@@ -31,8 +31,8 @@ Existing slots from each input Schedule are used to restrict or expand that sche
 {{< tab value="ts" label="TypeScript" >}}
 
 ```typescript
-import { MedplumClient } from '@medplum/core';
-import type { Bundle, Appointment } from '@medplum/fhirtypes';
+
+
 
 const medplum = new MedplumClient();
 

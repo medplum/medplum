@@ -85,7 +85,7 @@ requests.
 
 ## Verifying the upload
 
-Instances land in the [DICOM data model](./data-model.md) immediately; pixel data extraction happens
+Instances land in the [DICOM data model](/docs/dicom/data-model) immediately; pixel data extraction happens
 in the background. Check with an ordinary FHIR search:
 
 ```bash
@@ -103,5 +103,5 @@ curl https://api.medplum.com/dicomweb/studies \
 ## See also
 
 - [Medplum CLI](/docs/cli)
-- [DICOMweb API](./dicomweb-api.md)
-- [OHIF Viewer](./ohif-viewer.md) — to see what you just uploaded at [viewer.medplum.com](https://viewer.medplum.com)
+- [DICOMweb API](/docs/dicom/dicomweb-api)
+- [OHIF Viewer](/docs/dicom/ohif-viewer) — to see what you just uploaded at [viewer.medplum.com](https://viewer.medplum.com)

@@ -69,9 +69,7 @@ Read the current Task, check the claimant's eligibility, and update `owner` usin
 
 After checking eligibility in your controlled assignment path, pass the Task version the user reviewed to this function. A conflict returns `undefined`; reload the queue and ask the user to review the current assignment before another attempt.
 
-<MedplumCodeBlock language="ts" selectBlocks="routingImports, versionedTask, claimTaskTs">
-  {RoutingCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/task-routing-examples.ts" language="ts" blocks="routingImports, versionedTask, claimTaskTs" >}}
 
 Claiming establishes ownership. Set `in-progress` when the response work begins. Workflows that explicitly request and acknowledge a handoff can use `requested` and `accepted` as described in [Handoffs](/docs/careplans/handoffs-and-escalation#define-lifecycle-and-completion).
 
@@ -83,9 +81,7 @@ Use a transaction Bundle when linked resource updates must succeed together. App
 
 This example also adds the assignee to the thread. Pass the Practitioner who will participate in the conversation, even if a PractitionerRole owns the Task. Check eligibility and permission to join before calling it. The transaction requires the project's [transaction support](/docs/fhir-datastore/fhir-batch-requests) to be enabled. On a version conflict, reload both records and review the proposed transfer; retrying must preserve any intervening membership changes.
 
-<MedplumCodeBlock language="ts" selectBlocks="rerouteToProviderTs">
-  {RoutingCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/task-routing-examples.ts" language="ts" blocks="rerouteToProviderTs" >}}
 
 ## Reroute to a Provider Pool
 
@@ -93,9 +89,7 @@ Clear `Task.owner`, set the required `performerType`, and return the work to the
 
 The helper below updates only the Task. It preserves earlier notes and leaves the conversation's participants intact. Use the same version-checking helper shown above; let a conflict reach the caller for review.
 
-<MedplumCodeBlock language="ts" selectBlocks="rerouteToPoolTs">
-  {RoutingCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/task-routing-examples.ts" language="ts" blocks="rerouteToPoolTs" >}}
 
 Configure eligibility through [Teams and Delegation](/docs/careplans/teams-and-delegation#check-eligibility-before-assignment) and visibility through the [assignment and access rules](/docs/careplans/teams-and-delegation#assignment-and-access). This includes access to the thread and individual messages the assignee needs to read.
 

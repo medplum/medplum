@@ -51,14 +51,10 @@ Example:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="createPreAuthorizedCode">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/pre-authorized-code.ts" language="ts" blocks="createPreAuthorizedCode" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="createPreAuthorizedCodeCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/pre-authorized-code.ts" language="bash" blocks="createPreAuthorizedCodeCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -85,14 +81,10 @@ Example:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="redeemPreAuthorizedCode">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/pre-authorized-code.ts" language="ts" blocks="redeemPreAuthorizedCode" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="redeemPreAuthorizedCodeCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/pre-authorized-code.ts" language="bash" blocks="redeemPreAuthorizedCodeCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 

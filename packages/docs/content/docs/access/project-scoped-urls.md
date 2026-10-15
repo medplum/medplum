@@ -123,7 +123,7 @@ Use project-scoped URLs when:
 Set the client's `baseUrl` to the project-scoped URL. The client derives its FHIR, OAuth, and WebSocket URLs from the base URL, so every request uses the project scope.
 
 ```ts
-import { MedplumClient } from '@medplum/core';
+
 
 const medplum = new MedplumClient({
   baseUrl: 'https://api.medplum.com/projects/YOUR_PROJECT_ID/',

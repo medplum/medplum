@@ -14,27 +14,19 @@ Here is an example of searching for a list of `Patient` resources using the Conn
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="ConnectionApiGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="ConnectionApiGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="ConnectionApiTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="ConnectionApiTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="ConnectionApiCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="ConnectionApiCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="ConnectionApiResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="ConnectionApiResponse" >}}
 </details>
 
 See the "[Connection API](https://hl7.org/fhir/graphql.html#searching)" section of the FHIR GraphQL specification for more information.

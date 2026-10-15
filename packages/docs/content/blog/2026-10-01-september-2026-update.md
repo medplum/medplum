@@ -20,7 +20,7 @@ All of this continues to drive forward our [2026 roadmap priorities](/blog/2026-
 
 ### Scheduling
 
-<img src="https://github.com/Filupnot.png" alt="Philip Knott" width="50" height="50" style={{borderRadius: '50%'}} /> **[Philip Knott](https://github.com/Filupnot)** and <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
+<img src="https://github.com/Filupnot.png" alt="Philip Knott" width="50" height="50" style="border-radius: 50%" /> **[Philip Knott](https://github.com/Filupnot)** and <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style="border-radius: 50%" /> **[Noah Silas](https://github.com/noahsilas)**
 
 [Scheduling](/blog/2026-roadmap#scheduling) was again the largest area of the month. August built the booking flow; September made the [scheduling workspace](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace--basic) handle the situations a real front desk hits every day:
 
@@ -29,22 +29,22 @@ All of this continues to drive forward our [2026 roadmap priorities](/blog/2026-
 - **Either/or participants** — The booking form's participant fields previously intersected every selected actor's schedule, which made "provider A and B" easy and "provider A or B" impossible without two searches. An **Add another** control ([Storybook](https://storybook.medplum.com/?path=/story/medplum-appointmentactorselections--all-roles)) now expresses alternatives, so a search can ask for either room C or D, with device E, with provider A, and with either B or C, in one `$find`
 - **Visit type configuration** — A [`SchedulingConfigWorkspace`](https://storybook.medplum.com/?path=/story/medplum-schedulingconfigworkspace--basic) in `@medplum/react-scheduling` lists every visit type and opens the selected one for editing in place. Practice admins had been hand-editing `HealthcareService` resources to do this. A [`SchedulingParametersEditor`](https://storybook.medplum.com/?path=/story/medplum-schedulingparameterseditor-healthcareservice--configured) edits duration, buffers, alignment, capacity, and time zones at either level, the service's own parameters or a schedule's override for one service, and the weekly hours editor was restructured so a parent form can hold its state and save once
 
-<img src="/img/blog/2026-09-scheduling-parameters-editor.png" alt="SchedulingParametersEditor editing duration, buffers, alignment, capacity, and time zone for a visit type" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-scheduling-parameters-editor.png" alt="SchedulingParametersEditor editing duration, buffers, alignment, capacity, and time zone for a visit type" style="max-height: 400px; max-width: 100%" />
 
 - **Prior authorization fields** — A visit type can declare that it requires prior authorization through a `requires-prior-auth` coding on `HealthcareService.eligibility`. Booking such a visit adds procedure codes, diagnosis codes, and a medical-necessity confirmation to the [booking form](https://storybook.medplum.com/?path=/story/medplum-appointmentbookingform--auth-required), with custom values allowed in the code fields
 
-<img src="/img/blog/2026-09-scheduling-prior-auth-fields.png" alt="Booking form showing procedure codes, diagnosis codes, and medical necessity confirmation for a visit type that requires prior authorization" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-scheduling-prior-auth-fields.png" alt="Booking form showing procedure codes, diagnosis codes, and medical necessity confirmation for a visit type that requires prior authorization" style="max-height: 400px; max-width: 100%" />
 
 - **Booking outside the rules** — A `canBypassSchedulingRules` prop on the workspace and booking forms adds a **Date & time** and **Minutes** field above the offered times ([Storybook](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace--bypass-scheduling-rules)). The time finder is right for almost everyone, but a scheduler squeezing in an urgent patient or running a visit long needs a way to place a visit the rules would refuse
 - **More days at once** — The time finder has a **Show more days** button that loads two additional days at a time, requesting only days not already answered so results on screen stay put. The results column scrolls on its own so a long list does not push the form off screen
 - **Appointment details and cancellation** — Selecting an appointment on the calendar opens its [details in the side pane](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace-appointmentdetails--basic), with a cancel action. [`Appointment/$cancel`](/docs/scheduling/appointment-cancel) takes an optional structured `cancelationReason`, the form also accepts free text, and cancelled appointments no longer render on the calendar
 
-<img src="/img/blog/2026-09-scheduling-bypass-rules.png" alt="Date and time and minutes fields for booking a time the scheduling rules would refuse" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-scheduling-bypass-rules.png" alt="Date and time and minutes fields for booking a time the scheduling rules would refuse" style="max-height: 400px; max-width: 100%" />
 
 - **Calendar filters** — The workspace calendar [filters by location and visit type](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace-calendarspanel--with-filters) using a typeahead, which is what makes it usable for installs with many of each. Calendar colors stay stable across filter changes
 - **Time zones** — When offered times or viewed schedules are in a different time zone than the viewer's, the workspace says so, in the slot labels and in a notice above the calendar ([Storybook](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace--from-a-different-timezone)). On the server, `$find` no longer fails when an actor's resource cannot be read under the caller's access policy if a time zone is available from the service or schedule
 
-<img src="/img/blog/2026-09-scheduling-timezone-notice.png" alt="Scheduling workspace with the time finder open, showing an either/or provider search, Show more days, and the local time zone notice" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-scheduling-timezone-notice.png" alt="Scheduling workspace with the time finder open, showing an either/or provider search, Show more days, and the local time zone notice" style="max-height: 400px; max-width: 100%" />
 
 - **Inactive services and schedules** — A `HealthcareService` or `Schedule` marked `active: false` is rejected by `$find`, `$book`, `$hold`, and `$reschedule`. `$cancel` is deliberately unaffected, so appointments booked before a deactivation remain cancelable, and `$reschedule` can move an appointment *from* an inactive schedule *to* an active one
 - **Appointment site** — The site chosen in the booking form is now stored on the appointment as a `Location` reference in `supportingInformation`, readable through `getAppointmentSite` in `@medplum/core`
@@ -54,20 +54,20 @@ There is also a new [scheduling decision guide](/docs/decision-guides/scheduling
 
 ### Provider App
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)** and <img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style={{borderRadius: '50%'}} /> **[Finn Bergquist](https://github.com/finnbergquist)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" /> **[David Yanez](https://github.com/techdavidy)** and <img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style="border-radius: 50%" /> **[Finn Bergquist](https://github.com/finnbergquist)**
 
 The [Provider App](https://provider.medplum.com) billing surface introduced in August became a complete setup flow ([roadmap](/blog/2026-roadmap#provider-application)):
 
-<img src="/img/blog/2026-09-provider-get-started-visit-billing.png" alt="Provider App get started checklist including an initial visit and billing setup" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-provider-get-started-visit-billing.png" alt="Provider App get started checklist including an initial visit and billing setup" style="max-height: 400px; max-width: 100%" />
 
 - **Billing providers** — A billing providers tab lists and edits the organizations and practitioners claims are rendered by. Saving a practitioner writes NPI and taxonomy and either points the active `PractitionerRole` at a billing organization or clears it so the practitioner bills individually. Individual billers with an incomplete address are flagged. An existing `Organization` can be added as a billing provider rather than re-entered
 - **Live registration check** — As an NPI is typed, the app looks it up against the claims processor and shows whether the provider is registered, unregistered, or the check failed, and the save button waits on the result. Existing providers take an edit path rather than a duplicate create. Provider contracts are checked too, so a claim is not built against a provider with no effective contract
 
-<img src="/img/blog/2026-09-provider-billing-providers.png" alt="Billing providers tab in the Provider App listing organizations and practitioners" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-provider-billing-providers.png" alt="Billing providers tab in the Provider App listing organizations and practitioners" style="max-height: 400px; max-width: 100%" />
 
 - **Billing in the visit** — Visit details show the billing organization, the encounter eligibility check lets the user pick the provider, and the [eligibility request](/docs/billing/insurance-eligibility-checks) inbox was reworked. The get-started flow now includes an initial visit and billing setup
 
-<img src="/img/blog/2026-09-provider-eligibility-inbox.png" alt="Eligibility request inbox in the Provider App" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-provider-eligibility-inbox.png" alt="Eligibility request inbox in the Provider App" style="max-height: 400px; max-width: 100%" />
 
 - **Diagnoses from lab orders** — When lab orders are submitted during an encounter, the diagnoses on the order are added to the encounter as conditions, so the chart and the claim agree without re-entry
 - **Encounter review** — A `ClinicalImpression` is created on review if the encounter does not have one, which matters for encounters created outside the Provider App
@@ -77,7 +77,7 @@ The [Provider App](https://provider.medplum.com) billing surface introduced in A
 
 ### Bots and Automation
 
-<img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style={{borderRadius: '50%'}} /> **[Derrick Farris](https://github.com/ThatOneBro)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+<img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style="border-radius: 50%" /> **[Derrick Farris](https://github.com/ThatOneBro)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style="border-radius: 50%" /> **[Darren Eam](https://github.com/deam65)**
 
 - **The `Cron` resource** — A Bot's schedule used to live on the Bot itself, which tied one Bot to one schedule, gave no way to pass input to a scheduled run, and no way to run under an identity other than the Bot's own. The new [`Cron`](/docs/api/fhir/medplum/cron) resource owns the schedule instead: `onBehalfOf` names the `ProjectMembership` the run assumes, `parameter` carries input, and `endTime` bounds it. The same Bot can run on several schedules under different access policies, and a Bot in a [linked project](/docs/access/projects#project-linking) can be scheduled by each customer project that links to it while running with that project's permissions. Invalid cron strings and unreadable references are rejected on write rather than becoming jobs that silently never fire. The [cron guide](/docs/bots/bot-cron-job) covers the details
 - **Raw webhook bodies** — Public webhook Bots received parsed JSON, which discards the exact bytes a provider such as a payment processor signs. An opt-in `Bot.rawBody` setting delivers the original request text in `event.input` so signatures can be verified. Existing Bots are unchanged. See [consuming webhooks](/docs/bots/consuming-webhooks)
@@ -85,7 +85,7 @@ The [Provider App](https://provider.medplum.com) billing surface introduced in A
 
 ### Platform and API
 
-<img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style={{borderRadius: '50%'}} /> **[Cody Ebberson](https://github.com/codyebberson)**, <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**, and <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**
+<img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style="border-radius: 50%" /> **[Cody Ebberson](https://github.com/codyebberson)**, <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style="border-radius: 50%" /> **[Noah Silas](https://github.com/noahsilas)**, and <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style="border-radius: 50%" /> **[Matt Willer](https://github.com/mattwiller)**
 
 - **Customizable `CapabilityStatement`** — Medplum supports all of FHIR R4, but an implementer may expose a subset: a consumer-facing endpoint that does not accept patient-entered data, or a deployment limited to USCDI concepts. `/fhir/R4/metadata` advertised everything unconditionally. The generated statement can now be adjusted through server configuration, so a deployment states what it supports while still receiving updates as Medplum adds resource types, search parameters, and profiles
 - **Request correlation** — A new `X-Medplum-Log-Tag` request header attaches up to 128 characters of caller-supplied context to server logs, so an integration authenticating through one machine-to-machine client can still correlate requests back to its end users. Trace IDs were aligned with W3C Trace Context, responses now carry `X-Request-Id` and `X-Trace-Id`, and outbound `traceparent` headers are constructed properly. Both are covered in [log streaming](/docs/integration/log-streaming)
@@ -98,15 +98,15 @@ The [Provider App](https://provider.medplum.com) billing surface introduced in A
 
 ### AI
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" /> **[David Yanez](https://github.com/techdavidy)**
 
 - **Newer models and reasoning effort** — The [`$ai` operation](/docs/api/fhir/operations/ai) and [Spaces](/docs/provider/spaces) can use the latest OpenAI models, and callers can set the reasoning effort per request. Spaces exposes the model choice in its settings
 
-<img src="/img/blog/2026-09-spaces-model-selection.png" alt="Model selection in Spaces settings" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-09-spaces-model-selection.png" alt="Model selection in Spaces settings" style="max-height: 400px; max-width: 100%" />
 
 ### Revenue Cycle and Billing
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" /> **[David Yanez](https://github.com/techdavidy)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style="border-radius: 50%" /> **[Darren Eam](https://github.com/deam65)**
 
 The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap#revenue-cycle--billing) capabilities in the claims integrations:
 
@@ -120,7 +120,7 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 
 ### E-Prescribing
 
-<img src="https://github.com/oleg-mp.png" alt="Oleg Rocklin" width="50" height="50" style={{borderRadius: '50%'}} /> **[Oleg Rocklin](https://github.com/oleg-mp)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+<img src="https://github.com/oleg-mp.png" alt="Oleg Rocklin" width="50" height="50" style="border-radius: 50%" /> **[Oleg Rocklin](https://github.com/oleg-mp)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style="border-radius: 50%" /> **[Darren Eam](https://github.com/deam65)**
 
 - **Cart contents** — A `$get-cart` operation returns the current contents of a patient's medication cart from the prescribing system, so the cart badge reflects what the prescriber will actually see at signing
 - **Deletions** — A prescription deleted in the prescribing system previously reached Medplum only when someone re-ran patient sync. Deletion events are now handled when they arrive, across every envelope shape the vendor might post
@@ -130,7 +130,7 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 
 ### Labs, Terminology, and Integrations
 
-<img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style={{borderRadius: '50%'}} /> **[Finn Bergquist](https://github.com/finnbergquist)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/ianplunkett.png" alt="Ian Plunkett" width="50" height="50" style={{borderRadius: '50%'}} /> **[Ian Plunkett](https://github.com/ianplunkett)**
+<img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style="border-radius: 50%" /> **[Finn Bergquist](https://github.com/finnbergquist)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style="border-radius: 50%" /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/ianplunkett.png" alt="Ian Plunkett" width="50" height="50" style="border-radius: 50%" /> **[Ian Plunkett](https://github.com/ianplunkett)**
 
 - **Lab ordering iframe** — The lab network's hosted ordering interface can be launched from Medplum through a type-level operation that matches the patient on demographics and returns an authenticated URL. The [iframe guide](/docs/integration/health-gorilla/iframe) covers prerequisites, the SDK call, callback behavior, and troubleshooting, and distinguishes it from the results integration
 - **HIE groundwork** — Shared connection, installation, subscription, and deployment helpers were extracted from the lab ordering code so the health information exchange work builds on the same layer without entangling the two ([Darren Eam](https://github.com/deam65))
@@ -139,7 +139,7 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 
 ### Enterprise: Scale, Database, and Self-Hosting
 
-<img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Long](https://github.com/mattlong)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/The-Alchemist.png" alt="Karl Pietrzak" width="50" height="50" style={{borderRadius: '50%'}} /> **[Karl Pietrzak](https://github.com/The-Alchemist)**
+<img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style="border-radius: 50%" /> **[Matt Long](https://github.com/mattlong)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style="border-radius: 50%" /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/The-Alchemist.png" alt="Karl Pietrzak" width="50" height="50" style="border-radius: 50%" /> **[Karl Pietrzak](https://github.com/The-Alchemist)**
 
 [Enterprise scale](/blog/2026-roadmap#enterprise-scale--infrastructure) work continued the sharding groundwork from August and tightened the database and operations paths:
 
@@ -155,7 +155,7 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 
 ## Compliance
 
-<img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style={{borderRadius: '50%'}} /> **[Cody Ebberson](https://github.com/codyebberson)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Long](https://github.com/mattlong)**
+<img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style="border-radius: 50%" /> **[Cody Ebberson](https://github.com/codyebberson)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style="border-radius: 50%" /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style="border-radius: 50%" /> **[Matt Long](https://github.com/mattlong)**
 
 [Compliance](/blog/2026-roadmap#compliance-h1-2026) work this month was concentrated on identity, sessions, and the evidence trail:
 
@@ -173,7 +173,7 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 
 ## Documentation
 
-<img src="https://github.com/everett-williams.png" alt="Everett Williams" width="50" height="50" style={{borderRadius: '50%'}} /> **[Everett Williams](https://github.com/everett-williams)**, <img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style={{borderRadius: '50%'}} /> **[Cody Ebberson](https://github.com/codyebberson)**, and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+<img src="https://github.com/everett-williams.png" alt="Everett Williams" width="50" height="50" style="border-radius: 50%" /> **[Everett Williams](https://github.com/everett-williams)**, <img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style="border-radius: 50%" /> **[Cody Ebberson](https://github.com/codyebberson)**, and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style="border-radius: 50%" /> **[Darren Eam](https://github.com/deam65)**
 
 **Provider and platform**
 
@@ -212,8 +212,8 @@ New videos published this month, all on the [Medplum YouTube channel](https://ww
 
 Longer-form writing published this month:
 
-- <img src="/img/people/thomas-vande-casteele.jpg" alt="Thomas Vande Casteele" width="24" height="24" style={{borderRadius: '50%', verticalAlign: 'middle'}} /> **[Awell Panels: Worklists That Update Themselves](/blog/awell-panels-case-study)** by Thomas Vande Casteele — How Awell built Panels on self-hosted Medplum and took post-discharge follow-up from two hospitals to 180 facilities in nine months, with a [walkthrough](https://youtu.be/pH7ME9FRPLY) and a [build-from-scratch demo](https://youtu.be/e_jwOw4lo8E)
-- <img src="https://github.com/maddyli.png" alt="Maddy Li" width="24" height="24" style={{borderRadius: '50%', verticalAlign: 'middle'}} /> **[How Medplum thinks about FHIR](/blog/traditional-fhir)** by Maddy Li — Why Medplum treats FHIR as the transactional system of record rather than a read-mostly interface bolted onto proprietary tables
+- <img src="/img/people/thomas-vande-casteele.jpg" alt="Thomas Vande Casteele" width="24" height="24" style="border-radius: 50%; vertical-align: middle" /> **[Awell Panels: Worklists That Update Themselves](/blog/awell-panels-case-study)** by Thomas Vande Casteele — How Awell built Panels on self-hosted Medplum and took post-discharge follow-up from two hospitals to 180 facilities in nine months, with a [walkthrough](https://youtu.be/pH7ME9FRPLY) and a [build-from-scratch demo](https://youtu.be/e_jwOw4lo8E)
+- <img src="https://github.com/maddyli.png" alt="Maddy Li" width="24" height="24" style="border-radius: 50%; vertical-align: middle" /> **[How Medplum thinks about FHIR](/blog/traditional-fhir)** by Maddy Li — Why Medplum treats FHIR as the transactional system of record rather than a read-mostly interface bolted onto proprietary tables
 
 ## Releases
 

@@ -20,19 +20,13 @@ A filter expression has three parts: a **parameter**, an **operator**, and a **v
   <summary>Example: Filter syntax</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="syntaxTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="syntaxTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="syntaxCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="syntaxCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="syntaxCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="syntaxCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -65,19 +59,13 @@ This example will return all male patients that have the string "sim" somewhere 
   <summary>Example: Filtering a search based on both name and gender</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="logicalAndTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="logicalAndTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="logicalAndCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalAndCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="logicalAndCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalAndCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -88,19 +76,13 @@ This example will return any patients that have an identifier of 12345 OR the ph
   <summary>Example: Filtering a search based on either an identifier or phone number</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="logicalOrTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="logicalOrTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="logicalOrCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalOrCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="logicalOrCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalOrCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -113,19 +95,13 @@ You can further refine your search by nesting filters using parentheses and logi
   <summary>Example: Filtering a search based on gender and two potential names</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="nestedTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="nestedTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="nestedCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="nestedCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="nestedCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="nestedCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>

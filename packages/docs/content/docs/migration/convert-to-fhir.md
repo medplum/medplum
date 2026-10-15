@@ -32,9 +32,7 @@ Source System (Patient table):
 ```
 
 FHIR [`Patient`][patient] Resource:
-<MedplumCodeBlock language="ts" selectBlocks="patient-example">
-{ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="patient-example" >}}
 
 ## Using FHIR Identifiers to Link to the Source System
 
@@ -48,9 +46,7 @@ Adding source system identifiers helps in:
 
 ### Example
 
-<MedplumCodeBlock language="ts" selectBlocks="patient-with-identifier">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="patient-with-identifier" >}}
 
 ## Dealing with CodeableConcepts
 
@@ -85,9 +81,7 @@ Now, let's convert this data to a FHIR Condition resource:
 
 Initially, with just the local code:
 
-<MedplumCodeBlock language="ts" selectBlocks="condition-example">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="condition-example" >}}
 
 Later, enriched with a standard ICD-10 code:
 
@@ -97,9 +91,7 @@ The coding below illustrates the shape of an approved mapping. Do not infer a st
 
 {{< /warning >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="enriched-condition-example">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="enriched-condition-example" >}}
 
 In this example:
 
@@ -146,9 +138,7 @@ Conditional references solve these issues by allowing you to reference resources
 
 Let's amend the previous example to use a conditional reference to link our [`Condition`][condition] to the [`Patient`][patient].
 
-<MedplumCodeBlock language="ts" selectBlocks="conditional-reference-example">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="conditional-reference-example" >}}
 
 With this modification, we no longer have to look up the [`Patient's`][patient] `id` value in Medplum before writing the [`Condition`][condition]. The server resolves `identifier=http://your-source-system.com/patientId|P001` to the existing Patient during the write.
 

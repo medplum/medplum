@@ -15,9 +15,7 @@ The first step is to set up your test framework in your Bots package. Medplum Bo
 
 Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](#query-the-results) work.
 
-<MedplumCodeBlock language="ts" selectBlocks="definitions-import,index-schema">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="definitions-import,index-schema" >}}
 
 Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains recommended [eslintrc](https://github.com/medplum/medplum-demo-bots/blob/main/.eslintrc.json), [tsconfig](https://github.com/medplum/medplum-demo-bots/blob/main/tsconfig.json), and [vite.config](https://github.com/medplum/medplum-demo-bots/blob/main/vite.config.ts) settings for a faster developer feedback cycle.
 
@@ -28,7 +26,7 @@ After setting up your framework, you're ready to write your first test file! The
 You will need to import your bot's `handler` function, in addition to the other imports required by your test framework. You'll call this `handler` from each one of your tests.
 
 ```typescript
-import { handler } from './my-bot';
+
 ```
 
 ## Write your unit test
@@ -46,9 +44,7 @@ The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/ma
 
 The Medplum `MockClient` class extends the `MedplumClient` class, but stores resources in local memory rather than persisting them to the server. This presents a type-compatible interface to the Bot's handler function, which makes it ideal for unit tests.
 
-<MedplumCodeBlock language="ts" selectBlocks="create-client">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="create-client" >}}
 
 We recommend creating a `MockClient` at the beginning of each test, to avoid any cross-talk between tests.
 
@@ -81,9 +77,7 @@ The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main
 
 <details>
   <summary>Example: Create Resources</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="create-resources">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="create-resources" >}}
 </details>
 
 #### Creating Rich Test Data in Batches
@@ -96,9 +90,7 @@ The below example is from the [find matching patients bot tests](https://github.
 
 <details>
   <summary>Example: Creating a large set of patient data with a batch request</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="importPatientData,createBatchData">
-    {ExampleCode2}
-  </MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts" language="ts" blocks="importPatientData,createBatchData" >}}
 </details>
 
 In this example we create the `MockClient`, then the test data by calling `executeBatch` in the `beforeEach` function. The `beforeEach` function is an optimization that will run before each test, so you do not need to create the data as a part of every test.
@@ -113,9 +105,7 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 <details>
   <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="cliAsTransaction">
-    {ExampleCode3}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/bots/unit-testing-bots.ts" language="ts" blocks="cliAsTransaction" >}}
 </details>
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
@@ -130,9 +120,7 @@ If you want to clone an existing project into a new environment, you can use the
 
 After setting up your mock resources, you can invoke your bot by calling your bot's handler function. See the ["Bot Basics" tutorial](/docs/bots/bot-basics#editing-a-bot) for more information about the arguments to `handler`
 
-<MedplumCodeBlock language="ts" selectBlocks="invoke-bot">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="invoke-bot" >}}
 
 ### Query the results
 
@@ -144,9 +132,7 @@ The after running the Bot, the [finalize-report bot's tests](https://github.com/
 
 <details>
   <summary>Example: Query the results</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="query-results">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="query-results" >}}
 </details>
 
 {{< note title="A note on idempotency" >}}
@@ -154,9 +140,7 @@ Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedi
 
 <details>
   <summary>Example: Idempotency test</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="test-idempotent">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="test-idempotent" >}}
 </details>
 
 {{< /note >}}

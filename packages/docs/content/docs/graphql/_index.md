@@ -23,27 +23,19 @@ For example, to request a `Patient` by ID:
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="GetPatientByIdGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="GetPatientByIdGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="GetPatientByIdTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="GetPatientByIdTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="GetPatientByIdCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="GetPatientByIdCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="GetPatientByIdResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="GetPatientByIdResponse" >}}
 </details>
 
 This query retrieves the `resourceType`, `id`, `name`, and `address` of the specified `Patient`.
@@ -68,27 +60,19 @@ To search for a list of `Patient` resources with a specific name and city:
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="SearchPatientsByNameAndCityGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="SearchPatientsByNameAndCityGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="SearchPatientsByNameAndCityTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="SearchPatientsByNameAndCityTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="SearchPatientsByNameAndCityCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="SearchPatientsByNameAndCityCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="SearchPatientsByNameAndCityResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="SearchPatientsByNameAndCityResponse" >}}
 </details>
 
 This query searches for Patient resources with the name `"Eve"` and a city of `"Philadelphia"`, and aliases the list of patients as `patients` in the response.
@@ -111,27 +95,19 @@ For example, to retrieve a `DiagnosticReport` and all the `Observation` resource
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="DiagnosticReportWithObservationsGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="DiagnosticReportWithObservationsGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="DiagnosticReportWithObservationsTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="DiagnosticReportWithObservationsTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="DiagnosticReportWithObservationsCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="DiagnosticReportWithObservationsCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="DiagnosticReportWithObservationsResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="DiagnosticReportWithObservationsResponse" >}}
 </details>
 
 This query retrieves a `DiagnosticReport` and the `Observation` resources associated with it.
@@ -148,27 +124,19 @@ In the example below, we first search for a `Patient` by id, and then find all t
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="PatientWithRelatedEncountersGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="PatientWithRelatedEncountersGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="PatientWithRelatedEncountersTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="PatientWithRelatedEncountersTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="PatientWithRelatedEncountersCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="PatientWithRelatedEncountersCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="PatientWithRelatedEncountersResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="PatientWithRelatedEncountersResponse" >}}
 </details>
 
 See the "[Reverse References](https://hl7.org/fhir/r4/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
@@ -183,76 +151,54 @@ FHIR GraphQL supports filtering array properties using field arguments. For exam
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="FilterPatientNameByUseGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="FilterPatientNameByUseGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByUseTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterPatientNameByUseTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="FilterPatientNameByUseCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="FilterPatientNameByUseCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByUseResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterPatientNameByUseResponse" >}}
 </details>
 
 Another common use is to filter an `extension` array by `url`:
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="FilterExtensionByUrlGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="FilterExtensionByUrlGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="FilterExtensionByUrlTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterExtensionByUrlTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="FilterExtensionByUrlCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="FilterExtensionByUrlCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="FilterExtensionByUrlResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterExtensionByUrlResponse" >}}
 </details>
 
 If more powerful filtering capabilities are required, a FHIRPath expression can be evaluated to select which list items are included in the response. The expression should evaluate to `true` for an item to be included. This example selects all patient names without a family part:
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="FilterExtensionByFHIRPathGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="FilterExtensionByFHIRPathGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByFHIRPathTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterPatientNameByFHIRPathTS" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByFHIRPathResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterPatientNameByFHIRPathResponse" >}}
 </details>
 
 {{< tip title="Query Performance" >}}
@@ -271,27 +217,19 @@ This query searches for a list of `Patients` named `"Eve"`, living in `"Philadel
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="PatientsWithReportsGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="graphql" blocks="PatientsWithReportsGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="PatientsWithReportsTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="PatientsWithReportsTS" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="PatientsWithReportsCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="bash" blocks="PatientsWithReportsCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="PatientsWithReportsResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="PatientsWithReportsResponse" >}}
 </details>
 
 ## Summary

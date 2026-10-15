@@ -8,11 +8,11 @@ weight: 20
 The [RCM & Billing Decision Guide](/docs/decision-guides/rcm-billing) walks through requirements questions and FHIR modeling decisions for billing — use it alongside these docs.
 {{< /tip >}}
 
-The FHIR spec supports [many resources](/products/billing#fhir-resources) related to billing and payments. These resources can be created programmatically to support billing and payments. Commonly as part of a billing implementation, FHIR resources are created by applications and synchronized to clearinghouses or billing providers using [subscriptions](/docs/subscriptions) and [bots](/docs/bots).
+The FHIR spec supports [many resources](/products/billing#fhir-resources) related to billing and payments. These resources can be created programmatically to support billing and payments. Commonly as part of a billing implementation, FHIR resources are created by applications and synchronized to clearinghouses or billing providers using [subscriptions](/docs/subscriptions) and [bots](/docs/bots/).
 
-For example, after a lab test is completed, a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport.mdx) is created, and it and related resources are automatically sent to a billing system after the report is finalized.
+For example, after a lab test is completed, a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) is created, and it and related resources are automatically sent to a billing system after the report is finalized.
 
-For billing insurance, the [Coverage](/docs/api/fhir/resources/diagnosticreport.mdx) resource is critical for representing a patient's insurance. Refer to our [Patient Insurance](/docs/billing/patient-insurance) guide for more information on properly storing patient insurance information.
+For billing insurance, the [Coverage](/docs/api/fhir/resources/diagnosticreport) resource is critical for representing a patient's insurance. Refer to our [Patient Insurance](/docs/billing/patient-insurance) guide for more information on properly storing patient insurance information.
 
 ## Coding
 

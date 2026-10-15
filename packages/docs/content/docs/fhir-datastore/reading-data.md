@@ -11,19 +11,13 @@ Medplum also provides the `readResource` helper function as a part of the `Medpl
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="readTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/reading-data.ts" language="ts" blocks="readTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="readCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/reading-data.ts" language="bash" blocks="readCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="readCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/reading-data.ts" language="bash" blocks="readCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 

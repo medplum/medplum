@@ -39,12 +39,7 @@ To augment the `issuer`, the Davinci PDEX implementation guide [defines an exten
 
 <details>
   <summary>Example</summary>
-  <MedplumCodeBlock
-    language="ts"
-    selectBlocks="practitioner-head,qualifications-head,license,qualifications-tail,practitioner-tail"
-  >
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/provider-credentials.ts" language="ts" blocks="practitioner-head,qualifications-head,license,qualifications-tail,practitioner-tail" >}}
 </details>
 
 ## Medical Specialty
@@ -56,12 +51,7 @@ A provider's specialty certifications can also be represented Unlike licensure, 
 
 <details>
   <summary>Example</summary>
-  <MedplumCodeBlock
-    language="ts"
-    selectBlocks="practitioner-head,qualifications-head,specialty,qualifications-tail,practitioner-tail"
-  >
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/provider-credentials.ts" language="ts" blocks="practitioner-head,qualifications-head,specialty,qualifications-tail,practitioner-tail" >}}
 </details>
 
 {{< tip title="`Practitioner.qualification` vs. `PractitionerRole.specialty`" >}}

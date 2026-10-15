@@ -64,7 +64,7 @@ If using the Medplum React Component library, add your Google Client ID:
 
 ```tsx
 <SignInForm onSuccess={() => navigate('/')?.catch(console.error)} googleClientId={process.env.GOOGLE_CLIENT_ID}>
-  <Logo size={32} />
+  <Logo size="32" />
   <h1>Sign in to Foo Medical</h1>
 </SignInForm>
 ```
@@ -73,7 +73,7 @@ You may want to use environment variables. Check your build tool for instruction
 
 ```tsx
 <SignInForm onSuccess={() => navigate('/')?.catch(console.error)} googleClientId={process.env.GOOGLE_CLIENT_ID}>
-  <Logo size={32} />
+  <Logo size="32" />
   <h1>Sign in to Foo Medical</h1>
 </SignInForm>
 ```

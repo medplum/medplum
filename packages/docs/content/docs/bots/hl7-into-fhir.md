@@ -40,7 +40,7 @@ When we this implementation is complete we will:
   - First, [create a bot](https://app.medplum.com/admin/project) called ADT Handler Bot and save it
   - Paste the code below into the Bot you created and save. You can also find this bot and a corresponding test in the [Sample Bots Github Repository](https://github.com/medplum/medplum-demo-bots/).
 
-<MedplumCodeBlock language="ts">{ExampleCode}</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/bots/hl7-into-fhir.ts" language="ts" >}}
 
 Functionally, the code above will create a new patient with the `mrnNumber` provided, assuming that patient isn't already in this system.
 

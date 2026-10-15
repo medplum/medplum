@@ -39,9 +39,7 @@ To upload a file, use the `--data-binary` flag. The `--data-binary` flag is used
 
 Medplum provides a JavaScript/TypeScript SDK that makes it easy to upload binary files.
 
-<MedplumCodeBlock language="ts" selectBlocks="createBinary">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="createBinary" >}}
 
 The return value is the newly created resource, including the ID and meta.
 
@@ -63,9 +61,7 @@ For large files such as videos and images, it can be inconvenient to download co
 
 {{< tabs groupId="language" >}}
   {{< tab value="typescript" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="mediaImport,externalUrl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="mediaImport,externalUrl" >}}
   {{< /tab >}}
   {{< tab value="python" label="Python" >}}
 
@@ -86,9 +82,7 @@ media = {
   }
 };
 
-requests.post(f'{API_URL}/Media', json=media, headers={
-  'Authorization': f'Bearer {auth_token}'
-})
+requests.post(f'{API_URL}/Media', json=media, headers="Authorization': f'Bearer {auth_token}")
 
 ```
 
@@ -103,15 +97,11 @@ Once uploaded, the `Binary` resource can be referenced in various FHIR resources
 
 **a. Patient Profile Picture - `Patient.photo`:**
 
-<MedplumCodeBlock language="ts" selectBlocks="profilePhoto">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="profilePhoto" >}}
 
 **b. Message Attachment - `Communication.payload.contentAttachment`:**
 
-<MedplumCodeBlock language="ts" selectBlocks="messageAttachment">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="messageAttachment" >}}
 
 {{< warning title="Attachment Data" >}}
 When creating an [`Attachment`](/docs/api/fhir/datatypes/attachment), we recommend that you _do not_ use the `data` field to provide the full binary data string. This can make the attachment very large and can cause issues when making HTTP requests. See [External files and Document references](/docs/fhir-datastore/external-documents#example-creating-a-document-reference-for-a-binary-file) for an example of how to upload and reference [`Binary`](/docs/api/fhir/resources/binary) resources.
@@ -173,9 +163,7 @@ However, if you want to allow users to download the [`Binary`](/docs/api/fhir/re
 
 <details>
   <summary>Example: Download a Binary</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="downloadBinary">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="downloadBinary" >}}
 </details>
 
 In essence, Medplum elevates the utility of the FHIR `Binary` resource type. By streamlining the upload and retrieval processes, Medplum provides developers with a straightforward, optimized, and user-friendly means to manage binary files in healthcare applications.

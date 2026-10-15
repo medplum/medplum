@@ -66,9 +66,7 @@ For a plan formed in the context of a case, this guide uses `CarePlan.supporting
 
 Use a stable enrollment key to create the episode and its plan. This function takes references to an existing patient and organization and uses the episode's returned ID in the plan. Each conditional create can be retried with the same key if the process stops between writes; existing records retain their current state.
 
-<MedplumCodeBlock language="ts" selectBlocks="caseImports, createCaseTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/longitudinal-tracking-examples.ts" language="ts" blocks="caseImports, createCaseTs" >}}
 
 Apply the [patient-context and access rules](/docs/careplans/teams-and-delegation#assignment-and-access) to the linked records.
 
@@ -84,9 +82,7 @@ For the last query, follow pagination and select plans whose `supportingInfo` ex
 
 This example follows every page of authorized plans and checks the explicit episode reference:
 
-<MedplumCodeBlock language="ts" selectBlocks="findCasePlansTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/longitudinal-tracking-examples.ts" language="ts" blocks="findCasePlansTs" >}}
 
 A Condition search can find plans addressing a diagnosis, but cannot uniquely find an episode's plans. There is no standard R4 CarePlan search parameter for this `supportingInfo` association. If direct server-side episode-to-plan queries are essential at scale, agree on and validate a custom SearchParameter before relying on one.
 

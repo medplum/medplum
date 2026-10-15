@@ -162,9 +162,7 @@ Below is a detailed example of a [`Coverage`](/docs/api/fhir/resources/coverage)
 
 This example has been tested as part of the the [Medplum Candid Demo Bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health), a [Medplum Bot](/docs/bots) that submits insurance information to [Candid Health](https://www.joincandidhealth.com/) for reimbursement. Check out the [full bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/candid-health/send-to-candid.ts) for an example of how to submit FHIR resources to the Candid API.
 
-<MedplumCodeBlock language="ts" selectBlocks="exampleCoverage">
-    {Example}
-</MedplumCodeBlock>
+{{< code-example file="examples/medplum-demo-bots/src/candid-health/send-to-candid.test.ts" language="ts" blocks="exampleCoverage" >}}
 
 ## See Also
 

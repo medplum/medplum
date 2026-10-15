@@ -110,14 +110,10 @@ Here's an example query that sets the page size to 50:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchCount">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/paginated-search.ts" language="ts" blocks="searchCount" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchCountCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/paginated-search.ts" language="bash" blocks="searchCountCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -166,22 +162,16 @@ Here is an example of how to use the `_total` parameter in a search query:
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchTotal">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/paginated-search.ts" language="ts" blocks="searchTotal" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchTotalCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/paginated-search.ts" language="bash" blocks="searchTotalCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 This query will search for patients with the name "smith" and will return a Bundle with the accurate total number of matching resources included.
 
-<MedplumCodeBlock language="ts" selectBlocks="searchTotalResult">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/paginated-search.ts" language="ts" blocks="searchTotalResult" >}}
 
 {{< note title="Note" >}}
 The Medplum SDK provides the `searchResources` helper function. This function unwraps the response bundle of your search results and returns an array of the resources that match your parameters. If you want to get the count when using this function, the `.bundle` property is added to the array. You can access the total using `response.bundle.total`.
@@ -231,9 +221,7 @@ The URLs in the `Bundle.link` will opportunistically use `_cursor` pagination if
 
 The [`searchResourcePages()`](/docs/sdk/core.medplumclient.searchresourcepages) method of the MedplumClient provides an [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator) to simplify the iteration over resource pages.
 
-<MedplumCodeBlock language="ts" selectBlocks="paginatedSearch">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/paginated-search.ts" language="ts" blocks="paginatedSearch" >}}
 
 The array returned by `searchResourcePages` also includes a `bundle` property that contains the original `Bundle` resource. You can use this to access bundle metadata such as `Bundle.total` and `Bundle.link`.
 

@@ -18,22 +18,16 @@ To create a [`Patient`](/docs/api/fhir/resources/patient):
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreatePatientGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationCreatePatientGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="MutationCreatePatient">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreatePatient" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="MutationCreateResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateResponse" >}}
 </details>
 
 ### Aliasing the output
@@ -42,22 +36,16 @@ Just as with GraphQL queries, you can alias the newly created resource.
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreatePatientGraphQLAliased">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationCreatePatientGraphQLAliased" >}}
   {{< /tab >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="MutationCreatePatientAliased">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreatePatientAliased" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="MutationCreateResponseAliased">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateResponseAliased" >}}
 </details>
 
 ### Built-in types
@@ -68,14 +56,10 @@ This examples demonstrates how to create a mutation that creates a [`Communicati
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreateCommunicationGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationCreateCommunicationGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="MutationCreateCommunication">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateCommunication" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -83,22 +67,16 @@ This examples demonstrates how to create a mutation that creates a [`Communicati
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationPatientUpdateGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationPatientUpdateGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="MutationPatientUpdateTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationPatientUpdateTS" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="MutationUpdateResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationUpdateResponse" >}}
 </details>
 
 ## Patch Mutation
@@ -107,8 +85,7 @@ You can partially update a resource using the `[resourceType]Patch` mutation. Th
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql">
-{`
+{{< highlight graphql >}}
 mutation {
   PatientPatch(
     id: "example-id"
@@ -122,13 +99,11 @@ mutation {
     name { family given }
   }
 }
-`}
-    </MedplumCodeBlock>
+{{< /highlight >}}
   {{< /tab >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts">
-{`
-const result = await medplum.graphql(\`
+{{< highlight ts >}}
+const result = await medplum.graphql(`
 mutation {
   PatientPatch(
     id: "example-id"
@@ -142,9 +117,8 @@ mutation {
     name { family given }
   }
 }
-\`);
-`}
-    </MedplumCodeBlock>
+`);
+{{< /highlight >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -152,8 +126,7 @@ mutation {
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="json">
-{`
+{{< highlight json >}}
 {
   "data": {
     "PatientPatch": {
@@ -165,21 +138,16 @@ mutation {
     }
   }
 }
-`}
-  </MedplumCodeBlock>
+{{< /highlight >}}
 </details>
 
 ## Delete Mutation
 
 {{< tabs groupId="language" >}}
   {{< tab value="graphql" label="GraphQL" >}}
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationPatientDeleteGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationPatientDeleteGraphQL" >}}
   {{< /tab >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="MutationPatientDeleteTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationPatientDeleteTS" >}}
   {{< /tab >}}
 {{< /tabs >}}

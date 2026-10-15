@@ -22,7 +22,7 @@ This category is for user-facing applications that connect directly to Medplum. 
 | Method                                                         | **Choose to...**                                                                                    |
 | :------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
 | [Medplum as IDP](/docs/auth/medplum-as-idp)                    | (default) **Get going fast**, and don't have external compliance requirements.                      |
-| [External IDP](/docs/auth/external-identity-providers.mdx)     | Connect to an external IDP, like [Google Auth](/docs/auth/google-auth), Auth0, or AWS Cognito.      |
+| [External IDP](/docs/auth/external-identity-providers)     | Connect to an external IDP, like [Google Auth](/docs/auth/google-auth), Auth0, or AWS Cognito.      |
 | [Domain-level IDP](/docs/auth/domain-level-identity-providers) | Use your enterprise, domain-level **corporate identity solution.**                                  |
 | [Direct External Auth](/docs/auth/direct-external-auth)        | Authenticate directly with an external IDP token, without a token exchange flow (self-hosted only). |
 
@@ -49,12 +49,12 @@ For issuer-initiated workflows such as wallet handoff or magic links, use [**Pre
 
 ## User Management
 
-See our [User Management](/docs/user-management) section for more information:
+See our [User Management](/docs/user-management/) section for more information:
 
-- scoping users, and distinguishing [Project vs Server Scoped users](/docs/user-management/project-vs-server-scoped-users.mdx)
+- scoping users, and distinguishing [Project vs Server Scoped users](/docs/user-management/project-vs-server-scoped-users)
 - enabling [Open Patient Registration](/docs/user-management/open-patient-registration)
 - using [External ID's](/docs/user-management/external-ids)
-- creating [Custom Emails](/docs/user-management/custom-emails.mdx) for user invites
+- creating [Custom Emails](/docs/user-management/custom-emails) for user invites
 
 ---
 

@@ -6,7 +6,7 @@ weight: 220
 
 Clinical analyzers — Bio-Rad, Beckman, Roche, and many others — commonly speak **ASTM E1381** (the
 link layer) carrying **ASTM E1394** (the record format). The Agent handles these with a
-[byte stream channel](./features.md), configured entirely through query parameters on the channel's
+[byte stream channel](/docs/agent/features), configured entirely through query parameters on the channel's
 `Endpoint.address`.
 
 This page covers the configuration those analyzers need, and the behaviors that most often surprise
@@ -191,5 +191,5 @@ When bringing up an analyzer, confirm each layer separately — a failure at any
    match is usually a frame sequence number, per
    [Frame packing](#frame-packing-changes-which-lines-carry-a-sequence-number).
 
-A Bot that logs these and writes nothing is worth keeping around; channel [logs](./fetch-logs.md) and
+A Bot that logs these and writes nothing is worth keeping around; channel [logs](/docs/agent/fetch-logs) and
 the Bot's `AuditEvent` history together cover all three layers.

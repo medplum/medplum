@@ -25,7 +25,7 @@ This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api
 This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
 
 {{< tip title="Sample Data" >}}
-You can download the examples in this guide [here](./formulary-examples.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
+You can download the examples in this guide [here](/docs/medications/formulary/formulary-examples.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
 {{< /tip >}}
 
 {{< warning title="A note on the Medication resource" >}}

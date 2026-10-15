@@ -120,7 +120,7 @@ If any Communication is missing, the corresponding bot throws (`"... system prom
 
 The example below seeds all three Communications. The bodies are thin but functional – the loop will run end-to-end so you can verify wiring – they are not production prompts. Replace each `payload[0].contentString` with text authored for your deployment before exposing Spaces to users.
 
-<MedplumCodeBlock language="ts" selectBlocks="seedSystemPromptsTs">{ExampleCode}</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/provider/spaces-examples.ts" language="ts" blocks="seedSystemPromptsTs" >}}
 
 ### Default Prompts And Overrides
 
@@ -149,7 +149,7 @@ One per conversation. Created on the user's first message.
 | `topic.text`     | First 100 characters of the user's first message, used as the sidebar title      |
 | `note[0].text`   | JSON-encoded `{ "model": "..." }` capturing the model chosen for the conversation |
 
-<MedplumCodeBlock language="ts" selectBlocks="loadRecentTopicsTs">{ExampleCode}</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/provider/spaces-examples.ts" language="ts" blocks="loadRecentTopicsTs" >}}
 
 The Provider UI filters by `sender` so users only see their own conversations in the sidebar. Adjust this filter in your own UI if you need a shared inbox.
 
@@ -166,7 +166,7 @@ One per turn (user, assistant, tool). Each is linked to its topic by `partOf`.
 
 Messages are saved one at a time in conversation order and never updated, so `meta.lastUpdated` is their order; the Provider UI loads the newest 100. It persists every tool call and tool response on its own message so a mid-loop failure leaves a readable transcript.
 
-<MedplumCodeBlock language="ts" selectBlocks="loadConversationMessagesTs">{ExampleCode}</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/provider/spaces-examples.ts" language="ts" blocks="loadConversationMessagesTs" >}}
 
 ## The Bots
 
@@ -187,7 +187,7 @@ Outputs: `content` (string, may be null when the model only returns tool calls),
 
 The translator is the only bot that loops. The Provider UI re-invokes it after every batch of tool calls until the model decides it has enough context to answer.
 
-<MedplumCodeBlock language="ts" selectBlocks="invokeTranslatorBotTs">{ExampleCode}</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/provider/spaces-examples.ts" language="ts" blocks="invokeTranslatorBotTs" >}}
 
 ### FHIR Summary Bot
 
@@ -268,7 +268,7 @@ Spaces' behavior – when it calls FHIR, how it phrases summaries, which chart t
 
 Do not edit the default base prompts in place (see [Default Prompts And Overrides](#default-prompts-and-overrides) above). Instead, create your own Communication with the same identifier. The bots prefer whichever match's `meta.project` equals the current project, so your copy takes over automatically, with no redeploy needed.
 
-<MedplumCodeBlock language="ts" selectBlocks="updateSystemPromptTs">{ExampleCode}</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/provider/spaces-examples.ts" language="ts" blocks="updateSystemPromptTs" >}}
 
 Guidance per bot:
 

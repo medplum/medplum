@@ -30,9 +30,7 @@ Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be abl
 
 In future FHIR revisions, Schedule.serviceType will have type `CodeableReference(HealthcareService)`. In Medplum's R4 implementation, this is achieved by including an extension on a `CodeableConcept` in that attribute.
 
-  <MedplumCodeBlock language="ts" selectBlocks="scheduleServiceTypeLink">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/index.ts" language="ts" blocks="scheduleServiceTypeLink" >}}
 </details>
 
 ## Step 2: [Defining Availability](/docs/scheduling/defining-availability)

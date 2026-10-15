@@ -36,18 +36,18 @@ There are two ways in and one way out.
 
 **In, over the network protocol.** Imaging equipment overwhelmingly speaks DIMSE — the DICOM upper
 layer protocol over raw TCP — not HTTPS, and it speaks it on a hospital network that has no route to
-the public internet. The [Medplum Agent](./agent-dimse.md) runs inside that network, presents itself
+the public internet. The [Medplum Agent](/docs/dicom/agent-dimse) runs inside that network, presents itself
 as a DICOM Storage SCP, accepts `C-STORE` from the modality, and forwards each instance to Medplum
 over an outbound HTTPS connection. This is the same Agent that handles HL7 v2 and ASTM traffic, so a
 site that already runs one gets imaging by adding a channel.
 
 **In, over HTTPS.** Anything that can speak DICOMweb — a cloud PACS, a research pipeline, an
-integration engine, or the [Medplum CLI](./cli.md) — can `POST` directly to the
-[STOW-RS endpoint](./dicomweb-api.md#stow-rs-store-instances). No Agent required.
+integration engine, or the [Medplum CLI](/docs/dicom/cli) — can `POST` directly to the
+[STOW-RS endpoint](/docs/dicom/dicomweb-api#stow-rs-store-instances). No Agent required.
 
-**Out, over HTTPS.** [QIDO-RS and WADO-RS](./dicomweb-api.md) serve the study list, series metadata,
+**Out, over HTTPS.** [QIDO-RS and WADO-RS](/docs/dicom/dicomweb-api) serve the study list, series metadata,
 and pixel frames that a DICOMweb viewer needs. Medplum's implementation targets the request sequence
-the [OHIF Viewer](./ohif-viewer.md) makes.
+the [OHIF Viewer](/docs/dicom/ohif-viewer) makes.
 
 ## What gets stored
 
@@ -64,11 +64,11 @@ Studies and series are created conditionally on their DICOM UIDs, so the second 
 attaches to the study and series the first one created rather than duplicating them.
 
 A background worker then reads the raw file and extracts pixel data into one additional `Binary` per
-frame, which is what [WADO-RS frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames) serves.
-See the [Data Model](./data-model.md) for the full mapping from DICOM attributes to resource fields.
+frame, which is what [WADO-RS frame retrieval](/docs/dicom/dicomweb-api#wado-rs-retrieve-frames) serves.
+See the [Data Model](/docs/dicom/data-model) for the full mapping from DICOM attributes to resource fields.
 
 Because these are ordinary Medplum resources, they are searchable with the standard FHIR search API,
-readable through the [TypeScript SDK](/docs/sdk), subject to
+readable through the [TypeScript SDK](/docs/sdk/), subject to
 [access policies](/docs/access/access-policies), and able to trigger [Bots](/docs/bots) on create or
 update.
 
@@ -76,18 +76,18 @@ update.
 
 1. **Store a file from your laptop.** `medplum dicomweb stow MRBRAIN.DCM` uploads a DICOM file — or
    a whole directory of them — through STOW-RS with no infrastructure to set up. See the
-   [CLI](./cli.md).
+   [CLI](/docs/dicom/cli).
 2. **Look at it.** Medplum's hosted cloud is preconfigured with an
-   [OHIF Viewer](./ohif-viewer.md) at [viewer.medplum.com](https://viewer.medplum.com) — sign in and
+   [OHIF Viewer](/docs/dicom/ohif-viewer) at [viewer.medplum.com](https://viewer.medplum.com) — sign in and
    the study is there.
-3. **Connect a modality.** Add a DICOM channel to a [Medplum Agent](./agent-dimse.md) and send a
+3. **Connect a modality.** Add a DICOM channel to a [Medplum Agent](/docs/dicom/agent-dimse) and send a
    `C-ECHO`, then a `C-STORE`, from the device.
 
 ## Reference
 
-- [Data Model](./data-model.md) — resource types, search parameters, and DICOM attribute mapping
-- [DICOMweb API](./dicomweb-api.md) — the implemented HTTP endpoints
-- [Medplum Agent](./agent-dimse.md) — DIMSE `C-STORE` and `C-ECHO` from inside the firewall
-- [Medplum CLI](./cli.md) — `medplum dicomweb stow`
-- [OHIF Viewer](./ohif-viewer.md) — viewer configuration
+- [Data Model](/docs/dicom/data-model) — resource types, search parameters, and DICOM attribute mapping
+- [DICOMweb API](/docs/dicom/dicomweb-api) — the implemented HTTP endpoints
+- [Medplum Agent](/docs/dicom/agent-dimse) — DIMSE `C-STORE` and `C-ECHO` from inside the firewall
+- [Medplum CLI](/docs/dicom/cli) — `medplum dicomweb stow`
+- [OHIF Viewer](/docs/dicom/ohif-viewer) — viewer configuration
 - [DICOM Standard Part 18: Web Services](https://dicom.nema.org/medical/dicom/current/output/html/part18.html)

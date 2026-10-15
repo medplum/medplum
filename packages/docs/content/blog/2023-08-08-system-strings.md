@@ -94,8 +94,8 @@ The system string is our guiding light here. It allows us to clarify which ident
   <tbody>
     <tr>
       <td>
-        <CodeBlock language="js">
-          {`{
+{{< highlight js >}}
+{
   "resourceType": "Patient",
   "name": [{"given": ["Alice"]}],
   "identifier": [
@@ -110,12 +110,12 @@ The system string is our guiding light here. It allows us to clarify which ident
       "value": "98760"
     }
   ]
-}`}
-        </CodeBlock>
+}
+{{< /highlight >}}
       </td>
       <td>
-        <CodeBlock language="js">
-          {`{
+{{< highlight js >}}
+{
   "resourceType": "Patient",
   "name": [{"given": ["Bob"]}],
   "identifier": [
@@ -130,8 +130,8 @@ The system string is our guiding light here. It allows us to clarify which ident
       "value": "12345"
     }
   ]
-}`}
-        </CodeBlock>
+}
+{{< /highlight >}}
       </td>
     </tr>
   </tbody>
@@ -233,7 +233,6 @@ Some commonly used code systems:
     		<td ><code>http://hl7.org/fhir/sid/ndc</code></td>
     	</tr>
     </tbody>
-
 </table>
 
 For local codes, **the system string should reflect the degree of consensus **you want to enforce across your organization.

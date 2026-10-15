@@ -84,8 +84,8 @@ If you expunge a [`Project`](/docs/api/fhir/medplum/project), it will be _perman
 Sometimes you may want to restore data that has been accidentally deleted. The following script looks at the history of a resource and restores it if it is currently deleted.
 
 ```typescript
-import { MedplumClient } from '@medplum/core';
-import type { Resource } from '@medplum/fhirtypes';
+
+
 
 async function restoreDeletedResource(
   medplum: MedplumClient,

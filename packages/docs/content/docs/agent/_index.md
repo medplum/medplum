@@ -10,11 +10,11 @@ The Medplum Agent is an application that runs inside your firewall and connects 
 
 The Medplum Agent runs in your local network and connects to devices over low level protocols:
 
-![Medplum Agent Overview](./medplum-agent-overview.webp)
+![Medplum Agent Overview](medplum-agent-overview.webp)
 
 The Medplum Agent securely connects to Medplum servers running in the cloud using HTTPS and WebSockets:
 
-![Medplum Agent Connection Diagram](./medplum-agent-connection-diagram.webp)
+![Medplum Agent Connection Diagram](medplum-agent-connection-diagram.webp)
 
 ## Installation
 
@@ -60,7 +60,7 @@ Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new
 Second, set up the [Bot](https://app.medplum.com/Bot/new) that accepts the HL7 message, applies necessary transformations and translations, and sends an `ACK` message back to the sender. Ensure that your Bot accepts HL7 inputs, and you may refer to the [HL7 Bots documentation](/docs/bots/hl7-into-fhir) for more advanced uses. For an initial setup, the minimal Bot may be used:
 
 ```js
-import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
+
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
   return event.input.buildAck();

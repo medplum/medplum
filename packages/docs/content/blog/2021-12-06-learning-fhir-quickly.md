@@ -2,6 +2,7 @@
 id: 2021-12-06-learning-fhir-quickly
 title: Learning FHIR Quickly
 authors: reshma
+url: /blog/2021/12/06/learning-fhir-quickly
 ---
 
 You can use Medplum as a tool to help you learn FHIR quickly.
@@ -22,7 +23,7 @@ Using Chrome Developer tools can see directly which calls are made to render the
 
 To try for yourself:
 
-0. Pre-requisite, you have set up your Medplum account and created at least one patient [instructions here](/docs/tutorials) and are using Google Chrome.
+0. Pre-requisite, you have set up your Medplum account and created at least one patient [instructions here](/docs/tutorials/) and are using Google Chrome.
 1. Open the Medplum App and navigate to the Patient page.
 2. Open up Chrome Developer Tools and navigate to the Network tab and refresh the page [instructions here](https://everything.curl.dev/usingcurl/copyas).
 

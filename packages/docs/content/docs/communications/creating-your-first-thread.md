@@ -24,9 +24,7 @@ The example below is a provider–patient conversation: the patient is `subject`
 1. In the [Medplum App](https://app.medplum.com), open Project Admin → [Clients](https://app.medplum.com/admin/clients) and ensure you have a [`ClientApplication`](/docs/api/fhir/medplum/clientapplication). Create one there if needed (same place you would configure or invite a client for API access). You need the application ID and Secret; see [Client Credentials](/docs/auth/client-credentials) for details and for self-hosted `baseUrl` / token endpoint notes.
 2. Instantiate the client and call [`startClientLogin`](/docs/sdk/core.medplumclient.startclientlogin) before any `createResource` or search calls. Use `import { MedplumClient } from '@medplum/core';` at the top of your script (same as the thread snippets below).
 
-<MedplumCodeBlock language="ts" selectBlocks="creatingFirstThreadClientCredentialsTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="creatingFirstThreadClientCredentialsTs" >}}
 
 Replace the placeholders with the id and secret from the App. In your own repo, prefer reading them from the environment (for example `process.env.MEDPLUM_CLIENT_ID`) so secrets are not committed. The [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) must be allowed to create and read the resources you use (for example [`Communication`](/docs/api/fhir/resources/communication), `Patient`, `Practitioner`) via [access policies](/docs/access/access-policies) on its project membership—otherwise requests will fail with 401/403 before you get to reference errors.
 
@@ -37,25 +35,19 @@ Replace the placeholders with the id and secret from the App. In your own repo, 
 
 The first snippet creates the thread header and the opening message from the clinician to the patient. The header lists both participants in `recipient`; see the modeling note in [Messaging Data Model](/docs/communications/messaging-data-model#building-and-structuring-threads).
 
-<MedplumCodeBlock language="ts" selectBlocks="createYourFirstThreadHeaderAndFirstMessageTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="createYourFirstThreadHeaderAndFirstMessageTs" >}}
 
 ### Reply From Another Participant
 
 The next message is from the patient. In a real deployment you would normally create it from another app or login (for example the patient’s session) with its own authenticated `MedplumClient`. The block below keeps it in one tutorial file so you can run the flow locally; it reuses `createdThreadHeader` from the previous step.
 
-<MedplumCodeBlock language="ts" selectBlocks="createYourFirstThreadReplyFromAnotherUserTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="createYourFirstThreadReplyFromAnotherUserTs" >}}
 
 ### Optional: Reply to a Specific Message
 
 For linear chat, `partOf` plus sorting by `sent` is usually enough. Add [`inResponseTo`](/docs/api/fhir/resources/communication) only when the user explicitly replies to one message (for example a Reply action). The following snippet continues the variables from the steps above (`createdThreadHeader`, `walkthroughSecondMessage`):
 
-<MedplumCodeBlock language="ts" selectBlocks="createYourFirstThreadReplyInResponseToTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="createYourFirstThreadReplyInResponseToTs" >}}
 
 ## Atomic Creates With Transaction Bundles
 
@@ -67,27 +59,19 @@ In the [Medplum App](https://app.medplum.com), open Communication and find the n
 
 If `createResource` failed with a reference error, confirm the `Patient` and `Practitioner` from the snippet exist (for example open `Patient/homer-simpson` in the App), or read them with the client:
 
-<MedplumCodeBlock language="ts" selectBlocks="verifyWalkthroughReferencesTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="verifyWalkthroughReferencesTs" >}}
 
 To list messages in the thread (newest last when using `_sort=sent`), run a search with the header’s id:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="queryMessagesInThreadTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="queryMessagesInThreadTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="queryMessagesInThreadCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="queryMessagesInThreadCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 

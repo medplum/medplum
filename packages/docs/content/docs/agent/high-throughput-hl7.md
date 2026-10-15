@@ -12,7 +12,7 @@ A "slow" HL7 interface is almost never slow because of the network. A single MLL
 
 ### 1. The connection is a single-threaded, strictly-ordered pipe
 
-In [Original Acknowledgement Mode](./acknowledgement-modes.md#original-acknowledgement-mode), the sender transmits one message and then **blocks on that socket** until it receives an application ACK. Nothing else moves on that connection until the receiver has finished its entire processing pipeline — parse, validate, business logic, database commits, downstream calls.
+In [Original Acknowledgement Mode](/docs/agent/acknowledgement-modes#original-acknowledgement-mode), the sender transmits one message and then **blocks on that socket** until it receives an application ACK. Nothing else moves on that connection until the receiver has finished its entire processing pipeline — parse, validate, business logic, database commits, downstream calls.
 
 That makes end-to-end throughput a direct function of per-message processing latency:
 
@@ -52,7 +52,7 @@ The blocking ACK does buy something real: the sender knows the message was handl
 
 ### Solution 1: Enhanced ACK mode — unblocks the sender
 
-[Enhanced Acknowledgement Mode](./acknowledgement-modes.md) splits the single ACK into two: a fast **Commit Accept (CA)** sent as soon as the message is safely stored, and a later **Application ACK (AA/AE/AR)** sent once processing actually finishes. The socket is released at the CA, so the sender can transmit the next message immediately.
+[Enhanced Acknowledgement Mode](/docs/agent/acknowledgement-modes) splits the single ACK into two: a fast **Commit Accept (CA)** sent as soon as the message is safely stored, and a later **Application ACK (AA/AE/AR)** sent once processing actually finishes. The socket is released at the CA, so the sender can transmit the next message immediately.
 
 ```
 mllp://0.0.0.0:9001?enhanced=true
@@ -68,7 +68,7 @@ Enhanced mode is necessary but not sufficient. **It only becomes a throughput wi
 
 Standard enhanced mode requires the _sender_ to be configured for the two-step handshake (MSH-15/MSH-16). Frequently you can't do that: the sender is a partner's or client's Mirth Connect instance, a vendor appliance, or a legacy system whose interface team is a change-request away.
 
-[AA Mode](./acknowledgement-modes.md#aa-mode-simplified-enhanced-mode) solves this. The Agent immediately returns a plain **Application Accept (AA)** — an ordinary code every HL7 system already understands — and processes asynchronously.
+[AA Mode](/docs/agent/acknowledgement-modes#aa-mode-simplified-enhanced-mode) solves this. The Agent immediately returns a plain **Application Accept (AA)** — an ordinary code every HL7 system already understands — and processes asynchronously.
 
 ```
 mllp://0.0.0.0:9001?enhanced=aa
@@ -80,7 +80,7 @@ mllp://0.0.0.0:9001?enhanced=aa
 - You have no control over the remote system's configuration at all.
 - Your workflow doesn't need application-level failure feedback delivered back over the wire.
 
-**The trade-off:** the AA is sent before processing, so you can never send back an AE or AR. The sender always sees success. You must handle processing failures on your side — which is exactly what the durable queue and its retry policy are for (below). See the [AA Mode documentation](./acknowledgement-modes.md#aa-mode-simplified-enhanced-mode) for full details.
+**The trade-off:** the AA is sent before processing, so you can never send back an AE or AR. The sender always sees success. You must handle processing failures on your side — which is exactly what the durable queue and its retry policy are for (below). See the [AA Mode documentation](/docs/agent/acknowledgement-modes#aa-mode-simplified-enhanced-mode) for full details.
 
 ### Solution 3: The durable queue — makes the fast ACK honest
 
@@ -159,7 +159,7 @@ Two constraints on the pool:
 
 ### Solution 6: Outbound connection pooling (`keepAlive` + `maxClientsPerRemote`)
 
-Everything above concerns inbound traffic. If your Bots also push HL7 downstream via [`Agent/$push`](./push.md), the outbound side has its own version of the same bottleneck: one connection to a remote host means one message in flight to it.
+Everything above concerns inbound traffic. If your Bots also push HL7 downstream via [`Agent/$push`](/docs/agent/push), the outbound side has its own version of the same bottleneck: one connection to a remote host means one message in flight to it.
 
 - **`keepAlive: true`** reuses TCP connections instead of dialing per message, removing connection setup from the per-message path.
 - **`maxClientsPerRemote`** sets how many concurrent client connections the Agent maintains per remote host. Default is **5**, but it drops to **1** when `keepAlive` is enabled unless you set it explicitly — so if you enable `keepAlive` for a high-volume outbound feed, **set `maxClientsPerRemote` explicitly** or you will silently serialize.
@@ -270,7 +270,7 @@ mllp://0.0.0.0:9001?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=16
 
 ### Agent settings (`Agent.setting`)
 
-Minimum Agent versions: `durableQueue` and the `queue*` settings **5.1.22**; `channelRetryMode` and the `channelAutoRetry*` settings **5.1.25**; `channelMaxWorkers` and `channelLogicalChannelKey` **5.1.29**. See the [feature matrix](./features.md) for the rest.
+Minimum Agent versions: `durableQueue` and the `queue*` settings **5.1.22**; `channelRetryMode` and the `channelAutoRetry*` settings **5.1.25**; `channelMaxWorkers` and `channelLogicalChannelKey` **5.1.29**. See the [feature matrix](/docs/agent/features) for the rest.
 
 | Setting                             | Type      | Default                               | Purpose                                                                                                   |
 | :---------------------------------- | :-------- | :------------------------------------ | :-------------------------------------------------------------------------------------------------------- |
@@ -295,7 +295,7 @@ Minimum Agent versions: `durableQueue` and the `queue*` settings **5.1.22**; `ch
 
 Per-channel; where both exist, the URL parameter wins over the agent-wide setting, field by field.
 
-Minimum Agent versions: `duplicateBehavior` **5.1.22**; the `retryMode` / `autoRetry*` params **5.1.25**; `logicalChannelKey` and `maxWorkers` **5.1.29**. See the [feature matrix](./features.md) for the rest.
+Minimum Agent versions: `duplicateBehavior` **5.1.22**; the `retryMode` / `autoRetry*` params **5.1.25**; `logicalChannelKey` and `maxWorkers` **5.1.29**. See the [feature matrix](/docs/agent/features) for the rest.
 
 | Parameter                    | Values                         | Default       | Purpose                                                                  |
 | :--------------------------- | :----------------------------- | :------------ | :----------------------------------------------------------------------- |
@@ -325,14 +325,14 @@ Order matters — each step depends on the one before it.
 4. **Set `logicalChannelKey`, then raise `maxWorkers`.** Both, together — either alone is the wrong configuration. Start conservative (8–16), watch queue depth drain, then raise toward `throughput × latency`.
 5. **Size the outbound pool** if your Bots push downstream: `keepAlive: true` plus an explicit `maxClientsPerRemote`.
 
-**What to watch.** [`Agent/$stats`](./stats.md) reports connection counts, queue depths, and RTT metrics on demand; `logStatsFreqSecs` writes the same picture to the Agent log on an interval. The signal that matters is **queue depth over time**: flat or draining means the pool is keeping up; monotonically rising means you are still accepting faster than you drain, and either `maxWorkers` is too low, your partition key is too coarse (too few distinct values to parallelize across), or the real constraint has moved downstream into the Bot or the server.
+**What to watch.** [`Agent/$stats`](/docs/agent/stats) reports connection counts, queue depths, and RTT metrics on demand; `logStatsFreqSecs` writes the same picture to the Agent log on an interval. The signal that matters is **queue depth over time**: flat or draining means the pool is keeping up; monotonically rising means you are still accepting faster than you drain, and either `maxWorkers` is too low, your partition key is too coarse (too few distinct values to parallelize across), or the real constraint has moved downstream into the Bot or the server.
 
 If raising `maxWorkers` stops helping, check the key's cardinality first. A key that yields only a handful of distinct values — `MSH-4` on a single-facility feed, for example — caps your effective concurrency at that number no matter how large the pool is.
 
 ## See also
 
-- [Acknowledgement Modes](./acknowledgement-modes.md) — full treatment of Original, Enhanced, and AA modes
-- [Agent Features](./features.md) — feature/version compatibility matrix
-- [`Agent/$stats`](./stats.md) — runtime statistics
-- [`Agent/$push`](./push.md) — outbound message delivery
-- [Troubleshooting](./troubleshooting.md)
+- [Acknowledgement Modes](/docs/agent/acknowledgement-modes) — full treatment of Original, Enhanced, and AA modes
+- [Agent Features](/docs/agent/features) — feature/version compatibility matrix
+- [`Agent/$stats`](/docs/agent/stats) — runtime statistics
+- [`Agent/$push`](/docs/agent/push) — outbound message delivery
+- [Troubleshooting](/docs/agent/troubleshooting)

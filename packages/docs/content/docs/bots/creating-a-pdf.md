@@ -19,9 +19,7 @@ To learn more about pdfmake, check out the [playground](http://bpampuch.github.i
 
 This bot creates a PDF as a `Binary` and then creates a `Media` with the PDF as the content.
 
-<MedplumCodeBlock language="ts" selectBlocks="pdfBot">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/bots/creating-a-pdf.ts" language="ts" blocks="pdfBot" >}}
 
 ## Custom fonts
 
@@ -65,8 +63,6 @@ See the [pdfmake styling](https://pdfmake.github.io/docs/0.1/document-definition
 
 You can load an image by URL and embed it in the PDF.
 
-<MedplumCodeBlock language="ts" selectBlocks="coreImports,embeddedImages">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/bots/creating-a-pdf.ts" language="ts" blocks="coreImports,embeddedImages" >}}
 
 See the [pdfmake images](https://pdfmake.github.io/docs/0.1/document-definition-object/images/) page for more details.

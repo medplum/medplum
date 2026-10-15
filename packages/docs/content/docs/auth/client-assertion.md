@@ -127,9 +127,9 @@ curl -X POST https://api.medplum.com/oauth2/token \
   {{< tab value="typescript" label="TypeScript" >}}
 
 ```typescript
-import { MedplumClient } from '@medplum/core';
-import { SignJWT, importPKCS8 } from 'jose';
-import { readFileSync } from 'fs';
+
+
+
 
 const CLIENT_ID = 'your-client-application-id';
 const TOKEN_URL = 'https://api.medplum.com/oauth2/token';
@@ -202,7 +202,7 @@ response = requests.post(TOKEN_URL, data={
     'grant_type': 'client_credentials',
     'client_assertion_type': 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
     'client_assertion': signed_jwt,
-}, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+}, headers="Content-Type': 'application/x-www-form-urlencoded")
 
 access_token = response.json()['access_token']
 ```

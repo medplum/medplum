@@ -29,7 +29,7 @@ Secrets are stored on a per-project basis, and you must be a project administrat
 Secrets can be accessed from the `event.secrets` property, which contains an map from the secret name to the `ProjectSecret` object. [See here](/docs/sdk/core.botevent.secrets) for more details about `event.secrets`
 
 ```ts
-import { BotEvent, MedplumClient } from '@medplum/core';
+
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Print one secret
   console.log(`Secret: ${event.secrets['MY_API_KEY'].valueString}`);

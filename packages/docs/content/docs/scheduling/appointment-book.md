@@ -28,9 +28,7 @@ The `$book` operation books an [`Appointment`](/docs/api/fhir/resources/appointm
 
 {{< tabs >}}
 {{< tab value="ts" label="TypeScript" >}}
-  <MedplumCodeBlock language="ts" selectBlocks="bookOne">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/book.ts" language="ts" blocks="bookOne" >}}
 {{< /tab >}}
 {{< tab value="curl" label="cURL" >}}
 

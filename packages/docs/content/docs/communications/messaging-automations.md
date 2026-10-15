@@ -41,9 +41,7 @@ flowchart LR
 
 The factory below returns a Bot handler. Supply `isUnavailable` from your application's coverage integration and a coded response work type. Return `true` only for confirmed unavailability; if the lookup fails, throw so the Bot's recovery process can handle it. The handler uses the [safe pool transfer helper](/docs/communications/message-response-tracking-and-routing#reroute-to-a-provider-pool), preserving thread participants and checking the Task version.
 
-<MedplumCodeBlock language="ts" selectBlocks="oooImports, oooRerouteTs">
-  {RoutingCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/out-of-office-routing.ts" language="ts" blocks="oooImports, oooRerouteTs" >}}
 
 {{< tip title="Define the response pool before enabling automation" >}}
 
@@ -56,9 +54,7 @@ This example handles `ready`, `accepted`, and `in-progress` response work with o
 1. Configure the factory with your coverage lookup and response-work coding, then export the returned handler as the Bot entry point. Bundle the imported helper with the Bot. Create a Bot resource in the Medplum App (Project Admin → Bots → New). See [Deploying Bots](/docs/bots/bot-basics#deploying-a-bot) for full steps.
 2. Create a [Subscription](/docs/api/fhir/resources/subscription) that triggers the Bot for new child messages:
 
-<MedplumCodeBlock language="ts" selectBlocks="subscriptionOooRerouteTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="subscriptionOooRerouteTs" >}}
 
 The criteria `part-of:missing=false` limits the Subscription to child messages (which have `partOf`), not thread headers. `status=in-progress` avoids firing on retracted messages (`entered-in-error`) or drafts (`preparation`) — it targets newly sent messages.
 
@@ -85,9 +81,7 @@ flowchart LR
 
 #### Bot Code
 
-<MedplumCodeBlock language="ts" selectBlocks="staleThreadRemindersTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="staleThreadRemindersTs" >}}
 
 The 3-day threshold is configurable — adjust based on your response time expectations per thread category and urgency.
 

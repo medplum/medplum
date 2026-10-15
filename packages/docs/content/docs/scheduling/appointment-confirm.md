@@ -35,8 +35,8 @@ The `$confirm` operation confirms a held [`Appointment`](/docs/api/fhir/resource
 {{< tab value="ts" label="TypeScript" >}}
 
 ```typescript
-import { MedplumClient } from '@medplum/core';
-import type { Bundle } from '@medplum/fhirtypes';
+
+
 
 const medplum = new MedplumClient();
 

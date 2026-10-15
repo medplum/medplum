@@ -34,9 +34,7 @@ The `$hold` operation places a hold on one or more schedules by atomically creat
 {{< tabs >}}
 {{< tab value="ts" label="TypeScript" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="holdOne">
-    {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/hold.ts" language="ts" blocks="holdOne" >}}
 
 {{< /tab >}}
 {{< tab value="curl" label="cURL" >}}

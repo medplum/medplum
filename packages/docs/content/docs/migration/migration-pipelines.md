@@ -20,19 +20,13 @@ To perform a conditional update, use a `PUT` operation with a search query in th
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="medplum-sdk-upsert">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="ts" blocks="medplum-sdk-upsert" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="curl-upsert">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="bash" blocks="curl-upsert" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="medplum-cli-upsert">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="bash" blocks="medplum-cli-upsert" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -54,9 +48,7 @@ You can read more about Conditional Updates [here](/docs/fhir-datastore/working-
 
 Here's an example of using a batch to create multiple [`Patient`][patient] resources:
 
-<MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
-    {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="ts" blocks="create-patients-batch" >}}
 
 This batch creates or updates [`Patient`][patient] resources using conditional updates. Add one entry per independent source record.
 
@@ -74,9 +66,7 @@ Transactions require the `transaction-bundles` feature flag. Without it, a trans
 
 Here's an example of using a transaction to create an [`Encounter`][encounter] and associated [`ClinicalImpression`][clinicalimpression] assessment together. We use a transaction because the failure of one operation should invalidate the entire transaction.
 
-<MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-transaction">
-    {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="ts" blocks="encounter-and-impression-transaction" >}}
 
 In this transaction, both the Encounter and ClinicalImpression are created together. If either fails, the entire transaction is rolled back.
 
@@ -148,7 +138,7 @@ Run migrations with a dedicated [`ClientApplication`](/docs/auth/client-credenti
 For a long-running process, we recommend using [`setBasicAuth`](/docs/sdk/core.medplumclient.setbasicauth). The Medplum SDK will send the client ID and secret directly with HTTP Basic authentication on each API request:
 
 ```ts
-import { MedplumClient } from '@medplum/core';
+
 
 const medplum = new MedplumClient();
 medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID as string, process.env.MEDPLUM_CLIENT_SECRET as string);
@@ -235,25 +225,19 @@ Before loading data, profile the source and approve each transformation. The [ma
 
 Use a batch request to upload [`Patients`][patient] independently, using the primary key from the source system as the identifier.
 
-<MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
-    {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="ts" blocks="create-patients-batch" >}}
 
 ### Step 2: Create Conditions
 
 Use a batch request to upload [`Conditions`][condition] independently, using conditional references to link to the existing patients.
 
-<MedplumCodeBlock language="ts" selectBlocks="create-conditions-batch">
-    {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="ts" blocks="create-conditions-batch" >}}
 
 ### Step 3: Create Encounters and ClinicalImpressions
 
 Use one synchronous transaction for each [`Encounter`][encounter] and dependent [`ClinicalImpression`][clinicalimpression]. The transaction preserves atomicity for the pair. Submit separate transactions with bounded concurrency when processing many encounters.
 
-<MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-transaction">
-    {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/migration/migration-pipelines.ts" language="ts" blocks="encounter-and-impression-transaction" >}}
 
 This example demonstrates:
 

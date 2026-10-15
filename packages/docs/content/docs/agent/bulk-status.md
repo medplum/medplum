@@ -183,7 +183,7 @@ When `_count` is omitted, the operation queries the status of at most the **defa
 
 {{< /note >}}
 
-> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
+> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters).
 
 ### Recipes
 

@@ -12,16 +12,16 @@ This page collects common "recipes" for selecting agents with search parameters,
 
 The following operations accept `Agent` search parameters to select their operation targets when invoked against the type-level endpoint (`[base]/Agent/$operation`):
 
-- [`$bulk-status`](./bulk-status.md)
-- [`$fetch-logs`](./fetch-logs.md)
-- [`$stats`](./stats.md)
-- [`$upgrade`](./upgrade.md)
+- [`$bulk-status`](/docs/agent/bulk-status)
+- [`$fetch-logs`](/docs/agent/fetch-logs)
+- [`$stats`](/docs/agent/stats)
+- [`$upgrade`](/docs/agent/upgrade)
 
 In each case, the operation is run against _every_ agent matched by the query, and the response is a `Bundle` of `Parameters`, one entry per matched agent.
 
 {{< info title="Single vs. multiple agents" >}}
 
-The `$status` operation is single-agent only and does **not** accept search parameters. To query the status of multiple agents at once, use [`$bulk-status`](./bulk-status.md).
+The `$status` operation is single-agent only and does **not** accept search parameters. To query the status of multiple agents at once, use [`$bulk-status`](/docs/agent/bulk-status).
 
 {{< /info >}}
 
@@ -48,7 +48,7 @@ When `_count` is omitted, these operations act on at most the **default page siz
 
 ## Recipes
 
-The recipes below use [`$bulk-status`](./bulk-status.md) as an example, but the same query patterns work for any operation that supports search parameters — just swap in the operation you want to run (`$fetch-logs`, `$stats`, `$upgrade`, etc.).
+The recipes below use [`$bulk-status`](/docs/agent/bulk-status) as an example, but the same query patterns work for any operation that supports search parameters — just swap in the operation you want to run (`$fetch-logs`, `$stats`, `$upgrade`, etc.).
 
 ### All active agents
 
@@ -117,6 +117,6 @@ medplum get 'Agent/93f8b2fb-65a3-4977-a175-71b73b26fde7/$bulk-status'
 
 {{< tip title="CLI" >}}
 
-Many of these operations can also be invoked using the Medplum CLI. See the [agent CLI commands](./agent-cli-commands.md) for details.
+Many of these operations can also be invoked using the Medplum CLI. See the [agent CLI commands](/docs/agent/agent-cli-commands) for details.
 
 {{< /tip >}}

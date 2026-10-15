@@ -24,13 +24,9 @@ Refresh tokens are not issued by default. To receive a refresh token, you must i
 
 For example:
 
-<MedplumCodeBlock language="ts" selectBlocks="emailPasswordLogin" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/session-management.ts" language="ts" blocks="emailPasswordLogin" lineNumbers="true" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="oauthLogin" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/session-management.ts" language="ts" blocks="oauthLogin" lineNumbers="true" >}}
 
 ## Configuring Token Lifetimes
 
@@ -47,9 +43,7 @@ You can adjust token lifetimes by configuring your [`ClientApplication`](/docs/a
 
 Here's how to modify token lifetimes:
 
-<MedplumCodeBlock language="ts" selectBlocks="tokenLifetimes" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/session-management.ts" language="ts" blocks="tokenLifetimes" lineNumbers="true" >}}
 
 {{< warning >}}
 
@@ -97,9 +91,7 @@ To handle this scenario, you should:
 
 You can adjust the grace period when initializing the Medplum client:
 
-<MedplumCodeBlock language="ts" selectBlocks="graceCustomization" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/session-management.ts" language="ts" blocks="graceCustomization" lineNumbers="true" >}}
 
 ## Best Practices for Token Management
 
@@ -111,9 +103,7 @@ You can adjust the grace period when initializing the Medplum client:
 
    The Medplum client handles token refresh automatically. Configure the grace period appropriately for your application's needs:
 
-   <MedplumCodeBlock language="ts" selectBlocks="bestPractices" showLineNumbers>
-     {ExampleCode}
-   </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/session-management.ts" language="ts" blocks="bestPractices" lineNumbers="true" >}}
 
 3. **Token Revocation**
 

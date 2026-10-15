@@ -83,9 +83,7 @@ FHIR search cannot express `recipient OR sender` in one parameter. Inbox-style f
 
 <details>
   <summary>Example of a thread grouped using a Communication resource</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="communicationGroupedThread">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="communicationGroupedThread" >}}
 </details>
 
 ## How to Tag or Group Threads
@@ -102,9 +100,7 @@ You can omit `category` entirely if you do not need tags. **When using `category
 
 <details>
   <summary>Example of multiple categories</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="communicationCategories">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="communicationCategories" >}}
 </details>
 
 {{< tip title="Designing category schemes" >}}

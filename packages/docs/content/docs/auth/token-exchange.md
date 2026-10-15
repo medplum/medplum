@@ -45,14 +45,10 @@ The client makes a token exchange request to the token endpoint with an extensio
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="tokenExchange">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/token-exchange.ts" language="ts" blocks="tokenExchange" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="tokenExchangeCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/token-exchange.ts" language="bash" blocks="tokenExchangeCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 

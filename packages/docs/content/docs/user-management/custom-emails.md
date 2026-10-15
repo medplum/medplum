@@ -95,9 +95,7 @@ You will also need the `email` project feature flag turned on to allow Bots to s
 
 Here is a full example of a Bot that sends a custom email message:
 
-<MedplumCodeBlock language="ts" selectBlocks="customEmails" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/custom-emails.ts" language="ts" blocks="customEmails" lineNumbers="true" >}}
 
 Create, save, and deploy your bot. Make note of the Bot ID.
 

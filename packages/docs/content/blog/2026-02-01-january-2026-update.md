@@ -14,7 +14,7 @@ January was a packed month for Medplum. We shipped three patch releases (v5.0.11
 
 ### Provider App: Spaces, Messaging, and Tasks
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" /> **[David Yanez](https://github.com/techdavidy)**
 
 The [Provider app](https://provider.medplum.com) saw major improvements across messaging, task management, and the new Spaces experience. This work advances the [Provider Application roadmap goal](/docs/provider) of expanding available workflows.
 
@@ -26,7 +26,7 @@ The [Provider app](https://provider.medplum.com) saw major improvements across m
 
 ### Scheduling: $find and $book Operations
 
-<img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
+<img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style="border-radius: 50%" /> **[Noah Silas](https://github.com/noahsilas)**
 
 The most significant feature work this month was a ground-up buildout of FHIR-native scheduling operations. This directly supports the [Scheduling initiative](/docs/scheduling) on our [2026 roadmap](/blog/2026-roadmap), where we committed to self-scheduling, advanced availability management, and resource scheduling.
 
@@ -40,19 +40,19 @@ These operations give developers a clean, standards-based API for building patie
 
 ### System-Level Custom FHIR Operations
 
-<img src="https://github.com/monsieurBelbo.png" alt="Gonzalo Bellver" width="50" height="50" style={{borderRadius: '50%'}} /> **[Gonzalo Bellver](https://github.com/monsieurBelbo)**
+<img src="https://github.com/monsieurBelbo.png" alt="Gonzalo Bellver" width="50" height="50" style="border-radius: 50%" /> **[Gonzalo Bellver](https://github.com/monsieurBelbo)**
 
 Developers can now define [custom FHIR operations](/docs/bots/custom-fhir-operations) at the system level, not just per-resource. This is a key building block for the [Integrations & Plugins roadmap initiative](/docs/bots), enabling more flexible bot-powered workflows and custom API endpoints.
 
 ### FHIR Operations and Terminology
 
-<img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+<img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style="border-radius: 50%" /> **[Darren Eam](https://github.com/deam65)**
 
 - **[Patient `$summary` operation](/docs/api/fhir/operations/patient-summary)** with updated [`$everything` documentation](/docs/api/fhir/operations/patient-everything)
 - **[ConceptMap import](/docs/api/fhir/operations/conceptmap-import)** and comprehensive [terminology operations documentation](/docs/terminology)
 - New **[authentication and security operations](/docs/auth)** and **[resource validation operations](/docs/api/fhir/operations/validate-a-resource)**
 
-<img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**
+<img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style="border-radius: 50%" /> **[Matt Willer](https://github.com/mattwiller)**
 
 - **X-FHIR-Query support in [SDC `$extract`](/docs/api/fhir/operations/extract)** — enables dynamic queries in [Structured Data Capture](/docs/questionnaires/parsing-questionnaire-responses) extraction, improving form-based data capture workflows
 - **Display language overrides** in [`ValueSet/$expand`](/docs/api/fhir/operations/valueset-expand) and [`CodeSystem/$validate-code`](/docs/api/fhir/operations/codesystem-validate-code) — supports multilingual [terminology services](/docs/terminology), which is important for international deployments
@@ -61,20 +61,20 @@ Developers can now define [custom FHIR operations](/docs/bots/custom-fhir-operat
 
 These changes support the [Enterprise Scale & Infrastructure roadmap priority](/blog/2026-roadmap) of handling growing platform traffic.
 
-<img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**
+<img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style="border-radius: 50%" /> **[Matt Willer](https://github.com/mattwiller)**
 
 - **Reserved database connections for healthcheck** — prevents health checks from being starved during high load
 - **Redis failover error handling** in BullMQ workers — improves resilience during Redis cluster failovers
 - **Skip caching on write for [AuditEvent](/docs/api/fhir/resources/auditevent) resources** — reduces memory pressure for high-volume audit logging
 - **Tracing extensions on OperationOutcome** — better observability for debugging production issues
 
-<img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Long](https://github.com/mattlong)**
+<img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style="border-radius: 50%" /> **[Matt Long](https://github.com/mattlong)**
 
 - **[ReindexJob](/docs/self-hosting/super-admin-guide) configuration enhancements** — more control over reindexing for large datasets
 - **Per-resourceType padding configuration** — fine-grained tuning of array padding for storage optimization
 - **Array padding calculator** — tooling to help determine optimal padding settings
 
-<img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
+<img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style="border-radius: 50%" /> **[Noah Silas](https://github.com/noahsilas)**
 
 - **Automatic pre/post deploy migration generation** — streamlines the database migration workflow for [self-hosted deployments](/docs/self-hosting)
 
@@ -107,7 +107,7 @@ A significant documentation effort this month improved coverage across the Provi
 - Provider app docs updated ([Provider app guide](/docs/provider))
 - Updated [charting documentation](/docs/charting)
 
-<img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style={{borderRadius: '50%'}} /> **[Finn Bergquist](https://github.com/finnbergquist)**
+<img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style="border-radius: 50%" /> **[Finn Bergquist](https://github.com/finnbergquist)**
 
 - **Revamped multi-tenancy documentation** ([multi-tenancy identity providers](/docs/auth/domain-level-identity-providers))
 - **Scheduling docs**: availability time zones, `$find` beta status, `SchedulingParameters` duration param ([scheduling docs](/docs/scheduling))
@@ -123,7 +123,7 @@ A significant documentation effort this month improved coverage across the Provi
 
 **Medplum Agent**
 
-<img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style={{borderRadius: '50%'}} /> **[Derrick Farris](https://github.com/ThatOneBro)**
+<img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style="border-radius: 50%" /> **[Derrick Farris](https://github.com/ThatOneBro)**
 
 The [Medplum Agent](/docs/agent) is an application that runs inside your firewall and connects to devices over low-level protocols such as HL7/MLLP, ASTM, and DICOM, bridging them to the cloud via secure HTTPS WebSocket channels. This month the Agent docs received several updates:
 

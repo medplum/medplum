@@ -476,16 +476,12 @@ the option to embed FHIRPath expressions as needed to construct the query string
 When responses to the annotated Questionnaire are received, they can be passed to the [`$extract` API][extract] to be
 parsed into resources.
 
-<MedplumCodeBlock language="ts" selectBlocks="get">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/questionnaires/structured-data-capture.ts" language="ts" blocks="get" >}}
 
 Alternatively, the questionnaire and response can be passed in directly, in case they are not stored on the Medplum
 server:
 
-<MedplumCodeBlock language="ts" selectBlocks="post">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/questionnaires/structured-data-capture.ts" language="ts" blocks="post" >}}
 
 [extract]: /docs/api/fhir/operations/extract
 
@@ -779,7 +775,7 @@ A single response to the questionnaire will extract a Bundle containing two reso
 
 ## Approach 2: Subscription + Bot
 
-A [Medplum Bot](/docs/bots) is a TypeScript function that runs server-side in response to a FHIR event. For questionnaire parsing, the typical wiring is:
+A [Medplum Bot](/docs/bots/) is a TypeScript function that runs server-side in response to a FHIR event. For questionnaire parsing, the typical wiring is:
 
 1. Create a `Subscription` that fires on `QuestionnaireResponse` creation (or status change to `completed`).
 2. The Bot receives the `QuestionnaireResponse` as its input.
@@ -795,8 +791,8 @@ A [Medplum Bot](/docs/bots) is a TypeScript function that runs server-side in re
 ### Pattern
 
 ```typescript
-import { BotEvent, MedplumClient } from '@medplum/core';
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+
+
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   const response = event.input;

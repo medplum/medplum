@@ -31,19 +31,13 @@ The `_id` parameter allows you to search for any resource based on its `id` elem
   <summary>Example: Searching for patients by _id</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="idTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="idTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="idCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="idCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="idCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="idCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -58,19 +52,13 @@ This is especially useful when combined with [comparison operators](/docs/search
   <summary>Example: Searching for only communications that have occurred since the beginning of October, 2023</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="lastUpdatedTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="lastUpdatedTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="lastUpdatedCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="lastUpdatedCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="lastUpdatedCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="lastUpdatedCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -90,19 +78,13 @@ The `_summary` parameter can contain one of the following value set:
   <summary>Example: Searching for a summary of a patient</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="summaryTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="summaryTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="summaryCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="summaryCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="summaryCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="summaryCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -119,19 +101,13 @@ Note that any top-level mandatory or modifier elements should always be included
   <summary>Example: Searching the subject and performers of observations</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="elementsTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="elementsTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="elementsCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="elementsCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="elementsCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="elementsCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -144,19 +120,13 @@ The `_tag` parameter allows you to search on the `tag` field of the `meta` eleme
   <summary>Example: Searching for observations that are tagged as critical</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="tagTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="tagTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="tagCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="tagCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="tagCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="tagCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -171,19 +141,13 @@ Medplum allows you to easily search using compartments by providing the non-stan
   <summary>Example: Find all communications for a patient</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="compartmentTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="compartmentTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="compartmentCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="compartmentCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="compartmentCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="compartmentCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -202,19 +166,13 @@ The `_total=accurate` search parameter will only attempt to return the accurate 
   <summary>Example: Search for all patients in your organization and get an estimate of the total number</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="totalTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="totalTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="totalCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="totalCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="totalCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="totalCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -229,19 +187,13 @@ The `_profile` parameter is a reference parameter, meaning you may provide a ref
   <summary>Example: Search for observations that are part of the pediatric growth charts profile</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="profileTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="profileTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="profileCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="profileCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="profileCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="profileCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -256,19 +208,13 @@ The [Confidentiality Level Code System](http://terminology.hl7.org/CodeSystem/v3
   <summary>Example: Searching for patients that are of a **normal** confidentiality level.</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="securityTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="securityTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="securityCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="securityCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="securityCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="securityCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -283,19 +229,13 @@ The `meta.source` field indicates the system or application that originally crea
   <summary>Example: Searching for Patients sourced from `https://foomedical.com`</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="sourceTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="sourceTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="sourceCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="sourceCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="sourceCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="sourceCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -322,19 +262,13 @@ Mixing `_deleted` with most other search parameters will not work as expected. T
   <summary>Example: Searching for deleted patients</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="deletedTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="deletedTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="deletedCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="deletedCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="deletedCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="deletedCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -347,19 +281,13 @@ The `_project` parameter allows you to filter resources by their project ID. Thi
   <summary>Example: Searching for patients in a specific project</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="projectTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="projectTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="projectCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="projectCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="projectCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="projectCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -372,19 +300,13 @@ The `_type` parameter allows you to restrict the search to specific resource typ
   <summary>Example: Searching for Patients and Observations</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="typeTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="typeTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="typeCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="typeCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="typeCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="bash" blocks="typeCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>

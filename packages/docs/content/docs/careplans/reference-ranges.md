@@ -44,23 +44,17 @@ A range is defined by the following properties:
 
 <details>
   <summary>Example: 10 - 100 mg/dL</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="midRange">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="midRange" >}}
 </details>
 
 <details>
   <summary>Example: Less or equal to than 5 mg/dL </summary>
-  <MedplumCodeBlock language="ts" selectBlocks="lowRange">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="lowRange" >}}
 </details>
 
 <details>
   <summary>Example: Greater than or equal to 20 mg/dL </summary>
-  <MedplumCodeBlock language="ts" selectBlocks="highRange">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="highRange" >}}
 </details>
 
 In practice, multiple an [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) will define multiple reference ranges for a given patient population, to provide interpretations for each value of the [`Observation`](/docs/api/fhir/resources/observation).
@@ -69,9 +63,7 @@ In practice, multiple an [`ObservationDefinition`](/docs/api/fhir/resources/obse
   <summary>Example: Multiple Ranges</summary>
 The example below defines three reference ranges, to be interpreted as "Low", "Normal", and "High".
 
-  <MedplumCodeBlock language="ts" selectBlocks="allRanges">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="allRanges" >}}
 </details>
 
 ## Patient-dependent reference ranges
@@ -92,9 +84,7 @@ The table below describes which patient attributes can be used to target referen
 <details>
   <summary>Example: Age and gender dependent reference ranges</summary>
   The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and children.
-  <MedplumCodeBlock language="ts" selectBlocks="testosterone">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="testosterone" >}}
 </details>
 
 {{< note >}}
@@ -111,9 +101,7 @@ The Medplum SDK provides helper functions,[ `findObservationInterval`](/docs/sdk
   <summary>Example</summary>
 
 {' '}
-<MedplumCodeBlock language="ts" selectBlocks="findInterval">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="findInterval" >}}
 
 </details>
 
@@ -133,9 +121,7 @@ The type of reference range is specified in the `qualifiedInterval.category` fie
 
 <details>
   <summary>Example</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="categories">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="categories" >}}
 </details>
 
 ## Editing reference ranges in the Medplum App

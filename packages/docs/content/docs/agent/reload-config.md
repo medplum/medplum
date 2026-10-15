@@ -8,7 +8,7 @@ Remotely reloads the configuration of a given agent or agents from the Medplum S
 
 {{< info title="Minimum versions" >}}
 
-The `$reload-config` operation requires **Medplum Server > 3.1.6** and **Medplum Agent > 3.1.6**. See the [feature matrix](./features.md) for more details.
+The `$reload-config` operation requires **Medplum Server > 3.1.6** and **Medplum Agent > 3.1.6**. See the [feature matrix](/docs/agent/features) for more details.
 
 {{< /info >}}
 
@@ -38,7 +38,7 @@ For example:
 medplum get 'Agent/$reload-config?status=active'
 ```
 
-Here, `status=active` is an `Agent` search parameter used to select which agents to reload. See [Using Agent search parameters in bulk operations](./using-search-parameters.md) for more ways to select operation targets.
+Here, `status=active` is an `Agent` search parameter used to select which agents to reload. See [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters) for more ways to select operation targets.
 
 ## Single Agent Response
 
@@ -204,7 +204,7 @@ When `_count` is omitted, the operation reloads at most the **default page of 20
 
 {{< /note >}}
 
-> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
+> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters).
 
 ## Recipes
 
@@ -251,6 +251,6 @@ medplum get 'Agent/$reload-config?_count=50&_offset=50'
 
 {{< tip title="CLI" >}}
 
-You can also invoke this operation using the Medplum CLI's [`agent reload-config` command](./agent-cli-commands.md#reload-config-command).
+You can also invoke this operation using the Medplum CLI's [`agent reload-config` command](/docs/agent/agent-cli-commands#reload-config-command).
 
 {{< /tip >}}

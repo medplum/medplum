@@ -106,8 +106,8 @@ When sending a fax, you need to create multiple FHIR resources:
 ### Example: Sending a Fax
 
 ```typescript
-import { createReference } from '@medplum/core';
-import type { Communication, DocumentReference, Organization, Practitioner } from '@medplum/fhirtypes';
+
+
 
 // Assuming you have a MedplumClient instance and the sender's Practitioner profile
 const profile = (await medplum.getProfile()) as Practitioner;

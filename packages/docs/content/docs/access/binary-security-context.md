@@ -93,9 +93,7 @@ The `X-Security-Context` header is the FHIR standard method for setting Binary s
 
 **Best Practice**: Use `MedplumClient.createMedia()` when possible, as it automatically handles security context:
 
-<MedplumCodeBlock language="ts" selectBlocks="createMedia">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/binaries/create-media.ts" language="ts" blocks="createMedia" >}}
 
 Benefits of using `createMedia`:
 
@@ -111,7 +109,7 @@ Medplum React components that handle file uploads automatically use secure patte
 #### AttachmentButton Component
 
 ```jsx
-import { AttachmentButton } from '@medplum/react';
+
 
 <AttachmentButton
   securityContext={createReference(resource)}
@@ -122,7 +120,7 @@ import { AttachmentButton } from '@medplum/react';
 >
   {(props) => (
     <ActionIcon {...props} radius="xl" color="blue" variant="filled">
-      <IconCloudUpload size={16} />
+      <IconCloudUpload size="16" />
     </ActionIcon>
   )}
 </AttachmentButton>;
@@ -131,7 +129,7 @@ import { AttachmentButton } from '@medplum/react';
 #### AttachmentInput Component
 
 ```jsx
-import { AttachmentInput } from '@medplum/react';
+
 
 <AttachmentInput
   securityContext={createReference(patient)}

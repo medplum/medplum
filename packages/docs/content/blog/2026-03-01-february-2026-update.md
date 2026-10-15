@@ -14,7 +14,7 @@ February was a productive month for Medplum. We shipped four releases — v5.0.1
 
 ### Provider App: AI-Powered Spaces and Chat
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" /> **[David Yanez](https://github.com/techdavidy)**
 
 The [Provider app](https://provider.medplum.com)'s Spaces experience gained significant AI capabilities this month, advancing our [AI roadmap initiative](/blog/2026-roadmap):
 
@@ -28,13 +28,13 @@ The [Foomedical demo](https://github.com/medplum/medplum/tree/main/examples/foom
 
 ### AWS Lambda Streaming for Bots
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" /> **[David Yanez](https://github.com/techdavidy)**
 
 [Bots](/docs/bots) deployed on AWS Lambda can now stream responses back to callers in real time. This unlocks [Server-Sent Events](https://en.wikipedia.org/wiki/Server-sent_events)-style streaming from Lambda-hosted bots — a foundational capability for building AI scribes, copilots, and other latency-sensitive applications. This directly supports the [AI roadmap initiative](/blog/2026-roadmap).
 
 ### WebSocket Subscriptions: Scale and Observability
 
-<img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style={{borderRadius: '50%'}} /> **[Derrick Farris](https://github.com/ThatOneBro)**
+<img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style="border-radius: 50%" /> **[Derrick Farris](https://github.com/ThatOneBro)**
 
 February saw a major investment in [WebSocket subscriptions](/docs/subscriptions), improving performance, reliability, and operational visibility at scale — directly advancing the [Enterprise Scale & Infrastructure roadmap priority](/blog/2026-roadmap):
 
@@ -45,7 +45,7 @@ February saw a major investment in [WebSocket subscriptions](/docs/subscriptions
 
 ### Scheduling Enhancements
 
-<img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
+<img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style="border-radius: 50%" /> **[Noah Silas](https://github.com/noahsilas)**
 
 Building on January's [`$find` and `$book`](/docs/scheduling/defining-availability) foundation, scheduling received several refinements this month:
 
@@ -56,7 +56,7 @@ Building on January's [`$find` and `$book`](/docs/scheduling/defining-availabili
 
 ### Revenue Cycle: Claim Submission and Eligibility
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" /> **[David Yanez](https://github.com/techdavidy)**
 
 Advancing the [Revenue Cycle & Billing roadmap initiative](/blog/2026-roadmap):
 
@@ -65,19 +65,19 @@ Advancing the [Revenue Cycle & Billing roadmap initiative](/blog/2026-roadmap):
 
 ### Pharmacy Components
 
-<img src="https://github.com/oleg-mp.png" alt="Oleg Rocklin" width="50" height="50" style={{borderRadius: '50%'}} /> **[Oleg Rocklin](https://github.com/oleg-mp)**
+<img src="https://github.com/oleg-mp.png" alt="Oleg Rocklin" width="50" height="50" style="border-radius: 50%" /> **[Oleg Rocklin](https://github.com/oleg-mp)**
 
 New React components for **patient preferred pharmacy selection** are now available in `@medplum/react`. This supports e-prescribing workflows and the [ePrescribe integration](/docs/medications/e-prescibe) roadmap initiative.
 
 ### Multiple Redis Support
 
-<img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Long](https://github.com/mattlong)**
+<img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style="border-radius: 50%" /> **[Matt Long](https://github.com/mattlong)**
 
 Medplum server now supports **multiple Redis instances**, enabling more flexible infrastructure topologies including Redis Cluster deployments and failover configurations. This is an important step for enterprise-scale deployments that require high availability for caching and pub/sub. ([self-hosting guide](/docs/self-hosting))
 
 ### Instance-Level Custom FHIR Operations
 
-<img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="50" height="50" style={{borderRadius: '50%'}} /> **[Rahul Agarwal](https://github.com/rahul1)**
+<img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="50" height="50" style="border-radius: 50%" /> **[Rahul Agarwal](https://github.com/rahul1)**
 
 Developers can now define [custom FHIR operations](/docs/bots/custom-fhir-operations) at the instance level with resource input — enabling more granular, resource-specific API extensions. Combined with updated [bot operation documentation](/docs/bots), this gives builders more control over custom workflow APIs. For self-hosters, this is particularly valuable: you can expose clinic- or organization-specific operations directly on your FHIR server without forking Medplum, keeping your customizations cleanly separated from the core platform.
 
@@ -105,7 +105,7 @@ February's documentation work was substantial, with a major restoration of SDK d
 
 **Operations and API**
 
-<img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+<img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style="border-radius: 50%" /> **[Darren Eam](https://github.com/deam65)**
 
 - **Reorganized FHIR operations sidebar and index** — The [FHIR operations docs](/docs/api/fhir/operations) are now organized with a cleaner sidebar and index page for faster navigation
 - **New documentation for custom and bot operations** — Full coverage of [custom FHIR operations](/docs/bots/custom-fhir-operations), including instance-level and system-level patterns

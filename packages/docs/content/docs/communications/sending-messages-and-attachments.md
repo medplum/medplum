@@ -26,9 +26,7 @@ To attach a file to a message, use `medplum.createAttachment()` to upload the fi
 
 Use `medplum.createAttachment()` to upload the file and get an `Attachment`, then pass it to `payload[].contentAttachment`. See [Referencing a Binary in an Attachment](/docs/fhir-datastore/binary-data#referencing-a-binary-in-an-attachment) for more detail.
 
-<MedplumCodeBlock language="ts" selectBlocks="messageAttachment">
-  {BinaryExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="messageAttachment" >}}
 
 {{< note >}}
 If you already have a `Binary` resource (e.g. from `createBinary()`), use `url: getReferenceString(binary)` in the attachment. For new uploads in messages, we recommend `createAttachment()` so you get an `Attachment` object to pass directly to `contentAttachment`.
@@ -38,9 +36,7 @@ If you already have a `Binary` resource (e.g. from `createBinary()`), use `url: 
 
 Create the attachment with `createAttachment()` as above, then include multiple entries in the `payload` array (e.g. `contentString` plus `contentAttachment`):
 
-<MedplumCodeBlock language="ts" selectBlocks="messageWithTextAndAttachment">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="messageWithTextAndAttachment" >}}
 
 {{< warning >}}
 `contentAttachment` stores metadata and a URL reference — not the file bytes themselves. The binary lives as a separate [`Binary`](/docs/api/fhir/resources/binary) resource. If you delete the Binary, the attachment URL will return a 404.

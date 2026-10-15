@@ -83,7 +83,7 @@ The `storage` query parameter controls where a received instance ends up.
 | Mode                 | What happens                                                                                                                                                                                                             | Requires                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
 | `binary` _(default)_ | The instance is uploaded as a FHIR [`Binary`](/docs/api/fhir/resources/binary), and a reference to it is included in the Bot payload.                                                                                    | Any server version                        |
-| `dicomweb`           | The instance is sent to the server's [STOW-RS endpoint](./dicomweb-api.md#stow-rs-store-instances), which files it into `DicomStudy`, `DicomSeries`, and `DicomInstance` resources. No `Binary` is created by the Agent. | Medplum Server \> 5.1.27, Agent \> 5.1.28 |
+| `dicomweb`           | The instance is sent to the server's [STOW-RS endpoint](/docs/dicom/dicomweb-api#stow-rs-store-instances), which files it into `DicomStudy`, `DicomSeries`, and `DicomInstance` resources. No `Binary` is created by the Agent. | Medplum Server \> 5.1.27, Agent \> 5.1.28 |
 
 `binary` remains the default so that a DICOM channel configured before DICOMweb existed keeps working
 unchanged. **New deployments that want studies in the DICOM data model should set
@@ -125,7 +125,7 @@ Every `C-STORE` produces a notification to the channel's target `Bot`, regardles
 A minimal Bot that logs each arrival:
 
 ```ts
-import { BotEvent, MedplumClient } from '@medplum/core';
+
 
 interface DicomNotification {
   association: { callingAeTitle?: string; calledAeTitle?: string };
@@ -142,7 +142,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<DicomNotif
 
 In `dicomweb` mode this is the natural place to reconcile imaging against the chart — look up the
 `DicomStudy` the server just created, match `patientId` against your MRN identifier system, and link
-the two. See [Relationship to FHIR ImagingStudy](./data-model.md#relationship-to-fhir-imagingstudy).
+the two. See [Relationship to FHIR ImagingStudy](/docs/dicom/data-model#relationship-to-fhir-imagingstudy).
 
 ## Testing a channel
 
@@ -163,11 +163,11 @@ deliberately excludes message content, so DICOM transfer detail lands in the cha
 [may contain PHI](/docs/agent/configuration#channel-logger).
 
 To test without a modality or dcmtk at all, skip DIMSE entirely and use
-[`medplum dicomweb stow`](./cli.md).
+[`medplum dicomweb stow`](/docs/dicom/cli).
 
 ## See also
 
 - [Intro to Medplum Agent](/docs/agent)
 - [Agent Features](/docs/agent/features) — version matrix for `storage=dicomweb` and other channel options
 - [Agent Troubleshooting](/docs/agent/troubleshooting)
-- [DICOMweb API](./dicomweb-api.md)
+- [DICOMweb API](/docs/dicom/dicomweb-api)

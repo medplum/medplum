@@ -22,19 +22,13 @@ How you populate `sender` and `recipient` on the thread header affects these que
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="queryAllThreadsTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="queryAllThreadsTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="queryAllThreadsCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="queryAllThreadsCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="queryAllThreadsCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="queryAllThreadsCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -44,19 +38,13 @@ The `:missing` modifier finds Communication resources that have no `partOf` refe
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="queryMessagesInThreadTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="queryMessagesInThreadTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="queryMessagesInThreadCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="queryMessagesInThreadCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -74,19 +62,13 @@ Filter threads by patient:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="filterByPatientTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="filterByPatientTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="filterByPatientCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="filterByPatientCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="filterByPatientCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="filterByPatientCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -96,19 +78,13 @@ To show threads the current user participates in, filter by `recipient`:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="filterMyThreadsTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="filterMyThreadsTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="filterMyThreadsCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="filterMyThreadsCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="filterMyThreadsCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="filterMyThreadsCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -142,9 +118,7 @@ Communication?part-of=Communication/{threadId}
 
 When a notification arrives, append the new message to your local state. The notification `Bundle` contains a `SubscriptionStatus` entry and the new `Communication` — find it by `resourceType` rather than by position:
 
-<MedplumCodeBlock language="ts" selectBlocks="subscribeThreadMessagesTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="subscribeThreadMessagesTs" >}}
 
 If using `@medplum/react`, the [useSubscription](/docs/react/use-subscription) hook handles connection management:
 

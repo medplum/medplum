@@ -5,7 +5,7 @@ title: Orders and Results
 
 A common use case for HL7 is to place orders for diagnostics (labs and imaging commonly), and receive diagnostic results.  There are two common message types, the ORM (order entry) and ORU (observation result).
 
-This guide assumes you have already set up a Medplum [agent](/docs/agent) or otherwise [connected to the legacy healthcare application](/docs/integration/hl7-interfacing#connecting-to-legacy-systems) (LIS, PACS, EHR, pharmacy or other system) that you want to interface with and are able to receive the feed.
+This guide assumes you have already set up a Medplum [agent](/docs/agent) or otherwise [connected to the legacy healthcare application](/docs/integration/hl7-interfacing/#connecting-to-legacy-systems) (LIS, PACS, EHR, pharmacy or other system) that you want to interface with and are able to receive the feed.
 
 ## Placing Orders
 

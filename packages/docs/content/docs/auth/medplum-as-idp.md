@@ -10,7 +10,7 @@ tags: [auth]
 
 When building your own healthcare App, you can use Medplum as an **identity provider** using the OAuth2 Authorization Code flow. Medplum provides OAuth2 endpoints to authenticate Patients and Practitioners and share data with your application.
 
-This guide will go over the basics of Medplum's OAuth2 authorization code flow, and you can find more detailed documentation in the [API Section](/docs/api/oauth).
+This guide will go over the basics of Medplum's OAuth2 authorization code flow, and you can find more detailed documentation in the [API Section](/docs/api/oauth/).
 
 We also have a **[minimal demo on Github](https://github.com/medplum/medplum-oauth-demo)** that implements a simple authorization code login.
 

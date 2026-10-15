@@ -50,27 +50,19 @@ Limitation: Does not support group threads; one recipient per message only.
 
 ### Mark a Message as Read
 
-<MedplumCodeBlock language="ts" selectBlocks="simpleModelMarkReadTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="simpleModelMarkReadTs" >}}
 
 ### Query Unread Messages
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="simpleModelQueryUnreadTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="simpleModelQueryUnreadTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="simpleModelQueryUnreadCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="simpleModelQueryUnreadCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="simpleModelQueryUnreadCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="simpleModelQueryUnreadCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -85,17 +77,13 @@ Limitation: Not searchable via API — you cannot run a query like "all threads 
 
 ### Thread Header With Read-State Extension
 
-<MedplumCodeBlock language="ts" selectBlocks="threadHeaderWithReadExtensionTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="threadHeaderWithReadExtensionTs" >}}
 
 ### Update Last-Read When a User Views the Thread
 
 Find the participant's read-state block by URL (e.g. with `getExtension` from `@medplum/core`), update `lastRead` and `lastReadAt`, then save with `updateResource` (PUT). Avoid patching by extension index (e.g. `/extension/0/...`), since the order of extensions can vary and other extensions may exist on the resource.
 
-<MedplumCodeBlock language="ts" selectBlocks="updateThreadReadStateTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="updateThreadReadStateTs" >}}
 
 ---
 
@@ -116,27 +104,19 @@ FHIR R4 requires each [`Task`](/docs/api/fhir/resources/task) to include `code`.
 
 When the user reads the message, complete the Task:
 
-<MedplumCodeBlock language="ts" selectBlocks="markReadReceiptTaskTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="markReadReceiptTaskTs" >}}
 
 ### Find Unread in a Specific Thread
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="unreadInThreadTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="unreadInThreadTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="unreadInThreadCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="unreadInThreadCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="unreadInThreadCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="unreadInThreadCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -144,19 +124,13 @@ When the user reads the message, complete the Task:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="unreadCountTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="unreadCountTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="unreadCountCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="unreadCountCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 

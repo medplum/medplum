@@ -2,6 +2,7 @@
 id: 2021-11-04-introducing-medplum
 title: Introducing Medplum
 authors: cody
+url: /blog/2021/11/04/introducing-medplum
 ---
 
 ## Developer infrastructure and tools for healthcare apps

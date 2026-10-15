@@ -124,7 +124,7 @@ The `Binary.contentType` of each frame is derived from the file's Transfer Synta
 | `1.2.840.10008.1.2.4.201`, `.202`      | `image/jxl`                |
 | Anything else, including uncompressed  | `application/octet-stream` |
 
-Until the worker finishes, [frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames) returns
+Until the worker finishes, [frame retrieval](/docs/dicom/dicomweb-api#wado-rs-retrieve-frames) returns
 `404` for that instance. Study and series queries work immediately.
 
 The worker is named `dicom` and can be enabled or disabled per server instance through the

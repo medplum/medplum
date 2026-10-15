@@ -32,7 +32,7 @@ For example:
 medplum get 'Agent/$stats?_tag=Group+A'
 ```
 
-Here, `_tag=Group+A` is an `Agent` search parameter used to select which agents to fetch stats from. For example, to fetch stats from all active agents use `status=active`. See [Using Agent search parameters in bulk operations](./using-search-parameters.md) for more ways to select operation targets.
+Here, `_tag=Group+A` is an `Agent` search parameter used to select which agents to fetch stats from. For example, to fetch stats from all active agents use `status=active`. See [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters) for more ways to select operation targets.
 
 ## Single Agent Response
 
@@ -187,7 +187,7 @@ When `_count` is omitted, the operation fetches stats from at most the **default
 
 {{< /note >}}
 
-> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
+> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters).
 
 ## Recipes
 

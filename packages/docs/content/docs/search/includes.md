@@ -29,27 +29,19 @@ For example, the search query described above for `Observation`, `Patient`, and 
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchIncludes">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="searchIncludes" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchIncludesCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="searchIncludesCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchIncludesCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="searchIncludesCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="includesResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="includesResponse" >}}
 </details>
 
 {{< warning title="Note" >}}
@@ -101,27 +93,19 @@ to search for `Observation` resources, plus the `Patient` resources they refer t
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchIncludeIterate">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="searchIncludeIterate" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchIncludeIterateCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="searchIncludeIterateCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchIncludeIterateCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="searchIncludeIterateCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 <details>
   <summary>Example response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="iterateResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="iterateResponse" >}}
 </details>
 
 This query would return a Bundle containing all the resources from a linked graph like the following:
@@ -210,19 +194,13 @@ flowchart TD
   <summary>Example: Get a `Patient` and their `RelatedPerson`</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="relatedPersonCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="relatedPersonCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -260,19 +238,13 @@ flowchart TD
   <summary>Example: Get a `Patient` and their `RelatedPerson` modeled as a `Patient`</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonPatientTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonPatientTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonPatientCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonPatientCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="relatedPersonPatientCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="relatedPersonPatientCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -312,19 +284,13 @@ flowchart TD
   <summary>Example: Find all practitioners and roles at a specific location</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="locationPractitionerRoleTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="locationPractitionerRoleTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="locationPractitionerRoleCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="locationPractitionerRoleCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="locationPractitionerRoleCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="locationPractitionerRoleCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -362,19 +328,13 @@ flowchart TD
   <summary>Example: Search for all members of the `CareTeam` of a `Patient`</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="careTeamTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="careTeamTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="careTeamCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="careTeamCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="careTeamCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="careTeamCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>

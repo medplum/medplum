@@ -72,9 +72,7 @@ Unlike RXNorm, NDC operates as a flat code system and only refers to the "leaf n
 
 However, there are connections between the two code systems, as a drug product can have both NDC and RXNorm codes. Below is an example of the a [CodeableConcept](/docs/fhir-basics#standardizing-data-codeable-concepts) for Tylenol, with both NDC and RxNorm codes
 
-<MedplumCodeBlock language="ts" selectBlocks="tylenol-example">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/medications/medication-codes.ts" language="ts" blocks="tylenol-example" >}}
 
 ## Other Drug databases
 

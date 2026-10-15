@@ -76,16 +76,12 @@ The `item` field also provides additional data about the procedure, product, or 
 
 <details>
   <summary>Example: A coverage eligibility request for a consultation</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="eligibilityRequest">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="eligibilityRequest" >}}
 </details>
 
 <details>
   <summary>Example: A plan coverage and general benefits check</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="generalBenefitsCheckRequest">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="generalBenefitsCheckRequest" >}}
 </details>
 
 ## Sending an Eligibility Check Request
@@ -146,16 +142,12 @@ The `item` field is also an array on the `insurance` element of a [`CoverageElig
 
 <details>
   <summary>Example: A coverage eligibility response for a basic consultation</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="eligibilityResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="eligibilityResponse" >}}
 </details>
 
 <details>
   <summary>Example: A plan coverage and general benefits check response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="generalBenefitsCheckResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="generalBenefitsCheckResponse" >}}
 </details>
 
 ## See Also

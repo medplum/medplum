@@ -13,19 +13,13 @@ Medplum also provides the `createResource` method on the `MedplumClient` which i
   <summary>Example: Creating a Practitioner</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="createTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/creating-data.ts" language="ts" blocks="createTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="createCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/creating-data.ts" language="bash" blocks="createCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="createCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/creating-data.ts" language="bash" blocks="createCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>

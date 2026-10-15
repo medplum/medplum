@@ -49,28 +49,20 @@ The [Medplum Client SDK](/docs/sdk/core.medplumclient) also provides the `search
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchSingle">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchSingle" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchSingleCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchSingleCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
 This request will return a [FHIR `Bundle`](/docs/api/fhir/resources/bundle) resource, which contains the query results as well as some metadata. The `Bundle.entry` element will contain an array with each `Bundle.entry[i].resource` being a search result.
 
-<MedplumCodeBlock language="ts" selectBlocks="searchSingleReturn">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchSingleReturn" >}}
 
 Because iterating over the `Bundle.entry` array is such a common pattern, the Medplum SDK provides the `searchResources` convenience method that unwraps the bundle and returns an array of resources.
 
-<MedplumCodeBlock language="ts" selectBlocks="searchAnd">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchAnd" >}}
 
 The array returned by `searchResources` also includes a `bundle` property that contains the original `Bundle` resource. You can use this to access bundle metadata such as `Bundle.total` and `Bundle.link`.
 
@@ -80,14 +72,10 @@ You can perform an AND search by specifying multiple query parameters
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchAnd">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchAnd" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchAndCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchAndCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -95,14 +83,10 @@ Specifying comma separated values performs an OR operation for that search param
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchOr">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchOr" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchOrCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchOrCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -116,14 +100,10 @@ For example, to search for all `Observation` resources that reference a `Patient
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchReference">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchReference" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchReferenceCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchReferenceCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -196,14 +176,10 @@ For example, search for all `Tasks` where status _is not_ `completed`:
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchNot">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchNot" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchNotCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchNotCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -215,14 +191,10 @@ For example, searching for all `Patients` with missing `birthDates`.
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchMissing">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchMissing" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchMissingCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchMissingCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -234,14 +206,10 @@ For example, searching for `Patients` whose name includes the substring `"stein"
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchContains">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchContains" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchContainsCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchContainsCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -266,14 +234,10 @@ This example shows how to find all [`RiskAssessments`](/docs/api/fhir/resources/
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchGreaterThan">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchGreaterThan" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchGreaterThanCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchGreaterThanCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -282,14 +246,10 @@ You can search an inclusive range using an AND search
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchInclusiveRange">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchInclusiveRange" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchInclusiveRangeCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchInclusiveRangeCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -304,14 +264,10 @@ You can search an exclusive range using an OR search
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchExclusiveRange">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchExclusiveRange" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchExclusiveRangeCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchExclusiveRangeCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -325,14 +281,10 @@ The example below searches for all [`RiskAssessments`](/docs/api/fhir/resources/
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchSort">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchSort" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchSortCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchSortCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -342,14 +294,10 @@ To sort in _descending_ order, prepend the search parameter with a minus sign `-
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchSortDescending">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchSortDescending" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchSortDescendingCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchSortDescendingCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -359,14 +307,10 @@ FHIR also provides the special search parameter, `_lastUpdated`, to search by th
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchSortByLastUpdated">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="ts" blocks="searchSortByLastUpdated" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchSortByLastUpdatedCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/search/basic-search.ts" language="bash" blocks="searchSortByLastUpdatedCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 

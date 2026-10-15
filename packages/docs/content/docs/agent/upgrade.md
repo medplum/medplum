@@ -8,7 +8,7 @@ Remotely upgrades the Medplum Agent software for a given agent or agents. Useful
 
 {{< info title="Minimum versions" >}}
 
-The `$upgrade` operation requires **Medplum Server > 3.1.9** and **Medplum Agent > 3.1.10**. See the [feature matrix](./features.md) for more details.
+The `$upgrade` operation requires **Medplum Server > 3.1.9** and **Medplum Agent > 3.1.10**. See the [feature matrix](/docs/agent/features) for more details.
 
 {{< /info >}}
 
@@ -38,7 +38,7 @@ For example:
 medplum get 'Agent/$upgrade?status=active'
 ```
 
-Here, `status=active` is an `Agent` search parameter used to select which agents to upgrade. See [Using Agent search parameters in bulk operations](./using-search-parameters.md) for more ways to select operation targets.
+Here, `status=active` is an `Agent` search parameter used to select which agents to upgrade. See [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters) for more ways to select operation targets.
 
 ## Parameters
 
@@ -46,7 +46,7 @@ Here, `status=active` is an `Agent` search parameter used to select which agents
 - `timeout` (optional; default: `45000`, max: `56000`): How long, in milliseconds, the server waits for the agent to acknowledge the upgrade request before returning an error. Values above the maximum are clamped to `56000`.
 - `force` (optional; default: `false`): When `true`, instructs the agent to upgrade even if it is already running the requested version.
 
-> The parameters above configure _how_ the upgrade runs. To select _which_ agents to upgrade when using the multi-agent endpoint, use `Agent` search parameters — see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
+> The parameters above configure _how_ the upgrade runs. To select _which_ agents to upgrade when using the multi-agent endpoint, use `Agent` search parameters — see [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters).
 
 ## Single Agent Response
 
@@ -281,6 +281,6 @@ medplum get 'Agent/$upgrade?_count=50&_offset=50'
 
 {{< tip title="CLI" >}}
 
-You can also invoke this operation using the Medplum CLI's [`agent upgrade` command](./agent-cli-commands.md#upgrade-command).
+You can also invoke this operation using the Medplum CLI's [`agent upgrade` command](/docs/agent/agent-cli-commands#upgrade-command).
 
 {{< /tip >}}

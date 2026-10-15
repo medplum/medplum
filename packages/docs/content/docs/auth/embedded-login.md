@@ -121,7 +121,7 @@ The `<SignInForm>` React component handles both requests, PKCE, and the multi-fa
 
 ```tsx
 <SignInForm onSuccess={() => navigate('/')?.catch(console.error)}>
-  <Logo size={32} />
+  <Logo size="32" />
   <h1>Sign in to Foo Medical</h1>
 </SignInForm>
 ```

@@ -22,19 +22,13 @@ First, upload the binary file as a [`Binary`](/docs/api/fhir/resources/binary) r
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="imports,docReferenceBinaryTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/external-documents.ts" language="ts" blocks="imports,docReferenceBinaryTS" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="docReferenceBinaryCLI">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/external-documents.ts" language="bash" blocks="docReferenceBinaryCLI" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="docReferenceBinaryCURL">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/external-documents.ts" language="bash" blocks="docReferenceBinaryCURL" >}}
   {{< /tab >}}
 {{< /tabs >}}
 

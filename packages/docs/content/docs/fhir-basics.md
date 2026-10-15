@@ -187,9 +187,7 @@ Example: Tylenol
 <summary>
 Below is an example [`CodeableConcept`][codeableconcept], that defines the medication Tylenol, in both the [RXNorm](/docs/medications/medication-codes#rxnorm) or [NDC](/docs/medications/medication-codes#ndc) systems.
 
-<MedplumCodeBlock language="ts" selectBlocks="tylenol-example">
-  {MedicationExample}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/medications/medication-codes.ts" language="ts" blocks="tylenol-example" >}}
 </summary>
 </details>
 

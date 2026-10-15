@@ -280,7 +280,7 @@ data: [DONE]
 ## Using with TypeScript SDK
 
 ```typescript
-import { MedplumClient } from '@medplum/core';
+
 
 const medplum = new MedplumClient();
 

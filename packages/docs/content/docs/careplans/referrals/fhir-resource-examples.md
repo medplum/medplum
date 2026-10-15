@@ -9,7 +9,7 @@ Both teams use one Medplum project in this example. The package is shared throug
 
 The examples use fictional IDs and text labels. Configure validated terminology and local workflow CodeSystems, and use your server's returned IDs for later references.
 
-<span id="servicerequest-example" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
+<span id="servicerequest-example" style="scroll-margin-top: calc(var(--ifm-navbar-height) + 1rem)" />
 
 ## 1. Create the Request and Initial Work
 
@@ -68,7 +68,7 @@ Conditional creates make replaying this initial submission safe for FHIR resourc
 
 For the remaining snapshots, assume the transaction returned `ServiceRequest/referral-001` and `Task/coordinate-001`. Each snapshot shows a later persisted state in the workflow.
 
-<span id="documentreference-example" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
+<span id="documentreference-example" style="scroll-margin-top: calc(var(--ifm-navbar-height) + 1rem)" />
 
 ## 2. Store the Referral Package
 
@@ -100,7 +100,7 @@ After uploading, the DocumentReference looks like this. `Binary/package-pdf-001`
 
 The upload may use the DocumentReference as security context before the final attachment URL is populated. Establish the document's access rules first and recover incomplete uploads explicitly. A document's `final` status describes the document; it does not complete the referral.
 
-<span id="communication-example" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
+<span id="communication-example" style="scroll-margin-top: calc(var(--ifm-navbar-height) + 1rem)" />
 
 ## 3. Record the Thread and Sent Message
 
@@ -150,7 +150,7 @@ Here, both teams participate in an in-app conversation. For external delivery, t
 
 {{< /note >}}
 
-<span id="task-example" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
+<span id="task-example" style="scroll-margin-top: calc(var(--ifm-navbar-height) + 1rem)" />
 
 ## 4. Accept the Work and Assign Scheduling
 

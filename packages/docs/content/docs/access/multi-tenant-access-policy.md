@@ -222,9 +222,7 @@ If your Patient is also a User that can log in, this will not impact what that P
 <details>
   <summary>Example Method: Assigning a Patient to an Organization Tenant</summary>
 
-<MedplumCodeBlock language="ts" selectBlocks="enroll-patient">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="enroll-patient" >}}
 
 </details>
 
@@ -288,9 +286,7 @@ In all resources, the `meta.compartment` field is **readonly**. You cannot modif
 {{< tabs groupId="tenant-type" >}}
   {{< tab value="organization" label="Organization" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-organization">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-organization" >}}
 
 This will update the **meta.compartment** field of the Patient resource to include the reference to the Organization. Here is what the updated Patient resource will look like:
 
@@ -307,9 +303,7 @@ This will update the **meta.compartment** field of the Patient resource to inclu
   {{< /tab >}}
   {{< tab value="healthcare-service" label="HealthcareService" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-healthcare-service">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-healthcare-service" >}}
 
 This will update the **meta.compartment** field of the Patient resource to include the reference to the HealthcareService. Here is what the updated Patient resource will look like:
 
@@ -326,9 +320,7 @@ This will update the **meta.compartment** field of the Patient resource to inclu
   {{< /tab >}}
   {{< tab value="careteam" label="CareTeam" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-careteam">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-careteam" >}}
 
 This will update the **meta.compartment** field of the Patient resource to include the reference to the CareTeam. Here is what the updated Patient resource will look like:
 
@@ -350,23 +342,17 @@ Any resource can be assigned to a tenant with this model. For example, you could
 {{< tabs groupId="tenant-type" >}}
   {{< tab value="organization" label="Organization" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-questionnaire-organization">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-questionnaire-organization" >}}
 
   {{< /tab >}}
   {{< tab value="healthcare-service" label="HealthcareService" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-questionnaire-healthcare-service">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-questionnaire-healthcare-service" >}}
 
   {{< /tab >}}
   {{< tab value="careteam" label="CareTeam" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-questionnaire-careteam">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-questionnaire-careteam" >}}
 
   {{< /tab >}}
 {{< /tabs >}}
@@ -382,23 +368,17 @@ For example, a [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireres
 {{< tabs groupId="tenant-type" >}}
   {{< tab value="organization" label="Organization" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-propagate-organization">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-propagate-organization" >}}
 
   {{< /tab >}}
   {{< tab value="healthcare-service" label="HealthcareService" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-propagate-healthcare-service">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-propagate-healthcare-service" >}}
 
   {{< /tab >}}
   {{< tab value="careteam" label="CareTeam" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-propagate-careteam">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-propagate-careteam" >}}
 
   {{< /tab >}}
 {{< /tabs >}}
@@ -414,23 +394,17 @@ To assign a Patient to multiple tenants, you can call the [$set-accounts](/docs/
 {{< tabs groupId="tenant-type" >}}
   {{< tab value="organization" label="Organization" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-multiple-organization">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-multiple-organization" >}}
 
   {{< /tab >}}
   {{< tab value="healthcare-service" label="HealthcareService" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-multiple-healthcare-service">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-multiple-healthcare-service" >}}
 
   {{< /tab >}}
   {{< tab value="careteam" label="CareTeam" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="set-accounts-multiple-careteam">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="set-accounts-multiple-careteam" >}}
 
   {{< /tab >}}
 {{< /tabs >}}
@@ -452,23 +426,17 @@ In your design, you should decide which resource types you want to restrict acce
 {{< tabs groupId="tenant-type" >}}
   {{< tab value="organization" label="Organization" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="access-policy-organization">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="access-policy-organization" >}}
 
   {{< /tab >}}
   {{< tab value="healthcare-service" label="HealthcareService" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="access-policy-healthcare-service">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="access-policy-healthcare-service" >}}
 
   {{< /tab >}}
   {{< tab value="careteam" label="CareTeam" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="access-policy-careteam">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="access-policy-careteam" >}}
 
   {{< /tab >}}
 {{< /tabs >}}
@@ -551,9 +519,7 @@ Invite `Practitioner` Users associated with their respective tenants via the [`/
 <details>
   <summary>Example: Inviting a Practitioner User with Tenant Access</summary>
 
-<MedplumCodeBlock language="ts" selectBlocks="invite-practitioner">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="invite-practitioner" >}}
 
 </details>
 
@@ -564,9 +530,7 @@ Here is an example method for updating a User's ProjectMembership to add a new t
 <details>
   <summary>Example Method: Enrolling a Practitioner in an Organization Tenant After Invite</summary>
 
-<MedplumCodeBlock language="ts" selectBlocks="enroll-practitioner">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="enroll-practitioner" >}}
 
 </details>
 
@@ -671,9 +635,7 @@ A good thing to consider is that your application may need to allow some resourc
 
 To do this, do not include the `_compartment` check in resource type criteria for the resource types you want to allow access to.
 
-<MedplumCodeBlock language="ts" selectBlocks="access-policy-mixed">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="ts" blocks="access-policy-mixed" >}}
 
 ## Optional: Building a Tenant Selector
 
@@ -697,8 +659,6 @@ By following these patterns, you can create flexible access control models that 
   <summary>Example LLM Prompt: Recommending Tenanting Resources and Access Policies</summary>
   Answer the questions in the below prompt, and copy and paste it into an LLM.
 
-<MedplumCodeBlock language="md" selectBlocks="tenanting-prompt">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="md" blocks="tenanting-prompt" >}}
 
 </details>

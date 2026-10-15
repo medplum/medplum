@@ -68,7 +68,7 @@ The `createStyles` function is no longer available in Mantine 7.0. Use CSS Modul
 
 ```tsx
 // 6.x
-import { createStyles } from '@mantine/core';
+
 
 const useStyles = createStyles((theme) => ({
   root: {

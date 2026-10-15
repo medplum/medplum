@@ -29,7 +29,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
     </tr>
   </thead>
   <tbody>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Authentication and Identity</strong></td>
     </tr>
     <tr>
@@ -62,7 +62,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
       <td>Enable reCAPTCHA on patient registration</td>
       <td><a href="/docs/user-management/custom-emails#setup-recaptcha">Set up reCAPTCHA</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Clinical Systems (EHR, HIE, Labs)</strong></td>
     </tr>
     <tr>
@@ -101,7 +101,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
       <td>Lab orders and results</td>
       <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>E-Prescribe</strong></td>
     </tr>
     <tr>
@@ -116,7 +116,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
       <td>Custom prescribing workflows with FHIR operations and bots, plus a hosted iframe</td>
       <td><a href="/docs/integration/scriptsure">ScriptSure Integration</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Communications</strong></td>
     </tr>
     <tr>
@@ -131,7 +131,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
       <td>Send and receive SMS messages via FHIR Communication resources</td>
       <td><a href="/docs/integration/twilio-sms">Twilio SMS Integration</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Billing</strong></td>
     </tr>
     <tr>
@@ -146,7 +146,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
       <td>Insurance eligibility checks (X12 270/271) and professional claim submission (X12 837P/277/835)</td>
       <td><a href="/docs/integration/stedi">Stedi Integration</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Data and Observability</strong></td>
     </tr>
     <tr>
@@ -167,7 +167,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
       <td>Synchronize data to datawarehouse</td>
       <td><a href="/docs/analytics/snowflake">Snowflake sync</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Artificial Intelligence</strong></td>
     </tr>
     <tr>
@@ -176,7 +176,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
       <td>Large language models</td>
       <td><a href="/docs/ai">Medplum AI</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Devices and Remote Monitoring</strong></td>
     </tr>
     <tr>
@@ -202,7 +202,7 @@ Medplum provides templates and playbooks for common medical integrations.
     </tr>
   </thead>
   <tbody>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Clinical and EHR Data</strong></td>
     </tr>
     <tr>
@@ -244,7 +244,7 @@ Medplum provides templates and playbooks for common medical integrations.
       <td>Event driven workflow for workstations</td>
       <td><a href="/docs/fhircast">Documentation</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Payor and Compliance</strong></td>
     </tr>
     <tr>
@@ -259,7 +259,7 @@ Medplum provides templates and playbooks for common medical integrations.
       <td>Export FHIR Data for use by partners</td>
       <td><a href="/docs/api/fhir/operations/bulk-fhir">BulkFHIR documentation</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Identity and Authentication</strong></td>
     </tr>
     <tr>
@@ -274,7 +274,7 @@ Medplum provides templates and playbooks for common medical integrations.
       <td>Support connections via Basic Auth for legacy systems</td>
       <td><a href="/docs/sdk/core.medplumclient.setbasicauth">Basic auth</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Binary and Media</strong></td>
     </tr>
     <tr>
@@ -312,7 +312,7 @@ Medplum provides building blocks for custom integrations. **Any system that expo
     </tr>
   </thead>
   <tbody>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Scheduling and Payments (Bot Webhooks)</strong></td>
     </tr>
     <tr>
@@ -333,7 +333,7 @@ Medplum provides building blocks for custom integrations. **Any system that expo
       <td>Enable third party scheduling</td>
       <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Clinical (API)</strong></td>
     </tr>
     <tr>
@@ -348,7 +348,7 @@ Medplum provides building blocks for custom integrations. **Any system that expo
       <td>Look up National Provider Identifier (NPI) records from the public CMS registry</td>
       <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/nppes-lookup.ts">NPPES Lookup Bot</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Documents and Forms (Bot PDF)</strong></td>
     </tr>
     <tr>
@@ -363,7 +363,7 @@ Medplum provides building blocks for custom integrations. **Any system that expo
       <td>Create PDF for Superbill</td>
       <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
     </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
+    <tr style="background-color: #f6f8fa">
       <td colspan="4"><strong>Consent and E-signature (Bot Webhooks)</strong></td>
     </tr>
     <tr>
@@ -383,7 +383,7 @@ Medplum provides building blocks for custom integrations. **Any system that expo
 
 ## Integration Building Blocks and Testing
 
-Complex integrations are built by composing [bots](/docs/bots), [subscriptions](/docs/subscriptions), [authentication and authorization](/docs/auth) and the [TypeScript SDK](/docs/sdk).
+Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions), [authentication and authorization](/docs/auth) and the [TypeScript SDK](/docs/sdk/).
 
 - [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers

@@ -35,15 +35,11 @@ flowchart LR
 
 Create a Bot that sends an external notification for a child `Communication` (same handler whether you trigger it from your app server or from another Bot). The handler reads `event.input` as the `Communication` resource.
 
-<MedplumCodeBlock language="ts" selectBlocks="externalNotifyOnMessageBotTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="externalNotifyOnMessageBotTs" >}}
 
 After you create the in-app message, invoke the Bot with [`executeBot()`](/docs/sdk/core.medplumclient) so provider API errors (invalid number, throttling, etc.) return to the caller instead of failing asynchronously behind a subscription.
 
-<MedplumCodeBlock language="ts" selectBlocks="externalNotifyExecuteTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="externalNotifyExecuteTs" >}}
 
 The example uses [`createResourceIfNoneExist()`](/docs/sdk/core.medplumclient) with a stable application message id so a retry of the same send does not insert duplicate `Communication` rows. See [Bot $execute](/docs/api/fhir/operations/bot-execute) for authentication options, content types, and async execution.
 
@@ -69,9 +65,7 @@ When an inbound message arrives from an external channel, the Bot typically solv
 
 Use a conditional reference on `sender` so the server resolves the patient at create time — no separate search step:
 
-<MedplumCodeBlock language="ts" selectBlocks="inboundSmsConditionalSenderTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="inboundSmsConditionalSenderTs" >}}
 
 The snippet above only demonstrates sender resolution. It omits `partOf` on purpose — you still match or create a thread using one of the strategies below before you treat the example as a complete inbound message.
 
@@ -104,15 +98,11 @@ If the external system has its own conversation identifier (Twilio Conversations
 
 Upsert the thread header (no `partOf`, no `payload` on the header) so setup is idempotent if the same conversation id is seen more than once. [`upsertResource()`](/docs/sdk/core.medplumclient.upsertresource) matches on the same `identifier` search you will use for conditional `partOf`:
 
-<MedplumCodeBlock language="ts" selectBlocks="createThreadWithExternalIdTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="createThreadWithExternalIdTs" >}}
 
 Inbound messages can then use a conditional reference for `partOf`:
 
-<MedplumCodeBlock language="ts" selectBlocks="inboundSmsWithExternalThreadIdTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="inboundSmsWithExternalThreadIdTs" >}}
 
 Both `sender` and `partOf` can resolve via conditional references in a single `POST`. The `partOf` reference uses the same `identifier` search shape you stored on the thread header (for example `Communication?identifier=https://twilio.com|<conversationSid>` — the system and value must match how you set [`Communication.identifier`](/docs/api/fhir/resources/communication)). If no header matches, that conditional fails and the whole `Communication` create fails, same as an unmatched `Patient?phone`. You must also include the external id on every inbound payload so the server can resolve `partOf`.
 
@@ -120,9 +110,7 @@ Both `sender` and `partOf` can resolve via conditional references in a single `P
 
 If the channel is stateless (basic SMS, email without thread headers), there may be no external conversation id. The Bot resolves the patient, then searches for their most recent open thread header. This example uses the same active-thread filter as other messaging docs (`status:not=completed,entered-in-error,stopped,unknown` — see [Searching and Querying Threads](/docs/communications/searching-and-querying-threads#search-query-cheat-sheet)). The webhook payload must include the provider’s stable message id (`providerMessageId` in the example) for deduplication.
 
-<MedplumCodeBlock language="ts" selectBlocks="inboundSmsActiveThreadLookupBotTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="inboundSmsActiveThreadLookupBotTs" >}}
 
 {{< tip title="Unknown Inbound Numbers" >}}
 
@@ -164,15 +152,11 @@ flowchart LR
     Exec --> SmsOut["SMS to patient.telecom"]
 ```
 
-<MedplumCodeBlock language="ts" selectBlocks="roundTripReplyBotTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="roundTripReplyBotTs" >}}
 
 Orchestration from your app or API layer:
 
-<MedplumCodeBlock language="ts" selectBlocks="roundTripReplyExecuteTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="roundTripReplyExecuteTs" >}}
 
 Your product may key off the last inbound message’s `medium` instead of the header if that fits your model better.
 

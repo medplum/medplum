@@ -10,7 +10,7 @@ For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data 
 
 This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
 
-This guide covers building an order form with Medplum's React components and `useHealthGorillaLabOrder` hook, using Medplum FHIR resources and `send-to-health-gorilla` to submit orders. The [Lab Ordering iFrame](./iframe.md) is an optional alternative that embeds Health Gorilla's hosted interface. Choose either approach for your ordering workflow; the form components and hook do not require the iframe bot.
+This guide covers building an order form with Medplum's React components and `useHealthGorillaLabOrder` hook, using Medplum FHIR resources and `send-to-health-gorilla` to submit orders. The [Lab Ordering iFrame](/docs/integration/health-gorilla/iframe) is an optional alternative that embeds Health Gorilla's hosted interface. Choose either approach for your ordering workflow; the form components and hook do not require the iframe bot.
 
 The high-level workflow for sending laboratory & imaging orders from a custom order form is:
 
@@ -146,7 +146,7 @@ Diagnosis Code Selection
   label="Diagnoses"
   binding="http://hl7.org/fhir/sid/icd-10-cm"
   name="diagnoses"
-  maxValues={10}
+  maxValues="10"
   onChange={(items) => {
     const codeableConcepts = items.map((item) => ({
       coding: [item],

@@ -270,7 +270,7 @@ The tables are open Iceberg, so the engine is your choice. Everything on this pa
 
 Tell us which engine you are using when you open the request and we will point the catalog at it.
 
-If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir.mdx) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
+If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
 
 ## See also
 

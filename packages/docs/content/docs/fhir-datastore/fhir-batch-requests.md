@@ -74,35 +74,25 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
   <summary>Example: A simple batch request to simultaneously search for two patients</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="simpleBatchTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="simpleBatchTs" >}}
     {{< /tab >}}
     {{< tab value="cli" label="CLI" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="simpleBatchCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="bash" blocks="simpleBatchCli" >}}
     {{< /tab >}}
     {{< tab value="curl" label="cURL" >}}
-      <MedplumCodeBlock language="bash" selectBlocks="simpleBatchCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="bash" blocks="simpleBatchCurl" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
 
 <details>
   <summary>Example: Create multiple resources in one batch request</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="batchCreate">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="batchCreate" >}}
 </details>
 
 <details>
   <summary>Example: Make multiple calls to the _history endpoint in one batch request</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="historyEndpoint">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="historyEndpoint" >}}
 </details>
 
 ### Asynchronous Batch Requests
@@ -136,9 +126,7 @@ the batch:
 {{< tabs groupId="language" >}}
 
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="asyncBatchCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="bash" blocks="asyncBatchCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -229,9 +217,7 @@ Other bundle entries can refer to this resource using the temporary `urn:uuid:` 
 
 <details>
   <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="internalReference">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="internalReference" >}}
 </details>
 
 ### External \(Conditional) References
@@ -243,9 +229,7 @@ an error will be returned. For example:
 
 <details>
   <summary>Example: Create multiple patients that link to the same provider</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="externalReference">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="externalReference" >}}
 </details>
 
 ## Conditional Batch Actions
@@ -258,9 +242,7 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 
 <details>
   <summary>Example: Create a patient and organization, only if the organization does not already exist</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="conditionalCreate">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="conditionalCreate" >}}
 </details>
 
 ### Preventing Lost Updates with Version Checking
@@ -271,9 +253,7 @@ When updating resources in a transaction bundle, you can prevent **lost updates*
   <summary>Example: Version Checking in Transaction Bundle</summary>
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
-      <MedplumCodeBlock language="ts" selectBlocks="transactionIfMatchTs">
-        {UpdatingDataExampleCode}
-      </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="transactionIfMatchTs" >}}
     {{< /tab >}}
   {{< /tabs >}}
 </details>
@@ -452,13 +432,9 @@ Instead you should create the queue of `Promise` requests and then use `Promise.
 
   **❌ WRONG**
 
-  <MedplumCodeBlock language="ts" selectBlocks="autobatchingWrong">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="autobatchingWrong" >}}
 
   **✅ CORRECT**
 
-  <MedplumCodeBlock language="ts" selectBlocks="autobatchingCorrect">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="autobatchingCorrect" >}}
 </details>

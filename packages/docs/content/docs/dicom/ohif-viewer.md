@@ -17,7 +17,7 @@ configure — sign in with your Medplum account and the studies in your project 
 ![An MR brain study stored in Medplum, displayed in the OHIF Viewer at viewer.medplum.com](/img/blog/2026-08-dicom-ohif-viewer.webp)
 
 The viewer authenticates against Medplum with OAuth2 and reads over the same
-[DICOMweb API](./dicomweb-api.md) documented here, so what you see in it is exactly what any DICOMweb
+[DICOMweb API](/docs/dicom/dicomweb-api) documented here, so what you see in it is exactly what any DICOMweb
 client would get.
 
 ## Self-hosted viewer deployments
@@ -58,4 +58,4 @@ the viewer's displayed study from a clinician's selection elsewhere in the appli
 ## See also
 
 - [OHIF Viewer documentation](https://docs.ohif.org/)
-- [DICOMweb API](./dicomweb-api.md)
+- [DICOMweb API](/docs/dicom/dicomweb-api)

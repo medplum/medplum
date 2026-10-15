@@ -78,8 +78,15 @@ Improve internal security tooling, documentation, processes, training, and engin
 - Experience supporting enterprise security reviews and customer diligence.
 - Experience building or scaling a security function at an early-stage or growth-stage company.
 
-<AboutMedplum />
+## About Medplum
 
-<Benefits />
+Medplum is redefining healthcare with our open source, API-first electronic health record (EHR) platform, trusted by leading digital health and life sciences companies. Our mission is to catalyze change in the healthcare industry by improving the access, privacy, and utility of health data. At Medplum, we have a unique opportunity to impact the lives of patients, speed medical research, and contribute to the open source ecosystem.
+
+### Benefits
+
+- Competitive compensation package with equity
+- Flexible time off
+- Inclusive healthcare package
+- The chance to shape the future of healthcare tech – leave your mark on this vital industry
 
 Join us in our mission to revolutionize healthcare. If you're excited about owning security for a rapidly growing healthcare infrastructure platform and want a role that combines deep technical work with company-wide leadership, we'd love to hear from you. Reach out to [careers@medplum.com](mailto:careers@medplum.com).

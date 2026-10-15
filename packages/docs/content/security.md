@@ -111,7 +111,7 @@ Medplum was audited by Prescient Assurance, a leader in security and compliance 
 
 An unqualified opinion on a SOC 2 Type II audit report demonstrates to the Medplum’s current and future customers that they manage their data with the highest standard of security and compliance.
 
-<img src="/img/compliance/soc.png" alt="AICPA SOC Logo" style={{ width: 150 }} />
+<img src="/img/compliance/soc.png" alt="AICPA SOC Logo" style="width: 150px" />
 
 Customers can request access to the audit report.
 

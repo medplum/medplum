@@ -17,25 +17,19 @@ desired concept to filter the list and aid in selection when the set of possible
 First, the `ValueSet` resource must be uploaded to the Medplum FHIR server, and must contain a `url` by which
 to reference it.
 
-<MedplumCodeBlock language="json" selectBlocks="valueSet">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="json" blocks="valueSet" >}}
 
 Additionally, the URL used to refer to the code system in `ValueSet.compose.include.system` must actually correspond to
 a valid `CodeSystem` resource on the server:
 
-<MedplumCodeBlock language="json" selectBlocks="codeSystem">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="json" blocks="codeSystem" >}}
 
 ### Binding to the Input
 
 The `CodeInput`, `CodingInput`, and `CodeableConceptInput` React components provide the ability to connect an input
 field with a `ValueSet` for typeahead, returning whichever data type is needed by the application.
 
-<MedplumCodeBlock language="tsx" selectBlocks="input">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="tsx" blocks="input" >}}
 
 ## Internationalizing Codings
 
@@ -51,16 +45,12 @@ A `CodeSystem` resource can embed any number of known translations directly alon
 the `designation` field. This field can be used both for synonyms in the primary language, as well as translations into
 additional languages.
 
-<MedplumCodeBlock language="json" selectBlocks="translatedCodeSystem">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="json" blocks="translatedCodeSystem" >}}
 
 Additionally, synonyms or translations can be added to existing code systems using Medplum's custom
 [`CodeSystem/$import` API][import].
 
-<MedplumCodeBlock language="ts" selectBlocks="importDesignation">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="ts" blocks="importDesignation" >}}
 
 [import]: /docs/api/fhir/operations/codesystem-import
 
@@ -70,8 +60,6 @@ Using the [`ValueSet/$expand` API][expand], users can leverage these synonyms an
 specific code. By default, languages other than the primary are excluded from `filter` search results; a different
 language can be selected by setting the `displayLanguage` parameter:
 
-<MedplumCodeBlock language="ts" selectBlocks="expandLanguage">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="ts" blocks="expandLanguage" >}}
 
 [expand]: /docs/api/fhir/operations/valueset-expand

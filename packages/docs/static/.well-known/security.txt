@@ -1,0 +1,6 @@
+Contact: mailto:security@medplum.com
+Expires: 2027-02-28T00:00:00.000Z
+Encryption: https://www.medplum.com/medplum-security-public.asc
+Policy: https://www.medplum.com/security
+Preferred-Languages: en
+Canonical: https://www.medplum.com/.well-known/security.txt

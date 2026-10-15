@@ -31,7 +31,7 @@ on them reactively, rather than having to poll via expensive search requests on 
 
 ## Usage
 
-The `useSubscription` hook takes a [FHIR search criteria](../search/basic-search.mdx) and a callback function to call when a resource interaction
+The `useSubscription` hook takes a [FHIR search criteria](/docs/search/basic-search) and a callback function to call when a resource interaction
 that satisfies the Subscription occurs.
 
 ```tsx
@@ -308,9 +308,7 @@ The lifecycle hooks enable you to show connection status to users (e.g., "Discon
 
 Here's an example showing how to use lifecycle hooks to handle reconnection and fetch missed events:
 
-<MedplumCodeBlock language="tsx" selectBlocks="lifecycleHooks">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/react/use-subscription.tsx" language="tsx" blocks="lifecycleHooks" >}}
 
 ### Hook Invocation Order
 

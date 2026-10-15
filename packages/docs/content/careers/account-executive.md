@@ -72,9 +72,16 @@ We offer competitive base salary, uncapped commission, and meaningful equity.
 
 Exceptional performance should be rewarded exceptionally well.
 
-<AboutMedplum />
+## About Medplum
 
-<Benefits />
+Medplum is redefining healthcare with our open source, API-first electronic health record (EHR) platform, trusted by leading digital health and life sciences companies. Our mission is to catalyze change in the healthcare industry by improving the access, privacy, and utility of health data. At Medplum, we have a unique opportunity to impact the lives of patients, speed medical research, and contribute to the open source ecosystem.
+
+### Benefits
+
+- Competitive compensation package with equity
+- Flexible time off
+- Inclusive healthcare package
+- The chance to shape the future of healthcare tech – leave your mark on this vital industry
 
 The San Francisco, CA base salary range for this role is $200,000-$250,000 per year. Actual base salary within this range will be determined based on job-related skills, experience, and qualifications.
 

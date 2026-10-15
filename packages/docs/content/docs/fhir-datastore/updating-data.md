@@ -23,19 +23,13 @@ The below example updates a [`Patient`](/docs/api/fhir/resources/patient) resour
 <summary>Example: Updating a Resource</summary>
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="updateTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="updateTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="updateCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="bash" blocks="updateCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="updateCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="bash" blocks="updateCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 </details>
@@ -56,19 +50,13 @@ The below operation searches for a patient to add a name to, and creates it if i
 <summary>Example: Upserting a Resource</summary>
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="upsertTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="upsertTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="upsertCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="bash" blocks="upsertCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="upsertCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="bash" blocks="upsertCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 </details>
@@ -83,14 +71,10 @@ To prevent this, you can use the `If-Match` header (or `ifMatch` option) to spec
 <summary>Example: Safe Update with Version Checking</summary>
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="safeUpdateTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="safeUpdateTs" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="safeUpdateCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="bash" blocks="safeUpdateCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 </details>
@@ -109,19 +93,13 @@ The `PatchOperation` below sends an `add` operation to the `name` of the [`Patie
 <summary>Example: Patching a Resource</summary>
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="patchTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="patchTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="patchCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="bash" blocks="patchCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="patchCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="bash" blocks="patchCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 </details>

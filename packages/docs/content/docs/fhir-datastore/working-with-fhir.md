@@ -24,9 +24,7 @@ Creating a [`Patient`](../api/fhir/resources/patient) and a [`ServiceRequest`](.
 
 Creating a [`Patient`](/docs/api/fhir/resources/patient) if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has a Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
-<MedplumCodeBlock language="ts" selectBlocks="patient-imports, create-patient" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="patient-imports, create-patient" lineNumbers="true" >}}
 
 This example uses the [`MedplumClient`](/docs/sdk/core.medplumclient) from the Medplum SDK to interact with the FHIR API. The `createResourceIfNoneExists` method is a helper that performs a search before creating the resource.
 
@@ -43,19 +41,13 @@ Provide the current version of the resource and a search query, similar to `crea
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="upsertTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="upsertTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="upsertCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="upsertCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="upsertCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="upsertCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -65,9 +57,7 @@ Creating a new [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) also 
 
 Note that there are many fields on the requisition, and filling them in with the right data is crucial. This example is minimal for clarity.
 
-<MedplumCodeBlock language="ts" selectBlocks="service-request-imports, create-service-request" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="service-request-imports, create-service-request" lineNumbers="true" >}}
 
 If you are using the [hosted Medplum service](https://app.medplum.com) you can see your [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) objects [here](https://app.medplum.com/ServiceRequest). Similarly, you can see [`Patients`](/docs/api/fhir/resources/patient) [here](https://app.medplum.com/Patient).
 
@@ -81,15 +71,11 @@ You can then create a diagnostic report using the function below.
 
 ### Create the Observations
 
-<MedplumCodeBlock language="ts" selectBlocks="observation-imports, create-observations" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="observation-imports, create-observations" lineNumbers="true" >}}
 
 ### Create Report
 
-<MedplumCodeBlock language="ts" selectBlocks="report-imports, create-report" showLineNumbers>
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="report-imports, create-report" lineNumbers="true" >}}
 
 This will create a [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) that is linked to the [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) and to the [`Patient`](/docs/api/fhir/resources/patient). If you are using hosted Medplum, you can view all [`DiagnosticReports`](/docs/api/fhir/resources/diagnosticreport) [here](https://app.medplum.com/DiagnosticReport).
 

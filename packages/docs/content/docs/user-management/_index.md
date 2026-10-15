@@ -106,19 +106,13 @@ With is `ClientApplication`, you can create a `Project` resource and invite the 
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="createProjectTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="createProjectTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="createProjectCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="createProjectCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="createProjectCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="createProjectCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -126,19 +120,13 @@ With is `ClientApplication`, you can create a `Project` resource and invite the 
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="inviteNewAdminTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="inviteNewAdminTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="inviteNewAdminCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="inviteNewAdminCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="inviteNewAdminCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="inviteNewAdminCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -186,19 +174,13 @@ You can search for all project members by performing a search for all `ProjectMe
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchProjectMembershipTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="searchProjectMembershipTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchProjectMembershipCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchProjectMembershipCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchProjectMembershipCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchProjectMembershipCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -208,19 +190,13 @@ You can also use the `profile-type` search parameter to narrow your search
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchExcludingClientBotTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="searchExcludingClientBotTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchExcludingClientBotCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchExcludingClientBotCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchExcludingClientBotCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchExcludingClientBotCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -228,19 +204,13 @@ You can also use the `profile-type` search parameter to narrow your search
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchProfileTypePatientTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="searchProfileTypePatientTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePatientCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchProfileTypePatientCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePatientCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchProfileTypePatientCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -248,19 +218,13 @@ You can also use the `profile-type` search parameter to narrow your search
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="searchProfileTypePractitionerTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="searchProfileTypePractitionerTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePractitionerCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchProfileTypePractitionerCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePractitionerCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="searchProfileTypePractitionerCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -280,19 +244,13 @@ Promoting a user to admin can also be done programmatically. To do so, you will 
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="makeAdminTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="makeAdminTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="makeAdminCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="makeAdminCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="makeAdminCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="makeAdminCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -304,27 +262,19 @@ Inviting users can be done programmatically using the [`/invite` endpoint](/docs
 
 Prepare JSON payload:
 
-<MedplumCodeBlock language="ts" selectBlocks="prepareJson">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="prepareJson" >}}
 
 Then POST to the [`/invite` endpoint](/docs/api/project-admin/invite):
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="inviteUserTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="inviteUserTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="inviteUserCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="inviteUserCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="inviteUserCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="bash" blocks="inviteUserCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -332,15 +282,11 @@ The [`/invite` endpoint](/docs/api/project-admin/invite) creates a [`ProjectMemb
 
 For example, use `admin: true` to make the new user a project administrator:
 
-<MedplumCodeBlock language="ts" selectBlocks="prepareJsonAdmin">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="prepareJsonAdmin" >}}
 
 Or use the `access` property to specify a user's `AccessPolicy` with optional parameters.
 
-<MedplumCodeBlock language="ts" selectBlocks="prepareJsonAccessPolicy">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/auth/user-management-guide.ts" language="ts" blocks="prepareJsonAccessPolicy" >}}
 
 For more information, see the [`/invite` endpoint API docs](/docs/api/project-admin/invite)
 

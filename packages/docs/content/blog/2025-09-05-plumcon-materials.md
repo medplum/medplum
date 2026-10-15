@@ -19,8 +19,8 @@ We also want to thank everyone who donated demos and demo videos to this event -
 ### Keynote: Medplum Past, Present and Future
 **Speaker:** [Cody Ebberson](https://github.com/codyebberson)
 
-<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-  <img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="80" height="80" style={{borderRadius: '50%'}} />
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="80" height="80" style="border-radius: 50%" />
   <div>
     <strong>Slides:</strong> [Download Presentation](https://drive.google.com/file/d/13ChwHbf9S19kGL-kpheFBuR1ccjYQx3V/view?usp=sharing)
   </div>
@@ -29,8 +29,8 @@ We also want to thank everyone who donated demos and demo videos to this event -
 ### How to be a Healthtech Hero and Ship Apps 10x Faster
 **Speaker:** [Rahul Agarwal](https://github.com/rahul1)
 
-<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-  <img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="80" height="80" style={{borderRadius: '50%'}} />
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="80" height="80" style="border-radius: 50%" />
   <div>
     <strong>Slides:</strong> [How to be a Healthtech Hero and Ship Apps 10x Faster](https://docs.google.com/presentation/d/19GQjsTZcoOLUC1mVKmecvnTz5mFRfcW3QpoU2iATGrs/edit?usp=sharing)  
     <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=lHhK9dxgl2A)
@@ -40,9 +40,9 @@ We also want to thank everyone who donated demos and demo videos to this event -
 ### Fireside Chat: AI in Production in Healthcare
 **Speakers:** [Matthew Woo](https://github.com/matthewwoo), [Reshma Khilnani](https://github.com/reshmakh)
 
-<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-  <img src="https://github.com/matthewwoo.png" alt="Matthew Woo" width="80" height="80" style={{borderRadius: '50%'}} />
-  <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="80" height="80" style={{borderRadius: '50%'}} />
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="https://github.com/matthewwoo.png" alt="Matthew Woo" width="80" height="80" style="border-radius: 50%" />
+  <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="80" height="80" style="border-radius: 50%" />
   <div>
     Fireside chat was not recorded, but see more info and case study below.
   </div>
@@ -51,9 +51,9 @@ We also want to thank everyone who donated demos and demo videos to this event -
 ### Scaling to Millions of Patients
 **Speakers:** [Matt Long](https://github.com/mattlong), [Matt Willer](https://github.com/mattwiller)
 
-<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-  <img src="https://github.com/mattlong.png" alt="Matt Long" width="80" height="80" style={{borderRadius: '50%'}} />
-  <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="80" height="80" style={{borderRadius: '50%'}} />
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="https://github.com/mattlong.png" alt="Matt Long" width="80" height="80" style="border-radius: 50%" />
+  <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="80" height="80" style="border-radius: 50%" />
   <div>
     <strong>Slides:</strong> [Scaling to Millions of Patients](https://docs.google.com/presentation/d/1Ngktqoi8e5prNEq441O_OhVEJmgCDsMwrOQFWK9VLTQ/edit?usp=sharing)  
     <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=0ewuLinTDYQ)
@@ -63,9 +63,9 @@ We also want to thank everyone who donated demos and demo videos to this event -
 ### Realtime Applications: FHIRcast, Websockets and HL7v2
 **Speakers:** [Derrick Farris](https://github.com/ThatOneBro), [Maddy Li](https://github.com/maddyli)
 
-<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-  <img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="80" height="80" style={{borderRadius: '50%'}} />
-  <img src="https://github.com/maddyli.png" alt="Maddy Li" width="80" height="80" style={{borderRadius: '50%'}} />
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="80" height="80" style="border-radius: 50%" />
+  <img src="https://github.com/maddyli.png" alt="Maddy Li" width="80" height="80" style="border-radius: 50%" />
   <div>
     <strong>Slides:</strong> [Real-time Medical Applications for Developers](https://docs.google.com/presentation/d/1H1JjwD78NB3HFZ7n3sruDHPY82RK0rsJVrJC0GUVY_E/edit?usp=sharing)  
     <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=PliSbKE9UNI)
@@ -75,9 +75,9 @@ We also want to thank everyone who donated demos and demo videos to this event -
 ### Vibecoding EHRs
 **Speakers:** [Kevin Shaw](https://github.com/kevinwadeshaw), [David Yanez](https://github.com/techdavidy)
 
-<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-  <img src="https://github.com/kevinwadeshaw.png" alt="Kevin Shaw" width="80" height="80" style={{borderRadius: '50%'}} />
-  <img src="https://github.com/techdavidy.png" alt="David Yanez" width="80" height="80" style={{borderRadius: '50%'}} />
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="https://github.com/kevinwadeshaw.png" alt="Kevin Shaw" width="80" height="80" style="border-radius: 50%" />
+  <img src="https://github.com/techdavidy.png" alt="David Yanez" width="80" height="80" style="border-radius: 50%" />
   <div>
     <strong>Slides:</strong> [Vibe Coding EHRs](https://docs.google.com/presentation/d/1T_ErFaDrJrPG0Otr0I-l7iog-4Vy3RFvGHJQaMOHWqk/edit?usp=sharing)  
     <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=ZbxVopl8McI)
@@ -87,9 +87,9 @@ We also want to thank everyone who donated demos and demo videos to this event -
 ### Healthcare Integrations
 **Speakers:** [Ian Plunkett](https://github.com/ianplunkett), [Rahul Agarwal](https://github.com/rahul1)
 
-<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-  <img src="https://github.com/ianplunkett.png" alt="Ian Plunkett" width="80" height="80" style={{borderRadius: '50%'}} />
-  <img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="80" height="80" style={{borderRadius: '50%'}} />
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="https://github.com/ianplunkett.png" alt="Ian Plunkett" width="80" height="80" style="border-radius: 50%" />
+  <img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="80" height="80" style="border-radius: 50%" />
   <div>
     <strong>Slides:</strong> [What We Worry About So You Don't Have To](https://docs.google.com/presentation/d/11bWfSQ5Gj8keLEdoDDYhjuHK-9_Mz-5nnwaMXrEqmrg/edit?usp=sharing)  
     <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=hsBtH35vKzo)

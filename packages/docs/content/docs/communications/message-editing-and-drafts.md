@@ -24,17 +24,13 @@ The key difference is searchability: retract-and-correct makes edits discoverabl
 
 Mark the original message as `entered-in-error`:
 
-<MedplumCodeBlock language="ts" selectBlocks="retractMessageTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="retractMessageTs" >}}
 
 ### Create the Corrected Message
 
 Create a new [`Communication`](/docs/api/fhir/resources/communication) with the corrected content. Use `inResponseTo` to link it to the original, and tag it with a `correction` category. Carry forward `topic`, `subject`, and `recipient` from the original message so the correction is discoverable via the same searches:
 
-<MedplumCodeBlock language="ts" selectBlocks="createCorrectedMessageTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="createCorrectedMessageTs" >}}
 
 The original message content is always preserved in the resource's version history (`meta.versionId`), accessible via the Medplum App's History tab.
 
@@ -59,9 +55,7 @@ Draft messages let users compose a message and return to it later before sending
 
 For the simplest case, save draft text to browser storage keyed by thread ID:
 
-<MedplumCodeBlock language="ts" selectBlocks="localStorageDraftTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="localStorageDraftTs" >}}
 
 In your UI, bind the restored string to your composer state (for example, a React `useState` setter) instead of logging it.
 
@@ -77,21 +71,15 @@ If your app uses server-side rendering (for example, Next.js), guard `localStora
 
 For drafts that persist across devices, use `Communication.status = "preparation"`:
 
-<MedplumCodeBlock language="ts" selectBlocks="createServerDraftTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="createServerDraftTs" >}}
 
 Update the draft as the user types (debounce to avoid excessive requests):
 
-<MedplumCodeBlock language="ts" selectBlocks="patchServerDraftTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="patchServerDraftTs" >}}
 
 When the user sends the message, promote the draft. At this point, also ensure `topic`, `subject`, and `recipient` are populated if they were not set when the draft was first created:
 
-<MedplumCodeBlock language="ts" selectBlocks="promoteDraftTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="promoteDraftTs" >}}
 
 {{< tip title="Draft attachments" >}}
 
@@ -105,19 +93,13 @@ Query for the current user's drafts across all threads:
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="TypeScript" >}}
-    <MedplumCodeBlock language="ts" selectBlocks="loadDraftsTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="loadDraftsTs" >}}
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="loadDraftsCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="loadDraftsCli" >}}
   {{< /tab >}}
   {{< tab value="curl" label="cURL" >}}
-    <MedplumCodeBlock language="bash" selectBlocks="loadDraftsCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="bash" blocks="loadDraftsCurl" >}}
   {{< /tab >}}
 {{< /tabs >}}
 
@@ -131,9 +113,7 @@ Other users should never see your drafts. When loading messages for a thread, fi
 
 Server-side drafts can accumulate over time if users start composing but never send. Set up a cron-triggered Bot to purge `preparation` [`Communication`](/docs/api/fhir/resources/communication) resources older than a threshold (for example, 30 days). For large numbers of stale drafts, batch the deletes using `medplum.executeBatch()` with a Transaction Bundle for better performance.
 
-<MedplumCodeBlock language="ts" selectBlocks="staleDraftCleanupTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="staleDraftCleanupTs" >}}
 
 See [Cron Jobs for Bots](/docs/bots/bot-cron-job) for scheduling setup.
 

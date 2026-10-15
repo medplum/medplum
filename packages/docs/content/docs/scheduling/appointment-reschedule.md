@@ -33,9 +33,7 @@ It moves a visit; it does not change what the visit is. Changing an appointment'
 
 {{< tabs >}}
 {{< tab value="ts" label="TypeScript" >}}
-  <MedplumCodeBlock language="ts" selectBlocks="rescheduleReassignRoom">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/reschedule.ts" language="ts" blocks="rescheduleReassignRoom" >}}
 {{< /tab >}}
 {{< tab value="curl" label="cURL" >}}
 

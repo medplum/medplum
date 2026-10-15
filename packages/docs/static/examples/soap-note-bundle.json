@@ -1,0 +1,360 @@
+{
+  "resourceType": "Bundle",
+  "id": "soap-note-bundle",
+  "meta": {
+    "lastUpdated": "2024-01-15T11:30:00Z",
+    "profile": ["http://hl7.org/fhir/StructureDefinition/Bundle"]
+  },
+  "type": "collection",
+  "timestamp": "2024-01-15T11:30:00Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:encounter-example-encounter",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "example-encounter",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
+        },
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "162673000",
+                "display": "General examination of patient (procedure)"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "Patient/homer-simpson",
+          "display": "Homer Simpson"
+        },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "PPRF",
+                    "display": "primary performer"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "Practitioner/dr-alice-smith",
+              "display": "Dr. Alice Smith"
+            }
+          }
+        ],
+        "period": {
+          "start": "2024-01-15T09:00:00Z",
+          "end": "2024-01-15T10:30:00Z"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-subjective-fatigue",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-subjective-fatigue",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Observation"]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "75325-1",
+              "display": "Symptom"
+            }
+          ],
+          "text": "Fatigue"
+        },
+        "subject": {
+          "reference": "Patient/homer-simpson",
+          "display": "Homer Simpson"
+        },
+        "encounter": {
+          "reference": "Encounter/example-encounter",
+          "display": "Office visit"
+        },
+        "effectiveDateTime": "2024-01-15T09:15:00Z",
+        "performer": [
+          {
+            "reference": "Patient/homer-simpson",
+            "display": "Homer Simpson"
+          }
+        ],
+        "valueString": "Patient reports feeling lethargic and fatigued for the past week with associated epigastric discomfort."
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-objective-heart-rate",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-objective-heart-rate",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Observation"]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8867-4",
+              "display": "Heart rate"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/homer-simpson",
+          "display": "Homer Simpson"
+        },
+        "encounter": {
+          "reference": "Encounter/example-encounter",
+          "display": "Office visit"
+        },
+        "effectiveDateTime": "2024-01-15T09:20:00Z",
+        "performer": [
+          {
+            "reference": "Practitioner/dr-alice-smith",
+            "display": "Dr. Alice Smith"
+          }
+        ],
+        "valueQuantity": {
+          "value": 112,
+          "unit": "beats/min",
+          "system": "http://unitsofmeasure.org",
+          "code": "{Beats}/min"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:clinical-impression-assessment",
+      "resource": {
+        "resourceType": "ClinicalImpression",
+        "id": "clinical-impression-assessment",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/ClinicalImpression"]
+        },
+        "status": "completed",
+        "subject": {
+          "reference": "Patient/homer-simpson",
+          "display": "Homer Simpson"
+        },
+        "encounter": {
+          "reference": "Encounter/example-encounter",
+          "display": "Office visit"
+        },
+        "date": "2024-01-15T10:00:00Z",
+        "assessor": {
+          "reference": "Practitioner/dr-alice-smith",
+          "display": "Dr. Alice Smith"
+        },
+        "description": "Patient presents with fatigue and epigastric discomfort. Physical exam notable for elevated heart rate. Symptoms consistent with gastritis.",
+        "supportingInfo": [
+          {
+            "reference": "Observation/obs-subjective-fatigue",
+            "display": "Patient-reported fatigue"
+          },
+          {
+            "reference": "Observation/obs-objective-heart-rate",
+            "display": "Elevated heart rate"
+          }
+        ],
+        "note": [
+          {
+            "text": "Assessment: Symptoms of fatigue, epigastric discomfort, and tachycardia are consistent with gastritis. Differential diagnosis includes peptic ulcer disease. Recommend H. pylori testing to guide treatment. Will initiate empiric therapy pending lab results."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:condition-gastritis",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-gastritis",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Condition"]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "K29.70",
+              "display": "Gastritis, unspecified, without bleeding"
+            }
+          ],
+          "text": "Gastritis, unspecified"
+        },
+        "subject": {
+          "reference": "Patient/homer-simpson",
+          "display": "Homer Simpson"
+        },
+        "encounter": {
+          "reference": "Encounter/example-encounter",
+          "display": "Office visit"
+        },
+        "onsetDateTime": "2024-01-15",
+        "asserter": {
+          "reference": "Practitioner/dr-alice-smith",
+          "display": "Dr. Alice Smith"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:service-request-lab",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "service-request-lab",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
+        },
+        "status": "active",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "13958-0",
+              "display": "Helicobacter pylori [Presence] in Gastric fluid by Organism specific culture"
+            }
+          ],
+          "text": "H. pylori culture"
+        },
+        "subject": {
+          "reference": "Patient/homer-simpson",
+          "display": "Homer Simpson"
+        },
+        "encounter": {
+          "reference": "Encounter/example-encounter",
+          "display": "Office visit"
+        },
+        "authoredOn": "2024-01-15T10:15:00Z",
+        "requester": {
+          "reference": "Practitioner/dr-alice-smith",
+          "display": "Dr. Alice Smith"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/sid/icd-10-cm",
+                "code": "K29.70",
+                "display": "Gastritis, unspecified, without bleeding"
+              }
+            ],
+            "text": "Rule out H. pylori in setting of gastritis"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:provenance-note-signed",
+      "resource": {
+        "resourceType": "Provenance",
+        "id": "provenance-note-signed",
+        "meta": {
+          "profile": ["http://hl7.org/fhir/StructureDefinition/Provenance"]
+        },
+        "target": [
+          {
+            "reference": "Encounter/example-encounter",
+            "display": "Office visit"
+          }
+        ],
+        "recorded": "2024-01-15T11:30:00Z",
+        "reason": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+                "code": "SIGN",
+                "display": "Signed"
+              }
+            ]
+          }
+        ],
+        "agent": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/provenance-participant-type",
+                  "code": "author",
+                  "display": "Author"
+                }
+              ]
+            },
+            "who": {
+              "reference": "Practitioner/dr-alice-smith",
+              "display": "Dr. Alice Smith"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

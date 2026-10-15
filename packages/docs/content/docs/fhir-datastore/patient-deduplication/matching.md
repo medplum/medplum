@@ -33,9 +33,7 @@ The likelihood of a candidate being a match can be represented by a `RiskAssessm
 
 <details>
   <summary>Example: A `RiskAssessment` for a potential duplicated patient record</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="dupedPatientAssessment">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/patient-deduplication/matching.ts" language="ts" blocks="dupedPatientAssessment" >}}
 </details>
 
 Check out [Medplum's demo bots](https://github.com/medplum/medplum/blob/08d11217b7b399c6232432f04389d4c66ce85f18/examples/medplum-demo-bots/src/deduplication/find-matching-patients.ts#L58-L87) to see an example of how a `RiskAssessment` is created in practice.
@@ -48,9 +46,7 @@ To ensure that certain records are not matched, you can create a Do Not Match Li
 
 <details>
   <summary>Example: A patient's Do Not Match List</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/patient-deduplication/matching.ts" language="ts" blocks="doNotMatch" >}}
 </details>
 
 In the next section, we will discuss **merging** duplicate records.

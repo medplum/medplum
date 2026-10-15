@@ -6,7 +6,9 @@ slug: /careers
 
 ![Medplum is hiring](/img/hiring.webp)
 
-<AboutMedplum />
+## About Medplum
+
+Medplum is redefining healthcare with our open source, API-first electronic health record (EHR) platform, trusted by leading digital health and life sciences companies. Our mission is to catalyze change in the healthcare industry by improving the access, privacy, and utility of health data. At Medplum, we have a unique opportunity to impact the lives of patients, speed medical research, and contribute to the open source ecosystem.
 
 ## About the team
 

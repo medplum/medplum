@@ -68,7 +68,7 @@ response can be reconstructed faithfully from what was stored.
 
 What you get in exchange for keeping the DICOM shape is that these are still Medplum resources. They
 are searchable with the [FHIR search API](/docs/dicom/data-model#search-parameters), readable through
-the [TypeScript SDK](/docs/sdk), governed by
+the [TypeScript SDK](/docs/sdk/), governed by
 [access policies](/docs/access/access-policies), audited like everything else, and able to trigger
 [Bots](/docs/bots) on create or update.
 
@@ -117,7 +117,7 @@ produce.
 <img
   src="/img/blog/2026-08-dicom-ohif-viewer.webp"
   alt="An MR brain study stored in Medplum, displayed in the OHIF Viewer at viewer.medplum.com"
-  style={{ maxWidth: '100%' }}
+  style="max-width: 100%"
 />
 
 ## What's next

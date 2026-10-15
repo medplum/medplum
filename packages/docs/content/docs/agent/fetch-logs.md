@@ -32,13 +32,13 @@ For example:
 medplum get 'Agent/$fetch-logs?_tag=Group+A'
 ```
 
-Here, `_tag=Group+A` is an `Agent` search parameter used to select which agents to fetch logs from. For example, to fetch logs from all active agents use `status=active`. See [Using Agent search parameters in bulk operations](./using-search-parameters.md) for more ways to select operation targets.
+Here, `_tag=Group+A` is an `Agent` search parameter used to select which agents to fetch logs from. For example, to fetch logs from all active agents use `status=active`. See [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters) for more ways to select operation targets.
 
 ## Parameters
 
 - `limit` (optional; default: `20`): Maximum number of log entries to return per agent
 
-> The parameter above configures _how_ logs are fetched. To select _which_ agents to fetch logs from when using the multi-agent endpoint, use `Agent` search parameters — see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
+> The parameter above configures _how_ logs are fetched. To select _which_ agents to fetch logs from when using the multi-agent endpoint, use `Agent` search parameters — see [Using Agent search parameters in bulk operations](/docs/agent/using-search-parameters).
 
 ## Single Agent Response
 

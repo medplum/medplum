@@ -9,14 +9,14 @@ slug: /brand
 Feel free to use our logo in color, black or white.
 
 <div class={styles.logoContainer}>
-  <div class={styles.logoCard} style={{ width: 256, height: 160, background: 'white', color: 'var(--oc-grape-8)' }}>
-    <LogoSvg width={150} />
+  <div class={styles.logoCard} style="width: 256px; height: 160px; background: white; color: var(--oc-grape-8)">
+    <LogoSvg width="150" />
   </div>
-  <div class={styles.logoCard} style={{ width: 256, height: 160, background: 'var(--oc-gray-9)', color: 'white' }}>
-    <LogoSvg width={150} />
+  <div class={styles.logoCard} style="width: 256px; height: 160px; background: var(--oc-gray-9); color: white">
+    <LogoSvg width="150" />
   </div>
-  <div class={styles.logoCard} style={{ width: 256, height: 160, background: 'white', color: 'var(--oc-gray-9)' }}>
-    <LogoSvg width={150} />
+  <div class={styles.logoCard} style="width: 256px; height: 160px; background: white; color: var(--oc-gray-9)">
+    <LogoSvg width="150" />
   </div>
 </div>
 
@@ -25,32 +25,32 @@ Feel free to use our logo in color, black or white.
 Use these only when the Medplum brand is clearly visible or has been well established elsewhere.
 
 <div class={styles.logoContainer}>
-  <div class={styles.logoCard} style={{ width: 256, height: 256, background: 'white', color: 'var(--oc-grape-8)' }}>
-    <SymbolSvg width={64} />
+  <div class={styles.logoCard} style="width: 256px; height: 256px; background: white; color: var(--oc-grape-8)">
+    <SymbolSvg width="64" />
   </div>
-  <div class={styles.logoCard} style={{ width: 256, height: 256, background: 'var(--oc-gray-9)', color: 'white' }}>
-    <SymbolSvg width={64} />
+  <div class={styles.logoCard} style="width: 256px; height: 256px; background: var(--oc-gray-9); color: white">
+    <SymbolSvg width="64" />
   </div>
-  <div class={styles.logoCard} style={{ width: 256, height: 256, background: 'white', color: 'var(--oc-gray-9)' }}>
-    <SymbolSvg width={64} />
-  </div>
-  <div
-    class={styles.logoCard}
-    style={{ width: 256, height: 256, background: 'var(--oc-indigo-2)', color: 'var(--oc-grape-8)' }}
-  >
-    <SymbolSvg width={64} />
+  <div class={styles.logoCard} style="width: 256px; height: 256px; background: white; color: var(--oc-gray-9)">
+    <SymbolSvg width="64" />
   </div>
   <div
     class={styles.logoCard}
-    style={{ width: 256, height: 256, background: 'var(--oc-yellow-2)', color: 'var(--oc-grape-8)' }}
+    style="width: 256px; height: 256px; background: var(--oc-indigo-2); color: var(--oc-grape-8)"
   >
-    <SymbolSvg width={64} />
+    <SymbolSvg width="64" />
   </div>
   <div
     class={styles.logoCard}
-    style={{ width: 256, height: 256, background: 'var(--oc-orange-2)', color: 'var(--oc-grape-8)' }}
+    style="width: 256px; height: 256px; background: var(--oc-yellow-2); color: var(--oc-grape-8)"
   >
-    <SymbolSvg width={64} />
+    <SymbolSvg width="64" />
+  </div>
+  <div
+    class={styles.logoCard}
+    style="width: 256px; height: 256px; background: var(--oc-orange-2); color: var(--oc-grape-8)"
+  >
+    <SymbolSvg width="64" />
   </div>
 </div>
 
@@ -58,12 +58,12 @@ Use these only when the Medplum brand is clearly visible or has been well establ
 
 Please do not edit, change, distort, or reconfigure the Medplum logo.
 
-<div class={styles.logoContainer} style={{ gap: 64 }}>
-  <div class={styles.logoCard} style={{ width: 400, height: 160 }}>
-    <LogoClearspaceSvg width={400} />
+<div class={styles.logoContainer} style="gap: 64px">
+  <div class={styles.logoCard} style="width: 400px; height: 160px">
+    <LogoClearspaceSvg width="400" />
   </div>
-  <div class={styles.logoCard} style={{ width: 120, height: 120 }}>
-    <SymboClearspacelSvg width={120} />
+  <div class={styles.logoCard} style="width: 120px; height: 120px">
+    <SymboClearspacelSvg width="120" />
   </div>
 </div>
 
@@ -75,8 +75,8 @@ Be sure to test accessibility using the [WCAG Contrast Checker](https://webaim.o
 
 ### Plum (Grape)
 
-<div class={styles.logoContainer} style={{ alignItems: 'left' }}>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-grape-8)', color: 'white' }}>
+<div class={styles.logoContainer} style="align-items: left">
+  <div class={styles.colorCard} style="background: var(--oc-grape-8); color: white">
     <strong>Grape 8</strong>
     <br />
     HEX: #9C36B5
@@ -85,13 +85,13 @@ Be sure to test accessibility using the [WCAG Contrast Checker](https://webaim.o
 
 ### Violet
 
-<div class={styles.logoContainer} style={{ alignItems: 'left' }}>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-violet-1)', color: 'var(--oc-gray-9)' }}>
+<div class={styles.logoContainer} style="align-items: left">
+  <div class={styles.colorCard} style="background: var(--oc-violet-1); color: var(--oc-gray-9)">
     <strong>Violet 1</strong>
     <br />
     HEX: #E5DBFF
   </div>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-violet-3)', color: 'var(--oc-gray-9)' }}>
+  <div class={styles.colorCard} style="background: var(--oc-violet-3); color: var(--oc-gray-9)">
     <strong>Violet 3</strong>
     <br />
     HEX: #B197FC
@@ -100,13 +100,13 @@ Be sure to test accessibility using the [WCAG Contrast Checker](https://webaim.o
 
 ### Indigo
 
-<div class={styles.logoContainer} style={{ alignItems: 'left' }}>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-indigo-1)', color: 'var(--oc-gray-9)' }}>
+<div class={styles.logoContainer} style="align-items: left">
+  <div class={styles.colorCard} style="background: var(--oc-indigo-1); color: var(--oc-gray-9)">
     <strong>Indigo 1</strong>
     <br />
     HEX: #DBE4FF
   </div>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-indigo-3)', color: 'var(--oc-gray-9)' }}>
+  <div class={styles.colorCard} style="background: var(--oc-indigo-3); color: var(--oc-gray-9)">
     <strong>Indigo 3</strong>
     <br />
     HEX: #91A7FC
@@ -115,13 +115,13 @@ Be sure to test accessibility using the [WCAG Contrast Checker](https://webaim.o
 
 ### Yellow
 
-<div class={styles.logoContainer} style={{ alignItems: 'left' }}>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-yellow-1)', color: 'var(--oc-gray-9)' }}>
+<div class={styles.logoContainer} style="align-items: left">
+  <div class={styles.colorCard} style="background: var(--oc-yellow-1); color: var(--oc-gray-9)">
     <strong>Yellow 1</strong>
     <br />
     HEX: #FFF3BF
   </div>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-yellow-3)', color: 'var(--oc-gray-9)' }}>
+  <div class={styles.colorCard} style="background: var(--oc-yellow-3); color: var(--oc-gray-9)">
     <strong>Yellow 3</strong>
     <br />
     HEX: #FFE066
@@ -130,13 +130,13 @@ Be sure to test accessibility using the [WCAG Contrast Checker](https://webaim.o
 
 ### Orange
 
-<div class={styles.logoContainer} style={{ alignItems: 'left' }}>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-orange-1)', color: 'var(--oc-gray-9)' }}>
+<div class={styles.logoContainer} style="align-items: left">
+  <div class={styles.colorCard} style="background: var(--oc-orange-1); color: var(--oc-gray-9)">
     <strong>Orange 1</strong>
     <br />
     HEX: #FFE8CC
   </div>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-orange-3)', color: 'var(--oc-gray-9)' }}>
+  <div class={styles.colorCard} style="background: var(--oc-orange-3); color: var(--oc-gray-9)">
     <strong>Orange 3</strong>
     <br />
     HEX: #FFC078
@@ -145,18 +145,18 @@ Be sure to test accessibility using the [WCAG Contrast Checker](https://webaim.o
 
 ### Gray
 
-<div class={styles.logoContainer} style={{ alignItems: 'left' }}>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-gray-1)', color: 'var(--oc-gray-9)' }}>
+<div class={styles.logoContainer} style="align-items: left">
+  <div class={styles.colorCard} style="background: var(--oc-gray-1); color: var(--oc-gray-9)">
     <strong>Gray 1</strong>
     <br />
     HEX: #F1F3F5
   </div>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-gray-5)', color: 'var(--oc-gray-9)' }}>
+  <div class={styles.colorCard} style="background: var(--oc-gray-5); color: var(--oc-gray-9)">
     <strong>Gray 5</strong>
     <br />
     HEX: #ADB5BD
   </div>
-  <div class={styles.colorCard} style={{ background: 'var(--oc-gray-8)', color: 'var(--oc-gray-0)' }}>
+  <div class={styles.colorCard} style="background: var(--oc-gray-8); color: var(--oc-gray-0)">
     <strong>Gray 8</strong>
     <br />
     HEX: #343A40

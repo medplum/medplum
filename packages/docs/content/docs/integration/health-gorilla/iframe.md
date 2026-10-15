@@ -5,12 +5,12 @@ weight: 50
 ---
 
 {{< info title="Choose one ordering interface" >}}
-The iframe is an **optional alternative** to Medplum's [React order form components and `useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react). Use either the hosted iframe or the Medplum form components and hook for your ordering workflow. You do not need both, and the iframe is not required for the Health Gorilla integration.
+The iframe is an **optional alternative** to Medplum's [React order form components and `useHealthGorillaLabOrder` hook](/docs/integration/health-gorilla/sending-orders#creating-an-order-form-in-react). Use either the hosted iframe or the Medplum form components and hook for your ordering workflow. You do not need both, and the iframe is not required for the Health Gorilla integration.
 {{< /info >}}
 
 The `health-gorilla-iframe` bot lets your application launch Health Gorilla's hosted lab ordering interface for a Medplum patient. It returns an authenticated URL that you embed in an `<iframe>`; the bot itself does not render a user interface.
 
-Health Gorilla's [Lab Network iFrame](https://developer.healthgorilla.com/docs/lab-network-iframe) supports order placement for a single patient and a single order. Results are handled separately through the [results integration](./receiving-results.md).
+Health Gorilla's [Lab Network iFrame](https://developer.healthgorilla.com/docs/lab-network-iframe) supports order placement for a single patient and a single order. Results are handled separately through the [results integration](/docs/integration/health-gorilla/receiving-results).
 
 ## Prerequisites
 
@@ -86,7 +86,7 @@ The returned URL contains a Health Gorilla OAuth access token. Keep it in memory
 
 The bot reads the patient from Medplum and sends the first name entry's given names and family name, gender, and birth date to Health Gorilla. It uses demographics for matching even when the Medplum patient already has a Health Gorilla identifier. Health Gorilla may create a new patient if those demographics do not match an existing record.
 
-The bot does not require a Health Gorilla patient identifier and does not write one back to Medplum. Launching an iframe therefore does not establish the identifier mapping needed for downstream result matching. Validate patient and order matching as part of your integration setup; see [Resolving Orders with Results](./receiving-results.md#resolving-orders-with-results).
+The bot does not require a Health Gorilla patient identifier and does not write one back to Medplum. Launching an iframe therefore does not establish the identifier mapping needed for downstream result matching. Validate patient and order matching as part of your integration setup; see [Resolving Orders with Results](/docs/integration/health-gorilla/receiving-results#resolving-orders-with-results).
 
 The bot passes `Patient.gender` through unchanged. Confirm Health Gorilla's handling of `other` and `unknown` with your integration contact before using those values in this flow.
 
@@ -94,11 +94,11 @@ The bot passes `Patient.gender` through unchanged. Confirm Health Gorilla's hand
 
 The `callbackUrl` is a browser return destination after the user completes or cancels ordering. It is separate from the webhook endpoint used by `receive-from-health-gorilla`. Reaching this page alone is not confirmation that an order was submitted.
 
-The iframe bot creates the ordering session and returns its URL. It does not create a Medplum `ServiceRequest`, download requisitions, or retrieve results. Keep the Health Gorilla webhook subscriptions configured through `setup-subscriptions`, and use [Receiving Results](./receiving-results.md) for structured results and PDFs. Use [Sync Resources from Health Gorilla](./sync-resources-from-health-gorilla.md) to recover missed results.
+The iframe bot creates the ordering session and returns its URL. It does not create a Medplum `ServiceRequest`, download requisitions, or retrieve results. Keep the Health Gorilla webhook subscriptions configured through `setup-subscriptions`, and use [Receiving Results](/docs/integration/health-gorilla/receiving-results) for structured results and PDFs. Use [Sync Resources from Health Gorilla](/docs/integration/health-gorilla/sync-resources-from-health-gorilla) to recover missed results.
 
 ## Troubleshooting
 
 - **`Missing patientId` or `Missing callbackUrl`**: Include both fields in the JSON request body.
 - **Patient is missing required fields**: Populate the first name entry's given and family names, gender, and full birth date before launching the session.
 - **Session creation fails**: Verify the existing Health Gorilla OAuth configuration, ordering scopes, and Lab Network setup. The bot surfaces HTTP and Health Gorilla session errors to the caller.
-- **Results do not match the expected patient or order**: Check the [result matching rules](./receiving-results.md#resolving-orders-with-results) and review `DetectedIssue` resources. The iframe launch does not sync patient identifiers or create a corresponding Medplum order.
+- **Results do not match the expected patient or order**: Check the [result matching rules](/docs/integration/health-gorilla/receiving-results#resolving-orders-with-results) and review `DetectedIssue` resources. The iframe launch does not sync patient identifiers or create a corresponding Medplum order.

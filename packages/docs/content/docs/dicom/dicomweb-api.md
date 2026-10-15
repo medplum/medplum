@@ -57,8 +57,8 @@ curl -X POST https://api.medplum.com/dicomweb/studies \
   --data-binary @body.multipart
 ```
 
-Constructing that multipart body by hand is tedious; the [Medplum CLI](./cli.md) and the
-[Agent](./agent-dimse.md) both do it for you.
+Constructing that multipart body by hand is tedious; the [Medplum CLI](/docs/dicom/cli) and the
+[Agent](/docs/dicom/agent-dimse) both do it for you.
 
 **Response `200`** — a DICOM JSON dataset containing a Referenced SOP Sequence `(0008,1199)` with one
 item per stored instance, each carrying the Referenced SOP Class UID `(0008,1150)`, Referenced SOP
@@ -82,12 +82,12 @@ Accept: application/dicom+json
 ```
 
 Returns every `DicomStudy` visible to the caller as a DICOM JSON array, one dataset per study, with
-the study-level attributes described in the [data model](./data-model.md#dicomstudy).
+the study-level attributes described in the [data model](/docs/dicom/data-model#dicomstudy).
 
 Query parameters such as `PatientName`, `AccessionNumber`, `ModalitiesInStudy`, `limit`, `offset`,
 `includefield`, and `fuzzymatching` are accepted by the route but are not applied — every study the
 caller can read is returned. For filtered or paginated queries, use the
-[FHIR search API](./data-model.md#search-parameters) against `DicomStudy`.
+[FHIR search API](/docs/dicom/data-model#search-parameters) against `DicomStudy`.
 
 ## QIDO-RS: Search for series
 
@@ -111,7 +111,7 @@ Accept: application/dicom+json
 ```
 
 Returns a DICOM JSON array with the full metadata dataset for every instance in the series — the
-cleaned dataset stored in [`DicomInstance.metadata`](./data-model.md#what-lands-in-metadata). This is
+cleaned dataset stored in [`DicomInstance.metadata`](/docs/dicom/data-model#what-lands-in-metadata). This is
 the call a viewer makes to learn the geometry of a series before it starts pulling frames.
 
 **Response `404`** — the study or the series could not be found.
@@ -124,7 +124,7 @@ GET /dicomweb/studies/{studyUid}/series/{seriesUid}/instances/{instanceUid}/fram
 
 Returns one frame of pixel data as a `multipart/related` body. Frame numbers are **1-based**, as in
 the DICOM standard. The part's `Content-Type` reflects the encoding the frame was stored in — see
-[pixel data extraction](./data-model.md#pixel-data-extraction).
+[pixel data extraction](/docs/dicom/data-model#pixel-data-extraction).
 
 | Status | Meaning                                                                                |
 | ------ | -------------------------------------------------------------------------------------- |

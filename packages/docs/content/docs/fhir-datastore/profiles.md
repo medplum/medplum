@@ -165,7 +165,7 @@ After building your FSH profiles with SUSHI, the generated `StructureDefinition`
 To upload the generated profiles to Medplum:
 
 ```typescript
-import { MedplumClient } from '@medplum/core';
+
 
 
 const medplum = new MedplumClient();
@@ -307,7 +307,7 @@ medplum generate-types --profile-url https://example.com/profiles/my-patient/1.0
 ```
 
 ```ts
-import type { MyPatientProfile } from './types/profiles';
+
 
 const patient: MyPatientProfile = {
   resourceType: 'Patient',
@@ -381,9 +381,7 @@ Description: "A Patient profile that requires a birth date and phone number"
 
 <details>
 <summary>Example: Update your profile</summary>
-  <MedplumCodeBlock language="bash" selectBlocks="updateProfile">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/profiles.ts" language="bash" blocks="updateProfile" >}}
 </details>
 
 In the above example, we have a [`Patient`](/docs/api/fhir/resources/patient) with an initial profile. In the url, the profile name is `foo-patient` and the version is `1.0.0`.
@@ -402,7 +400,5 @@ When you update a profile, you can loop over each resource, validate it, and upd
 
 <details>
 <summary>Example: Validate a new profile against all Patient resources in the system</summary>
-  <MedplumCodeBlock language="bash" selectBlocks="profileMigration">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/fhir-datastore/profiles.ts" language="bash" blocks="profileMigration" >}}
 </details>

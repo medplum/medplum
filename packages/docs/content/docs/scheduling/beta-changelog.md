@@ -91,6 +91,4 @@ To preserve the old "block all services" behavior, clear `serviceType` on the af
 
 The script below finds every `busy` / `busy-unavailable` / `busy-tentative` Slot with a `serviceType` ending after `TARGET_DATE` and removes the `serviceType` field, so those Slots continue to block all services.
 
-<MedplumCodeBlock language="ts" selectBlocks="clearBusySlotServiceType">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/clear-busy-slot-service-type.ts" language="ts" blocks="clearBusySlotServiceType" >}}

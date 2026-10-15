@@ -40,9 +40,7 @@ One of the most important properties in the `item` is `linkId`, which is used to
 
 <details>
   <summary>Example: A basic `Questionnaire`</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="simpleQuestionnaire">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="simpleQuestionnaire" >}}
 </details>
 
 ### Nesting Questions
@@ -53,9 +51,7 @@ To do this, you must set `item.type='group'`. This specifies that the item will 
 
 <details>
   <summary>Example: A `Questionnaire` with nested questions</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="nestedQuestionnaire">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="nestedQuestionnaire" >}}
 </details>
 
 ### Defining Rules For Your Questions
@@ -85,9 +81,7 @@ You can conditionally display questions so that they only appear based on a user
 
 <details>
   <summary>Example: A `Questionnaire` with initial values and conditionally rendered questions</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="ruledQuestionnaire">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="ruledQuestionnaire" >}}
 </details>
 
 ## Creating a Response to a Questionnaire
@@ -130,9 +124,7 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
 
 <details>
   <summary>Example: A `QuestionnaireResponse` responding to the [conditional questionnaire above](#conditionally-displaying-questions)</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="response">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="response" >}}
 </details>
 
 ## UI Components

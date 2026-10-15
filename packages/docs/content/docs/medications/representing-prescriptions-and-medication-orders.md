@@ -141,9 +141,7 @@ Note that this field is stored as an array, so there can be multiple dosage inst
 
 <details>
   <summary>Example: Dosage Instructions</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="dosageInstructions">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="dosageInstructions" >}}
 </details>
 
 ## Distinguishing Between Prescriptions and Medication Orders
@@ -154,16 +152,12 @@ These types of requests should be differentiated as outpatient vs. inpatient usi
 
 <details>
   <summary>Example: A MedicationRequest categorized for a prescription</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="prescriptionRequest">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="prescriptionRequest" >}}
 </details>
 
 <details>
   <summary>Example: A MedicationRequest categorized for a medication fulfillment order</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="orderRequest">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="orderRequest" >}}
 </details>
 
 ## Representing Dispense Instructions and Fulfillment
@@ -183,9 +177,7 @@ The instructions to the pharmacy on how the order should be dispensed should be 
 
 <details>
   <summary>Example: Dispense Instructions</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="dispenseInstructions">
-    {ExampleCode}
-  </MedplumCodeBlock>
+{{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="dispenseInstructions" >}}
 </details>
 
 ### Representing Dispense Fulfillments

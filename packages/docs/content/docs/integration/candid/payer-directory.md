@@ -24,7 +24,7 @@ The examples below assume an authenticated `medplum` client. Set `payerBotId` to
 Invoke the bot with `executeBot` and a JSON input:
 
 ```ts
-import type { Organization, Parameters } from '@medplum/fhirtypes';
+
 
 const payerBotId = '<candid-get-payers-bot-id>';
 const result: Parameters = await medplum.executeBot(payerBotId, {
@@ -129,7 +129,7 @@ The bot reports the best state across Candid's clearinghouses for each capabilit
 The directory bot does not persist Organizations in Medplum. Save the selected payer before referencing it from other resources. For example, after fetching a single payer above, use a conditional create keyed by its Candid UUID to reuse an existing Organization:
 
 ```ts
-import { createReference } from '@medplum/core';
+
 
 const query = new URLSearchParams({
   identifier: `https://www.joincandidhealth.com/payer-uuid|${payerUuid}`,

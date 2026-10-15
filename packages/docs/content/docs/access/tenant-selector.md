@@ -131,15 +131,11 @@ Example: invite a practitioner with one organization-scoped policy and a single 
 
 #### Creating the First `ProjectMembership`
 
-<MedplumCodeBlock language="ts" selectBlocks="invite-practitioner-first-membership">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/tenant-selector.ts" language="ts" blocks="invite-practitioner-first-membership" >}}
 
 #### Creating an Additional `ProjectMembership`
 
-<MedplumCodeBlock language="ts" selectBlocks="invite-practitioner-second-membership">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/access/tenant-selector.ts" language="ts" blocks="invite-practitioner-second-membership" >}}
 
 ### Selector UX
 

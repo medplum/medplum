@@ -30,17 +30,13 @@ For the full lifecycle including read tracking, see [Communication Lifecycle](/d
 
 ### Close a Thread
 
-<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleCloseHeaderTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="threadLifecycleCloseHeaderTs" >}}
 
 To filter for only active threads when querying, see [Searching and Querying Threads](/docs/communications/searching-and-querying-threads).
 
 ### Reopen a Closed Thread
 
-<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleReopenHeaderTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="threadLifecycleReopenHeaderTs" >}}
 
 {{< warning >}}
 
@@ -56,25 +52,19 @@ Threads support multiple participants through the `recipient` array on the threa
 
 Set `sender` to the thread creator and list all participants (including the creator) in `recipient`. For why this convention matters, see the [thread header `sender` / `recipient` recommendation](/docs/communications/messaging-data-model#building-and-structuring-threads).
 
-<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleGroupThreadTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="threadLifecycleGroupThreadTs" >}}
 
 ### Add a Participant
 
 Use a JSON Patch to append to the `recipient` array:
 
-<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleAddParticipantTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="threadLifecycleAddParticipantTs" >}}
 
 ### Remove a Participant
 
 Replace the `recipient` array without the removed person. Read the current header, filter, then patch:
 
-<MedplumCodeBlock language="ts" selectBlocks="threadLifecycleRemoveParticipantTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="threadLifecycleRemoveParticipantTs" >}}
 
 {{< warning >}}
 
@@ -100,9 +90,7 @@ For typical messaging, restrict Communication reads so users only see threads wh
 
 The example below uses two `resource` entries for Communication — one scoped to `recipient` and one to `sender`. Medplum ORs multiple entries of the same resource type, so the user sees Communications where they are a recipient or a sender:
 
-<MedplumCodeBlock language="json" selectBlocks="messagingParticipantScopedAccessPolicyJson">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="json" blocks="messagingParticipantScopedAccessPolicyJson" >}}
 
 {{< note >}}
 
@@ -114,9 +102,7 @@ The example below uses two `resource` entries for Communication — one scoped t
 
 Supervisors, compliance staff, or support roles often need to see all threads even when they are not participants. Use a separate access policy (or role) that grants broader Communication read access:
 
-<MedplumCodeBlock language="json" selectBlocks="messagingSupervisorAccessPolicyJson">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="json" blocks="messagingSupervisorAccessPolicyJson" >}}
 
 Assign that policy to admin users as appropriate. The example above is read-only: supervisors can view threads but not send or change status unless you set `readonly` differently.
 

@@ -78,18 +78,14 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 <details>
 <summary>Example of the `SchedulingParameters` extension on a `HealthcareService`</summary>
 
-<MedplumCodeBlock language="ts" selectBlocks="schedulingParamsHealthcareService">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="schedulingParamsHealthcareService" >}}
 
 </details>
 
 <details>
 <summary>Example of the `SchedulingParameters` extension on a `Schedule`</summary>
 
-<MedplumCodeBlock language="ts" selectBlocks="schedulingParamsSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="schedulingParamsSchedule" >}}
 
 </details>
 
@@ -142,9 +138,7 @@ The Schedule resource should define the service types that it is capable of acti
 
 Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
 
-<MedplumCodeBlock language="ts" selectBlocks="scheduleResource">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="scheduleResource" >}}
 
 {{< note title="`Schedule` has no `name` element" >}}
 
@@ -175,9 +169,7 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
 | ↳ `availableEndTime`  | `valueTime`   | Closing time (not allowed  when `allDay` is present) | No         |
 | `notAvailableTime`    | (nested)      | Typed for future use; not yet processed              | Yes        |
 
-<MedplumCodeBlock language="ts" selectBlocks="scheduleAvailability">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="scheduleAvailability" >}}
 
 #### Windows that cross midnight
 
@@ -221,21 +213,15 @@ LOINC codes describe observations, lab tests, and documents — not services. Us
 
 For a `Schedule` to use the `HealthcareService`'s scheduling parameters, the `Schedule.serviceType` must include a reference to the HealthcareService in its extensions.
 
-<MedplumCodeBlock language="ts" selectBlocks="healthcareServiceServiceLevel">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="healthcareServiceServiceLevel" >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="scheduleServiceTypeLink">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="scheduleServiceTypeLink" >}}
 
 ### Offering All Service Types
 
 A `Schedule` that should be bookable for every `HealthcareService` does not have to list each one. Give its `serviceType` the code `all` from the `https://medplum.com/fhir/CodeSystem/scheduling-service-type` system instead, with no HealthcareService reference:
 
-<MedplumCodeBlock language="ts" selectBlocks="scheduleAllServiceTypes">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="scheduleAllServiceTypes" >}}
 
 `$find` and `$reschedule` accept this Schedule for any active HealthcareService the caller can read, including ones created later. The proposed and booked `Appointment` still records the specific HealthcareService in its own `serviceType`; it never carries the `all` code.
 
@@ -257,9 +243,7 @@ A [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedule](/docs/api/f
 
 This means you only need to specify what differs. For example, to restrict availability to Tuesday and Thursday mornings while keeping all other parameters (duration, buffers, alignment) from the HealthcareService:
 
-<MedplumCodeBlock language="ts" selectBlocks="scheduleOverride">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="scheduleOverride" >}}
 
 **Field-level inheritance**: When a Schedule has a `SchedulingParameters` extension for a service, each field is resolved independently using this priority order (highest to lowest):
 
@@ -274,9 +258,7 @@ If a Schedule has **no** `SchedulingParameters` extension at all, all parameters
 
 Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that blocks time for a specific service type.
 
-<MedplumCodeBlock language="ts" selectBlocks="slotBlocking">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="slotBlocking" >}}
 
 - **With serviceType**: Blocks only that specific service
 - **Without serviceType**: Blocks all services
@@ -300,9 +282,7 @@ Slots created to reserve time for `bufferBefore` or `bufferAfter` settings do no
 <details>
 <summary>Example: a Schedule that allows overbooking</summary>
 
-<MedplumCodeBlock language="ts" selectBlocks="overbookingSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="overbookingSchedule" >}}
 
 </details>
 
@@ -336,9 +316,7 @@ The `timezone` parameter allows you to specify different timezones for different
 
 There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/practitioner), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device), so you must add it via the FHIR timezone extension:
 
-<MedplumCodeBlock language="ts" selectBlocks="actorTimezone">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="actorTimezone" >}}
 
 {{< /tip >}}
 
@@ -367,9 +345,7 @@ taking effect, remove it and set `timezone` on each `Schedule` instead.
 
 Here is an example of a Schedule with multiple service types, each with its own time zone:
 
-<MedplumCodeBlock language="ts" selectBlocks="multiTimezoneSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="multiTimezoneSchedule" >}}
 
 In this example:
 
@@ -396,9 +372,7 @@ This example shows how to define availability for a simple primary care office w
 
 This HealthcareService defines default scheduling parameters for a 30-minute office visit with 5-minute buffers and 15-minute alignment intervals.
 
-<MedplumCodeBlock language="ts" selectBlocks="officeVisitService">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="officeVisitService" >}}
 
 </details>
 
@@ -407,9 +381,7 @@ This HealthcareService defines default scheduling parameters for a 30-minute off
 
 This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits all default parameters from the HealthcareService without any service-specific overrides.
 
-<MedplumCodeBlock language="ts" selectBlocks="drJohnsonSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="drJohnsonSchedule" >}}
 
 </details>
 
@@ -445,9 +417,7 @@ A provider who offers different appointment types with varying availability and 
 
 This HealthcareService defines a 60-minute new patient visit with 15-minute buffers and 30-minute alignment intervals.
 
-<MedplumCodeBlock language="ts" selectBlocks="newPatientService">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="newPatientService" >}}
 
 </details>
 
@@ -458,9 +428,7 @@ This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers
 
 It defines default availability of Monday-Friday, 9am-5pm.
 
-<MedplumCodeBlock language="ts" selectBlocks="followUpService">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="followUpService" >}}
 
 </details>
 
@@ -471,9 +439,7 @@ This schedule declares in its `serviceType` array that it can be booked for New 
 
 This Schedule uses the shared availability from the "Follow-Up" service (Mon-Fri 9am-5pm). It overrides "New Patient Visit" appointment type to only be available on Tuesday and Thursday mornings (9am-1pm).
 
-<MedplumCodeBlock language="ts" selectBlocks="multiServiceSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="multiServiceSchedule" >}}
 
 </details>
 
@@ -512,9 +478,7 @@ A bariatric surgery requiring surgeon, OR room, and anesthesiologist coordinatio
 
 This HealthcareService defines scheduling for a 120-minute surgical procedure with 45/30-minute buffers.
 
-<MedplumCodeBlock language="ts" selectBlocks="bariatricService">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="bariatricService" >}}
 
 </details>
 
@@ -523,9 +487,7 @@ This HealthcareService defines scheduling for a 120-minute surgical procedure wi
 
 This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited to Tuesday and Thursday mornings (8am-4pm).
 
-<MedplumCodeBlock language="ts" selectBlocks="surgeonSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="surgeonSchedule" >}}
 
 </details>
 
@@ -534,9 +496,7 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
 
 This Schedule shows Operating Room 3's availability for surgical procedures, available weekdays 7am-7pm with extended 12-hour blocks.
 
-<MedplumCodeBlock language="ts" selectBlocks="operatingRoomSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="operatingRoomSchedule" >}}
 
 </details>
 
@@ -545,9 +505,7 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
 
 This Schedule shows Dr. Kim's availability for surgical procedures, covering weekdays 7am-5pm (10-hour blocks).
 
-<MedplumCodeBlock language="ts" selectBlocks="anesthesiologistSchedule">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="anesthesiologistSchedule" >}}
 
 </details>
 
@@ -607,9 +565,7 @@ The service code below uses a placeholder `http://example.org/appointment-types`
 
 {{< /note >}}
 
-<MedplumCodeBlock language="ts" selectBlocks="seedBundle">
-  {ExampleCode}
-</MedplumCodeBlock>
+{{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="seedBundle" >}}
 
 ## Location Modeling
 

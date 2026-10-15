@@ -12,7 +12,7 @@ This guide will go over how to navigate the basic functionality of the Medplum A
 
 ## Homepage
 
-![App Homepage](./app-homepage.png)
+![App Homepage](app-homepage.png)
 
 When you first log in to the Medplum App, you'll see the page shown above. This home page consists of a few primary components:
 
@@ -29,7 +29,7 @@ The toolbar at the top contains actions that you can use to customize this view.
 
 - **Fields:** Can be used to add/remove columns for resource elements
 - **Filters:** Used to filter rows based on search criteria. Only elements with [search parameters](/docs/search/basic-search#search-parameters) can be filtered on. You can also use the filter icon at the top of each column to filter on a specific element. Refer to our [search guide](/docs/search/basic-search) for more information.
-- **New:** Create a new resource of the selected type. This will open a form to specify the fields of the newly created resource, with the <span style={{color:"red"}}>\*</span> character indicating required fields.
+- **New:** Create a new resource of the selected type. This will open a form to specify the fields of the newly created resource, with the <span style="color: red">\*</span> character indicating required fields.
   {{< note >}}
   This form is an instance of the [`ResourceForm`](https://storybook.medplum.com/?path=/story/medplum-resourceform--patient) React component, and can be embedded into your own applications.
   {{< /note >}}
