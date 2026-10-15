@@ -6,7 +6,7 @@ import { Pool } from 'pg';
 import * as semver from 'semver';
 import type { MedplumDatabaseConfig } from './config/types';
 import type { ServerConfig } from './config/utils';
-import { GLOBAL_SHARD_ID } from './fhir/sharding';
+import { getAllShardsExceptGlobal, GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -66,31 +66,40 @@ export async function initDatabase(serverConfig: ServerConfig): Promise<void> {
     );
   }
 
-  const migrationPools: Pool[] = [];
+  const migrationPools: [shardId: string, pools: Pool][] = [];
   if (serverConfig.database.runMigrations !== false) {
-    migrationPools.push(globalPools.pool);
+    migrationPools.push([GLOBAL_SHARD_ID, globalPools.pool]);
   }
 
-  for (const [shardId, shardConfig] of Object.entries(serverConfig.shards ?? {})) {
-    if (shardId === GLOBAL_SHARD_ID) {
-      continue;
-    }
-    const shardPool = initPool(shardId, shardConfig.database, undefined);
+  for (const shardConfig of getAllShardsExceptGlobal()) {
+    const shardPool = initPool(shardConfig.id, shardConfig.database, undefined);
     const readonlyShardPool =
-      shardConfig.readonlyDatabase && initPool(shardId, shardConfig.readonlyDatabase, undefined);
+      shardConfig.readonlyDatabase && initPool(shardConfig.id, shardConfig.readonlyDatabase, undefined);
 
-    shardPools[shardId] = {
+    shardPools[shardConfig.id] = {
       pool: shardPool,
       readonlyPool: readonlyShardPool,
     };
 
     if (shardConfig.database.runMigrations !== false) {
-      migrationPools.push(shardPool);
+      migrationPools.push([shardConfig.id, shardPool]);
     }
   }
 
-  for (const pool of migrationPools) {
-    await runMigrations(pool);
+  // use allSettled to not interrupt the migration process for other shards if one fails
+  const migrationResults = await Promise.allSettled(
+    migrationPools.map(([shardId, pool]) => runMigrations(shardId, pool))
+  );
+  let migrationReasonToThrow: unknown;
+  for (const result of migrationResults) {
+    if (result.status === 'rejected') {
+      globalLogger.error('Database pre-deploy migration error', { reason: result.reason });
+      // arbitrarily choose the first rejection reason to throw later
+      migrationReasonToThrow ??= result.reason;
+    }
+  }
+  if (migrationReasonToThrow) {
+    throw migrationReasonToThrow;
   }
 }
 
@@ -166,48 +175,68 @@ export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): numbe
   return config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT;
 }
 
+/**
+ * Closes every database pool. A pool that fails to close is logged rather than thrown, so the
+ * remaining pools (and the rest of shutdown) still get closed.
+ */
 export async function closeDatabase(): Promise<void> {
-  async function closePools(shardId: string, pools: ShardPools): Promise<void> {
-    if (pools.pool) {
-      globalLogger.info('Closing database pool', {
-        shardId,
-        totalCount: pools.pool.totalCount,
-        idleCount: pools.pool.idleCount,
-        waitingCount: pools.pool.waitingCount,
-      });
-      await pools.pool.end();
-      pools.pool = undefined;
+  async function closePool(shardId: string, pools: ShardPools, key: keyof ShardPools): Promise<void> {
+    const pool = pools[key];
+    if (!pool) {
+      return;
     }
-    if (pools.readonlyPool) {
-      globalLogger.info('Closing readonly database pool', {
-        shardId,
-        totalCount: pools.readonlyPool.totalCount,
-        idleCount: pools.readonlyPool.idleCount,
-        waitingCount: pools.readonlyPool.waitingCount,
-      });
-      await pools.readonlyPool.end();
-      pools.readonlyPool = undefined;
+    // Clear before ending: pg rejects a second end() on the same pool, so a failed pool cannot be retried
+    pools[key] = undefined;
+    const poolStats = {
+      shardId,
+      pool: key,
+      totalCount: pool.totalCount,
+      idleCount: pool.idleCount,
+      waitingCount: pool.waitingCount,
+    };
+    globalLogger.info('Closing database pool', poolStats);
+    try {
+      await pool.end();
+    } catch (err: unknown) {
+      globalLogger.error('Error closing database pool', { ...poolStats, err });
     }
   }
 
-  await closePools(GLOBAL_SHARD_ID, globalPools);
-  for (const [shardId, pools] of Object.entries(shardPools)) {
-    await closePools(shardId, pools);
-  }
+  const allPools: [shardId: string, pools: ShardPools][] = [
+    [GLOBAL_SHARD_ID, globalPools],
+    ...Object.entries(shardPools),
+  ];
+  await Promise.allSettled(
+    allPools.flatMap(([shardId, pools]) => [
+      closePool(shardId, pools, 'pool'),
+      closePool(shardId, pools, 'readonlyPool'),
+    ])
+  );
 }
 
-async function runMigrations(pool: Pool): Promise<void> {
+/**
+ * Runs pre-deploy migrations against a single shard's database.
+ *
+ * The migration lock ID is intentionally the same constant for every shard: Postgres scopes advisory
+ * locks to the current database, so shards in separate databases never contend, while two configs that
+ * point at the same database (or servers mid-deploy) still serialize against each other.
+ *
+ * @param shardId - The shard being migrated; used for logging.
+ * @param pool - The writer pool for the shard.
+ * @returns A promise that resolves when the migrations have completed successfully.
+ */
+async function runMigrations(shardId: string, pool: Pool): Promise<void> {
   return withPoolClient(async (client) => {
     let hasLock = false;
     try {
       hasLock = await acquireAdvisoryLock(client, locks.migration);
       if (!hasLock) {
-        throw new Error('Failed to acquire migration lock');
+        throw new Error(`Failed to acquire migration lock for shard ${shardId}`);
       }
       await client.query(`SET statement_timeout TO 0`); // Disable timeout for migrations AFTER getting lock
       await migrate(client);
-    } catch (err: any) {
-      globalLogger.error('Database schema migration error', err);
+    } catch (err: unknown) {
+      globalLogger.error('Database schema migration error', { shardId, err });
       throw err;
     } finally {
       if (hasLock) {

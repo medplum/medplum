@@ -212,6 +212,7 @@ export async function configureGinIndexes(
 
   // Vacuum if the fastupdate is disabled to flush GIN pending lists
   if (config.fastUpdate === false) {
+    // intentionally vacuum serially to avoid overloading the database
     for (const tableName of tableNames) {
       await vacuumTable(client, actions, tableName);
     }

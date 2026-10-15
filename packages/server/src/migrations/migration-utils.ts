@@ -251,6 +251,9 @@ export async function withLongRunningDatabaseClient<TResult>(
 
 export async function maybeAutoRunPendingPostDeployMigrationOnAllShards(): Promise<void> {
   for (const shardConfig of getAllShards()) {
+    // intentionally run serially since preparePostDeployMigrationAsyncJob
+    // utilizes SERIALIZABLE transactions on the global database; running in parallel would
+    // be prone to conflicts
     await maybeAutoRunPendingPostDeployMigrationOnShard(shardConfig);
   }
 }

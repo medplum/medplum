@@ -161,7 +161,7 @@ export function initOtelHeartbeat(): void {
     shardIdsToCheck.push(shardConfig.id);
   }
   otelHeartbeatListener = async () => {
-    await Promise.all(shardIdsToCheck.map((shardId) => recordShardMetrics(shardId)));
+    shardIdsToCheck.map((shardId) => recordShardMetrics(shardId));
 
     const heapStats = v8.getHeapStatistics();
     setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
@@ -191,7 +191,7 @@ export function initOtelHeartbeat(): void {
   heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
 }
 
-async function recordShardMetrics(shardId: string): Promise<void> {
+function recordShardMetrics(shardId: string): void {
   const writerPool = getDatabasePool(DatabaseMode.WRITER, shardId);
   const readerPool = getDatabasePool(DatabaseMode.READER, shardId);
 
