@@ -5,6 +5,7 @@ import { destroyCountUps, initCountUps } from './components/count-up.mjs';
 import { closeMobileNav, initMobileNav } from './components/mobile-nav.mjs';
 import { destroyProducts, initProducts } from './components/products/index.mjs';
 import { destroySolutions, initSolutions } from './components/solutions/index.mjs';
+import { initMermaid } from './components/mermaid.mjs';
 import { initTabs } from './components/tabs.mjs';
 import { destroyToc, initToc } from './components/toc.mjs';
 
@@ -153,6 +154,7 @@ swup.hooks.on('content:replace', (visit) => {
   initSolutions();
   updateNavbarScroll();
   initTabs();
+  initMermaid();
   initToc();
   updateActiveLinks();
 });
@@ -166,4 +168,5 @@ initCountUps();
 initProducts();
 initSolutions();
 initTabs();
+initMermaid();
 initToc();

@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "rimraf public && hugo --minify && node postprocess-mermaid.mjs",
+    "build": "rimraf public && hugo --minify",
     "dev": "hugo server --buildDrafts --buildFuture --noHTTPCache",
     "preview": "http-server public -c-1",
     "pxtorem": "postcss assets/**/*.scss --replace --no-map"
@@ -32,7 +32,6 @@
     "infima": "0.2.0-alpha.45",
     "mermaid": "12.2.0",
     "open-color": "1.9.1",
-    "playwright": "1.64.0",
     "postcss": "8.5.30",
     "postcss-cli": "12.0.0",
     "postcss-pxtorem": "6.1.0",

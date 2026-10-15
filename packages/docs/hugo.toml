@@ -57,6 +57,16 @@ enableGitInfo = true
   source = "../../examples/medplum-demo-bots/src"
   target = "assets/code/examples/medplum-demo-bots/src"
 
+[[module.mounts]]
+  source = "static"
+  target = "static"
+
+# Mermaid's code-split ESM build, loaded by assets/js/components/mermaid.mjs only on pages with diagrams
+[[module.mounts]]
+  source = "../../node_modules/mermaid/dist"
+  target = "static/js/mermaid"
+  files = ["mermaid.esm.min.mjs", "chunks/mermaid.esm.min/**"]
+
 # Lets js.Build resolve bare imports (swup, mermaid) from the hoisted node_modules
 [security.node.permissions]
   allowRead = ['.', '../../node_modules']
