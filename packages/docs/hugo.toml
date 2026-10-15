@@ -33,6 +33,11 @@ enableGitInfo = true
   source = "../../node_modules/@tabler/icons/icons"
   target = "assets/icons/tabler"
 
+# API Documenter output from the @medplum/core build, rendered by content/docs/sdk/_content.gotmpl
+[[module.mounts]]
+  source = "../core/dist/docs"
+  target = "assets/sdk"
+
 # Lets js.Build resolve bare imports (swup, mermaid) from the hoisted node_modules
 [security.node.permissions]
   allowRead = ['.', '../../node_modules']

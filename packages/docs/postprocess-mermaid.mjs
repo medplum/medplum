@@ -17,6 +17,7 @@
 
 import { createHash } from 'node:crypto';
 import { glob, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
@@ -94,7 +95,12 @@ async function main() {
 
   const pages = new Map();
   const sources = new Map();
-  for await (const filePath of glob(`${PUBLIC_DIR}/**/*.html`)) {
+  for await (const entry of glob(`${PUBLIC_DIR}/**/*.html`, { withFileTypes: true })) {
+    // Skip directories with .html names (e.g. the SDK page /docs/sdk/core.mailoptions.html)
+    if (!entry.isFile()) {
+      continue;
+    }
+    const filePath = join(entry.parentPath, entry.name);
     const html = await readFile(filePath, 'utf-8');
     if (!html.includes('<pre class=mermaid>')) {
       continue;
