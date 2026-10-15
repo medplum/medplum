@@ -102,14 +102,14 @@
   white-space: pre;
 }
 
-.wrapper .dayHeaderInner {
+.dayHeaderInner {
   flex-direction: row;
   align-items: center;
   margin-block: 8px;
   font-weight: 450;
 }
 
-.wrapper .otherDayHeaderInner {
+.otherDayHeaderInner {
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
@@ -147,19 +147,19 @@
   height: 20px;
 }
 
-.wrapper .slotHeaderInner {
+.slotHeaderInner {
   font-size: 11px;
   line-height: 1.09091;
   font-weight: 500;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
-.wrapper .nowIndicatorLine {
+.nowIndicatorLine {
   margin: -1px;
   border: 1px solid var(--mantine-color-red-7);
 }
 
-.wrapper .nowIndicatorDot {
+.nowIndicatorDot {
   width: 0;
   height: 0;
   margin: -6px;
@@ -168,7 +168,7 @@
   box-shadow: 0 0 0 2px var(--fc-classic-background);
 }
 
-.wrapper .nowIndicatorHeader {
+.nowIndicatorHeader {
   display: none;
 }
 
