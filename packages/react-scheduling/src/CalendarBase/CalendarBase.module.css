@@ -99,6 +99,7 @@
 
 .dayHeaderText {
   margin-block: 6px; /* plus the theme's 2px on the header inner */
+  line-height: 2em; /* as tall as today's circle, so every header row matches */
   font-weight: 450;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 
