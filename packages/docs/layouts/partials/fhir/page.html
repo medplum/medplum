@@ -1,0 +1,101 @@
+{{- /*
+  FHIR reference page for .Params.fhirType: the StructureDefinition's description, the hand-written prose in
+  assets/fhir/resources/<name>.md (a Medplum note, then spec sections as tabs), and the element and search parameter tables.
+*/ -}}
+{{- $page := . -}}
+{{- $idx := partialCached "fhir/index.html" . -}}
+{{- $key := lower .Params.fhirType -}}
+{{- $type := index $idx.types $key -}}
+{{- $sd := $type.sd -}}
+{{- $isResource := ne $type.location "datatypes" -}}
+
+{{- /* Prose: anything before the first heading is a note shown under the description; each ## section is a tab */ -}}
+{{- $note := "" -}}
+{{- $sections := slice -}}
+{{- with resources.Get (printf "fhir/resources/%s.md" $key) -}}
+  {{- $html := $page.RenderString (dict "display" "block") .Content -}}
+  {{- $parts := split $html "<h2" -}}
+  {{- $note = index $parts 0 -}}
+  {{- range after 1 $parts -}}
+    {{- $heading := index (findRESubmatch `^[^>]*>(.*?)</h2>` . 1) 0 -}}
+    {{- $sections = $sections | append (dict "label" (index $heading 1 | plainify) "html" (strings.TrimPrefix (index $heading 0) .)) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- /* Elements inherited from Resource/DomainResource get their own table on resource pages */ -}}
+{{- $own := slice -}}
+{{- $inherited := slice -}}
+{{- range after 1 $sd.snapshot.element -}}
+  {{- $base := index (split (.base.path | default .path) ".") 0 -}}
+  {{- if and (ne $base (index (split .path ".") 0)) (in $base "Resource") -}}
+    {{- $inherited = $inherited | append . -}}
+  {{- else -}}
+    {{- $own = $own | append . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- partial "fhir/markdown.html" (dict "text" $sd.description "idx" $idx "page" $page) -}}
+{{- $note | safeHTML -}}
+
+<div class="tabs-container fhir-tabs">
+  <div class="tab-panel" data-tab-label="Schema" data-tab-value="schema">
+    <h2 id="elements">Elements</h2>
+    {{ partial "fhir/elements.html" (dict "elements" $own "idx" $idx "page" $page) }}
+
+    {{- if $isResource }}
+      <h2 id="search-parameters">Search Parameters</h2>
+      {{- with index $idx.searchParams $key }}
+        <table class="fhir-search-params">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Expression</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{- range . }}
+              {{- /* Shared parameters list a description per resource, and a union of expressions; show this type's */ -}}
+              {{- $description := .description -}}
+              {{- if hasPrefix $description "Multiple Resources:" -}}
+                {{- range split $description "\n" -}}
+                  {{- if hasPrefix . (printf "* [%s]" $sd.name) }}{{ $description = trim (index (split . ":") 1 | default "") " " }}{{ end -}}
+                {{- end -}}
+              {{- end -}}
+              {{- $expressions := slice -}}
+              {{- range split (.expression | default "") " | " -}}
+                {{- if or (eq . $sd.name) (hasPrefix . (printf "%s." $sd.name)) (hasPrefix . (printf "(%s." $sd.name)) }}{{ $expressions = $expressions | append . }}{{ end -}}
+              {{- end -}}
+              <tr>
+                <td>{{ .code }}</td>
+                <td>{{ .type }}</td>
+                <td>{{ $description }}</td>
+                <td>{{ cond (gt (len $expressions) 0) (delimit $expressions " | ") .expression }}</td>
+              </tr>
+            {{- end }}
+          </tbody>
+        </table>
+      {{- else }}
+        <p><em>None</em></p>
+      {{- end }}
+
+      <h2 id="inherited-elements">Inherited Elements</h2>
+      {{ partial "fhir/elements.html" (dict "elements" $inherited "idx" $idx "page" $page) }}
+    {{- end }}
+  </div>
+
+  {{- range $sections }}
+    <div class="tab-panel" data-tab-label="{{ .label }}" data-tab-value="{{ .label | urlize }}">{{ .html | safeHTML }}</div>
+  {{- end }}
+
+  {{- with index $idx.referencedBy $key }}
+    <div class="tab-panel" data-tab-label="Referenced By" data-tab-value="referenced-by">
+      <ul>
+        {{- range sort . }}
+          <li>{{ partial "fhir/type-link.html" (dict "name" . "idx" $idx) | safeHTML }}</li>
+        {{- end }}
+      </ul>
+    </div>
+  {{- end }}
+</div>

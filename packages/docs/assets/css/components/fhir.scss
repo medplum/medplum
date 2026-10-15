@@ -1,0 +1,89 @@
+// FHIR reference pages (layouts/partials/fhir), ported from the Docusaurus ResourceTables component
+.fhir-elements,
+.fhir-search-params {
+  td {
+    font-size: 14px;
+  }
+
+  td p {
+    margin-bottom: 0.5ch;
+  }
+
+  details summary {
+    font-style: italic;
+    margin-bottom: 0.2ch;
+  }
+
+  td details p {
+    padding-left: 1.25rem;
+    margin-bottom: 1.2ch;
+  }
+}
+
+.fhir-element-name {
+  white-space: nowrap;
+}
+
+.fhir-long-name {
+  font-size: calc(0.85 * 14px);
+}
+
+.fhir-indentation {
+  border: solid var(--oc-gray-3);
+  border-width: 0 0 2px 2px;
+  height: 0.5ch;
+  width: 0.75rem;
+  display: inline-block;
+  position: relative;
+  top: -0.5ch;
+  margin-right: 0.5rem;
+}
+
+.fhir-required {
+  text-align: center;
+  font-size: 2.25ch;
+}
+
+.fhir-type {
+  white-space: pre-wrap;
+}
+
+// Section pages listing their children, like a Docusaurus generated-index
+.generated-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.generated-index-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-card-border-radius, 8px);
+  color: inherit;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: var(--ifm-color-primary);
+    text-decoration: none;
+  }
+}
+
+.generated-index-title {
+  font-weight: 600;
+}
+
+.generated-index-description {
+  font-size: 0.875rem;
+  color: var(--ifm-color-emphasis-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fhir-tabs > .tab-panel {
+  padding-top: 1rem;
+}

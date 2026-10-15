@@ -38,6 +38,16 @@ enableGitInfo = true
   source = "../core/dist/docs"
   target = "assets/sdk"
 
+[[module.mounts]]
+  source = "data"
+  target = "data"
+
+# FHIR definitions for the reference pages under /docs/api/fhir (content/docs/api/fhir/_content.gotmpl)
+[[module.mounts]]
+  source = "../definitions/src/fhir/r4"
+  target = "data/fhir"
+  files = ["profiles-resources.json", "profiles-types.json", "profiles-medplum.json", "search-parameters.json", "search-parameters-medplum.json"]
+
 # Example source shown in the docs by the code-example shortcode, at assets/code/<repo path>
 [[module.mounts]]
   source = "../examples/src"
