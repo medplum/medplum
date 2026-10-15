@@ -72,7 +72,7 @@ function shardIdValidator(source: 'body' | 'query' = 'body'): ValidationChain {
       throw new Error('shardId is required');
     }
     if (typeof value !== 'string') {
-      throw new Error('shardId must be a string');
+      throw new TypeError('shardId must be a string');
     }
     if (!isConfiguredShardId(value)) {
       throw new Error(`Unknown shardId: ${value}`);
@@ -92,7 +92,10 @@ function getShardId(input: { shardId?: unknown }): string {
     return GLOBAL_SHARD_ID;
   }
   if (typeof shardId !== 'string') {
-    throw new Error('shardId accessed without validation');
+    throw new TypeError('shardId must be a string');
+  }
+  if (!isConfiguredShardId(shardId)) {
+    throw new Error(`Unknown shardId: ${shardId}`);
   }
   return shardId;
 }

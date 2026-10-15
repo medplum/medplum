@@ -161,7 +161,9 @@ export function initOtelHeartbeat(): void {
     shardIdsToCheck.push(shardConfig.id);
   }
   otelHeartbeatListener = async () => {
-    shardIdsToCheck.map((shardId) => recordShardMetrics(shardId));
+    for (const shardId of shardIdsToCheck) {
+      recordShardMetrics(shardId);
+    }
 
     const heapStats = v8.getHeapStatistics();
     setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
