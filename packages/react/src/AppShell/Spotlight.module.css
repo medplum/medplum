@@ -54,7 +54,7 @@
 
 /* Modal content wrapper */
 .content {
-  box-shadow: 0 0.5rem 2rem light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.5));
+  box-shadow: light-dark(0 0.5rem 2rem rgba(0, 0, 0, 0.15), 0 0.5rem 2rem rgba(0, 0, 0, 0.5));
 }
 
 /* Group label — match Menu.Label (title case, not Mantine's default uppercase). */
