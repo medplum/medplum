@@ -19,6 +19,7 @@ const s3Client = new S3Client({ region });
 
 const mimeTypes = {
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.map': 'application/json; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
@@ -36,6 +37,10 @@ const mimeTypes = {
   '.xml': 'application/xml; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.ttf': 'font/ttf',
+  '.pdf': 'application/pdf',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.zip': 'application/zip',
+  '.asc': 'text/plain; charset=utf-8',
 };
 
 const immutableFileTypes = [
