@@ -21,7 +21,6 @@ interface MedListItemProps {
    */
   getItemUrl: (item: MedicationRequest) => string;
   medicationOrderExtensions: MedicationOrderExtensions;
-  /** Rendered to the right of the link, outside it, e.g. a remove-from-cart action. */
   actions?: ReactNode;
 }
 
@@ -43,8 +42,6 @@ export function MedListItem(props: MedListItemProps): JSX.Element {
                 [classes.selected]: isSelected,
               })}
             >
-              {/* `miw={0}` lets the column shrink below the medication name's full width, so the
-                  title ellipsizes and the badges stay on the row instead of being pushed off the edge. */}
               <Stack gap={0} flex={1} miw={0}>
                 <Group justify="space-between" align="flex-start" wrap="nowrap">
                   <Text fw={700} className={classes.title} flex={1}>
