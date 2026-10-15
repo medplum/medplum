@@ -1,0 +1,40 @@
+{{- $type := .type -}}
+{{- $title := .title -}}
+{{- $inner := .inner -}}
+{{- $icon := "" -}}
+{{- $class := "" -}}
+{{- $defaultTitle := "" -}}
+
+{{- if eq $type "note" -}}
+  {{- $icon = "outline/info-circle" -}}
+  {{- $class = "alert--secondary" -}}
+  {{- $defaultTitle = "note" -}}
+{{- else if eq $type "tip" -}}
+  {{- $icon = "outline/bulb" -}}
+  {{- $class = "alert--success" -}}
+  {{- $defaultTitle = "tip" -}}
+{{- else if eq $type "info" -}}
+  {{- $icon = "outline/info-circle" -}}
+  {{- $class = "alert--info" -}}
+  {{- $defaultTitle = "info" -}}
+{{- else if eq $type "warning" -}}
+  {{- $icon = "outline/alert-triangle" -}}
+  {{- $class = "alert--warning" -}}
+  {{- $defaultTitle = "warning" -}}
+{{- else if eq $type "danger" -}}
+  {{- $icon = "outline/flame" -}}
+  {{- $class = "alert--danger" -}}
+  {{- $defaultTitle = "danger" -}}
+{{- end -}}
+
+{{- $heading := or $title (upper $defaultTitle) -}}
+
+<div class="admonition alert {{ $class }}">
+  <div class="admonition-heading">
+    <span class="admonition-icon">{{ partial "icon" $icon }}</span>
+    <span>{{ $heading }}</span>
+  </div>
+  <div class="admonition-content">
+    {{ $inner }}
+  </div>
+</div>

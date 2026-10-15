@@ -1,0 +1,336 @@
+@import './fonts.scss';
+
+@import './components/alert.scss';
+@import './components/animated-circle.scss';
+@import './components/breadcrumbs.scss';
+@import './components/card.scss';
+@import './components/card-container.scss';
+@import './components/code.scss';
+@import './components/doc-footer.scss';
+@import './components/hero.scss';
+@import './components/hero-code.scss';
+@import './components/footer.scss';
+@import './components/jumbotron.scss';
+@import './components/logo-scroller.scss';
+@import './components/navbar.scss';
+@import './components/profile-card.scss';
+@import './components/responsive-iframe.scss';
+@import './components/section.scss';
+@import './components/sidebar.scss';
+@import './components/table.scss';
+@import './components/tabs.scss';
+@import './components/testimonial.scss';
+@import './components/toc.scss';
+
+@import './pages/home.scss';
+@import './pages/pricing.scss';
+
+:root {
+  /* Docusaurus overrides */
+  --ifm-h1-vertical-rhythm-top: 3;
+  --ifm-h2-vertical-rhythm-top: 2;
+  --ifm-h3-vertical-rhythm-top: 1.5;
+  --ifm-heading-vertical-rhythm-top: 1.25;
+  --ifm-h1-vertical-rhythm-bottom: 1.25;
+  --ifm-heading-vertical-rhythm-bottom: 1;
+
+  /* Medplum overrides */
+  --ifm-font-size-base: 16px;
+  --ifm-font-family-base: 'Poppins', sans-serif;
+  --ifm-color-primary: var(--oc-grape-8);
+  --ifm-color-primary-dark: var(--oc-grape-8);
+  --ifm-color-primary-darker: var(--oc-grape-9);
+  --ifm-color-primary-darkest: var(--oc-grape-9);
+  --ifm-color-primary-light: var(--oc-grape-2);
+  --ifm-color-primary-lighter: var(--oc-grape-1);
+  --ifm-color-primary-lightest: var(--oc-grape-0);
+  --ifm-heading-color: #000000;
+  --code-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
+  --img-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
+  --docusaurus-highlighted-code-line-bg: rgba(72, 77, 91, 0.2);
+
+  --ifm-footer-background-color: black;
+  --ifm-footer-color: var(--oc-gray-7);
+  --ifm-footer-title-color: var(--oc-gray-7);
+  --ifm-footer-link-color: var(--oc-gray-0);
+  --ifm-footer-link-hover-color: var(--oc-grape-6);
+  --ifm-footer-padding-vertical: 80px;
+}
+
+[data-theme='dark'] {
+  /* Medplum overrides */
+  --ifm-color-primary: var(--oc-grape-5);
+  --ifm-color-primary-dark: #6646af;
+  --ifm-color-primary-darker: #402c6e;
+  --ifm-color-primary-darkest: #19122c;
+  --ifm-color-primary-light: #ba9ff9;
+  --ifm-color-primary-lighter: #ba9ff9;
+  --ifm-color-primary-lightest: #ded1fc;
+  --ifm-heading-color: #ffffff;
+  --code-block-shadow: rgba(0, 0, 0, 0.35) 0 2px 4px;
+  --img-block-shadow: rgba(0, 0, 0, 0.95) 0 2px 4px;
+  --docusaurus-highlighted-code-line-bg: rgb(100 100 100);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  font-feature-settings:
+    'ss02' on,
+    'ss04' on;
+}
+
+html {
+  background-color: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  color-scheme: var(--ifm-color-scheme);
+  font: var(--ifm-font-size-base)/var(--ifm-line-height-base) var(--ifm-font-family-base);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizelegibility;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  height: 100%;
+  line-height: 1.65;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  min-height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.doc-wrapper {
+  display: flex;
+}
+
+.doc-root {
+  width: 100%;
+  display: flex;
+}
+
+aside {
+  margin-top: -60px;
+  display: none;
+  border-right: 1px solid var(--oc-gray-3);
+  width: 300px;
+}
+
+body[data-sidebar='open'] aside {
+  display: block;
+}
+
+body[data-breadcrumbs='visible'] .breadcrumbs {
+  display: flex;
+}
+
+body[data-toc='visible'] .main-toc {
+  display: block;
+}
+
+body[data-doc-footer='visible'] .doc-footer {
+  display: block;
+}
+
+/* The page shell only: exported landing pages contain their own <main> elements */
+main#swup {
+  display: flex;
+  flex-grow: 1;
+  margin: 0 auto;
+}
+
+/* Leave room for the docs sidebar only when it's shown */
+body[data-sidebar='open'] main#swup {
+  max-width: calc(100% - 300px);
+}
+
+/* Below 997px (Docusaurus's breakpoint) the docs sidebar moves into the navbar drawer and the
+   table of contents collapses into an "On this page" dropdown above the content */
+.toc-mobile {
+  display: none;
+}
+
+@media (max-width: 996px) {
+  body[data-sidebar='open'] aside {
+    display: none;
+  }
+
+  body[data-sidebar='open'] main#swup {
+    max-width: 100%;
+  }
+
+  body[data-toc='visible'] .main-toc {
+    display: none;
+  }
+
+  body[data-toc='visible'] .toc-mobile {
+    display: block;
+  }
+}
+
+.main-container {
+  padding-top: 1rem !important;
+  padding-bottom: 2rem !important;
+}
+
+/* Standalone pages (front matter `standalone: true`) correspond to Docusaurus src/pages, which render
+   in a bare container: no vertical padding and no gap above the footer */
+.main-container-standalone {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body:has(.main-container-standalone) .footer {
+  margin-top: 0;
+}
+
+.main-content {
+  flex: 75%;
+  padding: 0 16px;
+  min-width: 0;
+}
+
+.main-toc {
+  display: none; /* Hidden by default */
+  flex: 25%;
+  padding: 0 16px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--ifm-heading-color);
+  font-family: var(--ifm-heading-font-family);
+  font-weight: var(--ifm-heading-font-weight);
+  line-height: var(--ifm-heading-line-height);
+  margin: var(--ifm-heading-margin-top) 0 var(--ifm-heading-margin-bottom) 0;
+  scroll-margin-top: calc(var(--ifm-navbar-height) + 0.5rem);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--ifm-heading-color);
+  font-family: var(--ifm-heading-font-family);
+  font-weight: var(--ifm-heading-font-weight);
+  line-height: var(--ifm-heading-line-height);
+  margin: var(--ifm-heading-margin-top) 0 var(--ifm-heading-margin-bottom) 0;
+}
+
+h1 {
+  font-size: 44px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 130%;
+  margin-bottom: 25px;
+}
+
+h2 {
+  --ifm-h2-font-size: 2rem;
+  margin-bottom: calc(var(--ifm-heading-vertical-rhythm-bottom) * var(--ifm-leading));
+  margin-top: calc(var(--ifm-h2-vertical-rhythm-top) * var(--ifm-leading));
+  font-size: var(--ifm-h2-font-size);
+}
+
+h3 {
+  font-size: var(--ifm-h3-font-size);
+  font-weight: 700;
+  margin-top: 30px;
+  margin-bottom: 20px;
+}
+
+h4 {
+  font-size: var(--ifm-h4-font-size);
+}
+
+h5 {
+  font-size: var(--ifm-h5-font-size);
+}
+
+h6 {
+  font-size: var(--ifm-h6-font-size);
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+li {
+  word-wrap: break-word;
+}
+
+li + li {
+  margin-top: var(--ifm-list-item-margin);
+}
+
+.container {
+  max-width: 1140px;
+  padding-left: var(--ifm-spacing-horizontal);
+  padding-right: var(--ifm-spacing-horizontal);
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1320px;
+  }
+}
+
+.clean-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-flow: row;
+}
+
+.column {
+  flex-grow: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .row {
+    display: flex;
+    flex-flow: column;
+  }
+
+  .column {
+    margin-bottom: 32px;
+  }
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}

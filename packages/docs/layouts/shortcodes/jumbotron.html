@@ -1,0 +1,29 @@
+{{- /* Params: src/alt/width/height/class for a side image, or video for a side YouTube embed (embed URL) */ -}}
+<div class="jumbotron">
+  <div class="jumbotron-content">{{ .Inner | markdownify }}</div>
+  {{ with .Get "video" }}
+    <div class="jumbotron-image">
+      <iframe
+        width="560"
+        height="315"
+        src="{{ . }}"
+        title="YouTube video player"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+    </div>
+  {{ end }}
+  {{ with .Get "src" }}
+    <div class="jumbotron-image">
+      <img
+        src="{{ . | relURL }}"
+        alt="{{ $.Get "alt" | default "Illustration" }}"
+        width="{{ $.Get "width" | default "450" }}"
+        height="{{ $.Get "height" | default "450" }}"
+        {{ with $.Get "class" }}class="{{ . }}"{{ end }}
+        loading="lazy"
+      />
+    </div>
+  {{ end }}
+</div>

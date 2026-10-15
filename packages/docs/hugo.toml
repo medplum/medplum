@@ -1,0 +1,41 @@
+baseURL = 'https://www.medplum.com/'
+languageCode = 'en-us'
+title = 'Medplum'
+enableGitInfo = true
+
+[frontmatter]
+  date = [':filename', 'date', 'publishDate', 'lastmod']
+
+[params]
+  editURL = 'https://github.com/medplum/medplum/edit/main/packages/docs/content/'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    style = 'github'
+
+[[module.mounts]]
+  source = "assets"
+  target = "assets"
+
+[[module.mounts]]
+  source = "node_modules/infima/dist/css/default/default.css"
+  target = "assets/infima.css"
+
+[[module.mounts]]
+  source = "node_modules/open-color/open-color.css"
+  target = "assets/open-color.css"
+
+[[module.mounts]]
+  source = "node_modules/@tabler/icons/icons"
+  target = "assets/icons/tabler"
+
+[[module.mounts]]
+  source = "node_modules/@mermaid-js/tiny/dist"
+  target = "assets/js/vendor/mermaid"
+
+[[module.mounts]]
+  source = "node_modules/swup/dist"
+  target = "assets/js/vendor/swup"

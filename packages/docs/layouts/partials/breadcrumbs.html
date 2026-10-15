@@ -1,0 +1,13 @@
+<div class="breadcrumbs" aria-label="breadcrumbs">
+  <a href="/">{{ partial "icon" "filled/home" }}</a>
+  <span class="separator">&gt;</span>
+  {{- $ancestors := after 1 .Ancestors.Reverse }}
+  {{- if ge (len $ancestors) 1 }}
+    {{- $ancestors = after 1 $ancestors }}
+  {{- end }}
+  {{- range $ancestors }}
+  <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+  <span class="separator">&gt;</span>
+  {{- end }}
+  <span class="active"> {{ .Title }} </span>
+</div>

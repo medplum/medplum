@@ -1,0 +1,4 @@
+---
+id: blog
+title: Blog
+---

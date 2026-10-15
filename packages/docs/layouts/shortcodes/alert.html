@@ -1,0 +1,8 @@
+<div class="alert alert-{{ with .Get "type" }}{{ . }}{{ end }}">
+  <div class="alert-title">
+    {{ with .Get "title" }}<strong>{{ . }}</strong>{{ end }}
+  </div>
+  <div class="alert-content">
+    {{ .Inner | markdownify }}
+  </div>
+</div>

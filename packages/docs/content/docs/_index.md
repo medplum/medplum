@@ -1,0 +1,72 @@
+---
+id: home
+title: Welcome to Medplum
+slug: /
+weight: 20
+---
+
+{{< section >}}
+{{< feature-grid columns="2" >}}
+{{< feature title="Get Started" linkText="Read more" linkRef="./docs#get-started" >}}
+Set up and run your medical application in 5 minutes
+{{< /feature >}}
+{{< feature title="Plan your Workflows" linkText="Read more" linkRef="./docs#plan-your-workflows" >}}
+Learn FHIR and plan your workflows
+{{< /feature >}}
+{{< feature title="Build in Medplum" linkText="Read more" linkRef="./docs#build-in-medplum" >}}
+Medplum tools for full-stack apps with authentication
+{{< /feature >}}
+{{< feature title="Connect to the Ecosystem" linkText="Read more" linkRef="./docs#connect-to-the-healthcare-ecosystem" >}}
+Use HL7, FHIRcast, labs/prescribing, and beyond
+{{< /feature >}}
+{{< /feature-grid >}}
+{{< /section >}}
+
+## What is Medplum?
+
+Medplum is a **headless EHR**. Using [Medplum products](./products) you can build many [types of healthcare applications](./solutions). The diagram below is a system overview:
+
+![Medplum system overview](/img/medplum-architecture-overview.png)
+
+## Get Started
+
+1. [Register a project](/docs/tutorials/register) for your data.
+   1. [Optional]: [Import sample data](/docs/tutorials/importing-sample-data).
+2. Use our [provider app](/docs/provider) by logging in to our [out-of-the-box EHR experience](https://provider.medplum.com/).
+3. [Build your own application](/docs/tutorials/medplum-hello-world) against our APIs.
+
+## Plan your Workflows
+
+1. [Learn FHIR basics](./docs/fhir-basics) to understand the structure of FHIR resources, the healthcare standard on which Medplum is built.
+2. [Learn workflow patterns](./blog/fhir-workflow-patterns-to-simplify-your-life) to understand how resources are used to place requests, record events, and store information.
+3. [Design your workflows](./docs/decision-guides) using our decision guides to scope intake, charting, referrals, messaging, access control, billing, e-prescribing, and data migration before you build.
+4. Explore our clinical workflow guides! Popular workflows are included below. Step through specific use cases. Don't see a how-to guide you need? Reach out on our [Discord](https://discord.gg/medplum) or send us an email at [support@medplum.com](mailto:support@medplum.com).
+   1. [Charting patient data](./docs/charting)
+   2. [Creating and automating clinical operations](/docs/careplans/tasks)
+   3. [Recording asynchronous encounters and messaging](./docs/communications/async-encounters)
+   4. [Billing your services](./docs/billing)
+5. [Plan your data migration](./docs/decision-guides/data-migration), then use the [migration implementation guides](./docs/migration) to move your data to Medplum.
+
+## Build in Medplum
+
+1. [CRUD using our FHIR datastore](./docs/fhir-datastore), and learn to [search your data](./docs/search).
+2. Explore our [React components](./docs/api/react), pre-built to support Medplum data.
+3. [Run the Medplum stack locally](./docs/self-hosting/running-full-medplum-stack-in-docker) to set up your developer environment.
+4. Plan your [self-hosted deployment](./docs/self-hosting) on AWS, GCP, Azure, or Docker.
+
+## Connect to the Healthcare Ecosystem
+
+- Get on-prem connectivity with our [Medplum Agent](./docs/agent), connecting to devices over HL7/MLLP, ASTM, and DICOM and surfacing them securely to the cloud.
+- Use [FHIRcast](./docs/fhircast) for real-time synchronization.
+- Use our out-of-the-box [labs](./docs/integration/health-gorilla), [prescribing](./docs/integration/dosespot), and [RCM](./docs/integration/stedi) integrations.
+- Explore our [full menu of integrations](./docs/integration).
+
+## Reference Material
+
+Medplum is [open source](https://github.com/medplum/medplum). [Reference material](/docs/api/) and [sample applications](https://github.com/medplum) are available for browsing without authentication.
+
+## Community
+
+- **Contributing** - Medplum is open source because we believe that streamlining healthcare is based on _transparency_ and _collaboration_. If you are interested in contributing to Medplum, check out our [Contributors](./docs/contributing) page
+- **Discord** - Join the conversation by checking us out on [Discord](https://discord.gg/medplum)
+- **YouTube** — Our [YouTube channel](https://www.youtube.com/channel/UCu_sS6aXEHz3GPk2NTugtJA) includes content that aids in app development

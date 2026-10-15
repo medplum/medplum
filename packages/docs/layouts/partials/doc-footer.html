@@ -1,0 +1,31 @@
+<div class="doc-footer">
+  <div class="doc-footer-edit-row row">
+    <div class="column align-left doc-footer-edit-cell">
+      {{ with .File }}<a href="{{ site.Params.editURL }}{{ .Path }}" target="_blank" rel="noopener noreferrer">{{ partial "icon" "outline/pencil" }} Edit this page</a>{{ end }}
+    </div>
+    <div class="column align-right doc-footer-edit-cell">
+      {{ with .Lastmod }}<small><em>Last updated on <strong>{{ .Format "Jan 2, 2006" }}</strong></em></small>{{ end }}
+    </div>
+  </div>
+  {{ $flatPages := partialCached "flatten-sidebar" . "sidebar" }} {{ $prev := false }} {{ $next := false }} {{ range $i, $p := $flatPages }} {{ if eq
+  $p.RelPermalink $.RelPermalink }} {{ if gt $i 0 }} {{ $prev = index $flatPages (sub $i 1) }} {{ end }} {{ if lt $i (sub (len $flatPages) 1) }} {{ $next =
+  index $flatPages (add $i 1) }} {{ end }} {{ end }} {{ end }}
+  <div class="doc-footer-pagination-row row">
+    <div class="column align-left">
+      {{ with $prev }}
+      <a class="doc-footer-pagination-link" href="{{ .RelPermalink }}">
+        <div class="doc-footer-pagination-sublabel">Previous</div>
+        <div class="doc-footer-pagination-label">« {{ .Title }}</div></a
+      >
+      {{ end }}
+    </div>
+    <div class="column align-right">
+      {{ with $next }}
+      <a class="doc-footer-pagination-link" href="{{ .RelPermalink }}"
+        ><div class="doc-footer-pagination-sublabel">Next</div>
+        <div class="doc-footer-pagination-label">{{ .Title }} »</div></a
+      >
+      {{ end }}
+    </div>
+  </div>
+</div>

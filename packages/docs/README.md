@@ -1,42 +1,24 @@
-# Website
+# Medplum Docs
 
-Medplum documentation is built using [Docusaurus 2](https://docusaurus.io/).
+An exploration into migrating Medplum docs from Docusaurus to Hugo.
 
-## Installation
+## Folders
 
-Medplum documentation should be installed automatically by following the instructions in the base install. See [Medplum README](https://github.com/medplum/medplum).
+| Folder        | Description                              | Built? | Included in output? |
+| ------------- | ---------------------------------------- | ------ | ------------------- |
+| `archetypes/` | Content archetypes for new pages.        | Yes    | No                  |
+| `assets/`     | Assets that will be built into the site. | Yes    | Yes                 |
+| `content/`    | Markdown files for documentation pages.  | Yes    | Yes                 |
+| `data/`       | Data files for site configuration.       | Yes    | No                  |
+| `i18n/`       | Internationalization files.              | Yes    | No                  |
+| `layouts/`    | Custom layouts and templates.            | Yes    | Yes                 |
+| `static/`     | Static files served as-is.               | No     | Yes                 |
 
-## Local Development
+Layout types
 
-```bash
-npm run dev
-```
-
-This command generates the SDK reference pages (`docs/sdk`, from `@medplum/core`), starts a local development server with an increased Node heap, and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-The server listens on port `3100`, which is kept clear of the rest of the Medplum stack (the app uses `3000` and the provider example uses `3001`), so it can run alongside them. To use a different port:
-
-```bash
-npm run dev -- --port 3200
-```
-
-> The raw `npm run docusaurus start` still works, but it skips the SDK-docs generation, heap tuning, and port choice that `npm run dev` handles for you. On a fresh checkout it fails with `Invalid sidebar file at "sidebars.ts"` (missing `sdk/core*` pages) and may run out of memory, so prefer `npm run dev`.
-
-## Build
-
-```bash
-npm run docusaurus build
-```
-
-This command generates static content into the `build` directory.
-
-The FHIR resource pages are generated automatically. In the rare event that they need to be rebuilt, do the following
-
-```bash
-cd packages/generator
-npm run docs
-```
-
-## Deployment
-
-Deployment scripts can be found in `scripts/deploy-docs.sh`
+| Layout Type  | Convention? | Description                             |
+| ------------ | ----------- | --------------------------------------- |
+| `_default`   | Mandated    | Default layout for documentation pages. |
+| `_markup`    | Mandated    | Layout for rendering markdown content.  |
+| `partials`   | Mandated    | Reusable partial templates.             |
+| `shortcodes` | Mandated    | Custom shortcodes for markdown files.   |

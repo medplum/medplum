@@ -1,0 +1,27 @@
+---
+id: index
+title: Subscriptions
+tags:
+  - subscription
+---
+
+Subscriptions are event-driven notifications, like webhooks, and are commonly used for integrations and automations. Medplum supports subscribing to changes on FHIR resources. There is a description [FHIR Subscriptions](https://www.hl7.org/fhir/subscription.html) on HL7.org that describes the functionality in detail.
+
+- [Subscriptions](https://app.medplum.com/Subscription) can be created and updated on the [Medplum App](/docs/app)
+- Subscriptions are commonly used with [bots](/docs/bots/bot-for-questionnaire-response) and [questionnaires](/docs/questionnaires) to enable complex workflows.
+- [AuditEvents](https://app.medplum.com/AuditEvent) can be used to see a history of Subscription triggers and are useful in troubleshooting.
+- [Subscription features and fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Asubscriptions) can be seen in detail on Github.
+
+{{< warning title="Limit of 1,000 active Subscriptions per project" >}}
+
+When a resource changes, the server evaluates at most 1,000 active Subscriptions in the project.
+
+{{< /warning >}}
+
+**Additional Documentation**
+
+- Use the [subscription](/docs/tags/subscription) tag to quickly find all documentation related to Subscriptions
+- [Resending Webhooks](/docs/api/fhir/operations/resend) describes the `$resend` operation for manually triggering webhooks
+- [Subscription Extensions](/docs/subscriptions/subscription-extensions) describes advanced subscription features that allow more fine-grained control and security
+- [WebSocket Subscriptions](/docs/react/use-subscription) describes WebSocket subscriptions and usage of them via the React `useSubscription` hook
+- [Server-Scoped Subscriptions](/docs/subscriptions/server-scoped-subscriptions) describes the self-hosted feature that lets a super admin create a single Subscription that fires across every project on the server

@@ -1,0 +1,34 @@
+.logo-scroller {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 72rem;
+  margin: 20px auto 60px;
+}
+
+.logo-scroller-images {
+  width: 4000px;
+  animation: bannermove 30s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-scroller-images img {
+  display: inline-block;
+  margin: 1rem;
+}
+
+[data-theme='dark'] .logo-scroller-images img {
+  filter: grayscale(1) invert(1);
+}
+
+@keyframes bannermove {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-2030px);
+  }
+}

@@ -1,0 +1,33 @@
+# Footer link columns (layouts/partials/footer.html).
+# Mirrors themeConfig.footer.links in packages/docs/docusaurus.config.ts in the medplum repo.
+
+columns:
+  - title: Developers
+    items:
+      - { label: Getting started, to: /docs/tutorials }
+      - { label: Documentation, to: /docs }
+      - { label: Why Open Source, to: /open-source }
+      - { label: Search, to: /search }
+  - title: Community
+    items:
+      - { label: Case Studies, to: /case-studies }
+      - { label: Discord, to: 'https://discord.gg/medplum' }
+      - { label: Storybook, to: 'https://storybook.medplum.com/' }
+      - { label: GitHub, to: 'https://github.com/medplum/medplum' }
+      - { label: Knowledge Base, to: 'https://linen.medplum.com' }
+      - { label: Contributing, to: /docs/contributing }
+      - { label: Events, to: /blog/events-calendar }
+  - title: Company
+    items:
+      - { label: About us, to: /about }
+      - { label: Pricing, to: /pricing }
+      - { label: Enterprise, to: /enterprise }
+      - { label: Careers, to: /careers }
+      - { label: Blog, to: /blog }
+      - { label: Brand, to: /brand }
+      - { label: Book a Demo, to: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a' }
+
+bottomLinks:
+  - { label: Security, to: /security }
+  - { label: Terms of Service, to: /terms }
+  - { label: Privacy Policy, to: /privacy }

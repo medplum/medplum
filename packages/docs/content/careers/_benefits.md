@@ -1,0 +1,11 @@
+---
+id: _benefits
+title: Untitled
+---
+
+### Benefits
+
+- Competitive compensation package with equity
+- Flexible time off
+- Inclusive healthcare package
+- The chance to shape the future of healthcare tech – leave your mark on this vital industry

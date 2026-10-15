@@ -1,0 +1,464 @@
+---
+id: fhir-batch-requests
+title: FHIR Batch Requests
+weight: 80
+---
+
+FHIR allows users to create batch requests to bundle multiple API calls into a single HTTP request. Batch requests can improve speed and efficiency and can reduce HTTP traffic when working with many resources.
+
+{{< tip title="Cloning a project" >}}
+If you want to create a copy of a project, say for a new environment, this can be done using the `$clone` operation rather than by creating a batch request. For more details [see the Projects guide](/docs/access/projects#cloning-and-expunging-projects).
+{{< /tip >}}
+
+## Batches vs Transactions
+
+When bundling multiple operations together, FHIR provides two modes of operation controlled by the `Bundle.type` field:
+
+- `batch`: Each operation in the bundle is processed independently. Some operations may succeed while others fail. This is useful when the operations are not dependent on each other.
+- `transaction`: All operations in the bundle are processed atomically - either all operations succeed, or none of them do. This ensures data consistency when operations are dependent on each other.
+
+Here's a simple example showing the difference:
+
+```typescript
+// Batch example - operations processed independently
+const batchBundle = {
+  resourceType: 'Bundle',
+  type: 'batch',
+  entry: [
+    /* operations */
+  ],
+};
+
+// Transaction example - operations processed atomically
+const transactionBundle = {
+  resourceType: 'Bundle',
+  type: 'transaction',
+  entry: [
+    /* operations */
+  ],
+};
+```
+
+{{< warning title="Transaction Support" >}}
+Transaction bundles are generally available and production-ready, but they require the `transaction-bundles` feature flag to be enabled on your Medplum `Project`.
+
+A Medplum super administrator must enable the feature flag for each `Project`. For Medplum-hosted environments, contact Medplum support because Medplum manages super administrator access. For self-hosted environments, ask one of your internal Medplum super administrators to enable the feature flag.
+
+If the feature flag is not enabled, a bundle with `type: "transaction"` is processed as a `batch`. Entries execute independently with no atomicity guarantee, and the server does not return an error or warning. Verify the flag is enabled on your project before relying on transaction semantics.
+{{< /warning >}}
+
+### Transaction Limits
+
+Transactions are subject to the following limits. Exceeding either limit causes the entire transaction to be rejected with a `400 Bad Request` error.
+
+- A transaction may contain at most **50 update operations**.
+- A transaction that contains conditional operations (a conditional create using `ifNoneExist`, a conditional update, or a conditional delete) runs under serializable database isolation and is limited to **8 entries**.
+
+To keep a larger transaction out of serializable mode, resolve conditional lookups before submitting it: search for the target resources first, then use plain creates and updates with known IDs inside the transaction.
+
+## How to Perform a Batch Request
+
+Batch requests are performed by sending a POST request to `[baseURL]/` with a FHIR Bundle. The Medplum SDK provides the `executeBatch` helper function to simplify this operation.
+
+The details of your request will be in the `entry` field of the `Bundle`, which is an array of `BundleEntry` objects. Each `BundleEntry` should have the details of the resource you are working with, as well as additional information about the request you are making.
+
+| Element               | Description                                                                                                                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `request.url`         | The URL to send your request to. This is relative to the base R4 FHIR URL (e.g. https://api.medplum.com/fhir/R4).                                                                                                                 |
+| `request.method`      | The type of HTTP request: **GET** (read a resource or perform a search), **POST** (create), **PUT** (update), **DELETE** (delete). |
+| `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                           |
+| `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                                   |
+| `fullUrl`             | [See below](#internal-references)                                                                                                                                                                                                 |
+
+<details>
+  <summary>Example: A simple batch request to simultaneously search for two patients</summary>
+  {{< tabs groupId="language" >}}
+    {{< tab value="ts" label="Typescript" >}}
+      <MedplumCodeBlock language="ts" selectBlocks="simpleBatchTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    {{< /tab >}}
+    {{< tab value="cli" label="CLI" >}}
+      <MedplumCodeBlock language="bash" selectBlocks="simpleBatchCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    {{< /tab >}}
+    {{< tab value="curl" label="cURL" >}}
+      <MedplumCodeBlock language="bash" selectBlocks="simpleBatchCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    {{< /tab >}}
+  {{< /tabs >}}
+</details>
+
+<details>
+  <summary>Example: Create multiple resources in one batch request</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="batchCreate">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+<details>
+  <summary>Example: Make multiple calls to the _history endpoint in one batch request</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="historyEndpoint">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+### Asynchronous Batch Requests
+
+Synchronous batch requests are subject to an 8 MB request size limit (Medplum-hosted) and a 60 second timeout. If your use case exceeds these constraints, Medplum offers asynchronous batch requests. There are two main reasons you may want to process a batch asynchronously:
+
+1. **Large or slow bundles** — Bundles that exceed the 8 MB size limit or take more than 15 seconds to process may fail mid-request due to the request timeout. Async processing raises the size limit to 50 MB and removes the timeout by enqueuing the bundle for background processing.
+2. **FHIR quota avoidance** — Asynchronous batch requests do not count against a user's [FHIR interaction quota](/docs/rate-limits#fhir-interaction-load-rate-limit). This makes async the preferred approach for large data seeding or import jobs where quota limits would otherwise be a concern.
+
+In both cases, the `Bundle` is enqueued on the server and a response is sent back to the client immediately with a URL where it can receive status updates around the batch processing job. All resources are written to the FHIR store upon job completion — no additional step is required to apply the results.
+
+{{< warning title="Data availability" >}}
+Because async batches are processed in the background, data is not immediately available after the request returns. Poll the `AsyncJob` status URL and wait for `completed` status before assuming data is ready. This makes async batches best suited for scheduled or pre-planned jobs rather than last-minute operations where changes are needed immediately.
+{{< /warning >}}
+
+#### When to use async vs. sync
+
+| Scenario | Recommendation |
+| --- | --- |
+| Bundle is small and inexpensive | Sync (default) |
+| Bundle is large (approaching 5 MB+) or risks timeout | Async |
+| Seeding demo or test data ahead of time | Async (avoids quota, schedule in advance) |
+| Data must be available immediately | Sync (ensure quota headroom or raise [`userFhirQuota`](/docs/rate-limits#how-to-view-and-configure-fhir-quota-rate-limits)) |
+| High-volume import where quota is the bottleneck | Async |
+
+For a full, step-by-step guide detailing how to submit and poll for the results of asynchronous operations, see **[Processing asynchronous bundles](/docs/fhir-datastore/processing-async-bundles)**.
+
+To opt into asynchronous handling of the batch request, add the `Prefer: respond-async` header to the HTTP request for
+the batch:
+
+{{< tabs groupId="language" >}}
+
+  {{< tab value="curl" label="cURL" >}}
+    <MedplumCodeBlock language="bash" selectBlocks="asyncBatchCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  {{< /tab >}}
+{{< /tabs >}}
+
+See the [FHIR Asynchronous Request pattern](http://hl7.org/fhir/R5/async-bundle.html) for more information.
+
+## Response Structure
+
+When you submit a batch request, the server returns a `Bundle` with `type` set to `batch-response` (or `transaction-response` if the request was a transaction).
+
+The response Bundle contains an `entry` array that corresponds one-to-one with the entries in the request Bundle. The order of entries in the response matches the order in the request.
+
+Each entry in the response Bundle contains a `response` element with the following fields:
+
+| Field | Description |
+| --- | --- |
+| `status` | The HTTP status code for the operation (e.g., "200", "201", "404"). |
+| `outcome` | An [OperationOutcome](/docs/api/fhir/resources/operationoutcome) resource containing details about the operation result. |
+| `location` | For successful create operations, the location of the created resource. |
+
+If the operation returned a resource (e.g., a `read` or `search` operation, or a `create` operation returning the created resource), it will be included in the `resource` field of the entry.
+
+### Error Handling
+
+How errors are handled depends on whether the Bundle is a `batch` or a `transaction`.
+
+**Batch Requests (`type: batch`)**
+
+In a batch request, operations are independent. If one operation fails, it does **not** stop the processing of other operations (unless a system limit like a Rate Limit is reached).
+
+-   **Success**: The entry will have a `2xx` status code.
+-   **Failure**: The entry will have a `4xx` or `5xx` status code. The `response.outcome` will contain an `OperationOutcome` describing the error.
+
+Example of a batch response with one success and one failure:
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "batch-response",
+  "entry": [
+    {
+      "response": {
+        "status": "201",
+        "location": "Patient/123"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "id": "123"
+        // ...
+      }
+    },
+    {
+      "response": {
+        "status": "404",
+        "outcome": {
+          "resourceType": "OperationOutcome",
+          "issue": [
+            {
+              "severity": "error",
+              "code": "not-found",
+              "diagnostics": "Not found"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+**Transaction Requests (`type: transaction`)**
+
+In a transaction request, operations are atomic. If **any** operation fails, the entire transaction is rolled back, and the server returns an error for the whole request.
+
+-   **Success**: All operations succeeded. The response Bundle contains results for all entries.
+-   **Failure**: The server returns an `OperationOutcome` describing the error that caused the transaction to fail. No partial results are returned.
+
+## References in Bundles
+
+When using batch requests, it is common to require resources to refer to one another: either between two resources within the Bundle, or to resources outside the Bundle. FHIR provides ways to automatically link the resources together, without needing to know the exact resource IDs up front.
+
+### Internal References
+
+Resources within the same Bundle often need to link to one another: for example, you may create a `Patient` resource that is the `subject` of an `Encounter` created in the same batch request.
+
+Creating internal references is done by assigning temporary IDs to each bundle entry. The `fullUrl` field is set to `'urn:uuid:'` followed by a temporary UUID.
+
+Other bundle entries can refer to this resource using the temporary `urn:uuid:` string, which is replaced by the real reference during batch processing.
+
+<details>
+  <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="internalReference">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+### External \(Conditional) References
+
+Additionally, it may be necessary to link to resources that already exist on the server outside of the Bundle, for which the ID of the
+target resource is not known. To handle this use case, FHIR allows populating the reference with a search query string,
+which will be resolved by Medplum server at resource creation time. This search must resolve to a single resource, otherwise
+an error will be returned. For example:
+
+<details>
+  <summary>Example: Create multiple patients that link to the same provider</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="externalReference">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+## Conditional Batch Actions
+
+There may be situations where you would only like to create a a resource as part of a batch request if it does not already exist.
+
+You can conditionally perform batch actions by adding the `ifNoneExist` property to the `request` element of your `Bundle`.
+
+The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#search-parameters) to search existing resources and only performs the action if no match is found. Since you are already defining the `url` to send the request to, you only need to enter the actual parameter in this field (i.e., everything that would come after the `?` when submitting an actual search).
+
+<details>
+  <summary>Example: Create a patient and organization, only if the organization does not already exist</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="conditionalCreate">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+### Preventing Lost Updates with Version Checking
+
+When updating resources in a transaction bundle, you can prevent **lost updates** by using the `ifMatch` property in the bundle entry request. This ensures that your update only succeeds if the resource hasn't been modified by another user since you last read it.
+
+<details>
+  <summary>Example: Version Checking in Transaction Bundle</summary>
+  {{< tabs groupId="language" >}}
+    {{< tab value="ts" label="Typescript" >}}
+      <MedplumCodeBlock language="ts" selectBlocks="transactionIfMatchTs">
+        {UpdatingDataExampleCode}
+      </MedplumCodeBlock>
+    {{< /tab >}}
+  {{< /tabs >}}
+</details>
+
+If any resource in the transaction has been modified by another user (the version doesn't match), the transaction will fail with a `412 Precondition Failed` error, allowing you to retry after re-reading the current state.
+
+`ifMatch` works the same way on `DELETE` entries, so a delete only succeeds if the resource is still at the version you read.
+
+## Performing Upserts
+
+Previously, performing an "upsert" (i.e. either creating or updating a resource based on whether it already exists)
+required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/working-with-fhir#upsert)
+to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
+
+{{< note title="Upsert URLs" >}}
+
+Because resolving the search request in the upsert URL is a prerequisite to determine which ID should be assigned as
+part of handling [internal references](#internal-references), the `urn:uuid:` syntax for internal references **cannot**
+be used in the `Bundle.entry.request.url` for a conditional update within a batch.
+
+Instead, upsert URLs should link to other resources within the Bundle consistently through conditions on the target
+resource itself, not its server-assigned ID.
+
+<details>
+<summary>Example</summary>
+
+❌ **Incorrect**
+
+```js
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc",
+      "request": {
+        "method": "PUT",
+        "url": "Patient?identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [{ "system": "http://example.com/mrn", "value": "1234567" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b122a53c-9c0d-4654-9260-c0b67b7bc5d4",
+      "request": {
+        "method": "PUT",
+        // Incorrect: Upsert URL cannot use replaced urn:uuid: syntax
+        "url": "CareTeam?subject=urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc"
+      },
+      "resource": {
+        "resourceType": "CareTeam",
+        "subject": { "reference": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc" }
+      }
+    }
+  ]
+}
+```
+
+✅ **Correct**
+
+```js
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc",
+      "request": {
+        "method": "PUT",
+        "url": "Patient?identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [{ "system": "http://example.com/mrn", "value": "1234567" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b122a53c-9c0d-4654-9260-c0b67b7bc5d4",
+      "request": {
+        "method": "PUT",
+        // Correct: Refer to subject via chained search,
+        // using same identifier as its own upsert URL
+        "url": "CareTeam?subject.identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "CareTeam",
+        "subject": { "reference": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc" }
+      }
+    }
+  ]
+}
+```
+
+</details>
+
+{{< /note >}}
+
+## PATCH actions in a Batch
+
+Because the request body of a PATCH request is an array of [JSON Patch](https://jsonpatch.com/) operations, not a resource,
+some extra conversion is required to represent these actions in a batch request. The [FHIR recommended pattern](http://hl7.org/fhir/R5/http.html#jsonpatch-transaction)
+for this use case is to [base64 encode](https://datatracker.ietf.org/doc/html/rfc4648#section-4) the JSON Patch array
+and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
+
+```js
+{
+  "request": {
+    "method": "PATCH",
+    "url": "Patient/6ffaaab4-ff7e-4416-80c7-8fce95c3e31c"
+  },
+  "resource": {
+    "resourceType": "Binary",
+    "contentType": "application/json-patch+json",
+    // Encoded: [{"op":"test","path":"/active","value":false}]
+    "data": "W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9hY3RpdmUiLCJ2YWx1ZSI6ZmFsc2V9XQo="
+  },
+}
+```
+
+Additionally, Medplum supports passing JSON Patch formatted as a [Parameters](/docs/api/fhir/resources/parameters)
+resource, making it easier to see what operations are happening in the batch.
+
+{{< note title="Value Formatting" >}}
+
+To avoid parsing ambiguity and simplify the format of the `Parameters`, all values are passed as
+JSON strings, via the `valueString` field on each corresponding `Parameter.parameter.part` with `"name": "value"`.
+
+All types of values, including booleans, strings, objects, and arrays, should be passed to `JSON.stringify()`
+or equivalent rather than being included directly in the `Parameters`.
+
+{{< /note >}}
+
+```js
+{
+  "request": {
+    "method": "PATCH",
+    "url": "Patient/6ffaaab4-ff7e-4416-80c7-8fce95c3e31c"
+  },
+  "resource": {
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "operation",
+        "part": [
+          { "name": "op", "valueCode": "test" },
+          { "name": "path", "valueString": "/active" },
+          { "name": "value", "valueString": "false" }
+        ]
+      },
+      {
+        "name": "operation",
+        "part": [
+          { "name": "op", "valueCode": "add" },
+          { "name": "path", "valueString": "/name/-" },
+          // Note that values must be JSON encoded
+          { "name": "value", "valueString": "{\"given\":[\"Dave\"],\"family\":\"Smith\"}" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Medplum Autobatching
+
+The Medplum Client provides the option to automatically batch FHIR `read` and `search` requests using the `autoBatchTime` parameter. This field allows you to set a time window during which to batch up any `GET` requests. After this window expires, the `MedplumClient` will add them to a `Bundle` behind the scenes and then execute them as a batch request.
+
+Autobatching works by creating a queue of `Promises` issued within the `autoBatchTime` window and then creating a bundle out of these requests. To allow the queue to be created, you must make sure that the main thread continues to run, so you should not use `await` after each request. Using `await` will pause the main thread each time a request is made, so a queue cannot be created.
+
+Instead you should create the queue of `Promise` requests and then use `Promise.all()` to resolve all of them at once.
+
+<details>
+  <summary>Resolving Promises with autobatching</summary>
+
+  **❌ WRONG**
+
+  <MedplumCodeBlock language="ts" selectBlocks="autobatchingWrong">
+    {ExampleCode}
+  </MedplumCodeBlock>
+
+  **✅ CORRECT**
+
+  <MedplumCodeBlock language="ts" selectBlocks="autobatchingCorrect">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>

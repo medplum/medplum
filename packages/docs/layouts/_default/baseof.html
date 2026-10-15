@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script>
+      (function () {
+        var theme = localStorage.getItem('theme');
+        if (theme) document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ .Title }} | Medplum</title>
+    {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
+    <script src="{{ $js.RelPermalink }}" defer></script>
+    {{ $infima := resources.Get "infima.css" | toCSS }}
+    {{ $openColor := resources.Get "open-color.css" | toCSS }}
+    {{ $opts := dict "transpiler" "libsass" }}
+    {{ $scss := resources.Get "css/main.scss" | toCSS $opts }}
+    {{ $generated := resources.Get "css/generated/landing.css" }}
+    {{ $style := slice $infima $openColor $scss $generated | resources.Concat "css/bundle.css" | minify | fingerprint }}
+    <link
+      rel="stylesheet"
+      href="{{ $style.RelPermalink }}"
+      integrity="{{ $style.Data.Integrity }}"
+    />
+  </head>
+  <body
+    {{ if eq .Section "docs" }}
+      data-sidebar="open"
+    {{ else }}
+      data-sidebar="closed"
+    {{ end }}
+    {{ if .IsHome }}data-page="home"{{ else if and .IsSection (in (slice "products" "solutions") .Section) }}data-page="{{ .Section }}"{{ end }}
+  >
+    {{ partial "navbar" . }}
+    <div class="doc-wrapper">
+      <div class="doc-root">
+        <aside>
+          {{ partial "sidebar" . }}
+        </aside>
+        <main id="swup">
+          {{ block "page" . }}
+            <div class="main-container container{{ if .Params.standalone }} main-container-standalone{{ end }}">
+              <div class="row">
+                <div class="main-content">
+                  {{ partial "breadcrumbs" . }}
+                  {{- /* Mobile copy of the table of contents (shown below 997px); the id is dropped so it stays unique */ -}}
+                  {{ if findRE "<li>" .TableOfContents 1 }}
+                    <details class="toc-mobile">
+                      <summary>On this page</summary>
+                      {{ .TableOfContents | replaceRE `id="TableOfContents"` `class="toc-mobile-nav"` | safeHTML }}
+                    </details>
+                  {{ end }}
+                  {{ block "main" . }}{{ end }}
+                  {{ partial "doc-footer" . }}
+                </div>
+                <div class="main-toc">
+                  {{ .TableOfContents }}
+                </div>
+              </div>
+            </div>
+          {{ end }}
+        </main>
+      </div>
+    </div>
+    {{ partial "footer" . }}
+  </body>
+</html>

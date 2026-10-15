@@ -1,0 +1,113 @@
+{{- /* Home page. Content lives in data/home.yml; ported from LandingPage.tsx in the medplum repo. */ -}}
+{{ define "page" }}
+  {{ $d := site.Data.home }}
+  <div class="landing">
+    <div class="landing-content">
+      <div class="landing-hero">
+        <div class="landing-hero-content">
+          <h1 class="landing-hero-title">{{ $d.hero.title }}</h1>
+          <p class="landing-hero-text">{{ delimit $d.hero.text "<br />" | safeHTML }}</p>
+          <div class="landing-buttons">
+            <a href="{{ $d.hero.primaryButton.href }}" class="landing-button landing-button-purple">{{ $d.hero.primaryButton.label }}</a>
+            {{ partial "landing/build-dropdown" dict }}
+          </div>
+        </div>
+        <div class="landing-hero-image-container">
+          {{ with $d.hero.image }}
+            <img class="landing-hero-image" src="{{ .src }}" alt="{{ .alt }}" width="{{ .width }}" height="{{ .height }}" fetchpriority="high" />
+          {{ end }}
+        </div>
+      </div>
+
+      <h3 class="landing-logos-title">{{ $d.logosTitle }}</h3>
+      {{ partial "landing/logo-scroller" (dict "logos" $d.logos) }}
+
+      {{ partial "landing/section-header" $d.platform }}
+      <div class="landing-section">{{ partial "landing/feature-grid" (dict "features" $d.platform.features "variant" "ecosystem") }}</div>
+
+      {{ partial "landing/section-header" $d.solutions }}
+      <div class="solution-accordion">
+        {{ range $i, $s := $d.solutions.items }}
+          {{- /* Native exclusive accordion: details elements sharing a name allow only one open at a time. */ -}}
+          <details class="solution-accordion-item" name="home-solutions" {{ if eq $i 0 }}open{{ end }}>
+            <summary class="solution-accordion-header">
+              <span class="solution-accordion-header-left">
+                <span class="solution-accordion-icon-tile">{{ partial "icon" $s.icon }}</span>
+                <span class="solution-accordion-title">{{ $s.title }}</span>
+              </span>
+              <span class="solution-accordion-toggle" aria-hidden="true">
+                <span class="solution-accordion-toggle-plus">{{ partial "icon" "outline/plus" }}</span>
+                <span class="solution-accordion-toggle-minus">{{ partial "icon" "outline/minus" }}</span>
+              </span>
+            </summary>
+            <div class="solution-accordion-body">
+              <div class="solution-accordion-text">
+                {{ range $s.bullets }}
+                  <div class="solution-accordion-bullet">
+                    <span class="solution-accordion-bullet-icon">{{ partial "icon" "outline/chevron-right" }}</span>
+                    <span>{{ . }}</span>
+                  </div>
+                {{ end }}
+                <a href="{{ $s.link }}" class="solution-accordion-learn-more">Learn More {{ partial "icon" "outline/chevron-right" }}</a>
+              </div>
+              <div class="solution-accordion-image">
+                <img src="{{ $s.image }}" alt="" loading="lazy" {{ with $s.imageClass }}class="solution-accordion-img-{{ . }}"{{ end }} />
+              </div>
+            </div>
+          </details>
+        {{ end }}
+      </div>
+
+      {{ partial "landing/section-header" $d.ecosystem }}
+      <div class="landing-section">{{ partial "landing/feature-grid" (dict "features" $d.ecosystem.features "variant" "complexity") }}</div>
+
+      {{ partial "landing/section-header" $d.infrastructure }}
+      <div class="landing-section">
+        <div class="stats-bento">
+          {{ range $d.infrastructure.stats }}
+            <div class="stats-bento-item">
+              {{- /* Renders the final value so it reads correctly without JS; count-up.mjs animates it from zero on scroll. */ -}}
+              <div class="stats-bento-value" data-count-up="{{ .value }}" data-suffix="{{ .suffix }}">{{ .value }}{{ .suffix }}</div>
+              <div class="stats-bento-label">{{ .label }}</div>
+              <p class="stats-bento-description">{{ .description }}</p>
+            </div>
+          {{ end }}
+          <div class="stats-bento-item stats-bento-item-full">
+            <div class="stats-bento-label">
+              {{ $d.infrastructure.complianceTitle }}
+              <a href="{{ $d.infrastructure.complianceLink }}" aria-label="Learn more about security" class="stats-bento-security-link">{{ partial "icon" "outline/help-circle" }}</a>
+            </div>
+            {{ partial "landing/compliance-badges" dict }}
+          </div>
+        </div>
+      </div>
+
+      {{ partial "landing/section-header" $d.testimonials }}
+      <div class="landing-masonry">
+        {{ range $d.testimonials.items }}
+          <div class="landing-card">
+            <div class="landing-testimonial-header">
+              <img src="{{ .image }}" loading="lazy" alt="{{ .name }}" />
+              <div class="landing-testimonial-info">
+                <div class="landing-testimonial-name">{{ .name }}</div>
+                <div class="landing-testimonial-title">{{ .title }}</div>
+              </div>
+            </div>
+            {{ range .quote }}<p>{{ . }}</p>{{ end }}
+          </div>
+        {{ end }}
+      </div>
+    </div>
+
+    <div class="landing-cta-banner">
+      <div class="landing-content">
+        <h2>{{ $d.cta.title }}</h2>
+        <p class="landing-cta-banner-description">{{ $d.cta.text }}</p>
+        <div class="landing-buttons">
+          <a href="{{ $d.cta.secondaryButton.href }}" class="landing-button landing-button-white">{{ $d.cta.secondaryButton.label }}</a>
+          <a href="{{ $d.cta.primaryButton.href }}" class="landing-button landing-button-purple">{{ $d.cta.primaryButton.label }}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}

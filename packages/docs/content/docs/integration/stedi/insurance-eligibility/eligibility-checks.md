@@ -1,0 +1,874 @@
+---
+id: eligibility-checks
+title: Insurance and Benefits Eligibility Checks
+---
+
+This guide explains how to model your FHIR resources for the Stedi integration to send and receive eligibility and benefits checks.
+
+## Overview
+
+The Stedi integration allows you to perform insurance eligibility checks by sending a a [CoverageEligibilityRequest](/docs/api/fhir/resources/coverageeligibilityrequest) resource and receiving a [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse) resource with the benefits information. This workflow is handled by our **Insurance Eligibility Bot**. Please [contact the Medplum team](mailto:support@medplum.com) to get access to this bot.
+
+For more general information about eligibility checks, please see our [Insurance Eligibility Checks](/docs/billing/insurance-eligibility-checks) guide.
+
+## Creating the Eligibility Check
+
+The following diagram shows the resources that are involved to make an insurance eligibility check with our Stedi integration.
+
+```mermaid
+flowchart TD
+    CER["<div style='text-align: center;'><strong>CoverageEligibilityRequest</strong></div>"]
+
+    ProviderOrg["<div style='text-align: center;'><strong>Organization (Provider)</strong></div><u>identifier</u>:<br>  system: http://hl7.org/fhir/sid/us-npi<br>  value: 1999999984"]
+
+    Patient["<div style='text-align: center;'><strong>Patient (Subscriber)</strong></div>"]
+
+    Coverage["<div style='text-align: center;'><strong>Coverage (Insurance)</strong></div> <div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>subscriberId</u>: AETNA12345<br>"]
+
+    PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: https://www.stedi.com/healthcare/network<br>  value: 60054</div>"]
+
+    CER -->|provider| ProviderOrg
+    CER -->|patient| Patient
+    CER -->|insurance| Coverage
+    CER -->|insurer| PayerOrg
+
+    Coverage -->|subscriber| Patient
+    Coverage -->|beneficiary| Patient
+    Coverage -->|payor| PayerOrg
+
+    classDef request fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
+    classDef organization fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
+    classDef patient fill:#D4BCF2,stroke:#333,stroke-width:2px
+    classDef coverage fill:#A5D6A7,stroke:#333,stroke-width:2px
+
+    class CER request
+    class PayerOrg,ProviderOrg organization
+    class Patient patient
+    class Coverage coverage
+```
+
+### CoverageEligibilityRequest
+
+| Field                  | Description                                                                                                                                                                                                                                             | Required                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `insurer`              | Reference to the payer Organization                                                                                                                                                                                                                     | Yes                                           |
+| `provider`             | Reference to the provider Organization                                                                                                                                                                                                                  | Yes                                           |
+| `subscriber`           | Reference to the subscriber Patient                                                                                                                                                                                                                     | Yes                                           |
+| `insurance`            | Array of Coverages. If there are more than one, the array item labeled as the focal will be used for the eligibility check                                                                                                                              | Yes                                           |
+| `servicedPeriod.start` | Service period start date                                                                                                                                                                                                                               | No (defaults to current date if not provided) |
+| `item`                 | Array of details about the eligibility being checked. This includes what procedure, product, or service is being provided as well as why it is being provided. `item.category` is what selects the service types the check asks about, described below. | No (defaults to service type code `30`)       |
+
+#### Service type codes
+
+{{< note >}}
+Most payers respond to only a small subset of the X12 service type codes, and many return general benefits no matter what was requested, so treat a specific code as a request rather than a guarantee.
+{{< /note >}}
+
+Each `item.category.coding` entry with the system `https://x12.org/codes/service-type-codes` adds a service type to the check. You can supply several codings, or several `item` entries, and all of them are sent together on a single eligibility check. If no X12 service type coding is present, the check defaults to `30` (Health Benefit Plan Coverage). A code that Stedi does not accept is rejected before the request reaches the payer, and the error names the `item` and `coding` it came from.
+
+These are the codes most implementations start with.
+
+| Code | Display                                 |
+| ---- | --------------------------------------- |
+| `30` | Health Benefit Plan Coverage            |
+| `12` | Durable Medical Equipment Purchase      |
+| `35` | Dental Care                             |
+| `47` | Hospital                                |
+| `48` | Hospital - Inpatient                    |
+| `50` | Hospital - Outpatient                   |
+| `88` | Pharmacy                                |
+| `98` | Professional (Physician) Visit - Office |
+| `AL` | Vision (Optometry)                      |
+| `MH` | Mental Health                           |
+| `UC` | Urgent Care                             |
+
+For the complete set of accepted codes, see the service type codes section of [Stedi's eligibility code lists](https://www.stedi.com/docs/healthcare/eligibility-code-lists). Stedi also publishes [guidance on choosing service type codes](https://www.stedi.com/docs/healthcare/eligibility-stc-procedure-codes), and the codes themselves are maintained as the [X12 Service Type Codes](https://x12.org/codes/service-type-codes).
+
+This example asks about both durable medical equipment and mental health benefits.
+
+```ts
+item: [
+  {
+    category: {
+      coding: [
+        {
+          system: 'https://x12.org/codes/service-type-codes',
+          code: '12',
+          display: 'Durable Medical Equipment Purchase',
+        },
+        {
+          system: 'https://x12.org/codes/service-type-codes',
+          code: 'MH',
+          display: 'Mental Health',
+        },
+      ],
+    },
+  },
+],
+```
+
+:::
+
+### Organization (Payer)
+
+| Field        | Description                                               | Required |
+| ------------ | --------------------------------------------------------- | -------- |
+| `identifier` | System must be `https://www.stedi.com/healthcare/network` | Yes      |
+| `name`       | Organization name                                         | Yes      |
+
+{{< info >}}
+If you are using an Organization from the Medplum Payer Directory, it will have the correct Payer identifier, so you can just use that.
+{{< /info >}}
+
+### Organization (Provider)
+
+| Field        | Description                                     | Required |
+| ------------ | ----------------------------------------------- | -------- |
+| `identifier` | System must be `http://hl7.org/fhir/sid/us-npi` | Yes      |
+| `name`       | Organization name                               | Yes      |
+
+### Patient (Subscriber)
+
+| Field         | Description                             | Required             |
+| ------------- | --------------------------------------- | -------------------- |
+| `name.family` | Last name                               | Yes                  |
+| `name.given`  | First name                              | Yes                  |
+| `birthDate`   | Date of birth                           | Yes                  |
+| `identifier`  | System `http://hl7.org/fhir/sid/us-ssn` | No (but recommended) |
+
+### Coverage
+
+| Field          | Description                             | Required |
+| -------------- | --------------------------------------- | -------- |
+| `subscriberId` | Insurance subscriber ID                 | Yes      |
+| `status`       | Should be "active"                      | Yes      |
+| `subscriber`   | Reference to a Patient or RelatedPerson | Yes      |
+| `beneficiary`  | Reference to a Patient or RelatedPerson | Yes      |
+| `payor`        | Reference to the payer Organization     | Yes      |
+
+## Executing the Eligibility Check
+
+The **Insurance Eligibility Bot** runs the Stedi (X12 270/271) eligibility check and returns a `CoverageEligibilityResponse`. Invoke the `$stedi-check-eligibility` [custom operation](/docs/api/fhir/operations/custom-operations) on `CoverageEligibilityRequest` in either of these ways:
+
+- **Instance level** — on a stored request: `POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility`
+- **Type level** — with a `CoverageEligibilityRequest` in the request body: `POST {base}/fhir/R4/CoverageEligibilityRequest/$stedi-check-eligibility`
+
+**Instance level** (after you have created and stored the `CoverageEligibilityRequest`):
+
+```ts
+const response = await medplum.post(
+  medplum.fhirUrl('CoverageEligibilityRequest', coverageEligibilityRequest.id, '$stedi-check-eligibility')
+);
+```
+
+Or via the FHIR REST API:
+
+```http
+POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility
+```
+
+### Stedi sandbox testing
+
+{{< note >}}
+The Stedi sandbox successfully validates only a few payloads. **We recommend using the transaction Bundle below** when testing against the sandbox.
+{{< /note >}}
+
+<details>
+<summary>Example transaction Bundle for Eligibility Checks (recommended for Stedi sandbox testing)</summary>
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "family": "DOE", "given": ["JANE"] }],
+        "birthDate": "2004-04-04",
+        "gender": "female",
+        "identifier": [{ "system": "http://hl7.org/fhir/sid/us-ssn", "value": "987654321" }]
+      },
+      "request": { "method": "POST", "url": "Patient" }
+    },
+    {
+      "fullUrl": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "My Provider",
+        "identifier": [{ "system": "http://hl7.org/fhir/sid/us-npi", "value": "1999999984" }]
+      },
+      "request": { "method": "POST", "url": "Organization" }
+    },
+    {
+      "fullUrl": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+      "resource": {
+        "resourceType": "Organization",
+        "name": "AETNA INC",
+        "identifier": [{ "system": "https://www.stedi.com/healthcare/network", "value": "60054" }],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Organization" }
+    },
+    {
+      "fullUrl": "urn:uuid:d4f5a6b7-8c9d-4e0f-b1a2-3c4d5e6f7a8b",
+      "resource": {
+        "resourceType": "Coverage",
+        "status": "active",
+        "subscriberId": "AETNA12345",
+        "subscriber": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "JANE DOE"
+        },
+        "beneficiary": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "JANE DOE"
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+            "display": "AETNA INC"
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "Coverage" }
+    },
+    {
+      "fullUrl": "urn:uuid:e5a6b7c8-9d0e-4f1a-82b3-4d5e6f7a8b9c",
+      "resource": {
+        "resourceType": "CoverageEligibilityRequest",
+        "status": "active",
+        "purpose": ["benefits"],
+        "patient": {
+          "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+          "display": "JANE DOE"
+        },
+        "created": "2026-09-08",
+        "provider": {
+          "reference": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+          "display": "My Provider"
+        },
+        "insurer": {
+          "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
+          "display": "AETNA INC"
+        },
+        "insurance": [
+          {
+            "coverage": {
+              "reference": "urn:uuid:d4f5a6b7-8c9d-4e0f-b1a2-3c4d5e6f7a8b"
+            },
+            "focal": true
+          }
+        ],
+        "item": [
+          {
+            "category": {
+              "coding": [
+                {
+                  "system": "https://x12.org/codes/service-type-codes",
+                  "code": "30",
+                  "display": "Health Benefit Plan Coverage"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": { "method": "POST", "url": "CoverageEligibilityRequest" }
+    }
+  ]
+}
+```
+
+</details>
+
+## Receiving the Eligibility Response
+
+After the eligibility check is sent, the **Insurance Eligibility Bot** will create and return a [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse) resource. This new [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse) will reference all of the resources from the request.
+
+```mermaid
+flowchart TD
+    CER["<div style='text-align: center;'><strong>CoverageEligibilityRequest</strong></div>"]
+    CEResp["<div style='text-align: center;'><strong>CoverageEligibilityResponse</strong></div>"]
+
+    ProviderOrg["<div style='text-align: center;'><strong>Organization (Provider)</strong></div><u>identifier</u>:<br>  system: http://hl7.org/fhir/sid/us-npi<br>  value: 1999999984"]
+
+    Patient["<div style='text-align: center;'><strong>Patient (Subscriber)</strong></div>"]
+
+    Coverage["<div style='text-align: center;'><strong>Coverage (Insurance)</strong></div> <div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>subscriberId</u>: AETNA12345<br>"]
+
+    PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: https://www.stedi.com/healthcare/network<br>  value: 60054</div>"]
+
+    CEResp -->|request| CER
+    CEResp -->|requestor| ProviderOrg
+    CEResp -->|patient| Patient
+    CEResp -->|insurance| Coverage
+    CEResp -->|insurer| PayerOrg
+
+    classDef response fill:#57C48B,stroke:#333,stroke-width:2px,color:#fff
+    class CEResp response
+    classDef request fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
+    classDef organization fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
+    classDef patient fill:#D4BCF2,stroke:#333,stroke-width:2px
+    classDef coverage fill:#A5D6A7,stroke:#333,stroke-width:2px
+
+    class CER request
+    class PayerOrg,ProviderOrg organization
+    class Patient patient
+    class Coverage coverage
+```
+
+It will also contain the benefits information for the coverage in it's `insurance.item` field.
+
+[CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse).insurance.item field will contain the benefits information about the patient's coverage. Read more about [Receiving a CoverageEligibilityResponse](/docs/billing/insurance-eligibility-checks#receiving-a-response).
+
+Each `insurance.item` entry describes a benefit the payer reported, and its `category.coding` records the X12 service type codes that benefit applies to, using the system `https://x12.org/codes/service-type-codes`. Benefits scoped to general coverage also carry a `http://terminology.hl7.org/CodeSystem/ex-benefitcategory` coding for code `30`. A payer may report benefits for service types beyond the ones you asked about, and a benefit the payer did not scope to any service type has no `category` at all.
+
+<details>
+<summary>Example CoverageEligibilityResponse from a STEDI insurance and benefits eligibility check</summary>
+```ts
+{
+  "resourceType": "CoverageEligibilityResponse",
+  "status": "active",
+  "outcome": "complete", // Eligibility check was successful
+  "patient": {
+    "reference": "Patient/12345678-1234-5678-9abc-123456789abc",
+    "display": "Jordan Doe"
+  },
+  "insurer": {
+    "reference": "Organization/87654321-4321-8765-cdef-987654321def", 
+    "display": "Aetna" // Insurance company
+  },
+  "insurance": [
+    {
+      "coverage": {
+        "reference": "Coverage/abcdef12-5678-9012-3456-abcdef123456"
+      },
+      "inforce": true, // Coverage is active
+      "benefitPeriod": {
+        "start": "2024-01-01T00:00:00.000Z", // Coverage period
+        "end": "2024-12-31T00:00:00.000Z"
+      },
+      "item": [
+        // COPAY - Fixed dollar amount per visit (in-network)
+        {
+          "category": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              }
+            ]
+          },
+          "network": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/in-network-indicator",
+                "code": "Y",
+                "display": "Yes"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-network",
+                "code": "in",
+                "display": "In-Network"
+              }
+            ]
+          },
+          "unit": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/coverage-level-code",
+                "code": "IND",
+                "display": "Individual"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-unit",
+                "code": "individual",
+                "display": "Individual"
+              }
+            ]
+          },
+          "benefit": [
+            {
+              "type": {
+                "coding": [
+                  {
+                    "system": "https://www.stedi.com/benefit-type-code",
+                    "code": "B",
+                    "display": "Co-Payment"
+                  },
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/benefit-type",
+                    "code": "copay",
+                    "display": "Copayment per service	"
+                  }
+                ]
+              },
+              "allowedMoney": {
+                "value": 10, // $10 copay
+                "currency": "USD"
+              }
+            }
+          ]
+        },
+
+        // COINSURANCE - Percentage patient pays after deductible is met (in-network)
+        {
+          "category": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              }
+            ]
+          },
+          "network": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/in-network-indicator",
+                "code": "Y",
+                "display": "Yes"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-network",
+                "code": "in",
+                "display": "In-Network"
+              }
+            ]
+          },
+          "unit": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/coverage-level-code",
+                "code": "IND",
+                "display": "Individual"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-unit",
+                "code": "individual",
+                "display": "Individual"
+              }
+            ]
+          },
+          "benefit": [
+            {
+              "type": {
+                "coding": [
+                  {
+                    "system": "https://www.stedi.com/benefit-type-code",
+                    "code": "A",
+                    "display": "Co-Insurance"
+                  }
+                ]
+              },
+              "allowedUnsignedInt": 10 // 10% coinsurance
+            }
+          ]
+        },
+
+        // DEDUCTIBLE - Amount before insurance contributes (in-network)
+        {
+          "category": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              }
+            ]
+          },
+          "network": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/in-network-indicator",
+                "code": "Y",
+                "display": "Yes"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-network",
+                "code": "in",
+                "display": "In-Network"
+              }
+            ]
+          },
+          "unit": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/coverage-level-code",
+                "code": "IND",
+                "display": "Individual"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-unit",
+                "code": "individual",
+                "display": "Individual"
+              }
+            ]
+          },
+          "term": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/time-qualifier-code",
+                "code": "25", //This indicates that this is the contract's entire deductible
+                "display": "Contract"
+              }
+            ]
+          },
+          "benefit": [
+            {
+              "type": {
+                "coding": [
+                  {
+                    "system": "https://www.stedi.com/benefit-type-code",
+                    "code": "C",
+                    "display": "Deductible"
+                  },
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/benefit-type",
+                    "code": "deductible",
+                    "display": "Deductible"
+                  }
+                ]
+              },
+              "allowedMoney": {
+                "value": 500, // $500 deductible
+                "currency": "USD"
+              }
+            }
+          ]
+        },
+
+        // DEDUCTIBLE - Remaining deductible (in-network)
+        {
+          "category": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              }
+            ]
+          },
+          "network": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/in-network-indicator",
+                "code": "Y",
+                "display": "Yes"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-network",
+                "code": "in",
+                "display": "In-Network"
+              }
+            ]
+          },
+          "unit": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/coverage-level-code",
+                "code": "IND",
+                "display": "Individual"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-unit",
+                "code": "individual",
+                "display": "Individual"
+              }
+            ]
+          },
+          "term": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/time-qualifier-code",
+                "code": "29", //This indicates that this is the remaining deductible
+                "display": "Remaining"
+              }
+            ]
+          },
+          "benefit": [
+            {
+              "type": {
+                "coding": [
+                  {
+                    "system": "https://www.stedi.com/benefit-type-code",
+                    "code": "C",
+                    "display": "Deductible"
+                  },
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/benefit-type",
+                    "code": "deductible",
+                    "display": "Deductible"
+                  }
+                ]
+              },
+              "allowedMoney": {
+                "value": 250, // $250 remaining deductible (in-network)
+                "currency": "USD"
+              }
+            }
+          ]
+        },
+
+        // OUT-OF-POCKET (STOP LOSS) - the amount of money that the patient has to pay
+        // out of pocket before the insurance covers 100% (in-network)
+        {
+          "category": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              }
+            ]
+          },
+          "network": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/in-network-indicator",
+                "code": "Y",
+                "display": "Yes"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-network",
+                "code": "in",
+                "display": "In-Network"
+              }
+            ]
+          },
+          "unit": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/coverage-level-code",
+                "code": "IND",
+                "display": "Individual"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/benefit-unit",
+                "code": "individual",
+                "display": "Individual"
+              }
+            ]
+          },
+          "term": {
+            "coding": [
+              {
+                "system": "https://www.stedi.com/time-qualifier-code",
+                "code": "29",
+                "display": "Remaining"
+              }
+            ]
+          },
+          "benefit": [
+            {
+              "type": {
+                "coding": [
+                  {
+                    "system": "https://www.stedi.com/benefit-type-code",
+                    "code": "G",
+                    "display": "Out of Pocket (Stop Loss)"
+                  },
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/benefit-type",
+                    "code": "benefit",
+                    "display": "Benefit"
+                  }
+                ]
+              },
+              "allowedMoney": {
+                "value": 7000,
+                "currency": "USD"
+              }
+            }
+          ]
+        },
+      ]
+    },
+    //You will usually get out of network benefits as well
+
+]
+}
+
+````
+</details>
+
+Here are the STEDI specific codes that will be included in each of these fields:
+
+<details>
+<summary><strong>Network Indicator Codes</strong> - Indicates whether a service is in-network or out-of-network (System: <code>https://www.stedi.com/in-network-indicator</code>)</summary>
+
+| Code | Display |
+|------|---------|
+| `Y` | Yes |
+| `N` | No |
+| `U` | Unknown |
+| `W` | Not Applicable |
+
+</details>
+
+<details>
+<summary><strong>Coverage Level Codes</strong> - Defines who is covered under the benefit (individual, family, employee, etc.) (System: <code>https://www.stedi.com/coverage-level-code</code>)</summary>
+
+| Code | Display |
+|------|---------|
+| `CHD` | Children Only |
+| `DEP` | Dependents Only |
+| `ECH` | Employee and Children |
+| `EMP` | Employee Only |
+| `ESP` | Employee and Spouse |
+| `FAM` | Family |
+| `IND` | Individual |
+| `SPC` | Spouse and Children |
+| `SPO` | Spouse Only |
+
+</details>
+
+<details>
+<summary><strong>Time Qualifier Codes</strong> - Specifies the time period for the benefit (calendar year, lifetime, remaining, etc.) (System: <code>https://www.stedi.com/time-qualifier-code</code>)</summary>
+
+| Code | Display |
+|------|---------|
+| `6` | 24 Hours |
+| `7` | Years |
+| `13` | Service Year |
+| `21` | Calendar Year |
+| `22` | Year to Date |
+| `23` | Contract |
+| `24` | Episode |
+| `25` | Visit |
+| `26` | Outlier |
+| `27` | Remaining |
+| `28` | Exceeded |
+| `29` | Not Exceeded |
+| `30` | Lifetime |
+| `31` | Lifetime Remaining |
+| `32` | Month |
+| `33` | Hour |
+| `34` | Week |
+| `35` | Day |
+| `36` | Admission |
+
+</details>
+
+<details>
+<summary><strong>Benefit Type Codes</strong> - Defines the type of benefit (deductible, copay, coinsurance, coverage status, etc.) (System: <code>https://www.stedi.com/benefit-type-code</code>)</summary>
+
+| Code | Display |
+|------|---------|
+| `1` | Active Coverage |
+| `2` | Active - Full Risk Capitation |
+| `3` | Active - Services Capitated |
+| `4` | Active - Services Capitated to Primary Care Physician |
+| `5` | Active - Pending Investigation |
+| `6` | Inactive |
+| `7` | Inactive - Pending Eligibility Update |
+| `8` | Inactive - Pending Investigation |
+| `A` | Co-Insurance |
+| `B` | Co-Payment |
+| `C` | Deductible |
+| `CB` | Coverage Basis |
+| `D` | Benefit Description |
+| `E` | Exclusions |
+| `F` | Limitations |
+| `G` | Out of Pocket (Stop Loss) |
+| `H` | Unlimited |
+| `I` | Non-Covered |
+| `J` | Cost Containment |
+| `K` | Reserve |
+| `L` | Primary Care Provider |
+| `M` | Pre-existing Condition |
+| `MC` | Managed Care Coordinator |
+| `O` | Services Restricted to Following Provider |
+| `P` | Not Deemed a Medical Necessity |
+| `Q` | Benefit Disclaimer |
+| `R` | Second Surgical Opinion Required |
+| `S` | Other or Additional Payor |
+| `T` | Prior Year(s) History |
+| `U` | Card(s) Reported Lost/Stolen |
+| `V` | Contact Following Entity for Eligibility or Benefit Information |
+| `W` | Cannot Process |
+| `X` | Other Source of Data |
+| `Y` | Health Care Facility |
+| `N` | Spend Down |
+
+</details>
+
+## Different Subscriber and Dependent
+
+If the subscriber and dependent are different, for example if you are checking benefits for a spouse or child who is covered under their parent's insurance, your Coverage resource will need to reference both the subscriber and dependent Patient resources. You will need to use this model for coverage eligibility checks that are not for the subscriber themselves.
+
+```mermaid
+flowchart TD
+    CER["<div style='text-align: center;'><strong>CoverageEligibilityRequest</strong></div>"]
+
+    ProviderOrg["<div style='text-align: center;'><strong>Organization (Provider)</strong></div><u>identifier</u>:<br>  system: http://hl7.org/fhir/sid/us-npi<br>  value: 1999999984"]
+
+    Patient["<div style='text-align: center;'><strong>Patient (Subscriber)</strong></div>"]
+
+    Patient2["<div style='text-align: center;'><strong>Patient (Dependent)</strong></div>"]
+
+    Coverage["<div style='text-align: center;'><strong>Coverage (Insurance)</strong></div> <div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>subscriberId</u>: AETNA12345<br>"]
+
+    PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: https://www.stedi.com/healthcare/network<br>  value: 60054</div>"]
+
+    CER -->|provider| ProviderOrg
+    CER -->|patient| Patient2
+    CER -->|insurance| Coverage
+    CER -->|insurer| PayerOrg
+
+    Coverage -->|subscriber| Patient
+    Coverage -->|beneficiary| Patient2
+    Coverage -->|payor| PayerOrg
+
+    classDef request fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
+    classDef organization fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
+    classDef patient fill:#D4BCF2,stroke:#333,stroke-width:2px
+    classDef coverage fill:#A5D6A7,stroke:#333,stroke-width:2px
+
+    class CER request
+    class PayerOrg,ProviderOrg organization
+    class Patient patient
+    class Coverage coverage
+````
+
+## How to find the raw eligibility check data
+
+The eligibility check data is also stored in a [DocumentReference](/docs/api/fhir/resources/documentreference) resource with an identifier that has this system: `http://stedi.com/eligibility-response`.
