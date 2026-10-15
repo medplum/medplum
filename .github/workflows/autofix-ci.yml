@@ -47,9 +47,8 @@ jobs:
       - run: npm run lint:fix
 
       # The Decision Guide .docx/.pdf downloads are generated from the guides'
-      # markdown, but the production docs site is built and served by Vercel,
-      # whose sandbox can never have pandoc/LibreOffice. So the generated files
-      # are committed, and regenerated here — a runner does have root — whenever
+      # markdown, but the docs build doesn't install pandoc/LibreOffice. So the
+      # generated files are committed, and regenerated here — a runner does have root — whenever
       # the markdown or the generator itself changes. Output is byte-reproducible
       # (packages/docs/scripts/lib/docx-reproducible.mjs), so an unrelated PR that
       # trips this filter re-commits nothing.
@@ -58,7 +57,7 @@ jobs:
         run: |
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           CHANGED="$(git diff --name-only "$BASE_SHA"...HEAD)"
-          if echo "$CHANGED" | grep -qE '^packages/docs/(docs/decision-guides/|scripts/)'; then
+          if echo "$CHANGED" | grep -qE '^packages/docs/(content/docs/decision-guides/|scripts/)'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"

@@ -3,18 +3,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Regenerates the Decision Guide downloads from their canonical Markdown:
-//   docs/decision-guides/<slug>.md
+//   content/docs/decision-guides/<slug>.md
 //     --pandoc-->  static/decision-guides/<slug>.docx   (editable)
 //     --soffice--> static/decision-guides/<slug>.pdf     (brand-fidelity, all viewers)
 //
 // The PDF is rendered from the finished .docx, so the two can never drift.
 //
 // Run via `npm run build:guides`. This is deliberately NOT a build hook: the
-// production docs site is built and served by Vercel, whose sandbox has no
-// root/apt-get and so can never have pandoc/LibreOffice. The generated files are
-// therefore committed to the repo, and CI regenerates them whenever a guide's
-// markdown changes (.github/workflows/autofix-ci.yml) — so a Vercel build just
-// serves what's already checked in, and never runs this script. Output is
+// docs build runs in CI and locally without pandoc/LibreOffice. The generated
+// files are therefore committed to the repo, and CI regenerates them whenever a
+// guide's markdown changes (.github/workflows/autofix-ci.yml) — so a docs build
+// just serves what's already checked in, and never runs this script. Output is
 // byte-reproducible (see lib/docx-reproducible.mjs) so regenerating unchanged
 // content is a no-op rather than a fresh binary blob in git.
 
@@ -36,13 +35,17 @@ import { fixTableWidths } from './lib/docx-table-widths.mjs';
 import { ensureTrailingParagraph } from './lib/docx-trailing-paragraph.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DOCS_DIR = path.join(__dirname, '..', 'docs', 'decision-guides');
+const DOCS_DIR = path.join(__dirname, '..', 'content', 'docs', 'decision-guides');
 const OUT_DIR = path.join(__dirname, '..', 'static', 'decision-guides');
 const REFERENCE_DOCX = path.join(__dirname, 'decision-guide-reference.docx');
 const WORDMARK_PNG = path.join(__dirname, 'assets', 'medplum-wordmark-grape.png');
 
-function stripFrontMatter(markdown) {
-  return markdown.replace(/^---\n[\s\S]*?\n---\n/, '');
+// The guide's body for pandoc. Hugo pages render their title from front matter, so the H1 is restored here.
+function guideMarkdown(markdown) {
+  const frontMatter = /^---\n([\s\S]*?)\n---\n/.exec(markdown);
+  const title = /^title:\s*(.+)$/m.exec(frontMatter?.[1] ?? '')?.[1].replace(/^(["'])(.*)\1$/, '$2');
+  const body = markdown.slice(frontMatter?.[0].length ?? 0);
+  return title ? `\n# ${title}\n\n${body.trimStart()}` : body;
 }
 
 function sh(cmd, args) {
@@ -143,14 +146,14 @@ function main() {
 
   const slugs = fs
     .readdirSync(DOCS_DIR)
-    .filter((f) => f.endsWith('.md') && f !== 'index.md')
+    .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
     .map((f) => f.replace(/\.md$/, ''));
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-guide-md-'));
   let built = 0;
   for (const slug of slugs) {
     const raw = fs.readFileSync(path.join(DOCS_DIR, `${slug}.md`), 'utf8');
-    const body = stripFrontMatter(raw);
+    const body = guideMarkdown(raw);
 
     const outDocx = path.join(OUT_DIR, `${slug}.docx`);
     try {

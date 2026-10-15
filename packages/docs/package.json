@@ -15,6 +15,7 @@
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
     "build": "rimraf public && hugo --minify",
+    "build:guides": "node scripts/build-decision-guides.mjs",
     "dev": "hugo server --buildDrafts --buildFuture --noHTTPCache",
     "preview": "http-server public -c-1",
     "pxtorem": "postcss assets/**/*.scss --replace --no-map"
