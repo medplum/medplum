@@ -103,7 +103,8 @@
   font-weight: 450;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 
-  [aria-current=date] & {
+  [aria-current=date] &,
+  &.todayWeekday {
     color: inherit;
   }
 }

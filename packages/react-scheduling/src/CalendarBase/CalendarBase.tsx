@@ -96,9 +96,17 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
   );
 }
 
+// Month view headers are weekdays with no date, so FullCalendar never marks one as today.
+function isTodaysWeekday(info: DayHeaderInfo): boolean {
+  const now = new Date();
+  return (
+    !info.dayNumberText && info.dow === now.getDay() && now >= info.view.currentStart && now < info.view.currentEnd
+  );
+}
+
 function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
   return (
-    <span className={classes.dayHeaderText}>
+    <span className={cx(classes.dayHeaderText, isTodaysWeekday(info) && classes.todayWeekday)}>
       {info.textParts.map((part, i) => (
         <span key={i} className={part.type === 'day' ? classes.dayNumber : undefined}>
           {part.value}

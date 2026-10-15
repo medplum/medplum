@@ -215,6 +215,13 @@ describe('CalendarBase', () => {
       const cells = document.querySelectorAll('[aria-current=date] .dayCellTopInner');
       expect(cells).toHaveLength(1);
       expect(cells[0]).toHaveTextContent(today);
+
+      const weekdays = document.querySelectorAll('.todayWeekday');
+      expect(weekdays).toHaveLength(1);
+      expect(weekdays[0]).toHaveTextContent(new Date().toLocaleDateString('en-US', { weekday: 'short' }));
+
+      await userEvent.click(screen.getByLabelText('Next'));
+      expect(document.querySelectorAll('.todayWeekday')).toHaveLength(0);
     });
 
     test('hides slots in the month view', async () => {
