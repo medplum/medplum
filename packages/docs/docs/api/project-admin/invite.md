@@ -251,6 +251,22 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 
 When `mfaRequired: true` is set, the user will be required to enroll in Multi-Factor Authentication during their first login. See [MFA documentation](/docs/auth/mfa) for more details.
 
+#### Inviting an existing ClientApplication
+
+A project admin can add an existing [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) to the project, such as one from a [linked project](/docs/access/projects). The admin must have read access to the client. Set `resourceType` to `ClientApplication` and reference the client in `membership.profile`; `firstName`, `lastName`, `email` and `externalId` are not used. Other `membership` fields (e.g. `accessPolicy`, `admin`) and `upsert` work as for users.
+
+```ts
+await medplum.invite(':projectId', {
+  resourceType: 'ClientApplication',
+  membership: {
+    profile: { reference: 'ClientApplication/:clientId' },
+    accessPolicy: { reference: 'AccessPolicy/:accessPolicyId' },
+  },
+});
+```
+
+Returns the client's new [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership), with both `user` and `profile` referencing the client. Requests without a project in the URL keep authenticating the client into its home project; use project-scoped URLs (`/projects/:projectId/...`) to act in the invited project.
+
 ## See Also
 
 - [User Admin Guide](/docs/user-management)

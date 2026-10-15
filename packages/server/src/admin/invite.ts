@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { InviteRequest, ProfileResource, SearchRequest, WithId } from '@medplum/core';
+import type {
+  ClientApplicationInviteRequest,
+  InviteRequest,
+  ProfileResource,
+  SearchRequest,
+  WithId,
+} from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -17,6 +23,7 @@ import {
 } from '@medplum/core';
 import type {
   AccessPolicy,
+  ClientApplication,
   Patient,
   Project,
   ProjectMembership,
@@ -25,6 +32,7 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
+import type { Meta } from 'express-validator';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
@@ -34,21 +42,30 @@ import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
-import type { SystemRepository } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
+const isClientInvite = (_value: unknown, { req }: Meta): boolean => req.body?.resourceType === 'ClientApplication';
+const isUserInvite = (value: unknown, meta: Meta): boolean => !isClientInvite(value, meta);
+
 export const inviteValidator = makeValidationMiddleware([
-  body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
+  body('resourceType')
+    .isIn(['Patient', 'Practitioner', 'RelatedPerson', 'ClientApplication'])
+    .withMessage('Resource type is required'),
+  body('membership.profile.reference')
+    .if(isClientInvite)
+    .matches(/^ClientApplication\/[^/]+$/)
+    .withMessage('membership.profile must be a reference to a ClientApplication'),
+  body('firstName').if(isUserInvite).notEmpty().withMessage('First name is required'),
+  body('lastName').if(isUserInvite).notEmpty().withMessage('Last name is required'),
   oneOf(
     [
-      body('email').isEmail().withMessage('Valid email address is required'),
-      body('externalId').notEmpty().withMessage('External ID cannot be empty'),
+      body('email').if(isUserInvite).isEmail().withMessage('Valid email address is required'),
+      body('externalId').if(isUserInvite).notEmpty().withMessage('External ID cannot be empty'),
     ],
     { message: 'Either email or externalId is required' }
   ),
@@ -67,21 +84,28 @@ export const inviteValidator = makeValidationMiddleware([
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
 
-  const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
-  if (ctx.project.superAdmin) {
-    inviteRequest.project = await ctx.systemRepo.readResource('Project', projectId as string);
-  } else {
-    inviteRequest.project = ctx.project;
+  const project = ctx.project.superAdmin
+    ? await ctx.systemRepo.readResource<Project>('Project', projectId as string)
+    : ctx.project;
+
+  if (req.body.resourceType === 'ClientApplication') {
+    const membership = await inviteClientApplication(ctx.repo, project, req.body);
+    return sendFhirResponse(req, res, allOk, membership);
   }
 
-  const { membership } = await inviteUser(inviteRequest);
+  const { membership } = await inviteUser({ ...req.body, project });
   return sendFhirResponse(req, res, allOk, membership);
 }
 
 export interface ServerInviteRequest extends InviteRequest {
   project: WithId<Project>;
 }
+
+type MembershipRequest = Pick<
+  ServerInviteRequest,
+  'externalId' | 'accessPolicy' | 'access' | 'admin' | 'membership' | 'upsert' | 'forceNewMembership'
+> & { resourceType: ServerInviteRequest['resourceType'] | ClientApplication['resourceType'] };
 
 export interface ServerInviteResponse {
   user: WithId<User>;
@@ -180,6 +204,42 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   return { user, profile, membership };
+}
+
+/**
+ * Adds an existing ClientApplication to a project.
+ * The client is read with the inviter's repo, so only clients the inviter can read are invitable.
+ * @param repo - The inviter's repository.
+ * @param project - The project to add the client to.
+ * @param request - The client application invite request.
+ * @returns The client's membership in the project.
+ */
+export async function inviteClientApplication(
+  repo: Repository,
+  project: WithId<Project>,
+  request: ClientApplicationInviteRequest
+): Promise<WithId<ProjectMembership>> {
+  let client: WithId<ClientApplication>;
+  try {
+    client = await repo.readReference(request.membership.profile);
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+      throw new OperationOutcomeError(
+        badRequest(`ClientApplication ${getReferenceString(request.membership.profile)} does not exist`)
+      );
+    }
+    throw err;
+  }
+
+  const systemRepo = await getProjectSystemRepo(project);
+  const { membership, upsert } = request;
+  return upsertProjectMembership(
+    systemRepo,
+    { resourceType: 'ClientApplication', membership, upsert },
+    project,
+    client,
+    client
+  );
 }
 
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {
@@ -334,7 +394,7 @@ async function upsertProfileResource(
  */
 async function validateAccessPolicies(
   systemRepo: SystemRepository,
-  request: ServerInviteRequest,
+  request: MembershipRequest,
   project: WithId<Project>
 ): Promise<void> {
   // Collect all access policy references
@@ -392,10 +452,10 @@ async function validateAccessPolicies(
 
 async function upsertProjectMembership(
   systemRepo: SystemRepository,
-  request: ServerInviteRequest,
+  request: MembershipRequest,
   project: WithId<Project>,
-  user: WithId<User>,
-  profile: WithId<ProfileResource>
+  user: WithId<User | ClientApplication>,
+  profile: WithId<ProfileResource | ClientApplication>
 ): Promise<WithId<ProjectMembership>> {
   // Validate access policies before creating/updating membership
   await validateAccessPolicies(systemRepo, request, project);
@@ -517,7 +577,7 @@ async function upsertProjectMembership(
 
 async function searchForExistingMembership(
   systemRepo: SystemRepository,
-  user: WithId<User>,
+  user: WithId<User | ClientApplication>,
   project: WithId<Project>
 ): Promise<ProjectMembership | undefined> {
   return systemRepo.searchOne<ProjectMembership>({

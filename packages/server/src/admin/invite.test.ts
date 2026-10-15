@@ -34,7 +34,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import {
   addTestUser,
@@ -570,6 +570,70 @@ describe('Admin Invite', () => {
       });
     expect(res8).toHaveStatus(200);
     expect(res8.body.profile.reference).toContain('Patient/');
+  });
+
+  test('Invite ClientApplication visible to the inviter', async () => {
+    const {
+      project: linkedProject,
+      client,
+      membership: clientMembership,
+    } = await createTestProject({ withClient: true });
+    const { project, accessToken } = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+      project: { link: [{ project: createReference(linkedProject) }] },
+    });
+    const body = { resourceType: 'ClientApplication', membership: { profile: createReference(client) } };
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(body);
+    expect(res).toHaveStatus(200);
+    expect(res.body.project.reference).toBe(getReferenceString(project));
+    expect(res.body.user.reference).toBe(getReferenceString(client));
+    expect(res.body.profile.reference).toBe(getReferenceString(client));
+
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(body);
+    expect(res2).toHaveStatus(409);
+
+    // Touch the home membership so row order alone would not return it first
+    await withTestContext(() => getGlobalSystemRepo().updateResource({ ...clientMembership, active: true }));
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.project.reference).toBe(getReferenceString(linkedProject));
+  });
+
+  test('Invite ClientApplication not visible to the inviter', async () => {
+    const { client } = await createTestProject({ withClient: true });
+    const { project, accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'ClientApplication', membership: { profile: createReference(client) } });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe(`ClientApplication ${getReferenceString(client)} does not exist`);
+  });
+
+  test('Invite ClientApplication input validation', async () => {
+    const { project, accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+
+    for (const membership of [undefined, { profile: { reference: 'Patient/' + randomUUID() } }]) {
+      const res = await request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'ClientApplication', membership });
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toBe('membership.profile must be a reference to a ClientApplication');
+    }
   });
 
   test('Invite user as admin', async () => {
