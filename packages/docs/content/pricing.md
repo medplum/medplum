@@ -5,20 +5,4 @@ layout: pricing
 standalone: true
 ---
 
-# Pricing
-
-## H2 Test
-
-This is a paragraph
-
-### H3 Test
-
-This is a paragraph
-
-#### H4 Test
-
-This is a paragraph
-
-##### H5 Test
-
-This is a paragraph
+The pricing page is rendered by layouts/_default/pricing.html from data/pricing.yaml.

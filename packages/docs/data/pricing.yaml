@@ -1,0 +1,113 @@
+# The pricing page (layouts/_default/pricing.html).
+#
+# Text is markdown, so links are [text](url). A trailing ^N links to note N. Each row has one value per plan, in the
+# order of `plans`; a `section` row is a bold heading across the table.
+
+intro:
+  - Plans for startups, enterprises, and everyone in between.
+  - For questions about pricing or to [book an intro call](https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a) please reach out to us at [hello@medplum.com](mailto:hello@medplum.com).
+
+# Column groups above the plans: span is the number of plans in the group
+groups:
+  - label: Cloud Hosted ^17
+    span: 4
+  - label: Self Hosted
+    span: 2
+
+plans:
+  - Free ^1
+  - Production ^2
+  - Premium ^3
+  - Enterprise ^4
+  - Community ^5
+  - Enterprise ^6
+
+rows:
+  - feature: Pricing
+    values: [Free, "[$2,000/mo](https://buy.stripe.com/8wM3eN74HelC9fqeUU)", "[$6,000/mo](https://buy.stripe.com/6oEbLj9cPb9q63e4gk)", "[Contact us](https://forms.gle/ZQZq1iWjjWMkUwc9A)", Free, "[Contact us](https://forms.gle/ZQZq1iWjjWMkUwc9A)"]
+  - feature: Standard BAA
+    values: ['', "✔️", "✔️", "✔️", '', "✔️"]
+  - feature: Standard MSA
+    values: ['', "✔️", "✔️", "✔️", '', "✔️"]
+  - feature: "Bots ^7"
+    values: [Not enabled, Enabled, Enabled, Contact us, '', Contact us]
+  - feature: Emails Sent
+    values: [Not enabled, Not enabled, Enabled, Contact us, '', Contact us]
+  - feature: Usage
+    values: ["Test ^13", "Growth ^14", "Scale ^15", "Enterprise ^16", '', "Enterprise ^16"]
+  - feature: Custom Domains
+    values: [None, "1", "5", Contact us, '', Contact us]
+  - feature: UMLS Terminology
+    values: ['', '', "✔️", "✔️", '', "✔️"]
+  - feature: Dedicated Infrastructure
+    values: ['', '', '', Contact us, '', '']
+  - feature: "Data Warehouse ^18"
+    values: ['', '', '', "✔️", '', "✔️"]
+  - section: Communications
+  - feature: "Websocket Subscriptions ^10"
+    values: ['', '', "✔️", "✔️", '', "✔️"]
+  - feature: Concurrent Websocket Connections
+    values: ['', '', "2000", Contact Us, '', Contact Us]
+  - section: Integrations
+  - feature: Lab/Diagnostics
+    values: ['', '', "✔️", "✔️", '', "✔️"]
+  - feature: Medications/eRx
+    values: ['', '', "✔️", "✔️", '', "✔️"]
+  - feature: HL7 Integration Engine
+    values: ['', '', '', "✔️", '', "✔️"]
+  - section: Support
+  - feature: Channels
+    values: ["Discord<br>GitHub", "Discord (SLA)<br>GitHub (SLA)", "Private Slack<br>Email (SLA)", Contact us, "Discord<br>GitHub", Contact us]
+  - feature: Shared Roadmap
+    values: ['', '', '', "✔️", '', "✔️"]
+  - section: Security
+  - feature: Google Auth
+    values: ["✔️", "✔️", "✔️", "✔️", DIY, Contact us]
+  - feature: "Required Auth Methods ^8"
+    values: ['', "✔️", "✔️", "✔️", DIY, "✔️"]
+  - feature: "External Identity Providers ^12"
+    values: ['', "1", "2", Contact Us, DIY, Contact Us]
+  - feature: WAF Blocking
+    values: ["✔️", "✔️", "✔️", "✔️", DIY, "✔️"]
+  - feature: IP Address Restrictions
+    values: ['', '', "✔️", "✔️", DIY, "✔️"]
+  - feature: SCIM Administration
+    values: ['', '', '', "✔️", DIY, "✔️"]
+  - feature: Access Policies
+    values: [Testing only, "3", "10", Contact us, DIY, Contact us]
+  - section: Observability
+  - feature: Log Streaming
+    values: ['', '', "✔️", "✔️", DIY, "✔️"]
+  - feature: CISO Dashboard
+    values: ['', '', '', "✔️", '', "✔️"]
+  - section: "Compliance ^9"
+  - feature: SOC 2
+    values: ["✔️", "✔️", "✔️", "✔️", '', Contact us]
+  - feature: CLIA/CAP
+    values: ['', '', '', Contact us, '', Contact us]
+  - feature: ONC
+    values: ['', '', "✔️", Contact us, '', Contact us]
+  - feature: "Audit Support ^11"
+    values: ['', '', '', "✔️", '', "✔️"]
+  - feature: Sign Up
+    bold: true
+    values: ['', "[Start Now](https://buy.stripe.com/bIY16F88LgtKfDO146)", "[Start Now](https://buy.stripe.com/6oEbLj9cPb9q63e4gk)", "[Contact Us](https://forms.gle/ZQZq1iWjjWMkUwc9A)", '', "[Contact Us](https://forms.gle/ZQZq1iWjjWMkUwc9A)"]
+notes:
+  - "**Free**: recommended for prototyping or learning. See [Why Open Source](/open-source)."
+  - "**Production**: recommended for production applications, e.g. treatment of patients or conducting research."
+  - "**Premium**: Includes diagnostics, lab and medication integrations. Recommended for messaging heavy and integration heavy use cases."
+  - "**Enterprise**: recommended for institutions with complex workflow, integration or data requirements. Read more details on our [Enterprise](/enterprise) offering page."
+  - "**Community**: refers to self-hosting the [Medplum application](https://github.com/medplum/medplum). See [Why Open Source](/open-source)."
+  - "**Enterprise Self-Hosted**: recommended for those who must host the application on their own cloud infrastructure. Read more details on our [Enterprise](/enterprise) offering page."
+  - "**Bot Invocations**: refers to custom logic written by customers to execute their workflow. [Automation](https://www.medplum.com/products/bots) documentation and [integration](https://www.medplum.com/products/integration) are a good place to learn more."
+  - "**Required authentication methods**: Organizations can require that all logins at their domain go through their identity provider of choice."
+  - "**Compliance**: Many complex compliance scenarios can be supported with this infrastructure. You can read more on the [compliance page](https://www.medplum.com/docs/compliance)."
+  - "**Websocket Subscriptions**: maximal number of concurrent websocket [subscriptions](https://www.medplum.com/docs/subscriptions) available."
+  - "**Audit Support**: receive support during common audits common in health system and payor partnerships."
+  - "**External Identity Providers**: connect your Okta, Azure SSO, Auth0 or other oAuth based identity provider."
+  - "**Test Usage**: For low-volume use cases such as development, testing, or small internal tools."
+  - "**Growth Usage**: Supports moderate usage typical of production deployments or lightweight applications."
+  - "**Scale Usage**: Designed for high-throughput environments with sustained and growing traffic."
+  - "**Enterprise Usage**: Handles very high or mission-critical volumes, with customization and service level guarantees."
+  - "**Cloud Hosted**: Medplum is available for purchase through [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-gfbi35l2l7mma?sr=0-1&ref_=beagle&applicationId=AWSMPContessa)."
+  - "**Data Warehouse**: scheduled synchronization of FHIR resources to open Apache Iceberg tables, queried in place from [Snowflake](https://www.medplum.com/docs/analytics/snowflake), [Amazon Redshift](https://www.medplum.com/docs/analytics/redshift) and other engines."
