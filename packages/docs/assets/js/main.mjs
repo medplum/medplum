@@ -119,10 +119,12 @@ document.body.addEventListener('click', (e) => {
     }
   }
 
+  // As in Docusaurus, a category label without a page (a <span>, so no href) toggles like the caret; one with a page
+  // expands on the way there, and toggles once you're on it
   if (target.matches('.sidebar-category-link')) {
     const category = target.closest('.sidebar-category');
     if (category) {
-      if (isCurrentPage(target.href)) {
+      if (!target.href || isCurrentPage(target.href)) {
         category.classList.toggle('expanded');
       } else {
         category.classList.add('expanded');
@@ -148,6 +150,9 @@ export const swup = new Swup({
   containers: ['#swup'],
   animationSelector: false,
   animateHistoryBrowsing: false,
+  // Compare URLs without a trailing slash: hugo server serves /docs/api/ while links say /docs/api, which would make a
+  // link to the current page a new visit instead of a scroll (production URLs have no trailing slash)
+  resolveUrl: (url) => url.replace(/(.)\/(?=[?#]|$)/, '$1'),
   // Fetch a page when its link is hovered or touched, so the click renders from swup's cache (as Docusaurus does)
   plugins: [new SwupPreloadPlugin()],
 });
