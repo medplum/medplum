@@ -157,6 +157,8 @@ export interface AppointmentProposalFormProps {
   readonly onToggleTimeFinder?: (open: boolean) => void;
   /** Called with the visit type as it changes. */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
+  /** Called whenever the form starts or stops holding answers beyond the ones it opened with. */
+  readonly onDirtyChange?: (dirty: boolean) => void;
   /**
    * Called with the time chosen, and with `undefined` once it is dropped.
    *
@@ -227,6 +229,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
+    onDirtyChange,
     onChangeTime,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
@@ -256,6 +259,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
+  const [opening] = useState({ location, service, selections, patient });
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
@@ -403,6 +407,18 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       onChangeTime?.(toRange(chosen));
     }
   }, [chosen, defaultStartTime, onChangeTime]);
+
+  const dirty =
+    location !== opening.location ||
+    service !== opening.service ||
+    selections !== opening.selections ||
+    patient !== opening.patient ||
+    requirementValues !== EMPTY_REQUIREMENT_VALUES ||
+    occurrenceCount !== 1 ||
+    manualDateTime !== undefined ||
+    manualDurationMinutes !== undefined ||
+    (chosen !== undefined && chosen !== manualChoice);
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   function toggleFinder(): void {
     setFinding(!finding);

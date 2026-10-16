@@ -16,6 +16,7 @@ import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
+import { ConfirmModal } from '../../ConfirmModal/ConfirmModal';
 import { getAvailabilityFieldsError } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
 import {
   getBlockingErrors,
@@ -24,7 +25,6 @@ import {
 import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
-import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';

@@ -528,6 +528,67 @@ describe('SchedulingWorkspace booking', () => {
       expect(markedTime()).toBe('none');
     });
 
+    function discardDialog(): HTMLElement | null {
+      return screen.queryByRole('dialog', { name: 'Discard unsaved changes?' });
+    }
+
+    async function answer(button: 'Keep editing' | 'Discard changes'): Promise<void> {
+      await act(async () => {
+        fireEvent.click(within(discardDialog() as HTMLElement).getByRole('button', { name: button }));
+      });
+    }
+
+    test('Asks before an appointment replaces a booking form holding answers', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      await chooseImagingService();
+
+      await clickBookedVisit();
+      expect(discardDialog()).toBeInTheDocument();
+      await answer('Keep editing');
+
+      expect(hasPill('Ultrasound Imaging')).toBe(true);
+      expect(detailsPane()).not.toBeInTheDocument();
+    });
+
+    test('Opens the appointment once the answers are discarded', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      await chooseImagingService();
+
+      await clickBookedVisit();
+      await answer('Discard changes');
+
+      expect(detailsPane()).toBeInTheDocument();
+      expect(bookingPaneHeading()).not.toBeInTheDocument();
+    });
+
+    test('Asks for answers on the Block tab too', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      fireEvent.change(screen.getByLabelText(/^Comment/), { target: { value: 'Lunch' } });
+
+      await clickBookedVisit();
+
+      expect(discardDialog()).toBeInTheDocument();
+    });
+
+    test('Asks nothing once the form holding answers was closed', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      await chooseImagingService();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /close booking form/i }));
+      });
+      expect(discardDialog()).not.toBeInTheDocument();
+
+      await clickBookedVisit();
+
+      expect(discardDialog()).not.toBeInTheDocument();
+      expect(detailsPane()).toBeInTheDocument();
+    });
+
     test('Clicking open time puts the booking form back over the details', async () => {
       await setupWithVisit();
       await clickBookedVisit();
