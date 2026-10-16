@@ -4,6 +4,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import {
   createReference,
   extractServiceTypeReferences,
+  getDisplayString,
   getExtension,
   getReferenceString,
   isDefined,
@@ -14,6 +15,7 @@ import {
   setPrimaryProvider,
 } from '@medplum/core';
 import type { Appointment, AppointmentParticipant, Schedule, Slot } from '@medplum/fhirtypes';
+import { isActorInactive } from '../actors';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
 import { buildElevatedBooking } from './buildElevatedBooking';
 
@@ -121,6 +123,13 @@ export async function writeElevatedReschedule(
     throw new Error(
       'Every selected schedule must be active, have exactly one actor, and be eligible for this visit type.'
     );
+  }
+  const actors = await Promise.all(
+    schedules.map((schedule) => medplum.readReference(schedule.actor[0], { cache: 'no-cache' }).catch(() => undefined))
+  );
+  const inactiveActor = actors.find((actor) => actor && isActorInactive(actor));
+  if (inactiveActor) {
+    throw new Error(`${getDisplayString(inactiveActor)} is inactive.`);
   }
   // A move that keeps its schedules is moving off ones already read above.
   const loadedSchedules = new Map(scheduleRefs.map((reference, index) => [reference, schedules[index]]));

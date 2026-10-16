@@ -44,6 +44,24 @@ export function isBookableActorType(value: string | undefined): value is Bookabl
 }
 
 /**
+ * Whether an actor is turned off: a provider marked inactive, or a room or device whose status is `inactive`.
+ * Scheduling operations refuse a Schedule whose actor is turned off.
+ * @param resource - The actor.
+ * @returns True when it is inactive.
+ */
+export function isActorInactive(resource: Dereference<SchedulingActor>): boolean {
+  switch (resource.resourceType) {
+    case 'Practitioner':
+      return resource.active === false;
+    case 'Location':
+    case 'Device':
+      return resource.status === 'inactive';
+    default:
+      return false;
+  }
+}
+
+/**
  * Extracts the resource type of an actor, given as itself or as a reference.
  *
  * Only supports references that may be used for Scheduling operations, which are

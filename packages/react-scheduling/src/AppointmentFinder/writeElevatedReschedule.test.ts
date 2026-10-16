@@ -16,6 +16,7 @@ import { MockClient } from '@medplum/mock';
 import {
   DrRiveraSchedule,
   ExamRoomASchedule,
+  ExamRoomB,
   ExamRoomBSchedule,
   ImagingBenchFixtures,
   RiveraImagingAppointment,
@@ -228,6 +229,13 @@ describe('writeElevatedReschedule', () => {
     await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow(
       'Every selected schedule must'
     );
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  test('rejects a schedule whose actor is inactive', async () => {
+    await medplum.updateResource({ ...ExamRoomB, status: 'inactive' });
+    const create = vi.spyOn(medplum, 'createResource');
+    await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow('Exam Room B is inactive.');
     expect(create).not.toHaveBeenCalled();
   });
 

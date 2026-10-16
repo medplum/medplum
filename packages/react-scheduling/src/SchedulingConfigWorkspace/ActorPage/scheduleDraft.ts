@@ -14,6 +14,7 @@ import {
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
+import { isActorInactive } from '../../actors';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActorResource } from '../../configSearch';
 import type { SchedulingParameterValues } from '../../parameterValues';
@@ -29,7 +30,7 @@ import {
   initialAvailabilityFieldsValue,
   toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices, isActorInactive, isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
 
 /** What a Schedule sets for one visit type it offers. */
 export interface OfferingFields {
