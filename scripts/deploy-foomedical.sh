@@ -5,11 +5,23 @@ if [[ -z "${FOOMEDICAL_BUCKET}" ]]; then
   exit 1
 fi
 
-# Fail on error
+# Exit on error
 set -e
 
-# Echo commands
-set -x
+if [[ -z "${MEDPLUM_BASE_URL}" ]]; then
+  echo "MEDPLUM_BASE_URL is missing"
+  exit 1
+fi
 
-# Fast upload the foomedical build to S3
+# Inject env vars into build output. foomedical.com has its own reCAPTCHA key, separate from the app's.
+find "examples/foomedical/dist" -type f -exec sed -i \
+  -e "s|__MEDPLUM_BASE_URL__|${MEDPLUM_BASE_URL}|g" \
+  -e "s|__MEDPLUM_CLIENT_ID__||g" \
+  -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
+  -e "s|__RECAPTCHA_SITE_KEY__|${FOOMEDICAL_RECAPTCHA_SITE_KEY}|g" \
+  {} \;
+
+echo "Environment variable replacement complete."
+
+# Fast upload the build output to S3
 node scripts/s3deploy.mjs examples/foomedical/dist "s3://${FOOMEDICAL_BUCKET}"

@@ -191,11 +191,11 @@ curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHO
 # Run the appropriate deploy scripts
 #
 
-if [[ "$DEPLOY_APP" = true ]]; then
-  echo "Deploy app"
-
-  # We create a subshell for the build since we need to set the env vars to our placeholders for the Docker build
-  # We will replace the placeholders later with our actual env vars in deploy-app.sh
+# Runs `npm run <script> -- <turbo args>` in a subshell with the env vars set to placeholders, which the
+# deploy-*.sh scripts later replace with real values in the build output
+build_with_placeholders() {
+  local script="$1"
+  shift
   (
     export MEDPLUM_BASE_URL="__MEDPLUM_BASE_URL__"
     export MEDPLUM_CLIENT_ID="__MEDPLUM_CLIENT_ID__"
@@ -203,8 +203,13 @@ if [[ "$DEPLOY_APP" = true ]]; then
     export MEDPLUM_AWS_TEXTRACT_ENABLED="__MEDPLUM_AWS_TEXTRACT_ENABLED__"
     export GOOGLE_CLIENT_ID="__GOOGLE_CLIENT_ID__"
     export RECAPTCHA_SITE_KEY="__RECAPTCHA_SITE_KEY__"
-    npm run build -- --force --filter=@medplum/app
+    npm run "$script" -- "$@"
   )
+}
+
+if [[ "$DEPLOY_APP" = true ]]; then
+  echo "Deploy app"
+  build_with_placeholders build --force --filter=@medplum/app
 
   source ./scripts/build-docker-app.sh --latest
   source ./scripts/deploy-app.sh
@@ -238,28 +243,16 @@ fi
 
 # Examples deploy after docs so their failures can't block docs
 
-# Builds an example with its own .env.defaults: Vite ranks process.env above .env, so the app's deploy
-# env would otherwise override the example's config. Remaining args are passed to turbo.
-build_example() {
-  local example="$1"
-  shift
-  (
-    # shellcheck disable=SC2046
-    unset $(sed -n 's/^\([A-Z_][A-Z0-9_]*\)=.*/\1/p' "examples/${example}/.env.defaults")
-    npm run build:all -- "$@"
-  ) || exit 1
-}
-
 if [[ "$DEPLOY_FOOMEDICAL" = true ]]; then
   echo "Deploy foomedical"
   # --only: build:fast already built all of its dependencies
-  build_example foomedical --only --filter=foomedical
+  build_with_placeholders build:all --only --filter=foomedical || exit 1
   source ./scripts/deploy-foomedical.sh
 fi
 
 if [[ "$DEPLOY_PROVIDER" = true ]]; then
   echo "Deploy provider"
   # Not --only: it depends on packages build:fast skips (react-scheduling, dosespot, etc.)
-  build_example medplum-provider --filter=medplum-provider
+  build_with_placeholders build:all --filter=medplum-provider || exit 1
   source ./scripts/deploy-provider-app.sh
 fi
