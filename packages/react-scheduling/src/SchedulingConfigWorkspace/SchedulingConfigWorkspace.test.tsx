@@ -407,14 +407,14 @@ describe('SchedulingConfigWorkspace', () => {
 
     fireEvent.focus(timezone);
     fireEvent.change(timezone, { target: { value: 'America/Chicago' } });
-    fireEvent.click(screen.getByText('America/Chicago'));
+    fireEvent.click(screen.getByRole('option'));
     await userEvent.click(saveButton());
 
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument());
     expect(row('Dr. Anika Patel')).toHaveAttribute('aria-current', 'true');
     expect(
       within(within(details()).getByRole('region', { name: 'General' })).getByRole('textbox', { name: 'Time zone' })
-    ).toHaveValue('America/Chicago');
+    ).toHaveValue('(CT) Central Time - Chicago');
   });
 
   test('an empty project says each section has nothing yet, and still offers to create a visit type, room, or device', async () => {

@@ -20,6 +20,7 @@ import {
   getBlockingErrors,
   getInheritedDefaults,
   getSchedulingParameterWarnings,
+  getTimezoneLabel,
   getTimezoneOptions,
   getVisibleParameters,
   isSupportedTimezone,
@@ -47,7 +48,7 @@ function setField(name: string, value: string): void {
 function pickTimezone(name: string, zone: string): void {
   fireEvent.focus(field(name));
   fireEvent.change(field(name), { target: { value: zone } });
-  fireEvent.click(screen.getByText(zone));
+  fireEvent.click(screen.getByRole('option'));
 }
 
 function clearTimezone(label: string): void {
@@ -314,7 +315,7 @@ describe('SchedulingParametersEditor', () => {
       renderEditor(withZones(zones));
 
       for (const key of ['timezone', 'alignmentTimezone'] as const) {
-        expect(field(key)).toHaveValue(zones[key] ?? '');
+        expect(field(key)).toHaveValue(zones[key] ? getTimezoneLabel(zones[key]) : '');
         // Mantine marks a Select read-only unless it is searchable, so this fails if the field stops
         // being a picker the user can type into.
         expect(field(key)).not.toHaveAttribute('readonly');
@@ -402,7 +403,7 @@ describe('SchedulingParametersEditor', () => {
     test('is shown in a picker that can be changed', () => {
       renderEditor(service);
 
-      expect(field('timezone')).toHaveValue('America/Chicago');
+      expect(field('timezone')).toHaveValue('(CT) Central Time - Chicago');
       expect(field('timezone')).not.toHaveAttribute('readonly');
     });
 
@@ -905,10 +906,16 @@ describe('timezone options', () => {
     expect(isSupportedTimezone('Nowhere/Nothing')).toBe(false);
   });
 
-  test('folds a stored zone in without duplicating one already offered', () => {
-    const options = getTimezoneOptions(['Mars/Olympus_Mons', 'Etc/UTC', undefined]);
+  test('offers US zones first, then the rest west to east, folding a stored zone in once', () => {
+    const [us, others] = getTimezoneOptions(['Mars/Olympus_Mons', 'Etc/UTC', 'America/Chicago', undefined]);
+    const values = [...us.items, ...others.items].map((item) => item.value);
+    const otherLabels = others.items.map((item) => item.label);
+    const tokyo = 'Japan Standard Time - Tokyo';
 
-    expect(options).toContain('Mars/Olympus_Mons');
-    expect(options.filter((option) => option === 'Etc/UTC')).toHaveLength(1);
+    expect(us.items[0].label).toBe('(ET) Eastern Time - New York');
+    expect(otherLabels.indexOf(tokyo)).toBeGreaterThan(otherLabels.indexOf(getTimezoneLabel('Europe/London')));
+    expect(others.items).toContainEqual({ value: 'Mars/Olympus_Mons', label: 'Mars/Olympus_Mons' });
+    expect(values.filter((value) => value === 'Etc/UTC')).toHaveLength(1);
+    expect(values.filter((value) => value === 'America/Chicago')).toHaveLength(1);
   });
 });

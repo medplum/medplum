@@ -9,7 +9,7 @@ import type { CSSProperties, JSX, ReactNode } from 'react';
 import { useId, useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
-import { getTimezoneOptions } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
+import { getTimezoneOptions, timezoneFilter } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
 import { hasEditableName } from './actorDraft';
 
@@ -193,6 +193,7 @@ function TimezoneField(props: {
       styles={warn ? { wrapper: WARNING_INPUT } : undefined}
       inputWrapperOrder={['label', 'input', 'description', 'error']}
       data={options}
+      filter={timezoneFilter}
       value={value ?? null}
       placeholder="Not set"
       onChange={(next) => onChange(next ?? undefined)}
