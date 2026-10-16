@@ -20,7 +20,9 @@ if (!window.Kapa) {
   window.Kapa = kapa;
 }
 
-// Google Analytics, only in production builds (see layouts/partials/head-tags.html)
+// Google Analytics, only in production builds (see layouts/partials/head-tags.html). Swup navigations are counted by
+// GA's enhanced measurement ("page changes based on browser history events"), which is on for this property, so the
+// site doesn't send its own page_view events; doing both counted every navigation twice.
 if (gaId) {
   window.dataLayer = window.dataLayer || [];
   // gtag.js expects the arguments object itself, not an array

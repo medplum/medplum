@@ -143,11 +143,6 @@ export const swup = new Swup({
 
 swup.hooks.on('visit:start', closeMobileNav);
 
-// Report swup navigations to Google Analytics, which only sees full page loads (gtag is production-only)
-swup.hooks.on('page:view', () => {
-  window.gtag?.('event', 'page_view', { page_location: window.location.href, page_title: document.title });
-});
-
 swup.hooks.before('content:replace', (visit) => {
   updateAttributes(visit.to.url);
   updateActiveNavbarLinks(visit.to.url);
