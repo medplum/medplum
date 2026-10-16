@@ -111,7 +111,8 @@ function updateActiveLinks() {
 document.body.addEventListener('click', (e) => {
   const target = e.target;
 
-  if (target.matches('.sidebar-caret')) {
+  // The whole caret wrapper is the click target (it has the hover highlight), not just the 24px caret inside it
+  if (target.closest('.sidebar-caret-wrapper')) {
     const category = target.closest('.sidebar-category');
     if (category) {
       category.classList.toggle('expanded');
