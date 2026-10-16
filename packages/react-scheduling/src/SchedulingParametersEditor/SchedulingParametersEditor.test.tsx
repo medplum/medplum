@@ -906,14 +906,14 @@ describe('timezone options', () => {
     expect(isSupportedTimezone('Nowhere/Nothing')).toBe(false);
   });
 
-  test('offers US zones first, then the rest west to east, folding a stored zone in once', () => {
+  test('offers US zones first, then the rest by name, folding a stored zone in once', () => {
     const [us, others] = getTimezoneOptions(['Mars/Olympus_Mons', 'Etc/UTC', 'America/Chicago', undefined]);
     const values = [...us.items, ...others.items].map((item) => item.value);
-    const otherLabels = others.items.map((item) => item.label);
-    const tokyo = 'Japan Standard Time - Tokyo';
+    // The abbreviation does not count, so Toronto files under E rather than ahead of every unabbreviated name.
+    const sample = ['Central European Time - Berlin', '(ET) Eastern Time - Toronto', 'Japan Standard Time - Tokyo'];
 
     expect(us.items[0].label).toBe('(ET) Eastern Time - New York');
-    expect(otherLabels.indexOf(tokyo)).toBeGreaterThan(otherLabels.indexOf(getTimezoneLabel('Europe/London')));
+    expect(others.items.map((item) => item.label).filter((label) => sample.includes(label))).toEqual(sample);
     expect(others.items).toContainEqual({ value: 'Mars/Olympus_Mons', label: 'Mars/Olympus_Mons' });
     expect(values.filter((value) => value === 'Etc/UTC')).toHaveLength(1);
     expect(values.filter((value) => value === 'America/Chicago')).toHaveLength(1);

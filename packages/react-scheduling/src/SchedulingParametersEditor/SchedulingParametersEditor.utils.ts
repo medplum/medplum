@@ -143,15 +143,11 @@ const US_TIMEZONES: Record<string, string> = {
 };
 
 interface TimezoneOption extends ComboboxItem {
-  /** Minutes ahead of UTC right now, for sorting. */
-  readonly offset: number;
+  /** The label without its abbreviation, so `(ET) Eastern Time` sorts under E rather than ahead of every name. */
+  readonly place: string;
 }
 
-function timeZoneNamePart(
-  zone: string,
-  timeZoneName: 'shortGeneric' | 'longGeneric' | 'longOffset',
-  locale?: string
-): string {
+function timeZoneNamePart(zone: string, timeZoneName: 'shortGeneric' | 'longGeneric', locale?: string): string {
   return (
     new Intl.DateTimeFormat(locale, { timeZone: zone, timeZoneName })
       .formatToParts()
@@ -168,20 +164,16 @@ function timeZoneNamePart(
  */
 function getTimezoneOption(zone: string): TimezoneOption {
   try {
-    // Read in en-US so the offset parses the same way whatever the viewer's locale, and so US zones get their
-    // abbreviations. Older runtimes write UTC itself as a bare `GMT`.
-    const gmt = timeZoneNamePart(zone, 'longOffset', 'en-US');
-    const [, sign = '+', hours = '00', minutes = '00'] = /^GMT([+-])(\d{2}):(\d{2})$/.exec(gmt) ?? [];
-    const offset = (sign === '-' ? -1 : 1) * (Number(hours) * 60 + Number(minutes));
     const city = (zone.split('/').pop() ?? zone).replaceAll('_', ' ');
     // A zone the runtime has no name for comes back as an offset, so the city stands alone.
     const name = timeZoneNamePart(zone, 'longGeneric');
     const place = US_TIMEZONES[zone] ?? (name.startsWith('GMT') ? city : `${name} - ${city}`);
-    // Without one, the runtime writes a phrase such as `Germany Time` instead.
+    // Read in en-US so US zones get their abbreviations whatever the viewer's locale. Without one, the runtime
+    // writes a phrase such as `Germany Time` instead.
     const abbreviation = timeZoneNamePart(zone, 'shortGeneric', 'en-US');
-    return { value: zone, label: /^[A-Z]{2,5}$/.test(abbreviation) ? `(${abbreviation}) ${place}` : place, offset };
+    return { value: zone, label: /^[A-Z]{2,5}$/.test(abbreviation) ? `(${abbreviation}) ${place}` : place, place };
   } catch {
-    return { value: zone, label: zone, offset: 0 };
+    return { value: zone, label: zone, place: zone };
   }
 }
 
@@ -198,7 +190,7 @@ export function getTimezoneLabel(zone: string): string {
  * The timezones to offer, US zones first, with anything already stored added so a value the runtime does not
  * list is still shown rather than silently dropped from the field.
  * @param stored - Identifiers already on the resource, which may include ones the runtime does not list.
- * @returns The US zones, then every other zone from west to east, each appearing once.
+ * @returns The US zones, then every other zone alphabetically, each appearing once.
  */
 export function getTimezoneOptions(stored: (string | undefined)[] = []): ComboboxItemGroup<ComboboxItem>[] {
   let supported: string[] = [];
@@ -220,7 +212,7 @@ export function getTimezoneOptions(stored: (string | undefined)[] = []): Combobo
       group: 'Other time zones',
       items: [...others]
         .map(getTimezoneOption)
-        .sort((a, b) => a.offset - b.offset || a.label.localeCompare(b.label))
+        .sort((a, b) => a.place.localeCompare(b.place))
         .map(toItem),
     },
   ];
