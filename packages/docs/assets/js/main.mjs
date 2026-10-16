@@ -10,6 +10,7 @@ import { initKapa } from './components/kapa.mjs';
 import { initMermaid } from './components/mermaid.mjs';
 import { initSearch, openSearchFromPage } from './components/search.mjs';
 import { initTabs } from './components/tabs.mjs';
+import { initCopyCode } from './components/copy-code.mjs';
 import { destroyToc, initToc } from './components/toc.mjs';
 
 function setAttribute(key, value) {
@@ -177,6 +178,7 @@ swup.hooks.on('content:replace', (visit) => {
   initSolutions();
   updateNavbarScroll();
   initTabs();
+  initCopyCode();
   initMermaid();
   initToc();
   updateActiveLinks();
@@ -192,6 +194,7 @@ initCountUps();
 initProducts();
 initSolutions();
 initTabs();
+initCopyCode();
 initMermaid();
 initToc();
 initKapa(swup);
