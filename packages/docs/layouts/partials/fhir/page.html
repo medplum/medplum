@@ -17,8 +17,10 @@
   {{- $parts := split $html "<h2" -}}
   {{- $note = index $parts 0 -}}
   {{- range after 1 $parts -}}
-    {{- $heading := index (findRESubmatch `^[^>]*>(.*?)</h2>` . 1) 0 -}}
-    {{- $sections = $sections | append (dict "label" (index $heading 1 | plainify) "html" (strings.TrimPrefix (index $heading 0) .)) -}}
+    {{- $heading := index (findRESubmatch `(?s)^[^>]*>(.*?)</h2>` . 1) 0 -}}
+    {{- /* The label without the heading's "#" link (layouts/_markup/render-heading.html) */ -}}
+    {{- $label := index $heading 1 | replaceRE `(?s)<a [^>]*class="hash-link".*?</a>` "" | plainify -}}
+    {{- $sections = $sections | append (dict "label" $label "html" (strings.TrimPrefix (index $heading 0) .)) -}}
   {{- end -}}
 {{- end -}}
 
