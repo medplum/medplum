@@ -414,7 +414,7 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Dr. Anika Patel')).toHaveAttribute('aria-current', 'true');
     expect(
       within(within(details()).getByRole('region', { name: 'General' })).getByRole('textbox', { name: 'Time zone' })
-    ).toHaveValue('(CT) Central Time - Chicago');
+    ).toHaveValue('(CT) Central Time');
   });
 
   test('an empty project says each section has nothing yet, and still offers to create a visit type, room, or device', async () => {

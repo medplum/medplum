@@ -403,7 +403,7 @@ describe('SchedulingParametersEditor', () => {
     test('is shown in a picker that can be changed', () => {
       renderEditor(service);
 
-      expect(field('timezone')).toHaveValue('(CT) Central Time - Chicago');
+      expect(field('timezone')).toHaveValue('(CT) Central Time');
       expect(field('timezone')).not.toHaveAttribute('readonly');
     });
 
@@ -912,7 +912,7 @@ describe('timezone options', () => {
     // The abbreviation does not count, so Toronto files under E rather than ahead of every unabbreviated name.
     const sample = ['Central European Time - Berlin', '(ET) Eastern Time - Toronto', 'Japan Standard Time - Tokyo'];
 
-    expect(us.items[0].label).toBe('(ET) Eastern Time - New York');
+    expect(us.items[0].label).toBe('(ET) Eastern Time');
     expect(others.items.map((item) => item.label).filter((label) => sample.includes(label))).toEqual(sample);
     expect(others.items).toContainEqual({ value: 'Mars/Olympus_Mons', label: 'Mars/Olympus_Mons' });
     expect(values.filter((value) => value === 'Etc/UTC')).toHaveLength(1);

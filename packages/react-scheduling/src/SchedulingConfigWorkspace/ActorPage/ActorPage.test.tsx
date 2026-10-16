@@ -1123,7 +1123,7 @@ describe('ActorPage', () => {
       expect(await screen.findByText('Rejected by policy')).toBeInTheDocument();
       expect(sentResources(medplum).map((resource) => resource.resourceType)).toEqual(['Practitioner', 'Schedule']);
       expect(onSynced).not.toHaveBeenCalled();
-      expect(timezoneField()).toHaveValue('(CT) Central Time - Chicago');
+      expect(timezoneField()).toHaveValue('(CT) Central Time');
       expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toHaveValue('15 min');
       expect(saveBar()).not.toBeNull();
     });

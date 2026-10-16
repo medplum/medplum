@@ -128,18 +128,17 @@ export function isSupportedTimezone(value: string): boolean {
 }
 
 /**
- * Offered ahead of the rest, east to west, since they are the ones most deployments pick. Named by hand so
- * Arizona and Hawaii read like the others, where the runtime says Mountain Standard Time and
- * Hawaii-Aleutian Standard Time.
+ * Offered ahead of the rest, east to west, since they are the ones most deployments pick. Named by hand so they
+ * go without a city, and so Arizona reads as its own zone rather than the runtime's Mountain Standard Time.
  */
 const US_TIMEZONES: Record<string, string> = {
-  'America/New_York': 'Eastern Time - New York',
-  'America/Chicago': 'Central Time - Chicago',
-  'America/Denver': 'Mountain Time - Denver',
-  'America/Phoenix': 'Mountain Time - Arizona',
-  'America/Los_Angeles': 'Pacific Time - Los Angeles',
-  'America/Anchorage': 'Alaska Time - Anchorage',
-  'Pacific/Honolulu': 'Hawaii Time - Honolulu',
+  'America/New_York': 'Eastern Time',
+  'America/Chicago': 'Central Time',
+  'America/Denver': 'Mountain Time',
+  'America/Phoenix': 'Arizona Time',
+  'America/Los_Angeles': 'Pacific Time',
+  'America/Anchorage': 'Alaska Time',
+  'Pacific/Honolulu': 'Hawaii-Aleutian Time',
 };
 
 interface TimezoneOption extends ComboboxItem {
@@ -156,7 +155,7 @@ function timeZoneNamePart(zone: string, timeZoneName: 'shortGeneric' | 'longGene
 }
 
 /**
- * Describes a timezone the way calendar apps list them, e.g. `(ET) Eastern Time - New York`. The abbreviation
+ * Describes a timezone the way calendar apps list them, e.g. `(ET) Eastern Time - Toronto`. The abbreviation
  * is the generic one, so the label reads the same either side of daylight saving. Most zones outside the
  * Americas have no abbreviation and go without.
  * @param zone - The IANA identifier.
@@ -178,7 +177,7 @@ function getTimezoneOption(zone: string): TimezoneOption {
 }
 
 /**
- * Labels a timezone the way calendar apps list them, e.g. `(ET) Eastern Time - New York`.
+ * Labels a timezone the way calendar apps list them, e.g. `(ET) Eastern Time`.
  * @param zone - The IANA identifier.
  * @returns The label, or the bare identifier when the runtime cannot resolve it.
  */
