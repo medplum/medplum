@@ -28,9 +28,6 @@
     "source-map-explorer": "source-map-explorer dist/**/*.js --gzip",
     "test": "vitest run"
   },
-  "browserslist": [
-    "last 1 Chrome versions"
-  ],
   "devDependencies": {
     "@mantine/core": "8.3.18",
     "@mantine/dropzone": "8.3.18",

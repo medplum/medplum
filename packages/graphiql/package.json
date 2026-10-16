@@ -21,9 +21,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "browserslist": [
-    "last 1 Chrome versions"
-  ],
   "devDependencies": {
     "@graphiql/react": "0.39.1",
     "@graphiql/toolkit": "0.12.1",
