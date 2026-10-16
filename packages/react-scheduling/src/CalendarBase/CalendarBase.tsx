@@ -213,6 +213,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     loading,
     toolbarStart,
     toolbarEnd,
+    views,
     ...fullCalendarProps
   } = props;
 
@@ -388,6 +389,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
             data={[
               { label: 'Month', value: 'dayGridMonth' },
               { label: 'Week', value: 'timeGridWeek' },
+              ...(views?.timeGridFourDay ? [{ label: '4 Day', value: 'timeGridFourDay' }] : []),
               { label: 'Day', value: 'timeGridDay' },
             ]}
           />
@@ -402,14 +404,8 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         colorScheme={colorScheme}
         displayEventEnd={false}
         eventTimeFormat={{ timeStyle: 'short' }}
-        views={{
-          timeGridWeek: {
-            allDaySlot: false,
-          },
-          timeGridDay: {
-            allDaySlot: false,
-          },
-        }}
+        allDaySlot={false}
+        views={views}
         selectable={selectable}
         unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
         select={(eventInfo) => {

@@ -153,7 +153,7 @@ export interface SchedulingWorkspaceProps {
  *   delete it.
  * - Highlights the time clicked, and draws the visit the form would book as a draft
  *   appointment beside it, from whenever the form holds a time until it drops it. The
- *   calendar is never moved to reach either; one off the week on screen is drawn again
+ *   calendar is never moved to reach either; one off the days on screen is drawn again
  *   on paging back to it.
  * - Filters calendars and what is booked on them: the Service facility and Visit Type filters
  *   narrow the calendars listed to the ones held at that site and offering that service type,
@@ -282,7 +282,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     const isSettled = (reference: string): boolean =>
       services.has(reference) || medplum.getCachedReference({ reference }) !== undefined;
     // The color the HealthcareService names, or else one picked by its reference, so it holds
-    // whichever week is on show, for everyone, and as other service types come and go.
+    // whichever days are on show, for everyone, and as other service types come and go.
     const serviceColor = (reference: string): keyof typeof theme.colors => {
       const service = services.get(reference) ?? medplum.getCachedReference<HealthcareService>({ reference });
       return resolveThemeColor(theme, getSchedulingColor(service), fallbackColorIndex(reference));
@@ -359,7 +359,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         appointment: group[0],
         color,
       }))
-      // By reference, so the order holds from week to week; the names load only as the legend
+      // By reference, so the order holds from page to page; the names load only as the legend
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return {
@@ -437,7 +437,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   );
 
   // Opens what was booked, the first visit of a recurring series, and brings it on screen,
-  // so it isn't lost on the calendar or in a week off screen.
+  // so it isn't lost on the calendar or in days off screen.
   const finishBooking = useCallback(
     (booking: AppointmentBooking): void | Promise<void> => {
       const [first] = booking.appointments;
@@ -516,7 +516,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const openAppointment = loadedAppointment ?? selectedAppointment;
 
   // Only the filters and hidden calendars get a notice: a status the calendar doesn't load, such as
-  // cancelled, or a time in another week, already says why it isn't drawn.
+  // cancelled, or a time off screen, already says why it isn't drawn.
   let hiddenNotice: string | undefined;
   const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
   if (openAppointment && statuses.includes(openAppointment.status)) {
@@ -536,7 +536,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const openSlot = currentSlot ?? selectedSlot;
 
   // The calendar loads only the Slots on calendars shown, so one loaded and not drawn is hidden by
-  // the filters. One in another week isn't loaded, and its time already says why.
+  // the filters. One off screen isn't loaded, and its time already says why.
   let slotNotice: string | undefined;
   if (openSlot && !schedules.some((schedule) => getReferenceString(schedule) === openSlot.schedule.reference)) {
     slotNotice = "This blocked time's calendar isn't shown.";
