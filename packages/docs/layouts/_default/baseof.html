@@ -45,7 +45,9 @@
         </aside>
         <main id="swup">
           {{ block "page" . }}
-            <div class="main-container container{{ if .Params.standalone }} main-container-standalone{{ end }}">
+            {{- /* Markdown pages outside the docs and blog (Docusaurus src/pages: /security, /careers, /products/bots, ...) */}}
+            {{- $mdPage := and (in (slice "page" "section") .Kind) (not .Params.standalone) (not (in (slice "docs" "blog") .Section)) (ne .Path "/search") }}
+            <div class="main-container container{{ if .Params.standalone }} main-container-standalone{{ end }}{{ if $mdPage }} main-container-page{{ end }}">
               <div class="row">
                 {{- /* As on Docusaurus, blog pages other than the archive get a "Recent posts" sidebar */}}
                 {{- if and (or (eq .Section "blog") (eq .Type "blog_tags")) (ne .Layout "archive") }}

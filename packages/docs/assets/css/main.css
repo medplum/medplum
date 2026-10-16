@@ -151,6 +151,8 @@ main#swup {
   display: flex;
   flex-grow: 1;
   margin: 0 auto;
+  /* Without this, long unbreakable text (such as a URL) widens the page past the viewport */
+  min-width: 0;
 }
 
 /* Leave room for the docs sidebar only when it's shown */
@@ -194,8 +196,73 @@ body[data-sidebar='open'] main#swup {
   padding-bottom: 0 !important;
 }
 
-body:has(.main-container-standalone) .footer {
+body:has(.main-container-standalone, .main-container-page) .footer {
   margin-top: 0;
+}
+
+/* Markdown pages outside the docs and blog, laid out like Docusaurus's MDX pages: a full-width container (capped at
+   1440px and up, as .container is), 2rem above and below, and a centered content column beside a narrow table of
+   contents. Below 997px the content takes the full width and, unlike docs pages, there is no table of contents. */
+.main-container-page {
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
+
+  /* &.container outranks .container, which is defined further down */
+  @media (max-width: 1439px) {
+    &.container {
+      max-width: none;
+    }
+  }
+
+  /* Docusaurus gives these pages Infima's plain heading and list spacing, not the docs' .markdown rhythm */
+  article {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      margin: 0 0 var(--ifm-heading-margin-bottom);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+    }
+
+    li + li {
+      margin-top: 0;
+    }
+  }
+
+  .row {
+    justify-content: center;
+  }
+
+  .main-content {
+    flex: 0 0 66.667%;
+    max-width: 66.667%;
+  }
+
+  .main-toc {
+    display: block;
+    flex: 0 0 16.667%;
+    max-width: 16.667%;
+  }
+
+  .toc-mobile {
+    display: none !important;
+  }
+
+  @media (max-width: 996px) {
+    .main-content {
+      flex-basis: 100%;
+      max-width: 100%;
+    }
+
+    .main-toc {
+      display: none;
+    }
+  }
 }
 
 .main-content {

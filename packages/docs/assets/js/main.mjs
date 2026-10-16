@@ -44,8 +44,8 @@ function updateAttributes(newUrl) {
   setAttribute('sidebar', onDocsPage ? 'open' : 'closed');
   setAttribute('docFooter', onDocsPage ? 'visible' : 'hidden');
 
-  const showToc =
-    onDocsPage || pathname.startsWith('/blog/') || inSection(pathname, '/careers') || inSection(pathname, '/terms') || inSection(pathname, '/brand');
+  // Markdown pages outside the docs and blog show theirs through .main-container-page (see main.css)
+  const showToc = onDocsPage || pathname.startsWith('/blog/');
   setAttribute('toc', showToc ? 'visible' : 'hidden');
 
   const page = landingPages[pathname];
