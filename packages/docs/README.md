@@ -1,24 +1,83 @@
 # Medplum Docs
 
-An exploration into migrating Medplum docs from Docusaurus to Hugo.
+The [medplum.com](https://www.medplum.com) website and documentation, built with [Hugo](https://gohugo.io/).
+
+## Installation
+
+The docs are installed with the rest of the monorepo (see the [Medplum README](https://github.com/medplum/medplum)). Hugo itself comes from the `hugo-bin` npm package, so there is nothing else to install.
+
+The SDK reference is generated from `@medplum/core`'s API documentation, so build `@medplum/core` once before running the docs on a fresh checkout:
+
+```bash
+npm run build --workspace=@medplum/core
+```
+
+## Local Development
+
+```bash
+npm run dev
+```
+
+This starts Hugo's development server at http://localhost:1313, which rebuilds and reloads the page as you edit. A full build takes about 5 seconds.
+
+To check a page as it will be deployed (minified, with production settings), use `npm run preview` instead. Google Analytics is left out of both.
+
+## Build
+
+```bash
+npm run build
+```
+
+This builds the site into `public/`. From the repository root, `npm run build:docs` builds `@medplum/core` and the other dependencies first (the docs build itself isn't cached by Turbo; it's faster to rebuild than to restore).
+
+## Deployment
+
+`scripts/deploy-docs.sh` (at the repository root) uploads `public/` to S3 with `scripts/s3deploy.mjs`, which stores each `foo/index.html` as `foo`, so pages are served without a trailing slash.
 
 ## Folders
 
-| Folder        | Description                              | Built? | Included in output? |
-| ------------- | ---------------------------------------- | ------ | ------------------- |
-| `archetypes/` | Content archetypes for new pages.        | Yes    | No                  |
-| `assets/`     | Assets that will be built into the site. | Yes    | Yes                 |
-| `content/`    | Markdown files for documentation pages.  | Yes    | Yes                 |
-| `data/`       | Data files for site configuration.       | Yes    | No                  |
-| `i18n/`       | Internationalization files.              | Yes    | No                  |
-| `layouts/`    | Custom layouts and templates.            | Yes    | Yes                 |
-| `static/`     | Static files served as-is.               | No     | Yes                 |
+| Folder     | Contents                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| `assets/`  | CSS (`css/main.css` and its imports) and JavaScript (`js/main.mjs`), bundled by Hugo                        |
+| `content/` | Pages, as Markdown. The URL follows the path: `content/docs/bots/bot-basics.md` is `/docs/bots/bot-basics` |
+| `data/`    | Data for templates: the docs sidebar (`sidebar.yml`), blog authors (`authors.json`), pricing (`pricing.yaml`) |
+| `layouts/` | Templates: page layouts, partials, shortcodes, and render hooks (`_markup/`) for headings, images, and code |
+| `static/`  | Files served as-is: images, downloads, `opensearch.xml`                                                     |
+| `scripts/` | The Decision Guide download generator, and the temporary Docusaurus converter (see below)                  |
 
-Layout types
+## Content from the rest of the repo
 
-| Layout Type  | Convention? | Description                             |
-| ------------ | ----------- | --------------------------------------- |
-| `_default`   | Mandated    | Default layout for documentation pages. |
-| `_markup`    | Mandated    | Layout for rendering markdown content.  |
-| `partials`   | Mandated    | Reusable partial templates.             |
-| `shortcodes` | Mandated    | Custom shortcodes for markdown files.   |
+`hugo.toml` mounts files from elsewhere in the monorepo, so the docs always build from the current source:
+
+| Mounted from                                | As              | Used for                                         |
+| ------------------------------------------- | --------------- | ------------------------------------------------ |
+| `packages/core/dist/docs`                   | `assets/sdk`    | The TypeScript SDK reference                     |
+| `packages/definitions/src/fhir/r4`          | `data/fhir`     | The FHIR reference                               |
+| `packages/examples/src`                     | `assets/code`   | Code examples (`code-example`)                   |
+| `examples/medplum-demo-bots/src`            | `assets/code`   | Code examples (`code-example`)                   |
+| Infima, Open Color, Tabler icons, DocSearch | `assets`        | Styles, icons, and the search dialog             |
+| Mermaid                                     | `static/js`     | Diagrams, loaded on pages that have one          |
+
+The FHIR and SDK reference pages have no Markdown files. They're generated at build time by content adapters:
+
+- `content/docs/api/fhir/_content.gotmpl`: a page per FHIR resource and data type, rendered by `layouts/partials/fhir/page.html`. Hand-written notes and sections for a type go in `assets/fhir/resources/<type>.md`.
+- `content/docs/sdk/_content.gotmpl`: a page per API Documenter file from `@medplum/core`.
+
+## Writing Docs
+
+Pages are Markdown with front matter (`title`, and optionally `description`, `sidebar_label`, `weight` for ordering, `keywords`). Some things beyond plain Markdown:
+
+- **Sidebar**: `data/sidebar.yml` lists the docs sidebar. A category can list its pages explicitly, or `autogenerated` pages from a folder in `weight` order.
+- **Code examples**: `{{< code-example file="packages/examples/src/bots/file-uploads.ts" language="ts" blocks="createPdf" >}}` shows the lines between `// start-block createPdf` and `// end-block createPdf` in that file. The examples are type-checked with the rest of the repo, so prefer them to pasted code. `// highlight-next-line`, `// highlight-start`, and `// highlight-end` in the code highlight lines.
+- **Admonitions**: `{{< note >}}`, `{{< tip >}}`, `{{< info >}}`, `{{< warning >}}`, and `{{< danger >}}`, each with an optional `title="..."`.
+- **Tabs**: `{{< tabs groupId="language" >}}` around `{{< tab value="ts" label="TypeScript" >}}` blocks. Tabs with the same `groupId` switch together.
+- **Heading links**: a heading's ID comes from its text; set one with `## Heading {#custom-id}`.
+- **Diagrams**: a ` ```mermaid ` code block renders a Mermaid diagram.
+
+### Decision Guides
+
+The Decision Guide PDF and Word downloads are generated from their Markdown with `npm run build:guides`, which needs pandoc and LibreOffice. You normally don't need to run it: CI regenerates and commits them when a guide changes (`.github/workflows/autofix-ci.yml`).
+
+## Migration from Docusaurus
+
+The site was converted from Docusaurus. Until the migration is merged, `scripts/convert-docusaurus.mjs` regenerates `content/`, `data/sidebar.yml`, and `data/authors.json` from the Docusaurus sources on `main`, so docs changes made there carry over. It will be deleted after the migration, and then `content/` and `data/` are edited directly.
