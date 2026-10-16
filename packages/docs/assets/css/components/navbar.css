@@ -53,12 +53,6 @@
   color: var(--ifm-color-primary);
   display: block;
   margin: 0 auto;
-  transform: scale(1);
-  transition: all 0.1s ease;
-}
-
-.navbar-logo-image:hover {
-  transform: scale(1.03);
 }
 
 .navbar-icon-btn,
