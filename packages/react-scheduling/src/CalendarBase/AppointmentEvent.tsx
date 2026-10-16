@@ -26,8 +26,8 @@ export interface AppointmentEventProps {
 }
 
 /**
- * An appointment event, titled by its service type over its patient, with a card naming
- * everyone it is held on while it is hovered.
+ * An appointment event, titled by its service type over its patient (beside it, when the event is
+ * too short for two lines), with a card naming everyone it is held on while it is hovered.
  *
  * The event is drawn on one calendar only, so the card is where the rest of them are named.
  *
@@ -40,6 +40,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
   // A time grid says when the visit is by where it is drawn, so there the line under the service
   // type names the patient; a month's row has room for the service type and its time alone.
   const inTimeGrid = info.view.type.startsWith('timeGrid');
+  const oneLine = inTimeGrid && info.isShort;
   const recurring = getExtension(appointment, RecurrenceIdExtensionURI) !== undefined;
   // Each card is mounted only while its event is hovered: a card per event costs about twice
   // what drawing the event does, on every render, and most events are never hovered.
@@ -49,11 +50,12 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
     <div
       className={classes.eventContent}
       data-time-grid={inTimeGrid || undefined}
+      data-one-line={oneLine || undefined}
       onMouseEnter={() => setOpened(true)}
       onMouseLeave={() => setOpened(false)}
     >
       {inTimeGrid ? (
-        <div className={info.timeClass}>
+        <div className={cx(info.timeClass, classes.patient)}>
           <AppointmentPatientName appointment={appointment} />
         </div>
       ) : (

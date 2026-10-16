@@ -33,6 +33,45 @@
   flex-shrink: 0;
 }
 
+/* On one line, the service type gives way to an ellipsis along with the patient. */
+.eventContent[data-one-line] {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+
+  /* Not sticky, so the recurring icon is placed from the event. FullCalendar's skeleton.css makes
+   * titles sticky with `!important`. */
+  .title {
+    position: static !important;
+    flex-shrink: 1;
+  }
+
+  .patient {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    /* Empty alt text, so screen readers don't announce the separator. */
+    &::before {
+      content: '•' / '';
+      margin-inline-end: 4px;
+    }
+  }
+
+  /* Pinned to the event's end rather than the title's, past the patient. */
+  .recurring {
+    position: absolute;
+    inset-inline-end: 0;
+    float: none;
+    margin-inline-start: 0;
+  }
+
+  &:has(.recurring) {
+    padding-inline-end: 1.25em;
+  }
+}
+
 /* Floated, so a title cut short with an ellipsis gives way to it. */
 .recurring {
   float: right;
