@@ -33,7 +33,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
   const execStart = process.hrtime.bigint();
   // The bot runs with runAs's identity in runAs's project, so that is the project entitled to
-  // run bots -- not the one that happens to own the bot. Its AuditEvent is recorded there too.
+  // run bots -- not the one that happens to own the bot.
   const project = await getGlobalSystemRepo().readReference<Project>(runAs.project);
   if (isBotEnabledForProject(project)) {
     if (getConfig().storeBotInput) {

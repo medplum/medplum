@@ -314,9 +314,9 @@ export const medplumEslintConfig = [
     },
   },
   {
-    // Workers must run as a job's user only via runJobInAuthenticatedContext, which re-reads the
-    // serialized auth state and fails the job without retries if it has been revoked. These imports
-    // would build a user context or repo from the stale auth state instead.
+    // Workers act as a job's user only via runJobInAuthenticatedContext. runInAuthenticatedContext
+    // alone would retry a job whose auth state was revoked instead of failing it; the other imports
+    // skip the revocation check entirely.
     files: ['packages/server/src/workers/**/*.ts'],
     ignores: ['packages/server/src/workers/utils.ts', '**/*.test.ts'],
     rules: {

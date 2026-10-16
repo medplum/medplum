@@ -201,7 +201,7 @@ export function closeRequestContext(): void {
 }
 
 /**
- * Runs `fn` in a request context carrying the given IDs, e.g. those a background job was queued with.
+ * Runs `fn` in a request context carrying the given IDs.
  * @param requestId - The request ID; without it, `fn` runs in the current context.
  * @param traceId - The trace ID; without it, `fn` runs in the current context.
  * @param fn - The work to run.
@@ -221,16 +221,12 @@ export function tryRunInRequestContext<T>(
   }
 }
 
-/**
- * Thrown when a serialized auth state no longer authorizes work: its project or membership was
- * deactivated or deleted after the work was queued, so retrying cannot succeed.
- */
+/** Thrown when a serialized auth state's project or membership has been deactivated or deleted. */
 export class RevokedAuthStateError extends OperationOutcomeError {}
 
 /**
- * Runs `fn` as the user in `authState`. The project and membership of `authState` are re-read
- * to ensure they are current; `fn` runs with their current versions not the versions in
- * the serialized authState.
+ * Runs `fn` as the user in `authState`, with its project and memberships re-read so `fn` sees their
+ * current versions rather than the serialized ones.
  * @param authState - The serialized auth state to run as.
  * @param requestId - The request ID to log under; generated if absent.
  * @param traceId - The trace ID to log under; generated if absent.

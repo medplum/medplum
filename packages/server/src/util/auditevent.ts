@@ -196,7 +196,6 @@ export type AuditEventOutcome = (typeof AuditEventOutcome)[keyof typeof AuditEve
 export function createAuditEvent(
   type: AuditEventType,
   subtype: AuditEventSubtype,
-  // The project the AuditEvent is recorded in, if any; its `redactAuditEvents` setting applies.
   project: WithId<Project> | undefined,
   who: Reference | undefined,
   remoteAddress: string | undefined,

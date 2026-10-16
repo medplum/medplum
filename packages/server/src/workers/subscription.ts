@@ -126,8 +126,8 @@ export interface SubscriptionJobData {
   readonly requestTime: string;
   readonly requestId?: string;
   readonly traceId?: string;
-  // PENDING{v5.3} Remove, along with where addSubscriptionJobs sets it. This release never reads it; it is written only
-  // so workers still on an earlier release, which redact AuditEvents by its project, behave the same during a deploy.
+  // PENDING{v5.3} Remove, along with where addSubscriptionJobs sets it. Unread by this release; still
+  // written for workers on earlier releases during a rolling deploy.
   readonly authState?: AuthState;
   readonly verbose?: boolean;
 }
@@ -169,7 +169,6 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
       queueName,
       trackJobMetrics('subscription', (job) =>
         tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job), {
-          // The subscription's project; undefined for a system subscription
           projectId: job.data.target.projectId,
           subscriptionId: job.data.subscriptionId,
         })
@@ -623,7 +622,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   let systemRepo: SystemRepository;
-  // The subscription's project, not the writer's: its AuditEvents are recorded there, so its redaction setting applies.
+  // The subscription's project, not the writer's: AuditEvents are recorded there and follow its redaction setting.
   let project: WithId<Project> | undefined;
   let subscription: WithId<Subscription> | undefined;
   let rewrittenResource: Resource;

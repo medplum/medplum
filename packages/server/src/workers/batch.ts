@@ -135,8 +135,8 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       }
 
       // This fires only when the job could not be recovered by re-entrant resume (e.g. it stalled
-      // more than maxStalledCount times) or never reached execBatchJob (e.g. the project was
-      // deactivated). Mark the AsyncJob failed if it is still in progress and clean up any durable
+      // more than maxStalledCount times) or never reached execBatchJob (e.g. its auth state was
+      // revoked). Mark the AsyncJob failed if it is still in progress and clean up any durable
       // checkpoint state.
 
       try {

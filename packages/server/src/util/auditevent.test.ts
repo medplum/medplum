@@ -92,7 +92,6 @@ describe('AuditEvent utils', () => {
     const config = await loadTestConfig();
     config.redactAuditEvents = false;
 
-    // No request context: the project argument alone decides
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       CreateInteraction,

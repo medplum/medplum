@@ -230,9 +230,8 @@ export function addVerboseQueueLogging<TDataType>(
 /**
  * Runs a job as the user who queued it, via {@link runInAuthenticatedContext}.
  *
- * A {@link RevokedAuthStateError} is rethrown as an `UnrecoverableError` with the original as its
- * `cause`, so BullMQ moves the job straight to failed instead of retrying it until the project or
- * membership is reactivated. `AsyncJobExecutor.failJob` records the cause's outcome.
+ * A {@link RevokedAuthStateError} is rethrown as an `UnrecoverableError` so BullMQ fails the job
+ * without retrying; the original is kept as its `cause`, whose outcome `AsyncJobExecutor.failJob` records.
  * @param authState - The auth state serialized into the job data.
  * @param requestId - The request ID that queued the job, if any.
  * @param traceId - The trace ID that queued the job, if any.
