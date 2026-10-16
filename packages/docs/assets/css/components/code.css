@@ -32,6 +32,14 @@
   }
 }
 
+/* Chroma marks code its lexer can't parse as errors (white on dark red), including valid syntax its lexers don't
+   handle, such as bash line continuations and TypeScript union types. Docusaurus's highlighter never marked errors, so
+   show them as ordinary code. */
+.chroma .err {
+  color: inherit;
+  background-color: transparent;
+}
+
 .highlight pre code {
   padding: 0;
 }
