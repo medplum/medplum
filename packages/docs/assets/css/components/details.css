@@ -1,9 +1,16 @@
 /*
  * Collapsible sections (<details> in page content), styled as Docusaurus's Details component: an info alert with a
- * rotating arrow, and a divider between the summary and the content once open. The mobile "On this page" <details>
- * is outside <article>, so it keeps its own styles (toc.css). As on the live site, it looks the same in dark mode.
+ * rotating arrow, and a divider between the summary and the content once open. As on the live site, it looks the same
+ * in dark mode. Not applied to:
+ * - <details> in tables, such as the "Details" of each element in the FHIR reference, which Docusaurus rendered as
+ *   plain <details> (they keep only the italic summary, below)
+ * - the mobile "On this page" <details>, which is outside <article> (toc.css)
  */
-article details {
+article summary {
+  font-style: italic;
+}
+
+article details:not(table details) {
   --details-background: var(--oc-blue-0);
   --details-color: var(--oc-blue-9);
   --details-decoration: var(--oc-blue-5);
