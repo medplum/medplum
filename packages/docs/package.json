@@ -17,7 +17,7 @@
     "build": "rimraf public && hugo --minify",
     "build:guides": "node scripts/build-decision-guides.mjs",
     "dev": "hugo server --buildDrafts --buildFuture --noHTTPCache",
-    "preview": "http-server public -c-1"
+    "preview": "hugo server -e production --minify --disableLiveReload"
   },
   "prettier": {
     "printWidth": 160,
@@ -30,7 +30,6 @@
     "@medplum/core": "5.2.5",
     "@swup/preload-plugin": "3.2.12",
     "@tabler/icons": "3.49.0",
-    "http-server": "14.1.1",
     "hugo-bin": "0.166.0",
     "infima": "0.2.0-alpha.45",
     "mermaid": "12.2.0",
