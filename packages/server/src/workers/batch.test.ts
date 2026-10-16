@@ -570,7 +570,8 @@ describe('Batch worker', () => {
           name: 'outcome',
           resource: expect.objectContaining({ issue: [expect.objectContaining({ details: { text: reason } })] }),
         });
-      }));
+      })
+    );
 
     test('Verbose logging fields resolve the async job reference', () =>
       withTestContext(async () => {
