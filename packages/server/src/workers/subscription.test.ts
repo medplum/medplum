@@ -2606,7 +2606,6 @@ describe('Subscription Worker', () => {
           requestTime: new Date().toISOString(),
           requestId: ctx?.requestId,
           traceId: ctx?.traceId,
-          authState: ctx?.authState,
         };
 
         // For a websocket subscription, this results in "not found" instead of "gone"

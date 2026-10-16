@@ -200,9 +200,22 @@ export function closeRequestContext(): void {
   }
 }
 
-export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
+/**
+ * Runs `fn` in a request context carrying the given IDs, e.g. those a background job was queued with.
+ * @param requestId - The request ID; without it, `fn` runs in the current context.
+ * @param traceId - The trace ID; without it, `fn` runs in the current context.
+ * @param fn - The work to run.
+ * @param loggerMetadata - Optional fields added to every log line in the context.
+ * @returns The result of `fn`.
+ */
+export function tryRunInRequestContext<T>(
+  requestId: string | undefined,
+  traceId: string | undefined,
+  fn: () => T,
+  loggerMetadata?: Record<string, unknown>
+): T {
   if (requestId && traceId) {
-    return requestContextStore.run(new RequestContext(requestId, traceId), fn);
+    return requestContextStore.run(new RequestContext(requestId, traceId, undefined, loggerMetadata), fn);
   } else {
     return fn();
   }

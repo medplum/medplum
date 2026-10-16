@@ -71,7 +71,6 @@ import {
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
-  runJobInAuthenticatedContext,
   trackJobMetrics,
 } from './utils';
 
@@ -127,6 +126,8 @@ export interface SubscriptionJobData {
   readonly requestTime: string;
   readonly requestId?: string;
   readonly traceId?: string;
+  // PENDING{v5.3} Remove, along with where addSubscriptionJobs sets it. This release never reads it; it is written only
+  // so workers still on an earlier release, which redact AuditEvents by its project, behave the same during a deploy.
   readonly authState?: AuthState;
   readonly verbose?: boolean;
 }
@@ -167,11 +168,11 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
     worker = new Worker<SubscriptionJobData>(
       queueName,
       trackJobMetrics('subscription', (job) =>
-        job.data.authState
-          ? runJobInAuthenticatedContext(job.data.authState, job.data.requestId, job.data.traceId, undefined, () =>
-              execSubscriptionJob(job)
-            )
-          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job), {
+          // The subscription's project; undefined for a system subscription
+          projectId: job.data.target.projectId,
+          subscriptionId: job.data.subscriptionId,
+        })
       ),
       {
         ...getWorkerBullmqConfig(config, 'subscription', defaultOptions),
@@ -439,6 +440,7 @@ export async function addSubscriptionJobs(
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
+        // PENDING{v5.3} Remove with SubscriptionJobData.authState
         authState: ctx?.authState,
         verbose: options?.verbose,
       });
