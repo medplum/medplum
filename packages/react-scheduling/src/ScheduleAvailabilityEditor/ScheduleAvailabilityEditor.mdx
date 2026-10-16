@@ -21,7 +21,7 @@ Passing a `schedule` edits that calendar's override of the service's hours. A si
 [override behavior](https://www.medplum.com/docs/scheduling/defining-availability#override-behavior): with
 custom availability off, the Schedule inherits the service-level default and the days are shown read-only;
 switching it on writes an override, seeded from that default so the editor starts from the hours currently
-in effect. A reset link reloads the service default hours without giving up the override.
+in effect. A reset button reloads the service default hours without giving up the override.
 
 <Canvas of={ScheduleAvailabilityEditorStories.CustomHoursOverride} />
 
@@ -34,7 +34,7 @@ Omitting the `schedule` prop edits the service's own default hours instead, retu
 the Schedule override stores exactly what `HealthcareService.availableTime` holds; only the destination
 differs. Editing the default changes the hours for every Schedule that has no override of its own, so the two
 modes are worth keeping distinct in your UI. Because the service has no default to fall back on, the inherit
-switch and the reset link are not shown.
+switch and the reset button are not shown.
 
 <Canvas of={ScheduleAvailabilityEditorStories.ServiceDefault} />
 

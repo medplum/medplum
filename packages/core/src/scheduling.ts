@@ -1,18 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Appointment,
+  AppointmentParticipant,
   CodeableConcept,
   Duration,
   Extension,
   HealthcareService,
+  Location,
   Reference,
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { HTTP_TERMINOLOGY_HL7_ORG } from './constants';
+import { isReference } from './types';
 import type { WithId } from './utils';
 import {
   createReference,
   deepClone,
+  flatMapFilter,
   getExtension,
   getExtensions,
   getExtensionValue,
@@ -23,7 +29,9 @@ import {
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingEncounterCoding';
 export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';
-export const SchedulingScheduleColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+export const SchedulingColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+/** @deprecated Use SchedulingColorURI instead. */
+export const SchedulingScheduleColorURI = SchedulingColorURI;
 
 /** Code system for scheduling requirements, recorded on `HealthcareService.eligibility.code`. */
 export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-eligibility';
@@ -80,6 +88,28 @@ export const SchedulingUnvalidatedBookingURI =
   'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedBooking';
 
 /**
+ * This extension marks an `Appointment` created by the `$book` operation. Its
+ * value is a string recording the Medplum server version that handled the booking.
+ */
+export const SchedulingBookedByOperationURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingBookedByOperation';
+
+/** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
+export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
+
+/**
+ * This extension holds a `valueUrl` linking to the same `Appointment` in an external
+ * system, such as the scheduling system it is synced with.
+ */
+export const SchedulingExternalUrlURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingExternalUrl';
+
+/** Code system for `Appointment.participant.type`. */
+export const PARTICIPATION_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-ParticipationType`;
+
+/** The participation type marking an appointment's primary provider. */
+export const PRIMARY_PERFORMER_CODE = 'PPRF';
+
+/**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
  *
  * In R5/R6, `serviceType` attributes change from `CodeableConcept[]` to
@@ -104,7 +134,48 @@ export const SchedulingUnvalidatedBookingURI =
  * ```
  */
 export const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
+
+/** Code system for the `Schedule.serviceType` codes Medplum scheduling defines. */
+export const SCHEDULING_SERVICE_TYPE_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-service-type';
+
+/**
+ * The `Schedule.serviceType` code marking a Schedule that offers every HealthcareService, including ones
+ * created later.
+ *
+ * It decides only which services the Schedule accepts, not when: hours still resolve from the Schedule's
+ * SchedulingParameters for the service, then the service's own, then the defaults. Build it with
+ * `allServiceTypesCodeableConcept`.
+ */
+export const ALL_SERVICE_TYPES_CODE = 'all';
+
 export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
+
+/**
+ * R5's `Appointment.recurrenceTemplate`, as the R4 cross-version extension. `Appointment/$find`
+ * with `occurrence-count` adds it to each proposed first occurrence of a weekly series.
+ * Sub-extensions are named for R5's child elements: `timezone` (valueCodeableConcept, IANA),
+ * `recurrenceType` (valueCodeableConcept, UCUM `wk`), `occurrenceCount` (valuePositiveInt), and
+ * `weeklyTemplate` (the weekday, e.g. `monday`: valueBoolean true, and `weekInterval`: valuePositiveInt).
+ */
+export const RecurrenceTemplateExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate';
+
+/**
+ * R5's `Appointment.recurrenceId`, as the R4 cross-version extension: an occurrence's 1-based
+ * position (valuePositiveInt) in a series created via `Appointment/$book` or `Appointment/$hold`.
+ */
+export const RecurrenceIdExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId';
+
+/**
+ * R5's `Appointment.occurrenceChanged`, as the R4 cross-version extension: set (valueBoolean) on an
+ * occurrence of a recurring series that has been rescheduled off the series' pattern.
+ */
+export const OccurrenceChangedExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.occurrenceChanged';
+
+/** Identifier system for the `Appointment.identifier` shared by every occurrence of one recurring series. */
+export const RecurringAppointmentSeriesIdentifierSystem = 'https://medplum.com/fhir/recurring-appointment-series';
 
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
@@ -365,15 +436,15 @@ function setParameter<T extends Schedule | HealthcareService>(
   service: WithId<HealthcareService> | undefined,
   subextension: Extension
 ): T {
-  // Note where the value sits before clearing removes it, so that replacing one leaves the sub-extension
-  // where it was rather than moving it to the end, which would show up as churn in the resource timeline.
+  // Replace in place: moving the sub-extension to the end shows up as churn in the resource history.
   const previousIndex =
     getSchedulingParameterExtensions(resource, service)[0]?.extension?.findIndex(
       (existing) => existing.url === subextension.url
     ) ?? -1;
 
-  // Clear first: a resource carrying more than one matching container would otherwise keep a stale value.
-  const updated = clearParameter(resource, service, subextension.url);
+  // Remove from every matching container, or a second one keeps a stale value. Prune only after
+  // re-inserting, so a container holding just this parameter is not deleted and re-appended at the end.
+  const updated = removeParameter(resource, service, subextension.url);
 
   updated.extension ??= [];
 
@@ -390,10 +461,18 @@ function setParameter<T extends Schedule | HealthcareService>(
   subextensions.splice(previousIndex < 0 ? subextensions.length : previousIndex, 0, subextension);
   parameters.extension = subextensions;
 
-  return updated;
+  return pruneEmptyParameters(updated);
 }
 
 function clearParameter<T extends Schedule | HealthcareService>(
+  resource: T,
+  service: WithId<HealthcareService> | undefined,
+  url: string
+): T {
+  return pruneEmptyParameters(removeParameter(resource, service, url));
+}
+
+function removeParameter<T extends Schedule | HealthcareService>(
   resource: T,
   service: WithId<HealthcareService> | undefined,
   url: string
@@ -406,20 +485,27 @@ function clearParameter<T extends Schedule | HealthcareService>(
     }
   }
 
-  if (!updated.extension) {
-    return updated;
+  return updated;
+}
+
+// An empty SchedulingParameters extension violates FHIR `ext-1`, and one holding only a Schedule's `service`
+// pointer overrides nothing; either would keep `hasSchedulingParameters` reporting the resource configured.
+function pruneEmptyParameters<T extends Schedule | HealthcareService>(resource: T): T {
+  if (!resource.extension) {
+    return resource;
   }
 
-  // An extension with neither a value nor sub-extensions violates FHIR `ext-1`.
-  updated.extension = updated.extension.filter(
-    (extension) => extension.url !== SchedulingParametersURI || !!extension.extension?.length
+  resource.extension = resource.extension.filter(
+    (extension) =>
+      extension.url !== SchedulingParametersURI ||
+      !!extension.extension?.some((subextension) => subextension.url !== 'service')
   );
 
-  if (updated.extension.length === 0) {
-    delete updated.extension;
+  if (resource.extension.length === 0) {
+    delete resource.extension;
   }
 
-  return updated;
+  return resource;
 }
 
 /**
@@ -473,7 +559,53 @@ export function toServiceTypeCodeableConcepts(service: WithId<HealthcareService>
 }
 
 /**
+ * Builds the CodeableConcept that marks a Schedule as offering every HealthcareService, for
+ * `Schedule.serviceType`. An Appointment never carries it: it records the service actually booked.
+ * @returns The marker concept
+ */
+export function allServiceTypesCodeableConcept(): CodeableConcept {
+  return {
+    coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: ALL_SERVICE_TYPES_CODE }],
+    text: 'All service types',
+  };
+}
+
+/**
+ * Returns whether serviceType concepts carry the marker for offering every HealthcareService.
+ *
+ * An empty or missing `serviceType` does not count.
+ * @param serviceType - CodeableConcept values to inspect
+ * @returns True if any concept is the marker
+ */
+export function serviceTypeIncludesAllServices(serviceType: CodeableConcept[] | undefined): boolean {
+  return (
+    serviceType?.some((concept) =>
+      concept.coding?.some(
+        (coding) => coding.system === SCHEDULING_SERVICE_TYPE_SYSTEM && coding.code === ALL_SERVICE_TYPES_CODE
+      )
+    ) ?? false
+  );
+}
+
+/**
+ * Returns whether a Schedule with these serviceType concepts can be booked for the given HealthcareService:
+ * because it refers to the service, or because it carries the marker for offering every one.
+ * @param serviceType - CodeableConcept values to inspect
+ * @param service - HealthcareService or reference to match
+ * @returns True if the concepts offer the service
+ */
+export function serviceTypeOffersService(
+  serviceType: CodeableConcept[] | undefined,
+  service: WithId<HealthcareService> | (Reference<HealthcareService> & { reference: string })
+): boolean {
+  return serviceTypeIncludesAllServices(serviceType) || serviceTypeIncludesService(serviceType, service);
+}
+
+/**
  * Returns whether any serviceType concept refers to the given HealthcareService.
+ *
+ * Ignores the marker for offering every HealthcareService; use `serviceTypeOffersService` to ask whether a
+ * Schedule can be booked for the service.
  * @param serviceType - CodeableConcept values to inspect
  * @param service - HealthcareService or reference to match
  * @returns True if any concept references the service
@@ -494,19 +626,104 @@ export function serviceTypeIncludesService(
 }
 
 /**
- * Extracts HealthcareService references from serviceType concepts.
+ * Extracts the distinct HealthcareService references from serviceType concepts.
+ * A service with several `type` codes is represented by one concept per code,
+ * each carrying the same reference; that reference is returned only once.
  * @param serviceType - CodeableConcept values to inspect
- * @returns HealthcareService references embedded in the concepts
+ * @returns HealthcareService references embedded in the concepts, in first-seen order
  */
 export function extractServiceTypeReferences(
   serviceType: CodeableConcept[] | undefined
-): Reference<HealthcareService>[] {
+): (Reference<HealthcareService> & { reference: string })[] {
   if (!serviceType?.length) {
     return [];
   }
-  return serviceType
-    .map((concept) => getExtensionValue(concept, ServiceTypeReferenceURI) as Reference<HealthcareService> | undefined)
-    .filter(isDefined);
+  const seen = new Set<string>();
+  return flatMapFilter(serviceType, (concept) => {
+    const value = getExtensionValue(concept, ServiceTypeReferenceURI);
+    // We expect that `value` is always a Reference<HealthcareService>, but the
+    // extension shape may not be validated by a FHIR Profile, so we perform a
+    // safety check here. This also makes Typescript safe without a cast.
+    if (!isReference<HealthcareService>(value, 'HealthcareService') || seen.has(value.reference)) {
+      return undefined;
+    }
+    seen.add(value.reference);
+    return value;
+  });
+}
+
+/**
+ * Builds the `supportingInformation` entry recording the site an appointment is held at.
+ *
+ * A site and a room are both `Location`, so the site is recorded here rather than as a
+ * participant: `Appointment.location` answers the room, and {@link getAppointmentSite}
+ * the site. Anything writing an appointment outside the booking form should record the
+ * site through this, so that it is identifiable among the other `supportingInformation`
+ * entries.
+ *
+ * @param site - The site the appointment is held at.
+ * @returns The reference, stamped with {@link SchedulingSiteURI}.
+ */
+export function toAppointmentSiteReference(site: WithId<Location>): Reference<Location> {
+  return { ...createReference(site), extension: [{ url: SchedulingSiteURI, valueBoolean: true }] };
+}
+
+/**
+ * Reads the site an appointment is held at.
+ *
+ * Finds the entry {@link toAppointmentSiteReference} stamped.
+ *
+ * @param appointment - The appointment to read.
+ * @returns The site, or undefined for an appointment holding none.
+ */
+export function getAppointmentSite(appointment: Appointment): Reference<Location> | undefined {
+  return appointment.supportingInformation?.find(
+    (reference): reference is Reference<Location> =>
+      reference.reference?.startsWith('Location/') === true && getExtensionValue(reference, SchedulingSiteURI) === true
+  );
+}
+
+function isPrimaryPerformerType(type: CodeableConcept): boolean {
+  return (
+    type.coding?.some(
+      (coding) => coding.system === PARTICIPATION_TYPE_SYSTEM && coding.code === PRIMARY_PERFORMER_CODE
+    ) === true
+  );
+}
+
+/**
+ * Marks one participant as the appointment's primary provider, and no other.
+ *
+ * A downstream system that accepts one provider per appointment should be sent the primary.
+ *
+ * @param participants - The appointment's participants.
+ * @param primary - The actor to mark, or undefined to mark nobody.
+ * @returns The participants, with the mark moved onto `primary` and any other `type` kept.
+ */
+export function setPrimaryProvider(
+  participants: readonly AppointmentParticipant[],
+  primary: Reference | undefined
+): AppointmentParticipant[] {
+  return participants.map((participant) => {
+    const { type, ...rest } = participant;
+    const others = type?.filter((concept) => !isPrimaryPerformerType(concept)) ?? [];
+    if (primary?.reference && participant.actor?.reference === primary.reference) {
+      others.push({
+        coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' }],
+      });
+    }
+    return others.length > 0 ? { ...rest, type: others } : rest;
+  });
+}
+
+/**
+ * Reads the appointment's primary provider, as {@link setPrimaryProvider} marked it.
+ *
+ * @param appointment - The appointment to read.
+ * @returns The primary provider, or undefined for an appointment marking none.
+ */
+export function getPrimaryProvider(appointment: Appointment): Reference | undefined {
+  return appointment.participant.find((participant) => participant.type?.some(isPrimaryPerformerType))?.actor;
 }
 
 /**

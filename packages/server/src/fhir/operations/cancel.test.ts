@@ -258,6 +258,36 @@ describe('Appointment/$cancel', () => {
     expect(response.body).toMatchObject({ resourceType: 'Appointment', id: appointment.id, status: 'cancelled' });
   });
 
+  test('Succeeds for an appointment on a Schedule that has since been deactivated', async () => {
+    // An appointment booked while the schedule was active must remain cancelable
+    // after the schedule is deactivated, even though $find/$book now reject it.
+    const activeSchedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      actor: [createReference(practitioner)],
+      meta: { project: project.project.id },
+    });
+    const slot = await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      status: 'busy',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
+      schedule: createReference(activeSchedule),
+      meta: { project: project.project.id },
+    });
+    const appointment = await makeAppointment('booked', [slot]);
+    await systemRepo.updateResource<Schedule>({ ...activeSchedule, active: false });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response).toHaveStatus(200);
+    expect(response.body).toMatchObject({ resourceType: 'Appointment', id: appointment.id, status: 'cancelled' });
+
+    const remaining = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?_id=${slot.id}`));
+    expect(remaining).toHaveLength(0);
+  });
+
   test.each(['cancelled', 'fulfilled', 'noshow', 'entered-in-error'] as Appointment['status'][])(
     'Returns 400 for non-cancelable status: %s',
     async (status) => {

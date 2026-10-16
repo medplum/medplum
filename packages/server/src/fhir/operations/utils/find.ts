@@ -46,7 +46,7 @@ export function findAlignedSlotTimes(
   const results: Interval[] = [];
 
   for (const dayStart of eachDayOfInterval(interval, options.alignment.timezone)) {
-    const nextDay = dayStart.add({ days: 1 });
+    const nextDay = dayStart.add({ days: 1 }).startOfDay();
     const dayInterval: Interval = {
       start: new Date(Math.max(interval.start.valueOf(), dayStart.epochMilliseconds)),
       end: new Date(Math.min(interval.end.valueOf(), nextDay.epochMilliseconds)),

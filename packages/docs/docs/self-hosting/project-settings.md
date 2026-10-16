@@ -37,6 +37,7 @@ are:
 | `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
 | `transaction-bundles`     | Process `transaction` Bundles atomically. Without this flag, `transaction` Bundles are processed as batches. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests#transaction-limits) |
+| `range-search`            | Date searches compare the full period or range. See [Searching by due date range](/docs/careplans/tasks#searching-by-due-date-range). |
 
 ## Project system settings
 

@@ -1,0 +1,11 @@
+/* Sits on the title's first line, sized to its text. */
+.icon {
+  flex-shrink: 0;
+  margin-inline-end: 0.25em;
+  vertical-align: -0.125em;
+}
+
+/* Keeps the icon on the line of the title it marks, where a narrow column would wrap them apart. */
+.blocked {
+  white-space: nowrap;
+}

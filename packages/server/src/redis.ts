@@ -3,7 +3,7 @@
 import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { getLogger, globalLogger } from './logger';
 
 /*
@@ -41,7 +41,7 @@ export function reconnectOnError(err: Error): boolean | 1 | 2 {
   return false; // Do not reconnect on other errors
 }
 
-export function initRedis(config: MedplumServerConfig): void {
+export function initRedis(config: ServerConfig): void {
   redisInstances.default.redis = new Redis({
     ...config.redis,
     reconnectOnError,

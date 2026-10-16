@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Loader, Modal, Paper, ScrollArea } from '@mantine/core';
+import { Loader, Paper, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
@@ -15,12 +15,13 @@ import {
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
+import { OrderLabsModal } from '../../components/labs/OrderLabsModal';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { useDoseSpotAccess } from '../../hooks/useDoseSpotAccess';
 import { usePatient } from '../../hooks/usePatient';
-import { OrderLabsPage } from '../labs/OrderLabsPage';
 import classes from './PatientPage.module.css';
 import { getPatientPageTabs, patientPathPrefix } from './PatientPage.utils';
+import { usePatientActionsMenu } from './usePatientActionsMenu';
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ export function PatientPage(): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(patient);
   const PharmacyDialogComponent = usePharmacyDialog();
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
   const tabs = getPatientPageTabs(membership, { hasDoseSpotAccess });
@@ -81,6 +83,8 @@ export function PatientPage(): JSX.Element {
                 navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
               }
               sections={sections}
+              headerMenuItems={headerMenuItems}
+              onEditPatient={openEditModal}
             />
           </ScrollArea>
         </div>
@@ -102,9 +106,8 @@ export function PatientPage(): JSX.Element {
           </div>
         </div>
       </div>
-      <Modal opened={isLabsModalOpen} onClose={handleCloseLabsModal} size="xl" centered title="Order Labs">
-        <OrderLabsPage onSubmitLabOrder={handleCloseLabsModal} />
-      </Modal>
+      <OrderLabsModal opened={isLabsModalOpen} onClose={handleCloseLabsModal} onSubmitLabOrder={handleCloseLabsModal} />
+      {actionsModals}
     </>
   );
 }

@@ -44,12 +44,17 @@ export type UpdateResourceOptions = {
   ifMatch?: string;
 };
 
+export type DeleteResourceOptions = {
+  ifMatch?: string;
+};
+
 export type ReadHistoryOptions = {
   offset?: number;
   limit?: number;
 };
 
-type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+/** One or more resource types, as a single type, an array, or a set. */
+export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
 
 export interface TransactionOptions {
   readonly resourceTypes: ResourceTypeInput;
@@ -169,8 +174,9 @@ export abstract class FhirRepository {
    * See: https://www.hl7.org/fhir/http.html#delete
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
+   * @param options - Optional delete options.
    */
-  abstract deleteResource(resourceType: string, id: string): Promise<void>;
+  abstract deleteResource(resourceType: string, id: string, options?: DeleteResourceOptions): Promise<void>;
 
   /**
    * Patches a FHIR resource.
@@ -756,11 +762,29 @@ export class MemoryRepository extends FhirRepository {
     return results;
   }
 
-  async deleteResource(resourceType: string, id: string): Promise<void> {
-    if (!this.resources.get(resourceType)?.get(id)) {
+  async deleteResource(resourceType: string, id: string, options?: DeleteResourceOptions): Promise<void> {
+    const existing = this.resources.get(resourceType)?.get(id);
+    if (!existing) {
       throw new OperationOutcomeError(notFound);
     }
+    if (options?.ifMatch && existing.meta?.versionId !== options.ifMatch) {
+      throw new OperationOutcomeError(preconditionFailed);
+    }
     this.resources.get(resourceType)?.delete(id);
+  }
+
+  async expungeResource(resourceType: string, id: string): Promise<void> {
+    await this.expungeResources(resourceType, [id]);
+  }
+
+  async expungeResources(resourceType: string, ids: string[]): Promise<void> {
+    // Intentionally skips the history tombstone the server Repository writes.
+    const resources = this.resources.get(resourceType);
+    const resourceHistory = this.history.get(resourceType);
+    for (const id of ids) {
+      resources?.delete(id);
+      resourceHistory?.delete(id);
+    }
   }
 
   withTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {

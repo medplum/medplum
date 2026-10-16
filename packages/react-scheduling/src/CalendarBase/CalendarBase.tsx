@@ -1,6 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CalendarRef, EventApi, EventClickInfo, EventInput, EventSourceInput } from '@fullcalendar/react';
+import type {
+  CalendarRef,
+  DateTimeFormatPartWithWeek,
+  DayCellInfo,
+  DayHeaderInfo,
+  EventApi,
+  EventClickInfo,
+  EventDisplayInfo,
+  EventInput,
+  EventSourceInput,
+} from '@fullcalendar/react';
 import FullCalendar, { useCalendarController } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/react/daygrid';
 import interactionPlugin from '@fullcalendar/react/interaction';
@@ -9,7 +19,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, Loader, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
+import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -18,7 +28,10 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { getPatientParticipant } from '../actors';
+import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
+import { AppointmentPatientName } from './AppointmentPatientName';
 import classes from './CalendarBase.module.css';
 import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
 
@@ -27,6 +40,7 @@ export interface FhirEventSource {
   slots: Slot[];
   appointments: Appointment[];
   color?: string;
+  className?: string;
 }
 
 export type ExtendedEvent =
@@ -49,9 +63,8 @@ function appointmentsToEvents(
   return appointments
     .filter((appointment) => appointment.start && appointment.end)
     .map((appointment) => {
-      // Find the patient among the participants to use as title
-      const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
-      const name = patientParticipant?.actor?.display ?? 'No Patient';
+      const actor = getPatientParticipant(appointment)?.actor;
+      const name = actor?.reference ? (actor.display ?? '') : 'No Patient';
 
       return {
         id: appointment.id,
@@ -63,6 +76,59 @@ function appointmentsToEvents(
         ...extra,
       };
     });
+}
+
+/**
+ * Draws an appointment as FullCalendar would, but names its patient from the patient's record.
+ * @param info - What FullCalendar hands its event content.
+ * @returns The appointment's content, or `true` to keep FullCalendar's own for everything else.
+ */
+function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
+  const ext = info.event.extendedProps as ExtendedEvent;
+  if (ext.type !== 'appointment') {
+    return true;
+  }
+  return (
+    <>
+      {info.timeText && <div className={info.timeClass}>{info.timeText}</div>}
+      <div className={info.titleClass}>
+        <AppointmentPatientName appointment={ext.appointment} />
+      </div>
+    </>
+  );
+}
+
+function renderToday(textParts: DateTimeFormatPartWithWeek[], numberClassName: string): JSX.Element {
+  return (
+    <>
+      {textParts.map((part, i) => (
+        <span key={i} className={part.type === 'day' ? numberClassName : classes.todayText}>
+          {part.value}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element | string {
+  if (info.inPopover || !info.dayNumberText || !info.isToday) {
+    return info.text;
+  }
+  return renderToday(info.textParts, classes.todayNumber);
+}
+
+function renderDayCellTopContent(info: DayCellInfo): JSX.Element | string {
+  if (!info.isToday) {
+    return info.text;
+  }
+  return renderToday(
+    info.textParts,
+    cx(classes.todayNumber, info.isNarrow ? classes.narrowTodayCellNumber : classes.todayCellNumber)
+  );
+}
+
+function dayHeaderInnerClass(info: DayHeaderInfo): string {
+  return cx(classes.dayHeaderInner, !info.isToday && classes.otherDayHeaderInner);
 }
 
 function slotTitle(slot: Slot): string {
@@ -102,6 +168,8 @@ export interface CalendarBaseProps extends Omit<
   onDoubleClickSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onSelectInterval?: (interval: DateTimeRange) => void;
   selection?: DateTimeRange;
+  /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
+  selectedId?: string;
   eventSources: FhirEventSource[];
 
   onRangeChange?: (range: DateTimeRange) => void;
@@ -117,6 +185,7 @@ export interface CalendarBaseProps extends Omit<
 export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const colorScheme = useComputedColorScheme();
   const controller = useCalendarController();
+  const viewType = controller.view?.type;
 
   const {
     onRangeChange,
@@ -128,6 +197,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     onDoubleClickSlot,
     onSelectInterval,
     selection,
+    selectedId,
     loading,
     ...fullCalendarProps
   } = props;
@@ -143,8 +213,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         };
 
         const slotExtra = {
-          interactive: false,
-          display: 'background',
+          interactive: Boolean(props.onSelectSlot || props.onDoubleClickSlot),
+          display: viewType === 'dayGridMonth' ? 'none' : 'auto', // Hide slots in month view
         };
 
         return {
@@ -155,7 +225,14 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           ],
         };
       }),
-    [props.eventSources, props.onDoubleClickAppointment, props.onSelectAppointment]
+    [
+      props.eventSources,
+      props.onDoubleClickAppointment,
+      props.onSelectAppointment,
+      props.onSelectSlot,
+      props.onDoubleClickSlot,
+      viewType,
+    ]
   );
 
   const rawEventClick = useCallback(
@@ -257,7 +334,16 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
             </Button>
           </Button.Group>
           <Group>
-            <Title order={4}>{controller.view?.title}</Title>
+            <MonthPickerButton
+              size="compact-md"
+              label={
+                <Text component="span" fz="h4" fw={700} lh="h4">
+                  {controller.view?.title}
+                </Text>
+              }
+              date={controller.getDate() ?? new Date()}
+              onChange={(month) => controller.gotoDate(month)}
+            />
             {loading && <Loader size="sm" />}
           </Group>
         </Group>
@@ -298,6 +384,14 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           }
           onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
         }}
+        eventContent={renderEventContent}
+        dayHeaderContent={renderDayHeaderContent}
+        dayHeaderInnerClass={dayHeaderInnerClass}
+        dayCellTopContent={renderDayCellTopContent}
+        slotHeaderInnerClass={classes.slotHeaderInner}
+        nowIndicatorLineClass={classes.nowIndicatorLine}
+        nowIndicatorDotClass={classes.nowIndicatorDot}
+        nowIndicatorHeaderClass={classes.nowIndicatorHeader}
         {...fullCalendarProps}
         ref={calendarRef}
         eventSources={eventSources}
@@ -317,6 +411,9 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           cx(props.eventClass, classes.event, {
             [classes.clickable]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
+            // Judged when the event is drawn, so one that ends while on show stays unmarked until redrawn.
+            past: !!evt.event.end && evt.event.end.getTime() <= Date.now(),
+            selected: evt.event.id === selectedId,
           })
         }
         eventTimeClass={cx(props.eventTimeClass, classes.eventTime)}

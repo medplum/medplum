@@ -1,17 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, accepted } from '@medplum/core';
+import { accepted, OperationOutcomeError } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError } from 'bullmq';
 import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
-import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
-import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
 import { getProjectScopedUrl } from '../../../util/url';
 import { CancelledError } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
@@ -23,6 +20,43 @@ export class AsyncJobExecutor {
   constructor(repo: Repository, resource?: WithId<AsyncJob>) {
     this.repo = repo.clone();
     this.resource = resource;
+  }
+
+  /**
+   * Returns the AsyncJob managed by this executor.
+   * @returns The hydrated AsyncJob resource.
+   * @throws Error if the AsyncJob is not set.
+   */
+  getAsyncJob(): WithId<AsyncJob> {
+    if (!this.resource) {
+      throw new Error('AsyncJob missing');
+    }
+    return this.resource;
+  }
+
+  /**
+   * Reloads the managed AsyncJob from its owning repository.
+   * @returns The refreshed AsyncJob resource.
+   * @throws Error if the AsyncJob is not set.
+   */
+  async refresh(): Promise<WithId<AsyncJob>> {
+    const asyncJob = this.getAsyncJob();
+    this.resource = await this.repo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    return this.resource;
+  }
+
+  /**
+   * Updates the job output without changing its status. The update is conditional so it cannot
+   * overwrite a concurrent cancellation or other lifecycle change.
+   * @param output - The current job output.
+   * @returns The updated AsyncJob resource.
+   */
+  async updateOutput(output: Parameters): Promise<WithId<AsyncJob>> {
+    const asyncJob = this.getAsyncJob();
+    this.resource = await this.repo
+      .getSystemRepo()
+      .updateResource<AsyncJob>({ ...asyncJob, output }, { ifMatch: asyncJob.meta?.versionId });
+    return this.resource;
   }
 
   async init(url: string, params?: Partial<AsyncJob>): Promise<WithId<AsyncJob>> {
@@ -108,25 +142,14 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
-    let updatedJob: WithId<AsyncJob> = {
+    const updatedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
     };
-    if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
-      // This probably needs more validation that its a system-owned AsyncJob.
-      const completedDataVersion = updatedJob.dataVersion;
-      getLogger().info('Marking post-deploy migration complete', {
-        version: `v${completedDataVersion}`,
-      });
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
-      await maybeAutoRunPendingPostDeployMigration();
-      return updatedJob;
-    } else {
-      return this.repo.getSystemRepo().updateResource(updatedJob);
-    }
+    this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
+    return this.resource;
   }
 
   async failJob(err?: Error, output?: Parameters): Promise<WithId<AsyncJob>> {
@@ -166,7 +189,8 @@ export class AsyncJobExecutor {
         );
       }
     }
-    return this.repo.getSystemRepo().updateResource(failedJob);
+    this.resource = await this.repo.getSystemRepo().updateResource(failedJob);
+    return this.resource;
   }
 
   getContentLocation(baseUrl: string): string {

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM, APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../constants';
 import { installCancelStub } from '../stories/mockCancel';
 import { installValueSetStub } from '../stories/mockValueSet';
-import { DrRiveraPractitioner, SchedulingFixtures } from '../stories/scheduling';
+import { DrRiveraPractitioner, MilesCooperPatient, SchedulingFixtures } from '../stories/scheduling';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
@@ -38,7 +38,7 @@ let restoreValueSet: () => void;
 
 beforeEach(async () => {
   medplum = new MockClient();
-  for (const resource of [...SchedulingFixtures, APPOINTMENT]) {
+  for (const resource of [...SchedulingFixtures, MilesCooperPatient, APPOINTMENT]) {
     await medplum.createResource(resource);
   }
   restoreCancel = installCancelStub(medplum);
@@ -113,15 +113,19 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(details()).not.toBeInTheDocument();
   });
 
-  test('clicking an appointment opens its details', async () => {
+  test('clicking an appointment opens its details, until its calendar is hidden', async () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await clickAppointment();
 
     const open = within(details() as HTMLElement);
-    expect(open.getByText('Miles Cooper')).toBeInTheDocument();
+    expect(await open.findByText('Miles Cooper')).toBeInTheDocument();
     expect(open.getByText('booked')).toBeInTheDocument();
     expect(open.getByText('Ultrasound Imaging')).toBeInTheDocument();
+
+    // The visit is on Dr. Rivera's calendar alone, so hiding it takes the details with it.
+    await userEvent.click(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
+    await waitFor(() => expect(details()).not.toBeInTheDocument());
   });
 
   test('closing the details leaves the appointment on the calendar', async () => {
@@ -180,9 +184,9 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(within(details() as HTMLElement).getByText('This appointment is cancelled.')).toBeInTheDocument();
 
-    // And the grid is drawn again from the same announcement, without re-fetching.
-    await waitFor(() => expect(container.querySelector('.appointment.cancelled')).toBeInTheDocument());
-    expect(container.querySelector('.appointment.booked')).not.toBeInTheDocument();
+    // And the grid drops the visit on the same announcement, without re-fetching, since
+    // cancelled appointments are not drawn on the calendar.
+    await waitFor(() => expect(container.querySelector('.appointment')).not.toBeInTheDocument());
   });
 
   test('a refusal does not outlive the details it was raised in', async () => {

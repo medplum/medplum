@@ -1,30 +1,50 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Coding, Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Coding,
+  Extension,
+  HealthcareService,
+  Location,
+  Practitioner,
+  Reference,
+  Schedule,
+} from '@medplum/fhirtypes';
 import type { HealthcareServiceSchedulingParameterExtension, SchedulingParameterExtension } from './scheduling';
 import {
+  allServiceTypesCodeableConcept,
   clearHealthcareServiceSchedulingParameter,
   clearScheduleParameter,
   clearScheduleSchedulingParameter,
   extractServiceTypeReferences,
+  getAppointmentSite,
   getHealthcareServiceSchedulingParameters,
+  getPrimaryProvider,
   getScheduleParameters,
   getScheduleSchedulingParameters,
   getSchedulingRequirements,
   getSchedulingTimezone,
   hasSchedulingParameters,
   minutesToSchedulingDuration,
+  PARTICIPATION_TYPE_SYSTEM,
+  PRIMARY_PERFORMER_CODE,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_SERVICE_TYPE_SYSTEM,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
+  SchedulingSiteURI,
+  serviceTypeIncludesAllServices,
   serviceTypeIncludesService,
+  serviceTypeOffersService,
   setHealthcareServiceSchedulingParameter,
+  setPrimaryProvider,
   setScheduleParameter,
   setScheduleSchedulingParameter,
   TimezoneExtensionURI,
+  toAppointmentSiteReference,
   toServiceTypeCodeableConcepts,
 } from './scheduling';
 import type { WithId } from './utils';
@@ -183,6 +203,16 @@ describe('schedule parameters', () => {
     ]);
   });
 
+  test('drops the parameters extension once it holds nothing but the service pointer', () => {
+    const schedule: Schedule = { resourceType: 'Schedule', actor: [{ reference: 'Practitioner/123' }] };
+    const configured = setScheduleSchedulingParameter(schedule, service, bufferBefore);
+
+    const cleared = clearScheduleSchedulingParameter(configured, service, 'bufferBefore');
+
+    expect(cleared.extension).toBeUndefined();
+    expect(hasSchedulingParameters(cleared)).toBe(false);
+  });
+
   test('creates service-specific SchedulingParameters when missing', () => {
     const schedule: Schedule = {
       resourceType: 'Schedule',
@@ -288,6 +318,36 @@ describe('serviceType CodeableConcepts', () => {
     expect(serviceTypeIncludesService(serviceType, serviceWithType)).toBe(true);
   });
 
+  test('extracts one reference for a service with multiple type codes', () => {
+    const serviceWithTypes = {
+      ...service,
+      type: [
+        { coding: [{ system: 'http://example.com/service', code: 'office' }] },
+        { coding: [{ system: 'http://example.com/modality', code: 'telehealth' }] },
+      ],
+    };
+    const serviceType = toServiceTypeCodeableConcepts(serviceWithTypes);
+
+    expect(serviceType).toHaveLength(2);
+    expect(extractServiceTypeReferences(serviceType)).toEqual([
+      expect.objectContaining({ reference: 'HealthcareService/service-1' }),
+    ]);
+  });
+
+  test('extracts each distinct service reference in order', () => {
+    const otherService = { ...service, id: 'service-2' };
+    const serviceType = [
+      ...toServiceTypeCodeableConcepts(service),
+      ...toServiceTypeCodeableConcepts(otherService),
+      ...toServiceTypeCodeableConcepts(service),
+    ];
+
+    expect(extractServiceTypeReferences(serviceType).map((ref) => ref.reference)).toEqual([
+      'HealthcareService/service-1',
+      'HealthcareService/service-2',
+    ]);
+  });
+
   test('matches a HealthcareService reference', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
 
@@ -299,6 +359,39 @@ describe('serviceType CodeableConcepts', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
     expect(serviceTypeIncludesService(serviceType, { ...service, id: 'service-2' })).toBe(false);
     expect(serviceTypeIncludesService(undefined, service)).toBe(false);
+  });
+
+  test('the all-services marker offers every service without listing any', () => {
+    const serviceType = [allServiceTypesCodeableConcept()];
+
+    expect(serviceType[0].coding).toEqual([
+      { system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' },
+    ]);
+    expect(serviceTypeIncludesAllServices(serviceType)).toBe(true);
+    expect(serviceTypeOffersService(serviceType, service)).toBe(true);
+    // Listing a service by reference keeps its literal meaning.
+    expect(serviceTypeIncludesService(serviceType, service)).toBe(false);
+  });
+
+  test('a listed service is offered without the marker', () => {
+    expect(serviceTypeOffersService(toServiceTypeCodeableConcepts(service), service)).toBe(true);
+  });
+
+  test.each([
+    ['a missing serviceType', undefined],
+    ['an empty serviceType', []],
+    ['the same code in another system', [{ coding: [{ system: 'http://example.com/service', code: 'all' }] }]],
+    ['another code in the same system', [{ coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: 'none' }] }]],
+    ['a concept with only matching text', [{ text: 'All service types' }]],
+  ])('%s is not the all-services marker', (_name, serviceType) => {
+    expect(serviceTypeIncludesAllServices(serviceType)).toBe(false);
+    expect(serviceTypeOffersService(serviceType, service)).toBe(false);
+  });
+
+  test('the marker still offers every service alongside listed ones', () => {
+    const serviceType = [...toServiceTypeCodeableConcepts(service), allServiceTypesCodeableConcept()];
+
+    expect(serviceTypeOffersService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(true);
   });
 });
 
@@ -478,6 +571,26 @@ describe('service parameters', () => {
     expect(hasSchedulingParameters(cleared)).toBe(false);
   });
 
+  test('replaces the only parameter without moving its extension behind the others', () => {
+    const configured: WithId<HealthcareService> = {
+      ...visitType,
+      extension: [
+        { url: SchedulingParametersURI, extension: [duration] },
+        { url: 'https://example.com/unrelated', valueString: 'kept' },
+      ],
+    };
+
+    const updated = setHealthcareServiceSchedulingParameter(configured, {
+      url: 'duration',
+      valueDuration: { value: 45, unit: 'min' },
+    });
+
+    expect(updated.extension?.map((extension) => extension.url)).toEqual([
+      SchedulingParametersURI,
+      'https://example.com/unrelated',
+    ]);
+  });
+
   test('keeps the parameters extension while other parameters remain', () => {
     const configured = setHealthcareServiceSchedulingParameter(
       setHealthcareServiceSchedulingParameter(visitType, duration),
@@ -552,6 +665,91 @@ describe('deprecated schedule parameter helpers', () => {
       { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
     ]);
     expect(getScheduleParameters(schedule, service, 'bufferBefore')).toEqual([bufferBefore]);
+  });
+});
+
+describe('getAppointmentSite', () => {
+  const MainClinic: WithId<Location> = { resourceType: 'Location', id: 'main-clinic', name: 'Main Clinic' };
+
+  function withSupportingInformation(...references: Reference[]): Appointment {
+    return { resourceType: 'Appointment', status: 'booked', participant: [], supportingInformation: references };
+  }
+
+  test('reads back the site toAppointmentSiteReference recorded', () => {
+    const site = toAppointmentSiteReference(MainClinic);
+    expect(getAppointmentSite(withSupportingInformation(site))).toEqual(site);
+  });
+
+  test('says nothing for an appointment holding no site', () => {
+    expect(getAppointmentSite(withSupportingInformation())).toBeUndefined();
+    expect(getAppointmentSite({ resourceType: 'Appointment', status: 'booked', participant: [] })).toBeUndefined();
+  });
+
+  test('ignores a Location nobody stamped', () => {
+    // A host's own Location is not the site, however it is placed.
+    const appointment = withSupportingInformation({ reference: 'Location/other-site' });
+    expect(getAppointmentSite(appointment)).toBeUndefined();
+  });
+
+  test('finds the site among the other Locations and references a host keeps', () => {
+    const site = toAppointmentSiteReference(MainClinic);
+    const appointment = withSupportingInformation(
+      { reference: 'Coverage/insurance' },
+      { reference: 'Location/other-site' },
+      site
+    );
+    expect(getAppointmentSite(appointment)).toEqual(site);
+  });
+
+  test('ignores a stamp on something that is not a Location', () => {
+    const appointment = withSupportingInformation({
+      reference: 'Coverage/insurance',
+      extension: [{ url: SchedulingSiteURI, valueBoolean: true }],
+    });
+    expect(getAppointmentSite(appointment)).toBeUndefined();
+  });
+
+  test('survives a reference holding no reference', () => {
+    // A display-only reference is legal here; reading one must not throw the way
+    // `parseReference` does.
+    const appointment = withSupportingInformation({ display: 'Somewhere nobody recorded' });
+    expect(() => getAppointmentSite(appointment)).not.toThrow();
+    expect(getAppointmentSite(appointment)).toBeUndefined();
+  });
+});
+
+describe('setPrimaryProvider', () => {
+  const primaryType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] };
+  const markedType = {
+    coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' }],
+  };
+  const otherType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: 'ATND' }] };
+  const rivera = { reference: 'Practitioner/rivera' };
+  const okafor = { reference: 'Practitioner/okafor' };
+
+  test('moves the mark onto the primary and keeps other types', () => {
+    const participants = setPrimaryProvider(
+      [
+        { actor: rivera, status: 'accepted', type: [primaryType] },
+        { actor: okafor, status: 'accepted', type: [otherType] },
+      ],
+      okafor
+    );
+    expect(participants).toEqual([
+      { actor: rivera, status: 'accepted' },
+      { actor: okafor, status: 'accepted', type: [otherType, markedType] },
+    ]);
+    expect(getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })).toEqual(
+      okafor
+    );
+  });
+
+  test('marks nobody without a primary', () => {
+    const participants = setPrimaryProvider([{ actor: rivera, status: 'accepted', type: [primaryType] }], undefined);
+    expect(participants).toEqual([{ actor: rivera, status: 'accepted' }]);
+    expect(
+      getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })
+    ).toBeUndefined();
   });
 });
 

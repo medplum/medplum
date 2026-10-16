@@ -10,7 +10,7 @@ Medplum's matching is based on the **CMS Patient Matching framework**, an eviden
 
 :::note[CMS guidelines are in draft]
 
-The CMS Patient Matching framework is a draft proposal and is **subject to change as the guidelines evolve**. The criteria table and behavior described here reflect the current draft and may be updated in future releases.
+The CMS Patient Matching framework is a draft proposal and is **subject to change as the guidelines evolve**. Medplum implements the v3.4.0 Final Consolidated Draft. The criteria table and behavior described here may be updated in future releases.
 
 :::
 
@@ -47,6 +47,8 @@ Returns a ranked, graded list from the gathered candidate set for human review o
 
 Applies a **uniqueness gate**: the operation returns a patient **only if exactly one** candidate is a `certain` match (i.e. satisfies an approved CMS combination). If no candidate qualifies, if **two or more** distinct candidates qualify (an ambiguous result), or if candidate search is truncated such that uniqueness cannot be proven, the bundle is empty. This is the conservative behavior appropriate for releasing records in cross-organization exchange, where a wrong-patient disclosure is a critical error.
 
+**Twin guardrail:** if more than one gathered candidate has the query's date of birth (within ±1 day, since twins can be born either side of midnight), First Name must match exactly for every candidate. This prevents a one-edit fuzzy match from conflating twins with similar names, such as `Jayden` and `Jaden`.
+
 ## Output
 
 Returns a `Bundle` of type `searchset`. Each entry contains a matched `Patient` with a `search` element:
@@ -78,50 +80,54 @@ Candidates below the `possible` threshold, and candidates blocked by a generatio
 The `search.score` is intentionally **not** a probability — it is a simple, explainable ranking value:
 
 - **`1.0`** when an approved CMS combination is satisfied (`certain`).
-- In discovery mode only, otherwise **`min(x / 11, 0.9)`**, where `x` is the weighted count of the 11 identity factors that agree: an **exact** field counts as `1`, a **fuzzy** field as `0.5`. The `0.9` ceiling keeps any non-approved field set strictly below a real CMS match.
+- In discovery mode only, otherwise **`min(x / 12, 0.9)`**, where `x` is the weighted count of the 12 identity factors that agree: an **exact** field counts as `1`, a **fuzzy** field as `0.5`. The `0.9` ceiling keeps any non-approved field set strictly below a real CMS match.
 
 This non-CMS score is Medplum's FHIR `$match` discovery ranking aid; it is not part of the CMS Table 2 release rule. Within a single query the denominator is constant, so candidates sort correctly by score; grade carries the human-facing classification.
 
 ## Identity Factors
 
-Eleven factors are used (gender is **not** a matching factor):
+Twelve factors are used (gender is **not** a matching factor):
 
-First Name · Last Name · Date of Birth · Street Line · Phone Number · Email Address · SSN (last 4) · ITIN (last 4) · MBI · Legal ID · Namespace-bound Unique Identifier
+First Name · Last Name · Date of Birth · Street Line · ZIP Code · Phone Number · Email Address · SSN (last 4) · ITIN (last 4) · MBI · Legal ID · Namespace-bound Unique Identifier
 
 Identifier factors are matched by their `system` (issuing-authority namespace) and value, using the FHIR token convention `system|value`. An identifier with a system outside the CMS-specific namespaces is treated as a **namespace-bound unique identifier** (for example EMPI, FHIR Patient Identifier, CSP UUID, or project MRN).
 
 ## Approved CMS Matching Combinations
 
-A candidate is a `certain` match when its agreeing factors form one of these approved combinations and it is the unique such candidate. Fields marked with `*` may be satisfied by a fuzzy comparison; **at most one** field per match may be fuzzy.
+A candidate is a `certain` match when its agreeing factors form one of these approved combinations and it is the unique such candidate. Fields marked with `*` may be satisfied by a fuzzy comparison. For names and street lines, that means one edit (see [Fuzzy Matching](#fuzzy-matching)). For DOB, it means within ±1 day. **At most one** field per match may be fuzzy.
 
-| ID  | Field Combination                                |
-| --- | ------------------------------------------------ |
-| 01  | First Name\* + Last Name\* + DOB + Street Line\* |
-| 02  | First Name + Last Name\* + DOB + Phone           |
-| 03  | First Name\* + Last Name\* + DOB + Email         |
-| 04  | First Name\* + Last Name + DOB + SSN (last 4)    |
-| 05  | First Name + Last Name\* + DOB + SSN (last 4)    |
-| 06  | First Name\* + Last Name + DOB + ITIN (last 4)   |
-| 07  | First Name + Last Name\* + DOB + ITIN (last 4)   |
-| 08  | First Name + DOB + MBI                           |
-| 09  | First Name + DOB + Legal ID                      |
-| 10  | Last Name\* + DOB + Legal ID                     |
-| 11  | First Name + DOB + Phone                         |
-| 12  | First Name + DOB + Email                         |
-| 13  | Last Name + Phone + SSN (last 4)                 |
-| 14  | Last Name + Phone + ITIN (last 4)                |
-| 15  | Last Name\* + Email + SSN (last 4)               |
-| 16  | Last Name\* + Email + ITIN (last 4)              |
-| 17  | First Name + Phone + SSN (last 4)                |
-| 18  | First Name + Phone + ITIN (last 4)               |
-| 19  | First Name + Email + SSN (last 4)                |
-| 20  | First Name + Email + ITIN (last 4)               |
-| 21  | Phone + MBI                                      |
-| 22  | Phone + Legal ID                                 |
-| 23  | Email + MBI                                      |
-| 24  | Email + Legal ID                                 |
-| 25  | Legal ID + MBI                                   |
-| 26  | Namespace-bound Unique Identifier                |
+Combination IDs follow v3.4.0 numbering, which differs from earlier drafts. Audit events record the specification version alongside the combination ID.
+
+| ID  | Field Combination                                  |
+| --- | -------------------------------------------------- |
+| 01  | First Name\* + Last Name\* + DOB\* + Street Line\* |
+| 02  | First Name + Last Name\* + DOB\* + Phone           |
+| 03  | First Name\* + Last Name\* + DOB\* + Email         |
+| 04  | First Name\* + Last Name + DOB + SSN (last 4)      |
+| 05  | First Name + Last Name\* + DOB + SSN (last 4)      |
+| 06  | First Name\* + Last Name + DOB + ITIN (last 4)     |
+| 07  | First Name + Last Name\* + DOB + ITIN (last 4)     |
+| 08  | First Name + DOB + MBI                             |
+| 09  | First Name + DOB + Legal ID                        |
+| 10  | Last Name\* + DOB\* + Legal ID                     |
+| 11  | First Name + DOB + Phone                           |
+| 12  | First Name + DOB + Email                           |
+| 13  | First Name + Phone + SSN (last 4)                  |
+| 14  | First Name + Phone + ITIN (last 4)                 |
+| 15  | First Name + Email + SSN (last 4)                  |
+| 16  | First Name + Email + ITIN (last 4)                 |
+| 17  | Phone + MBI                                        |
+| 18  | Phone + Legal ID                                   |
+| 19  | Email + MBI                                        |
+| 20  | Email + Legal ID                                   |
+| 21  | Legal ID + MBI                                     |
+| 22  | Namespace-bound Unique Identifier                  |
+| 29  | First Name\* + Last Name\* + Phone + ZIP           |
+| 30  | Last Name\* + DOB + Phone                          |
+
+Rules 23 to 28 use insurance Member ID or Subscriber ID within a payer namespace. They are **not evaluated**, because the specification does not yet define how a payer-namespaced identifier is conveyed in a `$match` query.
+
+Rule 29 has no DOB, so on its own it cannot tell apart a parent and child who share a name, phone, and ZIP. Medplum does **not** apply rule 29 when both records have a DOB and the DOBs disagree.
 
 ## Normalization
 
@@ -131,6 +137,7 @@ Every field represents the set of **all known values** (current and historical �
 - **Phone numbers** are normalized by stripping punctuation and whitespace. U.S. `+1` / leading-`1` eleven-digit numbers are normalized to the same ten digits as domestic notation. Other country codes are left as digits without additional international parsing. Phone numbers match regardless of type (home/cell/work).
 - **Email** is lowercased and trimmed. Punctuation is preserved, so `john.smith@example.com` and `johnsmith@example.com` remain distinct.
 - **Date of birth** must be a full `YYYY-MM-DD` date; partial dates are not imputed and are ignored for matching.
+- **ZIP code** uses the first 5 digits.
 - **SSN / ITIN** use only the last 4 folded alphanumeric characters.
 - A **generational-suffix conflict** (both records have a suffix and they disagree after folding, e.g. `Jr` vs `Sr`) blocks the match.
 
@@ -138,7 +145,7 @@ Matching is intentionally limited to these mechanical, deterministic normalizati
 
 ### Fuzzy Matching
 
-Fuzzy matching is constrained: it applies only to **First Name, Last Name, and Street Line**, only where a combination permits it (`*` above), only to values at least **5 characters** long, and tolerates a **Damerau–Levenshtein distance of 1** (one insertion, deletion, substitution, or adjacent transposition). At most one field per match may be fuzzy. Phonetic matching (e.g. Soundex) is not used.
+Fuzzy matching is constrained: it applies only to **First Name, Last Name, and Street Line**, only where a combination permits it (`*` above), only to values at least **5 characters** long, and tolerates a **Damerau–Levenshtein distance of 1** (one insertion, deletion, substitution, or adjacent transposition). A starred **DOB** may instead be within **±1 day**. At most one field per match may be fuzzy, and a ±1 day DOB counts as that field. Phonetic matching (e.g. Soundex) is not used.
 
 ## Candidate Search
 
@@ -146,7 +153,7 @@ Before scoring, candidates are gathered with selective FHIR searches anchored on
 
 - `Patient?identifier=<system>|<value>` for each identifier
 - `Patient?telecom=<value>` for each phone or email
-- `Patient?birthdate=<date>&family=<family>` and `Patient?birthdate=<date>&given=<given>` when a birth date is present
+- `Patient?birthdate=ge<date-1>&birthdate=le<date+1>&family=<family>` and the same with `given=<given>` when a birth date is present, covering the ±1 day DOB tolerance
 
 Results are deduplicated by patient ID, then compared and scored in memory. Discovery mode ranks the gathered candidate set; it is intended for review and is not an exhaustive population scan. In disclosure mode, if a search hits its result cap (uniqueness cannot be proven), the match is suppressed.
 

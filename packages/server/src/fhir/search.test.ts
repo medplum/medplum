@@ -57,7 +57,7 @@ import assert from 'node:assert';
 import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { Repository } from './repo';
@@ -74,7 +74,7 @@ import { loadStructureDefinitions } from './structure';
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
 describe.each<Project['features']>([undefined, ['range-search']])('project-scoped Repository w/ %j', (features) => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let repo: Repository;
   let systemRepo: SystemRepository;
 
@@ -2458,6 +2458,60 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         )
       ).rejects.toThrow('Search chains longer than three links are not currently supported');
     }));
+
+  describe('disableChainedSearch', () => {
+    afterEach(() => {
+      config.disableChainedSearch = undefined;
+    });
+
+    test.each([
+      'Observation?subject:Patient.name=Alice',
+      'Patient?_has:Observation:subject:code=123',
+      'DiagnosticReport?result:Observation.subject:Patient.name=Alice',
+      `Patient?_has:Observation:subject:_id=${randomUUID()}`,
+    ])('Rejects chained search through disabled type: %s', (searchString) =>
+      withTestContext(async () => {
+        config.disableChainedSearch = ['Observation'];
+        await expect(repo.search(parseSearchRequest(searchString))).rejects.toThrow(
+          'Chained search is disabled for Observation'
+        );
+      })
+    );
+
+    test.each([
+      `Observation?subject:Patient._id=${randomUUID()}`,
+      'Encounter?patient.name=Alice',
+      'DiagnosticReport?result.code=123',
+    ])('Allows chained search not using disabled reference table: %s', (searchString) =>
+      withTestContext(async () => {
+        config.disableChainedSearch = ['Observation'];
+        await expect(repo.search(parseSearchRequest(searchString))).resolves.toBeDefined();
+      })
+    );
+
+    test('Chained search works again after reindex', () =>
+      withTestContext(async () => {
+        config.disableChainedSearch = ['Observation'];
+        const code = randomUUID();
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const obs = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }] },
+          subject: createReference(patient),
+        });
+        const searchRequest = parseSearchRequest<Patient>(`Patient?_has:Observation:subject:code=${code}`);
+        await expect(repo.search(searchRequest)).rejects.toThrow('Chained search is disabled for Observation');
+
+        config.disableChainedSearch = undefined;
+        const beforeReindex = await repo.search(searchRequest);
+        expect(beforeReindex.entry).toHaveLength(0);
+
+        await systemRepo.reindexResources([obs]);
+        const afterReindex = await repo.search(searchRequest);
+        expect(afterReindex.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
+      }));
+  });
 
   test.each([
     ['Patient?organization.invalid.name=Kaiser', 'Invalid search parameter in chain: Organization?invalid'],

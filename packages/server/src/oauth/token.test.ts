@@ -21,9 +21,9 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo, Repository } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
 import {
   addTestUser,
   createTestProject,
@@ -122,7 +122,7 @@ describe('OAuth2 Token', () => {
     userInfoMode: 'gcip' as const,
     userInfoApiKey: 'test-api-key',
   };
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
   let adminMembership: WithId<ProjectMembership>;
@@ -481,6 +481,44 @@ describe('OAuth2 Token', () => {
 
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`).send();
     expect(res2).toHaveStatus(401);
+  });
+
+  test('Client credentials on project-scoped URL uses membership for that project', async () => {
+    const { client, project: homeProject } = await createTestProject({ withClient: true });
+    const { project: otherProject } = await createTestProject();
+    await withTestContext(() =>
+      getGlobalSystemRepo().createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(otherProject),
+        user: createReference(client),
+        profile: createReference(client),
+      })
+    );
+
+    for (const target of [homeProject, otherProject]) {
+      const res = await request(app).post(`/projects/${target.id}/oauth2/token`).type('form').send({
+        grant_type: 'client_credentials',
+        client_id: client.id,
+        client_secret: client.secret,
+      });
+      expect(res).toHaveStatus(200);
+      expect(res.body.project.reference).toBe(getReferenceString(target));
+    }
+
+    const basicAuth = 'Basic ' + encodeBase64(client.id + ':' + client.secret);
+    const res2 = await request(app)
+      .get(`/projects/${otherProject.id}/fhir/R4/Patient`)
+      .set('Authorization', basicAuth)
+      .send();
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app).post(`/projects/${randomUUID()}/oauth2/token`).type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.error_description).toBe('Invalid client');
   });
 
   test('Client credentials IP address restriction', async () => {
@@ -1391,7 +1429,7 @@ describe('OAuth2 Token', () => {
     // 2) Get tokens with grant_type=authorization_code
     // 3) Get tokens with grant_type=refresh_token
     // 4) Get tokens again with grant_type=refresh_token
-    // 5) Verify that the first refresh token is invalid
+    // 5) Verify that replaying the first refresh token is rejected and revokes the login
 
     // 1) Authorize
     const res = await request(app).post('/auth/login').type('json').send({
@@ -1444,13 +1482,14 @@ describe('OAuth2 Token', () => {
     expect(res4.body.access_token).toBeDefined();
     expect(res4.body.refresh_token).toBeDefined();
 
-    // 5) Verify that the first refresh token is invalid
+    // 5) Verify that the first refresh token is invalid, and that replaying it revokes the login.
+    //    It is older than the previous token, so the grace period does not apply.
     const res5 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
     expect(res5).toHaveStatus(400);
-    expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
+    expect(res5.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
   });
 
   test('accessTokenLifetime -- Valid duration', async () => {

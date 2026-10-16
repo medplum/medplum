@@ -33,7 +33,7 @@ describe('CMS Patient Match Utils', () => {
       resourceType: 'Patient',
       name: [{ family: "O'Connor", given: [' Ana-Maria '] }],
       birthDate: '1970-01-02',
-      address: [{ line: ['123 Main St.', 'Apt. 4'] }],
+      address: [{ line: ['123 Main St.', 'Apt. 4'], postalCode: '02139-4307' }],
       telecom: [
         { system: 'phone', value: '+1 (617) 555-0100' },
         { system: 'email', value: 'Ana.Example@Example.COM' },
@@ -54,6 +54,7 @@ describe('CMS Patient Match Utils', () => {
         lastName: 'oconnor',
         dob: '19700102',
         streetLine: ['123mainst', 'apt4'],
+        zip: '02139',
         phone: '6175550100',
         email: 'ana.example@example.com',
         ssnLast4: '6789',
@@ -113,7 +114,7 @@ describe('CMS Patient Match Utils', () => {
       }),
       fields({
         firstName: 'robret',
-        dob: '19700102',
+        dob: '19700105',
         phone: '6175550101',
         email: 'john.smith@example.net',
         mbi: '1eg4te5mk74',
@@ -142,22 +143,20 @@ describe('CMS Patient Match Utils', () => {
     ['10', { lastName: 'Smith', dob: '1970-01-01', legalId: 'BENE123' }],
     ['11', { firstName: 'Robert', dob: '1970-01-01', phone: '6175550100' }],
     ['12', { firstName: 'Robert', dob: '1970-01-01', email: 'robert@example.com' }],
-    ['13', { lastName: 'Smith', phone: '6175550100', ssnLast4: '1234' }],
-    ['14', { lastName: 'Smith', phone: '6175550100', itinLast4: '4321' }],
-    ['15', { lastName: 'Smith', email: 'robert@example.com', ssnLast4: '1234' }],
-    ['16', { lastName: 'Smith', email: 'robert@example.com', itinLast4: '4321' }],
-    ['17', { firstName: 'Robert', phone: '6175550100', ssnLast4: '1234' }],
-    ['18', { firstName: 'Robert', phone: '6175550100', itinLast4: '4321' }],
-    ['19', { firstName: 'Robert', email: 'robert@example.com', ssnLast4: '1234' }],
-    ['20', { firstName: 'Robert', email: 'robert@example.com', itinLast4: '4321' }],
-    ['21', { phone: '6175550100', mbi: '1EG4TE5MK73' }],
-    ['22', { phone: '6175550100', legalId: 'BENE123' }],
-    ['23', { email: 'robert@example.com', mbi: '1EG4TE5MK73' }],
-    ['24', { email: 'robert@example.com', legalId: 'BENE123' }],
-    ['25', { legalId: 'BENE123', mbi: '1EG4TE5MK73' }],
-    ['26', { namespaceId: 'CSP-ABC' }],
+    ['13', { firstName: 'Robert', phone: '6175550100', ssnLast4: '1234' }],
+    ['14', { firstName: 'Robert', phone: '6175550100', itinLast4: '4321' }],
+    ['15', { firstName: 'Robert', email: 'robert@example.com', ssnLast4: '1234' }],
+    ['16', { firstName: 'Robert', email: 'robert@example.com', itinLast4: '4321' }],
+    ['17', { phone: '6175550100', mbi: '1EG4TE5MK73' }],
+    ['18', { phone: '6175550100', legalId: 'BENE123' }],
+    ['19', { email: 'robert@example.com', mbi: '1EG4TE5MK73' }],
+    ['20', { email: 'robert@example.com', legalId: 'BENE123' }],
+    ['21', { legalId: 'BENE123', mbi: '1EG4TE5MK73' }],
+    ['22', { namespaceId: 'CSP-ABC' }],
+    ['29', { firstName: 'Robert', lastName: 'Smith', phone: '6175550100', zip: '02139' }],
+    ['30', { lastName: 'Smith', dob: '1970-01-01', phone: '6175550100' }],
   ] satisfies [string, Fields][])('identifies CMS criteria %s', (criteriaId, input) => {
-    const fuzzyLast = ['05', '07', '10', '15', '16'].includes(criteriaId);
+    const fuzzyLast = ['05', '07', '10', '29', '30'].includes(criteriaId);
     const fuzzyFirst = ['04', '06'].includes(criteriaId);
     const result = cmsPatientMatch(
       patient(input),
@@ -167,9 +166,9 @@ describe('CMS Patient Match Utils', () => {
     expect(result.matchType).toBe(fuzzyLast || fuzzyFirst ? 'fuzzy' : 'exact');
   });
 
-  test('identifies EMPI-style namespace identifiers as criteria 26', () => {
+  test('identifies EMPI-style namespace identifiers as criteria 22', () => {
     expect(cmsPatientMatch(patient({ namespaceId: 'EMPI-999' }), patient({ namespaceId: 'EMPI-999' }))).toMatchObject({
-      criteriaId: '26',
+      criteriaId: '22',
       matchType: 'exact',
     });
   });
@@ -196,7 +195,7 @@ describe('CMS Patient Match Utils', () => {
         patient({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01' }),
         patient({ firstName: 'Robret', lastName: 'Smith', dob: '1985-12-31' })
       )
-    ).toMatchObject({ exactCount: 1, fuzzyCount: 1, noneCount: 9, criteriaId: undefined });
+    ).toMatchObject({ exactCount: 1, fuzzyCount: 1, noneCount: 10, criteriaId: undefined });
     expect(
       cmsPatientMatch(
         patient({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01', streetLine: '123 Main' }),
@@ -209,6 +208,54 @@ describe('CMS Patient Match Utils', () => {
         patient({ firstName: 'Robert', dob: '1970-01-01', phone: '6175550100', suffix: 'Senior' })
       )
     ).toMatchObject({ criteriaId: undefined, suffixConflict: true });
+  });
+
+  test('allows a ±1 day DOB only where Table 2 stars DOB, within the one-fuzzy-field limit', () => {
+    const base = { firstName: 'Robert', lastName: 'Smith', streetLine: '123 Main' };
+    expect(
+      cmsPatientMatch(patient({ ...base, dob: '1970-01-01' }), patient({ ...base, dob: '1969-12-31' }))
+    ).toMatchObject({ criteriaId: '01', matchType: 'fuzzy', fieldMatches: { dob: 'fuzzy' } });
+    expect(
+      cmsPatientMatch(
+        patient({ ...base, dob: '1970-01-01' }),
+        patient({ ...base, lastName: 'Smiht', dob: '1970-01-02' })
+      ).criteriaId
+    ).toBeUndefined();
+    expect(
+      cmsPatientMatch(patient({ ...base, dob: '1970-01-01' }), patient({ ...base, dob: '1970-01-03' })).fieldMatches.dob
+    ).toBe('none');
+    // Rule 11 does not star DOB
+    const rule11 = { firstName: 'Robert', phone: '6175550100' };
+    expect(
+      cmsPatientMatch(patient({ ...rule11, dob: '1970-01-01' }), patient({ ...rule11, dob: '1970-01-02' })).criteriaId
+    ).toBeUndefined();
+  });
+
+  test('does not apply rule 29 when both DOBs are known and disagree', () => {
+    const base = { firstName: 'Robert', lastName: 'Smith', phone: '6175550100', zip: '02139' };
+    expect(cmsPatientMatch(patient({ ...base, dob: '1950-03-04' }), patient(base)).criteriaId).toBe('29');
+    expect(
+      cmsPatientMatch(patient({ ...base, dob: '1950-03-04' }), patient({ ...base, dob: '1980-07-08' })).criteriaId
+    ).toBeUndefined();
+    expect(
+      cmsPatientMatch(
+        patient({ ...base, dob: '1950-03-04' }),
+        patient({ ...base, firstName: 'Robret', dob: '1950-03-05' })
+      ).criteriaId
+    ).toBe('29');
+  });
+
+  test('requires an exact First Name when exactFirstName is set', () => {
+    const input = { firstName: 'Jayden', lastName: 'Smith', dob: '2015-05-05', ssnLast4: '1234' };
+    expect(cmsPatientMatch(patient(input), patient({ ...input, firstName: 'Jaydan' })).criteriaId).toBe('04');
+    expect(
+      cmsPatientMatch(patient(input), patient({ ...input, firstName: 'Jaydan' }), { exactFirstName: true }).criteriaId
+    ).toBeUndefined();
+  });
+
+  test('no longer matches Last Name + Phone + SSN Last 4 without First Name', () => {
+    const input = { lastName: 'Smith', phone: '6175550100', ssnLast4: '1234' };
+    expect(cmsPatientMatch(patient(input), patient(input)).criteriaId).toBeUndefined();
   });
 
   test.each([
@@ -239,7 +286,8 @@ function patient(f: Fields): Patient {
           ]
         : undefined,
     birthDate: f.dob,
-    address: f.streetLine ? [{ line: [f.streetLine] }] : undefined,
+    address:
+      f.streetLine || f.zip ? [{ line: f.streetLine ? [f.streetLine] : undefined, postalCode: f.zip }] : undefined,
     telecom: [
       ...(f.phone ? [{ system: 'phone' as const, value: f.phone }] : []),
       ...(f.email ? [{ system: 'email' as const, value: f.email }] : []),
@@ -268,5 +316,6 @@ function fields(values: Partial<Record<Field, string | string[]>>): CmsPatientMa
     mbi: field('mbi'),
     legalId: field('legalId'),
     namespaceId: field('namespaceId'),
+    zip: field('zip'),
   };
 }

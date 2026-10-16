@@ -24,6 +24,7 @@ import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
+import { binaryScanHandler } from './operations/binary-scan';
 import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
 import { appointmentCancelHandler } from './operations/cancel';
@@ -73,10 +74,13 @@ import { patientMatchHandler } from './operations/patientmatch';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
+import { projectArchiveHandler } from './operations/projectarchive';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { projectRestoreHandler } from './operations/projectrestore';
 import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
+import { appointmentRescheduleHandler } from './operations/reschedule';
 import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
@@ -245,6 +249,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Project $clone
   router.add('POST', '/Project/:id/$clone', projectCloneHandler);
 
+  // Project $archive and $restore
+  router.add('POST', '/Project/:id/$archive', projectArchiveHandler);
+  router.add('POST', '/$restore', projectRestoreHandler);
+
   // Project $rate-limits
   router.add('GET', '/Project/:id/$rate-limits', projectRateLimitsHandler);
 
@@ -327,6 +335,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Binary $presigned-url operation
   router.add('GET', '/Binary/:id/$presigned-url', binaryPresignedUrlHandler);
+
+  // Binary $scan operation
+  router.add('POST', '/Binary/:id/$scan', binaryScanHandler);
 
   // Bot $init operation
   router.add('POST', '/Bot/$init', botInitHandler);
@@ -424,6 +435,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Appointment/$hold', appointmentHoldHandler);
   router.add('POST', '/Appointment/:id/$cancel', appointmentCancelHandler);
   router.add('POST', '/Appointment/:id/$confirm', appointmentConfirmHandler);
+  router.add('POST', '/Appointment/:id/$reschedule', appointmentRescheduleHandler);
 
   // PackageRelease $install operation
   router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);

@@ -98,6 +98,18 @@ Using unauthenticated webhooks inherently carries security risks. Medplum provid
 5.  **Rate Limiting (Recommended):** Implement rate limiting to prevent abuse or denial-of-service attacks against your webhook endpoint. Medplum offers platform-level rate limiting, but consider additional application-specific rate limiting within your Bot if appropriate.
 6.  **Payload Validation (Essential):** Always validate the structure and content of incoming webhook payloads before processing them. Do not trust external input.
 
+### Verifying JSON signatures
+
+Public webhook Bots receive parsed JSON in `event.input` by default. To verify a provider's signature against the original UTF-8 JSON text, set `Bot.rawBody` to `true`. With this setting enabled, `event.input` is the original text instead of a parsed object. Omitting the flag or setting it to `false` preserves the existing parsed-input behavior.
+
+Pass the raw `event.input` and the provider's signature header from `event.headers` to the provider's verification library. For Stripe, pass them with your webhook signing secret to `stripe.webhooks.constructEvent()`, which verifies the signature and returns the parsed Stripe event. Do not parse and reserialize the text first: doing so can change whitespace, escaping, and number formatting, invalidating the signature. Verify the signature before writing resources or processing the event.
+
+Parsed mode retains the existing JSON validation; raw mode still requires valid JSON but leaves further validation to your Bot or the provider's verification library. Both modes use the normal server JSON size limit. Body-parser decompresses compressed requests before capturing the text; use uncompressed UTF-8 JSON for providers that sign the transmitted bytes. Other content types, encodings, and execution endpoints retain their existing input handling.
+
+Only one representation is sent to the Bot, so enabling raw input does not add a duplicate body to the invocation payload. Runtime payload limits still apply, including JSON escaping and invocation metadata. VM, standard and streaming AWS Lambda wrappers, and Fission already forward `input`; no wrapper redeployment is required solely for this feature. Public webhook routes do not provide a response stream.
+
+Existing Bots require no changes. Before enabling raw mode, update your handler to expect a string in `event.input` and to verify and parse that string using the provider's library.
+
 ### How to Set Up an Unauthenticated Webhook
 
 To set up an unauthenticated webhook, follow these steps:

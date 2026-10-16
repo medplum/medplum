@@ -12,6 +12,7 @@ import {
   evalFhirPathTyped,
   flatMapFilter,
   getReferenceString,
+  HTTP_TERMINOLOGY_HL7_ORG,
   resolveId,
   SearchParameterType,
   stringify,
@@ -40,6 +41,20 @@ export interface DeleteHistoryContentOptions {
   author: Reference;
 }
 
+export const ExpungedHistoryTag = {
+  system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/iso-21089-lifecycle`,
+  code: 'destroy',
+  display: 'Destroy/Delete Record Lifecycle Event',
+} as const;
+
+/** A row of a `<ResourceType>_History` table. */
+export interface HistoryRow {
+  id: string;
+  versionId: string;
+  lastUpdated: Date;
+  content: string | null;
+}
+
 export function parseHistoryContent(content: string | null | undefined): Resource {
   return content ? (JSON.parse(content) as Resource) : ({ meta: { deleted: true } } as Resource);
 }
@@ -58,6 +73,31 @@ export function buildDeleteHistoryContent(resource: Resource, options: DeleteHis
   return stringify({
     resourceType: resource.resourceType,
     id: resource.id,
+    meta,
+  });
+}
+
+export function buildExpungedHistoryContent(
+  resourceType: string,
+  id: string,
+  versionId: string,
+  lastUpdated: Date,
+  author?: Reference,
+  projectId?: string
+): string {
+  const meta: Meta = {
+    versionId,
+    lastUpdated: lastUpdated.toISOString(),
+    author: author?.reference ? author : { reference: 'system' },
+    deleted: true,
+    tag: [ExpungedHistoryTag],
+  };
+  if (projectId) {
+    meta.project = projectId;
+  }
+  return stringify({
+    resourceType,
+    id,
     meta,
   });
 }

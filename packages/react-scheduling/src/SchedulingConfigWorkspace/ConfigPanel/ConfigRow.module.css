@@ -1,0 +1,26 @@
+/* ConfigRow.module.css */
+
+.row {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--mantine-radius-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.row[data-selected] {
+  background-color: var(--mantine-primary-color-light);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+}

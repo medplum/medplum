@@ -26,7 +26,7 @@ import {
   isResourceTypeAdvertised,
 } from '../config/capabilitystatement';
 import { getConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.
@@ -223,7 +223,7 @@ export function buildCapabilityStatement(): CapabilityStatement {
   };
 }
 
-function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
+function buildRest(config: ServerConfig): CapabilityStatementRest[] {
   return [
     {
       mode: 'server',
@@ -247,7 +247,7 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
   ];
 }
 
-function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecurity {
+function buildSecurity(config: ServerConfig): CapabilityStatementRestSecurity {
   return {
     cors: true,
     service: ['OAuth', 'Basic', 'SMART-on-FHIR'].map((service) => ({
@@ -280,7 +280,7 @@ function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecu
   };
 }
 
-function buildResourceTypes(config: MedplumServerConfig): CapabilityStatementRestResource[] {
+function buildResourceTypes(config: ServerConfig): CapabilityStatementRestResource[] {
   const csConfig = config.capabilityStatement;
   return Object.entries(getAllDataTypes())
     .filter(

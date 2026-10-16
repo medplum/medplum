@@ -18,6 +18,7 @@ import { queueRegistry } from './utils';
 
 let mockReadResult: { meta?: Record<string, unknown>; dict?: Record<string, unknown> };
 let mockNaturalized: Record<string, unknown>;
+let dicomProjectId: string;
 const mockFromAsyncStream = vi.fn();
 const mockReadFile = vi.fn();
 const mockStartObject = vi.fn();
@@ -58,7 +59,9 @@ describe('DICOM Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
-    repo = (await createTestProject({ withRepo: true })).repo;
+    const testProject = await createTestProject({ withRepo: true });
+    repo = testProject.repo;
+    dicomProjectId = testProject.project.id;
   });
 
   afterAll(async () => {
@@ -100,6 +103,7 @@ describe('DICOM Worker', () => {
           {
             resourceType: 'DicomInstance',
             id: 'instance-id',
+            meta: { project: 'project-id' },
             raw: { reference: 'Binary/new' },
           } as WithId<DicomInstance>,
           {
@@ -111,6 +115,7 @@ describe('DICOM Worker', () => {
     );
 
     expect(add).toHaveBeenCalledWith('DicomJobData', {
+      target: { kind: 'project', projectId: 'project-id' },
       id: 'instance-id',
       requestId: 'request-id',
       traceId: 'trace-id',
@@ -292,7 +297,7 @@ function noop(): void {
 }
 
 function createJob(id: string): Job<DicomJobData> {
-  return { data: { id } } as Job<DicomJobData>;
+  return { data: { target: { kind: 'project', projectId: dicomProjectId }, id } } as Job<DicomJobData>;
 }
 
 function getFirstPixelData(instance: DicomInstance): Reference<Binary> {

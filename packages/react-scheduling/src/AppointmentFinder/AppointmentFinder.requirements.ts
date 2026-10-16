@@ -8,8 +8,7 @@ import {
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
 } from '@medplum/core';
-import type { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { valueSetElementToCoding } from '@medplum/react';
+import type { CodeableConcept } from '@medplum/fhirtypes';
 
 // Built from the core system constants rather than written out, so the `http` a terminology uri
 // carries is not read as a plaintext-protocol vulnerability. Those constants exist for this.
@@ -25,8 +24,8 @@ export const DEFAULT_DIAGNOSIS_VALUE_SET = `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm/v
  * can be asked for.
  */
 export interface BookingRequirementValues {
-  readonly procedure: readonly Coding[];
-  readonly diagnosis: readonly Coding[];
+  readonly procedure: readonly CodeableConcept[];
+  readonly diagnosis: readonly CodeableConcept[];
   readonly medicalNecessity: boolean;
 }
 
@@ -67,10 +66,11 @@ export function hasRequiredValues(
 }
 
 /**
- * Reads the codes a field is holding into a list of codings.
- * @param elements - What the field is holding.
- * @returns The codings to record, dropping anything that never became a code.
+ * A concept as a code field records it: the codings that carry a code, or nothing when none do.
+ * @param concept - The concept the field is holding.
+ * @returns The concept to record, or undefined when it never became a code.
  */
-export function toCodings(elements: readonly ValueSetExpansionContains[]): Coding[] {
-  return elements.map((element) => valueSetElementToCoding(element)).filter((coding) => !!coding.code);
+export function toCodedConcept(concept: CodeableConcept | undefined): CodeableConcept | undefined {
+  const coding = concept?.coding?.filter((candidate) => !!candidate.code);
+  return coding?.length ? { ...concept, coding } : undefined;
 }

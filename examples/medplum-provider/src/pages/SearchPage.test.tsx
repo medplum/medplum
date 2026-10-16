@@ -230,10 +230,10 @@ describe('SearchPage', () => {
 
   test('New button navigates to new resource page', async () => {
     await setup('/Task');
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Task')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Task'));
     });
 
     await waitFor(() => {

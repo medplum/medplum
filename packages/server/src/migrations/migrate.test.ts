@@ -5,6 +5,7 @@ import { escapeIdentifier } from 'pg';
 import type { Mock, MockInstance } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import {
   buildCreateTables,
@@ -52,13 +53,20 @@ describe('Generator', () => {
       buildSchema(schemaBuilder);
       expect(() => schemaBuilder.toString()).not.toThrow();
     });
+
+    test('creates btree_gist extension', () => {
+      const schemaBuilder = new FileBuilder();
+      buildSchema(schemaBuilder);
+      expect(schemaBuilder.toString()).toContain('CREATE EXTENSION IF NOT EXISTS btree_gist;');
+    });
   });
 
   describe('generateMigrationActions', () => {
+    const shardId = GLOBAL_SHARD_ID;
     test('generates migration without errors', async () => {
       await expect(
         generateMigrationActions({
-          dbClient: getDatabasePool(DatabaseMode.WRITER),
+          dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
         })
@@ -67,7 +75,7 @@ describe('Generator', () => {
 
     test('returns PhasalMigration with preDeploy and postDeploy arrays', async () => {
       const result = await generateMigrationActions({
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
         dropUnmatchedIndexes: false,
         analyzeResourceTables: false,
       });
@@ -111,7 +119,7 @@ describe('Generator', () => {
       });
 
       const result = await generateMigrationActions({
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
       });
 
       expect(result.preDeploy).toContainEqual(expect.objectContaining({ type: 'CREATE_TABLE' }));
@@ -361,6 +369,101 @@ describe('Generator', () => {
       }
     });
 
+    describe('search parameter index variants', () => {
+      function getTable(resourceType: 'Task' | 'Appointment' | 'Observation' | 'MedicationRequest'): TableDefinition {
+        const result: SchemaDefinition = { tables: [], functions: [] };
+        buildCreateTables(result, resourceType);
+        return result.tables.find((t) => t.name === resourceType) as TableDefinition;
+      }
+
+      function getIndexColumns(table: TableDefinition): string[][] {
+        return table.indexes.map((i) => i.columns.map((c) => (typeof c === 'string' ? c : c.name)));
+      }
+
+      test('Task indexes replaced with project-scoped variants', () => {
+        const columns = getIndexColumns(getTable('Task'));
+        expect(columns).toContainEqual(['projectId', 'status', 'lastUpdated']);
+        expect(columns).toContainEqual(['projectId', 'authoredOn']);
+        expect(columns).toContainEqual(['projectId', 'dueDate']);
+        expect(columns).toContainEqual(['projectId', 'priority']);
+        expect(columns).toContainEqual(['projectId', '___tag']);
+        expect(columns).toContainEqual(['projectId', '___tagTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__code']);
+        expect(columns).toContainEqual(['projectId', '__codeTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__dueDate', '__dueDateSort']);
+        expect(columns).toContainEqual(['projectId', '__authoredOn', '__authoredOnSort']);
+
+        for (const plain of [
+          ['status'],
+          ['authoredOn'],
+          ['dueDate'],
+          ['priority'],
+          ['___tag'],
+          ['___tagTextTrgm'],
+          ['__code'],
+          ['__codeTextTrgm'],
+          ['__dueDate', '__dueDateSort'],
+          ['__authoredOn', '__authoredOnSort'],
+        ]) {
+          expect(columns).not.toContainEqual(plain);
+        }
+      });
+
+      test('date project-scopes btree index but leaves range index unscoped', () => {
+        const table = getTable('Appointment');
+        const columns = getIndexColumns(table);
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['projectId', 'date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+
+        const queries = getCreateTableQueries(table, { includeIfExists: false });
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___date_sorted_idx" ON "Appointment" USING gist ("__date", "__dateSort")'
+        );
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___end_sorted_idx" ON "Appointment" USING gist ("__end", "__endSort")'
+        );
+      });
+
+      test('array date is not project-scoped', () => {
+        const columns = getIndexColumns(getTable('MedicationRequest'));
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', 'date']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+      });
+
+      test('Observation subject with date sort suffix', () => {
+        const columns = getIndexColumns(getTable('Observation'));
+        expect(columns).toContainEqual(['subject']);
+        expect(columns).toContainEqual(['subject', 'date']);
+      });
+
+      test('HumanName project-scopes its GIN indexes and keeps unscoped btree ones', () => {
+        const schemaBuilder = new FileBuilder();
+        buildSchema(schemaBuilder);
+        const schema = schemaBuilder.toString();
+
+        expect(schema).toContain('"projectId" UUID');
+        for (const column of ['name', 'given', 'family']) {
+          expect(schema).toContain(`CREATE INDEX "HumanName_${column}_idx" ON "HumanName" ("${column}");`);
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}_idx" ON "HumanName" ("projectId", "${column}");`
+          );
+          expect(schema).not.toContain(`"HumanName_${column}Trgm_idx"`);
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}Trgm_idx" ON "HumanName" USING gin ("projectId", ${column} gin_trgm_ops);`
+          );
+          expect(schema).not.toContain(`"HumanName_${column}_idx_tsv"`);
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}_idx_tsv" ON "HumanName" USING gin ("projectId", `
+          );
+        }
+        expect(schema).not.toContain('"HumanName_projectId_resourceId_idx"');
+      });
+    });
+
     describe('identity columns', () => {
       test('create table', () => {
         const tableDef: TableDefinition = {
@@ -441,6 +544,7 @@ describe('Generator', () => {
   });
 
   describe('generateIndexesActions', () => {
+    const shardId = GLOBAL_SHARD_ID;
     test('allows a primary key to satisfy a structurally identical unique index declaration', () => {
       const startTable: TableDefinition = {
         name: 'Coding',
@@ -461,7 +565,7 @@ describe('Generator', () => {
       };
 
       const result = generateIndexesActions(startTable, targetTable, {
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
         dropUnmatchedIndexes: true,
       });
 
@@ -513,7 +617,7 @@ describe('Generator', () => {
       };
 
       const result = generateIndexesActions(startTable, targetTable, {
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
         dropUnmatchedIndexes: true,
       });
 
@@ -830,7 +934,7 @@ import type { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
-  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+  prepareJobData: prepareCustomMigrationJobData,
   run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 

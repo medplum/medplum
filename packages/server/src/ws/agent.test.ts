@@ -13,7 +13,7 @@ import { initApp, shutdownApp } from '../app';
 import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import * as redisModule from '../redis';
@@ -21,7 +21,7 @@ import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 
 const app = express();
-let config: MedplumServerConfig;
+let config: ServerConfig;
 let server: Server;
 let accessToken: string;
 let bot: Bot;

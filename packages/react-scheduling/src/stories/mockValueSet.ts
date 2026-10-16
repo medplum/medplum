@@ -41,10 +41,13 @@ const CANCELLATION_REASONS: readonly Coding[] = [
   { code: 'oth-weath', display: 'Other: Weather' },
 ].map((concept) => ({ ...concept, system: APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM }));
 
-/** What the stub knows when the caller names nothing: the cancellation reasons, and no more. */
-const DEFAULT_EXPANSIONS: Record<string, readonly Coding[]> = {
-  [APPOINTMENT_CANCELLATION_REASON_VALUE_SET]: CANCELLATION_REASONS,
+/** The cancellation reasons, for a caller naming them alongside value sets of its own. */
+export const CancellationReasonValueSets: Record<string, Coding[]> = {
+  [APPOINTMENT_CANCELLATION_REASON_VALUE_SET]: [...CANCELLATION_REASONS],
 };
+
+/** What the stub knows when the caller names nothing: the cancellation reasons, and no more. */
+const DEFAULT_EXPANSIONS: Record<string, readonly Coding[]> = CancellationReasonValueSets;
 
 /**
  * Answers `ValueSet/$expand` from a fixed set of value sets.

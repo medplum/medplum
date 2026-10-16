@@ -42,11 +42,17 @@ import {
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import type {
+  CreateResourceOptions,
+  DeleteResourceOptions,
+  ReadHistoryOptions,
+  UpdateResourceOptions,
+} from '@medplum/fhir-router';
 import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   AuditEventEntityDetail,
   Binary,
   Bundle,
@@ -130,9 +136,11 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
+import type { HistoryRow } from './repository/row-builder';
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
+  buildExpungedHistoryContent,
   buildResourceRow,
   parseHistoryContent,
 } from './repository/row-builder';
@@ -144,7 +152,14 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
+import {
+  getResourceTypeShardId,
+  GLOBAL_SHARD_ID,
+  normalizeShardId,
+  resolveShardId,
+  shardRoutingError,
+  TODO_SHARD_ID,
+} from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -271,8 +286,10 @@ export class Repository extends FhirRepository implements Disposable {
    *                Project.link (https://github.com/medplum/medplum/pull/9159)
    * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
+   * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
+   * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
    */
-  static readonly VERSION: number = 17;
+  static readonly VERSION: number = 19;
 
   /**
    * Constructs a new Repository instance.
@@ -663,7 +680,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (!this.inOwnTransaction()) {
       // Only set cache entry if not in a transaction
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: true });
     }
 
     return this.authorizeBinarySecurityContext(resource);
@@ -1151,7 +1168,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
     if (resource.resourceType !== 'AuditEvent') {
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: this.isCacheOnly(resource) });
     } else if (!create) {
       // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
       await this.deleteCacheEntry(resource.resourceType, resource.id);
@@ -1307,6 +1324,109 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Restores archived versions of one resource type, preserving ids, version ids, and meta.
+   * Inserts each version into history, then rebuilds the current row from the latest stored version.
+   * Idempotent, and does not trigger subscriptions or bots.
+   * This is only available to super admins.
+   * @param resourceType - The FHIR resource type.
+   * @param projectId - The project being restored. Every version must belong to it.
+   * @param versions - The archived versions.
+   */
+  async restoreResourceVersions(resourceType: ResourceType, projectId: string, versions: Resource[]): Promise<void> {
+    this.assertUsable();
+    // Protected types are server-wide (e.g. JsonWebKey signing keys), so an archive must never contain them
+    if (!this.isSuperAdmin() || protectedResourceTypes.includes(resourceType)) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    // Super admin Project fields come from the target, never the archive, so reruns keep what the operator set
+    let existingProject: Project | undefined;
+    if (resourceType === 'Project') {
+      const [row] = await this.sqlRead<{ content: string }>(
+        new SelectQuery('Project').column('content').where('id', '=', projectId),
+        'Project',
+        { mode: DatabaseMode.WRITER }
+      );
+      existingProject = row ? (parseHistoryContent(row.content) as Project) : undefined;
+    }
+    const restored = versions.map((v) => {
+      if (v.resourceType !== resourceType || !isRestorableToProject(v, projectId)) {
+        throw new OperationOutcomeError(
+          badRequest(`${v.resourceType}/${v.id} does not belong to Project/${projectId}`)
+        );
+      }
+      return v.resourceType === 'Project' ? replaceSuperAdminProjectFields(v, existingProject) : v;
+    });
+    const ids = [...new Set(versions.map((v) => v.id as string))];
+
+    await this.withTransaction(
+      async (txRepo) => {
+        const conflicts = await txRepo.sqlRead<{ id: string }>(
+          new SelectQuery(resourceType).column('id').where('id', 'IN', ids).where('projectId', '!=', projectId),
+          resourceType,
+          { mode: DatabaseMode.WRITER }
+        );
+        if (conflicts.length) {
+          throw new OperationOutcomeError(badRequest(`${resourceType}/${conflicts[0].id} belongs to another project`));
+        }
+
+        await txRepo.sqlWrite(
+          new InsertQuery(
+            resourceType + '_History',
+            restored.map((v) => ({
+              id: v.id,
+              versionId: v.meta?.versionId,
+              lastUpdated: v.meta?.lastUpdated,
+              content: stringify(v),
+            }))
+          ).ignoreOnConflict(),
+          resourceType
+        );
+
+        // Latest per id from the database, so reruns and versions split across batches resolve correctly
+        const latest = await txRepo.sqlRead<Omit<HistoryRow, 'versionId'>>(
+          new SelectQuery(resourceType + '_History')
+            .distinctOn('id')
+            .column('id')
+            .column('lastUpdated')
+            .column('content')
+            .where('id', 'IN', ids)
+            .orderBy('id')
+            .orderBy('lastUpdated', true)
+            .orderBy('versionId', true),
+          resourceType,
+          { mode: DatabaseMode.WRITER }
+        );
+
+        const current: WithId<Resource>[] = [];
+        const deleted: { id: string; lastUpdated: Date }[] = [];
+        for (const row of latest) {
+          const resource = parseHistoryContent(row.content) as WithId<Resource>;
+          if (resource.meta?.deleted) {
+            deleted.push(row);
+          } else {
+            current.push(resource);
+          }
+        }
+        if (deleted.length) {
+          const deletedRows = deleted.map((row) =>
+            buildDeletedResourceRow(
+              { resourceType, id: row.id, meta: { project: projectId } } as WithId<Resource>,
+              row.lastUpdated
+            )
+          );
+          await txRepo.sqlWrite(new InsertQuery(resourceType, deletedRows).mergeOnConflict(), resourceType);
+          for (const row of deleted) {
+            await txRepo.deleteFromLookupTables({ resourceType, id: row.id } as WithId<Resource>);
+          }
+        }
+        await txRepo.reindexResources(current);
+      },
+      { resourceTypes: resourceType, source: 'repo.restoreResourceVersions' }
+    );
+    await this.deleteCacheEntries(resourceType, ids);
+  }
+
+  /**
    * Resends subscriptions for the resource.
    * This is only available to the admin accounts.
    * This should not result in any change to the resource or its history.
@@ -1348,7 +1468,11 @@ export class Repository extends FhirRepository implements Disposable {
     );
   }
 
-  async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+  async deleteResource<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: DeleteResourceOptions
+  ): Promise<void> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1360,6 +1484,11 @@ export class Repository extends FhirRepository implements Disposable {
     } catch (err) {
       const outcomeErr = err as OperationOutcomeError;
       if (isGone(outcomeErr.outcome)) {
+        if (options?.ifMatch) {
+          // Trying to delete something that was already deleted tells us that someone mutated this
+          // since our requested version; report that error.
+          throw new OperationOutcomeError(preconditionFailed);
+        }
         return; // Resource is already deleted, return successfully
       }
       throw err;
@@ -1368,6 +1497,9 @@ export class Repository extends FhirRepository implements Disposable {
     try {
       if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
+      }
+      if (options?.ifMatch && resource.meta?.versionId !== options.ifMatch) {
+        throw new OperationOutcomeError(preconditionFailed);
       }
 
       await preCommitValidation(this, resource, 'delete');
@@ -1400,6 +1532,15 @@ export class Repository extends FhirRepository implements Disposable {
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(
           async (txRepo) => {
+            if (options?.ifMatch) {
+              // Re-check against the snapshot this transaction writes from. A write committed after this
+              // read fails the upsert below with a serialization error, and the retry lands back here.
+              const current = await txRepo.readResourceFromDatabase<T>(resourceType, id);
+              if (current.meta?.versionId !== options.ifMatch) {
+                throw new OperationOutcomeError(preconditionFailed);
+              }
+            }
+
             // FHIR logical delete: retain history and append a new deleted version. Instance
             // reads and vread of that version return HTTP 410 Gone; prior versions stay readable.
             const versionId = txRepo.generateId();
@@ -1446,9 +1587,9 @@ export class Repository extends FhirRepository implements Disposable {
       }
 
       if (!this.context.skipBackgroundJobs) {
-        await addBackgroundJobs(resource, resource, {
-          project: await this.getProjectById(resource.meta?.project),
-          interaction: 'delete',
+        await this.postCommit(async () => {
+          const project = await this.getProjectById(resource.meta?.project);
+          await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
         });
       }
     } catch (err) {
@@ -1546,11 +1687,11 @@ export class Repository extends FhirRepository implements Disposable {
     const projectId = this.isSuperAdmin() ? undefined : this.currentProject()?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
-        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
+        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id').returning('projectId');
         if (projectId) {
           deleteQuery.where('projectId', '=', projectId);
         }
-        const deleteResult = await txRepo.sqlWrite<{ id: string }>(deleteQuery, resourceType, {
+        const deleteResult = await txRepo.sqlWrite<{ id: string; projectId: string }>(deleteQuery, resourceType, {
           source: 'repo.expungeResources.resource',
         });
         if (deleteResult.length === 0) {
@@ -1575,6 +1716,31 @@ export class Repository extends FhirRepository implements Disposable {
           historyDelete.returning('id').returning('versionId');
         }
         const historyResult = await txRepo.sqlWrite<{ id: string; versionId?: string }>(historyDelete, resourceType);
+
+        const lastUpdated = new Date();
+        await txRepo.sqlWrite(
+          new InsertQuery(
+            resourceType + '_History',
+            deleteResult.map((res) => {
+              const versionId = txRepo.generateId();
+              return {
+                id: res.id,
+                versionId,
+                lastUpdated,
+                content: buildExpungedHistoryContent(
+                  resourceType,
+                  res.id,
+                  versionId,
+                  lastUpdated,
+                  txRepo.getAuthor(),
+                  res.projectId
+                ),
+              };
+            })
+          ),
+          resourceType,
+          { source: 'repo.expungeResources.tombstone' }
+        );
 
         await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
 
@@ -1719,11 +1885,21 @@ export class Repository extends FhirRepository implements Disposable {
    * @param interaction - The FHIR interaction being performed.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string, interaction: AccessPolicyInteraction): void {
-    // No compartment restrictions for admins.
-    if (!this.isSuperAdmin()) {
-      this.addProjectFilters(builder, resourceType);
-    }
+    this.addProjectFilters(builder, resourceType);
     this.addAccessPolicyFilters(builder, resourceType, interaction);
+  }
+
+  /**
+   * Returns the project IDs that searches for the given resource type are restricted to.
+   * @param resourceType - The resource type being searched.
+   * @returns The project IDs, or undefined if searches are not restricted by project.
+   */
+  getSearchProjectIds(resourceType: string): string[] | undefined {
+    // No compartment restrictions for admins.
+    if (this.isSuperAdmin()) {
+      return undefined;
+    }
+    return this.getPermittedProjectIds(resourceType);
   }
 
   /**
@@ -1741,7 +1917,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resourceType - The resource type being searched.
    */
   private addProjectFilters(builder: SelectQuery, resourceType: string): void {
-    const projectIds = this.getPermittedProjectIds(resourceType);
+    const projectIds = this.getSearchProjectIds(resourceType);
     if (projectIds) {
       builder.where('projectId', 'IN', projectIds);
     }
@@ -2363,6 +2539,10 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
+      const profile = this.currentProject()?.defaultProfile?.find((o) => o.resourceType === 'AuditEvent')?.profile;
+      if (profile?.length) {
+        auditEvent.meta = { ...auditEvent.meta, profile };
+      }
       // Clone the repository to obtain a separate RepositoryConnection for two reasons:
       // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
       // and closed/unusable as soon as post-commit callbacks returns (before the un-awaited save completes).
@@ -2370,11 +2550,21 @@ export class Repository extends FhirRepository implements Disposable {
       // mainline transactions started on the current Repository and cause one of them to fail.
       // To reduce AuditEvent overhead, we could consider further decoupling AuditEvent saves from request processing
       // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
-      const saveRepo = this.clone({ skipBackgroundJobs: true });
-      saveRepo
-        .updateResourceImpl(auditEvent, true)
+      const accountsRepo = this.clone();
+      const saveRepo = this.clone({ skipBackgroundJobs: true }).getSystemRepo();
+      accountsRepo
+        .getAccounts(undefined, auditEvent as WithId<AuditEvent>)
+        .then((accounts) => {
+          if (accounts) {
+            auditEvent.meta = { ...auditEvent.meta, account: accounts[0], accounts };
+          }
+          return saveRepo.updateResourceImpl(auditEvent, true);
+        })
         .catch((err) => getLogger().error('Failed to save AuditEvent', err))
-        .finally(() => saveRepo[Symbol.dispose]());
+        .finally(() => {
+          accountsRepo[Symbol.dispose]();
+          saveRepo[Symbol.dispose]();
+        });
     }
   }
 
@@ -2496,7 +2686,8 @@ export class Repository extends FhirRepository implements Disposable {
       return undefined;
     }
     this.recordCacheAccess('read', resourceType, 'repo.getCacheEntry');
-    return getResourceCacheEntry<T>(resourceType, id);
+    const entry = await getResourceCacheEntry<T>(resourceType, id);
+    return this.cacheEntryOnShard(entry);
   }
 
   /**
@@ -2511,25 +2702,44 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     this.recordCacheAccess('read', getResourceTypesFromReferences(references), 'repo.getCacheEntries');
-    return getResourceCacheEntries(references);
+    const entries = await getResourceCacheEntries(references);
+    for (let i = 0; i < entries.length; i++) {
+      entries[i] = this.cacheEntryOnShard(entries[i]);
+    }
+    return entries;
+  }
+
+  /**
+   * An entry cached by a repository on another shard is a copy this repository's database may not hold,
+   * so reads treat it as a miss.
+   * @param entry - The cache entry.
+   * @returns The entry if it was cached from the shard this repository reads its resource type from.
+   */
+  private cacheEntryOnShard<T extends Resource>(entry: CacheEntry<T> | undefined): CacheEntry<T> | undefined {
+    if (entry) {
+      return entry.shardId === getResourceTypeShardId(this.shardId, entry.resource.resourceType) ? entry : undefined;
+    }
+    return undefined;
   }
 
   /**
    * Writes a cache entry to Redis.
    * @param resource - The resource to cache.
+   * @param options - Optional write options.
+   * @param options.force - Create the entry even if it does not already exist.
    */
-  private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
+  private async setCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       const cachedResource = deepClone(resource);
       await this.postCommit(() => {
-        return this.setCacheEntry(cachedResource);
+        return this.setCacheEntry(cachedResource, options);
       });
       return;
     }
 
     this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource);
+    await setResourceCacheEntry(resource, getResourceTypeShardId(this.shardId, resource.resourceType), options);
   }
 
   /**
@@ -2823,3 +3033,57 @@ const patchOperationDefinition: OperationDefinition = {
 };
 
 const SuperAdminProjectIdEditableResourceTypes = ['User', 'Subscription'];
+
+/**
+ * Returns true if an archived version belongs to the project being restored.
+ * Besides meta.project, checks the fields that login and access control use to resolve a project,
+ * so a crafted archive cannot grant itself access to another project.
+ * @param resource - The archived version.
+ * @param projectId - The project being restored.
+ * @returns True if the version belongs to the project.
+ */
+function isRestorableToProject(resource: Resource, projectId: string): boolean {
+  if (resource.meta?.deleted) {
+    // Older tombstones have no meta.project; the conflict check still protects other projects
+    return (resource.meta.project ?? projectId) === projectId;
+  }
+  if (resource.meta?.project !== projectId) {
+    return false;
+  }
+  switch (resource.resourceType) {
+    case 'Project':
+      return resource.id === projectId;
+    case 'ProjectMembership':
+    case 'User':
+      return resolveId(resource.project) === projectId;
+    default:
+      return true;
+  }
+}
+
+const superAdminProjectFields = [
+  'superAdmin',
+  'features',
+  'link',
+  'systemSetting',
+  'systemSecret',
+  'strictMode',
+] as const;
+
+/**
+ * Replaces the Project fields that only super admins can set with the target's current values.
+ * @param project - The archived Project version.
+ * @param existing - The target's current Project, if any.
+ * @returns The Project with the target's super admin fields.
+ */
+function replaceSuperAdminProjectFields(project: Project, existing: Project | undefined): Project {
+  const result = { ...project };
+  for (const field of superAdminProjectFields) {
+    if (existing?.[field] === undefined) {
+      delete result[field];
+    } else {
+      Object.assign(result, { [field]: existing[field] });
+    }
+  }
+  return result;
+}

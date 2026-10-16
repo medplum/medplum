@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Flex, Modal, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Flex, Stack, Text, Tooltip } from '@mantine/core';
 import type { Filter, SearchRequest, SortRule, WithId } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
@@ -14,9 +14,9 @@ import { LabDetailPane } from '../../components/labs/LabDetailPane';
 import { LabListItem } from '../../components/labs/LabListItem';
 import { LabResultListItem } from '../../components/labs/LabResultListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
+import { OrderLabsModal } from '../../components/labs/OrderLabsModal';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
-import { OrderLabsPage } from '../labs/OrderLabsPage';
 
 export type LabTab = 'open' | 'completed' | 'revoked';
 type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
@@ -66,7 +66,8 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<LabItem>();
   const [loading, setLoading] = useState(false);
-  const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
+  // The order modal is either closed, creating a new order, or resuming a draft.
+  const [orderModal, setOrderModal] = useState<'new' | WithId<ServiceRequest>>();
 
   // The active search is parsed from the URL query string, then has the tab's
   // default status filter and a default sort applied.
@@ -167,7 +168,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
   );
 
   const handleNewOrderCreated = useCallback((): void => {
-    setNewOrderModalOpened(false);
+    setOrderModal(undefined);
     const openTab = tabs.find((t) => t.value === 'open');
     fetchData()
       .then(() => (openTab ? navigate(openTab.uri)?.catch(console.error) : undefined))
@@ -182,7 +183,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         color="blue"
         size={32}
         aria-label="Order Labs"
-        onClick={() => setNewOrderModalOpened(true)}
+        onClick={() => setOrderModal('new')}
       >
         <IconPlus size={16} />
       </ActionIcon>
@@ -196,7 +197,6 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         loading={loading}
         selectedKey={selectedId}
         selected={selected}
-        refresh={fetchData}
         tabs={tabs}
         activeTab={activeTab}
         headerActions={headerActions}
@@ -221,21 +221,21 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
             />
           )
         }
-        renderDetail={(item, ctx) => (
-          <LabDetailPane item={item} onOrderChange={() => ctx.refresh().catch(showErrorNotification)} />
+        renderDetail={(item) => (
+          <LabDetailPane
+            item={item}
+            onOrderChange={() => fetchData().catch(showErrorNotification)}
+            onResumeOrder={setOrderModal}
+          />
         )}
       />
 
-      {/* New Order Modal */}
-      <Modal
-        opened={newOrderModalOpened}
-        onClose={() => setNewOrderModalOpened(false)}
-        size="xl"
-        centered
-        title="Order Labs"
-      >
-        <OrderLabsPage onSubmitLabOrder={handleNewOrderCreated} />
-      </Modal>
+      <OrderLabsModal
+        opened={!!orderModal}
+        onClose={() => setOrderModal(undefined)}
+        draftOrder={orderModal === 'new' ? undefined : orderModal}
+        onSubmitLabOrder={handleNewOrderCreated}
+      />
     </Box>
   );
 }

@@ -23,7 +23,7 @@ import { vi } from 'vitest';
 import type { RawData } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { EventCategory } from './routes';
@@ -42,7 +42,7 @@ const HUB_ALIAS_ROUTE = '/api/hub';
 
 describe('FHIRcast routes', () => {
   let app: express.Express;
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let server: Server;
   let project: WithId<Project>;
   let accessToken: string;

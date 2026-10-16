@@ -3,25 +3,40 @@
 }
 
 [data-mantine-color-scheme='dark'] .panel {
-  background-color: var(--mantine-color-dark-8);
+  background-color: var(--mantine-color-body);
 }
 
 [data-mantine-color-scheme='light'] .panel {
   background-color: var(--mantine-color-white);
 }
 
-.patientSummaryBadge {
-  cursor: pointer;
+.headerLink,
+.headerContent {
+  flex: 1;
+  min-width: 0;
 }
 
-.patientSummaryAddButton {
-  opacity: 0;
-  transition: opacity 0.2s;
-  position: absolute;
-  right: 0;
-  top: 0;
-  transform: none;
-  stroke-width: 1;
+.headerLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.headerLink:hover {
+  text-decoration: none;
+}
+
+.actionsButton {
+  flex-shrink: 0;
+}
+
+.actionsButton[data-expanded] {
+  background-color: var(--mantine-primary-color-light);
+  color: var(--mantine-primary-color-light-color);
+}
+
+.patientSummaryBadge {
+  cursor: pointer;
 }
 
 .patientSummaryHeader {

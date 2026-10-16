@@ -3,23 +3,12 @@
 import { Card, Stack, Text } from '@mantine/core';
 import type { PatchOperation } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Encounter, Organization, Practitioner, Reference } from '@medplum/fhirtypes';
-import type { AsyncAutocompleteOption } from '@medplum/react';
+import type { Encounter, Location, Organization, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DateTimeInput, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
-import { NPI_SYSTEM, ORGANIZATION_TYPE_SYSTEM, PROVIDER_ORGANIZATION_TYPE } from '../../utils/billing';
-
-const OrganizationItem = (props: AsyncAutocompleteOption<Organization>): JSX.Element => {
-  const npi = props.resource.identifier?.find((id) => id.system === NPI_SYSTEM)?.value;
-  return (
-    <div>
-      <Text>{props.label}</Text>
-      <Text size="xs" c="dimmed">
-        NPI {npi}
-      </Text>
-    </div>
-  );
-};
+import { BILLING_ORGANIZATION_IDENTIFIER } from '../../utils/billing';
+import { BillingOrganizationOption } from '../billing/BillingOrganizationOption';
+import { ServiceFacilityOption } from '../billing/ServiceFacilityOption';
 
 interface VisitDetailsPanelProps {
   practitioner?: Practitioner;
@@ -38,6 +27,15 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
     }
 
     onEncounterChange([{ op: 'add', path: '/participant', value: [{ individual: createReference(practitioner) }] }]);
+  };
+
+  // Clearing the picker removes the whole location list; BillingTab drops the remove when there is none.
+  const handleServiceFacilityChange = (location: Location | undefined): void => {
+    if (!location) {
+      onEncounterChange([{ op: 'remove', path: '/location' }]);
+      return;
+    }
+    onEncounterChange([{ op: 'add', path: '/location', value: [{ location: createReference(location) }] }]);
   };
 
   const handleCheckinChange = async (checkin: string): Promise<void> => {
@@ -80,13 +78,25 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
             label="Billing organization"
             placeholder="Search for organization"
             defaultValue={billingOrganization}
-            searchCriteria={{
-              type: `${ORGANIZATION_TYPE_SYSTEM}|${PROVIDER_ORGANIZATION_TYPE}`,
-              identifier: `${NPI_SYSTEM}|`,
-            }}
-            itemComponent={OrganizationItem}
+            searchCriteria={{ identifier: BILLING_ORGANIZATION_IDENTIFIER }}
+            itemComponent={BillingOrganizationOption}
             onChange={onBillingOrganizationChange}
           />
+
+          <Stack gap={4}>
+            <ResourceInput<Location>
+              resourceType="Location"
+              name="serviceFacility"
+              label="Service facility"
+              placeholder="Search for location"
+              defaultValue={encounter.location?.[0]?.location}
+              itemComponent={ServiceFacilityOption}
+              onChange={handleServiceFacilityChange}
+            />
+            <Text size="xs" c="dimmed">
+              Defaults to the billing organization when empty.
+            </Text>
+          </Stack>
 
           <DateTimeInput
             name="checkin"

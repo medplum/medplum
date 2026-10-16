@@ -12,6 +12,9 @@ on:
 
 name: "Vouch - Check PR Backlog"
 
+permissions:
+  contents: read
+
 jobs:
   list-prs:
     runs-on: ubuntu-latest

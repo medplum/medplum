@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import type { AsyncJob, ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import type { ReindexPostDeployMigration } from '../../workers/reindex';
 import { prepareReindexJobData, ReindexJob } from '../../workers/reindex';
 
@@ -11,12 +10,12 @@ const maxResourceVersion = 8;
 
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
-  prepareJobData(asyncJob: WithId<AsyncJob>) {
+  prepareJobData(ctx) {
     // Also reindex Task, which was placed into the Patient compartment in a previous migration
     const resourceTypes: ResourceType[] = ['ServiceRequest', 'Task'];
-    return prepareReindexJobData(resourceTypes, asyncJob.id, { maxResourceVersion });
+    return prepareReindexJobData(ctx, resourceTypes, { maxResourceVersion });
   },
-  run: async (repo, job, jobData) => {
-    return new ReindexJob(repo).execute(job, jobData);
+  run: async (_repo, job, jobData) => {
+    return (await ReindexJob.create(jobData)).execute(job);
   },
 };

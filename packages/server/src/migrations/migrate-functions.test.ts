@@ -3,10 +3,11 @@
 import type { PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import type { PgQueryable } from '../fhir/sql';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
+import { TEST_SHARD_ID } from '../test.setup';
 import {
   addCheckConstraint,
   analyzeTable,
@@ -51,13 +52,13 @@ async function getTableIndexes(client: PgQueryable, tableName: string, schemaNam
 }
 
 describe('migrate-functions', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let client: PoolClient;
 
   beforeAll(async () => {
-    config = await loadTestConfig();
+    config = await loadTestConfig({ sharded: true });
     await initDatabase(config);
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, TEST_SHARD_ID);
     client = await pool.connect();
   });
 

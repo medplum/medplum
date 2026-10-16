@@ -17,7 +17,7 @@ permissions:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 45
     permissions:
       pull-requests: write
@@ -30,16 +30,18 @@ jobs:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
+      - name: Install npm from packageManager
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -79,7 +81,7 @@ jobs:
   preview:
     name: Deploy previews
     if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 20
     needs: [build]
     permissions:
@@ -88,7 +90,7 @@ jobs:
     env:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Detect changed packages
@@ -98,6 +100,8 @@ jobs:
         #   - packages/app                  -> app preview
         #   - packages/docs                 -> docs preview
         #   - examples/medplum-provider     -> provider preview
+        #   - packages/{storybook,mock}     -> storybook preview
+        #   - packages/react-scheduling     -> provider + storybook previews
         #   - packages/{core,react,react-hooks} -> all previews (shared deps)
         run: |
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
@@ -111,36 +115,45 @@ jobs:
           deploy_app=false
           deploy_docs=false
           deploy_provider=false
+          deploy_storybook=false
 
           # Shared packages force all previews.
           if changed '^packages/(core|react|react-hooks)/'; then
             deploy_app=true
             deploy_docs=true
             deploy_provider=true
+            deploy_storybook=true
           fi
 
           if changed '^packages/app/'; then deploy_app=true; fi
           if changed '^packages/docs/'; then deploy_docs=true; fi
           if changed '^examples/medplum-provider/'; then deploy_provider=true; fi
-          if changed '^packages/react-scheduling/'; then deploy_provider=true; fi
+          if changed '^packages/(storybook|mock)/'; then deploy_storybook=true; fi
+          if changed '^packages/react-scheduling/'; then
+            deploy_provider=true
+            deploy_storybook=true
+          fi
 
           deploy_any=false
-          if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_provider" = true ]; then
+          if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_provider" = true ] || [ "$deploy_storybook" = true ]; then
             deploy_any=true
           fi
 
-          echo "Decision: app=$deploy_app docs=$deploy_docs provider=$deploy_provider any=$deploy_any"
+          echo "Decision: app=$deploy_app docs=$deploy_docs provider=$deploy_provider storybook=$deploy_storybook any=$deploy_any"
 
           {
             echo "deploy_app=$deploy_app"
             echo "deploy_docs=$deploy_docs"
             echo "deploy_provider=$deploy_provider"
+            echo "deploy_storybook=$deploy_storybook"
             echo "deploy_any=$deploy_any"
           } >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+      - name: Install npm from packageManager
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -196,6 +209,12 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
+      - name: Deploy storybook preview
+        if: steps.changes.outputs.deploy_storybook == 'true'
+        run: './scripts/deploy-storybook.sh'
+        env:
+          AWS_REGION: 'us-east-1'
+          STORYBOOK_BUCKET: preview.medplum.dev/previews/storybook-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
       - name: Comment preview URLs
         if: steps.changes.outputs.deploy_any == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
@@ -203,6 +222,7 @@ jobs:
           DEPLOY_APP: ${{ steps.changes.outputs.deploy_app }}
           DEPLOY_DOCS: ${{ steps.changes.outputs.deploy_docs }}
           DEPLOY_PROVIDER: ${{ steps.changes.outputs.deploy_provider }}
+          DEPLOY_STORYBOOK: ${{ steps.changes.outputs.deploy_storybook }}
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -218,6 +238,9 @@ jobs:
             }
             if (process.env.DEPLOY_PROVIDER === 'true') {
               rows.push(`| Provider  | https://provider-${login}-${n}.preview.medplum.dev |`);
+            }
+            if (process.env.DEPLOY_STORYBOOK === 'true') {
+              rows.push(`| Storybook | https://storybook-${login}-${n}.preview.medplum.dev |`);
             }
 
             const body = [
@@ -259,7 +282,7 @@ jobs:
 
   eslint:
     name: Run eslint
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 20
     needs: [build]
     env:
@@ -268,16 +291,18 @@ jobs:
       eslint_errs: ${{ steps.fmt.outputs.eslint_errs }}
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
+      - name: Install npm from packageManager
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -340,7 +365,7 @@ jobs:
 
   test:
     name: Run tests
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 45
     needs: [build]
     strategy:
@@ -356,9 +381,16 @@ jobs:
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      # Vitest defaults to one worker per core minus one; with coverage on 16 cores, that
+      # contention pushes CPU-bound tests past their timeouts. Each non-serial vite config reads
+      # this (falling back to 75%), so serial packages (agent, hl7, cdk) keep maxWorkers: 1.
+      TEST_MAX_WORKERS: '75%'
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -372,6 +404,9 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
@@ -382,16 +417,18 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
+      - name: Install npm from packageManager
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -437,7 +474,7 @@ jobs:
       - name: Coveralls GitHub Action
         if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: coverage/lcov.info
@@ -446,14 +483,14 @@ jobs:
         # main and merge_group; for pull_request events, only runs when the PR head is on
         # this repo rather than a fork.
         if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
-        uses: SonarSource/sonarqube-scan-action@7cdc154593ec10cd3c019fceab40f415f9218437 # master
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   test-examples:
     name: Run example tests
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 30
     needs: [build]
     strategy:
@@ -465,16 +502,18 @@ jobs:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
+      - name: Install npm from packageManager
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -504,7 +543,7 @@ jobs:
 
   e2e:
     name: Run e2e tests
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 30
     needs: [build]
     strategy:
@@ -521,6 +560,9 @@ jobs:
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -534,6 +576,9 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
@@ -544,16 +589,18 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
+      - name: Install npm from packageManager
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -670,7 +717,7 @@ jobs:
 
   build-docs:
     name: Build the docs
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 30
     permissions:
       pull-requests: write
@@ -680,16 +727,18 @@ jobs:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
+      - name: Install npm from packageManager
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:

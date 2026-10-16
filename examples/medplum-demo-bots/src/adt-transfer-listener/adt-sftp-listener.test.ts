@@ -18,14 +18,11 @@ import type {
   Practitioner,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import * as dotenv from 'dotenv';
 import type { ReadStream } from 'ssh2';
 import { default as SftpClient } from 'ssh2-sftp-client';
 import { Readable } from 'stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler, processAdtMessage } from './adt-sftp-listener';
-
-dotenv.config({ quiet: true });
 
 const CONNECTION_DETAILS = {
   SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },

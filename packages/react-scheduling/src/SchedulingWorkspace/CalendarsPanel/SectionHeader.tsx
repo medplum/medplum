@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Collapse, Group, Loader, Text } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Group, Loader, Text, VisuallyHidden } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
@@ -11,10 +11,14 @@ export interface SectionHeaderProps {
   readonly children: ReactNode;
   /** Shows a small loading indicator next to the title while its items are being fetched. */
   readonly loading?: boolean;
+  /** How many items the section lists, shown beside the title. */
+  readonly count?: number;
+  /** Controls placed at the end of the header, such as a button that adds an item. */
+  readonly actions?: ReactNode;
 }
 
 export function SectionHeader(props: SectionHeaderProps): JSX.Element {
-  const { title, children, loading } = props;
+  const { title, children, loading, count, actions } = props;
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -35,7 +39,14 @@ export function SectionHeader(props: SectionHeaderProps): JSX.Element {
         <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)} className={classes.title}>
           {title}
         </Text>
+        {count !== undefined && !loading && (
+          <Badge size="sm" variant="light" color="gray" circle={count < 10} data-testid="section-count">
+            {count}
+            <VisuallyHidden> listed</VisuallyHidden>
+          </Badge>
+        )}
         {loading && <Loader size="xs" aria-label={`Loading ${title.toLowerCase()}`} />}
+        {actions && <Box ml="auto">{actions}</Box>}
       </Group>
 
       <Collapse in={!collapsed} my="xs">

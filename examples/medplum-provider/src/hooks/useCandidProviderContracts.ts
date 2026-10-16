@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { normalizeErrorString } from '@medplum/core';
 import type { Contract, Parameters } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne } from '@medplum/react';
 import { useEffect, useState } from 'react';
+import { getErrorMessage } from '../components/insurance/utils';
 import { CANDID_GET_CONTRACTS_BOT_IDENTIFIER, isContractInForce } from '../utils/candid';
 
 /** Candid pages contract searches; one page of this size covers any real provider's effective contracts. */
@@ -67,7 +67,7 @@ export function useCandidProviderContracts(contractingProviderId: string | undef
       })
       .catch((error) => {
         if (!cancelled) {
-          setLookup({ contractingProviderId, result: { status: 'failed', message: normalizeErrorString(error) } });
+          setLookup({ contractingProviderId, result: { status: 'failed', message: getErrorMessage(error) } });
         }
       });
 

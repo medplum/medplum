@@ -1,7 +1,7 @@
 ---
 title: Messaging & Communications Decision Guide
 sidebar_label: Messaging & Communications
-sidebar_position: 4
+sidebar_position: 6
 download_slug: messaging
 ---
 

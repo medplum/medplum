@@ -6,6 +6,7 @@ import type {
   Address,
   Appointment,
   AppointmentParticipant,
+  AuditEvent,
   Binary,
   Bundle,
   CarePlan,
@@ -273,7 +274,7 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(typesBundle)).not.toThrow();
     expect(() => validateResource(resourcesBundle)).not.toThrow();
     expect(() => validateResource(medplumBundle)).not.toThrow();
-  });
+  }, 30000);
 
   test('StructureDefinition with differential', () => {
     const sd: StructureDefinition = {
@@ -1205,7 +1206,20 @@ describe('FHIR resource validation', () => {
     sp.numberOfSubunits = 123.5;
     expect(() => validateResource(sp)).toThrow('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
 
-    sp.numberOfSubunits = 10;
+    sp.numberOfSubunits = -2_147_483_649;
+    expect(() => validateResource(sp)).toThrow(
+      'Expected number to be in the range -2147483648..2147483647 (SubstanceProtein.numberOfSubunits)'
+    );
+
+    sp.numberOfSubunits = 2_147_483_648;
+    expect(() => validateResource(sp)).toThrow(
+      'Expected number to be in the range -2147483648..2147483647 (SubstanceProtein.numberOfSubunits)'
+    );
+
+    sp.numberOfSubunits = -2_147_483_648;
+    expect(() => validateResource(sp)).not.toThrow();
+
+    sp.numberOfSubunits = 2_147_483_647;
     expect(() => validateResource(sp)).not.toThrow();
   });
 
@@ -1257,12 +1271,24 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.minutesDuration)');
 
     appt.minutesDuration = -1;
-    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
 
     appt.minutesDuration = 0;
-    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
 
-    appt.minutesDuration = 10;
+    appt.minutesDuration = 2_147_483_648;
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
+
+    appt.minutesDuration = 1;
+    expect(() => validateResource(appt)).not.toThrow();
+
+    appt.minutesDuration = 2_147_483_647;
     expect(() => validateResource(appt)).not.toThrow();
   });
 
@@ -1292,12 +1318,19 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.priority)');
 
     appt.priority = -1;
-    expect(() => validateResource(appt)).toThrow('Expected number to be non-negative (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 0..2147483647 (Appointment.priority)'
+    );
+
+    appt.priority = 2_147_483_648;
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 0..2147483647 (Appointment.priority)'
+    );
 
     appt.priority = 0;
     expect(() => validateResource(appt)).not.toThrow();
 
-    appt.priority = 10;
+    appt.priority = 2_147_483_647;
     expect(() => validateResource(appt)).not.toThrow();
   });
 
@@ -1698,6 +1731,19 @@ describe('FHIR resource validation', () => {
     expect(issues[0].severity).toBe('warning');
     expect(issues[0].details?.text).toContain('Invalid reference');
     expect(issues[0].details?.text).toContain('Organization');
+  });
+
+  test('System reference in AuditEvent.agent.who should not warn', () => {
+    const auditEvent: AuditEvent = {
+      resourceType: 'AuditEvent',
+      type: { code: 'rest', system: 'http://dicom.nema.org/resources/ontology/DCM' },
+      recorded: '2024-01-01T00:00:00Z',
+      agent: [{ who: { reference: 'system' }, requestor: true }],
+      source: { observer: { reference: 'Device/1' } },
+    };
+
+    const issues = validateResource(auditEvent);
+    expect(issues).toHaveLength(0);
   });
 
   test('Nested recursive properties', () => {

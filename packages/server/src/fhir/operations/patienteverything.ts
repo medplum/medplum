@@ -291,11 +291,11 @@ function processReferencesFromResources(toProcess: BundleEntry[], processedRefs:
 // Most relevant resource types are already included in the Patient compartment, so
 // only references of select other types need to be resolved
 const allowedReferenceTypes = /^(Organization|Location|Practitioner|PractitionerRole|Medication|Device)\//;
-function shouldResolveReference(refString: string): boolean {
+export function shouldResolveReference(refString: string): boolean {
   return allowedReferenceTypes.test(refString);
 }
 
-function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
+export function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
   for (const key in resource) {
     if (resource[key] && typeof resource[key] === 'object') {
       const value = resource[key];

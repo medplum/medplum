@@ -19,6 +19,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { AsyncJob, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getAsyncJobTracking } from '../../workers/base';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
 import { CancelledError } from '../../workers/utils';
 import type { Repository, SystemRepository } from '../repo';
@@ -89,18 +90,18 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
 
   const params = parseInputParameters<SetAccountsParameters>(operation, req);
 
-  const { repo } = getAuthenticatedContext();
+  const { repo, authState } = getAuthenticatedContext();
   if (req.headers?.['prefer'] === 'respond-async' && params.propagate) {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(repo);
     const asyncJob = await exec.init(concatUrls(baseUrl, `${resourceType}/${id}/$set-accounts`));
     await exec.run(async () => {
       await addSetAccountsJobData({
-        asyncJob,
+        tracking: getAsyncJobTracking(asyncJob),
         resourceType,
         id,
         accounts: params.accounts,
-        authState: getAuthenticatedContext().authState,
+        authState,
       });
     });
 

@@ -25,11 +25,17 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
+import { BILLING_ORGANIZATION_IDENTIFIER } from '../../utils/billing';
 import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { buildClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
+import {
+  CANDID_SUBMIT_CLAIM_OPERATION,
+  isCustomOperationAvailable,
+  STEDI_SUBMIT_CLAIM_OPERATION,
+} from '../../utils/operations';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
 import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
@@ -60,6 +66,17 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [claimResponse, setClaimResponse] = useState<WithId<ClaimResponse> | null | undefined>(undefined);
   const [claimResponseLoading, setClaimResponseLoading] = useState(false);
   const [billingOrganization, setBillingOrganization] = useState<Reference<Organization> | undefined>();
+  // Which claim submission operations are deployed in this project; undefined until resolved.
+  const [submitOperations, setSubmitOperations] = useState<{ candid: boolean; stedi: boolean } | undefined>();
+
+  useEffect(() => {
+    Promise.all([
+      isCustomOperationAvailable(medplum, CANDID_SUBMIT_CLAIM_OPERATION),
+      isCustomOperationAvailable(medplum, STEDI_SUBMIT_CLAIM_OPERATION),
+    ])
+      .then(([candid, stedi]) => setSubmitOperations({ candid, stedi }))
+      .catch(showErrorNotification);
+  }, [medplum]);
 
   useEffect(() => {
     const fetchClaim = async (): Promise<void> => {
@@ -109,7 +126,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, [medplum, patient]);
 
   // Default the billing organization: an existing draft claim records the previous choice;
-  // otherwise use the organization the practitioner bills under (PractitionerRole).
+  // otherwise use the billing organization on the practitioner's active PractitionerRole, looked up
+  // the same way the visit's insurance eligibility check does. The picker stays editable either way.
   useEffect(() => {
     const resolveBillingOrganization = async (): Promise<Reference<Organization> | undefined> => {
       if (claim?.provider?.reference?.startsWith('Organization/')) {
@@ -121,6 +139,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       const role = await medplum.searchOne('PractitionerRole', {
         practitioner: getReferenceString(practitioner),
         active: 'true',
+        'organization.identifier': BILLING_ORGANIZATION_IDENTIFIER,
       });
       return role?.organization;
     };
@@ -226,7 +245,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const pendingEncounterOpsRef = useRef(new Map<string, PatchOperation>());
 
   const flushEncounterOps = useDebouncedCallback(async (): Promise<void> => {
-    const ops = [...pendingEncounterOpsRef.current.values()];
+    // A remove on a missing path is rejected, and so is an empty location list, so clearing a service
+    // facility the encounter never had (or one selected and cleared within a single debounce) is a no-op.
+    const ops = [...pendingEncounterOpsRef.current.values()].filter(
+      (op) => !(op.op === 'remove' && op.path === '/location' && !encounter.location)
+    );
     pendingEncounterOpsRef.current.clear();
     if (ops.length === 0) {
       return;
@@ -352,6 +375,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, [coverages, medplum, patient]);
 
   const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
+  const NO_SUBMIT_OPERATION_TOOLTIP = 'Claim submission is not enabled for this project';
 
   const exportClaimMenu = (disabled?: boolean): JSX.Element => (
     <Menu shadow="md" width={200}>
@@ -440,10 +464,18 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     if (claimResponse) {
       return <ClaimSubmittedPanel claimResponse={claimResponse} exportMenu={exportClaimMenu()} />;
     }
+    const isLocked = chartNoteStatus === ChartNoteStatus.SignedAndLocked;
+    const canSubmitClaim = Boolean(submitOperations?.candid || submitOperations?.stedi);
+    let submitTooltip: string | undefined;
+    if (!isLocked) {
+      submitTooltip = LOCKED_TOOLTIP;
+    } else if (!canSubmitClaim) {
+      submitTooltip = NO_SUBMIT_OPERATION_TOOLTIP;
+    }
     return (
       <Card withBorder shadow="sm">
         <Flex justify="space-between">
-          {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
+          {exportClaimMenu(!isLocked)}
 
           <SubmitClaimModal
             opened={confirmModalOpen}
@@ -453,19 +485,19 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
             conditions={conditions}
             practitioner={practitioner}
             onClose={() => setConfirmModalOpen(false)}
-            onSubmitClaim={submitToCandid}
-            onSubmitToStedi={submitToStedi}
+            onSubmitClaim={submitOperations?.candid ? submitToCandid : undefined}
+            onSubmitToStedi={submitOperations?.stedi ? submitToStedi : undefined}
             ensureSelfPayCoverage={ensureSelfPayCoverage}
           />
-          <Tooltip label={LOCKED_TOOLTIP} disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}>
+          <Tooltip label={submitTooltip} disabled={!submitTooltip}>
             <Button
               component="div"
               variant="outline"
               leftSection={<IconSend size={16} />}
               loading={submitting}
-              onClick={chartNoteStatus === ChartNoteStatus.SignedAndLocked ? handleSubmitClaimClick : undefined}
-              disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || submitting}
-              data-disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked || undefined}
+              onClick={isLocked && canSubmitClaim ? handleSubmitClaimClick : undefined}
+              disabled={!isLocked || !canSubmitClaim || submitting}
+              data-disabled={!isLocked || !canSubmitClaim || undefined}
             >
               Submit Claim
             </Button>

@@ -4,7 +4,7 @@ sidebar_position: 21
 
 # Resource $expunge
 
-The `$expunge` operation permanently deletes a resource and all of its history from the database. Unlike a standard FHIR delete (which creates a "tombstone" record by marking it as deleted), expunge completely removes all traces of the resource.
+The `$expunge` operation permanently deletes a resource and its history from the database. A minimal tombstone remains in the resource's history table. Its `meta.tag` uses the FHIR audit lifecycle code `destroy`, and it contains no resource data.
 
 :::warning[]
 This operation is **irreversible**. Once a resource is expunged, it cannot be recovered. Use with caution.
@@ -39,13 +39,15 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Patient/example-id/$expunge' \
 
 ### Parameters
 
-| Name         | Type      | Description                                                    | Required |
-| ------------ | --------- | -------------------------------------------------------------- | -------- |
-| `everything` | `boolean` | Expunge all resources in the compartment (for Projects only)   | No       |
+| Name         | Type      | Description                                                  | Required |
+| ------------ | --------- | ------------------------------------------------------------ | -------- |
+| `everything` | `boolean` | Expunge all resources in the compartment (for Projects only) | No       |
 
 ### Expunge Everything (Project Compartment)
 
-When expunging a Project or using `everything=true`, the operation deletes all resources belonging to that compartment. This runs as an async job due to the potentially large number of resources involved.
+When expunging a Project, or when `everything=true`, Medplum starts an async job that walks **every FHIR resource type** in the target compartment (currently Patient and Project compartments). For each type it searches `_compartment`, then hard-deletes matching rows in batches of 10,000, including associated Binary storage. The HTTP request returns `202 Accepted` immediately; poll the `AsyncJob` for completion.
+
+Each deleted id still gets a history tombstone, including `AuditEvent` rows in the compartment.
 
 ```bash
 curl -X POST 'https://api.medplum.com/fhir/R4/Project/project-id/$expunge?everything=true' \
@@ -110,15 +112,19 @@ If you don't have admin privileges:
 ## Behavior
 
 ### Single Resource Expunge
-- Deletes the resource and all of its history versions
+
+- Deletes the resource and all prior history versions
+- Writes a minimal history tombstone tagged with the ISO 21089 `destroy` lifecycle code
 - Removes associated Binary resources referenced by the resource
 - The operation is synchronous and returns immediately
 
 ### Everything Mode (Project Expunge)
+
 - Iterates through all resource types in the compartment
 - Deletes resources in batches of 10,000
 - Also deletes associated Binary resources
 - Runs as an async job to handle large datasets
+- Leaves a history tombstone for each deleted id
 
 ## Related Documentation
 

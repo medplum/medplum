@@ -370,6 +370,7 @@ describe('OAuth Authorize', () => {
     const location = new URL(res3.headers.location);
     expect(location.pathname).toBe('/oauth');
     expect(location.searchParams.get('login')).not.toBeNull();
+    expect(location.searchParams.get('login')).not.toEqual(res1.body.login);
     expect(location.searchParams.get('scope')).toContain('user/Patient.rs');
     expect(location.searchParams.get('error')).toBeNull();
   });
@@ -431,12 +432,12 @@ describe('OAuth Authorize', () => {
     expect(location.searchParams.get('error')).toBe('login_required');
   });
 
-  test('Multiple authorizations reusing same login', async () => {
+  test('Subsequent authorization creates a new login', async () => {
     const res1 = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
       email,
       password,
-      scope: 'openid',
+      scope: 'openid offline_access',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
@@ -444,16 +445,15 @@ describe('OAuth Authorize', () => {
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
 
-    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
-    expect(login.codeChallenge).toEqual('xyz');
-
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res1.body.code,
       code_verifier: 'xyz',
     });
     expect(res2).toHaveStatus(200);
-    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+
+    const originalLogin = await systemRepo.readResource<Login>('Login', res1.body.login);
 
     const cookies = parseSetCookie(res1.headers['set-cookie']);
     expect(cookies.length).toBe(1);
@@ -464,7 +464,7 @@ describe('OAuth Authorize', () => {
       response_type: 'code',
       client_id: client.id,
       redirect_uri: client.redirectUris?.[0] as string,
-      scope: 'openid',
+      scope: 'openid offline_access',
       code_challenge: 'abc',
       code_challenge_method: 'plain',
     });
@@ -480,11 +480,52 @@ describe('OAuth Authorize', () => {
     const location = new URL(res3.headers.location);
     expect(location.host).toBe('example.com');
     expect(location.searchParams.get('error')).toBeNull();
-    expect(location.searchParams.get('code')).not.toEqual(res1.body.code);
 
-    const updatedLogin = await systemRepo.readResource<Login>('Login', res1.body.login);
-    expect(updatedLogin.codeChallenge).toEqual('abc');
-    expect(updatedLogin.launch?.reference).toEqual(`SmartAppLaunch/${launch.id}`);
+    const code = location.searchParams.get('code') as string;
+    expect(code).not.toEqual(res1.body.code);
+
+    // The original login is untouched
+    const unchangedLogin = await systemRepo.readResource<Login>('Login', originalLogin.id);
+    expect(unchangedLogin.meta?.versionId).toEqual(originalLogin.meta?.versionId);
+
+    // The new login carries the session, but has its own per-request state and refresh secret
+    const newLogin = await systemRepo.searchOne<Login>({
+      resourceType: 'Login',
+      filters: [{ code: 'code', operator: Operator.EQUALS, value: code }],
+    });
+    assert(newLogin);
+    expect(newLogin.id).not.toEqual(originalLogin.id);
+    expect(newLogin.basedOn?.reference).toEqual(`Login/${originalLogin.id}`);
+    expect(newLogin.user).toEqual(originalLogin.user);
+    expect(newLogin.membership).toEqual(originalLogin.membership);
+    expect(newLogin.authTime).toEqual(originalLogin.authTime);
+    expect(newLogin.codeChallenge).toEqual('abc');
+    expect(newLogin.launch?.reference).toEqual(`SmartAppLaunch/${launch.id}`);
+    expect(newLogin.granted).toBe(false);
+    expect(newLogin.cookie).toBeUndefined();
+    expect(newLogin.refreshSecret).toBeDefined();
+    expect(newLogin.refreshSecret).not.toEqual(originalLogin.refreshSecret);
+
+    const res4 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code,
+      code_verifier: 'abc',
+    });
+    expect(res4).toHaveStatus(200);
+    expect(res4.body.refresh_token).toBeDefined();
+
+    // Both sessions can refresh independently
+    const res5 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res4.body.refresh_token,
+    });
+    expect(res5).toHaveStatus(200);
+
+    const res6 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res6).toHaveStatus(200);
   });
 
   test('Using id_token_hint', async () => {
@@ -575,13 +616,6 @@ describe('OAuth Authorize', () => {
     });
     expect(res3).toHaveStatus(200);
 
-    // Confirm that the original refresh token is no longer accepted for its own grant type
-    const res4 = await request(app).post('/oauth2/token').type('form').send({
-      grant_type: 'refresh_token',
-      refresh_token: res2.body.refresh_token,
-    });
-    expect(res4).toHaveStatus(400);
-
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
@@ -592,11 +626,11 @@ describe('OAuth Authorize', () => {
       id_token_hint: res2.body.refresh_token,
       prompt: 'none',
     });
-    const res5 = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res5).toHaveStatus(302);
-    expect(res5.headers.location).toBeDefined();
+    const res4 = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res4).toHaveStatus(302);
+    expect(res4.headers.location).toBeDefined();
 
-    const location = new URL(res5.headers.location);
+    const location = new URL(res4.headers.location);
     expect(location.host).toBe('example.com');
     expect(location.searchParams.get('code')).toBeNull();
     expect(location.searchParams.get('error')).toBe('login_required');

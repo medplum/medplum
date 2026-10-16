@@ -64,7 +64,6 @@ export function getPatientPageTabs(
 
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
-  { id: 'edit', url: 'edit', label: 'Edit' },
   {
     id: 'encounter',
     url: 'Encounter',

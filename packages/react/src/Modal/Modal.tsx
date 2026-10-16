@@ -20,22 +20,27 @@ const formStyle: CSSProperties = {
 
 /**
  * Props for {@link Modal}.
- * @property children - Modal body, rendered in the scrolling region between the header and the
- * footer.
- * @property actions - Buttons pinned to the bottom edge of the modal above a full-bleed border.
- * They stretch to the full width with the primary action first; wrap them in a
- * `Group justify="flex-end"` for a right-aligned row instead. Omit for modals that only display
- * content - the footer and its border are then not rendered.
- * @property onSubmit - Wraps the body and the footer in a {@link Form}, so a `SubmitButton` in
- * `actions` submits the named inputs in `children`. A `SubmitButton` without this has no form to
- * submit and does nothing.
- * @property bodyHeight - Fixed body height as a CSS length, e.g. `'60vh'`, for modals whose content
- * is a fixed layout rather than a form that should size to its fields. Omit to size to the content.
  */
 export interface ModalProps extends Omit<MantineModalProps, 'children' | 'onSubmit' | 'scrollAreaComponent'> {
+  /** Modal body, rendered in the scrolling region between the header and the footer. */
   readonly children: ReactNode;
+  /**
+   * Buttons pinned to the bottom edge of the modal above a full-bleed border.
+   * They stretch to the full width with the primary action first; wrap them in a
+   * `Group justify="flex-end"` for a right-aligned row instead. Omit for modals that only display
+   * content - the footer and its border are then not rendered.
+   */
   readonly actions?: ReactNode;
+  /**
+   * Wraps the body and the footer in a {@link Form}, so a `SubmitButton` in
+   * `actions` submits the named inputs in `children`. A `SubmitButton` without this has no form to
+   * submit and does nothing.
+   */
   readonly onSubmit?: (formData: Record<string, string>) => Promise<void> | void;
+  /**
+   * Fixed body height as a CSS length, e.g. `'60vh'`, for modals whose content
+   * is a fixed layout rather than a form that should size to its fields. Omit to size to the content.
+   */
   readonly bodyHeight?: string;
 }
 

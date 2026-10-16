@@ -25,6 +25,7 @@ import request from 'supertest';
 import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
+import { clearBotAccessTokenCache } from '../../bots/utils';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
@@ -297,6 +298,24 @@ describe('Execute', () => {
     expect(row.botId).toStrictEqual(bots.systemEchoBot.id);
     expect(row.hl7MessageType).toStrictEqual('ACK');
     expect(row.hl7Version).toStrictEqual('2.6.1');
+    writeFileSpy.mockRestore();
+  });
+
+  test('Does not store input when storeBotInput is false', async () => {
+    const writeFileSpy = vi.spyOn(getBinaryStorage(), 'writeFile');
+    getConfig().storeBotInput = false;
+    try {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('input');
+      expect(res).toHaveStatus(200);
+      expect(writeFileSpy).not.toHaveBeenCalled();
+    } finally {
+      getConfig().storeBotInput = true;
+      writeFileSpy.mockRestore();
+    }
   });
 
   test('Execute without code', async () => {
@@ -861,6 +880,7 @@ describe('Execute', () => {
       ['systemEchoBot', 'linking'],
       ['systemEchoBot', 'own'],
     ])('Bot %s in %s project executes with correct accessToken', async (botName, whichProject) => {
+      clearBotAccessTokenCache();
       const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
       generateAccessTokenSpy.mockClear();
 

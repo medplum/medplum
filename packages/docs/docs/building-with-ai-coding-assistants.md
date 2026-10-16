@@ -196,7 +196,7 @@ search params, or operations.
 - Idempotent writes: conditional create/update keyed on `identifier` (`createResourceIfNoneExist`), never search-then-create.  [fhir-datastore/working-with-fhir]
 - Files: `createMedia`/`createBinary`/`createAttachment` → `Binary/{id}` url + securityContext; never base64 in `Attachment.data`.  [fhir-datastore/binary-data]
 - Access: patient-compartment access comes from a resource's OWN compartment references (e.g. `subject`); it does NOT propagate through links like `Communication.partOf`. Enforce via `AccessPolicy` + `ProjectMembership` (`%patient`/`%org` variables), never app-layer filtering.  [access/access-policies]
-- Licensing: one `PractitionerRole` per state; Medplum does not enforce licensure — your app code must.  [scheduling/state-by-state-licensure]
+- Licensing: use `PractitionerRole` per service line, with jurisdictions in `PractitionerRole.location` (multiple states may share a role). Scheduling does not enforce licensure; validate eligibility in the app's controlled booking path. Enforce data access with `AccessPolicy`.  [scheduling/state-by-state-licensure]
 - Subscriptions: scope `criteria` tightly; create/update-only firing and `%previous`/`%current` transition criteria exist as Medplum extensions.  [subscriptions/subscription-extensions]
 - Form extraction: SDC `templateExtract` or a Bot — one strategy per form.  [questionnaires/parsing-questionnaire-responses]
 - Codes: agents routinely hallucinate SNOMED/LOINC/ICD-10 codes; don't invent them or pull them from the internet (unreliable). When unsure, use a clearly-marked placeholder and flag it for human verification rather than shipping a made-up code.  [terminology/common-terminologies]

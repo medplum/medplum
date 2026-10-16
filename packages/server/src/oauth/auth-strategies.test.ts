@@ -19,7 +19,7 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { addTestUser, createTestProject, generateSelfSignedCert } from '../test.setup';
 import { mockFetchJson } from '../test.setup.fetch';
@@ -96,7 +96,7 @@ describe('Native password login', () => {
   const app = express();
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
 
@@ -175,7 +175,7 @@ describe('External/OIDC login', () => {
     clientId: '123',
     clientSecret: '456',
   };
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
 
@@ -260,7 +260,7 @@ describe('JWT bearer token exchange (RFC 8693)', () => {
   const fetchMock = vi.spyOn(globalThis, 'fetch');
   const redirectUri = `https://${randomUUID()}.example.com/auth/callback`;
   const email = randomUUID() + '@example.com';
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
 
@@ -322,7 +322,7 @@ describe('JWT bearer token exchange (RFC 8693)', () => {
 
 describe('Client credentials (machine-to-machine)', () => {
   const app = express();
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
@@ -363,7 +363,7 @@ describe('Google login', () => {
   // token directly rather than doing a redirect/code exchange with an arbitrary IdP.
   const app = express();
   const email = randomUUID() + '@example.com';
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
@@ -433,7 +433,7 @@ describe('Pre-authorized code grant (OpenID4VCI)', () => {
   // credential wallet), and the wallet exchanges that code for a token — with no
   // interactive login step at all.
   const app = express();
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let client: WithId<ClientApplication>;
   let adminAccessToken: string;
   let targetProfile: WithId<ProfileResource>;
@@ -529,7 +529,7 @@ describe('Client credentials via mTLS (machine-to-machine)', () => {
   // client presents a certificate (matched against the ClientApplication's configured trust
   // store) instead of a client_secret.
   const app = express();
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let client: WithId<ClientApplication>;
   let cert: string;
 
@@ -574,7 +574,7 @@ describe('Client credentials via private_key_jwt (machine-to-machine)', () => {
   // client signs a JWT with its own private key instead of sending a client_secret; the
   // server verifies it against the client's configured JWKS URL.
   const app = express();
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let client: WithId<ClientApplication>;
 
   beforeAll(async () => {

@@ -5,7 +5,14 @@ import type { HealthcareService, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import type { BookableActorType } from '../actors';
-import { SatelliteClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
+import {
+  DrOkaforSchedule,
+  DrRiveraSchedule,
+  SatelliteClinic,
+  SchedulingFixtures,
+  UltrasoundImagingService,
+  WalkInService,
+} from '../stories/scheduling';
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
@@ -204,6 +211,33 @@ describe('AppointmentActorSelect', () => {
     await typeInAutocomplete(input, 'riv');
 
     expect(await screen.findByText('Dr. Maya Rivera - Ultrasound Imaging availability')).toBeInTheDocument();
+  });
+
+  test('Offers only the candidates it was handed, searching nothing and needing no service', async () => {
+    const medplum = await setupClient();
+    const onChange = vi.fn();
+    const candidates: ScheduleCandidate[] = [
+      { schedule: DrRiveraSchedule, actorResource: undefined },
+      { schedule: DrOkaforSchedule, actorResource: undefined },
+    ];
+    renderWithMedplum(
+      <AppointmentActorSelect
+        actorType="Practitioner"
+        service={undefined}
+        candidates={candidates}
+        onChange={onChange}
+      />,
+      medplum
+    );
+
+    await openAutocomplete();
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+
+    await typeInAutocomplete(screen.getByRole('searchbox'), 'riv');
+    await clickAutocompleteOption('Dr. Maya Rivera');
+
+    expect(namesGiven(onChange)).toStrictEqual(['Dr. Maya Rivera']);
+    expect(medplum.search).not.toHaveBeenCalled();
   });
 
   test('Reruns the search when the location changes', async () => {

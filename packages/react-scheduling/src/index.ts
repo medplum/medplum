@@ -11,17 +11,21 @@ export * from './AppointmentFinder/AppointmentDayTimes';
 export * from './AppointmentFinder/AppointmentFinder.requirements';
 export * from './AppointmentFinder/AppointmentFinder.schedules';
 export * from './AppointmentFinder/AppointmentFinder.times';
+export * from './AppointmentFinder/AppointmentFinder.writes';
 export * from './AppointmentFinder/AppointmentOptionRow';
 export * from './AppointmentFinder/AppointmentProposalForm';
+export * from './AppointmentFinder/AppointmentRescheduleForm';
 export * from './AppointmentFinder/AppointmentServiceSelect';
 export * from './AppointmentFinder/AppointmentSlotGroupCard';
 export * from './Calendar/Calendar';
 export * from './MultiCalendar/MultiCalendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
+export * from './SchedulingConfigWorkspace/SchedulingConfigWorkspace';
 export * from './SchedulingWorkspace/SchedulingWorkspace';
 
 // Hooks that load what the components display
 export * from './AppointmentFinder/useProposedAppointments';
+export * from './AppointmentFinder/useRescheduleDefaults';
 export * from './hooks/useSchedulingResources';
 
 // Helpers the components are built on, usable without them

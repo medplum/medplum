@@ -17,12 +17,12 @@ import { Queue, Worker } from 'bullmq';
 import { Readable } from 'node:stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
+import type { ProjectJobTarget } from './base';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
@@ -38,6 +38,7 @@ import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetr
  */
 
 export interface DownloadJobData {
+  readonly target: ProjectJobTarget;
   readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
@@ -130,6 +131,7 @@ export async function addDownloadJobs(
     }
 
     await addDownloadJobData({
+      target: getProjectJobTarget(resource),
       resourceType: resource.resourceType,
       id: resource.id,
       url,
@@ -209,7 +211,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job - The download job details.
  */
 export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
+  const systemRepo = await getJobSystemRepo(job.data.target);
   const log = getLogger();
   const { resourceType, id, url } = job.data;
 

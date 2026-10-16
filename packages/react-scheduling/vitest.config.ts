@@ -43,6 +43,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/react-scheduling',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'jsdom',
     execArgv: jsdomExecArgv,

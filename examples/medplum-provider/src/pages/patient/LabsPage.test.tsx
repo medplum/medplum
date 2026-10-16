@@ -447,4 +447,18 @@ describe('LabsPage', () => {
       { timeout: 3000 }
     );
   });
+
+  test('opens the order form pre-filled from a draft when Active is chosen from the status menu', async () => {
+    const draftOrder: ServiceRequest = { ...activeOrder, id: 'draft-1', status: 'draft', requisition: undefined };
+    mockSearch([draftOrder], []);
+    setup(`/Patient/${HomerSimpson.id}/ServiceRequest/draft-1`);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Draft' }));
+    await userEvent.click(await screen.findByText('Active'));
+
+    expect(await screen.findByText('Resume Lab Order')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
+    });
+  });
 });

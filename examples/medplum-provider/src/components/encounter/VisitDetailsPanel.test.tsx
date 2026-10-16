@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import type { PatchOperation, WithId } from '@medplum/core';
-import type { Encounter, Organization, Practitioner } from '@medplum/fhirtypes';
+import type { Encounter, Location, Organization, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -173,7 +173,8 @@ describe('VisitDetailsPanel', () => {
       resourceType: 'Organization',
       id: 'org-1',
       name: 'Test Medical Practice',
-      identifier: [{ system: 'http://hl7.org/fhir/sid/us-npi', value: '3564119220' }],
+      identifier: [{ system: 'https://www.medplum.com/provider', value: 'billing-organization' }],
+      address: [{ line: ['1 Main St'], city: 'Springfield', state: 'IL', postalCode: '62701' }],
     };
 
     await medplum.createResource(mockOrganization);
@@ -195,7 +196,7 @@ describe('VisitDetailsPanel', () => {
       fireEvent.change(organizationInput, { target: { value: 'Test Medical' } });
     });
 
-    // The search is restricted to provider organizations that have an NPI identifier
+    // The search is restricted to billing organizations, as in the visit's eligibility check
     await waitFor(
       () => {
         expect(medplum.searchResources).toHaveBeenCalledWith(
@@ -206,17 +207,17 @@ describe('VisitDetailsPanel', () => {
         const calls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls;
         const orgCall = calls.find((call) => call[0] === 'Organization');
         const params = orgCall?.[1] as URLSearchParams;
-        expect(params.get('identifier')).toBe('http://hl7.org/fhir/sid/us-npi|');
-        expect(params.get('type')).toBe('http://terminology.hl7.org/CodeSystem/organization-type|prov');
+        expect(params.get('identifier')).toBe('https://www.medplum.com/provider|billing-organization');
+        expect(params.get('type')).toBeNull();
       },
       { timeout: 3000 }
     );
 
-    // Dropdown options show the organization name and its NPI
+    // Dropdown options show the organization name and its address
     await waitFor(
       () => {
         expect(screen.queryByText(/Test Medical Practice/i)).toBeInTheDocument();
-        expect(screen.queryByText(/NPI 3564119220/i)).toBeInTheDocument();
+        expect(screen.queryByText(/1 Main St/i)).toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -233,6 +234,64 @@ describe('VisitDetailsPanel', () => {
       },
       { timeout: 5000 }
     );
+  });
+
+  test('patches the encounter location when a service facility is selected', async () => {
+    const onEncounterChange = vi.fn();
+    const clinic: Location = {
+      resourceType: 'Location',
+      id: 'loc-1',
+      name: 'Main Clinic',
+      address: { line: ['9 Clinic St'], city: 'Cambridge', state: 'MA', postalCode: '02139' },
+    };
+    await medplum.createResource(clinic);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([clinic] as any);
+
+    setup({ onEncounterChange });
+
+    const facilityInput = await screen.findByPlaceholderText('Search for location');
+    await act(async () => {
+      fireEvent.change(facilityInput, { target: { value: 'Main' } });
+    });
+
+    // Dropdown options show the location name and its address
+    await waitFor(() => {
+      expect(medplum.searchResources).toHaveBeenCalledWith('Location', expect.any(URLSearchParams), expect.any(Object));
+      expect(screen.getByText('9 Clinic St, Cambridge, MA, 02139')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Main Clinic'));
+    });
+
+    await waitFor(() => {
+      expect(onEncounterChange).toHaveBeenLastCalledWith([
+        {
+          op: 'add',
+          path: '/location',
+          value: [{ location: expect.objectContaining({ reference: 'Location/loc-1' }) }],
+        },
+      ]);
+    });
+  });
+
+  test('shows the current service facility and removes it when cleared', async () => {
+    const onEncounterChange = vi.fn();
+    await medplum.createResource<Location>({ resourceType: 'Location', id: 'loc-1', name: 'Main Clinic' });
+
+    // No practitioner, so the only clear button belongs to the service facility picker
+    setup({
+      onEncounterChange,
+      encounter: { ...mockEncounter, location: [{ location: { reference: 'Location/loc-1' } }] },
+    });
+
+    expect(await screen.findByText('Main Clinic')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Clear all'));
+    });
+
+    expect(onEncounterChange).toHaveBeenLastCalledWith([{ op: 'remove', path: '/location' }]);
   });
 
   test('displays the default billing organization', async () => {

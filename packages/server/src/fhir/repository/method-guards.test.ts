@@ -43,6 +43,7 @@ const unguardedMembers = new Set<PropertyKey>([
   'generateId',
   'addDeletedFilter',
   'addSecurityFilters',
+  'getSearchProjectIds',
   'isClosed',
   'validateBinarySecurityContext',
   'clone',
@@ -88,6 +89,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'logEvent',
   'getCacheEntry',
   'getCacheEntries',
+  'cacheEntryOnShard',
   'setCacheEntry',
   'deleteCacheEntry',
   'deleteCacheEntries',
@@ -239,6 +241,11 @@ const guardedInvocations: MethodInvocation[] = [
     invoke: (repo) => repo.reindexResource<Patient>('Patient', guardedPatient.id),
   },
   { name: 'reindexResources', kind: 'method', invoke: (repo) => repo.reindexResources<Patient>([]) },
+  {
+    name: 'restoreResourceVersions',
+    kind: 'method',
+    invoke: (repo) => repo.restoreResourceVersions('Patient', NIL, []),
+  },
   {
     name: 'resendSubscriptions',
     kind: 'method',

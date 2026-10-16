@@ -1,12 +1,20 @@
+\set ON_ERROR_STOP on
 \c postgres
 
-DROP DATABASE IF EXISTS medplum_test;
-CREATE DATABASE medplum_test;
-GRANT ALL PRIVILEGES ON DATABASE medplum_test TO medplum;
+DROP DATABASE IF EXISTS medplum_test WITH (FORCE);
+DROP DATABASE IF EXISTS medplum_test_shard_1 WITH (FORCE);
 
-\c medplum_test
+CREATE DATABASE medplum_test OWNER medplum;
+CREATE DATABASE medplum_test_shard_1 OWNER medplum;
 
-CREATE USER medplum_test_readonly WITH PASSWORD 'medplum_test_readonly';
-GRANT CONNECT ON DATABASE medplum_test TO medplum_test_readonly;
-GRANT USAGE ON SCHEMA public TO medplum_test_readonly;
-GRANT pg_read_all_data TO medplum_test_readonly;
+-- Roles are cluster-wide: create once, idempotently. pg_read_all_data covers every database.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'medplum_test_readonly') THEN
+    CREATE ROLE medplum_test_readonly LOGIN PASSWORD 'medplum_test_readonly';
+  END IF;
+  IF NOT pg_has_role('medplum_test_readonly', 'pg_read_all_data', 'MEMBER') THEN
+    GRANT pg_read_all_data TO medplum_test_readonly;
+  END IF;
+END
+$$;

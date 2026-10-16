@@ -16,13 +16,15 @@ interface ProjectConfig {
   starterProject: StarterProject;
   projectName: string;
   serverUrl: string;
+  createRemote: boolean;
+  remoteVisibility: 'private' | 'public';
 }
 
 const STARTER_PROJECTS: StarterProject[] = [
   {
-    id: 'medplum-hello-world',
-    name: 'Hello World',
-    description: 'Minimal starter application showing basic Medplum integration',
+    id: 'medplum-provider',
+    name: 'Provider',
+    description: 'Simple EHR application with patient and encounter management',
   },
   {
     id: 'foomedical',
@@ -30,9 +32,9 @@ const STARTER_PROJECTS: StarterProject[] = [
     description: 'Full featured patient portal with open registration',
   },
   {
-    id: 'medplum-provider',
-    name: 'Provider',
-    description: 'Simple EHR application with patient and encounter management',
+    id: 'medplum-hello-world',
+    name: 'Hello World',
+    description: 'Minimal starter application showing basic Medplum integration',
   },
 ];
 
@@ -96,45 +98,150 @@ async function promptForConfig(): Promise<ProjectConfig> {
     'Please enter a valid URL'
   );
 
+  // Prompt the user to create and push to a new GitHub repository
+  const createRemoteAnswer = await prompt(
+    terminal,
+    'Create a new GitHub repository and push it there? (requires the GitHub CLI `gh`) (y/N)',
+    'n',
+    (str) => /^(y|n|yes|no)$/i.test(str),
+    'Please enter y or n'
+  );
+  const createRemote = /^y/i.test(createRemoteAnswer);
+
+  // Only ask about visibility if we are actually creating a repository
+  let remoteVisibility: ProjectConfig['remoteVisibility'] = 'private';
+  if (createRemote) {
+    const visibilityAnswer = await prompt(
+      terminal,
+      'Repository visibility',
+      'private',
+      (str) => /^(private|public)$/i.test(str),
+      'Please enter "private" or "public"'
+    );
+    remoteVisibility = visibilityAnswer.toLowerCase() as ProjectConfig['remoteVisibility'];
+  }
+
   // Cleanup
   terminal.close();
 
-  return { starterProject, projectName, serverUrl };
+  return { starterProject, projectName, serverUrl, createRemote, remoteVisibility };
+}
+
+// Fixed, unwriteable directories we trust to hold developer tools (git, gh, npm).
+// They are searched before the ambient PATH when resolving a tool, and are used
+// to pin the child-process PATH. Tools are always invoked by absolute path, so a
+// writable directory injected into PATH cannot silently shadow them
+// (CWE-426 / CWE-427, SonarCloud S4036).
+function trustedBinDirs(): string[] {
+  // The directory of the running Node runtime, where npm/npx are installed.
+  const dirs = [path.dirname(process.execPath)];
+  if (process.platform === 'win32') {
+    const systemRoot = process.env.SystemRoot ?? String.raw`C:\Windows`;
+    const programFiles = process.env.ProgramFiles ?? String.raw`C:\Program Files`;
+    dirs.push(
+      path.join(systemRoot, 'System32'),
+      systemRoot,
+      path.join(programFiles, 'Git', 'cmd'),
+      path.join(programFiles, 'GitHub CLI')
+    );
+  } else {
+    dirs.push('/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin');
+  }
+  return dirs;
+}
+
+// Resolves a command to its absolute path. Trusted, unwriteable directories are
+// searched first; if the tool lives elsewhere (e.g. a scoop/asdf/volta shim or
+// ~/.local/bin) we fall back to the ambient PATH so a valid install still works.
+// Either way an absolute path is returned, so invocation never relies on PATH
+// resolution. Throws if not found, which callers use to detect missing tools.
+function resolveExecutable(command: string): string {
+  const extensions = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : [''];
+  const ambientDirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
+  for (const dir of [...trustedBinDirs(), ...ambientDirs]) {
+    for (const extension of extensions) {
+      const candidate = path.join(dir, command + extension);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  throw new Error(`Could not find "${command}". Please ensure it is installed and on your PATH.`);
+}
+
+// Runs a trusted tool by its resolved absolute path. The child-process PATH is
+// pinned to the trusted directories (plus the tool's own directory) rather than
+// the ambient PATH, so nothing the tool spawns falls back to a writable location.
+function runTool(command: string, args: string, options: { cwd?: string } = {}): void {
+  const executable = resolveExecutable(command);
+  const pathDirs = [path.dirname(executable), ...trustedBinDirs()];
+  cp.execSync(`"${executable}" ${args}`, {
+    cwd: options.cwd,
+    stdio: 'inherit',
+    env: { ...process.env, PATH: [...new Set(pathDirs)].join(path.delimiter) },
+  });
+}
+
+// Writes the selected Medplum server URL into the project's `.env` file.
+// All Medplum starter apps read the base URL from `import.meta.env.MEDPLUM_BASE_URL`,
+// seeded from `.env.defaults`, so we start from that template and override the URL.
+function configureEnv(projectDir: string, serverUrl: string): void {
+  const envDefaultsPath = path.join(projectDir, '.env.defaults');
+  const envPath = path.join(projectDir, '.env');
+  let contents = fs.existsSync(envDefaultsPath) ? fs.readFileSync(envDefaultsPath, 'utf8') : '';
+  if (/^MEDPLUM_BASE_URL=.*$/m.test(contents)) {
+    contents = contents.replace(/^MEDPLUM_BASE_URL=.*$/m, `MEDPLUM_BASE_URL=${serverUrl}`);
+  } else {
+    contents = `MEDPLUM_BASE_URL=${serverUrl}\n${contents}`;
+  }
+  fs.writeFileSync(envPath, contents);
+}
+
+// Creates a new GitHub repository from the freshly initialized project and pushes to it.
+// Uses the GitHub CLI (`gh`), which handles auth against the user's own account.
+// If `gh` is unavailable, prints the manual command instead of failing.
+function createGitHubRepo(projectDir: string, name: string, visibility: ProjectConfig['remoteVisibility']): void {
+  try {
+    resolveExecutable('gh');
+  } catch {
+    console.log('GitHub CLI (`gh`) was not found, so no remote repository was created.');
+    console.log('Install it from https://cli.github.com/, then run from the project directory:');
+    console.log(`  gh repo create ${name} --${visibility} --source=. --remote=origin --push`);
+    return;
+  }
+
+  console.log(`Creating ${visibility} GitHub repository and pushing...`);
+  runTool('gh', `repo create ${name} --${visibility} --source=. --remote=origin --push`, { cwd: projectDir });
 }
 
 async function initializeProject(config: ProjectConfig): Promise<void> {
   const projectDir = path.join(process.cwd(), config.projectName);
 
   try {
-    // Clone the repository
+    // Clone the repository over HTTPS so no SSH key setup is required
     console.log('Cloning starter project...');
-    cp.execSync(`git clone git@github.com:medplum/${config.starterProject.id} ${config.projectName}`, {
-      stdio: 'inherit',
-    });
+    runTool('git', `clone https://github.com/medplum/${config.starterProject.id}.git ${config.projectName}`);
 
     // Remove .git directory
     fs.rmSync(path.join(projectDir, '.git'), { recursive: true, force: true });
 
-    // Update configuration
-    const configPath = path.join(projectDir, 'src', 'config.ts');
-    if (fs.existsSync(configPath)) {
-      let configContent = fs.readFileSync(configPath, 'utf8');
-      configContent = configContent.replace(/baseUrl:.*$/m, `baseUrl: '${config.serverUrl}',`);
-      fs.writeFileSync(configPath, configContent);
-    }
+    // Point the app at the chosen Medplum server
+    configureEnv(projectDir, config.serverUrl);
 
     // Initialize new git repository
     console.log('Initializing new git repository...');
-    cp.execSync('git init', { cwd: projectDir, stdio: 'inherit' });
-    cp.execSync('git add .', { cwd: projectDir, stdio: 'inherit' });
-    cp.execSync('git commit -m "Initial commit from Medplum initializer"', {
-      cwd: projectDir,
-      stdio: 'inherit',
-    });
+    runTool('git', 'init', { cwd: projectDir });
+    runTool('git', 'add .', { cwd: projectDir });
+    runTool('git', 'commit -m "Initial commit from Medplum initializer"', { cwd: projectDir });
+
+    // Optionally create a standalone GitHub repository the user owns and push to it
+    if (config.createRemote) {
+      createGitHubRepo(projectDir, config.projectName, config.remoteVisibility);
+    }
 
     // Install dependencies
     console.log('Installing dependencies...');
-    cp.execSync('npm install', { cwd: projectDir, stdio: 'inherit' });
+    runTool('npm', 'install', { cwd: projectDir });
 
     console.log(`Successfully created project ${config.projectName}!`);
     console.log(`Next steps:`);

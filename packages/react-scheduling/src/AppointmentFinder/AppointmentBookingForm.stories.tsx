@@ -39,7 +39,11 @@ const STORY_FIXTURES = [
  * @param booking - What the form wrote.
  */
 function reportBooking(booking: AppointmentBooking): void {
-  console.info('Booked', booking.appointment.id, `over ${booking.slots.length} slot(s)`);
+  console.info(
+    'Booked',
+    booking.appointments.map((appointment) => appointment.id),
+    `over ${booking.slots.length} slot(s)`
+  );
 }
 
 // A story's own decorators add to these rather than replacing them, so `$find` is

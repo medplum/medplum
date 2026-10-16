@@ -3,6 +3,10 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Scheduling
 
+:::tip[Planning this workflow?]
+The [Scheduling Decision Guide](/docs/decision-guides/scheduling) walks through requirements questions and FHIR modeling decisions for scheduling; use it alongside these docs.
+:::
+
 :::info[Beta]
 
 Medplum Scheduling is currently in [beta](/docs/compliance/alpha-beta).
@@ -19,7 +23,7 @@ Welcome to the Medplum Scheduling documentation. We currently support a range of
 
 Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each appointment type or service. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
 
-Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute.
+Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute. A Schedule that should take every appointment type can instead be marked as [offering all service types](/docs/scheduling/defining-availability#offering-all-service-types).
 
 <details>
   <summary>Referencing a HealthcareService</summary>
@@ -73,12 +77,13 @@ Based on the availability defined in the previous step, we can now find availabl
 
 Once a desired slot has been found, the appointment booking process can be handled in several steps.
 
-| Operation                                          | Description                     | Status   |
-| -------------------------------------------------- | ------------------------------- | -------- |
-| [`$book`](/docs/scheduling/appointment-book)       | Book an appointment in one step | **Beta** |
-| [`$hold`](/docs/scheduling/appointment-hold)       | Create a pending appointment    | **Beta** |
-| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment      | **Beta** |
-| [`$cancel`](/docs/scheduling/appointment-cancel)   | Cancel an appointment           | **Beta** |
+| Operation                                                | Description                                   | Status   |
+| -------------------------------------------------------- | --------------------------------------------- | -------- |
+| [`$book`](/docs/scheduling/appointment-book)             | Book an appointment in one step               | **Beta** |
+| [`$hold`](/docs/scheduling/appointment-hold)             | Create a pending appointment                  | **Beta** |
+| [`$confirm`](/docs/scheduling/appointment-confirm)       | Confirm a held appointment                    | **Beta** |
+| [`$cancel`](/docs/scheduling/appointment-cancel)         | Cancel an appointment                         | **Beta** |
+| [`$reschedule`](/docs/scheduling/appointment-reschedule) | Move an appointment to a new time or Schedule | **Beta** |
 
 ---
 

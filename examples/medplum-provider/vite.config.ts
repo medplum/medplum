@@ -18,6 +18,7 @@ if (!existsSync(path.join(import.meta.dirname, '.env'))) {
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
     '@medplum/core': path.resolve(import.meta.dirname, '../../packages/core/src'),
+    '@medplum/dosespot-core': path.resolve(import.meta.dirname, '../../packages/dosespot-core/src'),
     '@medplum/dosespot-react': path.resolve(import.meta.dirname, '../../packages/dosespot-react/src'),
     '@medplum/scriptsure-react': path.resolve(import.meta.dirname, '../../packages/scriptsure-react/src'),
     '@medplum/react': path.resolve(import.meta.dirname, '../../packages/react/src'),
@@ -44,6 +45,7 @@ export default defineConfig({
     alias,
   },
   test: {
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'jsdom',
     execArgv: jsdomExecArgv,

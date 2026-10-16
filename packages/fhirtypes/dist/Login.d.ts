@@ -247,6 +247,23 @@ export interface Login {
    * Optional picture URL from the external identity provider.
    */
   pictureUrl?: string;
+
+  /**
+   * The existing login that this login was created from, when an
+   * authorization request reused an existing session.
+   */
+  basedOn?: Reference<Login>;
+
+  /**
+   * The refresh secret that was most recently replaced by refresh token
+   * rotation.
+   */
+  previousRefreshSecret?: string;
+
+  /**
+   * The time at which the refresh secret was most recently rotated.
+   */
+  refreshSecretRotatedAt?: string;
 }
 
 /**

@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MantineThemeColors } from '@mantine/core';
-import { Divider, Stack, Text } from '@mantine/core';
-import { IconMapPinFilled } from '@tabler/icons-react';
+import { Box, Divider, Stack, Text } from '@mantine/core';
+import { IconCalculatorFilled, IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react';
 import type { BookableActorType } from '../../actors';
@@ -12,7 +11,6 @@ import { SectionHeader } from './SectionHeader';
 export interface CalendarsPanelItem {
   readonly id: string;
   readonly label: string;
-  readonly color: keyof MantineThemeColors;
   readonly imageUrl?: string;
   /** Defaults to true (selected/visible) when omitted. */
   readonly selected?: boolean;
@@ -21,6 +19,12 @@ export interface CalendarsPanelItem {
 export interface CalendarsPanelProps {
   /** Shows a loading indicator on every section while their candidates are being fetched. */
   readonly candidatesLoading?: boolean;
+  /**
+   * The fields narrowing which calendars are worth listing at all, shown above them —
+   * or omitted to leave the filters out entirely, which is what a host filtering
+   * nothing should pass. The panel renders whatever is given and reads none of it.
+   */
+  readonly filters?: ReactNode;
   /** The rows to show in each section, keyed by the actor type whose schedules they are. */
   readonly items: Readonly<Record<BookableActorType, readonly CalendarsPanelItem[]>>;
   readonly onToggle?: (actorType: BookableActorType, id: string) => void;
@@ -43,21 +47,24 @@ interface CalendarsPanelSection {
  */
 const SECTIONS: readonly CalendarsPanelSection[] = [
   { actorType: 'Practitioner', title: 'Providers & Staff', emptyLabel: 'providers or staff' },
-  { actorType: 'Device', title: 'Devices', emptyLabel: 'devices' },
+  { actorType: 'Device', title: 'Devices', emptyLabel: 'devices', icon: <IconCalculatorFilled size={12} /> },
   { actorType: 'Location', title: 'Rooms', emptyLabel: 'rooms', icon: <IconMapPinFilled size={12} /> },
 ];
 
 /**
- * A sidebar panel for selecting calendars, grouped under collapsible sections.
+ * A sidebar panel for selecting calendars, grouped under collapsible sections, above
+ * which a host may place the fields narrowing which calendars are worth listing at all.
  *
- * This is a presentational component that renders whatever is passed in. It
- * does not fetch or group FHIR resources.
+ * This is a presentational component that renders whatever is passed in. It does not
+ * fetch or group FHIR resources, which is why the filters arrive as a node rather than
+ * as options to render: the fields search the server, and a panel that renders lists
+ * has no business doing that.
  *
  * @param props - Component props
  * @returns A React Node with the Calendars panel UI in it
  */
 export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
-  const { items, candidatesLoading, onToggle, className } = props;
+  const { items, candidatesLoading, filters, onToggle, className } = props;
 
   return (
     <Stack gap="xs" className={className}>
@@ -65,6 +72,15 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
         Calendars
       </Text>
       <Divider />
+
+      {filters && (
+        <>
+          <Box mb="xs" role="group" aria-label="Filter calendars">
+            {filters}
+          </Box>
+          <Divider />
+        </>
+      )}
 
       {SECTIONS.map((section) => {
         const sectionItems = items[section.actorType];
@@ -81,7 +97,6 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
                     <CalendarRow
                       key={item.id}
                       item={item}
-                      color={item.color}
                       onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
                       icon={section.icon}
                     />

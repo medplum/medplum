@@ -9,11 +9,30 @@
   flex-direction: column;
   height: 100%;
   background: var(--mantine-color-body);
+  /* Clips the list while its width animates between open and collapsed. */
+  overflow: hidden;
+  transition:
+    width 200ms ease,
+    opacity 200ms ease;
 }
 
 .shell,
 .detailBorder {
   border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+/* Collapsed sidebar (`listVisible` false). `visibility` flips only after the
+   width/opacity animation ends (via its 200ms transition delay), which also
+   drops the hidden list's links and buttons out of the tab order. On expand the
+   base `.shell` transition applies, so visibility returns immediately. */
+.shellHidden {
+  opacity: 0;
+  visibility: hidden;
+  border-right: none;
+  transition:
+    width 200ms ease,
+    opacity 200ms ease,
+    visibility 0s 200ms;
 }
 
 /* Inset the rows from the sidebar edges. Each item's rounded hover/selected

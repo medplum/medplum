@@ -68,7 +68,7 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 | Url                 | Type                                                        | Default Value                               | Description                                                                                                                                                             | `HealthcareService` usage notes                               | `Schedule` usage notes                                    |
 | ------------------- | ----------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
 | `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | *none*                                      | Determines how long the time increments for a Slot are                                                                                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
-| `timezone`          | Code                                                        | *none*                                      | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability. When not set, falls back to the `Schedule.actor`'s timezone. |                                                               |                                                           |
+| `timezone`          | Code                                                        | *none*                                      | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability. When not set, falls back to the `Schedule.actor`'s timezone. | Not recommended; set on `Schedule` or `Schedule.actor` instead |                                                           |
 | `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets prep-time needed before appointment start. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
 | `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets cleanup time needed after appointment end. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
 | `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | 60 minutes (appointments start on-the-hour) | Start times must align to this interval (e.g., every 15 minutes)                                                                                                        |                                                               | Recommended to prefer setting this on `HealthcareService` |
@@ -142,7 +142,7 @@ This approach avoids the need to pre-generate thousands of Slot resources for ev
 
 The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device.
 
-The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute. To use Medplum Scheduling APIs, this should include the extension `https://medplum.com/fhir/service-type-reference` holding a reference to the matching HealthcareService.
+The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute. To use Medplum Scheduling APIs, this should include the extension `https://medplum.com/fhir/service-type-reference` holding a reference to the matching HealthcareService, or the code that marks the Schedule as [offering all service types](#offering-all-service-types).
 
 Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
 
@@ -232,6 +232,28 @@ For a `Schedule` to use the `HealthcareService`'s scheduling parameters, the `Sc
 <MedplumCodeBlock language="ts" selectBlocks="scheduleServiceTypeLink">
   {ExampleCode}
 </MedplumCodeBlock>
+
+### Offering All Service Types
+
+A `Schedule` that should be bookable for every `HealthcareService` does not have to list each one. Give its `serviceType` the code `all` from the `https://medplum.com/fhir/CodeSystem/scheduling-service-type` system instead, with no HealthcareService reference:
+
+<MedplumCodeBlock language="ts" selectBlocks="scheduleAllServiceTypes">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+`$find` and `$reschedule` accept this Schedule for any active HealthcareService the caller can read, including ones created later. The proposed and booked `Appointment` still records the specific HealthcareService in its own `serviceType`; it never carries the `all` code.
+
+This is always an explicit opt-in. A Schedule with an empty or missing `serviceType` offers nothing. The `all` code may sit alongside entries that reference specific services, which changes nothing: the Schedule already offers them.
+
+To find these Schedules, search by token: `Schedule?service-type=https://medplum.com/fhir/CodeSystem/scheduling-service-type|all`. To find every Schedule that offers a particular service, combine that token with the service's own `type` codes in one comma-separated `service-type` parameter.
+
+:::caution[The `all` code grants eligibility, not hours]
+
+It decides which services the Schedule accepts and nothing else. Hours resolve exactly as described under [Override Behavior](#override-behavior): the Schedule's `SchedulingParameters` for that service, then the HealthcareService's own, then the system default of always available.
+
+A Schedule that offers all service types is therefore bookable around the clock for any HealthcareService that sets no `availableTime`, unless the Schedule carries its own `availability` for that service. Before using it, either set `availableTime` on every HealthcareService, or add a per-service `SchedulingParameters` override with `availability` to the Schedule for each service.
+
+:::
 
 ### Override Behavior
 
@@ -325,11 +347,22 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 :::
 
+:::warning[Set `timezone` on the `Schedule`, not the `HealthcareService`]
+
+A visit type is usually offered by calendars in more than one place, and `timezone` says where a calendar's
+hours are kept, so it belongs on the [`Schedule`](/docs/api/fhir/resources/schedule) or on its actor. Setting
+it on a `HealthcareService` applies one place's clock to every calendar offering that service, including
+calendars in other time zones.
+
+A value already stored on a `HealthcareService` stays in force, since resolution still reads it. To stop it
+taking effect, remove it and set `timezone` on each `Schedule` instead.
+
+:::
 
 **Timezone Resolution Order:**
 
 1. If `timezone` is specified in the `scheduling-parameters` extension of a `Schedule` resource, use that time zone
-2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone
+2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone (supported, but not recommended; see above)
 3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device)
 
 **Important Notes:**
@@ -643,6 +676,7 @@ A few constraints trip people up most often when configuring availability:
 - **`Schedule` has no `name` element** in FHIR R4. Use `comment` for a human-readable label — sending `name` fails validation with `Invalid additional property "name"`. See [The Schedule Resource](#the-schedule-resource).
 - **A Schedule's parameters override, they don't merge.** Setting `availability` on a Schedule fully replaces the service's `availableTime` rather than narrowing it. See [Override Behavior](#override-behavior).
 - **To book across multiple schedules at once**, `duration`, `alignmentInterval`, `alignmentOffset`, and `alignmentTimezone` must match across them. Prefer setting these only on the `HealthcareService`.
+- **Offering all service types does not set hours.** A Schedule carrying the `all` code is bookable around the clock for any service that has no `availableTime` of its own. See [Offering All Service Types](#offering-all-service-types).
 
 ## Beta Status
 

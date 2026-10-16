@@ -10,7 +10,7 @@
  * 1. Create a .env file with HEALTHIE_API_URL and HEALTHIE_CLIENT_SECRET
  * 2. Run: npm test -- --run src/healthie/integration.test.ts
  */
-import { config } from 'dotenv';
+import { existsSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { HealthieClient } from './client';
 import { fetchAllergySensitivities } from './allergy';
@@ -27,7 +27,9 @@ import {
 } from './clinical-activity';
 
 // Load .env file
-config();
+if (existsSync('.env')) {
+  process.loadEnvFile();
+}
 
 // Both HEALTHIE_API_URL and HEALTHIE_CLIENT_SECRET must be set
 const HEALTHIE_API_URL = process.env.HEALTHIE_API_URL;

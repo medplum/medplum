@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { useDebouncedValue } from '@mantine/hooks';
-import { getIdentifier, normalizeErrorString } from '@medplum/core';
+import { getIdentifier } from '@medplum/core';
 import type { Organization, Parameters, Practitioner } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne } from '@medplum/react';
 import { useEffect, useState } from 'react';
+import { getErrorMessage } from '../components/insurance/utils';
 import { isValidNpi } from '../utils/billing';
 import { CANDID_LIST_PROVIDERS_BOT_IDENTIFIER, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../utils/candid';
 
@@ -82,7 +83,7 @@ export function useCandidProviderRegistration(
       })
       .catch((error) => {
         if (!cancelled) {
-          setRegistration({ status: 'failed', resourceType, message: normalizeErrorString(error) });
+          setRegistration({ status: 'failed', resourceType, message: getErrorMessage(error) });
         }
       });
 

@@ -3,7 +3,7 @@
 import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import { loadTestConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import {
   closeRedis,
   getAllRedisInstances,
@@ -18,7 +18,7 @@ import {
 import { deleteRedisKeys } from './test.setup';
 
 describe('Redis', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -64,7 +64,7 @@ describe('Redis', () => {
 
   describe('Separate Redis instances', () => {
     test('Init with all separate configs', async () => {
-      const separateConfig: MedplumServerConfig = {
+      const separateConfig: ServerConfig = {
         ...config,
         cacheRedis: { ...config.redis },
         rateLimitRedis: { ...config.redis },
@@ -89,7 +89,7 @@ describe('Redis', () => {
     });
 
     test('Fallback to default when separate configs not set', async () => {
-      const defaultOnlyConfig: MedplumServerConfig = {
+      const defaultOnlyConfig: ServerConfig = {
         ...config,
         cacheRedis: undefined,
         rateLimitRedis: undefined,
@@ -110,7 +110,7 @@ describe('Redis', () => {
     });
 
     test('getPubSubRedisSubscriber uses pubsub instance when configured', async () => {
-      const separateConfig: MedplumServerConfig = {
+      const separateConfig: ServerConfig = {
         ...config,
         pubSubRedis: { ...config.redis },
       };
@@ -126,7 +126,7 @@ describe('Redis', () => {
 
   describe('getAllRedisInstances', () => {
     test('Returns only default when no separate configs', async () => {
-      const defaultOnlyConfig: MedplumServerConfig = {
+      const defaultOnlyConfig: ServerConfig = {
         ...config,
         cacheRedis: undefined,
         rateLimitRedis: undefined,
@@ -143,7 +143,7 @@ describe('Redis', () => {
     });
 
     test('Returns all configured instances', async () => {
-      const separateConfig: MedplumServerConfig = {
+      const separateConfig: ServerConfig = {
         ...config,
         cacheRedis: { ...config.redis },
         rateLimitRedis: { ...config.redis },

@@ -21,17 +21,18 @@ let searchOnReaderAccessToken: string;
 let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
+let shardId: string;
 
 // Search tests spy on the shared reader/writer pools. Restore only those spies in try/finally
 // rather than vi.restoreAllMocks() in afterEach, which can disturb unrelated mocks and leave
 // pool.query in an inconsistent state for subsequent HTTP requests in this file.
-function spyOnDatabasePools(): {
+function spyOnDatabasePools(shardId: string): {
   readerSpy: MockInstance;
   writerSpy: MockInstance;
   restore: () => void;
 } {
-  const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-  const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+  const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+  const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
   return {
     readerSpy,
     writerSpy,
@@ -46,7 +47,10 @@ describe('FHIR Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    const res = await createTestProject({ withAccessToken: true, withRepo: true });
+    accessToken = res.accessToken;
+    shardId = res.repo.shardId;
+
     legacyJsonResponseAccessToken = await initTestAuth({
       project: { systemSetting: [{ name: 'legacyFhirJsonResponseFormat', valueBoolean: true }] },
     });
@@ -437,6 +441,25 @@ describe('FHIR Routes', () => {
     expect(res3).toHaveStatus(410);
   });
 
+  test('Delete resource with failed precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res).toHaveStatus(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .delete(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"bad-id"');
+    expect(res2).toHaveStatus(412);
+    const res3 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3).toHaveStatus(200);
+  });
+
   test('Delete resource invalid UUID', async () => {
     const res = await request(app)
       .delete(`/fhir/R4/Patient/123`)
@@ -532,7 +555,7 @@ describe('FHIR Routes', () => {
 
   describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
     test('Search', async () => {
-      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
       try {
         const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
@@ -554,7 +577,7 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST', async () => {
-      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
       try {
         const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
@@ -580,7 +603,7 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST with multiple includes', async () => {
-      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
       try {
         const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
@@ -631,7 +654,7 @@ describe('FHIR Routes', () => {
           });
         expect(res2).toHaveStatus(201);
 
-        const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+        const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
         try {
           const res3 = await request(app)
             .get('/fhir/R4?_type=Patient,Observation')

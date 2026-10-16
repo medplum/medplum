@@ -77,6 +77,23 @@ describe('useValueSetAvailability', () => {
     const { result } = renderHook(() => useValueSetAvailability(AVAILABLE), { wrapper });
     await waitFor(() => expect(result.current).toBe(true));
   });
+
+  test('settled verdict stays cached across unmount and remount', async () => {
+    const medplum = new MockClient();
+    const fetchSpy = vi.spyOn(medplum.client, 'mockFetch');
+    function wrapper({ children }: { children: ReactNode }): JSX.Element {
+      return <MedplumProvider medplum={medplum}>{children}</MedplumProvider>;
+    }
+    const countExpands = (): number => fetchSpy.mock.calls.filter(([url]) => url.includes('ValueSet/$expand')).length;
+
+    const first = renderHook(() => useValueSetAvailability(AVAILABLE), { wrapper });
+    await waitFor(() => expect(first.result.current).toBe(true));
+    first.unmount();
+
+    const second = renderHook(() => useValueSetAvailability(AVAILABLE), { wrapper });
+    await waitFor(() => expect(second.result.current).toBe(true));
+    expect(countExpands()).toBe(1);
+  });
 });
 
 describe('useValueSetAvailabilities', () => {

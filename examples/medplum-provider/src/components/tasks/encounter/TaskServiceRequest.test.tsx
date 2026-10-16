@@ -89,6 +89,7 @@ describe('TaskServiceRequest', () => {
       state: {
         performingLab: undefined,
         performingLabAccountNumber: undefined,
+        performingLabPhysicianAccountNumber: undefined,
         selectedTests: [],
         testMetadata: {},
         diagnoses: [],
@@ -114,6 +115,7 @@ describe('TaskServiceRequest', () => {
       searchAvailableTests: vi.fn().mockResolvedValue([]),
       setPerformingLab: vi.fn(),
       setPerformingLabAccountNumber: vi.fn(),
+      setPerformingLabPhysicianAccountNumber: vi.fn(),
       addTest: vi.fn(),
       removeTest: vi.fn(),
       setTests: vi.fn(),
@@ -253,6 +255,7 @@ describe('TaskServiceRequest', () => {
       state: {
         performingLab: undefined,
         performingLabAccountNumber: undefined,
+        performingLabPhysicianAccountNumber: undefined,
         selectedTests: [],
         testMetadata: {},
         diagnoses: [],
@@ -278,6 +281,7 @@ describe('TaskServiceRequest', () => {
       searchAvailableTests: vi.fn().mockResolvedValue([]),
       setPerformingLab: vi.fn(),
       setPerformingLabAccountNumber: vi.fn(),
+      setPerformingLabPhysicianAccountNumber: vi.fn(),
       addTest: vi.fn(),
       removeTest: vi.fn(),
       setTests: setTestsSpy,
@@ -320,6 +324,7 @@ describe('TaskServiceRequest', () => {
       state: {
         performingLab: undefined,
         performingLabAccountNumber: undefined,
+        performingLabPhysicianAccountNumber: undefined,
         selectedTests: [],
         testMetadata: {},
         diagnoses: [],
@@ -339,6 +344,7 @@ describe('TaskServiceRequest', () => {
       searchAvailableTests: vi.fn().mockResolvedValue([]),
       setPerformingLab: vi.fn(),
       setPerformingLabAccountNumber: vi.fn(),
+      setPerformingLabPhysicianAccountNumber: vi.fn(),
       addTest: vi.fn(),
       removeTest: vi.fn(),
       setTests: vi.fn(),

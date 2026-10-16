@@ -8,6 +8,18 @@ The Medplum codebase uses NPM workspaces to manage approximately 50 packages in 
 
 ## Key Concepts
 
+### Use the Pinned npm Version
+
+Use the npm version pinned in the `packageManager` field of the root `package.json`. Older versions of Node may come bundled with npm 10 or older, which may fail when rebuilding `package-lock.json` from scratch.
+
+```bash
+# Check your npm version
+npm -v
+
+# Install the pinned version (run from the project root)
+npm install -g "$(node -p "require('./package.json').packageManager")"
+```
+
 ### Always Run npm Commands from the Root
 
 ```bash
@@ -91,7 +103,7 @@ Or use the reinstall script with the update flag:
 ./scripts/reinstall.sh --update
 ```
 
-This will completely delete your `package-lock.json` file and all `node_modules` directories, and rebuild `package-lock.json` from scratch.  Depending on the magnitude of your change, sometimes this can be the cleaner option.
+This will completely delete your `package-lock.json` file and all `node_modules` directories, and rebuild `package-lock.json` from scratch. Depending on the magnitude of your change, sometimes this can be the cleaner option.
 
 ## Package.json Best Practices
 

@@ -20,7 +20,7 @@ import request from 'superwstest';
 import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { globalLogger } from '../logger';
 import * as redis from '../redis';
 import { initTestAuth, withTestContext } from '../test.setup';
@@ -29,7 +29,7 @@ import { handleFhircastConnection } from './fhircast';
 describe('FHIRcast WebSocket', () => {
   describe('Basic flow', () => {
     let app: Express;
-    let config: MedplumServerConfig;
+    let config: ServerConfig;
     let server: Server;
     let accessToken: string;
 
@@ -1130,7 +1130,7 @@ describe('FHIRcast WebSocket', () => {
 
   describe('Heartbeat', () => {
     let app: Express;
-    let config: MedplumServerConfig;
+    let config: ServerConfig;
     let server: Server;
     let accessToken: string;
 

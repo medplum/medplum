@@ -4,11 +4,12 @@
 /* global process */
 /* global console */
 
-import dotenv from 'dotenv';
 import esbuild from 'esbuild';
-import { writeFileSync } from 'fs';
+import { existsSync, writeFileSync } from 'fs';
 
-dotenv.config({ quiet: true });
+if (existsSync('.env')) {
+  process.loadEnvFile();
+}
 
 const options = {
   entryPoints: ['./src/index.ts'],

@@ -44,6 +44,14 @@ The `Criteria` of a subscription cannot be set to an [`AuditEvent`](/docs/api/fh
 
 :::
 
+:::warning[Subscriptions with `meta.accounts`]
+
+If a Subscription has `meta.accounts` set, it only fires for resources that share at least one of those accounts. Resources with no matching account are silently skipped, even if they match the `Criteria`.
+
+A Subscription inherits `meta.accounts` from its creator's [AccessPolicy](/docs/access/access-policies) `compartment`, so this often happens unintentionally. If a Subscription never fires, compare its `meta.accounts` with the resource's. A project admin can clear them with [`$set-accounts`](/docs/api/fhir/operations/set-accounts).
+
+:::
+
 You can find more instructions on setting up a subscription in the [Medplum Bots documentation](/docs/bots/bot-basics#executing-automatically-using-a-subscription).
 
 :::tip[AuditEvent Storage]

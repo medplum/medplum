@@ -116,6 +116,9 @@ if [ "$LAST_STEP" -lt 1 ]; then
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
     npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE" --target minor --enginesNode
 
+    # Re-pin packageManager (with its integrity hash) in case ncu bumped it
+    corepack use $(node -p "require('./package.json').packageManager")
+
     # Commit and push before running NPM install
     git add -u .
     git commit -s -m "Dependency upgrades - step 1"
@@ -156,6 +159,9 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
     npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target greatest --pre 0 --enginesNode
+
+    # Re-pin packageManager (with its integrity hash) in case ncu bumped it
+    corepack use $(node -p "require('./package.json').packageManager")
 
     # Check for changes in the working directory
     if git diff --quiet; then

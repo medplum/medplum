@@ -23,6 +23,9 @@ on:
 
 name: "Vouch - Check PR (shared)"
 
+permissions:
+  contents: read
+
 env:
   COMMUNITY_PR_LABEL: open-to-community
   VOUCHED_PR_LABEL: vouched

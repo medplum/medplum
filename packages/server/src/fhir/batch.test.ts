@@ -32,9 +32,10 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { generateAccessToken } from '../oauth/keys';
 import * as otelModule from '../otel/otel';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
-import type { ReentrantBatchJobData } from '../workers/batch';
+import type { BatchJobData } from '../workers/batch';
 import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
+import { normalizeShardId, TODO_SHARD_ID } from './sharding';
 import { PostgresError } from './sql';
 
 /**
@@ -45,22 +46,22 @@ import { PostgresError } from './sql';
  * @param overrides - Optional overrides applied on top of the defaults.
  * @returns A mock Job usable with execBatchJob.
  */
-function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, unknown>): Job<ReentrantBatchJobData> {
+function mockBatchJob(data: BatchJobData, overrides?: Record<string, unknown>): Job<BatchJobData> {
   const job: any = {
     id: '1',
     data,
     queueName: 'BatchQueue',
     token: 'test-token',
-    async updateData(newData: ReentrantBatchJobData) {
+    async updateData(newData: BatchJobData) {
       job.data = newData;
     },
     async moveToDelayed() {},
     ...overrides,
   };
-  return job as Job<ReentrantBatchJobData>;
+  return job as Job<BatchJobData>;
 }
 
-async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const { authState, requestId, traceId } = job.data;
   await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
 }
@@ -927,6 +928,54 @@ describe('Batch and Transaction processing', () => {
     expect((reread.body as Patient).gender).toBeUndefined();
   });
 
+  test('Batch DELETE with ifMatch', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const deleteBatch = (versionId: string | undefined): Bundle => ({
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [{ request: { method: 'DELETE', url: 'Patient/' + patient.id, ifMatch: `W/"${versionId}"` } }],
+    });
+
+    // A stale version leaves the resource in place
+    const res1 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(deleteBatch(patient.meta?.versionId));
+    expect(res1).toHaveStatus(200);
+    expect((res1.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('412');
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(deleteBatch((updated.body as Patient).meta?.versionId));
+    expect(res2).toHaveStatus(200);
+    expect((res2.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('200');
+    const gone = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(gone).toHaveStatus(410);
+  });
+
   test('Batch FHIRPath PATCH with current ifMatch succeeds and persists', async () => {
     const created = await request(app)
       .post('/fhir/R4/Patient')
@@ -1480,9 +1529,9 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<BatchJobData>>({ tracking: expect.anything() })
     );
-    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
 
     const job = mockBatchJob(enqueued);
@@ -1531,9 +1580,9 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<BatchJobData>>({ tracking: expect.any(Object) })
     );
-    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
 
     const job = mockBatchJob(enqueued);
@@ -1592,7 +1641,7 @@ describe('Batch and Transaction processing', () => {
     expect(res).toHaveStatus(202);
     const outcome = res.body as OperationOutcome;
 
-    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as BatchJobData);
     queue.add.mockClear();
 
     // Simulate the queue closing after the first two entries are processed. isClosing is checked
@@ -1663,7 +1712,7 @@ describe('Batch and Transaction processing', () => {
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJobId = new URL(jobUrl).pathname.split('/').at(-2) as string;
 
-    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as BatchJobData);
     queue.add.mockClear();
 
     // Process two entries, then delay (simulating a shutdown) to leave durable partial state.
@@ -1971,9 +2020,9 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<BatchJobData>>({ tracking: expect.anything() })
     );
-    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
 
     const job = mockBatchJob(enqueued);
@@ -2041,6 +2090,7 @@ describe('Batch and Transaction processing', () => {
 
 describe('Transaction bundle SERIALIZABLE retry', () => {
   const app = express();
+  let shardId: string;
   let accessToken: string;
 
   beforeAll(async () => {
@@ -2050,6 +2100,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
       project: { features: ['transaction-bundles'] },
       withAccessToken: true,
     }));
+    shardId = normalizeShardId(TODO_SHARD_ID); // get via the project returned from createTestProject
   });
 
   afterEach(() => {
@@ -2065,7 +2116,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
     // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
     // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
     // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, shardId);
     const originalConnect = writerPool.connect.bind(writerPool);
 
     let serializableBegins = 0;
