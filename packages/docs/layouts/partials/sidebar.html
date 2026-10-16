@@ -55,6 +55,9 @@
       {{- else }}
         <span class="sidebar-link sidebar-category-link">{{ .label }}</span>
       {{- end }}
+      {{- /* For Algolia's default Docusaurus crawler template, which takes a record's top-level heading (lvl0) from the
+        deepest open category's Docusaurus classes. Hidden, and inline-styled so infima's .menu__link can't show it. */}}
+      {{- if $isOpen }}<span class="menu__link menu__link--sublist menu__link--active" style="display: none">{{ .label }}</span>{{ end }}
       <div class="sidebar-caret-wrapper">
         <span class="sidebar-caret"></span>
       </div>

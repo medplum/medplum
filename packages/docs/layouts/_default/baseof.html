@@ -52,7 +52,8 @@
                       {{ .TableOfContents | replaceRE `id="TableOfContents"` `class="toc-mobile-nav"` | safeHTML }}
                     </details>
                   {{ end }}
-                  {{ block "main" . }}{{ end }}
+                  {{- /* <article> holds the title and content, which Algolia's default Docusaurus crawler template indexes */}}
+                  <article>{{ block "main" . }}{{ end }}</article>
                   {{ partial "doc-footer" . }}
                 </div>
                 <div class="main-toc">

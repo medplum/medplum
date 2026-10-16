@@ -1,0 +1,22 @@
+{{- /*
+  Algolia DocSearch meta tags, with the values Docusaurus emitted, so records from the Hugo site keep the facets
+  the search UI filters on (contextualSearch). The crawler copies docsearch:* meta tags onto each record.
+*/ -}}
+{{- $tag := "default" -}}
+{{- $isDocs := or (eq .Section "docs") (eq .Type "docs_tags") -}}
+{{- if eq .Type "docs_tags" -}}
+  {{- $tag = cond (eq .Kind "taxonomy") "doc_tags_list" "doc_tag_doc_list" -}}
+{{- else if eq .Type "blog_tags" -}}
+  {{- $tag = cond (eq .Kind "taxonomy") "blog_tags_list" "blog_tags_posts" -}}
+{{- else if eq .Section "docs" -}}
+  {{- $tag = "docs-default-current" -}}
+{{- else if and (eq .Section "blog") .IsSection -}}
+  {{- $tag = "blog_posts_list" -}}
+{{- else if eq .Layout "authors" -}}
+  {{- $tag = "blog_authors_list" -}}
+{{- end -}}
+<meta name="docsearch:language" content="en" />
+{{- if $isDocs }}
+<meta name="docsearch:version" content="current" />
+{{- end }}
+<meta name="docsearch:docusaurus_tag" content="{{ $tag }}" />

@@ -11,6 +11,8 @@
     {{- range $links }}
     {{- $active := hasPrefix $path .href }}
     <a class="navbar-link{{ if $active }} active{{ end }}" href="{{ .href }}" data-active-base="{{ .href }}"{{ if $active }} aria-current="page"{{ end }}>{{ .label }}</a>
+    {{- /* Fallback lvl0 for Algolia's default Docusaurus crawler template (see sidebar.html) */}}
+    {{- if $active }}<span class="navbar__item navbar__link--active" style="display: none">{{ .label }}</span>{{ end }}
     {{- end }}
   </div>
   <div class="navbar-right">
