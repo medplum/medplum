@@ -79,6 +79,10 @@
   margin-top: 0.075em;
 }
 
+:global(.dayGridMonth) .recurring {
+  margin-top: 0.125em;
+}
+
 /* Set apart from the service types named by their HealthcareService. */
 .untyped {
   opacity: 0.75;

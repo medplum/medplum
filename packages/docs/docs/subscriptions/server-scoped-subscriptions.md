@@ -21,6 +21,7 @@ A server-scoped Subscription is a `Subscription` with no `meta.project` (a proje
 
 - **Access policies** are skipped for these Subscriptions, since they aren't bound to a project. This is safe: only a super admin can create a project-less resource, and they're only evaluated when the flag is on.
 - **AuditEvents** from these firings are themselves project-less and live in the system scope.
+- **Bot endpoints** (`channel.endpoint: Bot/<id>`) are supported. By default the Bot runs as its own membership in its own project, receives the triggering resource as input, and can only reach other projects' data if its membership allows it. A [`runAsUser`](/docs/bots/bot-run-as-user) Bot instead runs as the requester in the triggering project, which must have Bots enabled and whose secrets are passed to the Bot. Bot execution AuditEvents are written to the project the Bot ran in.
 
 ## Enabling and Using
 
