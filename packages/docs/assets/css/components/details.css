@@ -1,0 +1,75 @@
+/*
+ * Collapsible sections (<details> in page content), styled as Docusaurus's Details component: an info alert with a
+ * rotating arrow, and a divider between the summary and the content once open. The mobile "On this page" <details>
+ * is outside <article>, so it keeps its own styles (toc.css). As on the live site, it looks the same in dark mode.
+ */
+article details {
+  --details-background: var(--oc-blue-0);
+  --details-color: var(--oc-blue-9);
+  --details-decoration: var(--oc-blue-5);
+
+  background-color: var(--details-background);
+  border: 1px solid var(--details-decoration);
+  border-radius: 0.4rem;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 1px 2px 0;
+  color: var(--details-color);
+  margin: 0 0 1rem;
+  padding: 1rem;
+
+  > summary {
+    cursor: pointer;
+    font-style: italic;
+    list-style: none;
+    margin-bottom: 0.1256rem;
+    padding-left: 1rem;
+    position: relative;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    /* A triangle pointing right, turned down when open */
+    &::before {
+      border-color: transparent transparent transparent var(--details-decoration);
+      border-style: solid;
+      border-width: 0.38rem;
+      content: '';
+      left: 0;
+      position: absolute;
+      top: 0.45rem;
+      transform: rotate(0deg);
+      transform-origin: 0.19rem 50%;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &[open] > summary {
+    border-bottom: 1px solid var(--details-decoration);
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+
+    &::before {
+      transform: rotate(90deg);
+    }
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+
+  code {
+    background-color: rgba(28, 126, 214, 0.15);
+  }
+
+  /* As in alerts: links in the text color, underlined in the border color */
+  a {
+    color: var(--details-color);
+    text-decoration: underline;
+    text-decoration-color: var(--details-decoration);
+
+    &:hover {
+      text-decoration-color: var(--details-decoration);
+      text-decoration-thickness: 2px;
+    }
+  }
+}
