@@ -105,6 +105,8 @@ export default {
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
  * anything booked from the form — opens its details in the same pane the booking form
  * uses, closing the form if one was open; clicking open time again puts the form back.
+ * A form holding answers on either tab asks first, the way the configuration workspace
+ * does; closing it with the ✕ does not.
  * "Cancel Appointment" turns the pane over to a page asking what the visit is being
  * called off for; a reason has to be searched for and picked before it can be confirmed,
  * and "Back" leaves without touching the visit. Confirming runs it through

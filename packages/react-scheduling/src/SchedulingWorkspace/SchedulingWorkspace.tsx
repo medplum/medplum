@@ -22,6 +22,7 @@ import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.s
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
+import { ConfirmModal } from '../ConfirmModal/ConfirmModal';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
@@ -39,6 +40,7 @@ import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
 import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
+import { useDiscardConfirmation } from './useDiscardConfirmation';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -313,12 +315,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setBlockHighlight(interval);
   }, []);
 
+  const discard = useDiscardConfirmation();
+  const { guard, reset: resetDirty } = discard;
+
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setHighlight(undefined);
     setBlockHighlight(undefined);
     setTimeFinderOpen(false);
-  }, []);
+    resetDirty();
+  }, [resetDirty]);
 
   // Hides are kept across a service change rather than pruned: a calendar hidden under
   // one service type stays hidden if another offers it again.
@@ -345,15 +351,17 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (isResourceWithId(appointment)) {
-        if (appointment.id !== selectedAppointment?.id) {
-          setRescheduleFinderOpen(false);
-        }
-        closeBooking();
-        setSelectedSlotId(undefined);
-        setSelectedAppointment(appointment);
+        guard(() => {
+          if (appointment.id !== selectedAppointment?.id) {
+            setRescheduleFinderOpen(false);
+          }
+          closeBooking();
+          setSelectedSlotId(undefined);
+          setSelectedAppointment(appointment);
+        });
       }
     },
-    [closeBooking, selectedAppointment?.id]
+    [guard, closeBooking, selectedAppointment?.id]
   );
 
   const closeAppointment = useCallback((): void => {
@@ -363,13 +371,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const selectSlot = useCallback(
     (slot: Slot): void => {
-      if (slot.id) {
-        closeBooking();
-        closeAppointment();
-        setSelectedSlotId(slot.id);
+      const { id } = slot;
+      if (id) {
+        guard(() => {
+          closeBooking();
+          closeAppointment();
+          setSelectedSlotId(id);
+        });
       }
     },
-    [closeBooking, closeAppointment]
+    [guard, closeBooking, closeAppointment]
   );
 
   // The open appointment is held apart from the calendar's, so that a visit cancelled from
@@ -520,6 +531,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 allowRecurring
                 onToggleTimeFinder={setTimeFinderOpen}
                 onChangeTime={setHighlight}
+                onDirtyChange={discard.onBookingDirtyChange}
                 onBooked={finishBooking}
                 defaultLocation={selectedLocation}
                 defaultService={selectedService}
@@ -530,12 +542,22 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 candidatesByActorType={candidatesByActorType}
                 defaultRange={bookingSelection}
                 onChangeTime={setBlockHighlight}
+                onDirtyChange={discard.onBlockDirtyChange}
                 onBlocked={finishBlock}
               />
             </Tabs.Panel>
           </Tabs>
         </section>
       )}
+      <ConfirmModal
+        {...discard.modalProps}
+        title="Discard unsaved changes?"
+        cancelLabel="Keep editing"
+        confirmLabel="Discard changes"
+        destructive
+      >
+        What's been entered in the booking form hasn't been saved.
+      </ConfirmModal>
     </div>
   );
 }

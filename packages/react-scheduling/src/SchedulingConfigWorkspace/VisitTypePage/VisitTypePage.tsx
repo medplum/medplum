@@ -47,7 +47,7 @@ import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPa
 import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
-import { ConfirmModal } from '../ConfirmModal';
+import { ConfirmModal } from '../../ConfirmModal/ConfirmModal';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
 import { getServiceFacilitiesConfirmation } from '../serviceFacilitiesConfirmation';
 import { ServiceFacilitiesField } from '../ServiceFacilitiesField';

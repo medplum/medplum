@@ -15,7 +15,7 @@ import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
 import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
-import { ConfirmModal } from './ConfirmModal';
+import { ConfirmModal } from '../ConfirmModal/ConfirmModal';
 import classes from './SchedulingConfigWorkspace.module.css';
 import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
 import { buildActorItems, buildServiceItems, getOfferings, isSameSelection } from './SchedulingConfigWorkspace.utils';

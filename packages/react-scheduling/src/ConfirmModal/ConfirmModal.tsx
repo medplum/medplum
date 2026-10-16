@@ -20,7 +20,7 @@ export interface ConfirmModalProps {
 }
 
 /**
- * Asks before a change in the configuration workspace goes ahead.
+ * Asks before a change goes ahead.
  * @param props - What is asked, the two answers, and what each does.
  * @returns The dialog.
  */
