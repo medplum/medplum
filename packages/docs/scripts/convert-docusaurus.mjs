@@ -37,6 +37,7 @@ const HAND_WRITTEN = [
   'enterprise.md',
   'pricing.md',
   'products/_index.md',
+  'search.md',
   'solutions/_index.md',
 ];
 

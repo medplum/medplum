@@ -8,6 +8,7 @@ import { destroyProducts, initProducts } from './components/products/index.mjs';
 import { destroySolutions, initSolutions } from './components/solutions/index.mjs';
 import { initKapa } from './components/kapa.mjs';
 import { initMermaid } from './components/mermaid.mjs';
+import { initSearch, openSearchFromPage } from './components/search.mjs';
 import { initTabs } from './components/tabs.mjs';
 import { destroyToc, initToc } from './components/toc.mjs';
 
@@ -167,6 +168,7 @@ swup.hooks.on('content:replace', (visit) => {
   initMermaid();
   initToc();
   updateActiveLinks();
+  openSearchFromPage();
 });
 
 updateAttributes(window.location.href);
@@ -181,3 +183,4 @@ initTabs();
 initMermaid();
 initToc();
 initKapa(swup);
+initSearch(swup);

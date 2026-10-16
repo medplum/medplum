@@ -26,6 +26,8 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
+    "@docsearch/css": "5.1.2",
+    "@docsearch/js": "5.1.2",
     "@medplum/core": "5.2.5",
     "@swup/preload-plugin": "3.2.12",
     "@tabler/icons": "3.49.0",

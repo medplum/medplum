@@ -13,12 +13,16 @@
     {{ partial "head-tags.html" . }}
     {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
     <script src="{{ $js.RelPermalink }}" defer></script>
+    {{- /* Loaded by assets/js/components/search.mjs when search is first opened */}}
+    {{ $docsearchJs := resources.Get "js/docsearch.mjs" | js.Build (dict "format" "esm") | minify | fingerprint }}
+    <meta name="docsearch-bundle" content="{{ $docsearchJs.RelPermalink }}" />
     {{ $infima := resources.Get "infima.css" }}
     {{ $openColor := resources.Get "open-color.css" }}
     {{ $opts := dict "transpiler" "dartsass" }}
     {{ $scss := resources.Get "css/main.scss" | toCSS $opts }}
     {{ $generated := resources.Get "css/generated/landing.css" }}
-    {{ $style := slice $infima $openColor $scss $generated | resources.Concat "css/bundle.css" | minify | fingerprint }}
+    {{ $docsearch := slice (resources.Get "docsearch/_variables.css") (resources.Get "docsearch/modal.css") }}
+    {{ $style := slice $infima $openColor | append $docsearch | append (slice $scss $generated) | resources.Concat "css/bundle.css" | minify | fingerprint }}
     <link
       rel="stylesheet"
       href="{{ $style.RelPermalink }}"

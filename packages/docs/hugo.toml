@@ -49,6 +49,12 @@ capitalizeListTitles = false
   source = "../../node_modules/open-color/open-color.css"
   target = "assets/open-color.css"
 
+# Algolia DocSearch modal styles (assets/js/components/search.mjs); the button and Ask AI styles aren't used
+[[module.mounts]]
+  source = "../../node_modules/@docsearch/css/dist"
+  target = "assets/docsearch"
+  files = ["_variables.css", "modal.css"]
+
 [[module.mounts]]
   source = "../../node_modules/@tabler/icons/icons"
   target = "assets/icons/tabler"
