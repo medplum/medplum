@@ -109,8 +109,8 @@ const reasonForVisiting = answers['reasonForVisit']?.valueString || 'No Reason G
 We can combine this with the [`medplum.createResource`](/docs/sdk/core.medplumclient.createresource) method to create the [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) . The final Bot then looks like this:
 
 ```ts
-
-
+import { BotEvent, MedplumClient, getQuestionnaireAnswers, createReference } from '@medplum/core';
+import { QuestionnaireResponse, Patient, ServiceRequest } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const response = event.input as QuestionnaireResponse;

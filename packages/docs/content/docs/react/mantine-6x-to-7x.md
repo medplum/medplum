@@ -34,8 +34,8 @@ You can now remove all Emotion dependencies from your project. Mantine now uses 
 Create a `postcss.config.mjs` file in the root of your project:
 
 ```javascript
-
-
+import mantinePreset from 'postcss-preset-mantine';
+import simpleVars from 'postcss-simple-vars';
 
 const config = {
   plugins: [
@@ -68,7 +68,7 @@ The `createStyles` function is no longer available in Mantine 7.0. Use CSS Modul
 
 ```tsx
 // 6.x
-
+import { createStyles } from '@mantine/core';
 
 const useStyles = createStyles((theme) => ({
   root: {

@@ -375,8 +375,8 @@ Replace the sample `id` with your Bot's ID.
 Write your bot in `src/hello-world.ts`. This can be TypeScript. It can reference `@medplum/core` and `node-fetch`:
 
 ```ts
-
-
+import { MedplumClient } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   console.log('Hello world');

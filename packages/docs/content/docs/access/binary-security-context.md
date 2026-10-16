@@ -109,7 +109,7 @@ Medplum React components that handle file uploads automatically use secure patte
 #### AttachmentButton Component
 
 ```jsx
-
+import { AttachmentButton } from '@medplum/react';
 
 <AttachmentButton
   securityContext={createReference(resource)}
@@ -120,7 +120,7 @@ Medplum React components that handle file uploads automatically use secure patte
 >
   {(props) => (
     <ActionIcon {...props} radius="xl" color="blue" variant="filled">
-      <IconCloudUpload size="16" />
+      <IconCloudUpload size={16} />
     </ActionIcon>
   )}
 </AttachmentButton>;
@@ -129,7 +129,7 @@ Medplum React components that handle file uploads automatically use secure patte
 #### AttachmentInput Component
 
 ```jsx
-
+import { AttachmentInput } from '@medplum/react';
 
 <AttachmentInput
   securityContext={createReference(patient)}

@@ -91,7 +91,7 @@ After we've installed dependencies, we can write your Bot in any typescript file
 As mentioned in [Bot Basics](./bot-basics), a bot is any TypeScript file that contains a `handler` function with the following signature:
 
 ```ts
-
+import { MedplumClient, BotEvent } from '@medplum/core';
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Your code here
 }
@@ -110,8 +110,8 @@ You'll see that this creates a simple bot that logs the patient's name to the co
 
 ```ts
 // src/my-first-bot.ts
-
-
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;

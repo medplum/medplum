@@ -165,8 +165,8 @@ After building your FSH profiles with SUSHI, the generated `StructureDefinition`
 To upload the generated profiles to Medplum:
 
 ```typescript
-
-
+import { MedplumClient } from '@medplum/core';
+import profileDefinition from './fsh-generated/resources/StructureDefinition-medplum-test-patient.json';
 
 const medplum = new MedplumClient();
 await medplum.createResource(profileDefinition);
@@ -307,7 +307,7 @@ medplum generate-types --profile-url https://example.com/profiles/my-patient/1.0
 ```
 
 ```ts
-
+import type { MyPatientProfile } from './types/profiles';
 
 const patient: MyPatientProfile = {
   resourceType: 'Patient',

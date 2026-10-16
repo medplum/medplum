@@ -436,7 +436,7 @@ Medplum is not optimized for massive wearable ingestion at second-level granular
 `expandSampledData` turns the packed string into an array of numeric values:
 
 ```typescript
-
+import { expandSampledData } from '@medplum/core';
 
 const values = expandSampledData({
   origin: { value: 60, unit: 'beats/min' },
@@ -450,7 +450,7 @@ const values = expandSampledData({
 `expandSampledObservation` lifts the same expansion to the Observation level, returning one Observation per sample:
 
 ```typescript
-
+import { expandSampledObservation } from '@medplum/core';
 
 const expandedObservations = expandSampledObservation({
   resourceType: 'Observation',
@@ -463,7 +463,7 @@ const expandedObservations = expandSampledObservation({
 `summarizeObservations` and `DataSampler` aggregate many observations into a single summary–useful for dashboards built off wearable data:
 
 ```typescript
-
+import { summarizeObservations, DataSampler } from '@medplum/core';
 
 const summary = summarizeObservations(
   observations,

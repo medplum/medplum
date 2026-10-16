@@ -72,8 +72,8 @@ Here are examples of how to use the integration with both `Media` and `DocumentR
 
 ```typescript
 // Import necessary types and client
-
-
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { Media } from '@medplum/fhirtypes';
 
 /**
  * Example function to send a Media resource to the `$aws-textract` operation.
@@ -104,8 +104,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Partial<Me
 
 ```typescript
 // Import necessary types and client
-
-
+import { MedplumClient } from '@medplum/core';
+import { DocumentReference } from '@medplum/fhirtypes';
 
 /**
  * Example function to send a DocumentReference resource to the `$aws-textract` operation.

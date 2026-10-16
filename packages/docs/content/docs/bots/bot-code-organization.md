@@ -68,8 +68,8 @@ npm install --save-dev esbuild glob
 ### esbuild.mjs
 
 ```js
-
-
+import esbuild from 'esbuild';
+import { glob } from 'glob';
 
 // Compile every .ts file in src/bots/ (excluding tests)
 const botEntryPoints = glob.sync('./src/bots/*.ts').filter((f) => !f.endsWith('.test.ts'));
@@ -140,10 +140,10 @@ Keep bot files thin. They should only contain the `handler` function and high-le
 
 ```ts
 // src/bots/send-order.ts
-
-
-
-
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { ServiceRequest } from '@medplum/fhirtypes';
+import { connectToApi } from '../common/connection';
+import { buildOrderPayload } from '../common/order-utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
   const order = event.input as ServiceRequest;
@@ -159,7 +159,7 @@ Shared modules are plain TypeScript — no Medplum-specific structure required:
 
 ```ts
 // src/common/connection.ts
-
+import { MedplumClient } from '@medplum/core';
 
 export async function connectToApi(medplum: MedplumClient): Promise<ApiClient> {
   const secret = await medplum.getProjectSecret('API_KEY');

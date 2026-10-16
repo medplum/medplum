@@ -191,7 +191,7 @@ To display a translated value, pass the parent resource object and the field nam
 matching translation:
 
 ```ts
-
+import { Extension } from '@medplum/fhirtypes';
 
 /**
  * Returns the translation of a primitive string field for the given BCP-47 language tag,

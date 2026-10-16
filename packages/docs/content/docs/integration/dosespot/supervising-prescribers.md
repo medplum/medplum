@@ -73,7 +73,7 @@ medplum post -p <profile> 'Practitioner/$dosespot-set-supervising-prescriber' '{
 ### TypeScript
 
 ```typescript
-
+import type { Parameters } from '@medplum/fhirtypes';
 
 const result = await medplum.post<Parameters>(
   medplum.fhirUrl('Practitioner', '$dosespot-set-supervising-prescriber'),
@@ -115,7 +115,7 @@ medplum post -p <profile> 'Practitioner/$dosespot-set-supervising-prescriber' '{
 ### TypeScript
 
 ```typescript
-
+import type { Parameters } from '@medplum/fhirtypes';
 
 const result = await medplum.post<Parameters>(
   medplum.fhirUrl('Practitioner', '$dosespot-set-supervising-prescriber'),

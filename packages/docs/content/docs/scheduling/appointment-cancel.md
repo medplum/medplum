@@ -27,8 +27,8 @@ The `$cancel` operation cancels an [`Appointment`](/docs/api/fhir/resources/appo
 {{< tab value="ts" label="TypeScript" >}}
 
 ```typescript
-
-
+import { MedplumClient } from '@medplum/core';
+import type { Appointment, Parameters } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 

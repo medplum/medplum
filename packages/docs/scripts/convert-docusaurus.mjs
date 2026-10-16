@@ -194,8 +194,10 @@ function writePage(page, urlBySource) {
   const bundleDir = path.dirname(destFile);
   fs.mkdirSync(bundleDir, { recursive: true });
 
-  let body = page.body;
-  body = inlinePartials(body, path.dirname(sourcePath));
+  // The conversions below are for markdown and MDX, so hide the code in fenced blocks from them: they would drop
+  // its import lines and # comments, and rewrite its JSX
+  const code = maskCodeBlocks(inlinePartials(page.body, path.dirname(sourcePath)));
+  let body = code.masked;
   body = convertBody(body, sourcePath);
   body = copyAssets(body, page, bundleDir);
   body = rewriteDocLinks(body, sourcePath, urlBySource);
@@ -203,7 +205,42 @@ function writePage(page, urlBySource) {
   const frontMatter = convertFrontMatter(page, body);
   body = body.replace(/^# .+\n?/m, ''); // The layout renders the title
 
-  fs.writeFileSync(destFile, cleanupWhitespace(frontMatter + '\n\n' + body.trimStart()), 'utf8');
+  fs.writeFileSync(destFile, code.restore(cleanupWhitespace(frontMatter + '\n\n' + body.trimStart())), 'utf8');
+}
+
+// Replaces the lines inside each fenced code block with a placeholder line, keeping the fence lines themselves (whose
+// language and highlight options are converted). restore() puts the code back.
+function maskCodeBlocks(body) {
+  const blocks = [];
+  const out = [];
+  let fence;
+  let lines = [];
+  for (const line of body.split('\n')) {
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (!fence) {
+      out.push(line);
+      if (marker) {
+        fence = marker[1];
+        lines = [];
+      }
+    } else if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length && !marker[2].trim()) {
+      if (lines.length) {
+        out.push(`CONVERTERCODEBLOCK${blocks.length}END`);
+        blocks.push(lines.join('\n'));
+      }
+      out.push(line);
+      fence = undefined;
+    } else {
+      lines.push(line);
+    }
+  }
+  if (fence) {
+    out.push(...lines); // Unclosed fence: leave it as written
+  }
+  return {
+    masked: out.join('\n'),
+    restore: (text) => text.replace(/CONVERTERCODEBLOCK(\d+)END/g, (_, i) => blocks[Number(i)]),
+  };
 }
 
 function convertFrontMatter(page, body) {

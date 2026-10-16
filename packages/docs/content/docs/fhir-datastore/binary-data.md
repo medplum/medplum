@@ -82,7 +82,9 @@ media = {
   }
 };
 
-requests.post(f'{API_URL}/Media', json=media, headers="Authorization': f'Bearer {auth_token}")
+requests.post(f'{API_URL}/Media', json=media, headers={
+  'Authorization': f'Bearer {auth_token}'
+})
 
 ```
 

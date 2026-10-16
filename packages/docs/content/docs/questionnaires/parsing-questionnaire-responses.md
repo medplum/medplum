@@ -791,8 +791,8 @@ A [Medplum Bot](/docs/bots/) is a TypeScript function that runs server-side in r
 ### Pattern
 
 ```typescript
-
-
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   const response = event.input;

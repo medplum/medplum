@@ -134,7 +134,7 @@ The Bot uses two key utility functions from the intake demo:
 **`getQuestionnaireAnswers()`** — Flattens the QuestionnaireResponse into a dictionary keyed by linkId. Use this for top-level, non-repeating fields like demographics:
 
 ```ts
-
+import { getQuestionnaireAnswers } from '@medplum/core';
 
 const answers = getQuestionnaireAnswers(response);
 
@@ -146,7 +146,7 @@ const gender = answers['gender-identity']?.valueCoding?.code;
 **`getGroupRepeatedAnswers()`** — Extracts an array of answer dictionaries from a repeating group. Use this for multi-entry sections like allergies and medications:
 
 ```ts
-
+import { getGroupRepeatedAnswers } from './intake-utils';
 
 // Returns one dictionary per allergy the patient reported
 const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');

@@ -26,7 +26,7 @@ After setting up your framework, you're ready to write your first test file! The
 You will need to import your bot's `handler` function, in addition to the other imports required by your test framework. You'll call this `handler` from each one of your tests.
 
 ```typescript
-
+import { handler } from './my-bot';
 ```
 
 ## Write your unit test

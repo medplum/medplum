@@ -125,7 +125,7 @@ Every `C-STORE` produces a notification to the channel's target `Bot`, regardles
 A minimal Bot that logs each arrival:
 
 ```ts
-
+import { BotEvent, MedplumClient } from '@medplum/core';
 
 interface DicomNotification {
   association: { callingAeTitle?: string; calledAeTitle?: string };

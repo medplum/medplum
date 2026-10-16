@@ -60,7 +60,7 @@ Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new
 Second, set up the [Bot](https://app.medplum.com/Bot/new) that accepts the HL7 message, applies necessary transformations and translations, and sends an `ACK` message back to the sender. Ensure that your Bot accepts HL7 inputs, and you may refer to the [HL7 Bots documentation](/docs/bots/hl7-into-fhir) for more advanced uses. For an initial setup, the minimal Bot may be used:
 
 ```js
-
+import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
   return event.input.buildAck();

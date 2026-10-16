@@ -58,8 +58,8 @@ There are a few important steps.
 Create a `postcss.config.mjs` file in the root of your project:
 
 ```javascript
-
-
+import mantinePreset from 'postcss-preset-mantine';
+import simpleVars from 'postcss-simple-vars';
 
 const config = {
   plugins: [
@@ -90,7 +90,7 @@ import '@mantine/core/styles.css';
 Wrap your application with the `MantineProvider` component:
 
 ```tsx
-
+import { createTheme, MantineProvider } from '@mantine/core';
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -108,15 +108,15 @@ function Demo() {
 ## Simple Example
 
 ```tsx
-
+import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
-
-
+import { MedplumClient } from '@medplum/core';
+import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
-
-
-
-
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { App } from './App';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),

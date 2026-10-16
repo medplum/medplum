@@ -146,7 +146,7 @@ Diagnosis Code Selection
   label="Diagnoses"
   binding="http://hl7.org/fhir/sid/icd-10-cm"
   name="diagnoses"
-  maxValues="10"
+  maxValues={10}
   onChange={(items) => {
     const codeableConcepts = items.map((item) => ({
       coding: [item],

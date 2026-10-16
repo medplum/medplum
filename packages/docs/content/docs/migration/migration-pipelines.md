@@ -138,7 +138,7 @@ Run migrations with a dedicated [`ClientApplication`](/docs/auth/client-credenti
 For a long-running process, we recommend using [`setBasicAuth`](/docs/sdk/core.medplumclient.setbasicauth). The Medplum SDK will send the client ID and secret directly with HTTP Basic authentication on each API request:
 
 ```ts
-
+import { MedplumClient } from '@medplum/core';
 
 const medplum = new MedplumClient();
 medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID as string, process.env.MEDPLUM_CLIENT_SECRET as string);

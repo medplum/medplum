@@ -70,7 +70,7 @@ Javascript code.
 All Bots are simply a single TypeScript/JavaScript file with a standard async entry point function called `handler`. To start your bot, create a `handler` function as shown below in the **Editor** window.
 
 ```typescript
-
+import { BotEvent, MedplumClient } from '@medplum/core';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Your code here
@@ -94,8 +94,8 @@ The following function arguments are available to the Bot code, to enable it to 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
 
 ```ts
-
-
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;
@@ -113,7 +113,7 @@ When you are done editing, click "Save" to save your Bot code to Medplum.
 Let's break this example down.
 
 ```ts
-
+import { Patient } from '@medplum/fhirtypes';
 //....
 const patient = event.input as Patient;
 ```
