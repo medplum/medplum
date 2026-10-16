@@ -1,36 +1,38 @@
 .tabs-container {
-  margin-bottom: 16px;
+  margin-bottom: var(--ifm-leading);
 }
 
+/* As Docusaurus's tabs (Infima's .tabs and .tabs__item, through the same variables) */
 .tabs-button-group {
   display: flex;
-  border-bottom: 2px solid var(--oc-gray-3);
+  color: var(--ifm-tabs-color);
+  font-weight: var(--ifm-font-weight-bold);
   margin-bottom: 0;
+  overflow-x: auto;
   padding: 0;
-  list-style: none;
-  gap: 4px;
 }
 
 .tabs-button {
-  padding: 8px 16px;
+  display: inline-flex;
+  padding: var(--ifm-tabs-padding-vertical) var(--ifm-tabs-padding-horizontal);
   border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: var(--ifm-global-radius);
   background: none;
+  color: inherit;
   cursor: pointer;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--oc-gray-6);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  font: inherit;
+  transition: background-color var(--ifm-transition-fast);
 
   &:hover {
-    color: var(--ifm-color-primary);
+    background-color: var(--ifm-hover-overlay);
   }
 
   &.active {
-    color: var(--ifm-color-primary);
-    border-bottom-color: var(--ifm-color-primary);
+    border-bottom-color: var(--ifm-tabs-color-active-border);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    color: var(--ifm-tabs-color-active);
   }
 }
 
@@ -39,5 +41,6 @@
 
   &.active {
     display: block;
+    margin-top: 1rem;
   }
 }

@@ -61,6 +61,13 @@ article details {
     background-color: rgba(28, 126, 214, 0.15);
   }
 
+  /* Tabs take the alert's colors too */
+  .tabs-button-group {
+    --ifm-tabs-color: var(--details-color);
+    --ifm-tabs-color-active: var(--details-color);
+    --ifm-tabs-color-active-border: var(--details-decoration);
+  }
+
   /* As in alerts: links in the text color, underlined in the border color */
   a {
     color: var(--details-color);
