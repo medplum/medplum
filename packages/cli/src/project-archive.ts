@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import { getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
-import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import type { MedplumClient, WithId } from '@medplum/core';
+import { getReferenceString, isUUID, normalizeErrorString, resolveId } from '@medplum/core';
+import type { AsyncJob, Binary, Bot, Parameters, ParametersParameter, Resource } from '@medplum/fhirtypes';
+import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -14,6 +14,8 @@ import { MedplumCommand } from './utils';
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 const MANIFEST_FILE = 'manifest.json';
 const POLL_PERIOD_MS = 2000;
+const BINARIES_DIR = 'binaries';
+const BINARY_CONCURRENCY = 5;
 
 export const projectArchiveCommand = new MedplumCommand('archive')
   .description('Download a full-history archive of a project to a local directory')
@@ -21,6 +23,7 @@ export const projectArchiveCommand = new MedplumCommand('archive')
   .option('--project <projectId>', 'Project to archive. Defaults to the current project')
   .option('--include-audit-events', 'Include AuditEvent resources')
   .option('--cleanup', 'Delete the archive files from the server after downloading them')
+  .option('--binaries', 'Also download the current content of each Binary')
   .action(async (directory, options) => {
     const medplum = await createMedplumClient(options);
     const projectId = options.project ?? resolveId(medplum.getActiveLogin()?.project);
@@ -28,14 +31,29 @@ export const projectArchiveCommand = new MedplumCommand('archive')
       throw new Error('No current project: run `npx medplum login` or pass --project');
     }
     await archiveProject(medplum, projectId, directory, options);
+    if (options.binaries) {
+      await downloadBinaries(medplum, directory);
+    }
   });
 
 export const projectRestoreCommand = new MedplumCommand('restore')
   .description('Restore a project archive from a local directory into this server (super admin only)')
   .argument('<directory>', 'Directory containing the archive')
+  .option('--binaries', 'Also upload Binary content downloaded with `archive --binaries`')
   .action(async (directory, options) => {
     const medplum = await createMedplumClient(options);
     await restoreProject(medplum, directory);
+    if (options.binaries) {
+      await uploadBinaries(medplum, directory);
+    }
+  });
+
+export const projectDeployBotsCommand = new MedplumCommand('deploy-bots')
+  .description('Deploy the Bots of a restored project archive. Enable the bots feature on the project first')
+  .argument('<directory>', 'Directory containing the archive')
+  .action(async (directory, options) => {
+    const medplum = await createMedplumClient(options);
+    await deployBots(medplum, directory);
   });
 
 async function archiveProject(
@@ -92,6 +110,113 @@ async function restoreProject(medplum: MedplumClient, directory: string): Promis
     console.log(`Warning: ${warning.valueString}`);
   }
   console.log('Restore complete');
+}
+
+async function downloadBinaries(medplum: MedplumClient, directory: string): Promise<void> {
+  const binaryDir = join(directory, BINARIES_DIR);
+  mkdirSync(binaryDir, { recursive: true });
+  const binaries = readCurrentVersions<Binary>(directory, 'Binary');
+  let missing = 0;
+  // Files are renamed into place when complete, so a rerun skips finished downloads
+  await forEachConcurrent(binaries, async (binary) => {
+    const path = join(binaryDir, binary.id);
+    if (existsSync(path)) {
+      return;
+    }
+    const res = await medplum.downloadResponse(`Binary/${binary.id}`);
+    if (res.status === 404) {
+      // The Binary resource exists but its content was never stored, e.g. an incomplete upload
+      missing++;
+      return;
+    }
+    if (!res.ok || !res.body) {
+      throw new Error(`Download of Binary/${binary.id} failed: ${res.status} ${res.statusText}`);
+    }
+    await pipeline(Readable.fromWeb(res.body as ReadableStream<Uint8Array>), createWriteStream(path + '.part'));
+    renameSync(path + '.part', path);
+  });
+  if (missing) {
+    console.log(`Warning: ${missing} Binary resources have no content on the server`);
+  }
+  console.log(`Downloaded ${binaries.length - missing} Binary files`);
+}
+
+async function uploadBinaries(medplum: MedplumClient, directory: string): Promise<void> {
+  let missing = 0;
+  await forEachConcurrent(readCurrentVersions<Binary>(directory, 'Binary'), async (binary) => {
+    const path = join(directory, BINARIES_DIR, binary.id);
+    if (!existsSync(path)) {
+      missing++;
+      return;
+    }
+    // Presigned upload writes into the restored current version, rather than creating a new version
+    const params = await medplum.get<Parameters>(medplum.fhirUrl('Binary', binary.id, '$presigned-url?upload=true'));
+    const url = params.parameter?.find((p) => p.name === 'url')?.valueUri as string;
+    const res = await fetch(url, {
+      method: 'PUT',
+      body: readFileSync(path),
+      headers: binary.contentType ? { 'Content-Type': binary.contentType } : undefined,
+    });
+    if (!res.ok) {
+      throw new Error(`Upload of Binary/${binary.id} failed: ${res.status} ${res.statusText}`);
+    }
+  });
+  if (missing) {
+    console.log(`Warning: ${missing} Binary files not found in ${join(directory, BINARIES_DIR)}`);
+  }
+  console.log('Uploaded Binary files');
+}
+
+async function deployBots(medplum: MedplumClient, directory: string): Promise<void> {
+  let failed = 0;
+  for (const bot of readCurrentVersions<Bot>(directory, 'Bot').filter((b) => b.executableCode)) {
+    try {
+      await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {});
+      console.log(`Deployed Bot/${bot.id} (${bot.name})`);
+    } catch (err) {
+      failed++;
+      console.log(`Failed to deploy Bot/${bot.id} (${bot.name}): ${normalizeErrorString(err)}`);
+    }
+  }
+  if (failed) {
+    throw new Error(`${failed} Bots failed to deploy`);
+  }
+}
+
+/**
+ * Reads the current version of each resource that is not deleted from an archive NDJSON file.
+ * Ids are used as local file names, so they must be UUIDs.
+ * @param directory - The archive directory.
+ * @param resourceType - The resource type.
+ * @returns The current, non-deleted resources.
+ */
+function readCurrentVersions<T extends Resource>(directory: string, resourceType: T['resourceType']): WithId<T>[] {
+  const path = join(directory, getFileName(resourceType));
+  if (!existsSync(path)) {
+    return [];
+  }
+  const current = new Map<string, WithId<T>>();
+  for (const line of readFileSync(path, 'utf8').split('\n')) {
+    if (line) {
+      const resource = JSON.parse(line) as WithId<T>;
+      if (!isUUID(resource.id)) {
+        throw new Error(`Invalid id in archive: ${resourceType}/${resource.id}`);
+      }
+      // Versions are in lastUpdated order, so the last one is current
+      current.set(resource.id, resource);
+    }
+  }
+  return [...current.values()].filter((r) => !r.meta?.deleted);
+}
+
+async function forEachConcurrent<T>(items: T[], fn: (item: T) => Promise<void>): Promise<void> {
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      await fn(items[next++]);
+    }
+  };
+  await Promise.all(Array.from({ length: BINARY_CONCURRENCY }, worker));
 }
 
 async function runJob(medplum: MedplumClient, url: URL, body: Parameters): Promise<AsyncJob> {

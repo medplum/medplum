@@ -12,6 +12,17 @@ import { createMedplumClient } from './util/client';
 vi.mock('./util/client');
 
 const ndjson = '{"resourceType":"Patient","id":"1"}\n';
+const binaryId = '00000000-0000-4000-8000-000000000001';
+const deletedBinaryId = '00000000-0000-4000-8000-000000000002';
+const emptyBinaryId = '00000000-0000-4000-8000-000000000003';
+const binaryNdjson = [
+  { resourceType: 'Binary', id: binaryId, contentType: 'text/plain', meta: { versionId: 'v1' } },
+  { resourceType: 'Binary', id: emptyBinaryId, contentType: 'text/plain', meta: { versionId: 'v4' } },
+  { resourceType: 'Binary', id: deletedBinaryId, contentType: 'text/plain', meta: { versionId: 'v2' } },
+  { resourceType: 'Binary', id: deletedBinaryId, meta: { versionId: 'v3', deleted: true } },
+]
+  .map((r) => JSON.stringify(r) + '\n')
+  .join('');
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': ContentType.FHIR_JSON, ...headers } });
@@ -55,6 +66,13 @@ describe('CLI project archive and restore', () => {
                 { name: 'url', valueUri: 'Binary/b1' },
               ],
             },
+            {
+              name: 'output',
+              part: [
+                { name: 'type', valueCode: 'Binary' },
+                { name: 'url', valueUri: 'Binary/b3' },
+              ],
+            },
           ],
         },
       },
@@ -82,11 +100,27 @@ describe('CLI project archive and restore', () => {
       if (url.endsWith('/Binary/b1')) {
         return method === 'DELETE' ? json({}) : new Response(ndjson, { headers: { 'content-type': 'text/plain' } });
       }
+      if (url.endsWith('/Binary/b3')) {
+        return method === 'DELETE' ? json({}) : new Response(binaryNdjson);
+      }
+      if (url.endsWith(`/Binary/${binaryId}`)) {
+        return new Response('hello');
+      }
+      if (url.includes(`/Binary/${binaryId}/$presigned-url?upload=true`)) {
+        return json({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'url', valueUri: 'https://storage.example.com/x' }],
+        });
+      }
+      if (url === 'https://storage.example.com/x') {
+        return new Response(null, { status: 200 });
+      }
       if (url.includes('/Binary?')) {
         return json({ resourceType: 'Binary', id: 'b2', contentType: 'application/fhir+ndjson' }, 201);
       }
       return json({ resourceType: 'OperationOutcome', issue: [] }, 404);
     });
+    vi.stubGlobal('fetch', fetch);
     const medplum = new MedplumClient({ fetch, baseUrl: 'https://example.com/' });
     (createMedplumClient as Mock).mockResolvedValue(medplum);
     console.log = vi.fn();
@@ -98,14 +132,19 @@ describe('CLI project archive and restore', () => {
   });
 
   test('Archive then restore', async () => {
-    await main(['node', 'index.js', 'project', 'archive', directory, '--project', 'p1', '--cleanup']);
+    await main(['node', 'index.js', 'project', 'archive', directory, '--project', 'p1', '--cleanup', '--binaries']);
 
     expect(readFileSync(join(directory, 'Patient.ndjson'), 'utf8')).toBe(ndjson);
     const manifest = JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8')) as Parameters;
     expect(manifest.parameter?.[1].part?.[1].valueUri).toBe('Patient.ndjson');
     expect(requests.some((r) => r.method === 'DELETE' && r.url.endsWith('/Binary/b1'))).toBe(true);
+    // Only the current, non-deleted Binary is downloaded
+    expect(readFileSync(join(directory, 'binaries', binaryId), 'utf8')).toBe('hello');
+    expect(requests.some((r) => r.url.endsWith(`/Binary/${deletedBinaryId}`))).toBe(false);
+    // A Binary with no stored content is skipped with a warning instead of failing the archive
+    expect(console.log).toHaveBeenCalledWith('Warning: 1 Binary resources have no content on the server');
 
-    await main(['node', 'index.js', 'project', 'restore', directory]);
+    await main(['node', 'index.js', 'project', 'restore', directory, '--binaries']);
 
     const upload = requests.find((r) => r.url.includes('/Binary?'));
     expect(Buffer.from(upload?.body as Uint8Array).toString()).toBe(ndjson);
@@ -113,6 +152,42 @@ describe('CLI project archive and restore', () => {
     const restored = JSON.parse(restore?.body as string) as Parameters;
     expect(restored.parameter?.[1].part?.[1].valueUri).toBe('Binary/b2');
     expect(console.log).toHaveBeenCalledWith('Warning: Enable bots');
+    const put = requests.find((r) => r.url === 'https://storage.example.com/x');
+    expect(put?.method).toBe('PUT');
+    expect(Buffer.from(put?.body as Uint8Array).toString()).toBe('hello');
+  });
+
+  test('Deploy bots', async () => {
+    const bots = [
+      { resourceType: 'Bot', id: '00000000-0000-4000-8000-00000000000a', name: 'ok', executableCode: {} },
+      { resourceType: 'Bot', id: '00000000-0000-4000-8000-00000000000b', name: 'fails', executableCode: {} },
+      { resourceType: 'Bot', id: '00000000-0000-4000-8000-00000000000c', name: 'never deployed' },
+    ];
+    fetch.mockImplementation(async (url: string) => {
+      requests.push({ method: 'POST', url });
+      return url.includes('0000000a/$deploy')
+        ? json({ resourceType: 'OperationOutcome', issue: [] })
+        : json(
+            {
+              resourceType: 'OperationOutcome',
+              issue: [{ severity: 'error', code: 'invalid', details: { text: 'Bots not enabled' } }],
+            },
+            400
+          );
+    });
+    writeFileSync(join(directory, 'Bot.ndjson'), bots.map((b) => JSON.stringify(b)).join('\n'));
+
+    await expect(main(['node', 'index.js', 'project', 'deploy-bots', directory])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(requests.map((r) => r.url.split('/').slice(-2).join('/'))).toStrictEqual([
+      '00000000-0000-4000-8000-00000000000a/$deploy',
+      '00000000-0000-4000-8000-00000000000b/$deploy',
+    ]);
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to deploy Bot/00000000-0000-4000-8000-00000000000b (fails): Bots not enabled')
+    );
+    expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining('1 Bots failed to deploy'));
   });
 
   test('Failed job and unsafe manifest', async () => {
