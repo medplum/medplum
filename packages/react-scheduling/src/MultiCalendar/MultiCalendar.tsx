@@ -92,6 +92,13 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
         omitZeroMinute: true,
         meridiem: 'lowercase',
       }}
+      views={{
+        timeGridThreeDay: {
+          type: 'timeGrid',
+          duration: { days: 3 },
+        },
+      }}
+      initialView="timeGridThreeDay"
     />
   );
 }
