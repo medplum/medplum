@@ -348,10 +348,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const { reset: resetDaySearch } = daySearch;
 
   // Compared by instant, so a host building the Date inline each render moves nothing.
-  const startTime = defaultStart?.getTime();
-  const [shownStartTime, setShownStartTime] = useState(startTime);
-  if (shownStartTime !== startTime) {
-    setShownStartTime(startTime);
+  const defaultStartTime = defaultStart?.getTime();
+  const [followedStartTime, setFollowedStartTime] = useState(defaultStartTime);
+  if (followedStartTime !== defaultStartTime) {
+    setFollowedStartTime(defaultStartTime);
     if (defaultStart && !daySearch.isDayOnShow(defaultStart)) {
       setMonth(defaultStart);
       daySearch.chooseDayRange(defaultStart);
@@ -385,23 +385,24 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     }
   }, [searching, onToggleTimeFinder]);
 
-  // Same shape as above: the ref holds the last time reported, so mounting takes down
-  // no marker the host put up, and clearing a time nobody chose reports no drop.
-  const reportedTime = useRef<Appointment | undefined>(undefined);
-  const reportedStartTime = useRef(startTime);
+  // Same shape as above: `lastReportedTime` is the time the host was last told about, so
+  // mounting takes down no marker the host put up, and clearing a time nobody chose
+  // reports no drop. `defaultStartAtLastReport` is the `defaultStart` the host had named then.
+  const lastReportedTime = useRef<Appointment | undefined>(undefined);
+  const defaultStartAtLastReport = useRef(defaultStartTime);
   useEffect(() => {
     // A host moving the day has already moved its marker there, so a time that move
     // dropped is not reported over it.
-    if (reportedStartTime.current !== startTime) {
-      reportedStartTime.current = startTime;
-      reportedTime.current = chosen;
+    if (defaultStartAtLastReport.current !== defaultStartTime) {
+      defaultStartAtLastReport.current = defaultStartTime;
+      lastReportedTime.current = chosen;
       return;
     }
-    if (reportedTime.current !== chosen) {
-      reportedTime.current = chosen;
+    if (lastReportedTime.current !== chosen) {
+      lastReportedTime.current = chosen;
       onChangeTime?.(toRange(chosen));
     }
-  }, [chosen, startTime, onChangeTime]);
+  }, [chosen, defaultStartTime, onChangeTime]);
 
   function toggleFinder(): void {
     setFinding(!finding);
