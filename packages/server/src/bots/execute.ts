@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { resolveId } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import { runInLambda } from '../cloud/aws/execute';
 import { runInLambdaStreaming } from '../cloud/aws/executestreaming';
@@ -34,7 +35,10 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   const execStart = process.hrtime.bigint();
   // The bot runs with runAs's identity in runAs's project, so that is the project entitled to
   // run bots -- not the one that happens to own the bot.
-  const project = await getGlobalSystemRepo().readReference<Project>(runAs.project);
+  const project =
+    request.runAsProject && request.runAsProject.id === resolveId(runAs.project)
+      ? request.runAsProject
+      : await getGlobalSystemRepo().readReference<Project>(runAs.project);
   if (isBotEnabledForProject(project)) {
     if (getConfig().storeBotInput) {
       await writeBotInputToStorage(request);

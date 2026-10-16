@@ -694,7 +694,15 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // Errors in this try/catch are considered to be issues in the client's rest hook or bot
     // and should trigger retries according to the subscription's max attempts
     if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+      await execBot(
+        systemRepo,
+        project,
+        job,
+        subscription,
+        rewrittenResource,
+        job.data.interaction,
+        job.data.requestTime
+      );
     } else {
       await sendRestHook(
         systemRepo,
@@ -907,6 +915,7 @@ function buildRestHookHeaders(
 /**
  * Executes a Bot subscription.
  * @param systemRepo - The system repository.
+ * @param project - The subscription's project.
  * @param job - The subscription job.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
@@ -915,6 +924,7 @@ function buildRestHookHeaders(
  */
 async function execBot(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
@@ -932,15 +942,15 @@ async function execBot(
   // URL should be a Bot reference string
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
-  const project = subscription.meta?.project as string;
+  const projectId = subscription.meta?.project as string;
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;
   let runAs: WithId<ProjectMembership> | undefined;
   if (bot.runAsUser) {
-    runAs = await findProjectMembership(project, requester);
+    runAs = await findProjectMembership(projectId, requester);
   } else {
-    runAs = await findProjectMembership(project, createReference(bot));
+    runAs = await findProjectMembership(projectId, createReference(bot));
   }
 
   if (!runAs) {
@@ -954,6 +964,7 @@ async function execBot(
     subscription,
     bot,
     runAs,
+    runAsProject: project,
     requester,
     input: body,
     contentType: ContentType.FHIR_JSON,
