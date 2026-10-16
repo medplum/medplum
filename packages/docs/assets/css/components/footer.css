@@ -1,5 +1,5 @@
-// Ported from src/theme/Footer/styles.module.css in the medplum repo.
-// Padding, title, and copyright colors come from infima's .footer rules and the --ifm-footer-* variables in main.scss.
+/* Ported from src/theme/Footer/styles.module.css in the medplum repo. */
+/* Padding, title, and copyright colors come from infima's .footer rules and the --ifm-footer-* variables in main.scss. */
 
 .footer {
   background-color: var(--oc-black);

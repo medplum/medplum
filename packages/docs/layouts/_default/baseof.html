@@ -18,11 +18,11 @@
     <meta name="docsearch-bundle" content="{{ $docsearchJs.RelPermalink }}" />
     {{ $infima := resources.Get "infima.css" }}
     {{ $openColor := resources.Get "open-color.css" }}
-    {{ $opts := dict "transpiler" "dartsass" }}
-    {{ $scss := resources.Get "css/main.scss" | toCSS $opts }}
+    {{- /* Bundles main.css's @imports and flattens CSS nesting for older browsers */}}
+    {{ $site := resources.Get "css/main.css" | css.Build (dict "target" (slice "chrome100" "edge100" "firefox100" "safari15") "externals" (slice "/*")) }}
     {{ $generated := resources.Get "css/generated/landing.css" }}
     {{ $docsearch := slice (resources.Get "docsearch/_variables.css") (resources.Get "docsearch/modal.css") }}
-    {{ $style := slice $infima $openColor | append $docsearch | append (slice $scss $generated) | resources.Concat "css/bundle.css" | minify | fingerprint }}
+    {{ $style := slice $infima $openColor | append $docsearch | append (slice $site $generated) | resources.Concat "css/bundle.css" | minify | fingerprint }}
     <link
       rel="stylesheet"
       href="{{ $style.RelPermalink }}"

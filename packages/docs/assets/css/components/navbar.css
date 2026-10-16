@@ -280,7 +280,7 @@ body.mobile-nav-show-secondary {
   cursor: pointer;
 }
 
-// The docs sidebar, moved in from <aside> while the drawer is open
+/* The docs sidebar, moved in from <aside> while the drawer is open */
 .mobile-nav-docs {
   .sidebar-viewport {
     position: static;

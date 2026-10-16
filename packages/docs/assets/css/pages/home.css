@@ -1,13 +1,13 @@
-// Home page (layouts/index.html).
-// Ported from the CSS modules in packages/docs/src/components/landing/ and src/css/landing-tokens.css in the medplum repo.
-// The landing-*, build-dropdown, and compliance-badges styles are written to be reused by the products and solutions pages.
+/* Home page (layouts/index.html). */
+/* Ported from the CSS modules in packages/docs/src/components/landing/ and src/css/landing-tokens.css in the medplum repo. */
+/* The landing-*, build-dropdown, and compliance-badges styles are written to be reused by the products and solutions pages. */
 
 :root {
   --layout-max-width: 80rem;
   --layout-padding: 2rem;
   --layout-padding-md: 1.5rem;
   --layout-padding-sm: 1rem;
-  // The gutter for the current viewport, resolved from the three widths above (as in Docusaurus custom.css)
+  /* The gutter for the current viewport, resolved from the three widths above (as in Docusaurus custom.css) */
   --layout-gutter: var(--layout-padding);
 
   --landing-font-display: 'Poppins', sans-serif;
@@ -44,20 +44,6 @@
   }
 }
 
-// Shared body copy treatment used by feature cards, stats, and testimonials
-@mixin landing-body-text {
-  font-size: 1rem;
-  color: var(--oc-gray-7);
-  line-height: 140%;
-  font-family: system-ui;
-  font-feature-settings: normal;
-  text-wrap-style: pretty;
-  letter-spacing: 0.005em;
-
-  [data-theme='dark'] & {
-    color: var(--oc-gray-4);
-  }
-}
 
 /* Page frame for the full-width marketing pages (data-page is set in baseof.html and main.mjs) */
 body[data-page] main#swup {
@@ -312,7 +298,7 @@ body[data-page] .footer {
     transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
     visibility 250ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  // Invisible bridge over the gap between trigger and menu, so moving the mouse down doesn't close it
+  /* Invisible bridge over the gap between trigger and menu, so moving the mouse down doesn't close it */
   &::before {
     content: '';
     position: absolute;
@@ -338,7 +324,7 @@ body[data-page] .footer {
   transform: rotate(180deg);
 }
 
-// Mirror the trigger's hover treatment while the menu is open
+/* Mirror the trigger's hover treatment while the menu is open */
 .build-dropdown:hover .landing-button-white,
 .build-dropdown:focus-within .landing-button-white,
 .build-dropdown.is-open .landing-button-white {
@@ -557,7 +543,7 @@ body[data-page] .footer {
     width: 100%;
   }
 
-  // Covers a caller-supplied trigger class too (e.g. the products CTA), as in BuildDropdown.module.css
+  /* Covers a caller-supplied trigger class too (e.g. the products CTA), as in BuildDropdown.module.css */
   .build-dropdown > .build-dropdown-trigger {
     width: 100%;
   }
@@ -724,7 +710,17 @@ body[data-page] .footer {
   }
 
   p {
-    @include landing-body-text;
+    font-size: 1rem;
+    color: var(--oc-gray-7);
+    line-height: 140%;
+    font-family: system-ui;
+    font-feature-settings: normal;
+    text-wrap-style: pretty;
+    letter-spacing: 0.005em;
+
+    [data-theme='dark'] & {
+      color: var(--oc-gray-4);
+    }
     margin-bottom: 0;
   }
 }
@@ -778,7 +774,7 @@ body[data-page] .footer {
   color: var(--oc-orange-3);
 }
 
-// Feature "Read more" link (actionButton in FeatureGrid.module.css), used by the docs home
+/* Feature "Read more" link (actionButton in FeatureGrid.module.css), used by the docs home */
 .landing-feature-action-button {
   display: flex;
   margin-top: 0.25rem;
@@ -799,7 +795,7 @@ body[data-page] .footer {
 /* Solution accordion: native <details name> exclusive accordion */
 
 .solution-accordion {
-  // Lets ::details-content transition to/from block-size: auto (Chromium; other browsers open instantly)
+  /* Lets ::details-content transition to/from block-size: auto (Chromium; other browsers open instantly) */
   interpolate-size: allow-keywords;
   border-radius: 16px;
   padding: 0 24px;
@@ -1209,7 +1205,17 @@ body[data-page] .footer {
 }
 
 .stats-bento-description {
-  @include landing-body-text;
+  font-size: 1rem;
+  color: var(--oc-gray-7);
+  line-height: 140%;
+  font-family: system-ui;
+  font-feature-settings: normal;
+  text-wrap-style: pretty;
+  letter-spacing: 0.005em;
+
+  [data-theme='dark'] & {
+    color: var(--oc-gray-4);
+  }
   margin: 0;
   text-wrap-style: balance;
 }
@@ -1414,7 +1420,17 @@ body[data-page] .footer {
   transition: all var(--landing-transition);
 
   p {
-    @include landing-body-text;
+    font-size: 1rem;
+    color: var(--oc-gray-7);
+    line-height: 140%;
+    font-family: system-ui;
+    font-feature-settings: normal;
+    text-wrap-style: pretty;
+    letter-spacing: 0.005em;
+
+    [data-theme='dark'] & {
+      color: var(--oc-gray-4);
+    }
     margin: 0;
   }
 

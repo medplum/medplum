@@ -1,5 +1,5 @@
-// Algolia DocSearch modal (assets/js/components/search.mjs) in Medplum colors. DocSearch sets its own dark theme
-// with :root[data-theme='dark'], so match that selector; --ifm-color-primary is already themed.
+/* Algolia DocSearch modal (assets/js/components/search.mjs) in Medplum colors. DocSearch sets its own dark theme */
+/* with :root[data-theme='dark'], so match that selector; --ifm-color-primary is already themed. */
 :root,
 :root[data-theme='dark'] {
   --docsearch-primary-color: var(--ifm-color-primary);
@@ -8,7 +8,7 @@
   --docsearch-font-family: var(--ifm-font-family-base);
 }
 
-// DocSearch renders its own search button here; the navbar has ours
+/* DocSearch renders its own search button here; the navbar has ours */
 #docsearch-container {
   display: none;
 }

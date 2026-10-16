@@ -1,4 +1,4 @@
-// FHIR reference pages (layouts/partials/fhir), ported from the Docusaurus ResourceTables component
+/* FHIR reference pages (layouts/partials/fhir), ported from the Docusaurus ResourceTables component */
 .fhir-elements,
 .fhir-search-params {
   td {
@@ -48,7 +48,7 @@
   white-space: pre-wrap;
 }
 
-// Section pages listing their children, like a Docusaurus generated-index
+/* Section pages listing their children, like a Docusaurus generated-index */
 .generated-index {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

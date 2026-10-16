@@ -14,11 +14,11 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "rimraf public && node scripts/hugo.mjs --minify",
+    "build": "rimraf public && hugo --minify",
     "build:guides": "node scripts/build-decision-guides.mjs",
-    "dev": "node scripts/hugo.mjs server --buildDrafts --buildFuture --noHTTPCache",
+    "dev": "hugo server --buildDrafts --buildFuture --noHTTPCache",
     "preview": "http-server public -c-1",
-    "pxtorem": "postcss assets/**/*.scss --replace --no-map"
+    "pxtorem": "postcss \"assets/css/**/*.css\" \"!assets/css/generated/**\" --replace --no-map"
   },
   "prettier": {
     "printWidth": 160,
@@ -39,9 +39,7 @@
     "postcss": "8.5.30",
     "postcss-cli": "12.0.0",
     "postcss-pxtorem": "6.1.0",
-    "postcss-scss": "4.0.9",
     "rimraf": "6.1.3",
-    "sass-embedded": "1.105.1",
     "swup": "4.10.0"
   }
 }
