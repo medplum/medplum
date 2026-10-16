@@ -1,7 +1,6 @@
 ---
 id: privacy
 title: Privacy Policy
-slug: /privacy
 ---
 
 Welcome to Medplum! Physicians and healthcare professionals who wish to use Medplum's software and services ("Licensed Application") are required to register for the service and provide certain registration information to Medplum. Accordingly, we have developed this Privacy Policy to describe our policies and procedures with respect to such information, as well as additional information that you provide to Medplum from time to time. This Privacy Policy applies only to registration data that is provided by the physicians who register for and use the Licensed Application. It does not apply to the content of the data and files that are transmitted through the Licensed Application. The security of the messages that are transmitted through our Licensed Application is governed by the HIPAA Security Rule.

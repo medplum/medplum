@@ -1,7 +1,6 @@
 ---
 id: pricing
 title: Pricing
-slug: /pricing
 layout: pricing
 standalone: true
 ---

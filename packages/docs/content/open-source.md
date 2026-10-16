@@ -1,7 +1,6 @@
 ---
 id: open-source
 title: Why Medplum Is Open Source
-slug: /open-source
 ---
 
 Medplum exists because healthcare infrastructure needs to be more open, more interoperable, and more developer-friendly.

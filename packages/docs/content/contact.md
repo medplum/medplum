@@ -1,7 +1,6 @@
 ---
 id: contact
 title: Contact Us
-slug: /contact
 ---
 
 ## Need Support?

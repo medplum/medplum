@@ -1,7 +1,6 @@
 ---
 id: security
 title: Security
-slug: /security
 ---
 
 ## Security as a Company Value

@@ -1,7 +1,6 @@
 ---
 id: terms
 title: Terms of Service
-slug: /terms
 ---
 
 ## Introduction and Eligibility

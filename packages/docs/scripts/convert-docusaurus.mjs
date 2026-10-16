@@ -219,6 +219,11 @@ function convertFrontMatter(page, body) {
     if (page.section === 'docs' && /^slug:\s*['"]?\//.test(line)) {
       continue;
     }
+    // Docusaurus pages ignore slug (their URL is their file path), and in Hugo a slug like "/careers" on a section
+    // moves its pages to the site root
+    if (page.section === 'pages' && line.startsWith('slug:')) {
+      continue;
+    }
     // Docs and blog tags are separate taxonomies, as in Docusaurus (see hugo.toml)
     if (line.startsWith('tags:') && (page.section === 'docs' || page.section === 'blog')) {
       line = `${page.section}_tags:` + line.slice('tags:'.length);

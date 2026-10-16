@@ -1,7 +1,6 @@
 ---
 id: careers
 title: Careers
-slug: /careers
 ---
 
 ![Medplum is hiring](/img/hiring.webp)
