@@ -63,6 +63,10 @@ const CACHE_CONTROL_NO_CACHE = 'no-cache';
 
 async function main() {
   const [_node, _script, sourcePath, destPath] = process.argv;
+  // Optional: Cache-Control for .html files, e.g. for a static site rather than an SPA whose index.html must not be cached
+  const htmlCacheControl =
+    process.argv.find((arg) => arg.startsWith('--html-cache-control='))?.slice('--html-cache-control='.length) ??
+    CACHE_CONTROL_NO_CACHE;
 
   if (!sourcePath) {
     console.error('Error: Source path is required as the first argument.');
@@ -115,7 +119,7 @@ async function main() {
       Key: s3Key,
       Body: fileStream,
       ContentType: mimeTypes[ext] || 'application/octet-stream',
-      CacheControl: immutableFileTypes.includes(ext) ? CACHE_CONTROL_IMMUTABLE : CACHE_CONTROL_NO_CACHE,
+      CacheControl: getCacheControl(ext, htmlCacheControl),
     });
     console.log(`Prepared upload for ${relativePath} => ${s3Key} (${fileStat.size} bytes)`);
   }
@@ -123,10 +127,18 @@ async function main() {
   console.log('Uploading immutable files...');
   await uploadAll(uploadRequests.filter((r) => r.CacheControl === CACHE_CONTROL_IMMUTABLE));
 
-  console.log('Uploading no-cache files...');
-  await uploadAll(uploadRequests.filter((r) => r.CacheControl === CACHE_CONTROL_NO_CACHE));
+  // Everything else after the immutable files, so pages never reference assets that aren't uploaded yet
+  console.log('Uploading remaining files...');
+  await uploadAll(uploadRequests.filter((r) => r.CacheControl !== CACHE_CONTROL_IMMUTABLE));
 
   console.log('Deployment complete.');
+}
+
+function getCacheControl(ext, htmlCacheControl) {
+  if (immutableFileTypes.includes(ext)) {
+    return CACHE_CONTROL_IMMUTABLE;
+  }
+  return ext === '.html' ? htmlCacheControl : CACHE_CONTROL_NO_CACHE;
 }
 
 async function getFiles(dir) {
