@@ -34,6 +34,8 @@ export interface MultiCalendarProps {
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
+  /** Height in pixels of each 30-minute row in the week and day views. */
+  slotMinHeight?: number;
 }
 
 /**

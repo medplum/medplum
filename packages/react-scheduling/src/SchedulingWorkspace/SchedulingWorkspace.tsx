@@ -64,6 +64,9 @@ const RESOURCE_OPTIONS = {
   appointmentStatuses: ['proposed', 'pending', 'booked', 'arrived', 'fulfilled', 'noshow', 'checked-in', 'waitlist'],
 } as const;
 
+// Tall enough that a 15-minute appointment shows both its service type and its patient.
+const SLOT_MIN_HEIGHT = 64;
+
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
   /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
@@ -447,6 +450,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         )}
         <MultiCalendar
           className={classes.multiCalendar}
+          slotMinHeight={SLOT_MIN_HEIGHT}
           sources={sources}
           onRangeChange={setRange}
           loading={resourcesLoading || servicesPending}
