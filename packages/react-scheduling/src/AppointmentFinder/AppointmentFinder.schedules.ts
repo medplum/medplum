@@ -6,7 +6,7 @@ import {
   assertNever,
   getDisplayString,
   getReferenceString,
-  isActorInactive,
+  isScheduleActorInactive,
   isDefined,
   lazy,
   SCHEDULING_SERVICE_TYPE_SYSTEM,
@@ -239,7 +239,7 @@ export function toScheduleCandidate(
   }
 
   const actorResource = actors.get(referenceStr);
-  if (actorResource && isActorInactive(actorResource)) {
+  if (actorResource && isScheduleActorInactive(actorResource)) {
     return undefined;
   }
 

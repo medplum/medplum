@@ -10,7 +10,7 @@ import {
   getExtension,
   getExtensionValue,
   getReferenceString,
-  isActorInactive,
+  isScheduleActorInactive,
   isDefined,
   isResource,
   MEDPLUM_VERSION,
@@ -592,7 +592,7 @@ export async function assertActorsActive(repo: Repository, schedules: WithPath<W
   );
   const actors = await repo.getSystemRepo().readReferences(refs);
   actors.forEach((actor, idx) => {
-    if (!isResource(actor) || !isActorInactive(actor)) {
+    if (!isResource(actor) || !isScheduleActorInactive(actor)) {
       return;
     }
     const visibleProjects = repo.getSearchProjectIds(actor.resourceType);

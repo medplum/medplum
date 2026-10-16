@@ -8,7 +8,7 @@ import {
   deepClone,
   deepEquals,
   extractServiceTypeReferences,
-  isActorInactive,
+  isScheduleActorInactive,
   resolveId,
   SchedulingParametersURI,
   serviceTypeIncludesAllServices,
@@ -148,7 +148,7 @@ export function buildScheduleDraft(
   }
   let draft: Schedule = stored
     ? deepClone(stored)
-    : { resourceType: 'Schedule', active: !isActorInactive(actor), actor: [createReference(actor)] };
+    : { resourceType: 'Schedule', active: !isScheduleActorInactive(actor), actor: [createReference(actor)] };
 
   if (stored && fields.active !== initial.active) {
     draft.active = fields.active;

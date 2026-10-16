@@ -5,7 +5,7 @@ import {
   extractServiceTypeReferences,
   getDisplayString,
   getReferenceString,
-  isActorInactive,
+  isScheduleActorInactive,
   isDefined,
   resolveId,
   serviceTypeIncludesAllServices,
@@ -119,7 +119,7 @@ export function withStoredService(
  * @returns Its status.
  */
 export function getActorStatus(resource: ConfigurableActorResource, scheduleActive: boolean | undefined): ConfigStatus {
-  if (isActorInactive(resource)) {
+  if (isScheduleActorInactive(resource)) {
     return 'inactive';
   }
   return scheduleActive === false ? 'schedule-inactive' : 'active';
@@ -194,7 +194,7 @@ export function buildActorItems(
       id: actor.resource.id,
       label: getDisplayString(actor.resource),
       selected: isActorSelected(actor, selection),
-      inactive: isActorInactive(actor.resource),
+      inactive: isScheduleActorInactive(actor.resource),
       notices: getActorNotices(actor),
     }))
     .filter((item) => matchesFilter(item.label, filter));
