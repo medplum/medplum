@@ -25,10 +25,12 @@ import {
   openTimeFinder,
   patientDetail,
   setupBookingClient,
+  typedTimeField,
 } from '../test-utils/bookingForm';
-import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
+import { formatZonedDateTimeInput } from './AppointmentFinder.times';
 
 installAutocompleteTimers();
 
@@ -332,6 +334,105 @@ describe('AppointmentBookingForm', () => {
 
         expect(screen.getByText(/Rivera's schedule/)).toBeInTheDocument();
         expect(screen.queryByText(/Okafor's schedule/)).not.toBeInTheDocument();
+      });
+    });
+
+    describe('Starting from a time the host names', () => {
+      // The `$find` stub offers times on the runner's clock, and Dr. Rivera's are read in New York.
+      const OFFERED = new Date(2026, 7, 17, 10, 0, 0);
+
+      test('Books it through $book when the search offers it', async () => {
+        const executeBatch = vi.spyOn(medplum, 'executeBatch');
+        const post = vi.spyOn(medplum, 'post');
+        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        await fillWithoutTime();
+
+        expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(OFFERED, 'America/New_York'));
+        await clickBook();
+        expect(bookCount(post)).toBe(1);
+        expect(executeBatch).not.toHaveBeenCalled();
+      });
+
+      test('Books it through $book with either of two providers in one row', async () => {
+        const executeBatch = vi.spyOn(medplum, 'executeBatch');
+        const post = vi.spyOn(medplum, 'post');
+        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        await chooseImagingService();
+        await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+        await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+        await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+        await openTimeFinder();
+        await clickBook();
+
+        expect(bookCount(post)).toBe(1);
+        expect(executeBatch).not.toHaveBeenCalled();
+      });
+
+      test('Writes it directly once its length differs from the one offered', async () => {
+        const executeBatch = vi
+          .spyOn(medplum, 'executeBatch')
+          .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
+        const post = vi.spyOn(medplum, 'post');
+        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        await fillWithoutTime();
+        fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+        await clickBook();
+
+        expect(bookCount(post)).toBe(0);
+        expect(executeBatch).toHaveBeenCalledTimes(1);
+      });
+
+      test('Looks up conflicts only for a time the search does not offer', async () => {
+        const searchResources = vi.spyOn(medplum, 'searchResources');
+        const slotSearches = (): number => searchResources.mock.calls.filter(([type]) => type === 'Slot').length;
+        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        await fillWithoutTime();
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1000);
+        });
+        expect(slotSearches()).toBe(0);
+
+        fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1000);
+        });
+        expect(slotSearches()).toBeGreaterThan(0);
+      });
+
+      test('Holds the conflict lookup until the search is back', async () => {
+        const answer = medplum.get.bind(medplum);
+        let release = (): void => undefined;
+        const held = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        vi.spyOn(medplum, 'get').mockImplementation((async (url: string | URL, options?: RequestInit) => {
+          if (String(url).includes('find')) {
+            await held;
+          }
+          return answer(url, options);
+        }) as MedplumClient['get']);
+        const searchResources = vi.spyOn(medplum, 'searchResources');
+        const slotSearches = (): number => searchResources.mock.calls.filter(([type]) => type === 'Slot').length;
+        setup(medplum, { canBypassSchedulingRules: true });
+        await fillWithoutTime();
+        typeTime('2026-08-17T14:07', '45');
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1000);
+        });
+        expect(slotSearches()).toBe(0);
+
+        await act(async () => {
+          release();
+          await vi.advanceTimersByTimeAsync(1000);
+        });
+        expect(slotSearches()).toBeGreaterThan(0);
+      });
+
+      test('Starts empty when that time has passed', async () => {
+        setup(medplum, { canBypassSchedulingRules: true, defaultTime: new Date(2026, 7, 17, 7, 0, 0) });
+        await fillWithoutTime();
+
+        expect(typedTimeField()).toHaveValue('');
       });
     });
   });

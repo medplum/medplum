@@ -177,6 +177,11 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * above the times on offer, for placing a visit the rules would refuse. The read-only
  * time on the left stays where it is; both ways of answering land in it.
  *
+ * **Date & time** starts out on the time clicked to open the form, and follows each later
+ * click, unless that time has passed or a whole day was picked in month view. A typed
+ * time that matches one on offer, start, length and calendars alike, is booked as offered
+ * through `$book`: its button in the search lights up, and no clash is looked up for it.
+ *
  * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
  * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
  * **Ultrasound Imaging** and **Dr. Maya Rivera**, then **Find a time**. Above the times
@@ -195,13 +200,14 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  *
  * > Overlaps blocked time on Exam Room A's schedule
  *
- * Nothing warns while the fields are incomplete, and the warning is taken down the
- * moment any of them changes, because what was looked up was about a different time.
+ * Nothing warns while the fields are incomplete or the search is still out, and the
+ * warning is taken down the moment any of them changes, because what was looked up was
+ * about a different time.
  *
- * Two things happen out of sight. A typed time is written directly as a transaction
- * rather than through `$book`, which would refuse it, and the appointment it writes
- * carries a `SchedulingUnvalidatedBooking` extension — the only durable record that
- * the rules were not applied to it.
+ * Two things happen out of sight. A typed time the search does not offer is written
+ * directly as a transaction rather than through `$book`, which would refuse it, and the
+ * appointment it writes carries a `SchedulingUnvalidatedBooking` extension — the only
+ * durable record that the rules were not applied to it.
  *
  * @returns The story.
  */
