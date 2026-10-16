@@ -28,6 +28,7 @@ import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
+  assertProjectActive,
   defaultQueueOptions,
   getWorkerBullmqConfig,
   isJobActive,
@@ -267,6 +268,8 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
       processor = BatchProcessor.fromState(router, userRepo, req, initialState, position);
       logger.info('resuming from checkpoint', { position, chunkSeq });
     }
+
+    await assertProjectActive(job.data.authState.project.id);
 
     const checkpointEntries = job.data.checkpointEntries ?? defaultCheckpointEntries;
     const checkpointIntervalMs = job.data.checkpointIntervalMs ?? defaultCheckpointIntervalMs;

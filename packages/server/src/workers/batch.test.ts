@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry, Project } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
@@ -213,6 +213,21 @@ describe('Batch worker', () => {
             }),
           }),
         ]);
+      }));
+
+    test('Fails without processing entries when the project has been deactivated', () =>
+      withTestContext(async () => {
+        const { asyncJob, job } = await setupReentrantJob(singleEntryBundle());
+        await systemRepo.updateResource<Project>({ ...authState.project, active: false });
+        try {
+          await expect(execBatchJob(job)).resolves.toBeUndefined();
+        } finally {
+          await systemRepo.updateResource<Project>({ ...authState.project, active: true });
+        }
+
+        const finished = await readAsyncJob(asyncJob.id);
+        expect(finished.status).toStrictEqual('error');
+        expect(finished.output?.parameter).toContainEqual({ name: 'error', valueString: 'Project not active' });
       }));
 
     test('Fails with partial results when a checkpoint write fails after preprocessing', () =>

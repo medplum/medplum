@@ -221,6 +221,45 @@ describe('Subscription Worker', () => {
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
     }));
 
+  test('Does not send subscriptions when project is inactive', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await findAndExecDispatchJob(patient, 'create');
+      const subscriptionQueue = getSubscriptionQueue();
+      const [, jobData] = (subscriptionQueue?.add as Mock).mock.lastCall as [string, SubscriptionJobData];
+      expect(jobData.id).toBe(patient.id);
+
+      const project = await systemRepo.updateResource<Project>({
+        ...(repo.currentProject() as WithId<Project>),
+        active: false,
+      });
+
+      // A job queued before the project was deactivated is dropped
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await execSubscriptionJob({ id: '1', data: jobData, attemptsMade: 0 } as unknown as Job<SubscriptionJobData>);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      // And no new jobs are queued
+      (subscriptionQueue?.add as Mock).mockClear();
+      await addSubscriptionJobs(patient, undefined, { project, interaction: 'update' });
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
   test('Status code 201', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';

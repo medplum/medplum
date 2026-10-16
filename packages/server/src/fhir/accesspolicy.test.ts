@@ -2024,6 +2024,7 @@ describe('AccessPolicy', () => {
       // This should be a no-op
       const check3 = await repo2.updateResource<Project>({
         ...check2,
+        active: false,
         superAdmin: true,
         features: ['bots'],
         systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
@@ -2031,6 +2032,7 @@ describe('AccessPolicy', () => {
       });
       expect(check3.id).toStrictEqual(project.id);
       expect(check3.meta?.versionId).toStrictEqual(check2.meta?.versionId);
+      expect(check3.active).toBeUndefined();
       expect(check3.superAdmin).toBeUndefined();
       expect(check3.features).toBeUndefined();
       expect(check3.systemSetting).toBeUndefined();

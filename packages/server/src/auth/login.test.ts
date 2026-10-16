@@ -548,6 +548,31 @@ describe('Login', () => {
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
+  test('Inactive project', async () => {
+    const email = `inactive-project-${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { project: inactiveProject } = await createTestProject();
+    const { project: activeProject } = await createTestProject();
+    await withTestContext(async () => {
+      for (const p of [inactiveProject, activeProject]) {
+        await inviteUser({ project: p, resourceType: 'Practitioner', firstName: 'T', lastName: 'U', email, password });
+      }
+    });
+    await getGlobalSystemRepo().updateResource({ ...inactiveProject, active: false });
+
+    // The inactive project is hidden, so the remaining one is chosen without prompting
+    const res1 = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.code).toBeDefined();
+
+    const res2 = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ email, password, scope: 'openid', projectId: inactiveProject.id });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.issue[0].details.text).toBe('Project not active');
+  });
+
   test('Success with no origin', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: corsClient.id,
