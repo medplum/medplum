@@ -34,7 +34,8 @@ capitalizeListTitles = false
     [markup.goldmark.renderer]
       unsafe = true
   [markup.highlight]
-    style = 'github'
+    # CSS classes instead of inline styles; the colors are in assets/css/components/chroma.css
+    noClasses = false
 
 [[module.mounts]]
   source = "assets"

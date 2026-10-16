@@ -2,36 +2,19 @@
 <link rel="icon" href="/favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="/img/medplum-apple-touch-icon.png" />
 <link rel="manifest" href="/manifest.json" />
-{{ partial "docsearch-meta.html" . }}
+{{ partial "docsearch-meta.html" .page }}
 
 {{- /* Cookie consent */}}
 <script src="https://cdn-cookieyes.com/client_data/11362a9d5311bc6aa21c5f47d05599c6/script.js"></script>
 
-{{- /* Google Analytics, only in production builds, not hugo server (including npm run preview); main.mjs reports swup navigations */}}
-{{- if and hugo.IsProduction (not hugo.IsServer) }}
-  {{- $gaId := "G-SHW0ZNT27G" }}
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() {
-      dataLayer.push(arguments);
-    }
-    gtag('js', new Date());
-    gtag('config', '{{ $gaId }}');
-  </script>
+{{- /* Google Analytics, only in production builds, not hugo server (including npm run preview); assets/js/head.mjs sets
+  up gtag, and main.mjs reports swup navigations */}}
+{{- with .gaId }}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ . }}"></script>
 {{- end }}
 
-{{- /* Kapa AI "Ask Us" widget, docked as a right-hand sidebar (see assets/js/components/kapa.mjs) */}}
-{{- $kapaSidebarWidth := "400px" }}
-<style>
-  :root {
-    --kapa-sidebar-width: {{ $kapaSidebarWidth | safeCSS }};
-  }
-</style>
-<script>
-  {{- /* Queues Kapa API calls made before the async widget bundle loads */}}
-  (function(){if(window.Kapa)return;var i=function(){i.c(arguments)};i.q=[];i.c=function(a){i.q.push(a)};window.Kapa=i})();
-</script>
+{{- /* Kapa AI "Ask Us" widget, docked as a right-hand sidebar (see assets/js/components/kapa.mjs). Its API queue is set
+  up in assets/js/head.mjs. Keep data-modal-size in sync with --kapa-sidebar-width in main.css. */}}
 <script
   async
   src="https://widget.kapa.ai/kapa-widget.bundle.js"
@@ -54,5 +37,5 @@
   data-font-family="'Poppins', sans-serif"
   data-color-scheme-selector="[data-theme='dark']"
   data-view-mode="sidebar"
-  data-modal-size="{{ $kapaSidebarWidth }}"
+  data-modal-size="400px"
 ></script>

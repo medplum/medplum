@@ -1,18 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script>
-      (function () {
-        var theme = localStorage.getItem('theme');
-        if (theme) document.documentElement.setAttribute('data-theme', theme);
-      })();
-    </script>
     <meta charset="utf-8" />
+    {{- /* Theme, Kapa, and Google Analytics setup that must run before the page renders (see assets/js/head.mjs) */}}
+    {{- $gaId := cond (and hugo.IsProduction (not hugo.IsServer)) "G-SHW0ZNT27G" "" }}
+    {{ $headJs := resources.Get "js/head.mjs" | js.Build (dict "params" (dict "gaId" $gaId)) | minify | fingerprint }}
+    <script src="{{ $headJs.RelPermalink }}" integrity="{{ $headJs.Data.Integrity }}"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ block "title" . }}{{ .Title }}{{ end }} | Medplum</title>
-    {{ partial "head-tags.html" . }}
+    {{ partial "head-tags.html" (dict "page" . "gaId" $gaId) }}
     {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
-    <script src="{{ $js.RelPermalink }}" defer></script>
+    <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
     {{- /* Loaded by assets/js/components/search.mjs when search is first opened */}}
     {{ $docsearchJs := resources.Get "js/docsearch.mjs" | js.Build (dict "format" "esm") | minify | fingerprint }}
     <meta name="docsearch-bundle" content="{{ $docsearchJs.RelPermalink }}" />

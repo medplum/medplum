@@ -15,6 +15,16 @@
   overflow: auto;
 }
 
+/* Chroma's wrapper (the <pre>, or a <div> around the line number table) used to carry these as inline styles; a grid
+   stretches highlighted lines across the full scroll width */
+.chroma {
+  tab-size: 4;
+
+  &:has(.hl) {
+    display: grid;
+  }
+}
+
 .highlight pre code {
   padding: 0;
 }

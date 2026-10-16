@@ -6,6 +6,7 @@
 @import './components/breadcrumbs.css';
 @import './components/card.css';
 @import './components/card-container.css';
+@import './components/chroma.css';
 @import './components/code.css';
 @import './components/doc-footer.css';
 @import './components/hero.css';
@@ -58,6 +59,9 @@
   --ifm-footer-link-color: var(--oc-gray-0);
   --ifm-footer-link-hover-color: var(--oc-grape-6);
   --ifm-footer-padding-vertical: 80px;
+
+  /* Must match data-modal-size on the Kapa widget script (layouts/partials/head-tags.html) */
+  --kapa-sidebar-width: 400px;
 }
 
 [data-theme='dark'] {
