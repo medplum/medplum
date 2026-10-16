@@ -51,6 +51,11 @@ capitalizeListTitles = false
   docs_tags = "/docs/tags/:slug/"
   blog_tags = "/blog/tags/:slug/"
 
+# Docusaurus's sitemap values (see layouts/_default/sitemap.xml)
+[sitemap]
+  changeFreq = 'weekly'
+  priority = 0.5
+
 [pagination]
   pagerSize = 10
   # Docusaurus has no /page/1 redirect pages
