@@ -57,10 +57,11 @@
                 <div class="main-content">
                   {{ partial "breadcrumbs" . }}
                   {{- /* Mobile copy of the table of contents (shown below 997px); the id is dropped so it stays unique */ -}}
-                  {{ if findRE "<li>" .TableOfContents 1 }}
+                  {{- $toc := partial "toc.html" . }}
+                  {{ if findRE "<li>" $toc 1 }}
                     <details class="toc-mobile">
                       <summary>On this page</summary>
-                      {{ .TableOfContents | replaceRE `id="TableOfContents"` `class="toc-mobile-nav"` | safeHTML }}
+                      {{ $toc | replaceRE `id="TableOfContents"` `class="toc-mobile-nav"` | safeHTML }}
                     </details>
                   {{ end }}
                   {{- /* <article> holds the title and content, which Algolia's default Docusaurus crawler template indexes */}}
@@ -68,7 +69,7 @@
                   {{ partial "doc-footer" . }}
                 </div>
                 <div class="main-toc">
-                  {{ .TableOfContents }}
+                  {{ partial "toc.html" . }}
                 </div>
               </div>
             </div>
