@@ -38,9 +38,9 @@ export interface RescheduleDefaults {
    * Actors the visit is held on whose schedules cannot be offered back, named where they
    * could be read.
    *
-   * A Schedule that is inactive, no longer names the visit type, or is held on an actor
-   * that is inactive or that this form does not book leaves its actors out of the rows above — and a move writes
-   * the actors it is given, so these are about to be dropped off the visit.
+   * A Schedule that is inactive, no longer names the visit type, or is held on an inactive
+   * actor or one this form does not book leaves its actors out of the rows above — and a
+   * move writes the actors it is given, so these are about to be dropped off the visit.
    */
   readonly droppedActors: readonly SchedulingActor[];
   /** References to every Schedule the visit is held on now, including those behind `droppedActors`. */

@@ -6,6 +6,7 @@ import {
   assertNever,
   getDisplayString,
   getReferenceString,
+  isActorInactive,
   isDefined,
   lazy,
   SCHEDULING_SERVICE_TYPE_SYSTEM,
@@ -17,7 +18,6 @@ import {
   BOOKABLE_ACTOR_TYPES,
   getActorType,
   getActorTypeLabel,
-  isActorInactive,
   isBookableActorType,
   REQUIRED_ACTOR_TYPES,
 } from '../actors';

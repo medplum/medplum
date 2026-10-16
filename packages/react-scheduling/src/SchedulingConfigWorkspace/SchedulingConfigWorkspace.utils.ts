@@ -5,6 +5,7 @@ import {
   extractServiceTypeReferences,
   getDisplayString,
   getReferenceString,
+  isActorInactive,
   isDefined,
   resolveId,
   serviceTypeIncludesAllServices,
@@ -12,7 +13,7 @@ import {
 } from '@medplum/core';
 import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
-import { isActorInactive, isBookableActorType } from '../actors';
+import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
 import type { NewActorType } from './ActorPage/actorDraft';
 import type { ConfigPanelItem } from './ConfigPanel/ConfigPanel';

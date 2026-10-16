@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, deepEquals, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
+import { deepClone, deepEquals, getExtensionValue, isActorInactive, TimezoneExtensionURI } from '@medplum/core';
 import type { Device, Location, Practitioner, Reference } from '@medplum/fhirtypes';
-import { isActorInactive } from '../../actors';
 import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM } from '../../constants';
 
 /** A provider, room, or device, as stored or as the page would store it. */

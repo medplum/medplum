@@ -8,13 +8,13 @@ import {
   deepClone,
   deepEquals,
   extractServiceTypeReferences,
+  isActorInactive,
   resolveId,
   SchedulingParametersURI,
   serviceTypeIncludesAllServices,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
-import { isActorInactive } from '../../actors';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActorResource } from '../../configSearch';
 import type { SchedulingParameterValues } from '../../parameterValues';
