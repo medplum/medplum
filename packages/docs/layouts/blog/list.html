@@ -1,5 +1,5 @@
 {{ define "main" }}
-  {{ if not .Params.hideTitle }}<h1>{{ .Title }}</h1>{{ end }}
+  {{- /* No visible title, as on Docusaurus; "Blog" stays in the <title> */}}
   {{ $paginator := .Paginate (partial "blog/sort-posts.html" .Pages) }}
   {{ range $paginator.Pages }}
     {{ partial "blog/summary.html" . }}
