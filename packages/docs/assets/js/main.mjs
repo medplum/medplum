@@ -1,3 +1,4 @@
+import SwupPreloadPlugin from '@swup/preload-plugin';
 import Swup from 'swup';
 import { destroyAnimatedCircles, initAnimatedCircles } from './components/animated-circle.mjs';
 import { initBuildDropdowns } from './components/build-dropdown.mjs';
@@ -135,6 +136,8 @@ export const swup = new Swup({
   containers: ['#swup'],
   animationSelector: false,
   animateHistoryBrowsing: false,
+  // Fetch a page when its link is hovered or touched, so the click renders from swup's cache (as Docusaurus does)
+  plugins: [new SwupPreloadPlugin()],
 });
 
 swup.hooks.on('visit:start', closeMobileNav);

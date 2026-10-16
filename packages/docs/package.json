@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@medplum/core": "5.2.5",
+    "@swup/preload-plugin": "3.2.12",
     "@tabler/icons": "3.49.0",
     "http-server": "14.1.1",
     "hugo-bin": "0.166.0",
