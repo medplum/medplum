@@ -7,7 +7,7 @@
 {{- end -}}
 {{- range $letter, $terms := $groups }}
   <section class="tag-index-group">
-    <h2>{{ $letter }}</h2>
+    <h2 id="{{ $letter }}">{{ $letter }}</h2>
     <ul class="tag-list">
       {{- range $terms }}<li><a class="tag" href="{{ partial "href" .Page }}">{{ .Page.Title }}<span class="tag-count">{{ .Count }}</span></a></li>{{ end -}}
     </ul>

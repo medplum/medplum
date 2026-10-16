@@ -11,7 +11,7 @@
   {{- end -}}
   {{ range $years }}
     <section class="blog-archive-year">
-      <h2>{{ . }}</h2>
+      <h2 id="{{ . }}">{{ . }}</h2>
       <ul>
         {{ range collections.Reverse (index $byYear .) }}
           <li><a href="{{ partial "href" . }}">{{ .Date.Format "January 2" }} - {{ .Title }}</a></li>

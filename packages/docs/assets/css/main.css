@@ -313,6 +313,23 @@ h6 {
   margin: var(--ifm-heading-margin-top) 0 var(--ifm-heading-margin-bottom) 0;
 }
 
+/* Heading self-links (layouts/_markup/render-heading.html), shown while the heading is hovered, as on Docusaurus */
+.hash-link {
+  opacity: 0;
+  padding-left: 0.5rem;
+  transition: opacity 0.2s;
+  user-select: none;
+
+  &::before {
+    content: '#';
+  }
+}
+
+.hash-link:focus,
+*:hover > .hash-link {
+  opacity: 1;
+}
+
 h1 {
   font-size: 44px;
   font-style: normal;
