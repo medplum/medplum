@@ -982,6 +982,31 @@ describe('Appointment/:id/$reschedule', () => {
     expect(stored.slot?.map((ref) => ref.reference)).toStrictEqual(booked.slot?.map((ref) => ref.reference));
   });
 
+  test('rejects rescheduling onto a schedule whose actor is inactive', async () => {
+    const room = await makeRoom();
+    const roomSchedule = await makeSchedule(room);
+    const start = '2026-04-21T16:00:00.000Z'; // Tue 11am EST
+    const end = '2026-04-21T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [roomSchedule] }));
+    await systemRepo.updateResource<Location>({ ...room, status: 'inactive' });
+
+    const response = await reschedule(booked.id as string, {
+      start: '2026-04-22T16:00:00.000Z', // Wed 11am EST
+      schedules: [roomSchedule],
+    });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: { text: 'Location is inactive' },
+        expression: ['Parameters.schedule[0].actor[0]'],
+      },
+    ]);
+  });
+
   test('moves an appointment off a schedule that has since been deactivated', async () => {
     const roomOneSchedule = await makeSchedule(roomOne);
     const roomTwoSchedule = await makeSchedule(roomTwo);

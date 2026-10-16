@@ -383,6 +383,34 @@ describe('Appointment/:id/$confirm', () => {
     );
   });
 
+  test('Returns 400 when a slot is on a Schedule whose actor is inactive', async () => {
+    const inactivePractitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      active: false,
+      meta: { project: project.project.id },
+    });
+    const inactiveActorSchedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      actor: [createReference(inactivePractitioner)],
+      meta: { project: project.project.id },
+    });
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative', inactiveActorSchedule)]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0]).toMatchObject({
+      details: { text: 'Practitioner is inactive' },
+      expression: ['Appointment.slot[0].schedule.actor[0]'],
+    });
+    expect(await systemRepo.readResource<Appointment>('Appointment', appointment.id)).toHaveProperty(
+      'status',
+      'pending'
+    );
+  });
+
   test('Returns 400 when a slot is on an inactive Schedule', async () => {
     const inactiveSchedule = await systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',

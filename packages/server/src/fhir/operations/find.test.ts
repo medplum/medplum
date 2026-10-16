@@ -15,6 +15,7 @@ import type {
   AccessPolicy,
   Appointment,
   Bundle,
+  Device,
   Extension,
   HealthcareService,
   Location,
@@ -1346,6 +1347,36 @@ describe('Appointment/$find', () => {
     expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[1]']);
   });
 
+  test.each([
+    { resourceType: 'Practitioner', active: false },
+    { resourceType: 'Location', status: 'inactive' },
+    { resourceType: 'Device', status: 'inactive' },
+  ] as const)('errors when one schedule has an inactive $resourceType actor', async (inactive) => {
+    const actor = await systemRepo.createResource<Practitioner | Location | Device>({
+      ...inactive,
+      meta: { project: project.id },
+    });
+    const practitionerSchedule = await makeSchedule(
+      [{ service: genericVisit, duration: 30, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+    const inactiveActorSchedule = await makeSchedule(
+      [{ service: genericVisit, duration: 30, timezone: 'America/New_York', availability: tueWedAvailability }],
+      { actor: [createReference(actor)] }
+    );
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${inactiveActorSchedule.id}`],
+    });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe(`${inactive.resourceType} is inactive`);
+    expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[1].actor[0]']);
+  });
+
   test('errors when one schedule has a planning horizon that excludes the requested range', async () => {
     const practitionerSchedule = await makeSchedule(
       [{ service: genericVisit, duration: 30, availability: monTueAvailability }],
@@ -1917,6 +1948,52 @@ describe('Appointment/$find', () => {
         resourceType: 'OperationOutcome',
         issue: [{ details: { text: 'No timezone specified and schedule.actor could not be read' } }],
       });
+    });
+
+    test('errors when the actor it cannot read is inactive', async () => {
+      const inactivePractitioner = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        meta: { project: project.id },
+        active: false,
+      });
+      const schedule = await makeSchedule(
+        [{ service: genericVisit, duration: 60, timezone: 'America/Phoenix', availability: monTueAvailability }],
+        { actor: [createReference(inactivePractitioner)] }
+      );
+      const { accessToken: restrictedToken } = await addTestUser(project, { accessPolicy: scheduleOnlyPolicy });
+
+      const response = await makeRequest(
+        {
+          ...range,
+          'service-type-reference': `HealthcareService/${genericVisit.id}`,
+          schedule: `Schedule/${schedule.id}`,
+        },
+        restrictedToken
+      );
+
+      expect(response).toHaveStatus(400);
+      expect(response.body.issue[0].details.text).toBe('Practitioner is inactive');
+    });
+
+    test('ignores whether an actor in another project is active', async () => {
+      const { project: otherProject } = await createTestProject();
+      const foreignPractitioner = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        meta: { project: otherProject.id },
+        active: false,
+      });
+      const schedule = await makeSchedule(
+        [{ service: genericVisit, duration: 60, timezone: 'America/Phoenix', availability: monTueAvailability }],
+        { actor: [createReference(foreignPractitioner)] }
+      );
+
+      const response = await makeRequest({
+        ...range,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${schedule.id}`,
+      });
+
+      expect(response).toHaveStatus(200);
     });
   });
 

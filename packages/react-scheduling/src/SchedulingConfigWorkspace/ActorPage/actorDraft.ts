@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, deepEquals, generateId, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
 import type { Device, HumanName, Location, Practitioner, Reference } from '@medplum/fhirtypes';
+import { isActorInactive } from '../../actors';
 import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, SCHEDULING_CONFIG_PROVIDER_SYSTEM } from '../../constants';
-import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** A provider, room, or device, as stored or as the page would store it. */
 export type ActorResource = Practitioner | Location | Device;

@@ -7,7 +7,7 @@ import { getAuthenticatedContext } from '../../context';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
-import { assertAllLoaded } from './utils/scheduling';
+import { assertActorsActive, assertAllLoaded } from './utils/scheduling';
 
 const confirmOperation = makeOperationDefinition(
   { scope: 'instance', resource: 'Appointment' },
@@ -79,6 +79,10 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
           throw new OperationOutcomeError(badRequest('Schedule is inactive', getPath(schedule)));
         }
       }
+      const actors = await txRepo
+        .readReferences(schedules.map((schedule) => schedule.actor[0]))
+        .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
+      await assertActorsActive(txRepo, schedules, actors);
 
       // Mark `busy-tentative` slots as `busy`
       const updatedSlots = await Promise.all(

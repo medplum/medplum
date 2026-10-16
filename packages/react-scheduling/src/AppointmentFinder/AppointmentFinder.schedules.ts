@@ -13,7 +13,13 @@ import {
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
-import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel, isBookableActorType } from '../actors';
+import {
+  BOOKABLE_ACTOR_TYPES,
+  getActorType,
+  getActorTypeLabel,
+  isActorInactive,
+  isBookableActorType,
+} from '../actors';
 import { getActorsKey } from './AppointmentFinder.times';
 
 /**
@@ -232,7 +238,12 @@ export function toScheduleCandidate(
     return undefined;
   }
 
-  return { schedule, actorResource: actors.get(referenceStr) };
+  const actorResource = actors.get(referenceStr);
+  if (actorResource && isActorInactive(actorResource)) {
+    return undefined;
+  }
+
+  return { schedule, actorResource };
 }
 
 /** How far up a `partOf` chain of Locations to look. */
