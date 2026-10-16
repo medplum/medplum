@@ -32,8 +32,8 @@ import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFin
 import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
-import { ConfirmModal } from '../ConfirmModal/ConfirmModal';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
+import { ConfirmModal } from '../ConfirmModal/ConfirmModal';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
