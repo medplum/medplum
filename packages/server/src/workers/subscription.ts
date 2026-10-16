@@ -914,17 +914,25 @@ async function execBot(
   }
 
   // URL should be a Bot reference string
+  // SHARDING: this reads the Bot through the triggering project's shard, but the Bot can live in another
+  // project (a linked project, or any project for a server-scoped Subscription), and `Bot/<id>` doesn't
+  // say which. Proposed fix: search the global shard for `ProjectMembership?profile=Bot/<id>`, read the
+  // Bot from each candidate project's shard until found, and cache Bot ID -> project since Bots don't move.
+  // Alternatives considered: store the Bot's project on the Subscription at write time (a per-write
+  // lookup, but a field that can go stale and needs a migration, and linked-project Subscriptions would
+  // need it too), or try every shard (simple, but one read per shard per job unless cached).
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
-  const project = subscription.meta?.project as string;
+  // A project-scoped Subscription only fires for its own project, so the Bot runs there. A
+  // server-scoped one has no project: a runAsUser Bot runs where the requester is a member (the
+  // triggering project), and any other Bot runs as itself in its home project.
+  const project = subscription.meta?.project ?? (bot.runAsUser ? job.data.target.projectId : bot.meta?.project);
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;
   let runAs: WithId<ProjectMembership> | undefined;
-  if (bot.runAsUser) {
-    runAs = await findProjectMembership(project, requester);
-  } else {
-    runAs = await findProjectMembership(project, createReference(bot));
+  if (project) {
+    runAs = await findProjectMembership(project, bot.runAsUser ? requester : createReference(bot));
   }
 
   if (!runAs) {
