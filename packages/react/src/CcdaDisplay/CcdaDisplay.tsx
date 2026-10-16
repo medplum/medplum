@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Button, Loader } from '@mantine/core';
+import { useElementSize } from '@mantine/hooks';
 import { normalizeErrorString } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -9,6 +10,7 @@ import { CcdaViewer } from '../CcdaViewer/CcdaViewer';
 import { exportJsonFile } from '../utils/dom';
 
 const BASE_VALIDATION_URL = 'https://ccda-validator.medplum.com/';
+const COLLAPSED_HEIGHT = 1000;
 
 export interface CcdaDisplayProps {
   readonly url?: string;
@@ -42,6 +44,9 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   const loadError = current?.error;
   const [validationResult, setValidationResult] = useState<ValidationResult>();
   const [validating, setValidating] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const { ref: contentRef, height: contentHeight } = useElementSize();
+  const collapsed = !expanded && contentHeight > COLLAPSED_HEIGHT;
 
   useEffect(() => {
     if (!url) {
@@ -139,7 +144,27 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
           {loadError}
         </Alert>
       )}
-      {!loadError && (xml === undefined ? <Loader /> : <CcdaViewer xml={xml} />)}
+      {loadError === undefined && (
+        <div
+          style={
+            collapsed
+              ? {
+                  maxHeight: COLLAPSED_HEIGHT,
+                  overflow: 'hidden',
+                  maskImage: 'linear-gradient(to bottom, black calc(100% - 120px), transparent)',
+                }
+              : undefined
+          }
+        >
+          {/* Mounted before the XML arrives so the size observer attaches on first render */}
+          <div ref={contentRef}>{xml === undefined ? <Loader /> : <CcdaViewer xml={xml} />}</div>
+        </div>
+      )}
+      {collapsed && (
+        <Button variant="default" fullWidth mt="xs" onClick={() => setExpanded(true)}>
+          Show full document
+        </Button>
+      )}
 
       <div style={{ marginTop: '10px', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
         <Button type="button" onClick={validateCcda} disabled={validating || !xml}>

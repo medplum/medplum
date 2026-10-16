@@ -115,6 +115,8 @@ describe('CcdaDisplay', () => {
     expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
     expect(screen.getByText('Asthma')).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenCalledWith(EXAMPLE_CCDA_URL);
+    // Short documents are not capped
+    expect(screen.queryByRole('button', { name: 'Show full document' })).not.toBeInTheDocument();
   });
 
   test.each([
@@ -128,6 +130,36 @@ describe('CcdaDisplay', () => {
     expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
     expect(downloadSpy).toHaveBeenCalledWith('Binary/abc-123');
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test('Caps a tall document until expanded', async () => {
+    // Report a rendered height taller than the collapsed cap
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        private readonly callback: ResizeObserverCallback;
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback;
+        }
+        observe(target: Element): void {
+          const entry = { target, contentRect: { width: 800, height: 2000 } } as unknown as ResizeObserverEntry;
+          this.callback([entry], this);
+        }
+        unobserve(): void {}
+        disconnect(): void {}
+      }
+    );
+    try {
+      setup(EXAMPLE_CCDA_URL);
+      const expand = await screen.findByRole('button', { name: 'Show full document' });
+      expect(screen.getByText('Example CCDA').closest('[style*="max-height"]')).toBeInTheDocument();
+
+      fireEvent.click(expand);
+      expect(screen.queryByRole('button', { name: 'Show full document' })).not.toBeInTheDocument();
+      expect(screen.getByText('Example CCDA').closest('[style*="max-height"]')).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   test('Shows an error when the C-CDA cannot be loaded', async () => {
