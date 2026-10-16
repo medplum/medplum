@@ -9,7 +9,7 @@ A recommendation is useful only if it reaches someone who can act on it. Sometim
 
 Clinical decision support (CDS) can provide reference material, rule-based recommendations, or predictive results. This guide covers how to bring that guidance into a care workflow and track the work it creates.
 
-## Meet the Clinician Where the Decision Happens
+## Meet the Clinician Where the Decision Happens {#choose-the-interaction}
 
 | Need | Approach |
 | --- | --- |
@@ -20,7 +20,7 @@ Clinical decision support (CDS) can provide reference material, rule-based recom
 
 Use [CDS Hooks](/docs/integration/cds-hooks) for the discovery, request, prefetch, and card contract. Use [SMART App Launch](/docs/integration/smart-app-launch) when launching an external application. These integration choices do not determine the clinical approval policy.
 
-## Show the Guidance and Its Evidence
+## Show the Guidance and Its Evidence {#present-guidance-in-context}
 
 For a Medplum-hosted CDS Hooks service, configure the Bot's `cdsService` hook and prefetch requirements. The client invokes the service at the intended workflow point and displays returned cards. It must implement the user interaction for suggestions and proposed actions.
 
@@ -32,7 +32,7 @@ A returned card is not automatically a persisted clinical request or Task. Check
 
 Display the guidance source and relevant evidence. Handle unavailable services and incomplete context explicitly. A failure can create a manual review obligation when the clinical workflow requires one; it should not silently appear as a successful evaluation with no recommendations.
 
-## Turn Recommendations into Review Tasks
+## Turn Recommendations into Review Tasks {#track-actionable-review}
 
 For recommendations that need follow-through, give the reviewer a work item that survives closing the chart:
 
@@ -52,7 +52,7 @@ Record the decision in a governed local `businessStatus`, with an authored, time
 
 If accepted guidance leads to a referral, use a ServiceRequest and fulfillment Tasks as described in [Referrals](/docs/careplans/referrals). If it changes a treatment plan, update the CarePlan through the clinical review path. Preserve patient references on every resulting resource.
 
-## Keep Evaluation Records When You Need Them
+## Keep Evaluation Records When You Need Them {#decide-whether-to-retain-every-evaluation}
 
 Suppose a rule runs ten times during a week, but only one result needs review. One review Task may cover the work. Retaining all ten evaluations is a separate requirement. Some applications also need the inputs, rule/model version, evaluation result, and disposition for informational results that never create a Task.
 
@@ -64,13 +64,13 @@ Choose this additional model only after defining retention and retrieval require
 
 {{< /note >}}
 
-## Check Whether Guidance Leads to Follow-Through
+## Check Whether Guidance Leads to Follow-Through {#operate-and-evaluate-the-workflow}
 
 Track who maintains the rules, how versions are introduced, when repeat review is warranted, and how to recover missed work. Measure actionable reviews, accepted and declined recommendations, follow-up completion, and alert burden with clear denominators. Clinical outcomes need separate evidence.
 
 Apply [Access Policies](/docs/access/access-policies) to the service context and stored outputs.
 
-## Understand the Certification Context
+## Understand the Certification Context {#certification-context}
 
 Medplum's [ONC certification documentation](/docs/compliance/onc#criteria-certified) lists the certified product and criteria, including (b)(11) Decision Support Interventions. Use that page and its linked product listing for certification scope. Building a CDS workflow on Medplum still requires evaluating the particular application, intervention, and use case.
 

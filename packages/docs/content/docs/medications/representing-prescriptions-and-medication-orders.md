@@ -141,6 +141,7 @@ Note that this field is stored as an array, so there can be multiple dosage inst
 
 <details>
   <summary>Example: Dosage Instructions</summary>
+
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="dosageInstructions" >}}
 </details>
 
@@ -152,11 +153,13 @@ These types of requests should be differentiated as outpatient vs. inpatient usi
 
 <details>
   <summary>Example: A MedicationRequest categorized for a prescription</summary>
+
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="prescriptionRequest" >}}
 </details>
 
 <details>
   <summary>Example: A MedicationRequest categorized for a medication fulfillment order</summary>
+
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="orderRequest" >}}
 </details>
 
@@ -177,6 +180,7 @@ The instructions to the pharmacy on how the order should be dispensed should be 
 
 <details>
   <summary>Example: Dispense Instructions</summary>
+
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="dispenseInstructions" >}}
 </details>
 

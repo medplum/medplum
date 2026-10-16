@@ -5,7 +5,7 @@ title: Sending Referrals and Tracking Delivery
 
 A fax receipt is useful evidence that something was delivered. The coordinator still needs to know whether the clinic accepted the referral and what happens next. Keep transport progress separate from the receiving team's clinical and operational decisions.
 
-## Agree on What the Other System Can Receive
+## Agree on What the Other System Can Receive {#choose-a-channel-and-payload}
 
 | Channel | Implementation considerations |
 | --- | --- |
@@ -20,7 +20,7 @@ A Bot can coordinate generation and transmission. For C-CDA, follow the [C-CDA i
 
 Across systems, preserve the referral's business identifier and map local resource references. Agree on which party owns each update. Two servers may represent the same business request with different resource IDs.
 
-## Keep the Package with Its Conversation
+## Keep the Package with Its Conversation {#record-the-conversation}
 
 Follow the [Messaging Data Model](/docs/communications/messaging-data-model):
 
@@ -34,7 +34,7 @@ In Medplum's messaging convention, a sent message uses `status: in-progress` wit
 
 The [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples) includes a thread, message, and document linked to the same request.
 
-## Match Delivery Receipts to the Right Send
+## Match Delivery Receipts to the Right Send {#reconcile-delivery-acknowledgments}
 
 When a delivery callback arrives, the coordinator should be able to trace it to the exact package that was sent. Persist the external provider's message or transmission identifier in a namespaced `Communication.identifier`. Correlate callbacks to that identifier and retain the provider's evidence. Populate `received` only when the acknowledged event means receipt under the channel's agreed contract.
 

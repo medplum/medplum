@@ -99,6 +99,7 @@ Key amongst these is the `qualifiedInterval` element, which is used to define _h
 
 <details>
   <summary>Example: Blood Sodium Level </summary>
+
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionSodium" >}}
 </details>
 
@@ -128,6 +129,7 @@ Material that is collected from a patient may be split up, prepared, and handled
 
 <details>
   <summary>Example: Capillary Blood Sample </summary>
+
   The following examples defines a fingerprick blood sample that is distributed into two collection tubes: a red cap and
   a green cap.
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="fingerprickSpecimen" >}}
@@ -195,6 +197,7 @@ In most cases, each service will only require a single laboratory procedure. In 
 
 <details>
   <summary>Example: Electrolyte Panel</summary>
+
   In the example below, a patient can order an Electrolyte Panel, which is a single laboratory procedure
   <h5>Patient-facing service</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="electrolytesPanelService" >}}
@@ -210,6 +213,7 @@ This allows you to reuse the data definition of your procedures, while allowing 
 
 <details>
   <summary>Example: Men's Health Panel</summary>
+
   <p>
     This PlanDefinition reuses the Electrolyte Panel from the previous example, and but adds a free testosterone test.
   </p>
@@ -336,6 +340,7 @@ graph TD
 
 <details>
   <summary>Services (PlanDefinition)</summary>
+
   <h5>Men's Health</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="mensHealthService" >}}
   <h5>Women's Health</h5>
@@ -344,6 +349,7 @@ graph TD
 
 <details>
   <summary>Procedures (ActivityDefinition)</summary>
+
   <h5>Testosterone</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="testosteroneProcedure" >}}
   <h5>Estradiol</h5>
@@ -354,6 +360,7 @@ graph TD
 
 <details>
   <summary>Observations (ObservationDefinition)</summary>
+
   <h5>Free Testosterone</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionTestosterone" >}}
   <h5>Estradiol</h5>
@@ -370,6 +377,7 @@ graph TD
 
 <details>
   <summary>Specimen (SpecimenDefinition)</summary>
+
   <h5>Finger-prick Capillary Blood</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="fingerprickSpecimen" >}}
 </details>

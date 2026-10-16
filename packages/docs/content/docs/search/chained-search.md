@@ -21,6 +21,7 @@ In the below example we search for all [`Observation`](/docs/api/fhir/resources/
 
 <details>
   <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="simpleChainedSearchTs" >}}
@@ -44,6 +45,7 @@ The general syntax for a forward chained search is `<reference searchParam>:<ref
 
 <details>
   <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a subject that is a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="chainedSearchTs" >}}
@@ -61,6 +63,7 @@ You can include more than one link in your chained search. In the below example,
 
 <details>
   <summary>Example: A chained search that chains multiple parameters</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="multipleChainsTs" >}}
@@ -88,6 +91,7 @@ As another example, you may want to search for any [`Patient`](/docs/api/fhir/re
 
 <details>
   <summary>Example: Search for any [`Patients`](/docs/api/fhir/resources/patient) that have had an observed heart rate above 150</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="reverseChainedSearchTs" >}}
@@ -111,6 +115,7 @@ In this example we search for a [`Specimen`](/docs/api/fhir/resources/specimen) 
 
 <details>
   <summary>Example: Nested reversed chained search</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="nestedReverseChainTs" >}}
@@ -132,6 +137,7 @@ In the below example, we search for a [`Patient`](/docs/api/fhir/resources/patie
 
 <details>
   <summary>Example: Combining reverse and forward chained search</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="combinedChainTs" >}}

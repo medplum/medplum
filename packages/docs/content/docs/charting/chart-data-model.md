@@ -568,11 +568,13 @@ Each `Condition` is an instance of a problem – recurrence is a new resource; l
 
 <details>
   <summary>Example Condition</summary>
+
 {{< code-example file="packages/examples/src/charting/representing-diagnoses.ts" language="ts" blocks="sampleCondition" >}}
 </details>
 
 <details>
   <summary>Example ValueSet of Condition codes</summary>
+
 {{< code-example file="packages/examples/src/charting/representing-diagnoses.ts" language="ts" blocks="sampleValueSet" >}}
 </details>
 

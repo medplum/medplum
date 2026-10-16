@@ -22,7 +22,7 @@ You can also use a parent Task to track an overall coordination obligation, with
 
 See [Teams and Delegation](/docs/careplans/teams-and-delegation) for role eligibility and [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation) for claiming, deadlines, and exception handling.
 
-## Find Out What Is Needed Before Booking
+## Find Out What Is Needed Before Booking {#track-coverage-and-authorization}
 
 Before telling the patient they are ready to book, establish which coverage or authorization checks your workflow requires. The payer integration may need to answer several different questions:
 
@@ -50,7 +50,7 @@ When required by the payer, link the claim's `referral` to the ServiceRequest an
 
 Retain the authorization's effective period (`ClaimResponse.preAuthPeriod` when supplied), approved services, and any visit or unit limits under the payer's exchange contract. Check authorization dates and remaining authorized visits or units for each booking and claim. Keep payer authorization limits distinct from the clinician's requested service timing; an authorization expiring may require renewal while the clinical referral remains active.
 
-## Book the Visit and Keep the Referral Linked
+## Book the Visit and Keep the Referral Linked {#connect-scheduling-to-the-request}
 
 Reference the ServiceRequest from `Appointment.basedOn` and, when the service occurs, `Encounter.basedOn`. Scheduling the appointment completes the scheduling work item; the clinical service still has to happen.
 
@@ -81,7 +81,7 @@ Agree on which events warrant an update: accepted, scheduled, declined, unable t
 
 Within one project, expose the shared workflow state through authorized views and [notifications](/docs/careplans/automating-workflows#let-the-assignee-know). Across systems, exchange a correlated status message through the [transmission workflow](/docs/careplans/referrals/transmition-and-tracking), retaining the Communication and delivery history. A failed status notification leaves follow-up work for the integration owner; it should not erase the scheduling outcome.
 
-## Change the Destination Without Losing the History
+## Change the Destination Without Losing the History {#cancel-or-reroute-deliberately}
 
 If only the destination changes and the clinical order remains valid, the authorized workflow can update `ServiceRequest.performer`, resolve the old work items, and create work for the new destination. Preserve prior messages and notify affected parties through the integration.
 

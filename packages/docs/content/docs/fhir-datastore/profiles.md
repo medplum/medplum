@@ -381,6 +381,7 @@ Description: "A Patient profile that requires a birth date and phone number"
 
 <details>
 <summary>Example: Update your profile</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/profiles.ts" language="bash" blocks="updateProfile" >}}
 </details>
 
@@ -400,5 +401,6 @@ When you update a profile, you can loop over each resource, validate it, and upd
 
 <details>
 <summary>Example: Validate a new profile against all Patient resources in the system</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/profiles.ts" language="bash" blocks="profileMigration" >}}
 </details>

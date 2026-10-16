@@ -158,7 +158,7 @@ Yash will demo [Suki](https://www.suki.ai/partners/) integrated into Medplum, sh
 
 _Themes: 🤖 AI, 📝 Ambient Documentation, 🧰 Developer Platform, 🤝 Partners_
 
-### 4:00 - 6:00 PM - Happy Hour \{#happy-hour}
+### 4:00 - 6:00 PM - Happy Hour {#happy-hour}
 
 Join us at the [Laureate Bar and Lounge](https://maps.app.goo.gl/oueKtqAekKinPCAc8) to close out the day.
 

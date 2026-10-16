@@ -5,7 +5,7 @@ title: Results and Closing the Loop
 
 The specialist saw the patient, but the referring team is still waiting for the note. From one team's perspective the service is complete; from the other's, there is work left to do. Model both so that a referral doesn't disappear from the queue too early.
 
-## Bring the Note Back to the Original Referral
+## Bring the Note Back to the Original Referral {#link-the-returned-evidence}
 
 | Returned record | Link to the original referral |
 | --- | --- |
@@ -18,7 +18,7 @@ For a DocumentReference, use `context.encounter` only for an Encounter or Episod
 
 Preserve the patient, author, clinical status, and relevant times on each returned record. If a DiagnosticReport has a rendered report, its `presentedForm` can use the [Binary URL pattern](/docs/careplans/referrals/recipients-and-packages#store-documents-with-binary).
 
-## Check Which Referral the Result Belongs To
+## Check Which Referral the Result Belongs To {#match-before-attaching}
 
 Prefer source referral identifiers and the correlation established during exchange. Verify the patient and service context as well. A patient can have several open referrals, so matching only on patient or specialty is insufficient.
 
@@ -34,7 +34,7 @@ Record the review disposition and rationale. Reference any resulting clinical re
 
 Use a stable identifier for the review work, derived from the referral and returned result/version or another defined review occurrence. Repeated delivery of the same report reuses that review work. Define when an amended report warrants another review.
 
-## Decide When Each Team Is Done
+## Decide When Each Team Is Done {#define-completion-for-each-side}
 
 The two teams finish at different points. In a workflow that includes returned-note review, the referring team still has work after the consultation:
 
@@ -69,7 +69,7 @@ For closed-loop workflows, completion usually needs both returned evidence and r
 
 {{< /tip >}}
 
-## Follow Up When the Note Is Missing or Changes
+## Follow Up When the Note Is Missing or Changes {#handle-missing-results-and-reopened-work}
 
 A visit may be over while the note is still missing. Give that missing result an owner and a deadline. A scheduled Bot can identify work past its agreed deadline and create or escalate a follow-up obligation once. Follow the [Medplum deadline convention](/docs/careplans/handoffs-and-escalation#represent-time-accurately), including pause rules and date-range queries.
 

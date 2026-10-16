@@ -33,6 +33,7 @@ The likelihood of a candidate being a match can be represented by a `RiskAssessm
 
 <details>
   <summary>Example: A `RiskAssessment` for a potential duplicated patient record</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/patient-deduplication/matching.ts" language="ts" blocks="dupedPatientAssessment" >}}
 </details>
 
@@ -46,6 +47,7 @@ To ensure that certain records are not matched, you can create a Do Not Match Li
 
 <details>
   <summary>Example: A patient's Do Not Match List</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/patient-deduplication/matching.ts" language="ts" blocks="doNotMatch" >}}
 </details>
 

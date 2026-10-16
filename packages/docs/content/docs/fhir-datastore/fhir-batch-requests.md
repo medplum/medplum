@@ -72,6 +72,7 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 
 <details>
   <summary>Example: A simple batch request to simultaneously search for two patients</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="simpleBatchTs" >}}
@@ -87,11 +88,13 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 
 <details>
   <summary>Example: Create multiple resources in one batch request</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="batchCreate" >}}
 </details>
 
 <details>
   <summary>Example: Make multiple calls to the _history endpoint in one batch request</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="historyEndpoint" >}}
 </details>
 
@@ -217,6 +220,7 @@ Other bundle entries can refer to this resource using the temporary `urn:uuid:` 
 
 <details>
   <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="internalReference" >}}
 </details>
 
@@ -229,6 +233,7 @@ an error will be returned. For example:
 
 <details>
   <summary>Example: Create multiple patients that link to the same provider</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="externalReference" >}}
 </details>
 
@@ -242,6 +247,7 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 
 <details>
   <summary>Example: Create a patient and organization, only if the organization does not already exist</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="conditionalCreate" >}}
 </details>
 
@@ -251,6 +257,7 @@ When updating resources in a transaction bundle, you can prevent **lost updates*
 
 <details>
   <summary>Example: Version Checking in Transaction Bundle</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="transactionIfMatchTs" >}}

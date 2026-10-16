@@ -56,7 +56,7 @@ The FHIR [`Communication`](/docs/api/fhir/resources/communication) resource repr
 
 For every search parameter, see the [Communication API reference](/docs/api/fhir/resources/communication#search-parameters).
 
-## Communication Lifecycle
+## Communication Lifecycle {#communication-lifecycle}
 
 | Stage | FHIR representation |
 | --- | --- |
@@ -83,6 +83,7 @@ FHIR search cannot express `recipient OR sender` in one parameter. Inbox-style f
 
 <details>
   <summary>Example of a thread grouped using a Communication resource</summary>
+
 {{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="communicationGroupedThread" >}}
 </details>
 
@@ -100,6 +101,7 @@ You can omit `category` entirely if you do not need tags. **When using `category
 
 <details>
   <summary>Example of multiple categories</summary>
+
 {{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="communicationCategories" >}}
 </details>
 

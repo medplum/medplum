@@ -27,6 +27,7 @@ The `Patient.link` element is used to connect duplicate patient records via refe
 
 <details>
   <summary>Example: Linking patient records</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="linkPatientRecords" >}}
 </details>
 
@@ -57,6 +58,7 @@ Use this approach if:
 
 <details>
   <summary>Example: Merge identifiers of two patient records</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="mergeIdentifiers" >}}
 </details>
 
@@ -109,6 +111,7 @@ The most efficient way to retrieve all clinical data associated with a patient i
 
 <details>
   <summary>Example: Update References on Clinical Data</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="updateReferences" >}}
 </details>
 
@@ -124,5 +127,6 @@ In some cases, you may want to completely disable merging for two records. This 
 
 <details>
   <summary>Example: Add record to a Do Not Match List</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="doNotMatch" >}}
 </details>

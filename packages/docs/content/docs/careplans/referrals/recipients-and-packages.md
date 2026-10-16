@@ -5,7 +5,7 @@ title: Recipients and Referral Packages
 
 "Send it to cardiology" might mean a named clinician, a clinic, or an intake team that decides who will see the patient. Model the destination at the level your workflow actually knows. You can assign the person who processes the referral separately.
 
-## Choose Where the Referral Is Going
+## Choose Where the Referral Is Going {#choose-the-recipient-model}
 
 | Destination | Recommended representation |
 | --- | --- |
@@ -24,7 +24,7 @@ A preferred-provider list expresses your practice's preference. Payer network pa
 
 {{< /note >}}
 
-## Send What the Receiving Team Needs
+## Send What the Receiving Team Needs {#build-the-clinical-package}
 
 Start with the receiving team's requirements, then let the sender review the material before release. Typical context includes the clinical reason, relevant results, current treatment, and coverage information. Select the records needed for the service instead of exporting the entire chart by default.
 
@@ -32,7 +32,7 @@ Give the reviewer a path back to the evidence. Use `reasonReference` for the cli
 
 `ServiceRequest.note` can carry narrative for the receiving team, and `patientInstruction` can carry instructions written for the patient. These fields do not create different access permissions within the resource. Keep internal-only material in separately protected resources and exclude it from the outbound package.
 
-## Upload the File and Keep Its Metadata
+## Upload the File and Keep Its Metadata {#store-documents-with-binary}
 
 Store file bytes in Binary and metadata in [DocumentReference](/docs/fhir-datastore/external-documents). The attachment's `url` points to `Binary/{id}`. Use `createBinary` or `createAttachment` with a `securityContext` appropriate to the document's access policy; see [Binary Data](/docs/fhir-datastore/binary-data).
 
@@ -44,7 +44,7 @@ Use the Binary URL in `DocumentReference.content.attachment.url`. Do not embed b
 
 {{< /warning >}}
 
-## Keep a Copy of What the Recipient Saw
+## Keep a Copy of What the Recipient Saw {#preserve-what-was-sent}
 
 A patient's chart can change after the referral is sent. Retain the generated package as a DocumentReference and link that exact document from the outbound Communication. For structured exchanges, retain the transmitted payload and correlation metadata according to your retention policy, including the resource versions represented.
 

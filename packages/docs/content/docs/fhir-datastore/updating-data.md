@@ -21,6 +21,7 @@ The below example updates a [`Patient`](/docs/api/fhir/resources/patient) resour
 
 <details>
 <summary>Example: Updating a Resource</summary>
+
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="updateTs" >}}
@@ -48,6 +49,7 @@ The below operation searches for a patient to add a name to, and creates it if i
 
 <details>
 <summary>Example: Upserting a Resource</summary>
+
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="upsertTs" >}}
@@ -69,6 +71,7 @@ To prevent this, you can use the `If-Match` header (or `ifMatch` option) to spec
 
 <details>
 <summary>Example: Safe Update with Version Checking</summary>
+
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="safeUpdateTs" >}}
@@ -91,6 +94,7 @@ The `PatchOperation` below sends an `add` operation to the `name` of the [`Patie
 
 <details>
 <summary>Example: Patching a Resource</summary>
+
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="patchTs" >}}

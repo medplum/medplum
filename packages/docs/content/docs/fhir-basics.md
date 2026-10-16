@@ -48,6 +48,7 @@ Lastly, all resources have an `id` element, which is a server-assigned identifie
 <summary>
 Example [`Patient`][patient]
 </summary>
+
 The example below shows an example [`Patient`][patient] resource. Here we can see that the [`Patient`][patient] contains multiple elements, including `name`, `telecom`, and `address`.
 ```javascript
 {
@@ -116,6 +117,7 @@ In Medplum, we will typically only use the `reference` and `display` elements.
 <summary>
 Example: Linking a [`MedicationRequest`][medicationrequest] to a [`Patient`][patient] and [`Practitioner`][practitioner]
 </summary>
+
 The example below shows a resource modeling a prescription (i.e. [`MedicationRequest`][medicationrequest]) with two references: **`subject` (i.e. the patient)** and **`requester` (i.e. the requesting physician)**.
 
 ```javascript
@@ -189,6 +191,7 @@ Below is an example [`CodeableConcept`][codeableconcept], that defines the medic
 
 {{< code-example file="packages/examples/src/medications/medication-codes.ts" language="ts" blocks="tylenol-example" >}}
 </summary>
+
 </details>
 
 ## Naming Data: Identifiers
@@ -220,6 +223,7 @@ When generating MRNs for new patients, store the value in `Patient.identifier` w
 <summary>
 Example: [`Patient`][patient] with two medical record numbers (MRNs)
 </summary>
+
 The example `Patient` below has three identifiers: **an SSN and two MRN identifiers** from different hospital systems.
 
 ```javascript

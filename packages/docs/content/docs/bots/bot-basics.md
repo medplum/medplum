@@ -182,7 +182,7 @@ This will execute the most recently deployed version of your Bot, with the `even
 In the output panel at the bottom right you will see the string "true", indicating that the execution was a success. To see the results of the execution, navigate to the **Event** tab.
 (You may need to reload the page.) The **Outcome Desc** column will show the result of the console.log.
 
-### _Using the `$execute` endpoint_
+### _Using the `$execute` endpoint_ {#using-the-execute-endpoint}
 
 You can also execute a bot programmatically by sending an HTTP `POST` request to the Bot's `$execute`. Below is an example request sent with [`cURL`](https://en.wikipedia.org/wiki/CURL):
 
@@ -221,7 +221,7 @@ This is the input data that will be parsed according to `CONTENT_TYPE` and passe
 
 Read more in the [Bot `$execute`](/docs/api/fhir/operations/bot-execute) documentation.
 
-### _Executing automatically using a [`Subscription`](/docs/fhir-basics#listening-for-changes-subscriptions)_
+### _Executing automatically using a [`Subscription`](/docs/fhir-basics#listening-for-changes-subscriptions)_ {#executing-automatically-using-a-subscription}
 
 While using the `$execute` endpoint allows developers to trigger Bots from 3rd party applications, the most common way to execute a bot is to use a [FHIR subscription](/docs/fhir-basics#listening-for-changes-subscriptions) to trigger the Bot whenever a resource has been updated.
 

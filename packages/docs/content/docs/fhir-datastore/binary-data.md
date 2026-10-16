@@ -163,6 +163,7 @@ However, if you want to allow users to download the [`Binary`](/docs/api/fhir/re
 
 <details>
   <summary>Example: Download a Binary</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="downloadBinary" >}}
 </details>
 

@@ -9,7 +9,7 @@ A patient may have several visits, messages, and follow-up Tasks during one care
 
 Use an [EpisodeOfCare](/docs/api/fhir/resources/episodeofcare) for that period of responsibility. A program enrollment, treatment course, or ongoing case can justify an episode. Independent tasks or a single visit can use their existing resources.
 
-## Start a Case and Name the Responsible Team
+## Start a Case and Name the Responsible Team {#establish-case-identity-and-responsibility}
 
 | Field | Purpose |
 | --- | --- |
@@ -30,7 +30,7 @@ Create each case with its own identity. Two concurrent episodes can address the 
 
 {{< /tip >}}
 
-## Bring Visits and Plans into the Case
+## Bring Visits and Plans into the Case {#link-visits-and-clinical-plans}
 
 ```mermaid
 flowchart LR
@@ -70,7 +70,7 @@ Use a stable enrollment key to create the episode and its plan. This function ta
 
 Apply the [patient-context and access rules](/docs/careplans/teams-and-delegation#assignment-and-access) to the linked records.
 
-## Find the Records for One Case
+## Find the Records for One Case {#retrieve-the-correct-case-context}
 
 ```http
 GET /fhir/R4/EpisodeOfCare?patient=Patient/example&status=active
@@ -88,7 +88,7 @@ A Condition search can find plans addressing a diagnosis, but cannot uniquely fi
 
 For work authorized by the plan, `Task.basedOn` can reference the CarePlan; keep `focus` for the actual request or resource being acted on. Work directly concerning case administration can focus on the EpisodeOfCare. Avoid overwriting a clinical focus merely to simplify case grouping. Other case-level work may need a documented grouping convention; an Encounter reference alone cannot identify one case when the visit spans several.
 
-## Transfer or Close the Case Without Dropping Work
+## Transfer or Close the Case Without Dropping Work {#change-responsibility-and-close-the-case}
 
 For a coordinator change within the same period of organizational responsibility, update `careManager` or team membership and retain history. Update individual open Task owners separately. A transfer to another organization can require a new episode, particularly when responsibility periods or system ownership differ; agree on the transfer boundary instead of silently reassigning the entire history.
 

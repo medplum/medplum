@@ -41,6 +41,7 @@ For example, the search query described above for `Observation`, `Patient`, and 
 
 <details>
   <summary>Example response</summary>
+
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="includesResponse" >}}
 </details>
 
@@ -105,6 +106,7 @@ to search for `Observation` resources, plus the `Patient` resources they refer t
 
 <details>
   <summary>Example response</summary>
+
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="iterateResponse" >}}
 </details>
 
@@ -192,6 +194,7 @@ flowchart TD
 
 <details>
   <summary>Example: Get a `Patient` and their `RelatedPerson`</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonTs" >}}
@@ -236,6 +239,7 @@ flowchart TD
 
 <details>
   <summary>Example: Get a `Patient` and their `RelatedPerson` modeled as a `Patient`</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonPatientTs" >}}
@@ -282,6 +286,7 @@ flowchart TD
 
 <details>
   <summary>Example: Find all practitioners and roles at a specific location</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="locationPractitionerRoleTs" >}}
@@ -326,6 +331,7 @@ flowchart TD
 
 <details>
   <summary>Example: Search for all members of the `CareTeam` of a `Patient`</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="careTeamTs" >}}

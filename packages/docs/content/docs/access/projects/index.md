@@ -130,7 +130,7 @@ If you later add a new resource type to the shared project (e.g. `Organization` 
 - Populate shared projects with read-only reference data (terminology, profiles, directories) rather than patient or clinical data.
 - Be aware that queries like `medplum.searchResources()` will return the first matching resource across all accessible projects (both local and linked). Use `_compartment` if you need deterministic project-scoped results.
 
-## The SuperAdmin `Project`
+## The SuperAdmin `Project` {#superadmin}
 
 The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Medplum server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
 
@@ -161,7 +161,7 @@ To switch to the SuperAdmin project or check if you are already in it, you can u
 - Sign in with an existing user, or enter the details for a new user account
 - Enter your project name
 
-## Project Settings
+## Project Settings {#settings}
 
 Project-level settings can be used to configure server behavior for different groups of users. A subset of the available
 settings related to authentication and access control are shown below; see the full [Project Settings](/docs/self-hosting/project-settings)
@@ -173,7 +173,7 @@ documentation for more information.
 | `features`                   | A list of optional features that are enabled for the project. Values related to access control include: <ul><li>`bots`: This [`Project`](/docs/api/fhir/medplum/project) is allowed to create and run [Bots](/docs/bots/bot-basics).</li><li>`email`: Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail). </li><li>`cron`: This [`Project`](/docs/api/fhir/medplum/project) can run Bots on [CRON timers](/docs/bots/bot-cron-job)</li><li>`google-auth-required`: [Google authentication](/docs/auth/google-auth) is the only method allowed for this [`Project`](/docs/api/fhir/medplum/project)</li></ul> |         |
 | `defaultPatientAccessPolicy` | The default [`AccessPolicy`](/docs/access/access-policies) applied to all [Patient Users](/docs/user-management/project-vs-server-scoped-users#project-scoped-users) invited to this [`Project`](/docs/api/fhir/medplum/project). This is required to enable [open patient registration](/docs/user-management/open-patient-registration).                                                                                                                                                                                                                                                                                                                                                             |         |
 
-## Default Profiles
+## Default Profiles {#default-profiles}
 
 The `defaultProfile` setting automatically applies [FHIR profiles](http://hl7.org/fhir/R4/profiling.html#resources) to resources that do not specify a profile in `meta.profile`. This is useful for enforcing consistent validation and clinical data quality across a project without requiring every resource creation call to include profile references.
 

@@ -5,7 +5,7 @@ title: Receiving and Triaging Referrals
 
 An incoming referral may be a clean API request or a scanned document with a hard-to-read patient name. Both need an accountable intake path. Preserve what arrived, confirm who it belongs to, and make the next action clear to the receiving team.
 
-## Keep What Arrived
+## Keep What Arrived {#preserve-the-source}
 
 Store incoming files as Binary with a DocumentReference describing the source and receipt context. Retain sender identifiers and transmission identifiers separately: the same referral can arrive through more than one channel.
 
@@ -13,7 +13,7 @@ For structured FHIR, validate the resource and resolve its references before per
 
 The [Titan case study](/blog/titan-case-study) illustrates why normalization and review matter in referral intake. Automated extraction can reduce transcription work, but the source remains useful when a reviewer needs to resolve an ambiguity.
 
-## Confirm Which Patient the Referral Belongs To
+## Confirm Which Patient the Referral Belongs To {#resolve-patient-identity-before-clinical-intake}
 
 An uncertain match needs a place to wait and someone to resolve it. Keep that review separate from the clinical intake that follows:
 
@@ -39,7 +39,7 @@ A conditional create can keep the same external referral number from producing t
 
 {{< /tip >}}
 
-## Give the Intake Team a Clear Next Step
+## Give the Intake Team a Clear Next Step {#create-the-receiving-work-item}
 
 Preserve the sender's request semantics, including the clinical requester, service, priority, and identifiers. Use a receiving-side Task for triage, focused on the ServiceRequest and assigned to the intake organization, service, or individual.
 
@@ -55,7 +55,7 @@ These statuses belong to the Task whose requested work is being accepted or decl
 
 Reconcile the clinical order through the [agreed request-authority and rerouting rules](/docs/careplans/referrals/processing-and-coordination#cancel-or-reroute-deliberately).
 
-## Recognize a Repeat Delivery or a Changed Request
+## Recognize a Repeat Delivery or a Changed Request {#handle-repeated-and-amended-referrals}
 
 Use the source referral identifier, including its namespace, for conditional create. Use a stable identity for the initial receiving Task as well. Preserve each incoming transmission even when it relates to an existing request.
 

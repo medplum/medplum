@@ -149,7 +149,7 @@ Medplum's interpretation of the prescription status, mapped to [MedicationReques
 | unknown | The status of the prescription is unknown. |
 </details>
 
-#### 2. `MedicationRequest.statusReason` _(system: https://dosespot.com/medication-status)_
+#### 2. `MedicationRequest.statusReason` _(system: https://dosespot.com/medication-status)_ {#2-medicationrequeststatusreason-system-httpsdosespotcommedication-status}
 DoseSpot's status for the prescription. This is what determines `MedicationRequest.status`.
 
 <details>
@@ -171,7 +171,7 @@ DoseSpot's status for the prescription. This is what determines `MedicationReque
 | NoFill | The prescription has not been filled. |
 </details>
 
-#### 3. `MedicationRequest.extension` _(url: https://dosespot.com/prescription-status)_
+#### 3. `MedicationRequest.extension` _(url: https://dosespot.com/prescription-status)_ {#3-medicationrequestextension-url-httpsdosespotcomprescription-status}
 DoseSpot's more granular transmission status for this specific Rx Order.
 
 <details>

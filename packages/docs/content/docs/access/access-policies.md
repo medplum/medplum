@@ -293,6 +293,7 @@ Medplum provides the following built-in variables:
   <summary>
     Example: General Practitioner Access Policy
   </summary>
+
   The following access policy grants access to all [`Patient`](/docs/api/fhir/resources/patient) resources where the current user (a [`Practitioner`](/docs/api/fhir/resources/practitioner)) is listed as the general practitioner:
   ```json
   {
@@ -315,6 +316,7 @@ This policy then acts like a _template_, that can be instantiated, potentially m
   <summary>
     Example: Custom Access Policy Variables
   </summary>
+
   In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations.
 
     ```json

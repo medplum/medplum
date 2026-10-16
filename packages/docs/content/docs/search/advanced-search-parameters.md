@@ -29,6 +29,7 @@ The `_id` parameter allows you to search for any resource based on its `id` elem
 
 <details>
   <summary>Example: Searching for patients by _id</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="idTs" >}}
@@ -50,6 +51,7 @@ This is especially useful when combined with [comparison operators](/docs/search
 
 <details>
   <summary>Example: Searching for only communications that have occurred since the beginning of October, 2023</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="lastUpdatedTs" >}}
@@ -76,6 +78,7 @@ The `_summary` parameter can contain one of the following value set:
 
 <details>
   <summary>Example: Searching for a summary of a patient</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="summaryTs" >}}
@@ -99,6 +102,7 @@ Note that any top-level mandatory or modifier elements should always be included
 
 <details>
   <summary>Example: Searching the subject and performers of observations</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="elementsTs" >}}
@@ -118,6 +122,7 @@ The `_tag` parameter allows you to search on the `tag` field of the `meta` eleme
 
 <details>
   <summary>Example: Searching for observations that are tagged as critical</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="tagTs" >}}
@@ -139,6 +144,7 @@ Medplum allows you to easily search using compartments by providing the non-stan
 
 <details>
   <summary>Example: Find all communications for a patient</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="compartmentTs" >}}
@@ -164,6 +170,7 @@ The `_total=accurate` search parameter will only attempt to return the accurate 
 
 <details>
   <summary>Example: Search for all patients in your organization and get an estimate of the total number</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="totalTs" >}}
@@ -185,6 +192,7 @@ The `_profile` parameter is a reference parameter, meaning you may provide a ref
 
 <details>
   <summary>Example: Search for observations that are part of the pediatric growth charts profile</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="profileTs" >}}
@@ -206,6 +214,7 @@ The [Confidentiality Level Code System](http://terminology.hl7.org/CodeSystem/v3
 
 <details>
   <summary>Example: Searching for patients that are of a **normal** confidentiality level.</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="securityTs" >}}
@@ -227,6 +236,7 @@ The `meta.source` field indicates the system or application that originally crea
 
 <details>
   <summary>Example: Searching for Patients sourced from `https://foomedical.com`</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="sourceTs" >}}
@@ -260,6 +270,7 @@ Mixing `_deleted` with most other search parameters will not work as expected. T
 
 <details>
   <summary>Example: Searching for deleted patients</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="deletedTs" >}}
@@ -279,6 +290,7 @@ The `_project` parameter allows you to filter resources by their project ID. Thi
 
 <details>
   <summary>Example: Searching for patients in a specific project</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="projectTs" >}}
@@ -298,6 +310,7 @@ The `_type` parameter allows you to restrict the search to specific resource typ
 
 <details>
   <summary>Example: Searching for Patients and Observations</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/advanced-search-parameters.ts" language="ts" blocks="typeTs" >}}

@@ -18,7 +18,7 @@ If you have any questions, please [contact us](mailto:hello@medplum.com) or [joi
 
 {{< /warning >}}
 
-## High-level overview
+## High-level overview {#high-level-overview}
 
 To deploy Medplum in GCP, the process is divided into two parts:
 
@@ -46,7 +46,7 @@ See [Generate Configuration Secret](#generate-configuration-secret)
   - The load balancer has a WAF (Cloud Armor)
   - Google-managed certificates are used
 
-### High-level deployment process
+### High-level deployment process {#high-level-deployment-process}
 
 1. Deploy static infrastructure (GKE, CloudSQL, Redis, Storage Buckets, LB)
 2. With the values from Step 1, create the Medplum app configuration
@@ -54,20 +54,20 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 4. Deploy the backend application using the Helm chart
 5. Copy the frontend files to the CDN bucket
 
-## GCP Deployment
+## GCP Deployment {#gcp-deployment}
 
-### Infrastructure Deployment (Terraform)
+### Infrastructure Deployment (Terraform) {#infrastructure-deployment}
 
 The `terraform` folder contains **Terraform** configurations for deploying infrastructure on **Google Cloud Platform (GCP)**. The setup includes a **Virtual Private Cloud (VPC)**, **Google Kubernetes Engine (GKE) cluster**, **Cloud SQL**, **Cloud Storage Buckets**, **Redis**, and more.
 
-#### Prerequisites
+#### Prerequisites {#prerequisites}
 
 - [Terraform](https://www.terraform.io/downloads.html) installed on your local machine.
 - A **GCP** account with the necessary permissions to create resources.
 - A **GCP** project where the resources will be deployed.
 - **Google Cloud SDK** installed and authenticated with your GCP account.
 
-#### Clone the Repository
+#### Clone the Repository {#clone-the-repository}
 
 Run:
 
@@ -76,11 +76,11 @@ git clone https://github.com/medplum/medplum
 cd terraform/gcp/
 ```
 
-#### Configure Backend (Optional)
+#### Configure Backend (Optional) {#configure-backend}
 
 If you want to use a [remote backend](https://developer.hashicorp.com/terraform/language/backend) for storing the Terraform state, uncomment and configure the backend.tf file.
 
-#### Initialize Terraform
+#### Initialize Terraform {#initialize-terraform}
 
 Modify the `terraform.tfvars` file to enter your project-specific values:
 
@@ -98,7 +98,7 @@ labels = {
 }
 ```
 
-#### Initialize Terraform
+#### Initialize Terraform {#initialize-terraform-1}
 
 Initialize the Terraform working directory to download the necessary provider plugins and modules:
 
@@ -106,7 +106,7 @@ Initialize the Terraform working directory to download the necessary provider pl
 terraform init
 ```
 
-#### Plan the Deployment
+#### Plan the Deployment {#plan-the-deployment}
 
 Generate and review an execution plan to ensure the configuration is correct:
 
@@ -114,7 +114,7 @@ Generate and review an execution plan to ensure the configuration is correct:
 terraform plan
 ```
 
-#### Apply the Configuration
+#### Apply the Configuration {#apply-the-configuration}
 
 Apply the Terraform configuration to create the resources in GCP:
 
@@ -122,7 +122,7 @@ Apply the Terraform configuration to create the resources in GCP:
 terraform apply
 ```
 
-### Generate configuration secret
+### Generate configuration secret {#generate-configuration-secret}
 
 The configuration secret holds the Medplum application configuration and it contains the connection strings to the rest of the infrastructure that we deployed before, using Terraform.
 
@@ -196,7 +196,7 @@ Use the gcloud secrets versions add command to add the secret data to your secre
 gcloud secrets versions add config-secret --data-file=secret_data.json
 ```
 
-### Configure DNS
+### Configure DNS {#configure-dns}
 
 After deploying the infrastructure, you need to point your domains to the external load balancer created by Terraform.
 
@@ -216,7 +216,7 @@ Note the IP address associated with medplum-elb.
 
 This ensures that traffic to these domains is routed through the CDN-enabled load balancer, which serves content from your backend buckets configured in Terraform.
 
-### Deploy the Backend API Using Helm
+### Deploy the Backend API Using Helm {#deploy-the-backend-api-using-helm}
 
 The Medplum Helm chart is a package containing `yaml` templates representing Kubernetes objects.
 
@@ -229,7 +229,7 @@ The Medplum Helm chart is a package containing `yaml` templates representing Kub
   - The ingress is optional. Users can choose to expose the API with other methods
 - Service Account
 
-#### Configure kubectl
+#### Configure kubectl {#configure-kubectl}
 
 Get credentials for your GKE cluster:
 
@@ -262,7 +262,7 @@ Reapply the Terraform configuration if you make changes:
 terraform apply
 ```
 
-#### Set up the Helm Repository
+#### Set up the Helm Repository {#set-up-the-helm-repository}
 
 Add the Medplum Helm repository:
 
@@ -277,7 +277,7 @@ Generate a local `values.yaml` file:
 helm show values medplum/medplum > values.yaml
 ```
 
-#### Edit the values.yaml File
+#### Edit the values.yaml File {id="edit-the-values.yaml-file"}
 
 Edit the `values.yaml` file to override default values, specifying your cloud provider and configuration source:
 
@@ -292,7 +292,7 @@ Replace `[MY_PROJECT_ID]` with your actual GCP project ID.
 
 Replace `[MY_CONFIG_SECRET_ID]` with the secret name created in the [Generate configuration secret](#generate-configuration-secret) step.
 
-#### Edit service account values
+#### Edit service account values {#edit-service-account-values}
 
 ```yaml
 serviceAccount:
@@ -302,7 +302,7 @@ serviceAccount:
 
 Replace `[MY_GCP_SERVICE_ACCOUNT]` with your actual GCP service account, which was created by Terraform and is named `medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com`.
 
-#### Edit ingress values
+#### Edit ingress values {#edit-ingress-values}
 
 (ingress is optional, customers can choose to use whatever method they like to expose the app)
 
@@ -314,7 +314,7 @@ ingress:
 
 Replace `api.yourdomain.com` with your actual domain.
 
-#### Install the Application
+#### Install the Application {#install-the-application}
 
 ```bash
 helm install medplum medplum/medplum \
@@ -338,13 +338,13 @@ Update your DNS records to point api.yourdomain.com to the Ingress IP address.
 
 This is the backend API endpoint.
 
-### Upgrade the backend application
+### Upgrade the backend application {#upgrade-the-backend-application}
 
 Backend upgrades use the standard Medplum Helm upgrade process. See [Install on Kubernetes: Upgrade to a new version](/docs/self-hosting/install-on-kubernetes#upgrade-to-a-new-version).
 
 The GCP-specific settings in `values.yaml`, such as the configuration source, service account annotations, and ingress settings, continue to apply during the upgrade. This upgrades the Kubernetes backend only; frontend static assets are built and uploaded separately in the next section.
 
-## Deploy the frontend (App)
+## Deploy the frontend (App) {id="deploy-the-frontend-(app)"}
 
 Serve your frontend application through Cloud Storage and the CDN-enabled load balancer.
 
@@ -398,7 +398,7 @@ APP_BUCKET=medplum-static-assets ./scripts/deploy-app-gcp.sh
 - **Content Delivery via CDN:** The CDN external load balancer serves content from the backend buckets (`medplum-static-assets` and `medplum-user-content`) associated with `app.yourdomain.com` and `storage.yourdomain.com`. Ensure your content is uploaded to the correct buckets for the CDN to serve.
 - **Update DNS Records (If Necessary):** Ensure that `app.yourdomain.com` points to the load balancer's IP address (already configured in the [Configure DNS](#configure-dns) step above).
 
-#### Post-Deployment Verification
+#### Post-Deployment Verification {#post-deployment-verification}
 
 **Check Backend API:**
 
@@ -414,7 +414,7 @@ You should receive a successful response indicating the API is operational.
 
 Visit https://app.example.com in a web browser to ensure it’s serving correctly and interacting with the backend API.
 
-## Clean Up Resources (Optional)
+## Clean Up Resources (Optional) {#clean-up-resources}
 
 If you need to tear down the infrastructure, use:
 
@@ -492,15 +492,15 @@ master_authorized_networks = [
 • **Path**: terraform/gcp/project-services.tf
 • **Description**: Enables necessary GCP APIs for the project, such as **Compute Engine**, **Kubernetes Engine**, and more.
 
-### Variables
+### Variables {#variables}
 
 The configuration uses variables defined in variables.tf and terraform.tfvars. Ensure they are correctly set for your environment.
 
-### Outputs
+### Outputs {#outputs}
 
 The configuration outputs sensitive information like the SQL database password, which is marked as sensitive in outputs.tf.
 
-### Notes
+### Notes {#notes}
 
 - Ensure that the **GCP project ID** and other variables are correctly set in terraform.tfvars.
 - Review the **IAM** roles and permissions to ensure they align with your security policies.

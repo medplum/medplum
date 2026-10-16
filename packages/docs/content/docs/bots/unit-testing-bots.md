@@ -77,6 +77,7 @@ The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main
 
 <details>
   <summary>Example: Create Resources</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="create-resources" >}}
 </details>
 
@@ -90,6 +91,7 @@ The below example is from the [find matching patients bot tests](https://github.
 
 <details>
   <summary>Example: Creating a large set of patient data with a batch request</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts" language="ts" blocks="importPatientData,createBatchData" >}}
 </details>
 
@@ -105,6 +107,7 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 <details>
   <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
+
 {{< code-example file="packages/examples/src/bots/unit-testing-bots.ts" language="ts" blocks="cliAsTransaction" >}}
 </details>
 
@@ -132,6 +135,7 @@ The after running the Bot, the [finalize-report bot's tests](https://github.com/
 
 <details>
   <summary>Example: Query the results</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="query-results" >}}
 </details>
 
@@ -140,6 +144,7 @@ Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedi
 
 <details>
   <summary>Example: Idempotency test</summary>
+
 {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="test-idempotent" >}}
 </details>
 

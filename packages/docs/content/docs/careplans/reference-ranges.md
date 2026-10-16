@@ -44,16 +44,19 @@ A range is defined by the following properties:
 
 <details>
   <summary>Example: 10 - 100 mg/dL</summary>
+
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="midRange" >}}
 </details>
 
 <details>
   <summary>Example: Less or equal to than 5 mg/dL </summary>
+
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="lowRange" >}}
 </details>
 
 <details>
   <summary>Example: Greater than or equal to 20 mg/dL </summary>
+
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="highRange" >}}
 </details>
 
@@ -61,6 +64,7 @@ In practice, multiple an [`ObservationDefinition`](/docs/api/fhir/resources/obse
 
 <details>
   <summary>Example: Multiple Ranges</summary>
+
 The example below defines three reference ranges, to be interpreted as "Low", "Normal", and "High".
 
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="allRanges" >}}
@@ -83,6 +87,7 @@ The table below describes which patient attributes can be used to target referen
 
 <details>
   <summary>Example: Age and gender dependent reference ranges</summary>
+
   The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and children.
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="testosterone" >}}
 </details>
@@ -121,6 +126,7 @@ The type of reference range is specified in the `qualifiedInterval.category` fie
 
 <details>
   <summary>Example</summary>
+
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="categories" >}}
 </details>
 

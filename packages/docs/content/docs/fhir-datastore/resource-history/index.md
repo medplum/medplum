@@ -62,6 +62,7 @@ The `readHistory` function is used to get the entire history of the resource. Yo
 
 <details>
   <summary>Example: Revert resource to a previous version</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/resource-history.ts" language="ts" blocks="revertChanges" >}}
 </details>
 

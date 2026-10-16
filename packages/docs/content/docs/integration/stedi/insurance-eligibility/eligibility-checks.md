@@ -337,6 +337,7 @@ Each `insurance.item` entry describes a benefit the payer reported, and its `cat
 
 <details>
 <summary>Example CoverageEligibilityResponse from a STEDI insurance and benefits eligibility check</summary>
+
 ```ts
 {
   "resourceType": "CoverageEligibilityResponse",

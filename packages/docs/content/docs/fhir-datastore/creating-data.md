@@ -11,6 +11,7 @@ Medplum also provides the `createResource` method on the `MedplumClient` which i
 
 <details>
   <summary>Example: Creating a Practitioner</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/creating-data.ts" language="ts" blocks="createTs" >}}

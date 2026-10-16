@@ -40,7 +40,7 @@ Backfills can trigger Subscriptions, Bots, webhooks, and external integrations o
 
 Do not assume a disabled Subscription will automatically process events that occurred while it was inactive. If downstream state must be reconstructed, make the replay an explicit cutover step and verify its results.
 
-## Write-only / Dual Write
+## Write-only / Dual Write {#write-only}
 
 When write/update operations come into your existing services, have your existing services write to both Medplum and your existing store.
 
@@ -70,7 +70,7 @@ This phase starts populating Medplum before applications depend on it, giving th
 - Reconcile dual-write failures continuously; do not defer the entire backlog to cutover.
 - Start with less critical data types to minimize risk.
 
-## Backfill Data
+## Backfill Data {#backfill}
 
 Migrate older data from the existing data store to Medplum.
 
@@ -95,7 +95,7 @@ Backfilling makes historical data available in Medplum while the existing system
 - Record checkpoints and import results so the backfill can resume without starting over.
 - Keep new writes flowing through the agreed source of truth while the historical backfill runs.
 
-## Read from Medplum in the Client
+## Read from Medplum in the Client {#read-from-medplum}
 
 Update your UX to read from Medplum's API rather than your existing API.
 
@@ -126,7 +126,7 @@ Moving reads is usually the first user-facing change. It lets people verify migr
 - Start with read-only views or reports before moving to more critical user interactions.
 - Monitor performance and user feedback closely during this phase.
 
-## Front-End Write to Medplum
+## Front-End Write to Medplum {#front-end-write}
 
 Update your UX to write directly to Medplum rather than through your existing services.
 
@@ -157,7 +157,7 @@ Once reads are stable, moving writes makes Medplum the operational system of rec
 - Preserve writes made after cutover so rollback does not discard new data.
 - Provide additional user support during this transition.
 
-## Deprecate Old System
+## Deprecate Old System {#deprecate}
 
 Phase out the old data store once you're confident in the Medplum implementation.
 

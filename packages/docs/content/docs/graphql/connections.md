@@ -26,6 +26,7 @@ Here is an example of searching for a list of `Patient` resources using the Conn
 
 <details>
   <summary>Example Response</summary>
+
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="ConnectionApiResponse" >}}
 </details>
 

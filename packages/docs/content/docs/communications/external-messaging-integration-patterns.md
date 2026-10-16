@@ -25,7 +25,7 @@ Bots are an [advanced feature](/docs/bots/bot-basics) that may need to be enable
 
 {{< /note >}}
 
-## Outbound: Notify External Systems on New Messages
+## Outbound: Notify External Systems on New Messages {#outbound-messaging-notifications}
 
 ```mermaid
 flowchart LR

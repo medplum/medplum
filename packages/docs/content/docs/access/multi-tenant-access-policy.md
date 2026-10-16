@@ -657,6 +657,7 @@ By following these patterns, you can create flexible access control models that 
 
 <details>
   <summary>Example LLM Prompt: Recommending Tenanting Resources and Access Policies</summary>
+
   Answer the questions in the below prompt, and copy and paste it into an LLM.
 
 {{< code-example file="packages/examples/src/access/multi-tenant-access-policy.ts" language="md" blocks="tenanting-prompt" >}}

@@ -39,6 +39,7 @@ To augment the `issuer`, the Davinci PDEX implementation guide [defines an exten
 
 <details>
   <summary>Example</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/provider-credentials.ts" language="ts" blocks="practitioner-head,qualifications-head,license,qualifications-tail,practitioner-tail" >}}
 </details>
 
@@ -51,6 +52,7 @@ A provider's specialty certifications can also be represented Unlike licensure, 
 
 <details>
   <summary>Example</summary>
+
 {{< code-example file="packages/examples/src/fhir-datastore/provider-credentials.ts" language="ts" blocks="practitioner-head,qualifications-head,specialty,qualifications-tail,practitioner-tail" >}}
 </details>
 

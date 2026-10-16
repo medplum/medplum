@@ -7,7 +7,7 @@ A coordinator needs to see what is waiting today. A team lead may want to know w
 
 Use current FHIR resources for actionable lists. For historical measures, capture the transitions that tell you when work arrived, changed hands, paused, and finished.
 
-## Show the Team What Needs Attention Today
+## Show the Team What Needs Attention Today {#build-current-work-lists}
 
 Use Task searches for owner, lifecycle status, work type, and local business stage. For example:
 
@@ -23,7 +23,7 @@ For deadlines, follow the [Task date-range guidance](/docs/careplans/tasks#searc
 
 Run operational and aggregate queries under the [access rules agreed for the workflow](/docs/careplans/teams-and-delegation#assignment-and-access).
 
-## Capture When Work Changed Hands
+## Capture When Work Changed Hands {#build-a-transition-model}
 
 {{< warning title="Editing a note should not reset queue age" >}}
 
@@ -45,7 +45,7 @@ A reporting table can contain:
 
 Build this table in your reporting store. Make ingestion replayable, tolerate late events, and retain enough source history to rebuild intervals.
 
-## Agree on What the Clock Measures
+## Agree on What the Clock Measures {#define-measures-before-calculating-them}
 
 Two teams can both report "turnaround time" and measure different things. Settle the start, stop, and pause rules before comparing their numbers.
 
@@ -59,7 +59,7 @@ Two teams can both report "turnaround time" and measure different things. Settle
 
 Count work at the appropriate level. One referral may have several Tasks, so completed Task counts do not produce a referral completion rate. A reopened item needs another interval; do not replace its original completion time in reporting history.
 
-## Put Work Completion Alongside Patient Progress
+## Put Work Completion Alongside Patient Progress {#connect-to-clinical-outcomes}
 
 Use Goal targets, `achievementStatus`, and supporting Observations for clinical progress. Report them alongside work completion without treating one as proof of the other. The clinical team defines measures and denominators; the pipeline preserves the evidence and timing needed to calculate them.
 

@@ -5,7 +5,7 @@ title: Handoffs, Deadlines, and Escalation
 
 An item marked "done" can still leave the next person wondering what to do. A useful handoff tells them what is ready, what evidence to review, and who to contact if they get stuck. Use Tasks to make that next obligation visible, with its own owner and completion criteria.
 
-## Decide What Done Means
+## Decide What Done Means {#define-lifecycle-and-completion}
 
 Use `Task.status` for its R4 lifecycle and `businessStatus` for local stages such as waiting for documents or awaiting review. Publish the local stage codes and permitted transitions. Use `statusReason` to explain the current blocked, failed, or cancelled state.
 
@@ -36,7 +36,7 @@ Before wiring up a Complete button, decide what the next person needs to see. A 
 
 The review is complete; the follow-up ServiceRequest still has its own fulfillment lifecycle.
 
-## Create the Next Work Item
+## Create the Next Work Item {#release-the-next-step}
 
 When preparation completes, the application or a scoped transition Subscription can initiate review. Derive a stable identifier from the source work and next step, and conditionally create the review Task. Replaying the same transition should find that same Task.
 
@@ -48,7 +48,7 @@ Use `partOf` for decomposition into subtasks. Store executable dependency rules 
 
 {{< /warning >}}
 
-## Set Start Dates and Deadlines
+## Set Start Dates and Deadlines {#represent-time-accurately}
 
 Use `authoredOn` for creation time, `executionPeriod` for actual work, and the [Task planned-date convention](/docs/careplans/tasks#task-start--due-dates) for start dates and deadlines.
 
@@ -56,7 +56,7 @@ Use [range-aware date queries](/docs/careplans/tasks#searching-by-due-date-range
 
 Compute business-hour deadlines in application or Bot logic using a defined time zone, calendar, and pause policy. Capture effective pause/resume times if waiting periods are excluded. Resource history records persistence times; use explicit transition records when those differ from the business event time.
 
-## Give Stuck Work a Way Forward
+## Give Stuck Work a Way Forward {#escalate-without-duplicating-work}
 
 A scheduled Bot can find overdue open work and reassign it or create a distinct escalation Task. Preserve the original item and its history. Use a stable escalation identifier or milestone to prevent a new alert on every run.
 

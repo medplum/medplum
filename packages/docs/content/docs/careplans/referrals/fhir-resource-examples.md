@@ -191,7 +191,7 @@ The referring team's `coordinate-001` Task owns follow-through and returned-note
 
 The shared view can now show receiving-team acceptance independently of the message's sent time. See [status updates](/docs/careplans/referrals/processing-and-coordination#keep-the-referring-team-in-the-loop) for notifying the referrer.
 
-## 5. Link the Booking
+## 5. Link the Booking {#link-the-booking}
 
 The receiving team's booking workflow creates an Appointment. This snapshot omits scheduling extensions and Slot details; use the [Scheduling operations](/docs/scheduling) to create the booking for your configured service.
 
@@ -212,7 +212,7 @@ The receiving team's booking workflow creates an Appointment. This snapshot omit
 
 Version-check the update to `Task/schedule-001`, setting `status: completed` and `output` to a typed Appointment reference: `type.text = "Confirmed booking"` and `valueReference.reference = "Appointment/consultation-001"`. Notify the referring team of the booking. The overall coordination Task stays open because its scope includes the returned-note review.
 
-## 6. Retain and Review the Returned Note
+## 6. Retain and Review the Returned Note {#review-the-returned-note}
 
 The receiving team moves its fulfillment Task to `in-progress` when that work begins, then to `completed` when its consultation criteria are met. After the service, upload the returned note using the same Binary pattern. Preserve the author and match the source referral identifier before linking it.
 
@@ -271,7 +271,7 @@ Create the review Task once for the relevant note/version. The referring clinici
 
 The responsible party reconciles the ServiceRequest's status from evidence that the requested service occurred. The coordinator completes the parent Task after the required note review and follow-up decisions are recorded.
 
-## Show the Coordinator the Whole Referral
+## Show the Coordinator the Whole Referral {#queries-for-the-referral-view}
 
 ```http
 GET /fhir/R4/Task?focus=ServiceRequest/referral-001

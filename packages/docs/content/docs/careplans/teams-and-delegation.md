@@ -7,7 +7,7 @@ A clinician shouldn't have to chase a missing intake form before reviewing it. A
 
 Start with the work and eligibility rules agreed by the practice, then represent them in the resource model. The [Digital Health Operations blog post](/blog/digital-health-operations#top-of-license-care) explains why a shared task system is useful across clinical and administrative roles.
 
-## Name the Team, the Role, and the Task Owner
+## Name the Team, the Role, and the Task Owner {#separate-three-kinds-of-responsibility}
 
 | Responsibility | Recommended representation |
 | --- | --- |
@@ -19,7 +19,7 @@ An organization-wide intake pool does not need a patient-specific CareTeam for e
 
 Link an ongoing team through `CarePlan.careTeam` or `EpisodeOfCare.team`. A case coordinator can be represented by `EpisodeOfCare.careManager`. Keep today's Task owner explicit even when it is a member of that team.
 
-## Let Coordinators Prepare and Clinicians Review
+## Let Coordinators Prepare and Clinicians Review {#model-preparation-and-clinical-review}
 
 Consider an assessment workflow: a coordinator checks completeness, then a clinician reviews the assessment and decides on follow-up. Use two Tasks because the owners and completion criteria differ. That gives each person a clear place to start and a clear definition of done.
 
@@ -48,7 +48,7 @@ Completing preparation does not authorize a clinical service. Persist a clinical
 
 {{< /warning >}}
 
-## Check Who Can Take the Work
+## Check Who Can Take the Work {#check-eligibility-before-assignment}
 
 Use `Task.performerType` to classify the required role, then evaluate the candidate's current credentials, service enrollment, jurisdiction, availability, and supervision requirements in the controlled assignment path. A matching role code alone is insufficient.
 
@@ -56,7 +56,7 @@ For multi-state services, follow [State-by-State Licensure](/docs/scheduling/sta
 
 Agree on which roles may perform each action with the practice, including any supervision requirements. Use those decisions to configure assignment rules and validated role codes.
 
-## Hand Off Work Without Losing Its Owner
+## Hand Off Work Without Losing Its Owner {#claim-transfer-and-escalate}
 
 Use a version-checked update when changing `Task.owner`. If another person has claimed the item, reload and evaluate the new state. Let the user act on the current assignment.
 
@@ -64,7 +64,7 @@ For the same work item, reassignment normally updates the existing Task. Record 
 
 If no eligible assignee is available, put the Task `on-hold`, explain why in `statusReason`, and assign an accountable escalation owner. A local `businessStatus` can identify the exception queue.
 
-## Configure Who Can See the Work
+## Configure Who Can See the Work {#assignment-and-access}
 
 Enforce resource access with [Access Policies](/docs/access/access-policies) and ProjectMembership, including what the former owner can read after transfer. Assignment records responsibility; permission rules determine visibility for the Task and each linked resource. Keep patient references on each patient-related resource.
 

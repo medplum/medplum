@@ -72,7 +72,7 @@ Filter threads by patient:
   {{< /tab >}}
 {{< /tabs >}}
 
-### Filter by Current User
+### Filter by Current User {#filter-by-current-user}
 
 To show threads the current user participates in, filter by `recipient`:
 

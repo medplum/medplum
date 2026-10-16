@@ -5,7 +5,7 @@ title: Creating and Capturing Referrals
 
 Referral forms vary by specialty, but the receiving team usually needs the same starting point: who the patient is, what service is requested, why it is needed, and who is requesting it. Capture that common information consistently, then add the specialty-specific details.
 
-## Give Each Requested Service Its Own Identity
+## Give Each Requested Service Its Own Identity {#start-with-the-servicerequest}
 
 Use one [ServiceRequest](/docs/api/fhir/resources/servicerequest) for each independently managed requested service. If a form requests several distinct services, create separate requests and use a shared `requisition` identifier when they were authorized together.
 
@@ -28,7 +28,7 @@ You can create a referral outside a visit. Keep `encounter` optional for intake 
 
 {{< /tip >}}
 
-## Turn Form Answers into a Referral
+## Turn Form Answers into a Referral {#capture-and-map-the-form}
 
 A simple application form can construct the ServiceRequest directly. For reusable forms, use a [Questionnaire](/docs/questionnaires) and retain the QuestionnaireResponse. A shared set of core questions helps specialty forms produce a consistent request model.
 
@@ -44,7 +44,7 @@ flowchart LR
 
 Keep an audit of the mapping and clinical author. Record the clinical author in `ServiceRequest.requester` and preserve the Bot's execution identity separately.
 
-## Let the Clinician Review Before Release
+## Let the Clinician Review Before Release {#save-drafts-and-release-orders}
 
 A draft order uses `status: draft` and `intent: order`. Once the authorized user releases it, change the status to `active` and record when it became actionable in `authoredOn`. Sending is a later operational step and can fail while the clinical order remains active.
 

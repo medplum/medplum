@@ -18,6 +18,7 @@ A filter expression has three parts: a **parameter**, an **operator**, and a **v
 
 <details>
   <summary>Example: Filter syntax</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="syntaxTs" >}}
@@ -57,6 +58,7 @@ This example will return all male patients that have the string "sim" somewhere 
 
 <details>
   <summary>Example: Filtering a search based on both name and gender</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="logicalAndTs" >}}
@@ -74,6 +76,7 @@ This example will return any patients that have an identifier of 12345 OR the ph
 
 <details>
   <summary>Example: Filtering a search based on either an identifier or phone number</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="logicalOrTs" >}}
@@ -93,6 +96,7 @@ You can further refine your search by nesting filters using parentheses and logi
 
 <details>
   <summary>Example: Filtering a search based on gender and two potential names</summary>
+
   {{< tabs groupId="language" >}}
     {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="nestedTs" >}}
