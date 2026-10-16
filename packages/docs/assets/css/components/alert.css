@@ -16,6 +16,19 @@
   margin-bottom: 16px;
 }
 
+/* As in Infima: links take the alert's text color, always underlined in its border color, thicker on hover */
+.alert a {
+  color: var(--ifm-alert-foreground-color);
+  text-decoration: underline;
+  text-decoration-color: var(--ifm-alert-border-color);
+
+  /* Repeat the color: the global a:hover's text-decoration shorthand would reset it */
+  &:hover {
+    text-decoration-color: var(--ifm-alert-border-color);
+    text-decoration-thickness: 2px;
+  }
+}
+
 .admonition-heading {
   display: flex;
   align-items: center;
