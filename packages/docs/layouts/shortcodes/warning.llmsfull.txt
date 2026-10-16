@@ -1,0 +1,6 @@
+{{- /* Plain text for /llms-full.txt: a Docusaurus-style admonition block */ -}}
+:::warning{{ with .Get "title" }}[{{ . }}]{{ end }}
+
+{{ trim .Inner "\n" }}
+
+:::

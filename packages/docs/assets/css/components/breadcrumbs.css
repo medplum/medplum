@@ -1,0 +1,38 @@
+.breadcrumbs {
+  display: none; /* Hidden by default */
+  align-items: center;
+  list-style: none;
+  font-size: 12.8px;
+  margin-bottom: 13px;
+}
+
+.breadcrumbs a,
+.breadcrumbs span {
+  display: inline-block;
+  border-radius: 16px;
+  margin-right: 8px;
+  padding: 5px 10px;
+  line-height: 22px;
+}
+
+.breadcrumbs svg {
+  width: 16px;
+  height: 16px;
+  padding: 2px 0 0 0;
+  margin: 0;
+}
+
+.breadcrumbs a {
+  color: var(--ifm-font-color-base);
+}
+
+.breadcrumbs a:hover,
+.breadcrumbs span.active {
+  background: var(--ifm-breadcrumb-item-background-active);
+  color: var(--oc-grape-8);
+  text-decoration: none;
+}
+
+.breadcrumbs span.separator {
+  padding: 2px;
+}

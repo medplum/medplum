@@ -1,0 +1,43 @@
+{{- /* Icons and third-party scripts, ported from the Docusaurus headTags, scripts, and gtag config */ -}}
+<link rel="icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/img/medplum-apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.json" />
+{{ partial "docsearch-meta.html" .page }}
+
+{{- /* Cookie consent */}}
+<script src="https://cdn-cookieyes.com/client_data/11362a9d5311bc6aa21c5f47d05599c6/script.js"></script>
+
+{{- /* Google Analytics, only in production builds, not hugo server (including npm run preview); assets/js/head.mjs sets
+  up gtag */}}
+{{- with .gaId }}
+  <link rel="preconnect" href="https://www.google-analytics.com" />
+  <link rel="preconnect" href="https://www.googletagmanager.com" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ . }}"></script>
+{{- end }}
+
+{{- /* Kapa AI "Ask Us" widget, docked as a right-hand sidebar (see assets/js/components/kapa.mjs). Its API queue is set
+  up in assets/js/head.mjs. Keep data-modal-size in sync with --kapa-sidebar-width in main.css. */}}
+<script
+  async
+  src="https://widget.kapa.ai/kapa-widget.bundle.js"
+  data-website-id="5cda65f5-5f1d-4b8c-846d-1fe83121c171"
+  data-project-name="Medplum"
+  data-project-color="#9c36b5"
+  data-project-color-dark="#cc5de8"
+  data-project-logo="/img/logo.svg"
+  data-launcher-button-image="/img/logo-white.svg"
+  data-launcher-button-image-height="28"
+  data-launcher-button-image-width="28"
+  data-launcher-button-width="auto"
+  data-launcher-button-padding-x="14px"
+  data-launcher-button-label-font-size="14px"
+  data-launcher-button-border="none"
+  data-launcher-button-border-radius="16px"
+  data-launcher-button-hover-background-color="#862e9c"
+  data-launcher-button-text="Ask Us"
+  data-modal-title="Ask Medplum AI"
+  data-font-family="'Poppins', sans-serif"
+  data-color-scheme-selector="[data-theme='dark']"
+  data-view-mode="sidebar"
+  data-modal-size="400px"
+></script>

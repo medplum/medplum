@@ -1,0 +1,1004 @@
+#!/usr/bin/env node
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+// Regenerates content/, static/, and data/sidebar.yml from the Docusaurus site at a git ref.
+// Temporary: keeps the Hugo site in sync with docs edits on main until the Docusaurus sources are removed.
+//
+// Usage: node scripts/convert-docusaurus.mjs [git-ref]   (default: origin/main)
+//
+// Everything in content/ is regenerated except HAND_WRITTEN, the pages built for Hugo directly.
+
+/* global console */
+/* global process */
+
+import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const ref = process.argv[2] ?? 'origin/main';
+const hugoRoot = path.resolve(import.meta.dirname, '..');
+const repoRoot = path.resolve(hugoRoot, '../..');
+const contentRoot = path.join(hugoRoot, 'content');
+
+// Content paths (relative to content/) not generated from Docusaurus; a trailing slash marks a directory
+const HAND_WRITTEN = [
+  '_index.md',
+  'about.md',
+  'blog/_index.md',
+  'blog/archive.md',
+  'blog/authors.md',
+  'brand/',
+  'case-studies.md',
+  'docs/api/fhir/_content.gotmpl',
+  'docs/sdk/',
+  'enterprise.md',
+  'pricing.md',
+  'products/_index.md',
+  'search.md',
+  'solutions/_index.md',
+];
+
+// Docusaurus directories generated from FHIR definitions and the SDK build; Hugo renders those itself
+const SKIPPED_SOURCE_DIRS = ['docs/sdk', 'docs/api/fhir/resources', 'docs/api/fhir/datatypes', 'docs/api/fhir/medplum'];
+
+const SOURCE_ROOTS = [
+  { source: 'blog', dest: 'blog' },
+  { source: 'docs', dest: 'docs' },
+  { source: 'src/pages', dest: '' },
+];
+
+const ASSET_EXTENSIONS = /\.(png|jpe?g|gif|webp|svg|mp4|webm|pdf|zip|json|csv|txt|docx?|xlsx?)$/i;
+
+// @medplum/mock, for code blocks that interpolate mock data (requires a built packages/mock)
+const mockModule = await import('@medplum/mock');
+
+const warnings = [];
+function warn(message) {
+  warnings.push(message);
+}
+
+async function main() {
+  const docusaurusRoot = exportDocusaurus(ref);
+  console.log(`Converting packages/docs at ${ref}`);
+
+  const pages = collectPages(docusaurusRoot);
+  const urlBySource = new Map(pages.map((p) => [p.sourcePath, p.url]));
+
+  removeGeneratedContent();
+  for (const page of pages.filter((p) => !isHandWritten(p.destPath))) {
+    writePage(page, urlBySource);
+  }
+  writeGeneratedIndexes(docusaurusRoot, pages);
+  writeTagPages(pages);
+  writeAuthors(docusaurusRoot);
+  syncStatic(docusaurusRoot);
+  await writeSidebar(docusaurusRoot, pages);
+
+  fs.rmSync(path.dirname(docusaurusRoot), { recursive: true, force: true });
+  console.log(`Wrote ${pages.length} pages`);
+  for (const w of warnings) {
+    console.warn(`WARN ${w}`);
+  }
+}
+
+function exportDocusaurus(gitRef) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'docusaurus-'));
+  execSync(`git archive ${gitRef} packages/docs | tar -x -C ${tmp}`, { cwd: repoRoot, stdio: 'inherit' });
+  return path.join(tmp, 'packages/docs');
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Planning: where each Docusaurus page lands in content/, and its URL
+// ---------------------------------------------------------------------------------------------------------------------
+
+function collectPages(docusaurusRoot) {
+  const pages = [];
+  for (const { source, dest } of SOURCE_ROOTS) {
+    const sourceRoot = path.join(docusaurusRoot, source);
+    for (const sourcePath of walk(sourceRoot)) {
+      const rel = toPosix(path.relative(docusaurusRoot, sourcePath));
+      if (!/\.mdx?$/.test(rel) || isPartial(rel) || SKIPPED_SOURCE_DIRS.some((d) => rel.startsWith(d + '/'))) {
+        continue;
+      }
+      const raw = fs.readFileSync(sourcePath, 'utf8');
+      const { frontMatter, body } = splitFrontMatter(raw);
+      const assets = findLocalAssets(body, path.dirname(sourcePath));
+      const destPath = planDestPath(sourcePath, sourceRoot, dest, assets.length > 0);
+      pages.push({ sourcePath, frontMatter, body, assets, destPath, section: dest || 'pages' });
+    }
+  }
+  for (const page of pages) {
+    page.url = planUrl(page);
+  }
+  return pages;
+}
+
+function isPartial(rel) {
+  return path.basename(rel).startsWith('_');
+}
+
+function planDestPath(sourcePath, sourceRoot, destRoot, hasAssets) {
+  const rel = toPosix(path.relative(sourceRoot, sourcePath)).replace(/\.mdx?$/, '');
+  const dir = path.posix.dirname(rel);
+  const base = path.posix.basename(rel);
+  const join = (...parts) => path.posix.join(destRoot, ...parts.filter((p) => p && p !== '.'));
+
+  if (base === 'index' || (base === 'home' && dir === '.')) {
+    // Outside docs and blog (destRoot ''), a folder's index with no other pages is a regular page, not a section, so
+    // it renders as itself: as a section, solutions/interoperability got the Solutions landing page's list layout
+    if (destRoot === '' && dir !== '.' && !hasChildPages(path.dirname(sourcePath), sourcePath)) {
+      return join(dir, 'index.md');
+    }
+    return join(dir, '_index.md');
+  }
+  // Docusaurus serves foo/foo.md at /foo; Hugo's equivalent is the page bundle foo/index.md
+  if (path.posix.basename(dir) === base) {
+    return join(dir, hasChildPages(path.dirname(sourcePath), sourcePath) ? '_index.md' : 'index.md');
+  }
+  // Pages with images next to them become bundles so Hugo publishes the images
+  if (hasAssets) {
+    const siblingDir = path.join(path.dirname(sourcePath), base);
+    return join(dir, base, fs.existsSync(siblingDir) && hasChildPages(siblingDir) ? '_index.md' : 'index.md');
+  }
+  return join(dir, base + '.md');
+}
+
+function hasChildPages(dir, exclude) {
+  return walk(dir).some((f) => f !== exclude && /\.mdx?$/.test(f) && !isPartial(f));
+}
+
+function planUrl({ destPath, frontMatter, section }) {
+  const slug = getField(frontMatter, 'slug');
+  if (section === 'blog' && !destPath.endsWith('_index.md')) {
+    if (slug) {
+      return '/blog/' + slug.replace(/^\//, '');
+    }
+    // Docusaurus derives the URL of a post without a slug from its dated file or folder name
+    const match = /(\d{4})-(\d{2})-(\d{2})-([^/]+?)(?:\/(?:_?index)\.md|\.md)$/.exec(destPath);
+    return match ? `/blog/${match[1]}/${match[2]}/${match[3]}/${match[4]}` : '/' + stripPage(destPath);
+  }
+  // Docusaurus doc slugs starting with "/" are relative to the docs root
+  if (section === 'docs' && slug?.startsWith('/')) {
+    return slug === '/' ? '/docs' : '/docs' + slug;
+  }
+  return '/' + stripPage(destPath);
+}
+
+function stripPage(destPath) {
+  return destPath.replace(/\/?(_index|index)\.md$/, '').replace(/\.md$/, '');
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Writing
+// ---------------------------------------------------------------------------------------------------------------------
+
+function removeGeneratedContent() {
+  for (const file of walk(contentRoot)) {
+    if (!isHandWritten(toPosix(path.relative(contentRoot, file)))) {
+      fs.rmSync(file);
+    }
+  }
+  removeEmptyDirs(contentRoot);
+}
+
+function isHandWritten(contentPath) {
+  return HAND_WRITTEN.some((h) => (h.endsWith('/') ? contentPath.startsWith(h) : contentPath === h));
+}
+
+function writePage(page, urlBySource) {
+  const { sourcePath, destPath } = page;
+  const destFile = path.join(contentRoot, destPath);
+  const bundleDir = path.dirname(destFile);
+  fs.mkdirSync(bundleDir, { recursive: true });
+
+  // The conversions below are for markdown and MDX, so hide the code in fenced blocks from them: they would drop
+  // its import lines and # comments, and rewrite its JSX
+  const code = maskCodeBlocks(applyMagicComments(dedentDetails(inlinePartials(page.body, path.dirname(sourcePath)))));
+  let body = code.masked;
+  body = convertBody(body, sourcePath);
+  body = copyAssets(body, page, bundleDir);
+  body = rewriteDocLinks(body, sourcePath, urlBySource);
+  body = fixSummaries(body);
+
+  const frontMatter = convertFrontMatter(page, body);
+  body = body.replace(/^# .+\n?/m, ''); // The layout renders the title
+
+  fs.writeFileSync(destFile, code.restore(cleanupWhitespace(frontMatter + '\n\n' + body.trimStart())), 'utf8');
+}
+
+// MDX ignores the indentation of markdown inside JSX like <details>; to CommonMark, four spaces make a code block (a
+// fence indented that far shows as text). Remove the common indentation of each <details> block's prose. Fenced code
+// moves exactly as far as its opening fence, so the code's own indentation is kept.
+function dedentDetails(body) {
+  return body.replace(/^([ \t]*<details\b[^>]*>[ \t]*\n)([\s\S]*?)(\n[ \t]*<\/details>)/gm, (_m, open, inner, close) => {
+    const lines = inner.split('\n');
+    const leading = (line) => /^[ \t]*/.exec(line)[0].length;
+    const indents = [];
+    let fence = '';
+    for (const line of lines) {
+      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker && (!fence || marker.startsWith(fence))) {
+        fence = fence ? '' : marker;
+      } else if (!fence && line.trim()) {
+        indents.push(leading(line));
+      }
+    }
+    const indent = indents.length ? Math.min(...indents) : 0;
+    if (!indent) {
+      return open + inner + close;
+    }
+    fence = '';
+    let shift = 0;
+    const out = lines.map((line) => {
+      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker && !fence) {
+        fence = marker;
+        shift = Math.min(indent, leading(line));
+      } else if (marker && marker.startsWith(fence)) {
+        fence = '';
+        return line.slice(Math.min(shift, leading(line)));
+      } else if (!fence) {
+        return line.slice(Math.min(indent, leading(line)));
+      }
+      return line.slice(Math.min(shift, leading(line)));
+    });
+    return open + out.join('\n') + close;
+  });
+}
+
+// MDX renders markdown inside <summary>, but to CommonMark it's raw HTML, so convert the inline markdown there (code,
+// bold, italics, and links, including [text][ref] references to the page's link definitions) to HTML
+function fixSummaries(body) {
+  const refs = new Map([...body.matchAll(/^ {0,3}\[([^\]]+)\]:\s*(\S+)/gm)].map((m) => [m[1].toLowerCase(), m[2]]));
+  const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return body.replace(/<summary>([\s\S]*?)<\/summary>/g, (_match, inner) => {
+    const codes = [];
+    let html = inner.replace(/`([^`]+)`/g, (_m, code) => `\u0001${codes.push(`<code>${escape(code)}</code>`) - 1}\u0001`);
+    html = html
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (m, text, ref) => {
+        const url = refs.get((ref || text).toLowerCase());
+        return url ? `<a href="${url}">${text}</a>` : m;
+      })
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/(?<![\w*])[*_](?=\S)(.+?)(?<=\S)[*_](?![\w*])/g, '<em>$1</em>');
+    return `<summary>${html.replace(/\u0001(\d+)\u0001/g, (_m, i) => codes[Number(i)])}</summary>`;
+  });
+}
+
+// Docusaurus's magic comments (// or # highlight-next-line, highlight-start, highlight-end) mark code lines to
+// highlight. Drop them and give the fence the equivalent Hugo option, {hl_lines=[...]}, numbered without them.
+// (layouts/partials/code-example-source.html does the same for code examples.)
+function applyMagicComments(body) {
+  const out = [];
+  let fence;
+  for (const line of body.split('\n')) {
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (!fence) {
+      out.push(line);
+      if (marker) {
+        fence = { marker: marker[1], index: out.length - 1, lines: 0, highlight: [], next: false, inRange: false };
+      }
+      continue;
+    }
+    if (marker && marker[1][0] === fence.marker[0] && marker[1].length >= fence.marker.length && !marker[2].trim()) {
+      if (fence.highlight.length) {
+        out[fence.index] = `${out[fence.index].trimEnd()} {hl_lines=[${fence.highlight.join(',')}]}`;
+      }
+      out.push(line);
+      fence = undefined;
+      continue;
+    }
+    const magic = /^\s*(?:\/\/|#)\s*highlight-(next-line|start|end)\s*$/.exec(line)?.[1];
+    if (magic === 'next-line') {
+      fence.next = true;
+    } else if (magic) {
+      fence.inRange = magic === 'start';
+    } else {
+      out.push(line);
+      fence.lines++;
+      if (fence.next || fence.inRange) {
+        fence.highlight.push(fence.lines);
+      }
+      fence.next = false;
+    }
+  }
+  return out.join('\n');
+}
+
+// Replaces the lines inside each fenced code block with a placeholder line, keeping the fence lines themselves (whose
+// language and highlight options are converted). restore() puts the code back.
+function maskCodeBlocks(body) {
+  const blocks = [];
+  const out = [];
+  let fence;
+  let lines = [];
+  for (const line of body.split('\n')) {
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (!fence) {
+      out.push(line);
+      if (marker) {
+        fence = marker[1];
+        lines = [];
+      }
+    } else if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length && !marker[2].trim()) {
+      if (lines.length) {
+        out.push(`CONVERTERCODEBLOCK${blocks.length}END`);
+        blocks.push(lines.join('\n'));
+      }
+      out.push(line);
+      fence = undefined;
+    } else {
+      lines.push(line);
+    }
+  }
+  if (fence) {
+    out.push(...lines); // Unclosed fence: leave it as written
+  }
+  return {
+    masked: out.join('\n'),
+    restore: (text) => text.replace(/CONVERTERCODEBLOCK(\d+)END/g, (_, i) => blocks[Number(i)]),
+  };
+}
+
+function convertFrontMatter(page, body) {
+  const lines = page.frontMatter ? page.frontMatter.split('\n').slice(1, -1) : [];
+  const has = (key) => lines.some((l) => l.startsWith(key + ':'));
+  const result = [];
+
+  for (let line of lines) {
+    // Hugo treats weight 0 as unweighted (sorted last) and weights are integers, while Docusaurus positions
+    // can be 0 or fractional (2.5), so map them to round(position * 10) + 10
+    if (line.startsWith('sidebar_position:')) {
+      line = `weight: ${Math.round(Number.parseFloat(line.slice('sidebar_position:'.length)) * 10) + 10}`;
+    }
+    if (line.startsWith('title:')) {
+      line = line.replace(/`/g, '');
+    }
+    // Docs slugs relative to the docs root become explicit URLs (or nothing, for the docs home)
+    if (page.section === 'docs' && /^slug:\s*['"]?\//.test(line)) {
+      continue;
+    }
+    // Docusaurus pages ignore slug (their URL is their file path), and in Hugo a slug like "/careers" on a section
+    // moves its pages to the site root
+    if (page.section === 'pages' && line.startsWith('slug:')) {
+      continue;
+    }
+    // Docs and blog tags are separate taxonomies, as in Docusaurus (see hugo.toml)
+    if (line.startsWith('tags:') && (page.section === 'docs' || page.section === 'blog')) {
+      line = `${page.section}_tags:` + line.slice('tags:'.length);
+    }
+    result.push(line);
+  }
+
+  if (!has('id')) {
+    result.unshift(`id: ${path.basename(page.sourcePath).replace(/\.mdx?$/, '')}`);
+  }
+  if (!has('title')) {
+    const heading = /^# (.+)$/m.exec(body)?.[1]?.trim() ?? (warn(`No title: ${page.sourcePath}`), 'Untitled');
+    const title = heading.replace(/`/g, '');
+    result.splice(1, 0, `title: ${title.includes(':') ? JSON.stringify(title) : title}`);
+  }
+  if (page.url !== '/' + stripPage(page.destPath) && !result.some((l) => l.startsWith('slug:'))) {
+    result.push(`url: ${page.url}`);
+  }
+  return ['---', ...result, '---'].join('\n');
+}
+
+// Inline `import Foo from './_foo.mdx'` partials where `<Foo />` is used
+function inlinePartials(body, sourceDir) {
+  const imports = [...body.matchAll(/^import (\w+) from ['"](\.{1,2}\/[^'"]+\.mdx?)['"];?$/gm)];
+  for (const [line, name, rel] of imports) {
+    const partial = splitFrontMatter(fs.readFileSync(path.resolve(sourceDir, rel.replace(/\\_/g, '_')), 'utf8')).body;
+    body = body.replace(line, '').replaceAll(new RegExp(`<${name}\\s*/>`, 'g'), partial.trim());
+  }
+  return body;
+}
+
+function convertBody(body, sourcePath) {
+  body = convertCodeExamples(body, sourcePath);
+
+  // Imported images (`import diagram from './diagram.png'`) become their relative path
+  for (const [line, name, rel] of body.matchAll(/^import (\w+) from ['"](\.{1,2}\/[^'"]+)['"];?$/gm)) {
+    if (ASSET_EXTENSIONS.test(rel)) {
+      body = body.replace(line, '').replaceAll(`{${name}}`, `"${rel}"`);
+    }
+  }
+
+  body = body
+    .replace(/^import .+ from .+;?$/gm, '') // Remaining MDX imports (React components)
+    .replaceAll('```cli', '```bash')
+    .replaceAll('```curl', '```bash')
+    .replaceAll('```fsh', '```txt')
+    .replaceAll('```PLpgSQL', '```sql')
+    .replaceAll('{/* truncate */}', '<!--more-->')
+    // Custom heading IDs, written {/* #id */} (or \{#id}) in MDX, become Hugo heading attributes, so #id links keep working
+    .replace(/^(#{1,6} .*?)[ \t]*(?:\{\/\*\s*#([^\s{}*]+)\s*\*\/\}|\\\{#([^\s{}*]+)\})[ \t]*$/gm, (_m, heading, a, b) => {
+      // Goldmark's {#id} shorthand takes word characters and hyphens only; others (as in "-(optional)") need {id="..."}
+      const id = a ?? b;
+      return `${heading} ${/^[\w-]+$/.test(id) ? `{#${id}}` : `{id="${id}"}`}`;
+    })
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '') // JSX comments
+    // MDX parses markdown right after <summary>; in CommonMark it would stay part of the <details> HTML block (a code
+    // fence there doesn't open, so its closing fence opens one that swallows the rest of the page)
+    .replace(/(<\/summary>)[ \t]*\n(?![ \t]*\n)/g, '$1\n\n')
+    .replace(/className=/g, 'class=');
+
+  body = convertJsxAttributes(body);
+  body = fixHtmlTables(body);
+  body = fixHighlightLines(body);
+  body = fixAdmonitions(body);
+  body = fixTabs(body);
+  body = fixLandingComponents(body);
+  body = fixEmphasizedHeadingIds(body);
+  return body;
+}
+
+// Hugo's automatic heading IDs stop at code or a link inside emphasis: "### _Using the `$execute` endpoint_" gets
+// #using-the. Give those headings the ID Docusaurus generated (github-slugger) explicitly, so links to them still work.
+function fixEmphasizedHeadingIds(body) {
+  let fence = '';
+  return body
+    .split('\n')
+    .map((line) => {
+      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker && (!fence || marker.startsWith(fence))) {
+        fence = fence ? '' : marker;
+        return line;
+      }
+      const heading = !fence && /^(#{1,6}) (.*?)[ \t]*$/.exec(line);
+      if (!heading || /\{#[^}]*\}$|\{id="[^"]*"\}$/.test(heading[2])) {
+        return line;
+      }
+      // Emphasis (outside code spans) containing code, a link, or a URL
+      const emphasis = heading[2].match(/(?<![\w*_])([*_])(?=\S)(.+?)(?<=\S)\1(?![\w*_])/g) ?? [];
+      if (!emphasis.some((e) => /`|\]\(|https?:\/\//.test(e))) {
+        return line;
+      }
+      const text = heading[2]
+        .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/`/g, '')
+        .replace(/(?<![\w*_])[*_]+|[*_]+(?![\w*_])/g, '');
+      const id = text
+        .trim()
+        .toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N}\p{Pc}\- ]/gu, '')
+        .replace(/ /g, '-');
+      return `${line.trimEnd()} {#${id}}`;
+    })
+    .join('\n');
+}
+
+// <MedplumCodeBlock language="ts" selectBlocks="a,b">{Example}</MedplumCodeBlock>, with
+// `import Example from '!!raw-loader!@site/../examples/src/foo.ts'`, becomes a code-example shortcode that reads
+// the example file at build time, so the docs keep showing the type-checked source.
+function convertCodeExamples(body, sourcePath) {
+  const files = {};
+  for (const [line, name, spec] of body.matchAll(/^import (\w+) from ['"]!!raw-loader!([^'"]+)['"];?$/gm)) {
+    files[name] = repoRelative(spec, sourcePath);
+    body = body.replace(line, '');
+  }
+
+  // Shortcodes are unindented: an indented shortcode would render as a Markdown code block
+  return body
+    .replace(/^[ \t]*<(MedplumCodeBlock|CodeBlock)\b([^>]*)>\s*\{(\w+)\}\s*<\/\1>/gm, (match, _component, attrs, name) => {
+      const file = files[name];
+      if (!file) {
+        warn(`Unknown code example ${name} in ${sourcePath}`);
+        return match;
+      }
+      const { language, blocks, title, lineNumbers, highlight } = codeBlockAttributes(attrs);
+      const params = [`file="${file}"`];
+      if (language) {
+        params.push(`language="${language}"`);
+      }
+      if (blocks) {
+        params.push(`blocks="${blocks}"`);
+      }
+      if (title) {
+        params.push(`title="${title}"`);
+      }
+      if (lineNumbers) {
+        params.push('lineNumbers="true"');
+      }
+      if (highlight) {
+        params.push(`highlight="${highlight}"`);
+      }
+      return `{{< code-example ${params.join(' ')} >}}`;
+    })
+    .replace(/^[ \t]*<(MedplumCodeBlock|CodeBlock)\b([^>]*)>\s*\{([\s\S]*?)\}\s*<\/\1>/gm, (match, _component, attrs, expression) => {
+      const { language, lineNumbers, highlight } = codeBlockAttributes(attrs);
+      const options = [lineNumbers && 'linenos=table', highlight && `hl_lines=${highlight.replaceAll(',', ' ')}`].filter(Boolean);
+      const code = dedent(evaluateExpression(expression, body, sourcePath));
+      return `{{< highlight ${language ?? 'text'}${options.length ? ` "${options.join(',')}"` : ''} >}}\n${code}\n{{< /highlight >}}`;
+    });
+}
+
+function codeBlockAttributes(attrs) {
+  const attr = (key) => new RegExp(`${key}=["']([^"']*)["']`).exec(attrs)?.[1];
+  return {
+    language: attr('language'),
+    blocks: attr('selectBlocks'),
+    title: attr('title'),
+    lineNumbers: /\bshowLineNumbers\b/.test(attrs),
+    highlight: attr('metastring')
+      ?.match(/\{([\d,\s-]+)\}/)?.[1]
+      ?.replace(/\s/g, ''),
+  };
+}
+
+// Docusaurus evaluates inline code ({`...`} or {expression}) as JS, sometimes using @medplum/mock data
+function evaluateExpression(expression, body, sourcePath) {
+  const names = [...body.matchAll(/^import \{([^}]+)\} from ['"]@medplum\/mock['"];?$/gm)].flatMap((m) => m[1].split(',').map((s) => s.trim()));
+  // eslint-disable-next-line no-new-func -- evaluating the docs' own code blocks, as MDX did
+  const evaluate = (expr) => String(new Function(...names, `return (${expr});`)(...names.map((n) => mockModule[n])));
+  try {
+    return evaluate(expression);
+  } catch (err) {
+    // MDX ignores a stray "}" after the expression (family-relationships has one)
+    try {
+      return evaluate(expression.replace(/\}\s*$/, ''));
+    } catch {
+      warn(`Could not evaluate code block in ${sourcePath}: ${err.message}`);
+      return expression;
+    }
+  }
+}
+
+function dedent(code) {
+  const lines = code.replace(/^\s*\n|\n\s*$/g, '').split('\n');
+  const indent = Math.min(...lines.filter((l) => l.trim()).map((l) => /^[ \t]*/.exec(l)[0].length));
+  return lines.map((l) => l.slice(indent)).join('\n');
+}
+
+function repoRelative(spec, sourcePath) {
+  const docsDir = sourcePath.slice(0, sourcePath.indexOf('/packages/docs/') + '/packages/docs'.length);
+  const absolute = spec.startsWith('@site/') ? path.join(docsDir, spec.slice('@site/'.length)) : path.resolve(path.dirname(sourcePath), spec);
+  return toPosix(path.relative(path.resolve(docsDir, '../..'), absolute));
+}
+
+// JSX attribute syntax that isn't valid HTML: style={{maxWidth: '100%'}}, src={"..."}, width={50}
+function convertJsxAttributes(body) {
+  return body
+    .replace(/style=\{\{([^}]*)\}\}/g, (_, obj) => {
+      const declarations = [...obj.matchAll(/(\w+)\s*:\s*(?:(['"])(.*?)\2|([\d.]+))/g)].map(
+        ([, key, , str, num]) => `${key.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}: ${str ?? num + 'px'}`
+      );
+      return `style="${declarations.join('; ')}"`;
+    })
+    .replace(/(\s[\w-]+)=\{\s*(['"])(.*?)\2\s*\}/g, '$1="$3"')
+    .replace(/(\s[\w-]+)=\{([\d.]+)\}/g, '$1="$2"');
+}
+
+// MDX parses Markdown inside JSX, but Markdown treats an HTML block as raw HTML that ends at the first blank line.
+// So in HTML tables, drop blank lines and convert the inline Markdown (bold, links) to HTML.
+function fixHtmlTables(body) {
+  return body.replace(/^[ \t]*<table[\s\S]*?<\/table>/gm, (table) =>
+    table
+      .replace(/\n[ \t]*(?=\n)/g, '')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+  );
+}
+
+// Relative references to files next to the page (images, videos, downloads)
+function findLocalAssets(body, sourceDir) {
+  const refs = new Set();
+  const patterns = [
+    /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, // Markdown images
+    /\]\(([^)\s#]+)\)/g, // Markdown links to files
+    /\s(?:src|poster|href)=\{?["']([^"']+)["']\}?/g, // HTML attributes
+    /^import \w+ from ['"](\.{1,2}\/[^'"]+)['"];?$/gm, // Imported images
+  ];
+  for (const pattern of patterns) {
+    for (const [, ref] of body.matchAll(pattern)) {
+      if (!/^([a-z]+:|\/|#)/i.test(ref) && ASSET_EXTENSIONS.test(ref) && !ref.startsWith('!!raw-loader')) {
+        if (fs.existsSync(path.resolve(sourceDir, decodeURI(ref)))) {
+          refs.add(ref);
+        } else {
+          warn(`Missing asset ${ref} in ${sourceDir}`);
+        }
+      }
+    }
+  }
+  return [...refs];
+}
+
+// Copies a page's assets into its bundle. Markdown images keep a bundle-relative name (resolved by the image render
+// hook); other references get an absolute URL, since relative URLs resolve against the parent of a slashless page URL.
+function copyAssets(body, page, bundleDir) {
+  for (const ref of page.assets) {
+    const source = path.resolve(path.dirname(page.sourcePath), decodeURI(ref));
+    const name = path.basename(source);
+    fs.copyFileSync(source, path.join(bundleDir, name));
+    const escaped = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Mark rewritten images (\0) so the second pass can't match them when the ref is already a bare name
+    body = body
+      .replace(new RegExp(`(!\\[[^\\]]*\\]\\()${escaped}([\\s)])`, 'g'), `$1\0${name}$2`)
+      .replace(new RegExp(`(\\]\\(|["'])${escaped}([)"'])`, 'g'), `$1${page.url}/${name}$2`);
+  }
+  return body.replaceAll('\0', '');
+}
+
+// Docusaurus resolves links to .md/.mdx files to the target page's URL
+function rewriteDocLinks(body, sourcePath, urlBySource) {
+  return body.replace(/\]\(((?!https?:)[^)\s#]+\.mdx?)(#[^)\s]*)?\)/g, (match, target, anchor = '') => {
+    const resolved = target.startsWith('/')
+      ? path.join(sourcePath.slice(0, sourcePath.indexOf('/packages/docs/') + '/packages/docs'.length), 'docs', target.replace(/^\/docs\//, '/'))
+      : path.resolve(path.dirname(sourcePath), decodeURI(target));
+    const url = urlBySource.get(resolved) ?? generatedDocUrl(resolved);
+    if (!url) {
+      warn(`Unresolved doc link ${target} in ${sourcePath}`);
+      return match;
+    }
+    return `](${url}${anchor})`;
+  });
+}
+
+// Docusaurus categories linking to a generated index (_category_.json) become section pages listing their docs,
+// unless the directory already has an index page
+function writeGeneratedIndexes(docusaurusRoot, pages) {
+  for (const file of walk(path.join(docusaurusRoot, 'docs')).filter((f) => path.basename(f) === '_category_.json')) {
+    const category = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const dir = toPosix(path.relative(docusaurusRoot, path.dirname(file)));
+    if (category.link?.type !== 'generated-index' || pages.some((p) => stripPage(p.destPath) === dir)) {
+      continue;
+    }
+    const frontMatter = [
+      `title: ${JSON.stringify(category.link.title ?? category.label)}`,
+      `sidebar_label: ${JSON.stringify(category.label)}`,
+      ...(category.link.description ? [`description: ${JSON.stringify(category.link.description)}`] : []),
+      ...(category.position === undefined ? [] : [`weight: ${Math.round(category.position * 10) + 10}`]),
+      'generatedIndex: true',
+    ];
+    fs.mkdirSync(path.join(contentRoot, dir), { recursive: true });
+    fs.writeFileSync(path.join(contentRoot, dir, '_index.md'), ['---', ...frontMatter, '---', ''].join('\n'), 'utf8');
+  }
+}
+
+// Blog authors (blog/authors.yml) as an ordered list in data/authors.json; the authors page keeps the file's order
+function writeAuthors(docusaurusRoot) {
+  const authors = [];
+  for (const line of fs.readFileSync(path.join(docusaurusRoot, 'blog/authors.yml'), 'utf8').split('\n')) {
+    const key = /^(\w[\w-]*):\s*$/.exec(line)?.[1];
+    const field = /^\s+(\w+):\s*(.*?)\s*$/.exec(line);
+    if (key) {
+      authors.push({ key });
+    } else if (field && authors.length > 0) {
+      authors.at(-1)[field[1]] = field[2].replace(/^(['"])(.*)\1$/, '$2');
+    }
+  }
+  fs.writeFileSync(path.join(hugoRoot, 'data/authors.json'), JSON.stringify(authors, null, 2) + '\n', 'utf8');
+}
+
+// Tag pages. Docusaurus tag URLs kebab-case the label (PlanDefinition -> plan-definition) where Hugo would just
+// lowercase it (plandefinition), so those tags get a term page setting the Docusaurus slug
+function writeTagPages(pages) {
+  // Taxonomy pages titled as on Docusaurus, rather than by their taxonomy name
+  for (const taxonomy of ['docs_tags', 'blog_tags']) {
+    fs.mkdirSync(path.join(contentRoot, taxonomy), { recursive: true });
+    fs.writeFileSync(path.join(contentRoot, taxonomy, '_index.md'), '---\ntitle: Tags\n---\n', 'utf8');
+  }
+  const labels = new Set(pages.filter((p) => p.section === 'docs').flatMap((p) => parseTags(p.frontMatter)));
+  for (const label of labels) {
+    const hugoKey = label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const slug = kebabCase(label);
+    if (slug !== hugoKey) {
+      const dir = path.join(contentRoot, 'docs_tags', hugoKey);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, '_index.md'), `---\ntitle: ${JSON.stringify(label)}\nslug: ${slug}\n---\n`, 'utf8');
+    }
+  }
+}
+
+function parseTags(frontMatter) {
+  const inline = frontMatter && /^tags:\s*\[(.*)\]\s*$/m.exec(frontMatter);
+  if (inline) {
+    return inline[1]
+      .split(',')
+      .map((t) => t.trim().replace(/^['"]|['"]$/g, ''))
+      .filter(Boolean);
+  }
+  const block = frontMatter && /^tags:\s*\n((?:[ \t]+-.*\n?)+)/m.exec(frontMatter);
+  return block
+    ? block[1]
+        .split('\n')
+        .map((l) =>
+          l
+            .replace(/^\s*-\s*/, '')
+            .trim()
+            .replace(/^['"]|['"]$/g, '')
+        )
+        .filter(Boolean)
+    : [];
+}
+
+// lodash's kebabCase, which Docusaurus uses for tag permalinks
+function kebabCase(text) {
+  return (text.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g) ?? []).map((w) => w.toLowerCase()).join('-');
+}
+
+// URL of a page in a directory Hugo generates itself (SDK, FHIR reference), at the same path as on Docusaurus
+function generatedDocUrl(sourcePath) {
+  const rel = /\/packages\/docs\/(docs\/.+)\.mdx?$/.exec(sourcePath)?.[1];
+  return rel && SKIPPED_SOURCE_DIRS.some((d) => rel.startsWith(d + '/')) ? '/' + rel : undefined;
+}
+
+// Mirrors Docusaurus's static/ (minus the generated FHIR definitions), keeping files that Hugo-only layouts use
+function syncStatic(docusaurusRoot) {
+  const sourceStatic = path.join(docusaurusRoot, 'static');
+  const destStatic = path.join(hugoRoot, 'static');
+  const hugoOnlySources = ['layouts', 'assets', 'data', 'hugo.toml']
+    .flatMap((p) => walk(path.join(hugoRoot, p)))
+    .filter((f) => /\.(html|toml|ya?ml|json|scss|css|mjs|js|md)$/.test(f))
+    .map((f) => fs.readFileSync(f, 'utf8'))
+    .join('\n');
+
+  for (const file of walk(destStatic)) {
+    const rel = toPosix(path.relative(destStatic, file));
+    if (!fs.existsSync(path.join(sourceStatic, rel)) && !hugoOnlySources.includes('/' + rel)) {
+      fs.rmSync(file);
+    }
+  }
+  for (const file of walk(sourceStatic)) {
+    const rel = toPosix(path.relative(sourceStatic, file));
+    if (rel.startsWith('data/')) {
+      continue;
+    }
+    fs.mkdirSync(path.dirname(path.join(destStatic, rel)), { recursive: true });
+    fs.copyFileSync(file, path.join(destStatic, rel));
+  }
+  removeEmptyDirs(destStatic);
+}
+
+// Converts the Docusaurus docs sidebar (sidebars.ts) to data/sidebar.yml (rendered by layouts/partials/sidebar.html).
+// Node strips the TypeScript types on import. Item types:
+//   header        { value }                  <- html '<strong>Title</strong>' items
+//   doc           { id, label? }             <- 'id' strings and { type: 'doc' } items
+//   category      { label, id?, items }      <- id is the Hugo page for the category's link doc, if any
+//   autogenerated { dir }                    <- { type: 'autogenerated', dirName }; Hugo lists the section's pages
+// Docusaurus's shorthand categories ({ 'Label': [items] } or { 'Label': { 'Sub': [items] } }) become categories too.
+async function writeSidebar(docusaurusRoot, pages) {
+  const { default: sidebars } = await import(pathToFileURL(path.join(docusaurusRoot, 'sidebars.ts')).href);
+
+  // Docusaurus doc id (path under docs/ without extension) -> Hugo page path
+  const hugoPathById = new Map(
+    pages
+      .filter((p) => p.section === 'docs')
+      .map((p) => [toPosix(path.relative(path.join(docusaurusRoot, 'docs'), p.sourcePath)).replace(/\.mdx?$/, ''), stripPage(p.destPath)])
+  );
+  const toHugoPath = (id) => {
+    const hugoPath = hugoPathById.get(id);
+    if (!hugoPath && !SKIPPED_SOURCE_DIRS.some((d) => `docs/${id}`.startsWith(d + '/'))) {
+      warn(`Sidebar doc not found: ${id}`);
+    }
+    return hugoPath ?? `docs/${id}`;
+  };
+
+  const convertItems = (items) => items.flatMap(convert);
+  const convert = (item) => {
+    if (typeof item === 'string') {
+      return { type: 'doc', id: toHugoPath(item) };
+    }
+    if (!item.type) {
+      return Object.entries(item).map(([label, value]) => ({
+        type: 'category',
+        label,
+        items: Array.isArray(value) ? convertItems(value) : convert(value),
+      }));
+    }
+    switch (item.type) {
+      case 'html': {
+        // Section titles are '<strong>Title</strong>'; parse that exactly rather than sanitizing arbitrary HTML
+        const title = /^\s*<strong\b[^<>]*>([^<>]+)<\/strong>\s*$/.exec(item.value)?.[1];
+        if (!title) {
+          throw new Error(`Unsupported sidebar html item: ${item.value}`);
+        }
+        return { type: 'header', value: title.trim() };
+      }
+      case 'doc':
+        return { type: 'doc', id: toHugoPath(item.id), ...(item.label ? { label: item.label } : {}) };
+      case 'autogenerated':
+        return { type: 'autogenerated', dir: `docs/${item.dirName}` };
+      case 'category':
+        return {
+          type: 'category',
+          label: item.label,
+          ...(item.link?.type === 'doc' ? { id: toHugoPath(item.link.id) } : {}),
+          // A generated index is the Hugo section page at the same URL
+          ...(item.link?.type === 'generated-index' && item.link.slug ? { id: 'docs' + item.link.slug } : {}),
+          items: convertItems(item.items),
+        };
+      default:
+        throw new Error('Unsupported sidebar item type: ' + item.type);
+    }
+  };
+
+  const header = '# GENERATED by scripts/convert-docusaurus.mjs from the Docusaurus sidebars.ts. Do not edit by hand.\n';
+  fs.writeFileSync(path.join(hugoRoot, 'data/sidebar.yml'), header + toYaml({ items: convertItems(sidebars.docsSidebar) }) + '\n', 'utf8');
+}
+
+// Minimal YAML writer for the sidebar's shape (objects, arrays, strings); JSON strings are valid YAML scalars
+function toYaml(value, indent = '') {
+  if (Array.isArray(value)) {
+    return value.map((v) => `${indent}- ` + toYaml(v, indent + '  ').trimStart()).join('\n');
+  }
+  return Object.entries(value)
+    .map(([k, v]) => (typeof v === 'object' ? `${indent}${k}:\n${toYaml(v, indent + '  ')}` : `${indent}${k}: ${JSON.stringify(v)}`))
+    .join('\n');
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Markdown syntax conversions
+// ---------------------------------------------------------------------------------------------------------------------
+
+const admonitionTypeMap = { note: 'note', tip: 'tip', info: 'info', warning: 'warning', danger: 'danger', caution: 'warning' };
+
+// Opening lines: ::::note, ::::tip Some Title, ::::warning[Title], ::: caution
+const admonitionOpenPattern = /^(\s*):{3,4}\s?(note|tip|info|warning|danger|caution)(?:\s+(.+?)|\[(.*?)\])?\s*$/;
+const admonitionClosePattern = /^(\s*):{3,4}\s*$/;
+
+function fixAdmonitions(content) {
+  const result = [];
+  const stack = [];
+  for (const line of content.split('\n')) {
+    const open = line.match(admonitionOpenPattern);
+    if (open) {
+      const [, indent, rawType, title1, title2] = open;
+      const type = admonitionTypeMap[rawType];
+      const title = title1 || title2 || '';
+      result.push(`${indent}{{< ${type}${title ? ` title="${title}"` : ''} >}}`);
+      stack.push({ type, indent });
+      continue;
+    }
+    if (admonitionClosePattern.test(line) && stack.length > 0) {
+      const { type, indent } = stack.pop();
+      result.push(`${indent}{{< /${type} >}}`);
+      continue;
+    }
+    result.push(line);
+  }
+  return result.join('\n');
+}
+
+// Docusaurus: ```js {1,4-6}   Hugo: ```js {hl_lines=[1,"4-6"]}
+function fixHighlightLines(content) {
+  return content.replace(/^(\s*```[\w+-]*[^\S\n]+.*?)\{([\d\s,-]+)\}/gm, (match, prefix, lines) => {
+    const items = lines
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => (s.includes('-') ? `"${s}"` : s));
+    return `${prefix}{hl_lines=[${items.join(',')}]}`;
+  });
+}
+
+function fixTabs(content) {
+  return content
+    .replace(/^(\s*)<(?:Tabs|BrowserOnlyTabs)(\s[^>]*)?\s*>/gm, (match, indent, attrs) => {
+      const groupId = attrs?.match(/groupId="([^"]+)"/)?.[1];
+      return `${indent}{{< tabs${groupId ? ` groupId="${groupId}"` : ''} >}}`;
+    })
+    .replace(/^(\s*)<\/(?:Tabs|BrowserOnlyTabs)>/gm, '$1{{< /tabs >}}')
+    .replace(/^(\s*)<TabItem\s+([^>]+)>/gm, (match, indent, attrs) => {
+      const value = attrs.match(/value="([^"]+)"/)?.[1] ?? '';
+      const label = attrs.match(/label="([^"]+)"/)?.[1] ?? value;
+      return `${indent}{{< tab value="${value}" label="${label}" >}}`;
+    })
+    .replace(/^(\s*)<\/TabItem>/gm, '$1{{< /tab >}}');
+}
+
+// Landing page React components (Section, FeatureGrid, Feature) become shortcodes
+function fixLandingComponents(content) {
+  let changed = false;
+  for (const [jsx, shortcode] of Object.entries({ Section: 'section', FeatureGrid: 'feature-grid', Feature: 'feature' })) {
+    content = content
+      .replace(new RegExp(`^(\\s*)<${jsx}\\b(\\s[^>]*)?>`, 'gm'), (match, indent, attrs) => {
+        changed = true;
+        return `{{< ${shortcode}${attrs ? attrs.replace(/\{([^}]+)\}/g, '"$1"') : ''} >}}`;
+      })
+      .replace(new RegExp(`^(\\s*)</${jsx}>`, 'gm'), () => {
+        changed = true;
+        return `{{< /${shortcode} >}}`;
+      });
+  }
+  if (!changed) {
+    return content;
+  }
+  // Trim leading whitespace inside {{< section >}} blocks
+  let inSection = false;
+  return content
+    .split('\n')
+    .map((line) => {
+      if (line === '{{< section >}}' || line === '{{< /section >}}') {
+        inSection = line === '{{< section >}}';
+        return line;
+      }
+      return inSection ? line.trimStart() : line;
+    })
+    .join('\n');
+}
+
+// Collapse blank lines, trim trailing whitespace (keeping Markdown hard breaks), leave fenced code untouched
+function cleanupWhitespace(content) {
+  const lines = content.split('\n');
+  const result = [];
+  let fence;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fence) {
+      result.push(line);
+      if (fenceMatch && fenceMatch[1][0] === fence[0] && fenceMatch[1].length >= fence.length && line.trim() === fenceMatch[1]) {
+        fence = undefined;
+      }
+      continue;
+    }
+    if (fenceMatch) {
+      fence = fenceMatch[1];
+      result.push(line.trimEnd());
+      continue;
+    }
+    const trimmed = line.trimEnd();
+    if (trimmed === '') {
+      if (result.length > 0 && result.at(-1) !== '') {
+        result.push('');
+      }
+      continue;
+    }
+    const isHardBreak = / {2,}$/.test(line) && lines[i + 1] !== undefined && lines[i + 1].trim() !== '';
+    result.push(isHardBreak ? trimmed + '  ' : trimmed);
+  }
+  return result.join('\n').trimEnd() + '\n';
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------------------------------------------------
+
+function splitFrontMatter(raw) {
+  const match = /^---\n([\s\S]*?\n)?---\n/.exec(raw);
+  return match ? { frontMatter: match[0].trimEnd(), body: raw.slice(match[0].length) } : { frontMatter: undefined, body: raw };
+}
+
+function getField(frontMatter, key) {
+  const value = frontMatter && new RegExp(`^${key}:\\s*(.+)$`, 'm').exec(frontMatter)?.[1]?.trim();
+  return value?.replace(/^['"]|['"]$/g, '');
+}
+
+function walk(dir) {
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  if (fs.statSync(dir).isFile()) {
+    return [dir];
+  }
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
+}
+
+function removeEmptyDirs(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      const sub = path.join(dir, entry.name);
+      removeEmptyDirs(sub);
+      if (fs.readdirSync(sub).length === 0) {
+        fs.rmdirSync(sub);
+      }
+    }
+  }
+}
+
+function toPosix(p) {
+  return p.split(path.sep).join('/');
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

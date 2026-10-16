@@ -19,6 +19,7 @@ const s3Client = new S3Client({ region });
 
 const mimeTypes = {
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.map': 'application/json; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
@@ -36,6 +37,10 @@ const mimeTypes = {
   '.xml': 'application/xml; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.ttf': 'font/ttf',
+  '.pdf': 'application/pdf',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.zip': 'application/zip',
+  '.asc': 'text/plain; charset=utf-8',
 };
 
 const immutableFileTypes = [
@@ -58,6 +63,10 @@ const CACHE_CONTROL_NO_CACHE = 'no-cache';
 
 async function main() {
   const [_node, _script, sourcePath, destPath] = process.argv;
+  // Optional: Cache-Control for .html files, e.g. for a static site rather than an SPA whose index.html must not be cached
+  const htmlCacheControl =
+    process.argv.find((arg) => arg.startsWith('--html-cache-control='))?.slice('--html-cache-control='.length) ??
+    CACHE_CONTROL_NO_CACHE;
 
   if (!sourcePath) {
     console.error('Error: Source path is required as the first argument.');
@@ -95,8 +104,8 @@ async function main() {
       // Special case for root iframe.html (Storybook nested page)
       s3Key += 'iframe.html';
     } else if (relativePath.endsWith('/index.html')) {
-      // Special case for directories with index.html
-      s3Key += relativePath.slice(0, -'index.html'.length);
+      // Serve foo/index.html at /foo (no trailing slash)
+      s3Key += relativePath.slice(0, -'/index.html'.length);
     } else if (relativePath.endsWith('.html')) {
       // Regular HTML files
       s3Key += relativePath.slice(0, -ext.length);
@@ -110,7 +119,7 @@ async function main() {
       Key: s3Key,
       Body: fileStream,
       ContentType: mimeTypes[ext] || 'application/octet-stream',
-      CacheControl: immutableFileTypes.includes(ext) ? CACHE_CONTROL_IMMUTABLE : CACHE_CONTROL_NO_CACHE,
+      CacheControl: getCacheControl(ext, htmlCacheControl),
     });
     console.log(`Prepared upload for ${relativePath} => ${s3Key} (${fileStat.size} bytes)`);
   }
@@ -118,10 +127,18 @@ async function main() {
   console.log('Uploading immutable files...');
   await uploadAll(uploadRequests.filter((r) => r.CacheControl === CACHE_CONTROL_IMMUTABLE));
 
-  console.log('Uploading no-cache files...');
-  await uploadAll(uploadRequests.filter((r) => r.CacheControl === CACHE_CONTROL_NO_CACHE));
+  // Everything else after the immutable files, so pages never reference assets that aren't uploaded yet
+  console.log('Uploading remaining files...');
+  await uploadAll(uploadRequests.filter((r) => r.CacheControl !== CACHE_CONTROL_IMMUTABLE));
 
   console.log('Deployment complete.');
+}
+
+function getCacheControl(ext, htmlCacheControl) {
+  if (immutableFileTypes.includes(ext)) {
+    return CACHE_CONTROL_IMMUTABLE;
+  }
+  return ext === '.html' ? htmlCacheControl : CACHE_CONTROL_NO_CACHE;
 }
 
 async function getFiles(dir) {

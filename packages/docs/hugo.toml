@@ -1,0 +1,140 @@
+baseURL = 'https://www.medplum.com/'
+locale = 'en-US'
+title = 'Medplum'
+enableGitInfo = true
+
+capitalizeListTitles = false
+
+# /llms.txt (an index of the docs) and /llms-full.txt (their full text), following llmstxt.org, from
+# layouts/index.llms.txt and layouts/index.llmsfull.txt
+[outputFormats.llms]
+  mediaType = 'text/plain'
+  baseName = 'llms'
+  isPlainText = true
+  notAlternative = true
+
+[outputFormats.llmsfull]
+  mediaType = 'text/plain'
+  baseName = 'llms-full'
+  isPlainText = true
+  notAlternative = true
+
+# Only the blog has feeds, at the Docusaurus URLs /blog/rss.xml and /blog/atom.xml (see content/blog/_index.md), instead
+# of Hugo's default index.xml in every section
+[outputs]
+  home = ['html', 'llms', 'llmsfull']
+  section = ['html']
+  taxonomy = ['html']
+  term = ['html']
+
+[outputFormats.rss]
+  baseName = 'rss'
+
+[mediaTypes.'application/atom+xml']
+  suffixes = ['xml']
+
+[outputFormats.atom]
+  mediaType = 'application/atom+xml'
+  baseName = 'atom'
+  rel = 'alternate'
+
+# Docusaurus keeps docs and blog tags separate, at /docs/tags and /blog/tags
+[taxonomies]
+  docs_tag = "docs_tags"
+  blog_tag = "blog_tags"
+
+[permalinks.taxonomy]
+  docs_tags = "/docs/tags/"
+  blog_tags = "/blog/tags/"
+
+[permalinks.term]
+  docs_tags = "/docs/tags/:slug/"
+  blog_tags = "/blog/tags/:slug/"
+
+# Docusaurus's sitemap values (see layouts/_default/sitemap.xml)
+[sitemap]
+  changeFreq = 'weekly'
+  priority = 0.5
+
+[pagination]
+  pagerSize = 10
+  # Docusaurus has no /page/1 redirect pages
+  disableAliases = true
+
+[frontmatter]
+  date = [':filename', 'date', 'publishDate', 'lastmod']
+
+[params]
+  editURL = 'https://github.com/medplum/medplum/edit/main/packages/docs/content/'
+
+[markup]
+  [markup.goldmark]
+    # Keep quotes, dashes, and ellipses as written (no curly quotes), as Docusaurus did
+    [markup.goldmark.extensions.typographer]
+      disable = true
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    # CSS classes instead of inline styles; the colors are in assets/css/components/chroma.css
+    noClasses = false
+
+[[module.mounts]]
+  source = "assets"
+  target = "assets"
+
+# npm workspaces hoist dependencies to the monorepo root
+[[module.mounts]]
+  source = "../../node_modules/infima/dist/css/default/default.css"
+  target = "assets/infima.css"
+
+[[module.mounts]]
+  source = "../../node_modules/open-color/open-color.css"
+  target = "assets/open-color.css"
+
+# Algolia DocSearch modal styles (assets/js/components/search.mjs); the button and Ask AI styles aren't used
+[[module.mounts]]
+  source = "../../node_modules/@docsearch/css/dist"
+  target = "assets/docsearch"
+  files = ["_variables.css", "modal.css"]
+
+[[module.mounts]]
+  source = "../../node_modules/@tabler/icons/icons"
+  target = "assets/icons/tabler"
+
+# API Documenter output from the @medplum/core build, rendered by content/docs/sdk/_content.gotmpl
+[[module.mounts]]
+  source = "../core/dist/docs"
+  target = "assets/sdk"
+
+[[module.mounts]]
+  source = "data"
+  target = "data"
+
+# FHIR definitions for the reference pages under /docs/api/fhir (content/docs/api/fhir/_content.gotmpl)
+[[module.mounts]]
+  source = "../definitions/src/fhir/r4"
+  target = "data/fhir"
+  files = ["profiles-resources.json", "profiles-types.json", "profiles-medplum.json", "search-parameters.json", "search-parameters-medplum.json"]
+
+# Example source shown in the docs by the code-example shortcode, at assets/code/<repo path>
+[[module.mounts]]
+  source = "../examples/src"
+  target = "assets/code/packages/examples/src"
+
+[[module.mounts]]
+  source = "../../examples/medplum-demo-bots/src"
+  target = "assets/code/examples/medplum-demo-bots/src"
+
+[[module.mounts]]
+  source = "static"
+  target = "static"
+
+# Mermaid's code-split ESM build, loaded by assets/js/components/mermaid.mjs only on pages with diagrams
+[[module.mounts]]
+  source = "../../node_modules/mermaid/dist"
+  target = "static/js/mermaid"
+  files = ["mermaid.esm.min.mjs", "chunks/mermaid.esm.min/**"]
+
+# Lets js.Build resolve bare imports (swup, mermaid) from the hoisted node_modules
+[security.node.permissions]
+  allowRead = ['.', '../../node_modules']

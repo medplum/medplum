@@ -1,0 +1,15 @@
+## Usage
+
+The [Measure](/docs/api/fhir/resources/measure) resource represents a structured, computable definition of a health-related measure such as a clinical quality measure, public health indicator, or population analytics measure. A quality measure is a quantitative tool to assess the performance of an individual or organization with respect to a specified process or outcome via the measurement of actions, processes, or outcomes of clinical care. Quality measures are often derived from clinical guidelines and are designed to determine whether the appropriate care has been provided given a set of clinical criteria and an evidence base.
+
+Note that the [Measure](/docs/api/fhir/resources/measure) itself does not typically contain any logic; rather a [Library](/docs/api/fhir/resources/library) resource is referenced that contains the logic required by the measure, and the various expression elements, such as population criteria, reference named expressions within that library (or libraries). In addition, if the [Measure](/docs/api/fhir/resources/measure) references multiple libraries, then any expression references within the resource must be qualified with the name of the library that contains the referenced expression.
+
+For a detailed discussion of how to use the [Measure](/docs/api/fhir/resources/measure) and [MeasureReport](/docs/api/fhir/resources/measurereport) resources, refer to the [Quality Reporting](https://www.hl7.org/fhir/clinicalreasoning-quality-reporting.html) topic.
+
+## Relationships
+
+The [Measure](/docs/api/fhir/resources/measure) resource describes a specific quality measure, or population analytic, providing the structure of the measure in terms of the calculation elements (the _populations_ involved). The [Group](/docs/api/fhir/resources/group) resource is also capable of describing a population, however, the complexity involved in specifying the criteria in the general case requires the use of a high-level query language such as Clinical Quality Language (CQL). As such, the [Measure](/docs/api/fhir/resources/measure) resource defines only the top-level populations and references expressions for the actual criteria. These expressions are typically provided using a [Library](/docs/api/fhir/resources/library) resource containing CQL or ELM expressions. In addition, the individual members of a population may be cases such as encounters or procedures and in these cases, the [Group](/docs/api/fhir/resources/group) resource would be unable to represent the population characteristics accurately.
+
+A [Measure](/docs/api/fhir/resources/measure) is also similar to an [Observation](/docs/api/fhir/resources/observation) resource, with the exception that the [Measure](/docs/api/fhir/resources/measure) is purely definitional, it contains no actual measurements, only a description of how to calculate a particular measurement or set of measurements.
+
+A [Measure](/docs/api/fhir/resources/measure) is also similar to a clinical document, but as with the relationship to [Observation](/docs/api/fhir/resources/observation), a Document is specific to a particular subject.

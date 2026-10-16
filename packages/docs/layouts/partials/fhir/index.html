@@ -1,0 +1,58 @@
+{{- /*
+  Index of the FHIR definitions for the reference pages under /docs/api/fhir. Call with partialCached; it's built once.
+
+  Returns a dict keyed by lowercase type name:
+    types        name -> { name, location, sd }   location is resources, datatypes, or medplum (the URL directory)
+    searchParams name -> [SearchParameter]
+    referencedBy name -> [type name]              other types with a Reference or canonical element targeting this type
+*/ -}}
+{{- $data := hugo.Data.fhir -}}
+{{- $excluded := slice "Resource" "BackboneElement" "DomainResource" "MetadataResource" "Element" "SubscriptionStatus" -}}
+{{- $sources := slice
+  (dict "location" "resources" "bundle" (index $data "profiles-resources"))
+  (dict "location" "datatypes" "bundle" (index $data "profiles-types"))
+  (dict "location" "medplum" "bundle" (index $data "profiles-medplum"))
+-}}
+
+{{- $types := dict -}}
+{{- range $sources -}}
+  {{- $location := .location -}}
+  {{- range .bundle.entry -}}
+    {{- with .resource -}}
+      {{- if and (eq .resourceType "StructureDefinition") (in (slice "resource" "complex-type") .kind) (not (in $excluded .name)) (findRE `^[A-Z]` .name) -}}
+        {{- $types = merge $types (dict (lower .name) (dict "name" .name "location" $location "sd" .)) -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $searchParams := dict -}}
+{{- range slice (index $data "search-parameters") (index $data "search-parameters-medplum") -}}
+  {{- range .entry -}}
+    {{- $param := .resource -}}
+    {{- range $param.base -}}
+      {{- $key := lower . -}}
+      {{- $searchParams = merge $searchParams (dict $key ((index $searchParams $key | default slice) | append $param)) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $referencedBy := dict -}}
+{{- range $types -}}
+  {{- $source := .name -}}
+  {{- range .sd.snapshot.element -}}
+    {{- range .type -}}
+      {{- if in (slice "Reference" "canonical") .code -}}
+        {{- range .targetProfile -}}
+          {{- $key := lower (path.Base .) -}}
+          {{- $existing := index $referencedBy $key | default slice -}}
+          {{- if and (ne $key (lower $source)) (not (in $existing $source)) -}}
+            {{- $referencedBy = merge $referencedBy (dict $key ($existing | append $source)) -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- return dict "types" $types "searchParams" $searchParams "referencedBy" $referencedBy -}}

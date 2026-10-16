@@ -1,0 +1,289 @@
+.navbar {
+  background-color: var(--ifm-navbar-background-color);
+  box-shadow: var(--ifm-navbar-shadow);
+  position: sticky;
+  display: flex;
+  flex-direction: row;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  padding: 8px 16px;
+  z-index: 200;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-grow: 1;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 8px;
+}
+
+.navbar-link {
+  display: inline-block;
+  padding: 0 12px;
+  text-decoration: none;
+  color: var(--ifm-navbar-link-color);
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.navbar-link:hover,
+.navbar-link.active {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.navbar-logo-link {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 0;
+  margin-right: 4px;
+}
+
+.navbar-logo-image {
+  color: var(--ifm-color-primary);
+  display: block;
+  margin: 0 auto;
+}
+
+.navbar-icon-btn,
+.navbar-text-btn {
+  border: 1px solid var(--ifm-toc-border-color);
+  color: var(--ifm-navbar-link-color);
+  cursor: pointer;
+  height: 40px;
+  transition: all var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+  background: 0 0;
+  border-radius: 50px;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  display: flex;
+}
+
+.navbar-icon-btn:hover,
+.navbar-text-btn:hover {
+  border: 1px solid var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.navbar-icon-btn {
+  width: 40px;
+}
+
+.navbar-text-btn {
+  white-space: nowrap;
+  line-height: 100%;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.navbar-primary-btn {
+  border: 1px solid var(--oc-grape-8);
+  background-color: var(--oc-grape-8);
+  color: white;
+}
+
+.navbar-primary-btn:hover {
+  background-color: var(--oc-grape-9);
+  border-color: var(--oc-grape-9);
+  color: white;
+}
+
+button.navbar-icon-btn {
+  font: inherit;
+}
+
+/* ---- Mobile (below 997px, Docusaurus's breakpoint): hamburger + slide-in drawer ---- */
+
+.navbar-toggle {
+  display: none;
+  align-items: center;
+  margin-right: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ifm-navbar-link-color);
+  cursor: pointer;
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 996px) {
+  .navbar-toggle {
+    display: flex;
+  }
+
+  .navbar-left > .navbar-link:not(.navbar-logo-link),
+  .navbar-desktop-only {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: block;
+  }
+}
+
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background-color: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--ifm-transition-fast) ease-in-out,
+    visibility var(--ifm-transition-fast) ease-in-out;
+}
+
+.mobile-nav-panel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 301;
+  display: flex;
+  flex-direction: column;
+  width: 83vw;
+  max-width: 300px;
+  background-color: var(--ifm-navbar-background-color);
+  box-shadow: var(--ifm-global-shadow-md);
+  transform: translate3d(-100%, 0, 0);
+  visibility: hidden;
+  transition:
+    transform var(--ifm-transition-fast) ease-in-out,
+    visibility var(--ifm-transition-fast) ease-in-out;
+}
+
+body.mobile-nav-open {
+  overflow: hidden;
+
+  .mobile-nav-backdrop {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .mobile-nav-panel {
+    transform: translate3d(0, 0, 0);
+    visibility: visible;
+  }
+}
+
+.mobile-nav-brand {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 8px 16px;
+  box-shadow: var(--ifm-navbar-shadow);
+}
+
+.mobile-nav-close {
+  display: flex;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ifm-navbar-link-color);
+  cursor: pointer;
+
+  svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 1.5;
+  }
+}
+
+.mobile-nav-items {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mobile-nav-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+
+  .navbar-text-btn {
+    justify-content: flex-start;
+    padding: 12px 20px;
+    font-size: 16px;
+  }
+}
+
+.mobile-nav-link {
+  padding: 6px 12px;
+  border-radius: 0.25rem;
+  color: var(--ifm-menu-color);
+  font-weight: 500;
+
+  &:hover {
+    background: var(--ifm-menu-color-background-hover);
+    text-decoration: none;
+  }
+
+  &.active {
+    background: var(--ifm-menu-color-background-active);
+    color: var(--ifm-color-primary);
+  }
+}
+
+.mobile-nav-secondary {
+  display: none;
+}
+
+body.mobile-nav-show-secondary {
+  .mobile-nav-primary {
+    display: none;
+  }
+
+  .mobile-nav-secondary {
+    display: block;
+  }
+}
+
+.mobile-nav-back {
+  width: 100%;
+  padding: 8px 20px;
+  border: 0;
+  background: var(--ifm-menu-color-background-active);
+  color: var(--ifm-font-color-base);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The docs sidebar, moved in from <aside> while the drawer is open */
+.mobile-nav-docs {
+  .sidebar-viewport {
+    position: static;
+    height: auto;
+    max-height: none;
+  }
+
+  .sidebar-container {
+    width: auto;
+    padding-top: 0;
+  }
+}

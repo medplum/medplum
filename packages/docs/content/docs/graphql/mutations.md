@@ -1,0 +1,157 @@
+---
+id: mutations
+title: Mutations
+weight: 40
+---
+
+GraphQL mutations are operations that allow the client to create, update, or delete data on the server. Unlike queries, which are read-only operations and can be executed in parallel, mutations are write operations. For more information about GraphQL mutations, refer to the [GraphQL documentation](https://graphql.org/learn/queries/#mutations).
+
+Medplum implements the draft [FHIR GraphQL Mutation spec](https://hl7.org/fhir/R4/graphql.html#mutations). For the inputs, you would append the action (Create, Update, or Delete) to the resource type.
+
+Here are examples of mutations for the `Patient` resource. You can test these mutations at [graphiql.medplum.com](https://graphiql.medplum.com/)
+
+## Create Mutation
+
+You can create a resource using the `[resourceType]Create` mutation.
+
+To create a [`Patient`](/docs/api/fhir/resources/patient):
+
+{{< tabs groupId="language" >}}
+  {{< tab value="graphql" label="GraphQL" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationCreatePatientGraphQL" >}}
+  {{< /tab >}}
+  {{< tab value="ts" label="Typescript" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreatePatient" >}}
+  {{< /tab >}}
+{{< /tabs >}}
+
+<details>
+<summary>Example Response</summary>
+
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateResponse" >}}
+</details>
+
+### Aliasing the output
+
+Just as with GraphQL queries, you can alias the newly created resource.
+
+{{< tabs groupId="language" >}}
+  {{< tab value="graphql" label="GraphQL" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationCreatePatientGraphQLAliased" >}}
+  {{< /tab >}}
+  {{< tab value="ts" label="Typescript" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreatePatientAliased" >}}
+  {{< /tab >}}
+{{< /tabs >}}
+
+<details>
+<summary>Example Response</summary>
+
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateResponseAliased" >}}
+</details>
+
+### Built-in types
+
+Medplum's graphQL schema provides type definitions for complex nested fields (aka "[Backbone Elements](https://www.hl7.org/fhir/R4/backboneelement.html#BackboneElement)"). These can be used to simplify arguments to your custom mutations.
+
+This examples demonstrates how to create a mutation that creates a [`Communication`](/docs/api/fhir/resources/communication) resource and takes an array of `CommunicationPayload` types as a parameter:
+
+{{< tabs groupId="language" >}}
+  {{< tab value="graphql" label="GraphQL" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationCreateCommunicationGraphQL" >}}
+  {{< /tab >}}
+  {{< tab value="ts" label="Typescript" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateCommunication" >}}
+  {{< /tab >}}
+{{< /tabs >}}
+
+## Update Mutation
+
+{{< tabs groupId="language" >}}
+  {{< tab value="graphql" label="GraphQL" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationPatientUpdateGraphQL" >}}
+  {{< /tab >}}
+  {{< tab value="ts" label="Typescript" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationPatientUpdateTS" >}}
+  {{< /tab >}}
+{{< /tabs >}}
+
+<details>
+<summary>Example Response</summary>
+
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationUpdateResponse" >}}
+</details>
+
+## Patch Mutation
+
+You can partially update a resource using the `[resourceType]Patch` mutation. This mutation takes an `id` and a `patch` array of operations (see [RFC 6902](https://datatracker.ietf.org/doc/html/rfc6902)).
+
+{{< tabs groupId="language" >}}
+  {{< tab value="graphql" label="GraphQL" >}}
+{{< highlight graphql >}}
+mutation {
+  PatientPatch(
+    id: "example-id"
+    patch: [
+      { op: "replace", path: "/name/0/family", value: "Smith" },
+      { op: "replace", path: "/gender", value: "male" }
+    ]
+  ) {
+    id
+    gender
+    name { family given }
+  }
+}
+{{< /highlight >}}
+  {{< /tab >}}
+  {{< tab value="ts" label="Typescript" >}}
+{{< highlight ts >}}
+const result = await medplum.graphql(`
+mutation {
+  PatientPatch(
+    id: "example-id"
+    patch: [
+      { op: "replace", path: "/name/0/family", value: "Smith" },
+      { op: "replace", path: "/gender", value: "male" }
+    ]
+  ) {
+    id
+    gender
+    name { family given }
+  }
+}
+`);
+{{< /highlight >}}
+  {{< /tab >}}
+{{< /tabs >}}
+
+> **Note:** The `value` field in the patch operation is always a string due to GraphQL input type limitations. For complex values, encode as JSON strings and decode server-side if needed.
+
+<details>
+  <summary>Example Response</summary>
+
+{{< highlight json >}}
+{
+  "data": {
+    "PatientPatch": {
+      "id": "example-id",
+      "gender": "male",
+      "name": [
+        { "family": "Smith", "given": ["Alice"] }
+      ]
+    }
+  }
+}
+{{< /highlight >}}
+</details>
+
+## Delete Mutation
+
+{{< tabs groupId="language" >}}
+  {{< tab value="graphql" label="GraphQL" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="graphql" blocks="MutationPatientDeleteGraphQL" >}}
+  {{< /tab >}}
+  {{< tab value="ts" label="Typescript" >}}
+{{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationPatientDeleteTS" >}}
+  {{< /tab >}}
+{{< /tabs >}}

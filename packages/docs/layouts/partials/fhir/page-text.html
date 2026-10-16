@@ -1,0 +1,63 @@
+{{- /*
+  A FHIR reference page as markdown, for /llms-full.txt: the same content as fhir/page.html, with the element and
+  search parameter tables as markdown tables. Context: the page (.Params.fhirType).
+*/ -}}
+{{- $data := partial "fhir/data.html" . -}}
+{{- $idx := $data.idx -}}
+{{- $out := slice -}}
+
+{{- /* FHIR's [[[Type]]] links become the type name */ -}}
+{{- $out = $out | append ($data.sd.description | replaceRE `\[\[\[([^\]]+)\]\]\]` "$1") -}}
+{{- with resources.Get (printf "fhir/resources/%s.md" $data.key) -}}
+  {{- $prose := split (printf "\n%s" .Content) "\n## " -}}
+  {{- with index $prose 0 | strings.TrimSpace }}{{ $out = $out | append . }}{{ end -}}
+  {{- $data = merge $data (dict "sections" (after 1 $prose)) -}}
+{{- end -}}
+
+{{- /* Table cells are one line, with pipes escaped */ -}}
+{{- $tables := dict "Elements" $data.own -}}
+{{- if $data.isResource }}{{ $tables = merge $tables (dict "Inherited Elements" $data.inherited) }}{{ end -}}
+{{- range slice "Elements" "Inherited Elements" -}}
+  {{- $elements := index $tables . -}}
+  {{- if not $elements }}{{ continue }}{{ end -}}
+  {{- $rows := slice (printf "## %s" .) "" "| Name | Required | Type | Description |" "| --- | --- | --- | --- |" -}}
+  {{- range $elements -}}
+    {{- $type := partial "fhir/element-type.html" (dict "element" . "idx" $idx) | plainify | htmlUnescape -}}
+    {{- $rows = $rows | append (printf "| %s | %s | %s%s | %s |"
+      (delimit (after 1 (split .path ".")) ".")
+      (cond (gt (int (.min | default 0)) 0) "✓" "")
+      $type
+      (cond (eq .max "*") "[]" "")
+      (.short | default "" | replaceRE `\s+` " " | replaceRE `\|` `\|`)
+    ) -}}
+  {{- end -}}
+  {{- $out = $out | append (delimit $rows "\n") -}}
+  {{- if and (eq . "Elements") $data.isResource -}}
+    {{- $rows = slice "## Search Parameters" "" -}}
+    {{- with $data.searchParams -}}
+      {{- $rows = $rows | append "| Name | Type | Description | Expression |" "| --- | --- | --- | --- |" -}}
+      {{- range . -}}
+        {{- $rows = $rows | append (printf "| %s | %s | %s | %s |"
+          .code .type
+          (.description | default "" | replaceRE `\s+` " " | replaceRE `\|` `\|`)
+          (.expression | default "" | replaceRE `\|` `\|`)
+        ) -}}
+      {{- end -}}
+    {{- else -}}
+      {{- $rows = $rows | append "_None_" -}}
+    {{- end -}}
+    {{- $out = $out | append (delimit $rows "\n") -}}
+  {{- end -}}
+{{- end -}}
+
+{{- range $data.sections -}}
+  {{- $out = $out | append (printf "## %s" (strings.TrimSpace .)) -}}
+{{- end -}}
+
+{{- with index $idx.referencedBy $data.key -}}
+  {{- $items := slice "## Referenced By" "" -}}
+  {{- range sort . }}{{ $items = $items | append (printf "- %s" .) }}{{ end -}}
+  {{- $out = $out | append (delimit $items "\n") -}}
+{{- end -}}
+
+{{- return delimit $out "\n\n" -}}

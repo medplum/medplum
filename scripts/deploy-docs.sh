@@ -12,4 +12,6 @@ set -e
 set -x
 
 # Fast upload the docs to S3
-node scripts/s3deploy.mjs packages/docs/build "s3://${DOCS_DESTINATION}"
+# Pages are cached briefly by browsers and refreshed in the background; CloudFront still revalidates every request
+node scripts/s3deploy.mjs packages/docs/public "s3://${DOCS_DESTINATION}" \
+  --html-cache-control="public, max-age=300, s-maxage=0, stale-while-revalidate=86400"

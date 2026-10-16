@@ -1,0 +1,32 @@
+{{- /*
+  A page's description in /llms.txt, following docusaurus-plugin-llms (which generated it before): the first line of
+  the front matter description, else the first prose paragraph, with links reduced to their text and cut to 150
+  characters. FHIR pages, which have no markdown body, use their meta description.
+*/ -}}
+{{- $text := "" -}}
+{{- if .Description -}}
+  {{- $text = index (split .Description "\n") 0 -}}
+{{- else if .Params.fhirType -}}
+  {{- $text = partial "page-description.html" . -}}
+{{- else -}}
+  {{- /* Fenced code can contain blank lines, so drop it before splitting into paragraphs */ -}}
+  {{- $body := .RawContent | replaceRE "(?ms)^[ \t]*```.*?^[ \t]*```" "" -}}
+  {{- range split $body "\n\n" -}}
+    {{- $para := strings.TrimSpace . -}}
+    {{- /* Skip headings, imports, and markup that isn't prose: HTML, shortcodes, admonitions, tables, images */ -}}
+    {{- if and $para (not (findRE `^(#|import\s|export\s|~~~|<[A-Za-z!/]|\{\{|\{/\*|:::|\||!\[)` $para 1)) -}}
+      {{- $text = $para -}}
+      {{- break -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $text = $text | replaceRE `!?\[([^\]]*)\]\([^)]*\)` "$1" | replaceRE `\s+` " " | strings.TrimSpace -}}
+{{- if gt (strings.RuneCount $text) 150 -}}
+  {{- $text = substr $text 0 147 -}}
+  {{- /* Don't leave a code span open */ -}}
+  {{- if modBool (len (findRE "`" $text)) 2 | not -}}
+    {{- $text = index (findRE "^(?s).*`" $text 1) 0 | strings.TrimSuffix "`" | strings.TrimSpace -}}
+  {{- end -}}
+  {{- $text = printf "%s..." $text -}}
+{{- end -}}
+{{- return $text -}}

@@ -1,0 +1,4 @@
+{{ define "main" }}
+  {{ if not .Params.hideTitle }}<h1>{{ .Title }}</h1>{{ end }}
+  {{ if .Params.fhirType }}{{ partial "fhir/page.html" . }}{{ else }}{{ .Content }}{{ end }}
+{{ end }}

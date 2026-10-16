@@ -71,6 +71,11 @@ if [[ "$FILES_CHANGED" =~ examples/foomedical ]] || [[ "$FILES_CHANGED" =~ deplo
   DEPLOY_FOOMEDICAL=true
 fi
 
+# The docs build reads code examples from here (see packages/docs/hugo.toml)
+if [[ "$FILES_CHANGED" =~ examples/medplum-demo-bots ]]; then
+  DEPLOY_DOCS=true
+fi
+
 if [[ "$FILES_CHANGED" =~ examples/medplum-provider ]] || [[ "$FILES_CHANGED" =~ deploy-provider-app.sh ]]; then
   DEPLOY_PROVIDER=true
 fi
@@ -91,8 +96,10 @@ if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_SERVER=true
 fi
 
+# The docs build generates the FHIR reference from the definitions
 if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
+  DEPLOY_DOCS=true
   DEPLOY_SERVER=true
 fi
 
@@ -101,6 +108,11 @@ if [[ "$FILES_CHANGED" =~ packages/dosespot ]]; then
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
+  DEPLOY_DOCS=true
+fi
+
+# The docs build reads code examples from here (see packages/docs/hugo.toml)
+if [[ "$FILES_CHANGED" =~ packages/examples ]]; then
   DEPLOY_DOCS=true
 fi
 

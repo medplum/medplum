@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import express from 'express';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
@@ -83,17 +81,6 @@ describe('API catalog', () => {
     for (const path of serviceDescPaths) {
       expect(await request(app).get(path)).toHaveStatus(200);
     }
-  });
-
-  test('www.medplum.com redirects to the canonical catalog', () => {
-    // RFC 9727 section 5.1 - other instances redirect to the canonical instance.
-    // www.medplum.com is served by Vercel, so the redirect lives in the docs site config.
-    const vercelConfig = JSON.parse(readFileSync(resolve(__dirname, '../../docs/vercel.json'), 'utf8'));
-    expect(vercelConfig.redirects).toContainEqual({
-      source: '/.well-known/api-catalog',
-      destination: 'https://api.medplum.com/.well-known/api-catalog',
-      permanent: true,
-    });
   });
 
   test('Catalog is not project scoped', async () => {

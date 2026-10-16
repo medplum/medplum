@@ -1,0 +1,22 @@
+Refer to the [US Core Goal profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-goal.html).
+
+## Usage
+
+A [Goal](/docs/api/fhir/resources/goal) in health care services delivery is generally an expressed desired health state to be achieved by a subject of care (or family/group) over a period or at a specific point of time. This desired target health state may be achieved as a result of health care intervention(s) or resulting from natural recovery over time. For example:
+
+- A goal of a plan for a condition such as a diabetes might specify desired outcome(s) (e.g. HgbA1c level =<5.6% in 3 months) as a result of interventions such as medication therapy, nutritional management and/or increase physical activity.
+- A goal of a procedure might be to meet the intended objective of the procedure (e.g. wet-dry-dressing changes twice a day; goal: wound healed completely in 2 weeks) or to prevent an unintended complication (e.g. repositioning a patient every two hours: goal to maintain skin integrity)
+
+[Goals](/docs/api/fhir/resources/goal) may address the prevention of illness, cure or mitigation of a condition, prolongation of life, or mitigation of pain and discomfort.
+
+When dealing with groups, goals may also reflect health state, such as a reduction of addiction behaviors. However, they may also reflect population health objectives such as education, screening, etc.
+
+Organizational goals are typically not health state specific but may instead identify measurement targets such as infection control, cost management, patient satisfaction, etc.
+
+## Relationships
+
+[Goals](/docs/api/fhir/resources/goal) are typically established in the context of a [CarePlan](/docs/api/fhir/resources/careplan). However, goals may also be directly referenced by request-type resources (e.g. [MedicationRequest](/docs/api/fhir/resources/medicationrequest) or [ServiceRequest](/docs/api/fhir/resources/servicerequest)) by using an extension.
+
+A goal represents a specific goal instance for a particular patient, group, etc. It is not intended to be used to define types of potential goals as part of an order set or protocol definition. Protocol definitions and order sets are supported through [PlanDefinition](/docs/api/fhir/resources/plandefinition). The [Goal](/docs/api/fhir/resources/goal) resource is intended to be used once an order set is instantiated or assigned to a patient, which is when the potential goals become the actual goals, if not changed or deleted.
+
+[Goals](/docs/api/fhir/resources/goal) are often evaluated using [Observations](/docs/api/fhir/resources/observation).

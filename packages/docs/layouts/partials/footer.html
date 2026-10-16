@@ -1,0 +1,31 @@
+{{- /* Site footer. Links live in data/footer.yml; ported from src/theme/Footer in the medplum repo. */ -}}
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div class="footer-column">
+        {{ partial "logo.html" (dict "width" "159" "height" "34" "class" "footer-logo") }}
+      </div>
+      <div class="footer-column">
+        <div class="footer-row">
+          {{ range hugo.Data.footer.columns }}
+            <div class="footer-column">
+              <div class="footer__title">{{ .title }}</div>
+              <ul class="footer__items clean-list">
+                {{ range .items }}
+                  <li class="footer__item"><a class="footer-link" href="{{ .to }}">{{ .label }}</a></li>
+                {{ end }}
+              </ul>
+            </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+    <hr class="footer-separator" />
+    <div class="footer-row">
+      <div class="footer-column">
+        {{ range hugo.Data.footer.bottomLinks }}<a class="footer-bottom-link" href="{{ .to }}">{{ .label }}</a>{{ end }}
+      </div>
+      <div class="footer-column footer-right-aligned">© {{ now.Year }} Orangebot, Inc.</div>
+    </div>
+  </div>
+</footer>

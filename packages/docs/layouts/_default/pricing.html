@@ -1,0 +1,60 @@
+{{- /* The pricing page, from data/pricing.yaml */ -}}
+{{ define "main" }}
+  {{- $pricing := hugo.Data.pricing }}
+  <div class="pricing">
+    <h1>Build the future of healthcare</h1>
+    {{- range $pricing.intro }}
+      <p class="pricing-intro">{{ partial "pricing-text.html" (dict "page" $ "text" .) }}</p>
+    {{- end }}
+    <table class="pricing-table">
+      <colgroup>
+        <col class="pricing-feature-column" />
+        {{- range $pricing.groups }}
+          {{- $span := .span }}
+          {{- range seq $span }}<col class="pricing-plan-column{{ if eq . $span }} pricing-group-end{{ end }}" />{{ end }}
+        {{- end }}
+      </colgroup>
+      <thead>
+        <tr>
+          <th></th>
+          {{- range $pricing.groups }}
+            <th colspan="{{ .span }}">{{ partial "pricing-text.html" (dict "page" $ "text" .label) }}</th>
+          {{- end }}
+        </tr>
+        <tr>
+          <th></th>
+          {{- range $pricing.plans }}
+            <th>{{ partial "pricing-text.html" (dict "page" $ "text" .) }}</th>
+          {{- end }}
+        </tr>
+      </thead>
+      <tbody>
+        {{- range $pricing.rows }}
+          <tr>
+            {{- if .section }}
+              <td><strong>{{ partial "pricing-text.html" (dict "page" $ "text" .section) }}</strong></td>
+              {{- range $pricing.plans }}<td></td>{{ end }}
+            {{- else }}
+              <td>
+                {{- if .bold }}<strong>{{ end -}}
+                {{ partial "pricing-text.html" (dict "page" $ "text" .feature) }}
+                {{- if .bold }}</strong>{{ end -}}
+              </td>
+              {{- range .values }}
+                <td>{{ partial "pricing-text.html" (dict "page" $ "text" .) }}</td>
+              {{- end }}
+            {{- end }}
+          </tr>
+        {{- end }}
+      </tbody>
+    </table>
+  </div>
+  <div class="pricing-notes">
+    <h3>Notes</h3>
+    <ol>
+      {{- range $i, $note := $pricing.notes }}
+        <li id="note{{ add $i 1 }}">{{ partial "pricing-text.html" (dict "page" $ "text" $note) }}</li>
+      {{- end }}
+    </ol>
+  </div>
+{{ end }}

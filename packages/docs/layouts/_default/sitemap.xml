@@ -1,0 +1,37 @@
+{{- /* The sitemap, with URLs as served (no trailing slash) and, as on Docusaurus, the blog's archive, authors, and
+  paginated list pages, which Hugo's default sitemap leaves out */ -}}
+{{- $base := strings.TrimSuffix "/" site.BaseURL -}}
+{{- $extra := slice -}}
+{{- range slice "/blog/archive" "/blog/authors" }}{{ with site.GetPage . }}{{ $extra = $extra | append . }}{{ end }}{{ end -}}
+{{- /* /blog/page/2 and up, and the same for each blog tag; page 1 is the list page itself. The paginators are the
+  ones the list templates create (same arguments), so the page counts match what's rendered. */ -}}
+{{- $lists := slice (site.GetPage "/blog") -}}
+{{- range site.Taxonomies.blog_tags }}{{ $lists = $lists | append .Page }}{{ end -}}
+{{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  {{- range (where .Pages "Sitemap.Disable" "ne" true) | append $extra }}
+    {{- if .Permalink }}
+  <url>
+    <loc>{{ if eq .RelPermalink "/" }}{{ .Permalink }}{{ else }}{{ strings.TrimSuffix "/" .Permalink }}{{ end }}</loc>
+    {{- if not .Lastmod.IsZero }}
+    <lastmod>{{ .Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod>
+    {{- end }}
+    <changefreq>{{ .Sitemap.ChangeFreq }}</changefreq>
+    <priority>{{ .Sitemap.Priority }}</priority>
+  </url>
+    {{- end }}
+  {{- end }}
+  {{- range $lists }}
+    {{- $path := partial "href" . }}
+    {{- $pager := .Paginate (partial "blog/sort-posts.html" .Pages) }}
+    {{- $sitemap := .Sitemap }}
+    {{- /* seq 2 1 would count down, so only lists with more than one page */}}
+    {{- range cond (gt $pager.TotalPages 1) (seq 2 $pager.TotalPages) slice }}
+  <url>
+    <loc>{{ $base }}{{ $path }}/page/{{ . }}</loc>
+    <changefreq>{{ $sitemap.ChangeFreq }}</changefreq>
+    <priority>{{ $sitemap.Priority }}</priority>
+  </url>
+    {{- end }}
+  {{- end }}
+</urlset>

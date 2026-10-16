@@ -1,0 +1,14 @@
+{{- /* Port of ProfileCard (src/components/ProfileCard.tsx); icons are its own SVGs, copied to assets/icons/profile-card/ */ -}}
+<div class="profile-card">
+  <div class="profile-card-image">
+    <img src="{{ .Get "imgUrl" | relURL }}" alt="{{ .Get "name" }}" loading="lazy" />
+  </div>
+  <h3>{{ .Get "name" }}</h3>
+  <p>{{ .Get "title" }}</p>
+  <div class="profile-card-links">
+    {{ with .Get "linkedInUrl" }}<a href="{{ . }}" rel="noreferrer" target="_blank">{{ (resources.Get "icons/profile-card/linkedin.svg").Content | safeHTML }} LinkedIn</a>{{ end }}
+    {{ with .Get "githubUrl" }}<a href="{{ . }}" rel="noreferrer" target="_blank">{{ (resources.Get "icons/profile-card/github.svg").Content | safeHTML }} GitHub</a>{{ end }}
+    {{ with .Get "webUrl" }}<a href="{{ . }}" rel="noreferrer" target="_blank">{{ (resources.Get "icons/profile-card/link.svg").Content | safeHTML }} Web</a>{{ end }}
+    {{ with .Get "youtubeUrl" }}<a href="{{ . }}" rel="noreferrer" target="_blank">{{ (resources.Get "icons/profile-card/youtube.svg").Content | safeHTML }} YouTube</a>{{ end }}
+  </div>
+</div>

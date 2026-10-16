@@ -1,0 +1,12 @@
+{{- /* The docs pages listed in /llms.txt and /llms-full.txt, in source file order as docusaurus-plugin-llms listed
+  them (a section's _index.md sorts as index.md). Generated category indexes, which have no content, are left out. */ -}}
+{{- $pages := slice -}}
+{{- range where (where site.Pages "Section" "docs") "Kind" "in" (slice "page" "section") -}}
+  {{- if .Params.generatedIndex }}{{ continue }}{{ end -}}
+  {{- /* The source file name, extension included (core.addressformatoptions.md sorts before core.md); pages from
+    content adapters (FHIR, SDK) have the adapter as their File, so they use their URL */ -}}
+  {{- $key := printf "%s.md" (strings.TrimPrefix "/" .Path) -}}
+  {{- if and .File (in (slice "md" "mdx") .File.Ext) }}{{ $key = replace .File.Path "_index." "index." }}{{ end -}}
+  {{- $pages = $pages | append (dict "key" (lower $key) "page" .) -}}
+{{- end -}}
+{{- return apply (sort $pages "key") "index" "." "page" -}}

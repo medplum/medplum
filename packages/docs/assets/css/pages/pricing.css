@@ -1,0 +1,40 @@
+.pricing {
+  text-align: center;
+  margin: 50px auto 10px auto;
+  padding: 20px 20px 10px 20px;
+}
+
+.pricing h1 {
+  font-size: 2.5rem;
+  font-weight: 300;
+}
+
+.pricing-intro {
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+.pricing-table {
+  width: 950px;
+  margin: auto;
+}
+
+.pricing-feature-column {
+  width: 22%;
+  border-right: 2px solid #ccc;
+}
+
+.pricing-plan-column {
+  width: 13%;
+}
+
+/* The last plan in a group, except the final column */
+.pricing-group-end:not(:last-child) {
+  border-right: 2px solid #ccc;
+}
+
+.pricing-notes {
+  max-width: 900px;
+  margin: 20px auto;
+  line-height: 1.75;
+}

@@ -1,0 +1,10 @@
+{{- $name := .Get 0 -}} {{/* Grabs the first word after the shortcode name */}}
+{{- $path := printf "icons/tabler/%s.svg" $name -}}
+{{- $svg := resources.Get $path -}}
+
+{{- if $svg -}}
+    {{- /* We use 'replace' to ensure it scales correctly via CSS if needed */ -}}
+    {{- $svg.Content | safeHTML -}}
+{{- else -}}
+    {{- warnf "Icon %q not found at %q" $name $path -}}
+{{- end -}}

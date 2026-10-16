@@ -1,0 +1,32 @@
+{{- /* Type column for an element: linked type names, Reference<Target | ...>, or the backbone type name. Params: element, idx */ -}}
+{{- $idx := .idx -}}
+{{- $element := .element -}}
+{{- $types := $element.type | default slice -}}
+{{- $result := "" -}}
+{{- if and $types (eq (index $types 0).code "BackboneElement") -}}
+  {{- /* Inline backbone types are named after their path, e.g. Patient.contact -> PatientContact */ -}}
+  {{- $result = delimit (apply (split $element.path ".") "strings.FirstUpper" ".") "" -}}
+{{- else -}}
+  {{- $rendered := slice -}}
+  {{- range $types -}}
+    {{- if eq .code "Reference" -}}
+      {{- $targets := slice -}}
+      {{- range .targetProfile -}}
+        {{- if in . "/fhir/StructureDefinition/" }}{{ $targets = $targets | append (path.Base .) }}{{ end -}}
+      {{- end -}}
+      {{- /* More than two targets are listed one per line */ -}}
+      {{- $vertical := gt (len $targets) 2 -}}
+      {{- $links := slice -}}
+      {{- range $targets }}{{ $links = $links | append (partial "fhir/type-link.html" (dict "name" . "idx" $idx)) }}{{ end -}}
+      {{- $inner := delimit $links (cond $vertical "\n |  " " | ") -}}
+      {{- if $vertical }}{{ $inner = printf "\n  %s\n" $inner }}{{ end -}}
+      {{- $rendered = $rendered | append (printf "Reference&lt;%s&gt;" $inner) -}}
+    {{- else if eq .code "http://hl7.org/fhirpath/System.String" -}}
+      {{- $rendered = $rendered | append "string" -}}
+    {{- else -}}
+      {{- $rendered = $rendered | append (partial "fhir/type-link.html" (dict "name" .code "idx" $idx)) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $result = printf `<span class="fhir-type">%s</span>` (delimit $rendered ", ") -}}
+{{- end -}}
+{{- return $result -}}

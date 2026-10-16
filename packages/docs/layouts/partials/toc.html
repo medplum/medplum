@@ -1,0 +1,17 @@
+{{- /* A page's table of contents, from its Markdown headings: levels 2 and 3 unless the page's toc_min_heading_level or
+  toc_max_heading_level (Docusaurus front matter) say otherwise, and none with hide_table_of_contents. FHIR reference
+  pages have no Markdown; theirs lists the Schema tab's sections, as on Docusaurus (see fhir/page.html). */ -}}
+{{- $toc := "" -}}
+{{- if not .Params.hide_table_of_contents -}}
+  {{- $toc = .Fragments.ToHTML (.Params.toc_min_heading_level | default 2) (.Params.toc_max_heading_level | default 3) false -}}
+{{- end -}}
+{{- if .Params.fhirType -}}
+  {{- $sections := slice (dict "id" "elements" "title" "Elements") -}}
+  {{- if (partial "fhir/data.html" .).isResource -}}
+    {{- $sections = $sections | append (dict "id" "search-parameters" "title" "Search Parameters") (dict "id" "inherited-elements" "title" "Inherited Elements") -}}
+  {{- end -}}
+  {{- $items := slice -}}
+  {{- range $sections }}{{ $items = $items | append (printf `<li><a href="#%s">%s</a></li>` .id .title) }}{{ end -}}
+  {{- $toc = printf `<nav id="TableOfContents"><ul>%s</ul></nav>` (delimit $items "") | safeHTML -}}
+{{- end -}}
+{{- return $toc -}}

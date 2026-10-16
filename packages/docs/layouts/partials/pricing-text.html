@@ -1,0 +1,6 @@
+{{- /* A line of pricing text (data/pricing.yaml): inline markdown, a trailing ^N as a link to note N, and external
+  and mailto links opening in a new tab as Docusaurus's <Link> did. Params: page, text */ -}}
+{{- $text := .text | default "" | replaceRE `\s*\^(\d+)$` `<sup><a href="#note$1">$1</a></sup>` -}}
+{{- $html := .page.RenderString $text -}}
+{{- $html = replaceRE `<a href="((?:https?://|mailto:)[^"]+)"` `<a href="$1" target="_blank" rel="noopener noreferrer"` $html -}}
+{{- return safeHTML $html -}}

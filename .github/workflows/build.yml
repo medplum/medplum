@@ -99,6 +99,8 @@ jobs:
         # Rules:
         #   - packages/app                  -> app preview
         #   - packages/docs                 -> docs preview
+        #   - packages/{definitions,examples}, examples/medplum-demo-bots -> docs preview
+        #     (the docs build reads the FHIR reference and code examples from them)
         #   - examples/medplum-provider     -> provider preview
         #   - packages/{storybook,mock}     -> storybook preview
         #   - packages/react-scheduling     -> provider + storybook previews
@@ -127,6 +129,7 @@ jobs:
 
           if changed '^packages/app/'; then deploy_app=true; fi
           if changed '^packages/docs/'; then deploy_docs=true; fi
+          if changed '^(packages/(definitions|examples)|examples/medplum-demo-bots)/'; then deploy_docs=true; fi
           if changed '^examples/medplum-provider/'; then deploy_provider=true; fi
           if changed '^packages/(storybook|mock)/'; then deploy_storybook=true; fi
           if changed '^packages/react-scheduling/'; then

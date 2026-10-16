@@ -1,0 +1,15 @@
+{{- /* All terms of a taxonomy, grouped by first letter with counts, like the Docusaurus tags page */ -}}
+<h1>{{ .Title }}</h1>
+{{- $groups := dict -}}
+{{- range .Data.Terms.Alphabetical -}}
+  {{- $letter := upper (substr .Page.Title 0 1) -}}
+  {{- $groups = merge $groups (dict $letter ((index $groups $letter | default slice) | append .)) -}}
+{{- end -}}
+{{- range $letter, $terms := $groups }}
+  <section class="tag-index-group">
+    <h2 id="{{ $letter }}">{{ $letter }}</h2>
+    <ul class="tag-list">
+      {{- range $terms }}<li><a class="tag" href="{{ partial "href" .Page }}">{{ .Page.Title }}<span class="tag-count">{{ .Count }}</span></a></li>{{ end -}}
+    </ul>
+  </section>
+{{- end }}
