@@ -41,9 +41,10 @@ one, which is listed once it is saved. Providers can't be created here.
 
 - **General:** whether it is active, its name, the service facilities it is offered at
   (`HealthcareService.location`), and its booking requirements. With no service facilities, it is offered at
-  every one, so adding a first one or removing the last asks first. Booking requirements are what schedulers must
-  enter to book it, such as for prior authorization: procedure codes, diagnosis codes, and confirmation of medical
-  necessity, each ticked on its own. They are the `scheduling-eligibility` codes on `HealthcareService.eligibility` that the booking form
+  every one, so a save that adds the first one, or removes the last, asks first. A new visit type isn't offered
+  anywhere yet, so creating it doesn't. Booking requirements are what schedulers must enter to book it, such as
+  for prior authorization: procedure codes, diagnosis codes, and confirmation of medical necessity, each ticked on
+  its own. They are the `scheduling-eligibility` codes on `HealthcareService.eligibility` that the booking form
   reads. Unticking one removes only its code, and any other eligibility the visit type records is left as it is.
 - **Scheduling parameters:** duration, buffers, start interval, and capacity, with the same validation and
   warnings as `SchedulingParametersEditor`.
@@ -61,8 +62,8 @@ one, which is listed once it is saved. Providers can't be created here.
   the Schedule can't be switched back on while it stays off. Switching the Schedule off on its own pauses booking
   without losing anything. A note says when it can't be booked: because it is inactive, or because its Schedule
   is switched off. A provider's name and NPIs (`Practitioner.identifier` with the `us-npi` system) are read-only,
-  since they are kept by the system providers come from, and where a provider works is recorded on their roles
-  rather than here. A device's name is read-only too, once it is created. A room's name is edited, and so is a
+  since they are kept by the system providers come from. Where a provider works is edited as their service
+  facilities (below). A device's name is read-only too, once it is created. A room's name is edited, and so is a
   room's or device's service facility (`Location.partOf`, or `Device.location`), picked from the same Locations
   booking filters by. The time zone (the `timezone` extension) is the one hours are read in for any visit type
   that sets none of its own. A provider, room, or device without one is warned that it is recommended, without
@@ -91,6 +92,16 @@ named stay named while it is on, so a client that doesn't know the marker still 
 them together, or, while searching, **Select all** that match. Offering an actor's first visit type creates its
 Schedule when the page is saved, and not before. **Stop offering**, from an entry's menu or for every ticked entry
 at once, asks first, then removes the settings the Schedule holds for those visit types with them.
+
+A provider's General also has **Service facilities**, the same field a visit type has, filled from the service
+facility Locations the provider's active `PractitionerRole`s name. With none, booking filtered to a service
+facility offers the provider at every one, so a save that adds the first one, or removes the last, asks first.
+The workspace writes one role per provider, its own, marked by an `identifier` with the provider's id. Adding a
+service facility puts it on that role, which is created on the first save that adds one, or turned back on if it
+was off. Removing one takes it off that role, or turns the role off when it was the last. Every other role, such
+as one a sync wrote, still places the provider for booking but is never changed, so a service facility it links
+is shown locked above the field's input, marked **Linked by another system**, and can't be removed. When there is
+one, the provider is already limited to it, so neither save asks.
 
 A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
 facility. A new room or device starts active, unless switched off before Create, and is created with a Schedule

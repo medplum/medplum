@@ -24,6 +24,7 @@ import {
 import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
+import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
@@ -34,9 +35,11 @@ import { ActorGeneral } from './ActorGeneral';
 import { OfferAllSwitch } from './OfferAllSwitch';
 import { OfferingEditor, OfferingSummary } from './OfferingEditor';
 import { OfferingsList } from './OfferingsList';
+import { ProviderFacilitiesFields } from './ProviderFacilitiesFields';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf, startingOfferingFields } from './scheduleDraft';
 import { useOfferAll } from './useOfferAll';
+import { useProviderFacilities } from './useProviderFacilities';
 
 export interface ActorPageProps {
   /**
@@ -100,9 +103,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
   const offerAll = useOfferAll({ servicesById, schedule, fields, setFields, setOpenServiceId: setOpen });
+  const [confirmingFacilities, setConfirmingFacilities] = useState(false);
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
-  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
+  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'> & { change?: ConfigChange }>();
   const [reloading, setReloading] = useState(false);
   // Bumped by Discard to remount the General fields, whose location input holds its own selection.
   const [discards, setDiscards] = useState(0);
@@ -115,11 +119,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const name = creating ? general.name.trim() : getDisplayString(stored);
   const actorName = name || `this ${noun}`;
 
+  const facilities = useProviderFacilities(stored, actorName);
+
   const scheduleDraft = actorWithId && buildScheduleDraft(schedule, actorWithId, fields, initial, servicesById);
   const actorDirty = !deepEquals(general, initialGeneral);
   // Compares the fields rather than the Schedule draft, so edits the draft can't store yet, like an emptied
   // week, still count and the save bar can say why it refuses.
-  const dirty = creating || actorDirty || !deepEquals(fields, initial);
+  const dirty = creating || actorDirty || !deepEquals(fields, initial) || facilities.changes.length > 0;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = useMemo(
@@ -198,6 +204,19 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       }
       return;
     }
+    if (facilities.confirmation) {
+      setConfirmingFacilities(true);
+      return;
+    }
+    await save();
+  }
+
+  async function handleConfirmFacilities(): Promise<void> {
+    setConfirmingFacilities(false);
+    await save();
+  }
+
+  async function save(): Promise<void> {
     setSaving(true);
     setFailure(undefined);
     try {
@@ -214,7 +233,9 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           ifNoneExist: `actor=${getReferenceString(actorDraft)}`,
         });
       }
+      changes.push(...facilities.changes);
       const result = await saveConfigChanges(medplum, changes);
+      facilities.store(result.saved.map(({ resource: saved }) => saved));
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
       } else if (result.saved.length === 0) {
@@ -238,6 +259,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     }
     setGeneral(initialGeneral);
     setDiscards((count) => count + 1);
+    facilities.discard();
     setFields(initial);
     offerAll.reset();
     setOpen((current) => (current && Object.hasOwn(initial.offerings, current) ? current : null));
@@ -257,7 +279,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           ? medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })
           : medplum.searchOne('Schedule', { actor: getReferenceString(stored) }, { cache: 'no-cache' }),
       ]);
+      await facilities.reload();
       onSynced(reloadedSchedule ? [reloadedActor, reloadedSchedule] : [reloadedActor], open ?? undefined);
+      // When only a role changed, no version the page is keyed on did, so nothing remounts it.
+      handleDiscard();
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
@@ -265,7 +290,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     }
   }
 
-  const conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+  let conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+  if (failure?.change?.draft.resourceType === 'PractitionerRole') {
+    conflictSubject = `The service facilities for ${actorName}`;
+  }
   const offerable = useMemo(
     () => services.filter((service) => service.active !== false && !Object.hasOwn(fields.offerings, service.id)),
     [services, fields.offerings]
@@ -307,6 +335,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
           nameError={triedToSave || initialGeneral.name ? nameError : undefined}
         />
+        {facilities.field && <ProviderFacilitiesFields {...facilities.field} />}
         {alert && (
           <Alert color="blue" variant="light">
             {alert}
@@ -360,6 +389,17 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           />
         )}
       </ConfigSection>
+
+      <ConfirmModal
+        opened={confirmingFacilities}
+        title={facilities.confirmation?.title}
+        cancelLabel="Cancel"
+        confirmLabel={facilities.confirmation?.confirmLabel ?? 'Save'}
+        onCancel={() => setConfirmingFacilities(false)}
+        onConfirm={handleConfirmFacilities}
+      >
+        {facilities.confirmation?.body}
+      </ConfirmModal>
 
       <SaveBar
         dirty={dirty}

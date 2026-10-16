@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Patient, QuestionnaireResponse, ServiceRequest } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import * as notifications from '../../utils/notifications';
-import { OrderLabsPage } from './OrderLabsPage';
+import { OrderLabsModal } from './OrderLabsModal';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
   const actual = await vi.importActual('@medplum/health-gorilla-react');
@@ -34,10 +35,15 @@ vi.mock('../../utils/notifications', () => ({
   showErrorNotification: vi.fn(),
 }));
 
+vi.mock('../../utils/labOrderDraft', () => ({
+  getLabOrderDraftDefaults: vi.fn(),
+}));
+
 import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MemoryRouter, useParams } from 'react-router';
+import { getLabOrderDraftDefaults } from '../../utils/labOrderDraft';
 
-describe('OrderLabsPage', () => {
+describe('OrderLabsModal', () => {
   let medplum: MockClient;
   let mockOnSubmitLabOrder: () => void;
   let mockLabOrderReturn: ReturnType<typeof useHealthGorillaLabOrder>;
@@ -111,7 +117,7 @@ describe('OrderLabsPage', () => {
     vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
   });
 
-  function setup(props: { patientId?: string; patient?: Patient } = {}): void {
+  function setup(props: { patientId?: string; patient?: Patient; draftOrder?: ServiceRequest } = {}): void {
     vi.mocked(useParams).mockReturnValue({ patientId: props.patientId });
 
     if (props.patientId) {
@@ -121,11 +127,25 @@ describe('OrderLabsPage', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <OrderLabsPage patient={props.patient} onSubmitLabOrder={mockOnSubmitLabOrder} />
+          <OrderLabsModal
+            opened
+            onClose={vi.fn()}
+            patient={props.patient}
+            draftOrder={props.draftOrder}
+            onSubmitLabOrder={mockOnSubmitLabOrder}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );
   }
+
+  const draftOrder: WithId<ServiceRequest> = {
+    resourceType: 'ServiceRequest',
+    id: 'draft-123',
+    status: 'draft',
+    intent: 'order',
+    subject: { reference: `Patient/${HomerSimpson.id}` },
+  };
 
   test('Renders form fields', async () => {
     setup();
@@ -370,5 +390,130 @@ describe('OrderLabsPage', () => {
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
     // Drain pending async state updates (e.g. ResourceInput defaultValue resolution)
     await act(async () => {});
+  });
+
+  describe('Resuming a draft', () => {
+    const mockTest: TestCoding = { code: 'TEST001', display: 'Complete Blood Count', system: 'http://loinc.org' };
+    const aoeResponse: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
+
+    beforeEach(async () => {
+      await medplum.createResource({
+        resourceType: 'Encounter',
+        id: 'enc-1',
+        status: 'finished',
+        class: { code: 'AMB' },
+      });
+      vi.mocked(getLabOrderDraftDefaults).mockResolvedValue({
+        patient: HomerSimpson,
+        requester: { resourceType: 'Practitioner', id: 'req-1', name: [{ given: ['Dr'], family: 'Who' }] },
+        performingLab: { resourceType: 'Organization', id: 'lab-123', name: 'Test Lab' },
+        encounter: { reference: 'Encounter/enc-1' },
+        task: { resourceType: 'Task', id: 'task-1', status: 'requested', intent: 'order' },
+        performingLabAccountNumber: 'ACCT-1',
+        performingLabPhysicianAccountNumber: 'PHY-1',
+        tests: [mockTest],
+        unresolvedTests: [{ system: 'http://loinc.org', code: '24323-8', display: 'Metabolic panel' }],
+        testMetadata: { TEST001: { priority: 'stat', notes: 'Run first', aoeResponses: aoeResponse } },
+        diagnoses: [{ coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Diabetes' }] }],
+        billTo: 'insurance',
+        orderNotes: 'Fasting',
+        specimenCollectedDateTime: new Date('2024-03-01T10:00:00.000Z'),
+      });
+      // Like the real hook, hand out new setter identities on every render so the
+      // draft must not be re-applied whenever the page re-renders.
+      vi.mocked(useHealthGorillaLabOrder).mockImplementation(() => ({
+        ...mockLabOrderReturn,
+        updateTestMetadata: (...args) => mockLabOrderReturn.updateTestMetadata(...args),
+        setDiagnoses: (...args) => mockLabOrderReturn.setDiagnoses(...args),
+        updateBillingInformation: (...args) => mockLabOrderReturn.updateBillingInformation(...args),
+        setPerformingLabAccountNumber: (...args) => mockLabOrderReturn.setPerformingLabAccountNumber(...args),
+        setOrderNotes: (...args) => mockLabOrderReturn.setOrderNotes(...args),
+        setSpecimenCollectedDateTime: (...args) => mockLabOrderReturn.setSpecimenCollectedDateTime(...args),
+      }));
+    });
+
+    test('seeds the form from the draft and revokes it after the new order is sent', async () => {
+      vi.spyOn(medplum, 'patchResource').mockResolvedValue({ ...draftOrder, status: 'revoked' });
+      const updateResource = vi.spyOn(medplum, 'updateResource');
+      setup({ draftOrder });
+
+      expect(await screen.findByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
+      expect(getLabOrderDraftDefaults).toHaveBeenCalledWith(medplum, draftOrder);
+
+      expect(mockLabOrderReturn.setTests).toHaveBeenCalledWith([mockTest]);
+      expect(mockLabOrderReturn.updateTestMetadata).toHaveBeenCalledWith(mockTest, {
+        priority: 'stat',
+        notes: 'Run first',
+        aoeResponses: aoeResponse,
+      });
+      expect(mockLabOrderReturn.setPerformingLabPhysicianAccountNumber).toHaveBeenCalledWith('PHY-1');
+      expect(mockLabOrderReturn.setPerformingLab).toHaveBeenCalledWith(
+        expect.objectContaining({ resourceType: 'Organization', id: 'lab-123' })
+      );
+      expect(mockLabOrderReturn.setPerformingLabAccountNumber).toHaveBeenCalledWith('ACCT-1');
+      expect(mockLabOrderReturn.setDiagnoses).toHaveBeenCalledWith([
+        expect.objectContaining({ coding: [expect.objectContaining({ code: 'E11.9' })] }),
+      ]);
+      expect(mockLabOrderReturn.updateBillingInformation).toHaveBeenCalledWith({ billTo: 'insurance' });
+      expect(mockLabOrderReturn.setOrderNotes).toHaveBeenCalledWith('Fasting');
+      expect(mockLabOrderReturn.setSpecimenCollectedDateTime).toHaveBeenCalledWith(
+        new Date('2024-03-01T10:00:00.000Z')
+      );
+      expect(screen.getByLabelText('Order notes')).toHaveValue('Fasting');
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.getByText('Dr Who')).toBeInTheDocument();
+      expect(showNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'yellow', message: expect.stringContaining('Metabolic panel') })
+      );
+      // The draft is applied once, not on every re-render
+      expect(
+        vi.mocked(mockLabOrderReturn.updateBillingInformation).mock.calls.filter(([info]) => info.billTo)
+      ).toHaveLength(1);
+      expect(mockLabOrderReturn.updateTestMetadata).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Submit Order' }));
+
+      await waitFor(() => {
+        expect(mockOnSubmitLabOrder).toHaveBeenCalled();
+      });
+      // The new order is linked to the draft's encounter and its task now points at the new order
+      expect(medplum.executeBot).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ encounter: { reference: 'Encounter/enc-1' } }),
+        expect.anything()
+      );
+      expect(updateResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Task',
+          id: 'task-1',
+          focus: { reference: 'ServiceRequest/order-123' },
+        })
+      );
+      expect(medplum.patchResource).toHaveBeenCalledWith('ServiceRequest', 'draft-123', [
+        { op: 'replace', path: '/status', value: 'revoked' },
+      ]);
+    });
+
+    test('still shows the form when the draft cannot be loaded', async () => {
+      vi.mocked(getLabOrderDraftDefaults).mockRejectedValue(new Error('Forbidden'));
+      setup({ draftOrder });
+
+      expect(await screen.findByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
+      expect(notifications.showErrorNotification).toHaveBeenCalled();
+    });
+
+    test('does not revoke the draft when sending fails', async () => {
+      vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('Bot execution failed'));
+      vi.spyOn(medplum, 'patchResource');
+      setup({ draftOrder });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Submit Order' }));
+
+      await waitFor(() => {
+        expect(notifications.showErrorNotification).toHaveBeenCalled();
+      });
+      expect(medplum.patchResource).not.toHaveBeenCalled();
+      expect(mockOnSubmitLabOrder).not.toHaveBeenCalled();
+    });
   });
 });

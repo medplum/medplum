@@ -424,6 +424,54 @@ describe('Subscription Worker', () => {
       { traceId: '12345678901234567890123456789012' }
     ));
 
+  test('Delete in a transaction notifies subscriptions only once committed', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+
+      // Delete the patient, then roll the delete back
+      await expect(
+        repo.withTransaction(
+          async (txRepo) => {
+            await txRepo.deleteResource('Patient', patient.id);
+            throw new Error('Roll it back!');
+          },
+          { resourceTypes: ['Patient'], source: 'test.subscription.rolledBackDelete' }
+        )
+      ).rejects.toThrow('Roll it back!');
+
+      // The patient was never deleted, so no delete job should be dispatched
+      await expect(repo.readResource('Patient', patient.id)).resolves.toMatchObject({ id: patient.id });
+      await expect(findAndExecDispatchJob(patient, 'delete')).rejects.toThrow('Job not found');
+
+      // Delete the patient again, this time committing the transaction
+      await repo.withTransaction(
+        async (txRepo) => {
+          await txRepo.deleteResource('Patient', patient.id);
+        },
+        { resourceTypes: ['Patient'], source: 'test.subscription.committedDelete' }
+      );
+
+      await findAndExecSubscriptionJob(patient, 'delete');
+      expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST' }));
+    }));
+
   test('Send subscriptions with signature', () =>
     withTestContext(
       async () => {

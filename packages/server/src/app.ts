@@ -46,7 +46,7 @@ import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { drainStdout, getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
-import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnAllShards } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -295,7 +295,7 @@ export async function initAppServices(config: ServerConfig): Promise<void> {
   initHeartbeat(config);
   initOtelHeartbeat();
   initServerRegistryHeartbeatListener();
-  await maybeAutoRunPendingPostDeployMigration();
+  await maybeAutoRunPendingPostDeployMigrationOnAllShards();
 }
 
 export async function shutdownApp(): Promise<void> {

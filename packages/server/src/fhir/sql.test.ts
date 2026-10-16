@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Client, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
+import { setConnectionShardId } from '../sharding/connection-shard-id';
 import type { CTE, Operator, PgQueryable } from './sql';
 import {
   Column,
@@ -521,6 +522,11 @@ test('debug', async () => {
   writeSpy.mockClear();
   await executeQuery();
   expect(writeSpy).toHaveBeenCalledWith('sql SELECT "MyTable"."id" FROM "MyTable"');
+
+  setConnectionShardId(conn, 'some-shard');
+  writeSpy.mockClear();
+  await executeQuery();
+  expect(writeSpy).toHaveBeenCalledWith('[some-shard] sql SELECT "MyTable"."id" FROM "MyTable"');
 
   setSqlDebug(undefined);
 

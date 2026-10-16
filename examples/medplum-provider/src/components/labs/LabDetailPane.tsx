@@ -14,6 +14,7 @@ import { LabResultDetails } from './LabResultDetails';
 interface LabDetailPaneProps {
   item: WithId<ServiceRequest> | WithId<DiagnosticReport>;
   onOrderChange?: (order: WithId<ServiceRequest>) => void;
+  onResumeOrder?: (order: WithId<ServiceRequest>) => void;
 }
 
 /**
@@ -25,7 +26,7 @@ interface LabDetailPaneProps {
  * @returns The detail pane for the given lab item.
  */
 export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
-  const { item, onOrderChange } = props;
+  const { item, onOrderChange, onResumeOrder } = props;
   const medplum = useMedplum();
 
   const basedOnRef =
@@ -91,6 +92,7 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
                 setOrder(updated);
                 onOrderChange?.(updated);
               }}
+              onResume={onResumeOrder ? () => onResumeOrder(order) : undefined}
             />
           )}
           {!order && item.resourceType === 'DiagnosticReport' && <LabResultDetails key={item.id} result={item} />}

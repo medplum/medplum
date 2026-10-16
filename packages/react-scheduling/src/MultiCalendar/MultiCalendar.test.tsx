@@ -104,7 +104,7 @@ describe('MultiCalendar', () => {
     expect(screen.getByText(/Available/)).toBeInTheDocument();
     expect(screen.getByText(/Available/).querySelector('svg')).toBeNull();
     expect(screen.getByText(/Blocked/)).toBeInTheDocument();
-    expect(screen.getByText(/Blocked/).querySelector('svg')).toHaveClass('tabler-icon-square-rounded-x-filled');
+    expect(screen.getByText(/Blocked/).querySelector('svg')).toHaveClass('tabler-icon-square-x-filled');
     // A week says when a slot is by where it is drawn, so the line under its title names whose time it is.
     const blocked = screen.getByText(/Blocked/).closest<HTMLElement>('.event') as HTMLElement;
     expect(await within(blocked).findByText('Alice Smith')).toBeInTheDocument();

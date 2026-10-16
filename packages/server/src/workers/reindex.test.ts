@@ -42,10 +42,9 @@ import {
 } from './reindex';
 import { queueRegistry } from './utils';
 
-const shardId = TODO_SHARD_ID;
-
 describe('Reindex Worker', () => {
   let repo: Repository;
+  let shardId: string;
   let systemRepo: SystemRepository;
 
   beforeAll(async () => {
@@ -53,6 +52,7 @@ describe('Reindex Worker', () => {
     await initAppServices(config);
 
     repo = (await createTestProject({ withRepo: true })).repo;
+    shardId = repo.shardId;
     systemRepo = repo.getSystemRepo();
   });
 
@@ -610,6 +610,31 @@ describe('Reindex Worker', () => {
       expect(asyncJob.status).toStrictEqual('completed');
     }));
 
+  test.each<[string, ReindexJobData['target'] | undefined]>([
+    ['a TODO shard target', { kind: 'shard', shardId: TODO_SHARD_ID }],
+    ['no target', undefined],
+  ])('Completes a data migration queued with %s', (_label, legacyTarget) =>
+    withTestContext(async () => {
+      // dataVersion 1 is already applied, so marking it complete leaves the shared database unchanged
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        type: 'data-migration',
+        status: 'accepted',
+        dataVersion: 1,
+        minServerVersion: '0.0.0',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/migrate',
+      });
+
+      const jobData = prepareReindexJobData({ shardId, asyncJob }, ['MedicinalProductManufactured']);
+      const legacyJobData = { ...jobData, target: legacyTarget } as ReindexJobData;
+      await expect((await ReindexJob.create(legacyJobData)).execute(undefined)).resolves.toBe('finished');
+
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+    })
+  );
+
   test('Continues when one resource type fails and reports error', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({
@@ -888,19 +913,22 @@ describe('Reindex Worker', () => {
       const rows = await new SelectQuery('User')
         .column('projectId')
         .where('id', '=', user.id)
-        .execute(getDatabasePool(DatabaseMode.READER));
+        .execute(getDatabasePool(DatabaseMode.READER, repo.shardId));
       expect(rows[0].projectId).toStrictEqual(project.id);
     }));
 });
 
 describe('Job cancellation', () => {
   let repo: Repository;
+  let shardId: string;
   let systemRepo: SystemRepository;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    repo = (await createTestProject({ withRepo: true })).repo;
+    const testProject = await createTestProject({ withRepo: true });
+    repo = testProject.repo;
+    shardId = repo.shardId;
     systemRepo = repo.getSystemRepo();
   });
 
