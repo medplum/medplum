@@ -97,14 +97,16 @@ export interface DicomInstance {
   modifierExtension?: Extension[];
 
   /**
-   * The study that this DICOM instance belongs to.
+   * The study that this DICOM instance belongs to. Set by the DICOM
+   * worker once the instance has been parsed.
    */
-  study: Reference<DicomStudy>;
+  study?: Reference<DicomStudy>;
 
   /**
-   * The series that this DICOM instance belongs to.
+   * The series that this DICOM instance belongs to. Set by the DICOM
+   * worker once the instance has been parsed.
    */
-  series: Reference<DicomSeries>;
+  series?: Reference<DicomSeries>;
 
   /**
    * The SOP Class UID of the DICOM instance.

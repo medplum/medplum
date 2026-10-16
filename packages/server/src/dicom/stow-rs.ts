@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString, isString, Operator } from '@medplum/core';
-import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, Operator } from '@medplum/core';
+import type { Binary, DicomInstance } from '@medplum/fhirtypes';
 import type { DcmjsDicomDict } from 'dcmjs';
 import dcmjs from 'dcmjs';
 import DicomwebMultipartParser from 'dicomweb-multipart-parser';
@@ -12,7 +12,7 @@ import { getAuthenticatedContext } from '../context';
 import { uploadBinaryData } from '../fhir/binary';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
-import { cleanDicomJsonDict, dcmjsSeriesToMedplumSeries, dcmjsStudyToMedplumStudy } from './utils';
+import { cleanDicomJsonDict } from './utils';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { async, data, utilities } = dcmjs;
@@ -56,51 +56,19 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     return cleanDicomJsonDict({ ...result.meta, ...result.dict });
   }
 
+  // Only the instance is written here, keyed by its SOP Instance UID. Its `DicomStudy` and
+  // `DicomSeries` are found or created by the DICOM instance job, which also links them and fills in
+  // the remaining instance attributes, so a request costs one transaction per instance, not three.
   async function processInstance([binary, dict]: [WithId<Binary>, DcmjsDicomDict]): Promise<DicomInstance> {
     const naturalized = DicomMetaDictionary.naturalizeDataset(dict) as Record<string, unknown>;
-
-    const studyResult = await repo.conditionalCreate<DicomStudy>(dcmjsStudyToMedplumStudy(naturalized), {
-      resourceType: 'DicomStudy',
-      filters: [
-        { code: 'study-instance-uid', operator: Operator.EXACT, value: naturalized.StudyInstanceUID as string },
-      ],
-    });
-
-    const seriesResult = await repo.conditionalCreate<DicomSeries>(
-      dcmjsSeriesToMedplumSeries(createReference(studyResult.resource), naturalized),
-      {
-        resourceType: 'DicomSeries',
-        filters: [
-          { code: 'series-instance-uid', operator: Operator.EXACT, value: naturalized.SeriesInstanceUID as string },
-        ],
-      }
-    );
-
-    let instanceNumber: string;
-    if (isString(naturalized.InstanceNumber)) {
-      instanceNumber = naturalized.InstanceNumber;
-    } else if (typeof naturalized.InstanceNumber === 'number') {
-      instanceNumber = naturalized.InstanceNumber.toString();
-    } else {
-      instanceNumber = '1'; // Default to "1" if InstanceNumber is missing or invalid, as it is a required field in DICOM
-    }
 
     const instanceResult = await repo.conditionalCreate<DicomInstance>(
       {
         resourceType: 'DicomInstance',
-        study: createReference(studyResult.resource),
-        series: createReference(seriesResult.resource),
         raw: createReference(binary),
         metadata: JSON.stringify(dict),
         sopClassUid: naturalized.SOPClassUID as string,
         sopInstanceUid: naturalized.SOPInstanceUID as string,
-        instanceAvailability: naturalized.InstanceAvailability as string,
-        timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
-        instanceNumber: instanceNumber,
-        rows: naturalized.Rows as number,
-        columns: naturalized.Columns as number,
-        bitsAllocated: naturalized.BitsAllocated as number,
-        numberOfFrames: naturalized.NumberOfFrames as number,
       },
       {
         resourceType: 'DicomInstance',

@@ -5,9 +5,7 @@ import { createReference, deepEquals, HTTP_HL7_ORG, isCreated, Operator } from '
 import type {
   Coding,
   Device,
-  DicomSeries,
   DicomStudy,
-  Endpoint,
   Group,
   ImagingStudy,
   ImagingStudySeries,
@@ -15,14 +13,13 @@ import type {
   Patient,
   Reference,
 } from '@medplum/fhirtypes';
-import { getConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
+import type { StudyScan } from './utils';
 import { updateWithRetry } from './utils';
 
 export const DICOM_UID_SYSTEM = 'urn:dicom:uid';
 const DCM_SYSTEM = 'http://dicom.nema.org/resources/ontology/DCM';
-const ENDPOINT_CONNECTION_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/endpoint-connection-type';
 const MEDPLUM_DICOM_SYSTEM = 'https://medplum.com/dicom';
 
 /** Marks the resources this module maintains, so `ImagingStudy?_tag=` can find them. */
@@ -53,7 +50,6 @@ type DerivedKey =
   | 'modality'
   | 'subject'
   | 'started'
-  | 'endpoint'
   | 'numberOfSeries'
   | 'numberOfInstances'
   | 'series';
@@ -69,12 +65,6 @@ type DerivedImagingStudy = { [K in DerivedKey]-?: ImagingStudy[K] };
 
 /** A status someone set by hand to retire a study, which no arriving instance should undo. */
 const RETIRED_STATUSES: ImagingStudy['status'][] = ['cancelled', 'entered-in-error'];
-
-export interface StudyScan {
-  readonly seriesList: WithId<DicomSeries>[];
-  readonly instanceCounts: Map<string, number>;
-  readonly totalInstances: number;
-}
 
 /**
  * Creates or refreshes the `ImagingStudy` mirroring a `DicomStudy`.
@@ -126,11 +116,10 @@ export async function reconcileImagingStudy(
     return;
   }
 
-  const endpoint = await getWadoEndpoint(repo, projectId);
   const existing = matches[0];
 
   if (!existing) {
-    const derived = await deriveImagingStudy(repo, projectId, study, scan, endpoint, undefined);
+    const derived = await deriveImagingStudy(repo, projectId, study, scan, undefined);
     const result = await repo.conditionalCreate<ImagingStudy>(mergeImagingStudy(undefined, derived, projectId), search);
     if (isCreated(result.outcome)) {
       return;
@@ -144,7 +133,7 @@ export async function reconcileImagingStudy(
   }
 
   await updateWithRetry<ImagingStudy>(repo, 'ImagingStudy', id, async (current) => {
-    const derived = await deriveImagingStudy(repo, projectId, study, scan, endpoint, current);
+    const derived = await deriveImagingStudy(repo, projectId, study, scan, current);
     const merged = mergeImagingStudy(current, derived, projectId);
     // Skip the write when nothing changed: every version writes a full history row and dispatches to
     // every matching Subscription, and this runs again for each instance that arrives.
@@ -158,7 +147,6 @@ export async function reconcileImagingStudy(
  * @param projectId - The project the study belongs to.
  * @param study - The source study.
  * @param scan - Series and instance counts.
- * @param endpoint - The project's WADO-RS endpoint.
  * @param existing - The stored ImagingStudy, if any, for the fields that latch.
  * @returns The derived fields.
  */
@@ -167,7 +155,6 @@ async function deriveImagingStudy(
   projectId: string,
   study: WithId<DicomStudy>,
   scan: StudyScan,
-  endpoint: Reference<Endpoint>,
   existing: ImagingStudy | undefined
 ): Promise<DerivedImagingStudy> {
   const modalities = new Set<string>();
@@ -209,7 +196,6 @@ async function deriveImagingStudy(
       .map((code) => ({ system: DCM_SYSTEM, code })),
     subject: await resolveSubject(repo, projectId, study, existing?.subject),
     started: toFhirDateTime(study.studyDate, study.studyTime, study.timezoneOffsetFromUtc),
-    endpoint: mergeSlot(existing?.endpoint, [endpoint], (value) => value.reference === endpoint.reference),
     numberOfSeries: series.length,
     numberOfInstances: scan.totalInstances,
     series: series.length > 0 ? series : undefined,
@@ -314,42 +300,6 @@ function resolveStatus(existing: ImagingStudy | undefined, totalInstances: numbe
     return existing.status;
   }
   return totalInstances > 0 ? 'available' : 'registered';
-}
-
-/**
- * Returns the project's WADO-RS endpoint, creating it on first use.
- *
- * Matched on an identifier this server owns rather than on `connection-type`, so a `dicom-wado-rs`
- * Endpoint the customer created for their own archive is never adopted and rewritten.
- *
- * @param repo - The repository to read and write with.
- * @param projectId - The project the endpoint belongs to.
- * @returns A reference to the endpoint.
- */
-export async function getWadoEndpoint(repo: Repository, projectId: string): Promise<Reference<Endpoint>> {
-  const result = await repo.conditionalCreate<Endpoint>(
-    {
-      resourceType: 'Endpoint',
-      meta: { project: projectId },
-      identifier: [{ system: MEDPLUM_DICOM_SYSTEM, value: 'wado-rs' }],
-      status: 'active',
-      connectionType: { system: ENDPOINT_CONNECTION_TYPE_SYSTEM, code: 'dicom-wado-rs' },
-      name: 'DICOMweb WADO-RS',
-      payloadType: [
-        { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/endpoint-payload-type', code: 'any' }] },
-      ],
-      payloadMimeType: ['application/dicom'],
-      address: new URL('dicomweb', getConfig().baseUrl).toString(),
-    },
-    {
-      resourceType: 'Endpoint',
-      filters: [
-        { code: '_project', operator: Operator.EQUALS, value: projectId },
-        { code: 'identifier', operator: Operator.EXACT, value: `${MEDPLUM_DICOM_SYSTEM}|wado-rs` },
-      ],
-    }
-  );
-  return createReference(result.resource);
 }
 
 /**

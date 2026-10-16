@@ -70,9 +70,13 @@ Instance UID `(0008,1155)`, and a Retrieve URL `(0008,1190)`.
 
 :::caution
 
-The Retrieve URL returned in the response is currently a placeholder of the form `/instances/{id}/raw`, which is not a resolvable endpoint. Use the QIDO-RS and WADO-RS routes below to retrieve stored instances, or the `Endpoint` referenced by the study's [`ImagingStudy`](./data-model.md#relationship-to-fhir-imagingstudy).
+The Retrieve URL returned in the response is currently a placeholder of the form `/instances/{id}/raw`, which is not a resolvable endpoint. Use the QIDO-RS and WADO-RS routes below to retrieve stored instances.
 
 :::
+
+A `200` means every instance's file and `DicomInstance` are stored. Attaching each instance to its
+`DicomStudy` and `DicomSeries` happens in a [background job](./data-model.md#background-processing),
+so a study can take a moment after the response to appear in QIDO-RS and WADO-RS results.
 
 ## QIDO-RS: Search for studies
 
@@ -133,8 +137,9 @@ the DICOM standard. The part's `Content-Type` reflects the encoding the frame wa
 | `404`  | Study, series, or instance not found — or pixel data has not been extracted for it yet |
 | `416`  | The requested frame number exceeds the number of frames available for the instance     |
 
-A `404` immediately after upload usually means the background worker has not finished extracting
-pixel data. Retry, or check that the `dicom` worker is running.
+A `404` immediately after upload usually means the background worker has not finished attaching the
+instance to its study or extracting its pixel data. Retry, or check that the `dicom` worker is
+running.
 
 Only a single frame number is supported per request. The standard's comma-separated frame list
 (`/frames/1,2,3`) is not implemented.

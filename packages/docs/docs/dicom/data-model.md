@@ -23,23 +23,22 @@ flowchart TD
   Raw["Binary<br/><i>original .dcm file</i>"]
   Pixels["Binary[]<br/><i>pixel data, one per frame</i>"]
   Imaging["ImagingStudy<br/><i>derived, chart-facing</i>"]
-  Endpoint["Endpoint<br/><i>WADO-RS</i>"]
 
   Study --> Series
   Series --> Instance
   Instance -- "raw" --> Raw
   Instance -- "pixelData" --> Pixels
   Study -. "derived" .-> Imaging
-  Imaging -- "endpoint" --> Endpoint
 ```
 
 ## Resource types
 
 ### DicomStudy
 
-One [`DicomStudy`](/docs/api/fhir/medplum/dicomstudy) per DICOM Study Instance UID. Created
-conditionally on `studyInstanceUid`, so instances arriving over separate uploads collect under one
-study.
+One [`DicomStudy`](/docs/api/fhir/medplum/dicomstudy) per DICOM Study Instance UID within a project.
+Created by the [instance job](#background-processing), conditionally on `studyInstanceUid`, so
+instances arriving over separate uploads collect under one study. Its attributes come from the first
+instance of the study to be processed.
 
 | Field                           | DICOM tag     | Notes                                                   |
 | ------------------------------- | ------------- | ------------------------------------------------------- |
@@ -61,7 +60,8 @@ study.
 
 ### DicomSeries
 
-One [`DicomSeries`](/docs/api/fhir/medplum/dicomseries) per Series Instance UID, created conditionally on `seriesInstanceUid`.
+One [`DicomSeries`](/docs/api/fhir/medplum/dicomseries) per Series Instance UID within a project,
+created by the [instance job](#background-processing) conditionally on `seriesInstanceUid`.
 
 | Field                             | DICOM tag                            |
 | --------------------------------- | ------------------------------------ |
@@ -79,11 +79,13 @@ One [`DicomSeries`](/docs/api/fhir/medplum/dicomseries) per Series Instance UID,
 
 One [`DicomInstance`](/docs/api/fhir/medplum/dicominstance) per stored SOP instance, created
 conditionally on `sopInstanceUid` so that re-uploading the same instance resolves the existing
-resource rather than duplicating it.
+resource rather than duplicating it. This is the only resource a STOW-RS request writes; the
+attributes below other than `sopClassUid`, `sopInstanceUid`, `metadata`, and `raw` are filled in by
+the [instance job](#background-processing).
 
 | Field                   | DICOM tag                    | Notes                                                                      |
 | ----------------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| `study`, `series`       |                              | References to the parent resources                                         |
+| `study`, `series`       |                              | References to the parent resources, set by the instance job                |
 | `sopClassUid`           | `(0008,0016)`                |                                                                            |
 | `sopInstanceUid`        | `(0008,0018)`                |                                                                            |
 | `instanceAvailability`  | `(0008,0056)`                |                                                                            |
@@ -114,28 +116,33 @@ studies in memory. The complete file is always preserved in the `raw` `Binary` r
 
 ## Background processing
 
-Storing an instance does not extract its pixels inline — that would make every `C-STORE` wait on
-decoding. The work is split across two queues, by how often it needs to run.
+A STOW-RS request stores the uploaded file and one `DicomInstance` per SOP instance, and nothing
+else — every `C-STORE` would otherwise wait on creating the study and series and on decoding pixels.
+The rest of the work is split into two job types on the `DicomQueue` BullMQ queue, by how often it
+needs to run.
 
-Both entry points feed the same queues. Whether an instance arrives through
+Both entry points feed the same jobs. Whether an instance arrives through
 [STOW-RS](./dicomweb-api.md#stow-rs-store-instances) or as a `DicomInstance` created through the FHIR
 API, the same jobs run, so the two routes produce the same resources.
-
-Both run on the `DicomQueue` BullMQ queue, as two job types.
 
 **Instance job — once per instance.** Triggered when a `DicomInstance` is created or its `raw`
 reference changes (three attempts, exponential backoff starting at one second):
 
 1. The worker reads the raw `Binary` and parses the full file.
-2. Instance attributes read from the dataset — `rows`, `columns`, `bitsAllocated`, `numberOfFrames`,
-   and the rest — are patched onto the `DicomInstance`.
-3. `PixelData` is split into frames. Each frame is written as its own `Binary`, with
+2. If the instance has no `study` and `series` yet — as with every STOW-RS upload — the `DicomStudy`
+   and `DicomSeries` matching the file's UIDs are found in the instance's project, or created if
+   there are none. An instance created through the FHIR API with `study` and `series` already set
+   keeps them.
+3. Instance attributes read from the dataset — `rows`, `columns`, `bitsAllocated`, `numberOfFrames`,
+   and the rest — are patched onto the `DicomInstance`, along with the `study` and `series`
+   references.
+4. `PixelData` is split into frames. Each frame is written as its own `Binary`, with
    `securityContext` set to the `DicomInstance` so it inherits the instance's access control.
-4. `DicomInstance.pixelData` is patched with references to those binaries, in frame order.
+5. `DicomInstance.pixelData` is patched with references to those binaries, in frame order.
 
-**Study job — once per study.** Enqueued for the parent study whenever an instance lands or is
-deleted, and deduplicated per study, so a five-hundred-instance upload recomputes the study about
-twice rather than five hundred times:
+**Study job — once per study.** Enqueued for the parent study whenever an instance is linked to it
+or deleted from it, and deduplicated per study, so a five-hundred-instance upload recomputes the
+study about twice rather than five hundred times:
 
 1. Study-level aggregates — `modalitiesInStudy`, `numberOfStudyRelatedSeries`,
    `numberOfStudyRelatedInstances` — are recomputed from the stored series and instances.
@@ -154,14 +161,15 @@ The `Binary.contentType` of each frame is derived from the file's Transfer Synta
 | `1.2.840.10008.1.2.4.201`, `.202`      | `image/jxl`                |
 | Anything else, including uncompressed  | `application/octet-stream` |
 
-Until the instance job finishes, [frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames)
-returns `404` for that instance. Studies and series appear in query results immediately, because they
-are created during the upload itself; their instance counts fill in once the study job runs.
+An uploaded instance is not visible through QIDO-RS or WADO-RS until its instance job finishes,
+because that is what attaches it to a study and series. A new study first appears in query results
+at that point too, and its instance counts fill in once the study job runs.
 
 The worker is named `dicom` and can be enabled or disabled per server instance through the
 `workers.enabled` configuration setting, like any other Medplum worker. A deployment that runs
-workers on dedicated hosts needs `dicom` enabled on at least one of them, or pixel data is never
-extracted, aggregate counts stay absent, and no `ImagingStudy` is created.
+workers on dedicated hosts needs `dicom` enabled on at least one of them. Otherwise uploaded
+instances are stored but never attached to a study, pixel data is never extracted, aggregate counts
+stay absent, and no `ImagingStudy` is created.
 
 ## Search parameters
 
@@ -203,17 +211,15 @@ It is identified by the study's UID, so it converges rather than duplicating:
   "identifier": [{ "system": "urn:dicom:uid", "value": "urn:oid:1.2.826.0.1.3680043.10.543.2" }],
   "status": "available",
   "numberOfSeries": 2,
-  "numberOfInstances": 148,
-  "endpoint": [{ "reference": "Endpoint/..." }]
+  "numberOfInstances": 148
 }
 ```
 
-`ImagingStudy.endpoint` points at an [`Endpoint`](/docs/api/fhir/resources/endpoint) with
-`connectionType` `dicom-wado-rs`, created once per project, whose `address` is this server's DICOMweb
-root. A client composes retrieve URLs from it:
+To retrieve the study, a client composes DICOMweb URLs against this server's
+[DICOMweb root](./dicomweb-api.md) from the UIDs on the `ImagingStudy`:
 
 ```
-{endpoint.address}/studies/{identifier}/series/{series.uid}/instances/{sopInstanceUid}
+/dicomweb/studies/{identifier}/series/{series.uid}/metadata
 ```
 
 Series are listed on the `ImagingStudy`; individual instances are not. Enumerating every SOP instance
@@ -222,9 +228,9 @@ would make the resource grow without bound on a large study, and viewers read th
 
 ### Which fields the server owns
 
-The study job rewrites only the fields it derives — `identifier`, `status`, `modality`, `started`,
-`endpoint`, `numberOfSeries`, `numberOfInstances`, and `series`. Everything else is yours to set:
-`basedOn`, `encounter`, `procedureReference`, `note`, `description`, and the rest survive every
+The study job rewrites only the fields it derives — `identifier`, `status`, `modality`, `subject`,
+`started`, `numberOfSeries`, `numberOfInstances`, and `series`. Everything else is yours to set:
+`basedOn`, `encounter`, `endpoint`, `procedureReference`, `note`, `description`, and the rest survive every
 recompute. Resources the server maintains carry the tag `https://medplum.com/dicom|derived-from-dicom`.
 
 Two fields latch, so that a human correction is never undone by a later instance arriving:

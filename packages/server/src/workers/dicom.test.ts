@@ -297,6 +297,81 @@ describe('DICOM Worker', () => {
     expect(info).toHaveBeenCalledWith('DICOM processing error', { id: instance.id, err: expect.any(Error) });
   });
 
+  test('execDicomJob links an uploaded instance to its study and series, creating them once', () =>
+    withTestContext(async () => {
+      const studyInstanceUid = randomUUID();
+      const seriesInstanceUid = randomUUID();
+      mockNaturalized = {
+        TransferSyntaxUID: '1.2.840.10008.1.2.4.50',
+        StudyInstanceUID: studyInstanceUid,
+        SeriesInstanceUID: seriesInstanceUid,
+        Modality: 'CT',
+        InstanceNumber: 4,
+      };
+      // Two instances of one series, stored the way STOW stores them: without a study or series.
+      const first = await createUnlinkedInstance(repo);
+      const second = await createUnlinkedInstance(repo);
+
+      const add = vi.fn();
+      vi.spyOn(queueRegistry, 'get').mockReturnValue({ add } as any);
+      await execDicomJob(createJob(first.id));
+      await execDicomJob(createJob(second.id));
+
+      const a = await repo.readResource<DicomInstance>('DicomInstance', first.id);
+      const b = await repo.readResource<DicomInstance>('DicomInstance', second.id);
+      expect(a.study?.reference).toBeDefined();
+      expect(b.study?.reference).toBe(a.study?.reference);
+      expect(b.series?.reference).toBe(a.series?.reference);
+      expect(a.instanceNumber).toBe('4');
+
+      const study = await repo.readReference<DicomStudy>(a.study as Reference<DicomStudy>);
+      expect(study).toMatchObject({ studyInstanceUid, meta: { project: dicomProjectId } });
+      const series = await repo.readReference<DicomSeries>(a.series as Reference<DicomSeries>);
+      expect(series).toMatchObject({ seriesInstanceUid, modality: 'CT', study: { reference: a.study?.reference } });
+
+      // Linking is what gives a STOW instance a study, so it is also what enqueues the study job.
+      expect(add).toHaveBeenCalledWith(
+        'DicomStudyJobData',
+        expect.objectContaining({ studyId: study.id }),
+        expect.objectContaining({ deduplication: expect.objectContaining({ id: `dicom-study:${study.id}` }) })
+      );
+    }));
+
+  test('execDicomJob never links an instance to a study in another project', () =>
+    withTestContext(async () => {
+      const studyInstanceUid = randomUUID();
+      mockNaturalized = {
+        TransferSyntaxUID: '1.2.840.10008.1.2.4.50',
+        StudyInstanceUID: studyInstanceUid,
+        SeriesInstanceUID: randomUUID(),
+      };
+      const other = await createTestProject({ withRepo: true });
+      const theirs = await other.repo.createResource<DicomStudy>({ resourceType: 'DicomStudy', studyInstanceUid });
+
+      // The worker runs on a system repository, which spans every project on the shard.
+      const instance = await createUnlinkedInstance(repo);
+      await execDicomJob(createJob(instance.id));
+
+      const linked = await repo.readResource<DicomInstance>('DicomInstance', instance.id);
+      expect(linked.study?.reference).toBeDefined();
+      expect(linked.study?.reference).not.toBe(`DicomStudy/${theirs.id}`);
+    }));
+
+  test('execDicomJob leaves an instance that arrived already linked on its own study', async () => {
+    const instance = await createDicomInstance();
+    mockNaturalized = {
+      TransferSyntaxUID: '1.2.840.10008.1.2.4.50',
+      StudyInstanceUID: randomUUID(),
+      SeriesInstanceUID: randomUUID(),
+    };
+
+    await execDicomJob(createJob(instance.id));
+
+    const updated = await repo.readResource<DicomInstance>('DicomInstance', instance.id);
+    expect(updated.study).toStrictEqual(instance.study);
+    expect(updated.series).toStrictEqual(instance.series);
+  });
+
   test('execDicomStudyJob ignores series and instances another project attached to the study', () =>
     withTestContext(async () => {
       const victim = await createTestProject({ withRepo: true });
@@ -352,6 +427,21 @@ describe('DICOM Worker', () => {
       raw: { reference: 'Binary/123' },
     });
     return series;
+  }
+
+  async function createUnlinkedInstance(instanceRepo: Repository): Promise<WithId<DicomInstance>> {
+    const raw = await instanceRepo.createResource<Binary>({
+      resourceType: 'Binary',
+      contentType: 'application/dicom',
+    });
+    await getBinaryStorage().writeBinary(raw, 'instance.dcm', 'application/dicom', Readable.from(Buffer.from('dicom')));
+    return instanceRepo.createResource<DicomInstance>({
+      resourceType: 'DicomInstance',
+      sopClassUid: '1.2.3',
+      sopInstanceUid: randomUUID(),
+      metadata: '{}',
+      raw: createReference(raw),
+    });
   }
 
   async function createDicomInstance(options?: Partial<DicomInstance>): Promise<WithId<DicomInstance>> {

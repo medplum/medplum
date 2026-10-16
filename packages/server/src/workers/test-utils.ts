@@ -7,8 +7,8 @@ import type { Job, Queue } from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
-import type { DicomStudyJobData } from './dicom';
-import { execDicomStudyJob, getDicomQueue } from './dicom';
+import type { DicomJobData, DicomQueueJobData, DicomStudyJobData } from './dicom';
+import { execDicomJob, execDicomStudyJob, getDicomQueue } from './dicom';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
@@ -166,18 +166,23 @@ export function mockFetchResponse(status: number, body: any, headers: Record<str
 }
 
 /**
- * Runs the deferred DICOM study work for everything enqueued so far.
+ * Runs the deferred DICOM work for everything enqueued so far: instance jobs, then study jobs.
  *
- * Study aggregates and the derived `ImagingStudy` are computed by a coalesced background job rather
- * than during the STOW request, so a test that uploads instances and then reads counts has to drain
- * that job first. Dispatch is drained on the way through, since that is what enqueues it.
+ * A STOW request stores only the instances. Linking them to a study and series, and computing the
+ * study aggregates and the derived `ImagingStudy`, happen in background jobs, so a test that uploads
+ * instances and then reads them back through QIDO or WADO has to drain those jobs first. Dispatch is
+ * drained on the way through, since that is what enqueues the instance jobs.
+ *
+ * Every call clears the queues it drained, so a later call only runs what was enqueued since.
  */
-export async function execPendingDicomStudyJobs(): Promise<void> {
+export async function execPendingDicomJobs(): Promise<void> {
   // Only DICOM instances, because the mock queue accumulates every dispatch job the file has ever
   // enqueued and replaying an unrelated one can fail on a version that no longer resolves.
   const dispatchQueue = getDispatchQueue();
   if (dispatchQueue) {
-    for (const [, data] of (dispatchQueue.add as Mock).mock.calls) {
+    const calls = [...(dispatchQueue.add as Mock).mock.calls];
+    (dispatchQueue.add as Mock).mockClear();
+    for (const [, data] of calls) {
       if (data?.resourceType === 'DicomInstance') {
         await execDispatchJob({ id: 1, data } as unknown as Job);
       }
@@ -189,14 +194,43 @@ export async function execPendingDicomStudyJobs(): Promise<void> {
     return;
   }
 
-  // Instance and study jobs share the queue, so select on the job name.
+  // Instance and study jobs share the queue, so select on the job name. Instance jobs run first,
+  // because they are what link an uploaded instance to its study and enqueue that study's job.
   const studyJobs = new Map<string, DicomStudyJobData>();
-  for (const [name, data] of (dicomQueue.add as Mock).mock.calls) {
+  for (const [name, data] of takeDicomJobs(dicomQueue)) {
     if (name === 'DicomStudyJobData') {
-      studyJobs.set((data as DicomStudyJobData).studyId, data);
+      studyJobs.set((data as DicomStudyJobData).studyId, data as DicomStudyJobData);
+    } else {
+      try {
+        await execDicomJob({ id: 1, data } as unknown as Job<DicomJobData>);
+      } catch {
+        // A fixture instance whose raw Binary is not a DICOM file fails here, as it would in the
+        // worker. Tests assert on what the jobs that did succeed produced.
+      }
+    }
+  }
+
+  // Collected after the instance jobs, which enqueue a study job once they link an instance.
+  for (const [name, data] of takeDicomJobs(dicomQueue)) {
+    if (name === 'DicomStudyJobData') {
+      studyJobs.set((data as DicomStudyJobData).studyId, data as DicomStudyJobData);
     }
   }
   for (const data of studyJobs.values()) {
     await execDicomStudyJob({ id: 1, data } as unknown as Job<DicomStudyJobData>);
   }
+  // Study jobs can re-enqueue themselves; those are already covered by the run above.
+  (dicomQueue.add as Mock).mockClear();
+}
+
+/**
+ * Removes and returns every job added to a mocked queue so far.
+ * @param queue - The mocked queue.
+ * @returns The job names and data, in the order they were added.
+ */
+function takeDicomJobs(queue: Queue<DicomQueueJobData>): [string, DicomQueueJobData][] {
+  const add = queue.add as Mock;
+  const calls = add.mock.calls.map(([name, data]) => [name, data] as [string, DicomQueueJobData]);
+  add.mockClear();
+  return calls;
 }

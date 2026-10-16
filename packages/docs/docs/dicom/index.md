@@ -59,14 +59,14 @@ A single DICOM instance arriving at Medplum produces five things:
 | [`DicomSeries`](/docs/api/fhir/medplum/dicomseries)     | Series-level attributes — series UID, modality, series description                      |
 | [`DicomInstance`](/docs/api/fhir/medplum/dicominstance) | Instance-level attributes, plus the full DICOM JSON metadata and references to binaries |
 | [`Binary`](/docs/api/fhir/resources/binary)             | The original, unmodified `.dcm` file                                                    |
-| [`ImagingStudy`](/docs/api/fhir/resources/imagingstudy) | A derived, chart-facing view of the study, with a WADO-RS endpoint to retrieve it from  |
+| [`ImagingStudy`](/docs/api/fhir/resources/imagingstudy) | A derived, chart-facing view of the study                                               |
 
-Studies and series are created conditionally on their DICOM UIDs, so the second instance of a series
-attaches to the study and series the first one created rather than duplicating them.
-
-Background workers then read the raw file and extract pixel data into one additional `Binary` per
-frame, which is what [WADO-RS frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames) serves, and
-recompute the study's instance counts and its `ImagingStudy`.
+An upload stores the file and its `DicomInstance`. Background workers then read the raw file, attach
+the instance to its study and series, extract pixel data into one additional `Binary` per frame
+(which is what [WADO-RS frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames) serves), and
+recompute the study's instance counts and its `ImagingStudy`. Studies and series are created
+conditionally on their DICOM UIDs, so the second instance of a series attaches to the study and
+series the first one created rather than duplicating them.
 See the [Data Model](./data-model.md) for the full mapping from DICOM attributes to resource fields.
 
 Because these are ordinary Medplum resources, they are searchable with the standard FHIR search API,

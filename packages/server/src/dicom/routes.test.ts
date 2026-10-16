@@ -15,7 +15,7 @@ import type { Repository } from '../fhir/repo';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject } from '../test.setup';
-import { execPendingDicomStudyJobs } from '../workers/test-utils';
+import { execPendingDicomJobs } from '../workers/test-utils';
 import { handleSearchSeries } from './qido-rs';
 import { handleRetrieveInstanceFrame, handleRetrieveSeriesMetadata } from './wado-rs';
 
@@ -414,9 +414,22 @@ describe('DICOM Routes', () => {
     expect(JSON.stringify(res.body)).toContain('1.2.840.10008.5.1.4.1.1.7');
     expect(JSON.stringify(res.body)).toContain('1.2.826.0.1.3680043.10.543.1');
 
-    // Study level aggregates are computed by the coalesced study job rather than during the upload,
-    // so they are only correct once it has run.
-    await execPendingDicomStudyJobs();
+    // The upload stores only the instance. Its study and series are created by the instance job, and
+    // the aggregates by the coalesced study job, so neither is visible until those have run.
+    const unlinked = await repo.searchOne<DicomInstance>({
+      resourceType: 'DicomInstance',
+      filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: '1.2.826.0.1.3680043.10.543.1' }],
+    });
+    expect(unlinked?.study).toBeUndefined();
+    expect(unlinked?.series).toBeUndefined();
+
+    await execPendingDicomJobs();
+
+    const linked = await repo.readResource<DicomInstance>('DicomInstance', unlinked?.id as string);
+    expect(linked.study?.reference).toMatch(/^DicomStudy\//);
+    expect(linked.series?.reference).toMatch(/^DicomSeries\//);
+    // Filled in by the instance job from the parsed file, rather than by the upload.
+    expect(linked).toMatchObject({ instanceNumber: '1', rows: 1, columns: 1 });
 
     // The uploaded instance carries no ModalitiesInStudy (0008,0061), so the value below can only
     // come from reconciling the study against its stored series.
@@ -441,10 +454,8 @@ describe('DICOM Routes', () => {
   });
 
   test('Create study with multiple instances in one request', async () => {
-    // Every instance below shares a study and a series, so their conditional creates all resolve
-    // the same two resources. They must be written one at a time: `conditionalCreate` opens a
-    // serializable transaction on the connection they share, and overlapping them throws
-    // "Repository is in an active transaction".
+    // Every instance below shares a study and a series, so the instance jobs must all resolve the
+    // same two resources rather than creating one per instance.
     const studyInstanceUid = '1.2.826.0.1.3680043.10.543.20';
     const seriesInstanceUid = '1.2.826.0.1.3680043.10.543.21';
     const sopInstanceUids = ['.22', '.23', '.24'].map((suffix) => `1.2.826.0.1.3680043.10.543${suffix}`);
@@ -473,7 +484,7 @@ describe('DICOM Routes', () => {
     ].Value?.map((item) => item['00081155'].Value[0]);
     expect(referenced).toStrictEqual(sopInstanceUids);
 
-    await execPendingDicomStudyJobs();
+    await execPendingDicomJobs();
 
     // A single study and series absorbed all three, rather than one being created per instance
     const studies = await request(app)
@@ -533,7 +544,7 @@ describe('DICOM Routes', () => {
     expect(await binaryExists(copy)).toBe(false);
     await expect(getBinaryStorage().readBinary(copy)).rejects.toThrow();
 
-    await execPendingDicomStudyJobs();
+    await execPendingDicomJobs();
 
     // The conditional create resolved the existing instance the second time, so the study and series
     // still count a single instance rather than two. NumberOfStudyRelatedInstances (0020,1208) and

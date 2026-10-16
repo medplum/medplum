@@ -101,7 +101,7 @@ describe('ImagingStudy reconciliation', () => {
       expect(imagingStudy?.series?.map((s) => s.numberOfInstances)).toStrictEqual([3, 2]);
       // Instances are not enumerated; viewers read them from the series metadata route.
       expect(imagingStudy?.series?.[0].instance).toBeUndefined();
-      expect(imagingStudy?.endpoint).toHaveLength(1);
+      expect(imagingStudy?.endpoint).toBeUndefined();
     }));
 
   test('Reports a study with no instances as registered rather than available', () =>
@@ -254,17 +254,5 @@ describe('ImagingStudy reconciliation', () => {
       // A study someone retired is not resurrected by the next instance to arrive.
       expect(after?.status).toBe('entered-in-error');
       expect(after?.numberOfSeries).toBe(2);
-    }));
-
-  test('Reuses one WADO-RS Endpoint for the whole project', () =>
-    withTestContext(async () => {
-      const first = await createStudy();
-      const second = await createStudy();
-
-      const a = await reconcile(first);
-      const b = await reconcile(second);
-
-      expect(a?.endpoint?.[0].reference).toBe(b?.endpoint?.[0].reference);
-      expect(projectId).toBeDefined();
     }));
 });

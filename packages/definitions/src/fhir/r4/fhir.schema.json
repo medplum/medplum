@@ -65706,8 +65706,6 @@
       "additionalProperties": false,
       "required": [
         "resourceType",
-        "study",
-        "series",
         "sopClassUid",
         "sopInstanceUid",
         "metadata",

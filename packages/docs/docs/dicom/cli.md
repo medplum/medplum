@@ -85,8 +85,9 @@ requests.
 
 ## Verifying the upload
 
-Instances land in the [DICOM data model](./data-model.md) immediately; pixel data extraction happens
-in the background. Check with an ordinary FHIR search:
+Instances are stored immediately. Attaching them to a study and series in the
+[DICOM data model](./data-model.md), and extracting pixel data, happen in the background. Check with
+an ordinary FHIR search:
 
 ```bash
 medplum get 'DicomStudy?_count=5'

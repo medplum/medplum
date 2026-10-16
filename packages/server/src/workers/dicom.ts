@@ -1,16 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Logger, Operation, WithId } from '@medplum/core';
+import type { Logger, Operation, SearchRequest, WithId } from '@medplum/core';
 import { createReference, isGone, isString, normalizeOperationOutcome, Operator, resolveId } from '@medplum/core';
-import type { Binary, DicomInstance, DicomStudy, Reference } from '@medplum/fhirtypes';
+import type { Binary, DicomInstance, DicomSeries, DicomStudy, Reference } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import dcmjs from 'dcmjs';
 import { Readable } from 'node:stream';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { reconcileImagingStudy } from '../dicom/imaging-study';
-import { scanStudy, updateSeriesAggregates, updateStudyAggregates } from '../dicom/utils';
+import {
+  dcmjsSeriesToMedplumSeries,
+  dcmjsStudyToMedplumStudy,
+  scanStudy,
+  updateSeriesAggregates,
+  updateStudyAggregates,
+} from '../dicom/utils';
 import type { Repository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
@@ -28,11 +34,11 @@ const { DicomMetadataListener } = utilities;
 /*
  * DICOM processing, split by the cardinality of the work rather than by how the bytes arrived.
  *
- * `DicomJobData` runs once per instance: parse the file, fill in the instance attributes, split out
- * the pixel data. `DicomStudyJobData` runs once per study and is coalesced, because the study level
- * work - the Q/R aggregates and the derived `ImagingStudy` - costs the same whether one instance
- * arrived or five hundred did. Both a DICOMweb STOW and a directly created `DicomInstance` enqueue
- * both, so neither entry point can drift away from the other.
+ * `DicomJobData` runs once per instance: parse the file, find or create its study and series, fill in
+ * the instance attributes, split out the pixel data. `DicomStudyJobData` runs once per study and is
+ * coalesced, because the study level work - the Q/R aggregates and the derived `ImagingStudy` - costs
+ * the same whether one instance arrived or five hundred did. Both a DICOMweb STOW and a directly
+ * created `DicomInstance` go through both, so neither entry point can drift away from the other.
  *
  * They share one queue rather than getting one each: `deduplication` is a per-job option, so the
  * coalescing works either way, and a single queue cannot be half-enabled by configuration or close
@@ -142,20 +148,13 @@ export async function addDicomJobs(resource: WithId<DicomInstance>, previousVers
       requestId: ctx?.requestId,
       traceId: ctx?.traceId,
     });
-    // Enqueued here as well as after the instance job succeeds, so a study still converges when an
-    // instance fails permanently - a corrupt file should not hold back the counts for its siblings.
-    await addStudyJobForInstance(resource);
-  }
-}
-
-/**
- * Enqueues the study level work for whichever study an instance belongs to.
- * @param resource - The instance whose study should be recomputed.
- */
-async function addStudyJobForInstance(resource: WithId<DicomInstance>): Promise<void> {
-  const studyId = resolveId(resource.study);
-  if (studyId) {
-    await addDicomStudyJob(getProjectJobTarget(resource), studyId);
+    // An instance created already linked - through the FHIR API rather than STOW - counts toward its
+    // study whether or not its file parses, so its study is recomputed now as well as after the
+    // instance job. A STOW instance has no study until the instance job links one.
+    const studyId = resolveId(resource.study);
+    if (studyId) {
+      await addDicomStudyJob(getProjectJobTarget(resource), studyId);
+    }
   }
 }
 
@@ -180,6 +179,7 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
   const { id } = job.data;
 
   let resource: WithId<DicomInstance>;
+  let studyId: string | undefined;
   try {
     resource = await systemRepo.readResource<DicomInstance>('DicomInstance', id);
   } catch (err) {
@@ -208,11 +208,13 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
     }
 
     const naturalized = DicomMetaDictionary.naturalizeDataset({ ...meta, ...dict }) as Record<string, unknown>;
+    const parents = await linkStudyAndSeries(systemRepo, resource, naturalized, log);
     const pixelData = await extractPixelData(systemRepo, resource, naturalized, log);
 
     // Patched rather than updated: the parse and the pixel extraction above can take a while, and a
     // read-modify-write spanning them would clobber anything written to the instance in between.
     const patch = buildInstancePatch(resource, {
+      ...parents,
       instanceAvailability: naturalized.InstanceAvailability,
       timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC,
       instanceNumber: toInstanceNumber(naturalized.InstanceNumber),
@@ -225,6 +227,7 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
     if (patch.length > 0) {
       await systemRepo.patchResource('DicomInstance', id, patch);
     }
+    studyId = resolveId(parents.study ?? resource.study);
   } catch (err) {
     log.info('DICOM processing error', { id, err });
     throw err;
@@ -232,7 +235,95 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
 
   // After the instance is stored, not in a `finally`: a job that threw will be retried, and each
   // retry would otherwise schedule another full study recomputation against an unhealthy system.
-  await addStudyJobForInstance(resource);
+  if (studyId) {
+    await addDicomStudyJob(getProjectJobTarget(resource), studyId);
+  }
+}
+
+/**
+ * Finds or creates the `DicomStudy` and `DicomSeries` an instance belongs to, by UID.
+ *
+ * This is done here rather than during STOW so the upload request only writes the instance. An
+ * instance that arrives already linked - one created directly through the FHIR API - is left as it
+ * is, since its caller chose those parents.
+ *
+ * @param systemRepo - The repository to read and write with.
+ * @param resource - The instance being processed.
+ * @param naturalized - The naturalized DICOM dataset.
+ * @param log - The logger to report an unlinkable instance to.
+ * @returns The references to add to the instance, or none when it is already linked or cannot be.
+ */
+async function linkStudyAndSeries(
+  systemRepo: Repository,
+  resource: WithId<DicomInstance>,
+  naturalized: Record<string, unknown>,
+  log: Logger
+): Promise<{ study?: Reference<DicomStudy>; series?: Reference<DicomSeries> }> {
+  if (resource.study && resource.series) {
+    return {};
+  }
+
+  const projectId = resource.meta?.project;
+  const studyInstanceUid = naturalized.StudyInstanceUID;
+  const seriesInstanceUid = naturalized.SeriesInstanceUID;
+  if (!projectId || !isString(studyInstanceUid) || !isString(seriesInstanceUid)) {
+    log.warn('Unable to link DICOM instance to a study and series', { id: resource.id });
+    return {};
+  }
+
+  const study = await findOrCreateByUid(
+    systemRepo,
+    projectId,
+    dcmjsStudyToMedplumStudy(naturalized),
+    'study-instance-uid',
+    studyInstanceUid
+  );
+  const series = await findOrCreateByUid(
+    systemRepo,
+    projectId,
+    dcmjsSeriesToMedplumSeries(createReference(study), naturalized),
+    'series-instance-uid',
+    seriesInstanceUid
+  );
+  return { study: createReference(study), series: createReference(series) };
+}
+
+/**
+ * Returns the resource in a project with the given DICOM UID, creating it if there is none.
+ *
+ * Searched before the conditional create: after the first instance of a study, every sibling finds
+ * the study and series already stored, and a search is far cheaper than the serializable transaction
+ * `conditionalCreate` opens. The conditional create is still what makes concurrent first arrivals
+ * agree on a single resource.
+ *
+ * @param systemRepo - The repository to read and write with. It spans the shard, so every search is
+ * confined to the project explicitly.
+ * @param projectId - The project the resource belongs to.
+ * @param resource - The resource to create when none exists.
+ * @param code - The UID search parameter.
+ * @param uid - The UID to match.
+ * @returns The stored resource.
+ */
+async function findOrCreateByUid<T extends DicomStudy | DicomSeries>(
+  systemRepo: Repository,
+  projectId: string,
+  resource: T,
+  code: string,
+  uid: string
+): Promise<WithId<T>> {
+  const search: SearchRequest<T> = {
+    resourceType: resource.resourceType,
+    filters: [
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+      { code, operator: Operator.EXACT, value: uid },
+    ],
+  };
+  const existing = await systemRepo.searchOne<T>(search);
+  if (existing) {
+    return existing;
+  }
+  const result = await systemRepo.conditionalCreate<T>({ ...resource, meta: { project: projectId } }, search);
+  return result.resource;
 }
 
 /**

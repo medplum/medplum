@@ -10769,8 +10769,8 @@
           {
             "id" : "DicomInstance.study",
             "path" : "DicomInstance.study",
-            "definition" : "The study that this DICOM instance belongs to.",
-            "min" : 1,
+            "definition" : "The study that this DICOM instance belongs to. Set by the DICOM worker once the instance has been parsed.",
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "Reference",
@@ -10778,15 +10778,15 @@
             }],
             "base" : {
               "path" : "DicomInstance.study",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             }
           },
           {
             "id" : "DicomInstance.series",
             "path" : "DicomInstance.series",
-            "definition" : "The series that this DICOM instance belongs to.",
-            "min" : 1,
+            "definition" : "The series that this DICOM instance belongs to. Set by the DICOM worker once the instance has been parsed.",
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "Reference",
@@ -10794,7 +10794,7 @@
             }],
             "base" : {
               "path" : "DicomInstance.series",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             }
           },
