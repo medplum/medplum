@@ -15,7 +15,7 @@ import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/f
 import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Queue, Worker } from 'bullmq';
-import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { addBatchTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { uploadBinaryData } from '../fhir/binary';
@@ -28,12 +28,12 @@ import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
-  assertProjectActive,
   defaultQueueOptions,
   getWorkerBullmqConfig,
   isJobActive,
   moveToDelayedAndThrow,
   queueRegistry,
+  runJobInAuthenticatedContext,
   trackJobMetrics,
   updateAsyncJobOutput,
 } from './utils';
@@ -117,7 +117,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       queueName,
       trackJobMetrics('batch', (job) => {
         const { authState, requestId, traceId } = job.data;
-        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
+        return runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           return execBatchJob(job);
         });
       }),
@@ -135,8 +135,9 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       }
 
       // This fires only when the job could not be recovered by re-entrant resume (e.g. it stalled
-      // more than maxStalledCount times). Mark the AsyncJob failed if it is still in progress and
-      // clean up any durable checkpoint state.
+      // more than maxStalledCount times) or never reached execBatchJob (e.g. the project was
+      // deactivated). Mark the AsyncJob failed if it is still in progress and clean up any durable
+      // checkpoint state.
 
       try {
         const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
@@ -268,8 +269,6 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
       processor = BatchProcessor.fromState(router, userRepo, req, initialState, position);
       logger.info('resuming from checkpoint', { position, chunkSeq });
     }
-
-    await assertProjectActive(job.data.authState.project.id);
 
     const checkpointEntries = job.data.checkpointEntries ?? defaultCheckpointEntries;
     const checkpointIntervalMs = job.data.checkpointIntervalMs ?? defaultCheckpointIntervalMs;

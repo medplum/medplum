@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Bundle, BundleEntry, Project } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import { DelayedError, Worker } from 'bullmq';
+import { DelayedError, UnrecoverableError, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
@@ -213,21 +213,6 @@ describe('Batch worker', () => {
             }),
           }),
         ]);
-      }));
-
-    test('Fails without processing entries when the project has been deactivated', () =>
-      withTestContext(async () => {
-        const { asyncJob, job } = await setupReentrantJob(singleEntryBundle());
-        await systemRepo.updateResource<Project>({ ...authState.project, active: false });
-        try {
-          await expect(execBatchJob(job)).resolves.toBeUndefined();
-        } finally {
-          await systemRepo.updateResource<Project>({ ...authState.project, active: true });
-        }
-
-        const finished = await readAsyncJob(asyncJob.id);
-        expect(finished.status).toStrictEqual('error');
-        expect(finished.output?.parameter).toContainEqual({ name: 'error', valueString: 'Project not active' });
       }));
 
     test('Fails with partial results when a checkpoint write fails after preprocessing', () =>
@@ -559,6 +544,32 @@ describe('Batch worker', () => {
       withTestContext(async () => {
         const { processor } = captureWorker();
         await expect(processor({ data: { authState } } as unknown as Job)).rejects.toThrow(TypeError);
+      }));
+
+    test.each([
+      ['project', 'Project not active'],
+      ['membership', 'Profile not active'],
+    ] as const)('Fails the AsyncJob without processing entries when the %s has been deactivated', (key, reason) =>
+      withTestContext(async () => {
+        const { processor, failedHandler } = captureWorker();
+        const { asyncJob, job } = await setupReentrantJob(singleEntryBundle());
+        const loadSpy = vi.spyOn(BatchCheckpointStore.prototype, 'loadInputBundle');
+        await systemRepo.updateResource({ ...authState[key], active: false });
+        try {
+          const err = await processor(job).catch((e: unknown) => e);
+          expect(err).toBeInstanceOf(UnrecoverableError);
+          await failedHandler(job, err as Error);
+        } finally {
+          await systemRepo.updateResource({ ...authState[key], active: true });
+        }
+
+        expect(loadSpy).not.toHaveBeenCalled();
+        const finished = await readAsyncJob(asyncJob.id);
+        expect(finished.status).toStrictEqual('error');
+        expect(finished.output?.parameter).toContainEqual({
+          name: 'outcome',
+          resource: expect.objectContaining({ issue: [expect.objectContaining({ details: { text: reason } })] }),
+        });
       }));
 
     test('Verbose logging fields resolve the async job reference', () =>

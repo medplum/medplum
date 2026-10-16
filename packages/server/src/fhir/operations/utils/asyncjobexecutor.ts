@@ -180,8 +180,10 @@ export class AsyncJobExecutor {
       };
       failedJob.output.parameter ??= [];
 
-      if (err instanceof OperationOutcomeError) {
-        failedJob.output.parameter.push({ name: 'outcome', resource: err.outcome });
+      // A wrapper such as BullMQ's UnrecoverableError keeps the structured outcome as its cause.
+      const outcomeErr = err instanceof OperationOutcomeError ? err : err.cause;
+      if (outcomeErr instanceof OperationOutcomeError) {
+        failedJob.output.parameter.push({ name: 'outcome', resource: outcomeErr.outcome });
       } else {
         failedJob.output.parameter.push(
           { name: 'error', valueString: err.message },

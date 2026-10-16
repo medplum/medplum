@@ -313,6 +313,37 @@ export const medplumEslintConfig = [
       'medplum/no-transaction-callback-invoking-repo': 'error',
     },
   },
+  {
+    // Workers must run as a job's user only via runJobInAuthenticatedContext, which re-reads the
+    // serialized auth state and fails the job without retries if it has been revoked. These imports
+    // would build a user context or repo from the stale auth state instead.
+    files: ['packages/server/src/workers/**/*.ts'],
+    ignores: ['packages/server/src/workers/utils.ts', '**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(^|/)context$',
+              importNames: ['runInAuthenticatedContext', 'AuthenticatedRequestContext'],
+              message: 'Use runJobInAuthenticatedContext',
+            },
+            {
+              regex: '(^|/)fhir/accesspolicy$',
+              importNames: ['getRepoForLogin'],
+              message: 'Use runJobInAuthenticatedContext',
+            },
+            {
+              regex: '(^|/)request-context-store$',
+              importNames: ['requestContextStore'],
+              message: 'Use runJobInAuthenticatedContext or tryRunInRequestContext',
+            },
+          ],
+        },
+      ],
+    },
+  },
   /**
    * vite.config.ts and vitest.config.ts are often outside package tsconfig include (e.g. rootDir src);
    * skip type-aware parsing.
