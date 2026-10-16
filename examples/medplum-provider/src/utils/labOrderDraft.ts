@@ -1,14 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import { getExtensionValue, getIdentifier, isReference, SNOMED } from '@medplum/core';
+import type { MedplumClient, MedplumRequestOptions, ResourceArray, WithId } from '@medplum/core';
+import {
+  badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
+  getExtensionValue,
+  getIdentifier,
+  getReferenceString,
+  isReference,
+  OperationOutcomeError,
+  parseReference,
+  SNOMED,
+} from '@medplum/core';
 import type {
+  Bundle,
+  BundleEntry,
   Encounter,
   Organization,
   Patient,
   Practitioner,
   QuestionnaireResponse,
   Reference,
+  Resource,
   ServiceRequest,
   Specimen,
   Task,
@@ -18,14 +31,18 @@ import type {
   DiagnosisCodeableConcept,
   LabOrderTestMetadata,
   LabOrganization,
+  PartialLabOrderInputs,
   TestCoding,
 } from '@medplum/health-gorilla-core';
 import {
+  createLabOrderBundle,
   HEALTH_GORILLA_SYSTEM,
   isBillTo,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+  validateLabOrderInputs,
 } from '@medplum/health-gorilla-core';
 import type { TestSearch } from '@medplum/health-gorilla-react';
 import { getAutocompleteSearchFunction } from '@medplum/health-gorilla-react';
@@ -85,7 +102,7 @@ export async function getLabOrderDraftDefaults(
     requesterRef ? medplum.readReference(requesterRef) : undefined,
     performerRef ? medplum.readReference(performerRef) : undefined,
     specimenRef ? medplum.readReference(specimenRef) : undefined,
-    order.id ? medplum.searchResources('ServiceRequest', { 'based-on': `ServiceRequest/${order.id}` }) : [],
+    order.id ? searchOrderTests(medplum, order.id) : [],
     order.id ? medplum.searchOne('Task', { focus: `ServiceRequest/${order.id}` }) : undefined,
   ]);
 
@@ -105,9 +122,7 @@ export async function getLabOrderDraftDefaults(
       if (!code) {
         return;
       }
-      const aoeRef = child.supportingInfo?.find((ref): ref is Reference<QuestionnaireResponse> =>
-        isReference(ref, 'QuestionnaireResponse')
-      );
+      const aoeRef = getAoeReference(child);
       testMetadata[code] = {
         priority: child.priority,
         notes: child.note?.[0]?.text,
@@ -208,4 +223,171 @@ async function resolveTests(
  */
 function isCompendiumCoding(coding: TestCoding): boolean {
   return !!coding.system?.startsWith('urn:uuid:');
+}
+
+/** Extensions the order form writes on a lab order. Any others on a resumed draft are kept. */
+const FORM_EXTENSION_URLS = new Set([
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
+]);
+
+/**
+ * Saves the lab order form as a draft lab order, without sending it to the lab.
+ *
+ * Without `draft`, a new draft is created. With `draft`, that draft is updated in place, keeping its
+ * ID, and its per-test requests, AOE answers and specimen are replaced, so resuming it again shows
+ * what was saved. Unlike submitting, the bill-to and required AOE answers can still be missing.
+ * @param medplum - The Medplum client.
+ * @param inputs - The values entered in the lab order form.
+ * @param draft - The draft lab order to update, if any.
+ * @returns The saved draft lab order.
+ */
+export async function saveLabOrderDraft(
+  medplum: MedplumClient,
+  inputs: PartialLabOrderInputs,
+  draft?: ServiceRequest
+): Promise<WithId<ServiceRequest>> {
+  const bundle = createLabOrderDraftBundle(inputs);
+  const entries = bundle.entry ?? [];
+  const orderIndex = entries.findIndex(isLabOrderEntry);
+  if (draft?.id) {
+    await targetExistingDraft(medplum, entries, entries[orderIndex], draft.id);
+  }
+
+  const response = await medplum.executeBatch(bundle);
+  const failed = response.entry?.find((entry) => !entry.response?.status?.startsWith('2'));
+  if (failed) {
+    throw new OperationOutcomeError(failed.response?.outcome ?? badRequest('Lab order draft was not saved'));
+  }
+  notifyBatchModified(medplum, entries, response);
+  return response.entry?.[orderIndex]?.resource as WithId<ServiceRequest>;
+}
+
+function createLabOrderDraftBundle(inputs: PartialLabOrderInputs): Bundle {
+  // Skip the builder's checks on AOE answers and billing, which only need to be complete on submit
+  const testMetadata = Object.fromEntries(
+    Object.entries(inputs.testMetadata ?? {}).map(([code, metadata]) => [
+      code,
+      metadata && { ...metadata, aoeQuestionnaire: undefined },
+    ])
+  );
+  const billingComplete = !validateLabOrderInputs(inputs)?.billingInformation;
+  const bundle = createLabOrderBundle({
+    ...inputs,
+    testMetadata,
+    billingInformation: billingComplete ? inputs.billingInformation : { billTo: 'patient' },
+  });
+  if (billingComplete) {
+    return bundle;
+  }
+
+  // Record the bill-to chosen so far in place of the placeholder
+  const order = bundle.entry?.find(isLabOrderEntry)?.resource as ServiceRequest;
+  const billTo = inputs.billingInformation?.billTo;
+  const extension = (order.extension ?? []).filter(
+    (ext) => ext.url !== MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO
+  );
+  if (billTo) {
+    extension.push({ url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: billTo });
+  }
+  order.extension = extension.length > 0 ? extension : undefined;
+  return bundle;
+}
+
+/**
+ * Turns a new draft's bundle into an update of an existing draft. The top-level lab order is
+ * updated in place, keeping its ID and the fields the form does not set, such as its encounter.
+ * Its per-test requests, AOE answers and specimen are only reached through the lab order, so the
+ * current ones are deleted and the bundle creates them again.
+ * @param medplum - The Medplum client.
+ * @param entries - The entries of the bundle built from the form, which are modified in place.
+ * @param orderEntry - The entry for the top-level lab order.
+ * @param draftId - The ID of the draft lab order to update.
+ */
+async function targetExistingDraft(
+  medplum: MedplumClient,
+  entries: BundleEntry[],
+  orderEntry: BundleEntry,
+  draftId: string
+): Promise<void> {
+  const [current, currentTests] = await Promise.all([
+    medplum.readResource('ServiceRequest', draftId, { cache: 'no-cache' }),
+    searchOrderTests(medplum, draftId, { cache: 'no-cache' }),
+  ]);
+
+  const order = orderEntry.resource as ServiceRequest;
+  const extension = [
+    ...(current.extension ?? []).filter((ext) => !FORM_EXTENSION_URLS.has(ext.url)),
+    ...(order.extension ?? []),
+  ];
+  orderEntry.request = { method: 'PUT', url: getReferenceString(current) };
+  // The builder sets every field it owns, as undefined when cleared, so cleared values replace the draft's
+  orderEntry.resource = {
+    ...current,
+    ...order,
+    id: current.id,
+    meta: { ...current.meta, ...order.meta },
+    extension: extension.length > 0 ? extension : undefined,
+  };
+
+  const deletes = [
+    ...currentTests.flatMap((test) => [getReferenceString(test), getAoeReference(test)?.reference]),
+    current.specimen?.find((ref) => isReference(ref, 'Specimen'))?.reference,
+  ];
+  for (const url of deletes) {
+    if (url) {
+      entries.push({ request: { method: 'DELETE', url } });
+    }
+  }
+}
+
+/**
+ * executeBatch does not tell the client what it changed, so cached reads and searches would
+ * show the draft as it was before the save when it is resumed again.
+ * @param medplum - The Medplum client.
+ * @param entries - The entries of the bundle that was executed.
+ * @param response - The batch response, whose entries are in the same order.
+ */
+function notifyBatchModified(medplum: MedplumClient, entries: BundleEntry[], response: Bundle): void {
+  entries.forEach((entry, index) => {
+    const resource = response.entry?.[index]?.resource as WithId<Resource> | undefined;
+    if (resource) {
+      const operation = entry.request?.method === 'PUT' ? 'update' : 'create';
+      medplum.notifyResourceModified({ resourceType: resource.resourceType, operation, id: resource.id, resource });
+    } else if (entry.request?.method === 'DELETE') {
+      const [resourceType, id] = parseReference({ reference: entry.request.url });
+      medplum.notifyResourceModified({ resourceType, operation: 'delete', id });
+    }
+  });
+}
+
+function isLabOrderEntry(entry: BundleEntry): boolean {
+  return !!entry.resource?.meta?.profile?.includes(MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE);
+}
+
+/**
+ * Searches a lab order's per-test requests, all on one page so that none are missed on resume or
+ * left behind on save.
+ * @param medplum - The Medplum client.
+ * @param orderId - The ID of the top-level lab order.
+ * @param options - Request options, such as the cache mode.
+ * @returns The lab order's per-test requests.
+ */
+function searchOrderTests(
+  medplum: MedplumClient,
+  orderId: string,
+  options?: MedplumRequestOptions
+): Promise<ResourceArray<WithId<ServiceRequest>>> {
+  return medplum.searchResources(
+    'ServiceRequest',
+    { 'based-on': `ServiceRequest/${orderId}`, _count: DEFAULT_MAX_SEARCH_COUNT.toString() },
+    options
+  );
+}
+
+function getAoeReference(test: ServiceRequest): Reference<QuestionnaireResponse> | undefined {
+  return test.supportingInfo?.find((ref): ref is Reference<QuestionnaireResponse> =>
+    isReference(ref, 'QuestionnaireResponse')
+  );
 }
