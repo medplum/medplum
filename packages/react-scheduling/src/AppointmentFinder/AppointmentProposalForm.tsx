@@ -134,8 +134,10 @@ export interface AppointmentProposalFormProps {
    */
   readonly ignoreAppointmentSchedules?: readonly string[];
   /**
-   * The day the time search opens on, and the day a typed time starts out on.
-   * Defaults to today.
+   * The day the time search opens on. Defaults to today.
+   *
+   * A later value moves the search to its day and keeps every answer, unless that day is
+   * already on show.
    */
   readonly defaultStart?: Date;
   /**
@@ -160,7 +162,8 @@ export interface AppointmentProposalFormProps {
    *
    * Every answer above the time drops it — a different day, a different provider —
    * so a host pointing at the time on a calendar of its own takes the marker down
-   * rather than leaving it on a time nobody chose.
+   * rather than leaving it on a time nobody chose. A time dropped because `defaultStart`
+   * moved is not reported: the host moved the day, and its marker with it.
    */
   readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
   /** The ValueSet the procedure code field binds to. Defaults to the full CPT value set. */
@@ -344,6 +347,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   });
   const { reset: resetDaySearch } = daySearch;
 
+  // Compared by instant, so a host building the Date inline each render moves nothing.
+  const startTime = defaultStart?.getTime();
+  const [shownStartTime, setShownStartTime] = useState(startTime);
+  if (shownStartTime !== startTime) {
+    setShownStartTime(startTime);
+    if (defaultStart && !daySearch.isDayOnShow(defaultStart)) {
+      setMonth(defaultStart);
+      daySearch.chooseDayRange(defaultStart);
+    }
+  }
+
   // Whatever moves the count moves what was found under it, the field going away included:
   // a proposal carries the series it was found for, and a typed time books a single visit.
   // Adjusted during render, so no time found under the old count is ever offered under the new.
@@ -374,12 +388,20 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // Same shape as above: the ref holds the last time reported, so mounting takes down
   // no marker the host put up, and clearing a time nobody chose reports no drop.
   const reportedTime = useRef<Appointment | undefined>(undefined);
+  const reportedStartTime = useRef(startTime);
   useEffect(() => {
+    // A host moving the day has already moved its marker there, so a time that move
+    // dropped is not reported over it.
+    if (reportedStartTime.current !== startTime) {
+      reportedStartTime.current = startTime;
+      reportedTime.current = chosen;
+      return;
+    }
     if (reportedTime.current !== chosen) {
       reportedTime.current = chosen;
       onChangeTime?.(toRange(chosen));
     }
-  }, [chosen, onChangeTime]);
+  }, [chosen, startTime, onChangeTime]);
 
   function toggleFinder(): void {
     setFinding(!finding);

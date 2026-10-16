@@ -33,6 +33,7 @@ import {
   choosePatient,
   chooseRepeat,
   chooseSecondOfferedTime,
+  chosenTimeField,
   clickBook,
   codePill,
   dragDays,
@@ -365,28 +366,32 @@ describe('SchedulingWorkspace booking', () => {
     expect(markedTime()).toBe('none');
   });
 
-  test('Re-opens on a different day, clearing what was answered for the old one', async () => {
+  test('Keeps what was answered, and searches the new day, when a different day is clicked', async () => {
+    const get = vi.spyOn(medplum, 'get');
     setup();
     await clickCalendar('tuesday morning');
     await chooseImagingService();
-    expect(hasPill('Ultrasound Imaging')).toBe(true);
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
 
     await clickCalendar('thursday');
 
-    // A different day is a different visit, and the answers were for the old one.
-    expect(hasPill('Ultrasound Imaging')).toBe(false);
+    expect(hasPill('Ultrasound Imaging')).toBe(true);
+    expect(new Date(lastFindStart(get) as string).getDate()).toBe(THURSDAY_MORNING.getDate());
   });
 
-  test('Keeps what was answered when the same day is clicked again', async () => {
+  test('Keeps the time chosen when the day already searched is clicked again', async () => {
     setup();
     await clickCalendar('tuesday morning');
     await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    await chooseSecondOfferedTime();
 
     await clickCalendar('tuesday afternoon');
 
-    // Clicking around inside the day being booked is not a change of mind about which
-    // day it is, and must not take the answers away.
     expect(hasPill('Ultrasound Imaging')).toBe(true);
+    expect(chosenTimeField()).toBeInTheDocument();
   });
 
   describe('Marking the time being booked', () => {
@@ -434,6 +439,19 @@ describe('SchedulingWorkspace booking', () => {
       await chooseDay('19');
 
       expect(markedTime()).toBe('none');
+    });
+
+    test('Keeps the mark on a new click that drops the time chosen', async () => {
+      setup();
+      await clickCalendar('tuesday morning');
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseSecondOfferedTime();
+
+      await clickCalendar('thursday');
+
+      expect(markedTime()).toBe(THURSDAY_MORNING.toISOString());
     });
   });
 
