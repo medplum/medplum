@@ -138,6 +138,9 @@ export default {
  * Monday morning's visits ended before the pinned "now" (12:05 that day), so they are drawn
  * faded: an imaging visit that was seen, and a telehealth visit the patient missed.
  *
+ * Wednesday afternoon's flu shots on Sam Ortiz's calendar run 15 minutes, the shortest visits
+ * here, and each still shows its visit type over its patient.
+ *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.

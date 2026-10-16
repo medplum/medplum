@@ -1175,6 +1175,10 @@ export const AppointmentPatientFixtures = [
   buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
   buildPatient('pt-patel', 'Anika', 'Patel', '1983-03-19'),
   buildPatient('pt-novak', 'Theo', 'Novak', '1967-10-08'),
+  buildPatient('pt-bauer', 'Hannah', 'Bauer', '1994-04-26'),
+  buildPatient('pt-santos', 'Mateo', 'Santos', '1979-06-14'),
+  buildPatient('pt-kowalski', 'Nora', 'Kowalski', '1963-11-30'),
+  buildPatient('pt-ibrahim', 'Yusuf', 'Ibrahim', '2005-08-09'),
 ];
 
 /**
@@ -1551,6 +1555,67 @@ export const LonelyAppointment: WithId<Appointment> = {
   ],
 };
 
+export const FluShotService = buildSchedulableService({
+  id: 'flu-shot',
+  name: 'Flu Shot',
+  category: 'Procedure',
+  durationMinutes: 15,
+  alignmentMinutes: 15,
+  locationIds: ['main-clinic'],
+});
+
+export const NurseOrtizPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'nurse-ortiz',
+  name: [{ given: ['Sam'], family: 'Ortiz', suffix: ['RN'] }],
+};
+
+export const NurseOrtizSchedule = buildSchedule('schedule-nurse-ortiz', 'Practitioner/nurse-ortiz', 'Sam Ortiz, RN', {
+  id: 'flu-shot',
+  name: 'Flu Shot',
+});
+
+/** Flu shots on Wednesday afternoon, the shortest visits on the calendar: three back to back, then one on its own. */
+export const NurseOrtizFluShotSlots: WithId<Slot>[] = (
+  [
+    ['ortiz-1', '2020-05-06T20:00:00Z'],
+    ['ortiz-2', '2020-05-06T20:15:00Z'],
+    ['ortiz-3', '2020-05-06T20:30:00Z'],
+    ['ortiz-4', '2020-05-06T21:00:00Z'],
+  ] as const
+).map(([id, start]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  schedule: createReference(NurseOrtizSchedule),
+  start,
+  end: addMinutes(new Date(start), 15).toISOString(),
+}));
+
+const fluShotPatientRefs: Reference<Patient>[] = [
+  { reference: 'Patient/pt-bauer', display: 'Hannah Bauer' },
+  { reference: 'Patient/pt-santos', display: 'Mateo Santos' },
+  { reference: 'Patient/pt-kowalski', display: 'Nora Kowalski' },
+  { reference: 'Patient/pt-ibrahim', display: 'Yusuf Ibrahim' },
+];
+
+export const NurseOrtizFluShotAppointments: WithId<Appointment>[] = NurseOrtizFluShotSlots.map((slot, idx) => ({
+  resourceType: 'Appointment',
+  id: `appointment-${slot.id}`,
+  status: idx === 3 ? 'pending' : 'booked',
+  start: slot.start,
+  end: slot.end,
+  serviceType: toServiceTypeCodeableConcepts(FluShotService),
+  slot: [createReference(slot)],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(NurseOrtizPractitioner) },
+      { status: 'accepted', actor: fluShotPatientRefs[idx] },
+    ],
+    createReference(NurseOrtizPractitioner)
+  ),
+}));
+
 export const CalendarWeekFixtures = [
   RiveraImagingAppointment,
   ...RiveraImagingHeldSlots,
@@ -1576,4 +1641,9 @@ export const CalendarWeekFixtures = [
   ChenInfusionBufferSlot,
   ChenInfusionAppointment,
   LonelyAppointment,
+  FluShotService,
+  NurseOrtizPractitioner,
+  NurseOrtizSchedule,
+  ...NurseOrtizFluShotSlots,
+  ...NurseOrtizFluShotAppointments,
 ];
