@@ -69,6 +69,11 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
     <CalendarBase
       eventSources={eventSources}
       nowIndicator
+      // Tall enough that a 15 minute appointment, the length most are booked for, shows both its
+      // service type and its patient.
+      slotMinHeight={76}
+      // Rows this tall leave fewer hours on screen, so open at the start of a clinic day.
+      scrollTime="07:00:00"
       className={cx(className, classes.wrapper)}
       {...calendarBaseProps}
       eventInnerClass={classes.eventInner}

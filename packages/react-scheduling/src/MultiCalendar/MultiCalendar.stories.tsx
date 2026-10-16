@@ -453,3 +453,75 @@ export const ThemeColors = (): JSX.Element => {
   );
 };
 ThemeColors.decorators = [withFixtures([bookedVisit, pendingVisit])];
+
+const followUpVisit = {
+  resourceType: 'HealthcareService',
+  id: 'follow-up-visit',
+  name: 'Oncology follow-up',
+} satisfies HealthcareService;
+
+const labDraw = {
+  resourceType: 'HealthcareService',
+  id: 'lab-draw',
+  name: 'Lab draw',
+} satisfies HealthcareService;
+
+/**
+ * An appointment on Tuesday, May 5, the day after the mocked Monday.
+ * @param patient - The patient's name, which also names the appointment.
+ * @param service - What the visit is for.
+ * @param hour - The hour it starts at.
+ * @param minute - The minute it starts at.
+ * @param minutes - How long it runs.
+ * @returns The appointment.
+ */
+function shortAppointment(
+  patient: string,
+  service: HealthcareService,
+  hour: number,
+  minute: number,
+  minutes: number
+): Appointment {
+  const start = new Date(2020, 4, 5, hour, minute);
+  return {
+    resourceType: 'Appointment',
+    id: `short-${hour}-${minute}`,
+    status: 'booked',
+    start: start.toISOString(),
+    end: new Date(start.getTime() + minutes * 60_000).toISOString(),
+    serviceType: [{ extension: [{ url: ServiceTypeReferenceURI, valueReference: createReference(service) }] }],
+    participant: [{ status: 'accepted', actor: { reference: `Patient/${patient}`, display: patient } }],
+  };
+}
+
+/**
+ * Back-to-back 15 minute visits, the length most visits are booked for, each showing what it is
+ * for and who it is with.
+ * @returns The story.
+ */
+export const ShortVisits = (): JSX.Element => {
+  const sources: MultiCalendarSource[] = [
+    {
+      color: 'blue',
+      slots: [],
+      appointments: [
+        shortAppointment('Homer Simpson', followUpVisit, 8, 0, 15),
+        shortAppointment('Marge Simpson', labDraw, 8, 15, 15),
+        shortAppointment('Bartholomew Jojo Simpson', followUpVisit, 8, 30, 15),
+        shortAppointment('Lisa Simpson', labDraw, 8, 45, 15),
+        shortAppointment('Ned Flanders', followUpVisit, 9, 0, 30),
+        shortAppointment('Maude Flanders', labDraw, 9, 30, 10),
+      ],
+    },
+  ];
+
+  return (
+    <div style={{ height: 700, padding: '1em' }}>
+      <MultiCalendar
+        sources={sources}
+        onSelectAppointment={(appointment) => alert(`Selected Appointment/${appointment.id}`)}
+      />
+    </div>
+  );
+};
+ShortVisits.decorators = [withFixtures([followUpVisit, labDraw])];
