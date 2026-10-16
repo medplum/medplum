@@ -17,8 +17,7 @@
     "build": "rimraf public && hugo --minify",
     "build:guides": "node scripts/build-decision-guides.mjs",
     "dev": "hugo server --buildDrafts --buildFuture --noHTTPCache",
-    "preview": "http-server public -c-1",
-    "pxtorem": "postcss \"assets/css/**/*.css\" \"!assets/css/generated/**\" --replace --no-map"
+    "preview": "http-server public -c-1"
   },
   "prettier": {
     "printWidth": 160,
@@ -36,9 +35,6 @@
     "infima": "0.2.0-alpha.45",
     "mermaid": "12.2.0",
     "open-color": "1.9.1",
-    "postcss": "8.5.30",
-    "postcss-cli": "12.0.0",
-    "postcss-pxtorem": "6.1.0",
     "rimraf": "6.1.3",
     "swup": "4.10.0"
   }
