@@ -17,7 +17,9 @@ const MANIFEST_ACCEPT = [
 const ecrClients: Record<string, ECRClient> = {};
 
 /**
- * Replaces every tagged container image in the config with `<name>@<digest>` of the image the tag currently points to.
+ * Replaces each tagged additional container image in the config with `<name>@<digest>` of the image the tag currently
+ * points to. Server images are left as tags: the server deploy pipeline pins its own digests outside CDK, so pinning
+ * them here would only show up as diffs against the deployed template.
  * @param config - The infra config, modified in place.
  */
 export async function resolveImageDigests(config: MedplumInfraConfig): Promise<void> {
@@ -31,14 +33,10 @@ export async function resolveImageDigests(config: MedplumInfraConfig): Promise<v
     return digestImage;
   };
 
-  config.serverImage = await pin(config.serverImage);
   for (const container of config.additionalContainers ?? []) {
     container.image = await pin(container.image);
   }
   for (const service of config.workerServices ?? []) {
-    if (service.serverImage) {
-      service.serverImage = await pin(service.serverImage);
-    }
     for (const container of service.additionalContainers ?? []) {
       container.image = await pin(container.image);
     }

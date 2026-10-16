@@ -69,7 +69,7 @@ describe('Image digests', () => {
     await expect(resolveImageDigest('medplum/medplum-server:missing')).rejects.toThrow('HTTP 404');
   });
 
-  test('Rewrites every image in the config once', async () => {
+  test('Pins each additional container image once and leaves server images as tags', async () => {
     const config = {
       serverImage: 'medplum/medplum-server:latest',
       additionalContainers: [{ name: 'otel', image: `${ECR_IMAGE}:latest` }],
@@ -78,19 +78,22 @@ describe('Image digests', () => {
           id: 'Workers',
           desiredCount: 1,
           serverImage: 'medplum/medplum-server:latest',
-          additionalContainers: [{ name: 'pinned', image: `busybox@${DIGEST}` }],
+          additionalContainers: [
+            { name: 'otel', image: `${ECR_IMAGE}:latest` },
+            { name: 'pinned', image: `busybox@${DIGEST}` },
+          ],
         },
       ],
     } as MedplumInfraConfig;
 
     await resolveImageDigests(config);
 
-    expect(config.serverImage).toBe(`medplum/medplum-server@${DIGEST}`);
+    expect(config.serverImage).toBe('medplum/medplum-server:latest');
     expect(config.additionalContainers?.[0].image).toBe(`${ECR_IMAGE}@${DIGEST}`);
-    expect(config.workerServices?.[0].serverImage).toBe(`medplum/medplum-server@${DIGEST}`);
-    expect(config.workerServices?.[0].additionalContainers?.[0].image).toBe(`busybox@${DIGEST}`);
+    expect(config.workerServices?.[0].serverImage).toBe('medplum/medplum-server:latest');
+    expect(config.workerServices?.[0].additionalContainers?.[0].image).toBe(`${ECR_IMAGE}@${DIGEST}`);
+    expect(config.workerServices?.[0].additionalContainers?.[1].image).toBe(`busybox@${DIGEST}`);
     expect(ecrMock.commandCalls(DescribeImagesCommand)).toHaveLength(1);
-    // One challenged HEAD, one token fetch, one authorized HEAD: the worker's identical image is not re-resolved
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

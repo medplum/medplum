@@ -171,9 +171,9 @@ The number of running ECS/Fargate instances in steady state. Use `1` when gettin
 
 The DockerHub server image to deploy. Use `medplum/medplum-server:4.0` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.
 
-### pinImageDigests
+### pinAdditionalContainerImages
 
-Optional flag (default `false`). When `true`, `cdk synth` and `cdk deploy` look up the digest each image tag currently points to (`serverImage`, `additionalContainers`, and their `workerServices` overrides) and deploy `image@sha256:...` instead of the tag. Tasks then keep running the same image until the next `cdk deploy`, even if the tag is pushed again or a task restarts. Images in Amazon ECR are resolved with the AWS credentials running CDK, which need `ecr:DescribeImages`; images in other registries must be publicly readable.
+Optional flag (default `false`). When `true`, `cdk synth` and `cdk deploy` look up the digest each `additionalContainers` image tag (including `workerServices` overrides) currently points to and deploy `image@sha256:...` instead of the tag. Those containers then keep running the same image until the next `cdk deploy`, even if the tag is pushed again or a task restarts. `serverImage` is left as a tag, because the server is usually deployed by a pipeline that registers its own digest-pinned task definitions; pinning it in CDK would show up as a change in every `cdk diff`. Images in Amazon ECR are resolved with the AWS credentials running CDK, which need `ecr:DescribeImages`; images in other registries must be publicly readable.
 
 ### serverMemory
 

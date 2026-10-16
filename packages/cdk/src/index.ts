@@ -28,7 +28,7 @@ export async function main(context?: Record<string, string>): Promise<void> {
 
   const config = JSON.parse(readFileSync(resolve(configFileName), 'utf-8')) as MedplumSourceInfraConfig;
   const normalizedConfig = await normalizeInfraConfig(config);
-  if (normalizedConfig.pinImageDigests) {
+  if (normalizedConfig.pinAdditionalContainerImages) {
     await resolveImageDigests(normalizedConfig);
   }
   const stack = new MedplumStack(app, normalizedConfig);
