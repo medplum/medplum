@@ -1,11 +1,19 @@
 {{ define "main" }}
   <h1>{{ .Title }}</h1>
-  {{- /* Years newest first, posts within a year oldest first, as on Docusaurus */ -}}
-  {{ range (where site.RegularPages "Section" "blog").GroupByDate "2006" }}
+  {{- /* Years newest first, posts within a year oldest first: Docusaurus's post order, reversed within each year.
+    Grouped by hand rather than with GroupByDate, which re-sorts posts that share a date. */ -}}
+  {{- $years := slice -}}
+  {{- $byYear := dict -}}
+  {{- range partial "blog/sort-posts.html" (where site.RegularPages "Section" "blog") -}}
+    {{- $year := .Date.Format "2006" -}}
+    {{- if not (index $byYear $year) }}{{ $years = $years | append $year }}{{ end -}}
+    {{- $byYear = merge $byYear (dict $year ((index $byYear $year | default slice) | append .)) -}}
+  {{- end -}}
+  {{ range $years }}
     <section class="blog-archive-year">
-      <h2>{{ .Key }}</h2>
+      <h2>{{ . }}</h2>
       <ul>
-        {{ range .Pages.ByDate }}
+        {{ range collections.Reverse (index $byYear .) }}
           <li><a href="{{ partial "href" . }}">{{ .Date.Format "January 2" }} - {{ .Title }}</a></li>
         {{ end }}
       </ul>

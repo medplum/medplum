@@ -2,7 +2,7 @@
 {{ define "main" }}
   <h1>{{ partial "tagged-heading.html" (dict "page" . "noun" "post") }}</h1>
   <a href="/blog/tags">View All Tags</a>
-  {{ $paginator := .Paginate .Pages.ByDate.Reverse }}
+  {{ $paginator := .Paginate (partial "blog/sort-posts.html" .Pages) }}
   {{ range $paginator.Pages }}
     {{ partial "blog/summary.html" . }}
   {{ end }}

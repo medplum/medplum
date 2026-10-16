@@ -47,6 +47,10 @@
           {{ block "page" . }}
             <div class="main-container container{{ if .Params.standalone }} main-container-standalone{{ end }}">
               <div class="row">
+                {{- /* As on Docusaurus, blog pages other than the archive get a "Recent posts" sidebar */}}
+                {{- if and (or (eq .Section "blog") (eq .Type "blog_tags")) (ne .Layout "archive") }}
+                  {{ partial "blog/sidebar.html" . }}
+                {{- end }}
                 <div class="main-content">
                   {{ partial "breadcrumbs" . }}
                   {{- /* Mobile copy of the table of contents (shown below 997px); the id is dropped so it stays unique */ -}}

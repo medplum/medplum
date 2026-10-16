@@ -85,3 +85,70 @@
 .tag-index-group h2 {
   margin-top: 2rem;
 }
+
+/* "Recent posts" sidebar (layouts/partials/blog/sidebar.html), in Docusaurus's 3 / 7 / 2 column split */
+.blog-sidebar {
+  flex: 0 0 25%;
+  padding: 0 16px;
+}
+
+.row:has(.blog-sidebar) .main-content {
+  flex: 0 0 58.333%;
+}
+
+.row:has(.blog-sidebar) .main-toc {
+  flex: 0 0 16.667%;
+}
+
+.blog-sidebar nav {
+  position: sticky;
+  top: calc(var(--ifm-navbar-height) + 2rem);
+  max-height: calc(100vh - (var(--ifm-navbar-height) + 2rem));
+  overflow-y: auto;
+}
+
+.blog-sidebar-title {
+  font-size: var(--ifm-h3-font-size);
+  font-weight: var(--ifm-font-weight-bold);
+  margin-bottom: 1rem;
+}
+
+.blog-sidebar-year {
+  font-size: 1.25rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.blog-sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+
+  li {
+    margin-top: 0.8rem;
+  }
+}
+
+.blog-sidebar-link {
+  color: var(--ifm-font-color-base);
+
+  &:hover {
+    color: var(--ifm-color-primary);
+    text-decoration: none;
+  }
+
+  &.active {
+    color: var(--ifm-color-primary);
+  }
+}
+
+/* Below Docusaurus's 997px breakpoint the blog sidebar is hidden */
+@media (max-width: 996px) {
+  .blog-sidebar {
+    display: none;
+  }
+
+  .row:has(.blog-sidebar) .main-content {
+    flex: 1;
+  }
+}

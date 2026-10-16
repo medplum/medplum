@@ -1,6 +1,6 @@
 {{ define "main" }}
   {{ if not .Params.hideTitle }}<h1>{{ .Title }}</h1>{{ end }}
-  {{ $paginator := .Paginate .Pages.ByDate.Reverse }}
+  {{ $paginator := .Paginate (partial "blog/sort-posts.html" .Pages) }}
   {{ range $paginator.Pages }}
     {{ partial "blog/summary.html" . }}
   {{ end }}
