@@ -5,10 +5,24 @@ enableGitInfo = true
 
 capitalizeListTitles = false
 
+# /llms.txt (an index of the docs) and /llms-full.txt (their full text), following llmstxt.org, from
+# layouts/index.llms.txt and layouts/index.llmsfull.txt
+[outputFormats.llms]
+  mediaType = 'text/plain'
+  baseName = 'llms'
+  isPlainText = true
+  notAlternative = true
+
+[outputFormats.llmsfull]
+  mediaType = 'text/plain'
+  baseName = 'llms-full'
+  isPlainText = true
+  notAlternative = true
+
 # Only the blog has feeds, at the Docusaurus URLs /blog/rss.xml and /blog/atom.xml (see content/blog/_index.md), instead
 # of Hugo's default index.xml in every section
 [outputs]
-  home = ['html']
+  home = ['html', 'llms', 'llmsfull']
   section = ['html']
   taxonomy = ['html']
   term = ['html']

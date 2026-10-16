@@ -1,0 +1,54 @@
+{{- /*
+  The code shown by the code-example shortcode: lines from a repo file (mounted under assets/code/), limited to the
+  named blocks if any, with marker comments and the common indentation removed. Params: file, blocks, position
+  (the shortcode's .Position, for errors).
+*/ -}}
+{{- $file := .file -}}
+{{- $resource := resources.Get (printf "code/%s" $file) -}}
+{{- if not $resource -}}
+  {{- errorf "%s: code-example file not found: %s" $.position $file -}}
+{{- end -}}
+
+{{- $markerPattern := `^\s*//\s*(start|end)-block\s+([A-Za-z_-]*)` -}}
+{{- $lines := split (strings.TrimRight "\n" $resource.Content) "\n" -}}
+{{- $selected := slice -}}
+{{- with .blocks -}}
+  {{- range $name := split . "," -}}
+    {{- $name = trim $name " " -}}
+    {{- $inBlock := false -}}
+    {{- $found := false -}}
+    {{- range $lines -}}
+      {{- $marker := findRESubmatch $markerPattern . 1 -}}
+      {{- if $marker -}}
+        {{- if eq (index $marker 0 2) $name -}}
+          {{- $inBlock = eq (index $marker 0 1) "start" -}}
+          {{- $found = true -}}
+        {{- end -}}
+      {{- else if $inBlock -}}
+        {{- $selected = $selected | append . -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if not $found -}}
+      {{- errorf "%s: no block %q in %s" $.position $name $file -}}
+    {{- end -}}
+  {{- end -}}
+{{- else -}}
+  {{- range $lines -}}
+    {{- if not (findRE $markerPattern .) -}}
+      {{- $selected = $selected | append . -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- /* Remove the common indentation */ -}}
+{{- $indent := 1000 -}}
+{{- range $selected -}}
+  {{- if trim . " \t" -}}
+    {{- $indent = int (math.Min $indent (len (index (findRE `^[ \t]*` . 1) 0))) -}}
+  {{- end -}}
+{{- end -}}
+{{- $code := slice -}}
+{{- range $selected -}}
+  {{- $code = $code | append (cond (gt (len .) $indent) (substr . $indent) (trim . " \t")) -}}
+{{- end -}}
+{{- return delimit $code "\n" -}}

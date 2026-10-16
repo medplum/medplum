@@ -6,54 +6,7 @@
 
   Params: file (repo-relative path), language, blocks (comma-separated), title, lineNumbers, highlight ("1,4-6")
 */ -}}
-{{- $file := .Get "file" -}}
-{{- $resource := resources.Get (printf "code/%s" $file) -}}
-{{- if not $resource -}}
-  {{- errorf "%s: code-example file not found: %s" .Position $file -}}
-{{- end -}}
-
-{{- $markerPattern := `^\s*//\s*(start|end)-block\s+([A-Za-z_-]*)` -}}
-{{- $lines := split (strings.TrimRight "\n" $resource.Content) "\n" -}}
-{{- $selected := slice -}}
-{{- with .Get "blocks" -}}
-  {{- range $name := split . "," -}}
-    {{- $name = trim $name " " -}}
-    {{- $inBlock := false -}}
-    {{- $found := false -}}
-    {{- range $lines -}}
-      {{- $marker := findRESubmatch $markerPattern . 1 -}}
-      {{- if $marker -}}
-        {{- if eq (index $marker 0 2) $name -}}
-          {{- $inBlock = eq (index $marker 0 1) "start" -}}
-          {{- $found = true -}}
-        {{- end -}}
-      {{- else if $inBlock -}}
-        {{- $selected = $selected | append . -}}
-      {{- end -}}
-    {{- end -}}
-    {{- if not $found -}}
-      {{- errorf "%s: no block %q in %s" $.Position $name $file -}}
-    {{- end -}}
-  {{- end -}}
-{{- else -}}
-  {{- range $lines -}}
-    {{- if not (findRE $markerPattern .) -}}
-      {{- $selected = $selected | append . -}}
-    {{- end -}}
-  {{- end -}}
-{{- end -}}
-
-{{- /* Remove the common indentation */ -}}
-{{- $indent := 1000 -}}
-{{- range $selected -}}
-  {{- if trim . " \t" -}}
-    {{- $indent = int (math.Min $indent (len (index (findRE `^[ \t]*` . 1) 0))) -}}
-  {{- end -}}
-{{- end -}}
-{{- $code := slice -}}
-{{- range $selected -}}
-  {{- $code = $code | append (cond (gt (len .) $indent) (substr . $indent) (trim . " \t")) -}}
-{{- end -}}
+{{- $code := partial "code-example-source.html" (dict "file" (.Get "file") "blocks" (.Get "blocks") "position" .Position) -}}
 
 {{- $options := dict -}}
 {{- with .Get "highlight" -}}
@@ -63,4 +16,4 @@
   {{- $options = merge $options (dict "lineNos" "table") -}}
 {{- end -}}
 {{- with .Get "title" -}}<div class="code-example-title">{{ . }}</div>{{- end -}}
-{{- highlight (delimit $code "\n") (.Get "language" | default "text") $options -}}
+{{- highlight $code (.Get "language" | default "text") $options -}}

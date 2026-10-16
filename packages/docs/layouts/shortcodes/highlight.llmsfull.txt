@@ -1,0 +1,4 @@
+{{- /* Plain text for /llms-full.txt: Hugo's highlight shortcode as a fenced block */ -}}
+```{{ .Get 0 }}
+{{ trim .Inner "\n" }}
+```

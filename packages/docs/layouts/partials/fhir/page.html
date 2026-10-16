@@ -3,11 +3,11 @@
   assets/fhir/resources/<name>.md (a Medplum note, then spec sections as tabs), and the element and search parameter tables.
 */ -}}
 {{- $page := . -}}
-{{- $idx := partialCached "fhir/index.html" . -}}
-{{- $key := lower .Params.fhirType -}}
-{{- $type := index $idx.types $key -}}
-{{- $sd := $type.sd -}}
-{{- $isResource := ne $type.location "datatypes" -}}
+{{- $data := partial "fhir/data.html" . -}}
+{{- $idx := $data.idx -}}
+{{- $key := $data.key -}}
+{{- $sd := $data.sd -}}
+{{- $isResource := $data.isResource -}}
 
 {{- /* Prose: anything before the first heading is a note shown under the description; each ## section is a tab */ -}}
 {{- $note := "" -}}
@@ -22,29 +22,17 @@
   {{- end -}}
 {{- end -}}
 
-{{- /* Elements inherited from Resource/DomainResource get their own table on resource pages */ -}}
-{{- $own := slice -}}
-{{- $inherited := slice -}}
-{{- range after 1 $sd.snapshot.element -}}
-  {{- $base := index (split (.base.path | default .path) ".") 0 -}}
-  {{- if and (ne $base (index (split .path ".") 0)) (in $base "Resource") -}}
-    {{- $inherited = $inherited | append . -}}
-  {{- else -}}
-    {{- $own = $own | append . -}}
-  {{- end -}}
-{{- end -}}
-
 {{- partial "fhir/markdown.html" (dict "text" $sd.description "idx" $idx "page" $page) -}}
 {{- $note | safeHTML -}}
 
 <div class="tabs-container fhir-tabs">
   <div class="tab-panel" data-tab-label="Schema" data-tab-value="schema">
     <h2 id="elements">Elements</h2>
-    {{ partial "fhir/elements.html" (dict "elements" $own "idx" $idx "page" $page) }}
+    {{ partial "fhir/elements.html" (dict "elements" $data.own "idx" $idx "page" $page) }}
 
     {{- if $isResource }}
       <h2 id="search-parameters">Search Parameters</h2>
-      {{- with index $idx.searchParams $key }}
+      {{- with $data.searchParams }}
         <table class="fhir-search-params">
           <thead>
             <tr>
@@ -56,22 +44,11 @@
           </thead>
           <tbody>
             {{- range . }}
-              {{- /* Shared parameters list a description per resource, and a union of expressions; show this type's */ -}}
-              {{- $description := .description -}}
-              {{- if hasPrefix $description "Multiple Resources:" -}}
-                {{- range split $description "\n" -}}
-                  {{- if hasPrefix . (printf "* [%s]" $sd.name) }}{{ $description = trim (index (split . ":") 1 | default "") " " }}{{ end -}}
-                {{- end -}}
-              {{- end -}}
-              {{- $expressions := slice -}}
-              {{- range split (.expression | default "") " | " -}}
-                {{- if or (eq . $sd.name) (hasPrefix . (printf "%s." $sd.name)) (hasPrefix . (printf "(%s." $sd.name)) }}{{ $expressions = $expressions | append . }}{{ end -}}
-              {{- end -}}
               <tr>
                 <td>{{ .code }}</td>
                 <td>{{ .type }}</td>
-                <td>{{ $description }}</td>
-                <td>{{ cond (gt (len $expressions) 0) (delimit $expressions " | ") .expression }}</td>
+                <td>{{ .description }}</td>
+                <td>{{ .expression }}</td>
               </tr>
             {{- end }}
           </tbody>
@@ -81,7 +58,7 @@
       {{- end }}
 
       <h2 id="inherited-elements">Inherited Elements</h2>
-      {{ partial "fhir/elements.html" (dict "elements" $inherited "idx" $idx "page" $page) }}
+      {{ partial "fhir/elements.html" (dict "elements" $data.inherited "idx" $idx "page" $page) }}
     {{- end }}
   </div>
 
