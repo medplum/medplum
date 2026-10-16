@@ -27,7 +27,8 @@
 {{- partial "fhir/markdown.html" (dict "text" $sd.description "idx" $idx "page" $page) -}}
 {{- $note | safeHTML -}}
 
-<div class="tabs-container fhir-tabs">
+{{- /* The selected tab is in the URL, ?section=usage, as on Docusaurus; values are the labels in lowerCamelCase */}}
+<div class="tabs-container fhir-tabs" data-query-string="section">
   <div class="tab-panel" data-tab-label="Schema" data-tab-value="schema">
     <h2 id="elements">Elements</h2>
     {{ partial "fhir/elements.html" (dict "elements" $data.own "idx" $idx "page" $page) }}
@@ -65,11 +66,13 @@
   </div>
 
   {{- range $sections }}
-    <div class="tab-panel" data-tab-label="{{ .label }}" data-tab-value="{{ .label | urlize }}">{{ .html | safeHTML }}</div>
+    {{- $words := split (lower .label) " " }}
+    {{- $value := delimit (slice (index $words 0) | append (apply (after 1 $words) "strings.FirstUpper" ".")) "" }}
+    <div class="tab-panel" data-tab-label="{{ .label }}" data-tab-value="{{ $value }}">{{ .html | safeHTML }}</div>
   {{- end }}
 
   {{- with index $idx.referencedBy $key }}
-    <div class="tab-panel" data-tab-label="Referenced By" data-tab-value="referenced-by">
+    <div class="tab-panel" data-tab-label="Referenced By" data-tab-value="referencedBy">
       <ul>
         {{- range sort . }}
           <li>{{ partial "fhir/type-link.html" (dict "name" . "idx" $idx) | safeHTML }}</li>
