@@ -621,6 +621,8 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   let systemRepo: SystemRepository;
+  // The subscription's project, not the writer's: its AuditEvents are recorded there, so its redaction setting applies.
+  let project: WithId<Project> | undefined;
   let subscription: WithId<Subscription> | undefined;
   let rewrittenResource: Resource;
 
@@ -651,7 +653,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
     // Jobs queued before the project was deactivated are dropped, not delivered late.
     if (!job.data.target.system) {
-      const project = await systemRepo.readResource<Project>('Project', job.data.target.projectId);
+      project = await systemRepo.readResource<Project>('Project', job.data.target.projectId);
       if (getInactiveReason(project)) {
         logFn(`Project ${project.id} is not active`);
         return;
@@ -693,12 +695,20 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     if (subscription.channel?.endpoint?.startsWith('Bot/')) {
       await execBot(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     } else {
-      await sendRestHook(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+      await sendRestHook(
+        systemRepo,
+        project,
+        job,
+        subscription,
+        rewrittenResource,
+        job.data.interaction,
+        job.data.requestTime
+      );
     }
     // Success - reset the failure counter
     await clearSubscriptionFailures(subscription.id);
   } catch (err) {
-    await catchJobError(systemRepo, subscription, job, err);
+    await catchJobError(systemRepo, project, subscription, job, err);
   }
 }
 
@@ -745,6 +755,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
 /**
  * Sends a rest-hook subscription.
  * @param systemRepo - The system repository.
+ * @param project - The subscription's project; undefined for a system subscription.
  * @param job - The subscription job details.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
@@ -753,6 +764,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
  */
 async function sendRestHook(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
@@ -795,6 +807,7 @@ async function sendRestHook(
     const success = isJobSuccessful(subscription, response.status);
     await createSubscriptionAuditEvent(
       systemRepo,
+      project,
       resource,
       requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -814,6 +827,7 @@ async function sendRestHook(
     });
     await createSubscriptionAuditEvent(
       systemRepo,
+      project,
       resource,
       requestTime,
       AuditEventOutcome.MinorFailure,
@@ -950,6 +964,7 @@ async function execBot(
 
 async function catchJobError(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   subscription: WithId<Subscription>,
   job: Job<SubscriptionJobData>,
   err: unknown
@@ -964,7 +979,7 @@ async function catchJobError(
     const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
     const result = await recordSubscriptionFailure(subscription.id, triggers);
     if (result) {
-      await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
+      await autoDisableSubscription(systemRepo, project, result.trigger, subscription, result.failureCount);
     }
     // Throw a special error type to force BullMQ to move the job to failed state, instead of retrying again
     throw new UnrecoverableError(err instanceof Error ? err.message : 'Subscription exhausted available retries');
@@ -981,6 +996,7 @@ async function catchJobError(
 
 async function autoDisableSubscription(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   trigger: SubscriptionAutoDisableTrigger,
   subscription: WithId<Subscription>,
   failureCount: number
@@ -1004,6 +1020,7 @@ async function autoDisableSubscription(
 
         await createSubscriptionAuditEvent(
           txRepo,
+          project,
           subscription,
           new Date().toISOString(),
           AuditEventOutcome.SeriousFailure,

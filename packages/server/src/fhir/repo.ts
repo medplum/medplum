@@ -2522,7 +2522,7 @@ export class Repository extends FhirRepository implements Disposable {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       subtype,
-      this.context.projects?.[0]?.id as string,
+      this.context.projects?.[0],
       this.context.author,
       this.context.remoteAddress,
       outcome,

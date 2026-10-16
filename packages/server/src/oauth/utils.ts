@@ -513,7 +513,7 @@ export async function setLoginMembership(
   const auditEvent = createAuditEvent(
     UserAuthenticationEvent,
     LoginEvent,
-    project.id,
+    project,
     membership.profile,
     login.remoteAddress,
     AuditEventOutcome.Success
@@ -1429,7 +1429,7 @@ async function tryExternalAuthLogin(
     createAuditEvent(
       UserAuthenticationEvent,
       LoginEvent,
-      project.id,
+      project,
       membership.profile,
       login.remoteAddress,
       AuditEventOutcome.Success

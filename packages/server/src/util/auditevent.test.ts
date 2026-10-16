@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { AuditEvent, Bot, Observation, ProjectMembership } from '@medplum/fhirtypes';
+import type { AuditEvent, Bot, Observation, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { MockInstance } from 'vitest';
 import type { BotExecutionRequest } from '../bots/types';
@@ -20,6 +20,11 @@ import {
 } from './auditevent';
 
 describe('AuditEvent utils', () => {
+  const project: WithId<Project> = { resourceType: 'Project', id: randomUUID() };
+  const redactingProject: WithId<Project> = {
+    ...project,
+    setting: [{ name: 'redactAuditEvents', valueBoolean: true }],
+  };
   let writeSpy: MockInstance;
 
   beforeEach(() => {
@@ -66,7 +71,7 @@ describe('AuditEvent utils', () => {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       CreateInteraction,
-      randomUUID(),
+      project,
       { reference: 'Practitioner/123', display: 'Test User' },
       undefined,
       AuditEventOutcome.Success,
@@ -83,13 +88,32 @@ describe('AuditEvent utils', () => {
     expect(auditLog).not.toContain('User');
   });
 
+  test("Redacts display text when the AuditEvent's project redacts AuditEvents", async () => {
+    const config = await loadTestConfig();
+    config.redactAuditEvents = false;
+
+    // No request context: the project argument alone decides
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      CreateInteraction,
+      redactingProject,
+      { reference: 'Practitioner/123', display: 'Test User' },
+      undefined,
+      AuditEventOutcome.Success,
+      { resource: { reference: 'Patient/123', display: 'Alice Smith' } }
+    );
+    expect(auditEvent.meta?.project).toBe(project.id);
+    expect(auditEvent.agent?.[0].who).toMatchObject({ reference: 'Practitioner/123', display: undefined });
+    expect(auditEvent.entity?.[0].what).toMatchObject({ reference: 'Patient/123', display: undefined });
+  });
+
   test('Includes entityDetail on the search entity', async () => {
     await loadTestConfig();
 
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       SearchInteraction,
-      randomUUID(),
+      project,
       { reference: 'Practitioner/123', display: 'Test User' },
       undefined,
       AuditEventOutcome.Success,
@@ -109,7 +133,7 @@ describe('AuditEvent utils', () => {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       CreateInteraction,
-      randomUUID(),
+      project,
       { reference: 'Practitioner/123', display: 'Test User' },
       undefined,
       AuditEventOutcome.Success,
@@ -130,7 +154,7 @@ describe('AuditEvent utils', () => {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       SearchInteraction,
-      randomUUID(),
+      project,
       { reference: 'Practitioner/123', display: 'Test User' },
       undefined,
       AuditEventOutcome.Success,
@@ -146,7 +170,7 @@ describe('AuditEvent utils', () => {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       ReadInteraction,
-      randomUUID(),
+      project,
       { reference: 'Practitioner/user-123' },
       undefined,
       AuditEventOutcome.Success,
@@ -173,7 +197,7 @@ describe('AuditEvent utils', () => {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       ReadInteraction,
-      randomUUID(),
+      project,
       clientRef,
       undefined,
       AuditEventOutcome.Success,
@@ -190,7 +214,7 @@ describe('AuditEvent utils', () => {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       ReadInteraction,
-      randomUUID(),
+      project,
       { reference: 'Practitioner/user-123' },
       undefined,
       AuditEventOutcome.Success
@@ -218,7 +242,13 @@ describe('AuditEvent utils', () => {
       const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
 
       // Successful execution with no output won't trigger on-error or on-output
-      await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, '');
+      await createBotAuditEvent(
+        req,
+        { resourceType: 'Project' },
+        new Date().toISOString(),
+        AuditEventOutcome.Success,
+        ''
+      );
       expect(writeSpy).not.toHaveBeenCalled();
     }
   );
@@ -242,7 +272,40 @@ describe('AuditEvent utils', () => {
     };
     const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
 
-    await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, 'foo');
+    await createBotAuditEvent(
+      req,
+      { resourceType: 'Project' },
+      new Date().toISOString(),
+      AuditEventOutcome.Success,
+      'foo'
+    );
     expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining(`,"outcomeDesc":"foo"`));
+  });
+
+  test("Redacts Bot AuditEvent display text when the bot's project redacts AuditEvents", async () => {
+    const config = await loadTestConfig();
+    config.logAuditEvents = true;
+    config.redactAuditEvents = false;
+
+    const bot: WithId<Bot> = {
+      resourceType: 'Bot',
+      id: randomUUID(),
+      name: 'Test Bot',
+      auditEventDestination: ['log'],
+    };
+    const runAs: WithId<ProjectMembership> = {
+      resourceType: 'ProjectMembership',
+      id: randomUUID(),
+      project: { reference: `Project/${randomUUID()}` },
+      user: { reference: `User/${randomUUID()}` },
+      profile: { reference: `Practitioner/${randomUUID()}`, display: 'Alice Smith' },
+    };
+    const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
+
+    await createBotAuditEvent(req, redactingProject, new Date().toISOString(), AuditEventOutcome.Success, 'foo');
+    const logged = writeSpy.mock.calls[0][0] as string;
+    expect(logged).toContain(runAs.profile.reference);
+    expect(logged).not.toContain('Alice Smith');
+    expect(logged).not.toContain('Test Bot');
   });
 });
