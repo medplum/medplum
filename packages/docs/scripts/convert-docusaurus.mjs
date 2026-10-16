@@ -196,7 +196,7 @@ function writePage(page, urlBySource) {
 
   // The conversions below are for markdown and MDX, so hide the code in fenced blocks from them: they would drop
   // its import lines and # comments, and rewrite its JSX
-  const code = maskCodeBlocks(dedentDetails(inlinePartials(page.body, path.dirname(sourcePath))));
+  const code = maskCodeBlocks(applyMagicComments(dedentDetails(inlinePartials(page.body, path.dirname(sourcePath)))));
   let body = code.masked;
   body = convertBody(body, sourcePath);
   body = copyAssets(body, page, bundleDir);
@@ -267,6 +267,46 @@ function fixSummaries(body) {
       .replace(/(?<![\w*])[*_](?=\S)(.+?)(?<=\S)[*_](?![\w*])/g, '<em>$1</em>');
     return `<summary>${html.replace(/\u0001(\d+)\u0001/g, (_m, i) => codes[Number(i)])}</summary>`;
   });
+}
+
+// Docusaurus's magic comments (// or # highlight-next-line, highlight-start, highlight-end) mark code lines to
+// highlight. Drop them and give the fence the equivalent Hugo option, {hl_lines=[...]}, numbered without them.
+// (layouts/partials/code-example-source.html does the same for code examples.)
+function applyMagicComments(body) {
+  const out = [];
+  let fence;
+  for (const line of body.split('\n')) {
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (!fence) {
+      out.push(line);
+      if (marker) {
+        fence = { marker: marker[1], index: out.length - 1, lines: 0, highlight: [], next: false, inRange: false };
+      }
+      continue;
+    }
+    if (marker && marker[1][0] === fence.marker[0] && marker[1].length >= fence.marker.length && !marker[2].trim()) {
+      if (fence.highlight.length) {
+        out[fence.index] = `${out[fence.index].trimEnd()} {hl_lines=[${fence.highlight.join(',')}]}`;
+      }
+      out.push(line);
+      fence = undefined;
+      continue;
+    }
+    const magic = /^\s*(?:\/\/|#)\s*highlight-(next-line|start|end)\s*$/.exec(line)?.[1];
+    if (magic === 'next-line') {
+      fence.next = true;
+    } else if (magic) {
+      fence.inRange = magic === 'start';
+    } else {
+      out.push(line);
+      fence.lines++;
+      if (fence.next || fence.inRange) {
+        fence.highlight.push(fence.lines);
+      }
+      fence.next = false;
+    }
+  }
+  return out.join('\n');
 }
 
 // Replaces the lines inside each fenced code block with a placeholder line, keeping the fence lines themselves (whose

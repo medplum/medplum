@@ -6,14 +6,17 @@
 
   Params: file (repo-relative path), language, blocks (comma-separated), title, lineNumbers, highlight ("1,4-6")
 */ -}}
-{{- $code := partial "code-example-source.html" (dict "file" (.Get "file") "blocks" (.Get "blocks") "position" .Position) -}}
+{{- $source := partial "code-example-source.html" (dict "file" (.Get "file") "blocks" (.Get "blocks") "position" .Position) -}}
 
 {{- $options := dict -}}
-{{- with .Get "highlight" -}}
-  {{- $options = merge $options (dict "hl_lines" (replace . "," " ")) -}}
+{{- /* Lines from the highlight param ("1,4-6") and from magic comments in the code */ -}}
+{{- $lines := $source.highlight -}}
+{{- with .Get "highlight" }}{{ $lines = $lines | append (split . ",") }}{{ end -}}
+{{- with $lines -}}
+  {{- $options = merge $options (dict "hl_lines" (delimit . " ")) -}}
 {{- end -}}
 {{- if eq (.Get "lineNumbers") "true" -}}
   {{- $options = merge $options (dict "lineNos" "table") -}}
 {{- end -}}
 {{- with .Get "title" -}}<div class="code-example-title">{{ . }}</div>{{- end -}}
-{{- highlight $code (.Get "language" | default "text") $options -}}
+{{- highlight $source.code (.Get "language" | default "text") $options -}}

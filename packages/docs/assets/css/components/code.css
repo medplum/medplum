@@ -23,6 +23,13 @@
   &:has(.hl) {
     display: grid;
   }
+
+  /* Highlighted lines, as on Docusaurus: its color, stretched across the code box's padding */
+  .hl {
+    background-color: var(--docusaurus-highlighted-code-line-bg);
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
 }
 
 .highlight pre code {

@@ -18,7 +18,7 @@ GraphQL has [surged in popularity](https://devops.com/key-findings-from-the-2022
 
 In the context of FHIR, one of GraphQL's strongest features is the ability to quickly retrieve [multiple linked resources](/docs/graphql#resolving-nested-resources-with-the-resource-element). While the REST API allows similar functionality using the [`_include`](/docs/search/includes) and [`_revinclude`](/docs/search/includes) search parameters, GraphQL offers a more natural syntax for querying bundles of resources that reference each other.
 
-```graphql
+```graphql {hl_lines=[13,14,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]}
 {
   Patient(id: "patient-id") {
     name {
@@ -31,17 +31,14 @@ In the context of FHIR, one of GraphQL's strongest features is the ability to qu
       state
       postalCode
     }
-    # highlight-start
     # Get all DiagnosticReports related to this patient
     DiagnosticReportList(_reference: patient) {
-      # highlight-end
       performer {
         reference
       }
       code {
         text
       }
-      # highlight-start
       # Get all Observation resources
       # referenced by DiagnosticReport.result
       result {
@@ -58,7 +55,6 @@ In the context of FHIR, one of GraphQL's strongest features is the ability to qu
           }
         }
       }
-      # highlight-end
     }
   }
 }
@@ -66,7 +62,7 @@ In the context of FHIR, one of GraphQL's strongest features is the ability to qu
 
 In addition, GraphQL also offers very fine grained control for developers to select the exact fields returned in a query, which can reduce your app's network traffic. Unlike the REST API, GraphQL lets you select specific fields, even in deeply nested elements, and provides additional filtering functionality through [FHIR Path list filters](/docs/graphql#filtering-lists-with-field-arguments). This is helpful in applications where bandwidth is at a premium, such as in mobile applications.
 
-```graphql
+```graphql {hl_lines=[13,14,15,16]}
 {
   Patient(id: "patient-id") {
     name {
@@ -79,12 +75,10 @@ In addition, GraphQL also offers very fine grained control for developers to sel
       state
       postalCode
     }
-    # highlight-start
     # Filter the `telecom` field to only contain phone numbers
     telecom(system: "phone") {
       value
     }
-    # highlight-end
   }
 }
 ```
@@ -141,18 +135,16 @@ await medplum.patchResource('Task', task.id, [
 
 And while GraphQL mutations _do_ allow writing multiple resources at once, using FHIR [batch requests](http://hl7.org/fhir/R4/http.html#transaction) via the REST API offers more advanced batch writing functionality. The [`ifNoneExist`](http://hl7.org/fhir/R4/bundle-definitions.html#Bundle.entry.request.ifNoneExist) element can be used to perform a search before creating a resource to prevent duplicate resource creation. Additionally, you can create collection of linked resources that reference each other using the [`urn:uuid` syntax](http://hl7.org/fhir/R4/http.html#trules).
 
-```ts
+```ts {hl_lines=[6,10,25]}
 {
   resourceType: 'Bundle',
   type: 'batch',
   entry: [
     {
-      // highlight-next-line
       fullUrl: 'urn:uuid:42316ff8-2714-4680-9980-f37a6d1a71bc',
       request: {
         method: 'POST',
         url: 'Practitioner',
-        // highlight-next-line
         ifNoneExist: 'identifier=https://example.com|' + identifier,
       },
       resource: {
@@ -168,7 +160,6 @@ And while GraphQL mutations _do_ allow writing multiple resources at once, using
         intent: 'order',
         subject: createReference(patient),
         code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
-        // highlight-next-line
         requester: { reference: 'urn:uuid:42316ff8-2714-4680-9980-f37a6d1a71bc' },
       },
     },

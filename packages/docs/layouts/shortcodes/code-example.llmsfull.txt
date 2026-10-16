@@ -1,5 +1,5 @@
 {{- /* Plain text for /llms-full.txt: the example's code in a fenced block (see code-example.html) */ -}}
-{{- $code := partial "code-example-source.html" (dict "file" (.Get "file") "blocks" (.Get "blocks") "position" .Position) -}}
+{{- $code := (partial "code-example-source.html" (dict "file" (.Get "file") "blocks" (.Get "blocks") "position" .Position)).code -}}
 {{- with .Get "title" }}{{ . }}
 
 {{ end -}}

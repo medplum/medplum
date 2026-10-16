@@ -1,5 +1,5 @@
 {{- /*
-  The code shown by the code-example shortcode: lines from a repo file (mounted under assets/code/), limited to the
+  The code shown by the code-example shortcode, as dict "code" (the text) and "highlight" (line numbers to highlight): lines from a repo file (mounted under assets/code/), limited to the
   named blocks if any, with marker comments and the common indentation removed. Params: file, blocks, position
   (the shortcode's .Position, for errors).
 */ -}}
@@ -47,8 +47,22 @@
     {{- $indent = int (math.Min $indent (len (index (findRE `^[ \t]*` . 1) 0))) -}}
   {{- end -}}
 {{- end -}}
+{{- /* Docusaurus's magic comments (// or # highlight-next-line, highlight-start, highlight-end) mark lines to
+  highlight; drop them and collect the line numbers they mark, counted without them */ -}}
 {{- $code := slice -}}
+{{- $highlight := slice -}}
+{{- $next := false -}}
+{{- $inRange := false -}}
 {{- range $selected -}}
-  {{- $code = $code | append (cond (gt (len .) $indent) (substr . $indent) (trim . " \t")) -}}
+  {{- $line := cond (gt (len .) $indent) (substr . $indent) (trim . " \t") -}}
+  {{- $magic := index (findRESubmatch `^\s*(?://|#)\s*highlight-(next-line|start|end)\s*$` $line 1) 0 -}}
+  {{- if $magic -}}
+    {{- $kind := index $magic 1 -}}
+    {{- if eq $kind "next-line" }}{{ $next = true }}{{ else }}{{ $inRange = eq $kind "start" }}{{ end -}}
+    {{- continue -}}
+  {{- end -}}
+  {{- $code = $code | append $line -}}
+  {{- if or $next $inRange }}{{ $highlight = $highlight | append (string (len $code)) }}{{ end -}}
+  {{- $next = false -}}
 {{- end -}}
-{{- return delimit $code "\n" -}}
+{{- return dict "code" (delimit $code "\n") "highlight" $highlight -}}

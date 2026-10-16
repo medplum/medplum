@@ -121,7 +121,7 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
 <details>
 <summary>Example: PHQ-4 Questionnaire</summary>
 
-```json
+```json {hl_lines=[30,31,32,37,38,39,44,45,46,51,52,53,73,74,75,80,81,82,87,88,89,94,95,96,116,117,118,123,124,125,130,131,132,137,138,139,159,160,161,166,167,168,173,174,175,180,181,182]}
 {
   "resourceType": "Questionnaire",
   "title": "Patient Health Questionnaire 4 item (PHQ-4) [Reported]",
@@ -151,38 +151,30 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
       "answerOption": [
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6568-5",
             "display": "Not at all",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6569-3",
             "display": "Several days",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6570-1",
             "display": "More than half the days",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6571-9",
             "display": "Nearly every day",
             "system": "http://loinc.org"
-            // highlight-end
           }
         }
       ]
@@ -202,38 +194,30 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
       "answerOption": [
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6568-5",
             "display": "Not at all",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6569-3",
             "display": "Several days",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA18938-3",
             "display": "More days than not",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6571-9",
             "display": "Nearly every day",
             "system": "http://loinc.org"
-            // highlight-end
           }
         }
       ]
@@ -253,38 +237,30 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
       "answerOption": [
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6568-5",
             "display": "Not at all",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6569-3",
             "display": "Several days",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6570-1",
             "display": "More than half the days",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6571-9",
             "display": "Nearly every day",
             "system": "http://loinc.org"
-            // highlight-end
           }
         }
       ]
@@ -304,38 +280,30 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
       "answerOption": [
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6568-5",
             "display": "Not at all",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6569-3",
             "display": "Several days",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6570-1",
             "display": "More than half the days",
             "system": "http://loinc.org"
-            // highlight-end
           }
         },
         {
           "valueCoding": {
-            // highlight-start
             "code": "LA6571-9",
             "display": "Nearly every day",
             "system": "http://loinc.org"
-            // highlight-end
           }
         }
       ]
