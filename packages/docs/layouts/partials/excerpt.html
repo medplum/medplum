@@ -1,0 +1,59 @@
+{{- /*
+  The first meaningful line of a markdown string, as plain text: the default page description, ported from
+  Docusaurus's createExcerpt (@docusaurus/utils markdownUtils.ts) so descriptions match the Docusaurus site. Blank
+  lines, imports, fenced code, and lines with only markup (such as shortcodes) are skipped.
+*/ -}}
+{{- $result := "" -}}
+{{- $inCode := false -}}
+{{- $inImport := false -}}
+{{- $fence := "" -}}
+{{- /* Drop a setext (underlined) title */ -}}
+{{- $text := . | strings.TrimLeft " \t\r\n" | replaceRE `^[^\r\n]*\r?\n=+` "" -}}
+{{- range split $text "\n" -}}
+  {{- $line := strings.TrimRight "\r" . -}}
+  {{- if and (eq $line "") $inImport }}{{ $inImport = false }}{{ end -}}
+  {{- $trimmed := trim $line " \t" -}}
+  {{- if not $trimmed }}{{ continue }}{{ end -}}
+  {{- if and (or (findRE `^(?:import|export)\s` $line 1) $inImport) (not $inCode) -}}
+    {{- $inImport = true -}}
+    {{- continue -}}
+  {{- end -}}
+  {{- if hasPrefix $trimmed "```" -}}
+    {{- $f := index (findRE "^`+" $trimmed 1) 0 -}}
+    {{- if not $inCode -}}
+      {{- $inCode = true -}}
+      {{- $fence = $f -}}
+    {{- else if ge (len $f) (len $fence) -}}
+      {{- $inCode = false -}}
+    {{- end -}}
+    {{- continue -}}
+  {{- else if $inCode -}}
+    {{- continue -}}
+  {{- end -}}
+  {{- $clean := $line
+    | replaceRE `\{\{[<%].*?[>%]\}\}` ""
+    | replaceRE `<[^>]*>` ""
+    | replaceRE `(?m)^#[^#]+#?` ""
+    | replaceRE `(?m)^#{1,6}\s*([^#]*)\s*#{0,6}` "$1"
+    | replaceRE `\*\*\*(.*?)\*\*\*` "$1"
+    | replaceRE `___(.*?)___` "$1"
+    | replaceRE `\*\*(.*?)\*\*` "$1"
+    | replaceRE `__(.*?)__` "$1"
+    | replaceRE `\*(.*?)\*` "$1"
+    | replaceRE `_(.*?)_` "$1"
+    | replaceRE `~~(\S.*\S)~~` "$1"
+    | replaceRE `!\[(.*?)\][\[(].*?[\])]` "$1"
+    | replaceRE `\[\^.+?\](?:: .*$)?` ""
+    | replaceRE `\[(.*?)\][\[(].*?[\])]` "$1"
+    | replaceRE "`(.+?)`" "$1"
+    | replaceRE `^\s{0,3}>\s?` ""
+  -}}
+  {{- /* These two replace only the first match, as in Docusaurus; the limit argument can't be piped */ -}}
+  {{- $clean = replaceRE `:::.*` "" $clean 1 | replaceRE `\s?:(?:::|[^:\n])+:` "" -}}
+  {{- $clean = replaceRE `\{#*[\w-]+\}` "" $clean 1 | strings.TrimSpace -}}
+  {{- if $clean -}}
+    {{- $result = $clean -}}
+    {{- break -}}
+  {{- end -}}
+{{- end -}}
+{{- return $result -}}

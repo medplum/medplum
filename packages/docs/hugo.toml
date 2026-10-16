@@ -5,6 +5,25 @@ enableGitInfo = true
 
 capitalizeListTitles = false
 
+# Only the blog has feeds, at the Docusaurus URLs /blog/rss.xml and /blog/atom.xml (see content/blog/_index.md), instead
+# of Hugo's default index.xml in every section
+[outputs]
+  home = ['html']
+  section = ['html']
+  taxonomy = ['html']
+  term = ['html']
+
+[outputFormats.rss]
+  baseName = 'rss'
+
+[mediaTypes.'application/atom+xml']
+  suffixes = ['xml']
+
+[outputFormats.atom]
+  mediaType = 'application/atom+xml'
+  baseName = 'atom'
+  rel = 'alternate'
+
 # Docusaurus keeps docs and blog tags separate, at /docs/tags and /blog/tags
 [taxonomies]
   docs_tag = "docs_tags"

@@ -10,6 +10,8 @@
 {{- /* Google Analytics, only in production builds, not hugo server (including npm run preview); assets/js/head.mjs sets
   up gtag */}}
 {{- with .gaId }}
+  <link rel="preconnect" href="https://www.google-analytics.com" />
+  <link rel="preconnect" href="https://www.googletagmanager.com" />
   <script async src="https://www.googletagmanager.com/gtag/js?id={{ . }}"></script>
 {{- end }}
 

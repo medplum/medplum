@@ -1,0 +1,33 @@
+{{- /* The blog's RSS feed at /blog/rss.xml: the 20 newest posts, in the format of Docusaurus's feed */ -}}
+{{- $posts := first 20 (partial "blog/sort-posts.html" .Pages) -}}
+{{- $base := strings.TrimSuffix "/" site.BaseURL -}}
+{{- printf `<?xml version="1.0" encoding="utf-8"?>` | safeHTML }}
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Medplum Blog</title>
+    <link>{{ $base }}/blog</link>
+    <description>Medplum Blog</description>
+    {{- with index $posts 0 }}
+    <lastBuildDate>{{ .Date.UTC.Format "Mon, 02 Jan 2006 15:04:05 GMT" }}</lastBuildDate>
+    {{- end }}
+    <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+    <language>en</language>
+    {{- range $posts }}
+    {{- $url := printf "%s%s" $base (partial "href" .) }}
+    <item>
+      {{- /* Built as one string: html/template escapes anything inside a <title> element */}}
+      {{ printf "<title><![CDATA[%s]]></title>" .Title | safeHTML }}
+      <link>{{ $url }}</link>
+      <guid>{{ $url }}</guid>
+      <pubDate>{{ .Date.UTC.Format "Mon, 02 Jan 2006 15:04:05 GMT" }}</pubDate>
+      {{- with partial "page-description.html" . }}
+      <description>{{ printf "<![CDATA[%s]]>" . | safeHTML }}</description>
+      {{- end }}
+      <content:encoded>{{ printf "<![CDATA[%s]]>" (partial "blog/feed-content.html" .) | safeHTML }}</content:encoded>
+      {{- range .Params.blog_tags }}
+      <category>{{ . }}</category>
+      {{- end }}
+    </item>
+    {{- end }}
+  </channel>
+</rss>

@@ -7,7 +7,10 @@
     {{ $headJs := resources.Get "js/head.mjs" | js.Build (dict "params" (dict "gaId" $gaId)) | minify | fingerprint }}
     <script src="{{ $headJs.RelPermalink }}" integrity="{{ $headJs.Data.Integrity }}"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ block "title" . }}{{ .Title }}{{ end }} | Medplum</title>
+    {{- /* "Medplum" alone on the home page, as on Docusaurus */}}
+    <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ block "title" . }}{{ .Title }}{{ end }} | {{ site.Title }}{{ end }}</title>
+    <meta property="og:title" content="{{ if .IsHome }}{{ site.Title }}{{ else }}{{ template "title" . }} | {{ site.Title }}{{ end }}" data-page-meta />
+    {{ partial "head-meta.html" . }}
     {{ partial "head-tags.html" (dict "page" . "gaId" $gaId) }}
     {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
     <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>

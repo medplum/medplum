@@ -63,6 +63,16 @@ function updateNavbarScroll() {
 
 window.addEventListener('scroll', updateNavbarScroll, { passive: true });
 
+// Swup replaces only the page content and <title>, so copy the incoming page's own head tags (description, canonical
+// URL, Open Graph; marked data-page-meta in layouts/partials/head-meta.html) for anything that reads them client-side
+function updatePageMeta(doc) {
+  if (!doc) {
+    return;
+  }
+  document.head.querySelectorAll('[data-page-meta]').forEach((el) => el.remove());
+  document.head.append(...Array.from(doc.head.querySelectorAll('[data-page-meta]'), (el) => document.importNode(el, true)));
+}
+
 // Navbar links are active on their own path and everything under it (see layouts/partials/navbar.html)
 function updateActiveNavbarLinks(url) {
   const pathname = new URL(url, window.location.origin).pathname;
@@ -146,6 +156,7 @@ swup.hooks.on('visit:start', closeMobileNav);
 swup.hooks.before('content:replace', (visit) => {
   updateAttributes(visit.to.url);
   updateActiveNavbarLinks(visit.to.url);
+  updatePageMeta(visit.to.document);
   destroyAnimatedCircles();
   destroyCountUps();
   destroyProducts();
