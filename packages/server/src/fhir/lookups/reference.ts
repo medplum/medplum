@@ -244,11 +244,12 @@ class RowsInArrays implements Expression {
 
 /**
  * Creates a hash string for a reference row for efficient comparison.
+ * UUIDs are lowercased to match how Postgres returns them, so a casing-only change is not a diff.
  * @param row - The reference table row.
  * @returns A hash string combining resourceId, targetId, and code.
  */
 function hashRow(row: ReferenceTableRow): string {
-  return ReferenceTable.allColumnNames.map((c) => row[c]).join('|');
+  return `${row.resourceId.toLowerCase()}|${row.targetId.toLowerCase()}|${row.code}`;
 }
 
 /**
@@ -298,7 +299,7 @@ function addSearchReferenceResult(
   searchParam: SearchParameter,
   targetId: string
 ): void {
-  result.set(`${searchParam.code}|${targetId}`, {
+  result.set(`${searchParam.code}|${targetId.toLowerCase()}`, {
     resourceId: resource.id,
     targetId: targetId,
     code: searchParam.code,
