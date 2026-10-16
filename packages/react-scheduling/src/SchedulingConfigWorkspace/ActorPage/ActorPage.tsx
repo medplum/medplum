@@ -24,7 +24,7 @@ import {
 import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
-import { ConfirmModal } from '../ConfirmModal';
+import { ConfirmModal } from '../../ConfirmModal/ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';

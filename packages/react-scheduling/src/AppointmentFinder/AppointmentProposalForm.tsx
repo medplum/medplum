@@ -175,6 +175,8 @@ export interface AppointmentProposalFormProps {
   readonly onToggleTimeFinder?: (open: boolean) => void;
   /** Called with the visit type as it changes. */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
+  /** Called whenever the form starts or stops holding answers beyond the ones it opened with. */
+  readonly onDirtyChange?: (dirty: boolean) => void;
   /**
    * Called with the appointment that would be booked, a searched or typed time, and with
    * `undefined` once there is none. Status `proposed`, so a host can draw it on a calendar of
@@ -247,6 +249,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
+    onDirtyChange,
     onChangeProposal,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
@@ -281,6 +284,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
   const [pickCount, setPickCount] = useState(0);
+  const [initial] = useState({ serviceFacility, service, selections, patient });
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
@@ -434,6 +438,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   useEffect(() => () => latestOnChangeProposal.current?.(undefined), []);
 
   const finderButtonRef = useRef<HTMLButtonElement>(null);
+
+  const dirty =
+    serviceFacility !== initial.serviceFacility ||
+    service !== initial.service ||
+    selections !== initial.selections ||
+    patient !== initial.patient ||
+    requirementValues !== EMPTY_REQUIREMENT_VALUES ||
+    comment !== '' ||
+    occurrenceCount !== 1 ||
+    manualDateTime !== undefined ||
+    manualDurationMinutes !== undefined ||
+    (chosen !== undefined && chosen !== manualChoice);
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   function toggleFinder(): void {
     setFinding(!finding);
