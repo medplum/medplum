@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, deepEquals, getExtensionValue, isActorInactive, TimezoneExtensionURI } from '@medplum/core';
+import { deepClone, deepEquals, getExtensionValue, isScheduleActorInactive, TimezoneExtensionURI } from '@medplum/core';
 import type { Device, Location, Practitioner, Reference } from '@medplum/fhirtypes';
 import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM } from '../../constants';
 
@@ -58,7 +58,7 @@ export function hasEditableName(resource: ActorResource): resource is Location |
  */
 export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralFields {
   const timezone = getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
-  const active = !isActorInactive(resource);
+  const active = !isScheduleActorInactive(resource);
   if (resource.resourceType === 'Practitioner') {
     return { name: '', active, timezone };
   }

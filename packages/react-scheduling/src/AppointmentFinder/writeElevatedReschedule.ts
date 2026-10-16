@@ -7,7 +7,7 @@ import {
   getDisplayString,
   getExtension,
   getReferenceString,
-  isActorInactive,
+  isScheduleActorInactive,
   isDefined,
   isValidDate,
   OccurrenceChangedExtensionURI,
@@ -129,7 +129,7 @@ export async function writeElevatedReschedule(
       'Every selected schedule must be active, have exactly one actor, and be eligible for this visit type.'
     );
   }
-  const inactiveActor = actors.find((actor) => actor && isActorInactive(actor));
+  const inactiveActor = actors.find((actor) => actor && isScheduleActorInactive(actor));
   if (inactiveActor) {
     throw new Error(`${getDisplayString(inactiveActor)} is inactive.`);
   }
