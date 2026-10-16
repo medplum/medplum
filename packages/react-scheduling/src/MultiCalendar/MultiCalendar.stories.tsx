@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { useMantineTheme } from '@mantine/core';
-import { createReference, ServiceTypeReferenceURI } from '@medplum/core';
+import { createReference, RecurrenceIdExtensionURI, ServiceTypeReferenceURI } from '@medplum/core';
 import type {
   Appointment,
   Device,
@@ -453,3 +453,57 @@ export const ThemeColors = (): JSX.Element => {
   );
 };
 ThemeColors.decorators = [withFixtures([bookedVisit, pendingVisit])];
+
+const followUpVisit = {
+  resourceType: 'HealthcareService',
+  id: 'follow-up-visit',
+  name: 'Medication management follow-up',
+} satisfies HealthcareService;
+
+/**
+ * An appointment for the follow-up visit on Tuesday, May 5.
+ * @param hour - The hour it starts at.
+ * @param minutes - How long it lasts.
+ * @param recurring - Whether it is an occurrence of a recurring series.
+ * @returns The appointment.
+ */
+function followUpAppointment(hour: number, minutes: number, recurring = false): Appointment {
+  const start = new Date(2020, 4, 5, hour);
+  return {
+    resourceType: 'Appointment',
+    id: `follow-up-${minutes}`,
+    status: 'booked',
+    start: start.toISOString(),
+    end: new Date(start.getTime() + minutes * 60_000).toISOString(),
+    extension: recurring ? [{ url: RecurrenceIdExtensionURI, valueDateTime: start.toISOString() }] : undefined,
+    serviceType: [
+      {
+        extension: [{ url: ServiceTypeReferenceURI, valueReference: createReference(followUpVisit) }],
+      },
+    ],
+    participant: [{ status: 'accepted', actor: createReference(HomerSimpson) }],
+  };
+}
+
+// Events too short for two lines name the patient beside the service type.
+export const ShortAppointments = (): JSX.Element => {
+  const sources: MultiCalendarSource[] = [
+    {
+      schedule: DrAliceSmithSchedule,
+      slots: [],
+      appointments: [
+        followUpAppointment(9, 15, true),
+        followUpAppointment(10, 20),
+        followUpAppointment(11, 25),
+        followUpAppointment(13, 30),
+      ],
+    },
+  ];
+
+  return (
+    <div style={{ height: 700, padding: '1em' }}>
+      <MultiCalendar sources={sources} />
+    </div>
+  );
+};
+ShortAppointments.decorators = [withFixtures([followUpVisit])];
