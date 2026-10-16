@@ -17,12 +17,12 @@ desired concept to filter the list and aid in selection when the set of possible
 First, the `ValueSet` resource must be uploaded to the Medplum FHIR server, and must contain a `url` by which
 to reference it.
 
-{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="json" blocks="valueSet" >}}
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="ts" blocks="valueSet" >}}
 
 Additionally, the URL used to refer to the code system in `ValueSet.compose.include.system` must actually correspond to
 a valid `CodeSystem` resource on the server:
 
-{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="json" blocks="codeSystem" >}}
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="ts" blocks="codeSystem" >}}
 
 ### Binding to the Input
 
@@ -45,7 +45,7 @@ A `CodeSystem` resource can embed any number of known translations directly alon
 the `designation` field. This field can be used both for synonyms in the primary language, as well as translations into
 additional languages.
 
-{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="json" blocks="translatedCodeSystem" >}}
+{{< code-example file="packages/examples/src/terminology/medplum-terminology-services.tsx" language="ts" blocks="translatedCodeSystem" >}}
 
 Additionally, synonyms or translations can be added to existing code systems using Medplum's custom
 [`CodeSystem/$import` API][import].
