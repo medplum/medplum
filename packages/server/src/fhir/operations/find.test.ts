@@ -1950,7 +1950,19 @@ describe('Appointment/$find', () => {
       });
     });
 
-    test('errors when the actor it cannot read is inactive', async () => {
+    test.each([
+      { access: 'cannot read', policy: scheduleOnlyPolicy },
+      {
+        access: 'cannot see `active` on',
+        policy: {
+          ...scheduleOnlyPolicy,
+          resource: [
+            ...(scheduleOnlyPolicy.resource ?? []),
+            { resourceType: 'Practitioner', hiddenFields: ['active'] },
+          ],
+        },
+      },
+    ])('errors when an actor the caller $access is inactive', async ({ policy }) => {
       const inactivePractitioner = await systemRepo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         meta: { project: project.id },
@@ -1960,7 +1972,7 @@ describe('Appointment/$find', () => {
         [{ service: genericVisit, duration: 60, timezone: 'America/Phoenix', availability: monTueAvailability }],
         { actor: [createReference(inactivePractitioner)] }
       );
-      const { accessToken: restrictedToken } = await addTestUser(project, { accessPolicy: scheduleOnlyPolicy });
+      const { accessToken: restrictedToken } = await addTestUser(project, { accessPolicy: policy });
 
       const response = await makeRequest(
         {
@@ -1994,6 +2006,41 @@ describe('Appointment/$find', () => {
       });
 
       expect(response).toHaveStatus(200);
+    });
+
+    test('errors when an inactive actor is in a linked project', async () => {
+      const { project: sharedProject } = await createTestProject();
+      const sharedPractitioner = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        meta: { project: sharedProject.id },
+        active: false,
+      });
+      const { project: tenant, accessToken: tenantToken } = await createTestProject({
+        project: { link: [{ project: createReference(sharedProject) }] },
+        withAccessToken: true,
+      });
+      const service = await systemRepo.createResource<HealthcareService>({
+        ...genericVisit,
+        id: undefined,
+        meta: { project: tenant.id },
+      });
+      const schedule = await systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: tenant.id },
+        actor: [createReference(sharedPractitioner)],
+        serviceType: toServiceTypeCodeableConcepts(service),
+        extension: makeSchedulingExtension([
+          { service, duration: 60, timezone: 'America/Phoenix', availability: monTueAvailability },
+        ]),
+      });
+
+      const response = await makeRequest(
+        { ...range, 'service-type-reference': `HealthcareService/${service.id}`, schedule: `Schedule/${schedule.id}` },
+        tenantToken
+      );
+
+      expect(response).toHaveStatus(400);
+      expect(response.body.issue[0].details.text).toBe('Practitioner is inactive');
     });
   });
 

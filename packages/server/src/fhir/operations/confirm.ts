@@ -79,10 +79,7 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
           throw new OperationOutcomeError(badRequest('Schedule is inactive', getPath(schedule)));
         }
       }
-      const actors = await txRepo
-        .readReferences(schedules.map((schedule) => schedule.actor[0]))
-        .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
-      await assertActorsActive(txRepo, schedules, actors);
+      await assertActorsActive(txRepo, schedules);
 
       // Mark `busy-tentative` slots as `busy`
       const updatedSlots = await Promise.all(

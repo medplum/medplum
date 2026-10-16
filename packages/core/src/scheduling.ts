@@ -588,6 +588,25 @@ export function serviceTypeIncludesAllServices(serviceType: CodeableConcept[] | 
 }
 
 /**
+ * Returns whether a Schedule actor is turned off: a Practitioner with `active: false`, or a Location or Device whose
+ * status is `inactive`. Scheduling operations refuse a Schedule whose actor is inactive. Other actor types are
+ * never treated as inactive.
+ * @param actor - The actor resource.
+ * @returns True if the actor is inactive.
+ */
+export function isActorInactive(actor: Resource): boolean {
+  switch (actor.resourceType) {
+    case 'Practitioner':
+      return actor.active === false;
+    case 'Location':
+    case 'Device':
+      return actor.status === 'inactive';
+    default:
+      return false;
+  }
+}
+
+/**
  * Returns whether a Schedule with these serviceType concepts can be booked for the given HealthcareService:
  * because it refers to the service, or because it carries the marker for offering every one.
  * @param serviceType - CodeableConcept values to inspect

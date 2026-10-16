@@ -10,6 +10,7 @@ import {
   getExtension,
   getExtensionValue,
   getReferenceString,
+  isActorInactive,
   isDefined,
   isResource,
   MEDPLUM_VERSION,
@@ -574,51 +575,32 @@ export function assertAllLoaded<T extends Resource>(
   }
 }
 
-function isActorInactive(actor: Resource): boolean {
-  switch (actor.resourceType) {
-    case 'Practitioner':
-      return actor.active === false;
-    case 'Location':
-    case 'Device':
-      return actor.status === 'inactive';
-    default:
-      return false;
-  }
-}
-
 /**
- * Rejects scheduling onto a Schedule whose actor is inactive.
+ * Rejects scheduling onto a Schedule with an inactive actor.
  *
- * Whether an actor can be booked doesn't depend on who is asking, so an actor the caller
- * can't read is read with system privileges for this check alone. Only an actor in the
- * Schedule's own project is trusted, so the error can't reveal anything about another one.
+ * Whether an actor can be booked doesn't depend on who is asking, so actors are read with
+ * system privileges: an access policy that hides the actor, or its `active` or `status`,
+ * doesn't skip the check. An actor in a project the caller can't see is ignored, so the
+ * error can't reveal anything about it.
  *
  * @param repo - The caller's repository.
  * @param schedules - The schedules being booked onto.
- * @param actors - Each schedule's first actor, as read by the caller, or the error reading it.
  */
-export async function assertActorsActive(
-  repo: Repository,
-  schedules: WithPath<WithId<Schedule>>[],
-  actors: WithPath<Resource | Error>[]
-): Promise<void> {
-  await Promise.all(
-    schedules.map(async (schedule, idx) => {
-      let actor: Resource | undefined = isResource(actors[idx]) ? actors[idx] : undefined;
-      if (!actor) {
-        // The caller's copy of the Schedule has its `meta.project` stripped, so read both
-        const systemRepo = repo.getSystemRepo();
-        const [storedSchedule, systemActor] = await Promise.all([
-          systemRepo.readResource<Schedule>('Schedule', schedule.id),
-          systemRepo.readReference(schedule.actor[0]).catch(() => undefined),
-        ]);
-        actor = systemActor?.meta?.project === storedSchedule.meta?.project ? systemActor : undefined;
-      }
-      if (actor && isActorInactive(actor)) {
-        throw new OperationOutcomeError(badRequest(`${actor.resourceType} is inactive`, getPath(actors[idx])));
-      }
-    })
+export async function assertActorsActive(repo: Repository, schedules: WithPath<WithId<Schedule>>[]): Promise<void> {
+  const refs = schedules.flatMap((schedule) =>
+    schedule.actor.map((actor, idx) => withPath(actor, `${getPath(schedule)}.actor[${idx}]`))
   );
+  const actors = await repo.getSystemRepo().readReferences(refs);
+  actors.forEach((actor, idx) => {
+    if (!isResource(actor) || !isActorInactive(actor)) {
+      return;
+    }
+    const visibleProjects = repo.getSearchProjectIds(actor.resourceType);
+    if (visibleProjects && !visibleProjects.includes(actor.meta?.project as string)) {
+      return;
+    }
+    throw new OperationOutcomeError(badRequest(`${actor.resourceType} is inactive`, getPath(refs[idx])));
+  });
 }
 
 // Gets SchedulingParameters information for a list of Schedule resources with
@@ -644,10 +626,12 @@ export async function getSchedulingParametersGroup(
     }
   });
 
-  const actors = await repo
-    .readReferences(schedules.map((schedule) => schedule.actor[0]))
-    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
-  await assertActorsActive(repo, schedules, actors);
+  const [actors] = await Promise.all([
+    repo
+      .readReferences(schedules.map((schedule) => schedule.actor[0]))
+      .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' })),
+    assertActorsActive(repo, schedules),
+  ]);
 
   const serviceParams = getHealthcareServiceSchedulingParameters(healthcareService);
 
