@@ -234,7 +234,7 @@ Vital signs measure core physiological functions – blood pressure, pulse, resp
 | `component`    | Sub-results that belong together (for example BP systolic/diastolic). See [Multi-component observations](#multi-component-observations).                                                                                                                                                                                                                                                   |                                                                                                     |                           |
 
 <details>
-  <summary>Example: body temperature</summary>
+<summary>Example: body temperature</summary>
 
 ```js
 {
@@ -258,7 +258,7 @@ Vital signs measure core physiological functions – blood pressure, pulse, resp
 </details>
 
 <details>
-  <summary>Example: observation from survey input</summary>
+<summary>Example: observation from survey input</summary>
 
 ```js
 {
@@ -287,7 +287,7 @@ Vital signs measure core physiological functions – blood pressure, pulse, resp
 </details>
 
 <details>
-  <summary>Example: device-measured observation</summary>
+<summary>Example: device-measured observation</summary>
 
 ```js
 {
@@ -317,7 +317,7 @@ Vital signs measure core physiological functions – blood pressure, pulse, resp
 </details>
 
 <details>
-  <summary>Example: patient-performed observation</summary>
+<summary>Example: patient-performed observation</summary>
 
 ```js
 {
@@ -391,7 +391,7 @@ Medplum is not optimized for massive wearable ingestion at second-level granular
 {{< /warning >}}
 
 <details>
-  <summary>Example: heart rate sampled data</summary>
+<summary>Example: heart rate sampled data</summary>
 
 ```js
 {
@@ -488,7 +488,7 @@ Use `Observation.component` when multiple values share method, performer, device
 {{< /warning >}}
 
 <details>
-  <summary>Example: blood pressure panel</summary>
+<summary>Example: blood pressure panel</summary>
 
 ```js
 {
@@ -567,13 +567,13 @@ Applications include:
 Each `Condition` is an instance of a problem – recurrence is a new resource; link clinically via narrative or extensions as your workflow requires.
 
 <details>
-  <summary>Example Condition</summary>
+<summary>Example Condition</summary>
 
 {{< code-example file="packages/examples/src/charting/representing-diagnoses.ts" language="ts" blocks="sampleCondition" >}}
 </details>
 
 <details>
-  <summary>Example ValueSet of Condition codes</summary>
+<summary>Example ValueSet of Condition codes</summary>
 
 {{< code-example file="packages/examples/src/charting/representing-diagnoses.ts" language="ts" blocks="sampleValueSet" >}}
 </details>

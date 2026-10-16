@@ -17,19 +17,19 @@ A filter expression has three parts: a **parameter**, an **operator**, and a **v
 - The **value** is the criteria you want to compare against
 
 <details>
-  <summary>Example: Filter syntax</summary>
+<summary>Example: Filter syntax</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="syntaxTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="syntaxCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="syntaxCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 In this example, the filter expression is `name eq "simpson"`, where `name` is the **parameter**, `eq` is the **operator**, and `"simpson"` is the **value**.
@@ -57,37 +57,37 @@ The `_filter` parameter allows you to apply multiple filters using logical opera
 This example will return all male patients that have the string "sim" somewhere in their name.
 
 <details>
-  <summary>Example: Filtering a search based on both name and gender</summary>
+<summary>Example: Filtering a search based on both name and gender</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="logicalAndTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalAndCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalAndCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 This example will return any patients that have an identifier of 12345 OR the phone number "555-6789". It is important to note that this is _impossible_ to do using standard search parameter syntax.
 
 <details>
-  <summary>Example: Filtering a search based on either an identifier or phone number</summary>
+<summary>Example: Filtering a search based on either an identifier or phone number</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="logicalOrTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalOrCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="logicalOrCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 ## Nested Filters
@@ -95,19 +95,19 @@ This example will return any patients that have an identifier of 12345 OR the ph
 You can further refine your search by nesting filters using parentheses and logical operators.
 
 <details>
-  <summary>Example: Filtering a search based on gender and two potential names</summary>
+<summary>Example: Filtering a search based on gender and two potential names</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="ts" blocks="nestedTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="nestedCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/filter-search-parameter.ts" language="bash" blocks="nestedCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 This example initially filters for all male patients. It then filters those male patients for any names that contain either of the strings "sim" or "wigg".

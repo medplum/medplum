@@ -61,7 +61,7 @@ While there is no direct method to revert changes made to a resource, it can be 
 The `readHistory` function is used to get the entire history of the resource. You can then choose the version and use `readVersion` to return the complete details of that version of the resource. The current resource can then be updated to the historic details.
 
 <details>
-  <summary>Example: Revert resource to a previous version</summary>
+<summary>Example: Revert resource to a previous version</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/resource-history.ts" language="ts" blocks="revertChanges" >}}
 </details>

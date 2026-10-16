@@ -46,7 +46,7 @@ Lastly, all resources have an `id` element, which is a server-assigned identifie
 
 <details>
 <summary>
-Example [`Patient`][patient]
+Example <a href="/docs/api/fhir/resources/patient"><code>Patient</code></a>
 </summary>
 
 The example below shows an example [`Patient`][patient] resource. Here we can see that the [`Patient`][patient] contains multiple elements, including `name`, `telecom`, and `address`.
@@ -115,7 +115,7 @@ In Medplum, we will typically only use the `reference` and `display` elements.
 
 <details>
 <summary>
-Example: Linking a [`MedicationRequest`][medicationrequest] to a [`Patient`][patient] and [`Practitioner`][practitioner]
+Example: Linking a <a href="/docs/api/fhir/resources/medicationrequest"><code>MedicationRequest</code></a> to a <a href="/docs/api/fhir/resources/patient"><code>Patient</code></a> and <a href="/docs/api/fhir/resources/practitioner"><code>Practitioner</code></a>
 </summary>
 
 The example below shows a resource modeling a prescription (i.e. [`MedicationRequest`][medicationrequest]) with two references: **`subject` (i.e. the patient)** and **`requester` (i.e. the requesting physician)**.
@@ -187,7 +187,7 @@ Refer to the [FHIR official documentation](https://hl7.org/fhir/R4/terminologies
 <details>
 Example: Tylenol
 <summary>
-Below is an example [`CodeableConcept`][codeableconcept], that defines the medication Tylenol, in both the [RXNorm](/docs/medications/medication-codes#rxnorm) or [NDC](/docs/medications/medication-codes#ndc) systems.
+Below is an example <a href="/docs/api/fhir/datatypes/codeableconcept"><code>CodeableConcept</code></a>, that defines the medication Tylenol, in both the <a href="/docs/medications/medication-codes#rxnorm">RXNorm</a> or <a href="/docs/medications/medication-codes#ndc">NDC</a> systems.
 
 {{< code-example file="packages/examples/src/medications/medication-codes.ts" language="ts" blocks="tylenol-example" >}}
 </summary>
@@ -221,7 +221,7 @@ When generating MRNs for new patients, store the value in `Patient.identifier` w
 
 <details>
 <summary>
-Example: [`Patient`][patient] with two medical record numbers (MRNs)
+Example: <a href="/docs/api/fhir/resources/patient"><code>Patient</code></a> with two medical record numbers (MRNs)
 </summary>
 
 The example `Patient` below has three identifiers: **an SSN and two MRN identifiers** from different hospital systems.

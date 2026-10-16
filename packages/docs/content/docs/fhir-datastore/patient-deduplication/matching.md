@@ -32,7 +32,7 @@ The likelihood of a candidate being a match can be represented by a `RiskAssessm
 | `basis`              | The patient or other resource that could be a potential match for the subject, considered the **target record**. | Patient/homer-j-simpson                         |
 
 <details>
-  <summary>Example: A `RiskAssessment` for a potential duplicated patient record</summary>
+<summary>Example: A <code>RiskAssessment</code> for a potential duplicated patient record</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/patient-deduplication/matching.ts" language="ts" blocks="dupedPatientAssessment" >}}
 </details>
@@ -46,7 +46,7 @@ In some cases, it is already known that two similar records should _not_ be matc
 To ensure that certain records are not matched, you can create a Do Not Match List for a patient. This should be represented as a `List` resource, with the patient stored in the `subject` field. Any other patients that should not be matched to this patient can be stored as an `entry`. To ensure that records on a Do Not Match List are not merged, see the docs on [disabling merging](/docs/fhir-datastore/patient-deduplication/merging#disabling-merges).
 
 <details>
-  <summary>Example: A patient's Do Not Match List</summary>
+<summary>Example: A patient's Do Not Match List</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/patient-deduplication/matching.ts" language="ts" blocks="doNotMatch" >}}
 </details>

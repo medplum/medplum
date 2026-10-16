@@ -299,7 +299,7 @@ Both Subjective and Objective are [`Observation`](/docs/api/fhir/resources/obser
 Use appropriate coding (typically [LOINC](/docs/careplans/loinc)) and `value[x]`. For measurement details see [Observations and vital signs](/docs/charting/chart-data-model#observations-and-vital-signs).
 
 <details>
-  <summary>Example: patient-reported fatigue (Subjective)</summary>
+<summary>Example: patient-reported fatigue (Subjective)</summary>
 
 ```json
 {
@@ -325,7 +325,7 @@ Use appropriate coding (typically [LOINC](/docs/careplans/loinc)) and `value[x]`
 </details>
 
 <details>
-  <summary>Example: elevated heart rate (Objective)</summary>
+<summary>Example: elevated heart rate (Objective)</summary>
 
 ```json
 {
@@ -376,7 +376,7 @@ Usually create `ClinicalImpression` early with `status` `in-progress`, then tran
 | `note`        | Narrative; `note[0].text` is common for the note | Assessment narrative text                               |
 
 <details>
-  <summary>Example: ClinicalImpression at encounter start</summary>
+<summary>Example: ClinicalImpression at encounter start</summary>
 
 ```json
 {
@@ -407,7 +407,7 @@ Plan items are concrete FHIR requests: [`ServiceRequest`](/docs/api/fhir/resourc
 When the note is complete, set `ClinicalImpression.status` to `completed` and create [`Provenance`](/docs/api/fhir/resources/provenance) targeting the Encounter to record signer and time. "Signed" and "locked" are separate product decisions – co-signing, post-sign editable windows, and amendment workflows belong in your own discovery; see [Designing Charting](/docs/charting/designing-charting) for the structure-vs-narrative framing.
 
 <details>
-  <summary>Example: Provenance for clinician sign-off</summary>
+<summary>Example: Provenance for clinician sign-off</summary>
 
 ```json
 {

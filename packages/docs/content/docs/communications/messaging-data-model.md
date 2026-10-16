@@ -82,7 +82,7 @@ FHIR search cannot express `recipient OR sender` in one parameter. Inbox-style f
 {{< /tip >}}
 
 <details>
-  <summary>Example of a thread grouped using a Communication resource</summary>
+<summary>Example of a thread grouped using a Communication resource</summary>
 
 {{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="communicationGroupedThread" >}}
 </details>
@@ -100,7 +100,7 @@ You can omit `category` entirely if you do not need tags. **When using `category
 | Product offering | SNOMED, [LOINC](/docs/careplans/loinc), custom internal coding |
 
 <details>
-  <summary>Example of multiple categories</summary>
+<summary>Example of multiple categories</summary>
 
 {{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="communicationCategories" >}}
 </details>

@@ -242,7 +242,7 @@ repeating items is shown below.
 #### Example
 
 <details>
-  <summary>Corrected Questionnaire using templateExtractContext</summary>
+<summary>Corrected Questionnaire using templateExtractContext</summary>
 
 ```json
 {
@@ -386,7 +386,7 @@ context extensions using the [`application/x-fhir-query` language][x-fhir-query]
 the option to embed FHIRPath expressions as needed to construct the query string.
 
 <details>
-  <summary>Example: Questionnaire using x-fhir-query to look up a Medication</summary>
+<summary>Example: Questionnaire using x-fhir-query to look up a Medication</summary>
 
 ```json
 {
@@ -519,7 +519,7 @@ grouping together questions that pertain to a particular resource. To simplify t
 the `templateExtract` extension can be placed on the question or group corresponding to that template resource.
 
 <details>
-  <summary>Example: Questionnaire extracting Patient and Observation</summary>
+<summary>Example: Questionnaire extracting Patient and Observation</summary>
 
 ```json
 {

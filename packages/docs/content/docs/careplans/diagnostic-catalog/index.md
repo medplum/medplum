@@ -98,7 +98,7 @@ A great [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition
 Key amongst these is the `qualifiedInterval` element, which is used to define _how results should be interpreted._ See our [guide on reference ranges](./reference-ranges) for more information.
 
 <details>
-  <summary>Example: Blood Sodium Level </summary>
+<summary>Example: Blood Sodium Level </summary>
 
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionSodium" >}}
 </details>
@@ -128,10 +128,10 @@ Material that is collected from a patient may be split up, prepared, and handled
 {{< /tip >}}
 
 <details>
-  <summary>Example: Capillary Blood Sample </summary>
+<summary>Example: Capillary Blood Sample </summary>
 
-  The following examples defines a fingerprick blood sample that is distributed into two collection tubes: a red cap and
-  a green cap.
+The following examples defines a fingerprick blood sample that is distributed into two collection tubes: a red cap and
+a green cap.
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="fingerprickSpecimen" >}}
 </details>
 
@@ -196,12 +196,12 @@ The most important fields for [`ActivityDefinition`](/docs/api/fhir/resources/ac
 In most cases, each service will only require a single laboratory procedure. In these cases, you will only need a single `PlanDefinition.action` and [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition), representing the main operational procedure performed to fulfill this laboratory service.
 
 <details>
-  <summary>Example: Electrolyte Panel</summary>
+<summary>Example: Electrolyte Panel</summary>
 
-  In the example below, a patient can order an Electrolyte Panel, which is a single laboratory procedure
-  <h5>Patient-facing service</h5>
+In the example below, a patient can order an Electrolyte Panel, which is a single laboratory procedure
+<h5>Patient-facing service</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="electrolytesPanelService" >}}
-  <h5>Laboratory Procedure</h5>
+<h5>Laboratory Procedure</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="electrolytesPanel" >}}
 </details>
 
@@ -212,22 +212,22 @@ In some cases, a product offering might _embed_ multiple procedures that are reu
 This allows you to reuse the data definition of your procedures, while allowing you to compose them into different patient-facing product offerings.
 
 <details>
-  <summary>Example: Men's Health Panel</summary>
+<summary>Example: Men's Health Panel</summary>
 
-  <p>
-    This PlanDefinition reuses the Electrolyte Panel from the previous example, and but adds a free testosterone test.
-  </p>
-    <h5>
-    Patient-facing service
-  </h5>
-{{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="mensHealthService" >}}
+<p>
+  This PlanDefinition reuses the Electrolyte Panel from the previous example, and but adds a free testosterone test.
+</p>
   <h5>
-    Laboratory Procedures
-  </h5>
-  <h6>Testosterone Procedure</h6>
+  Patient-facing service
+</h5>
+{{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="mensHealthService" >}}
+<h5>
+  Laboratory Procedures
+</h5>
+<h6>Testosterone Procedure</h6>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="testosteroneProcedure" >}}
 
-  <h6>Electrolytes Procedure</h6>
+<h6>Electrolytes Procedure</h6>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="electrolytesPanel" >}}
 </details>
 
@@ -339,45 +339,45 @@ graph TD
 ```
 
 <details>
-  <summary>Services (PlanDefinition)</summary>
+<summary>Services (PlanDefinition)</summary>
 
-  <h5>Men's Health</h5>
+<h5>Men's Health</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="mensHealthService" >}}
-  <h5>Women's Health</h5>
+<h5>Women's Health</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="womensHealthService" >}}
 </details>
 
 <details>
-  <summary>Procedures (ActivityDefinition)</summary>
+<summary>Procedures (ActivityDefinition)</summary>
 
-  <h5>Testosterone</h5>
+<h5>Testosterone</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="testosteroneProcedure" >}}
-  <h5>Estradiol</h5>
+<h5>Estradiol</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="estradiolProcedure" >}}
-  <h5>Electrolytes</h5>
+<h5>Electrolytes</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="electrolytesPanel" >}}
 </details>
 
 <details>
-  <summary>Observations (ObservationDefinition)</summary>
+<summary>Observations (ObservationDefinition)</summary>
 
-  <h5>Free Testosterone</h5>
+<h5>Free Testosterone</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionTestosterone" >}}
-  <h5>Estradiol</h5>
+<h5>Estradiol</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionEstradiol" >}}
-  <h5>Sodium</h5>
+<h5>Sodium</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionSodium" >}}
-  <h5>Potassium</h5>
+<h5>Potassium</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionPotassium" >}}
-  <h5>Chloride</h5>
+<h5>Chloride</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionChloride" >}}
-  <h5>CO2</h5>
+<h5>CO2</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="observationDefinitionCarbonDioxide" >}}
 </details>
 
 <details>
-  <summary>Specimen (SpecimenDefinition)</summary>
+<summary>Specimen (SpecimenDefinition)</summary>
 
-  <h5>Finger-prick Capillary Blood</h5>
+<h5>Finger-prick Capillary Blood</h5>
 {{< code-example file="packages/examples/src/careplans/diagnostic-catalog.ts" language="ts" blocks="fingerprickSpecimen" >}}
 </details>

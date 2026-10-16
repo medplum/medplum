@@ -71,29 +71,29 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 | `fullUrl`             | [See below](#internal-references)                                                                                                                                                                                                 |
 
 <details>
-  <summary>Example: A simple batch request to simultaneously search for two patients</summary>
+<summary>Example: A simple batch request to simultaneously search for two patients</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="simpleBatchTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="bash" blocks="simpleBatchCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="bash" blocks="simpleBatchCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 <details>
-  <summary>Example: Create multiple resources in one batch request</summary>
+<summary>Example: Create multiple resources in one batch request</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="batchCreate" >}}
 </details>
 
 <details>
-  <summary>Example: Make multiple calls to the _history endpoint in one batch request</summary>
+<summary>Example: Make multiple calls to the _history endpoint in one batch request</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="historyEndpoint" >}}
 </details>
@@ -219,7 +219,7 @@ Creating internal references is done by assigning temporary IDs to each bundle e
 Other bundle entries can refer to this resource using the temporary `urn:uuid:` string, which is replaced by the real reference during batch processing.
 
 <details>
-  <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
+<summary>Example: Create a patient and encounter whose subject is the created patient</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="internalReference" >}}
 </details>
@@ -232,7 +232,7 @@ which will be resolved by Medplum server at resource creation time. This search 
 an error will be returned. For example:
 
 <details>
-  <summary>Example: Create multiple patients that link to the same provider</summary>
+<summary>Example: Create multiple patients that link to the same provider</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="externalReference" >}}
 </details>
@@ -246,7 +246,7 @@ You can conditionally perform batch actions by adding the `ifNoneExist` property
 The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#search-parameters) to search existing resources and only performs the action if no match is found. Since you are already defining the `url` to send the request to, you only need to enter the actual parameter in this field (i.e., everything that would come after the `?` when submitting an actual search).
 
 <details>
-  <summary>Example: Create a patient and organization, only if the organization does not already exist</summary>
+<summary>Example: Create a patient and organization, only if the organization does not already exist</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="conditionalCreate" >}}
 </details>
@@ -256,13 +256,13 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 When updating resources in a transaction bundle, you can prevent **lost updates** by using the `ifMatch` property in the bundle entry request. This ensures that your update only succeeds if the resource hasn't been modified by another user since you last read it.
 
 <details>
-  <summary>Example: Version Checking in Transaction Bundle</summary>
+<summary>Example: Version Checking in Transaction Bundle</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/fhir-datastore/updating-data.ts" language="ts" blocks="transactionIfMatchTs" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 If any resource in the transaction has been modified by another user (the version doesn't match), the transaction will fail with a `412 Precondition Failed` error, allowing you to retry after re-reading the current state.
@@ -435,13 +435,13 @@ Autobatching works by creating a queue of `Promises` issued within the `autoBatc
 Instead you should create the queue of `Promise` requests and then use `Promise.all()` to resolve all of them at once.
 
 <details>
-  <summary>Resolving Promises with autobatching</summary>
+<summary>Resolving Promises with autobatching</summary>
 
-  **❌ WRONG**
+**❌ WRONG**
 
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="autobatchingWrong" >}}
 
-  **✅ CORRECT**
+**✅ CORRECT**
 
 {{< code-example file="packages/examples/src/fhir-datastore/fhir-batch-requests.ts" language="ts" blocks="autobatchingCorrect" >}}
 </details>

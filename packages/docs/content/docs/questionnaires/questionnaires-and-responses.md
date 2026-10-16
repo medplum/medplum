@@ -39,7 +39,7 @@ One of the most important properties in the `item` is `linkId`, which is used to
 | `repeats`         | A boolean indicating if the question may have more than one associated answer.                                                          | true                                       |
 
 <details>
-  <summary>Example: A basic `Questionnaire`</summary>
+<summary>Example: A basic <code>Questionnaire</code></summary>
 
 {{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="simpleQuestionnaire" >}}
 </details>
@@ -51,7 +51,7 @@ The `item` element allows you to group and nest questions together by adding add
 To do this, you must set `item.type='group'`. This specifies that the item will not be a question, but instead a group of questions. When defining a group, the `text` property should be a description of the group instead of an actual question.
 
 <details>
-  <summary>Example: A `Questionnaire` with nested questions</summary>
+<summary>Example: A <code>Questionnaire</code> with nested questions</summary>
 
 {{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="nestedQuestionnaire" >}}
 </details>
@@ -82,7 +82,7 @@ You can conditionally display questions so that they only appear based on a user
 | `answer[x]`  | The value that the referenced question is being tested against using the `operator`. The datatype should match the answer datatype of the referenced question. |                                                                                                     | female      |
 
 <details>
-  <summary>Example: A `Questionnaire` with initial values and conditionally rendered questions</summary>
+<summary>Example: A <code>Questionnaire</code> with initial values and conditionally rendered questions</summary>
 
 {{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="ruledQuestionnaire" >}}
 </details>
@@ -126,7 +126,7 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
 | `linkId`          | The item from the corresponding `Questionnaire` that this answer responds to.                               | marital-status       |
 
 <details>
-  <summary>Example: A `QuestionnaireResponse` responding to the [conditional questionnaire above](#conditionally-displaying-questions)</summary>
+<summary>Example: A <code>QuestionnaireResponse</code> responding to the <a href="#conditionally-displaying-questions">conditional questionnaire above</a></summary>
 
 {{< code-example file="packages/examples/src/questionnaires/questionnaires-and-responses.ts" language="ts" blocks="response" >}}
 </details>

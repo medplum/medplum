@@ -290,53 +290,53 @@ Medplum provides the following built-in variables:
 | `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                  |
 
 <details open>
-  <summary>
-    Example: General Practitioner Access Policy
-  </summary>
+<summary>
+  Example: General Practitioner Access Policy
+</summary>
 
-  The following access policy grants access to all [`Patient`](/docs/api/fhir/resources/patient) resources where the current user (a [`Practitioner`](/docs/api/fhir/resources/practitioner)) is listed as the general practitioner:
-  ```json
-  {
-    "resourceType": "AccessPolicy",
-    "name": "GP Access Policy",
-    "resource": [
-      {
-        "resourceType": "Patient",
-        "criteria": "Patient?general-practitioner=%profile"
-      }
-    ]
-  }
-  ```
+The following access policy grants access to all [`Patient`](/docs/api/fhir/resources/patient) resources where the current user (a [`Practitioner`](/docs/api/fhir/resources/practitioner)) is listed as the general practitioner:
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "GP Access Policy",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?general-practitioner=%profile"
+    }
+  ]
+}
+```
 </details>
 
 You can also set custom variables for access policies on the user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource.
 This policy then acts like a _template_, that can be instantiated, potentially multiple times, with different values for each variable.
 
 <details open>
-  <summary>
-    Example: Custom Access Policy Variables
-  </summary>
+<summary>
+  Example: Custom Access Policy Variables
+</summary>
 
-  In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations.
+In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations.
 
-    ```json
-    {
-      "resourceType": "AccessPolicy",
-      "id": "123",
-      "name": "Parameterized Access Policy",
-      "resource": [
-        {
-          "resourceType": "Patient",
-          "criteria": "Patient?organization=%provider_organization"
-        },
-        {
-          "resourceType": "DiagnosticReport",
-          "criteria": "DiagnosticReport?performer=%provider_organization"
-        }
-      ]
-    }
-    ```
-    We can set these variables on the user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource, as follows
+  ```json
+  {
+    "resourceType": "AccessPolicy",
+    "id": "123",
+    "name": "Parameterized Access Policy",
+    "resource": [
+      {
+        "resourceType": "Patient",
+        "criteria": "Patient?organization=%provider_organization"
+      },
+      {
+        "resourceType": "DiagnosticReport",
+        "criteria": "DiagnosticReport?performer=%provider_organization"
+      }
+    ]
+  }
+  ```
+  We can set these variables on the user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource, as follows
 
 ```js
 {

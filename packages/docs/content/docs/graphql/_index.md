@@ -34,7 +34,7 @@ For example, to request a `Patient` by ID:
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="GetPatientByIdResponse" >}}
 </details>
@@ -72,7 +72,7 @@ To search for a list of `Patient` resources with a specific name and city:
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="SearchPatientsByNameAndCityResponse" >}}
 </details>
@@ -108,7 +108,7 @@ For example, to retrieve a `DiagnosticReport` and all the `Observation` resource
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="DiagnosticReportWithObservationsResponse" >}}
 </details>
@@ -138,7 +138,7 @@ In the example below, we first search for a `Patient` by id, and then find all t
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="PatientWithRelatedEncountersResponse" >}}
 </details>
@@ -166,7 +166,7 @@ FHIR GraphQL supports filtering array properties using field arguments. For exam
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterPatientNameByUseResponse" >}}
 </details>
@@ -186,7 +186,7 @@ Another common use is to filter an `extension` array by `url`:
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterExtensionByUrlResponse" >}}
 </details>
@@ -203,7 +203,7 @@ If more powerful filtering capabilities are required, a FHIRPath expression can 
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="FilterPatientNameByFHIRPathResponse" >}}
 </details>
@@ -235,7 +235,7 @@ This query searches for a list of `Patients` named `"Eve"`, living in `"Philadel
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/basic-query.ts" language="ts" blocks="PatientsWithReportsResponse" >}}
 </details>

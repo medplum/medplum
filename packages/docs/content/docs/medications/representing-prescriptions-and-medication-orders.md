@@ -140,7 +140,7 @@ The instructions for how the patient should take the medication should be includ
 Note that this field is stored as an array, so there can be multiple dosage instructions for each order. For example, the same medication may be taken multiple times throughout the day, but in different dosages each time. This is where the `dosageInstruction.sequence` field should be used to indicate which order the instructions are in.
 
 <details>
-  <summary>Example: Dosage Instructions</summary>
+<summary>Example: Dosage Instructions</summary>
 
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="dosageInstructions" >}}
 </details>
@@ -152,13 +152,13 @@ A [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) can represen
 These types of requests should be differentiated as outpatient vs. inpatient using the `MedicationRequest.category` field, which represents the type of medical request. The [FHIR MedicationRequest Admin Location value set](https://www.hl7.org/fhir/valueset-medicationrequest-admin-location.html) can be used for this. Note that the `category` field is an array, so it is possible to have multiple values if you wish to categorize your requests in other ways as well.
 
 <details>
-  <summary>Example: A MedicationRequest categorized for a prescription</summary>
+<summary>Example: A MedicationRequest categorized for a prescription</summary>
 
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="prescriptionRequest" >}}
 </details>
 
 <details>
-  <summary>Example: A MedicationRequest categorized for a medication fulfillment order</summary>
+<summary>Example: A MedicationRequest categorized for a medication fulfillment order</summary>
 
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="orderRequest" >}}
 </details>
@@ -179,7 +179,7 @@ The instructions to the pharmacy on how the order should be dispensed should be 
 | `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                  |                                                                                                                                   |
 
 <details>
-  <summary>Example: Dispense Instructions</summary>
+<summary>Example: Dispense Instructions</summary>
 
 {{< code-example file="packages/examples/src/medications/representing-prescriptions-and-medication-orders.ts" language="ts" blocks="dispenseInstructions" >}}
 </details>

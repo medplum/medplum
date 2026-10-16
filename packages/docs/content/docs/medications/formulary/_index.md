@@ -97,7 +97,7 @@ The table below summarizes the most important medication metadata elements.
 | `intendedRoute`       | Method of ingestion (oral, intravenous, etc.)                            | [SNOMED Route Codes](http://hl7.org/fhir/R4/valueset-route-codes.html)                                              |
 
 <details>
-  <summary>Example of Drug Characteristics</summary>
+<summary>Example of Drug Characteristics</summary>
 
 ```ts
 {
@@ -246,7 +246,7 @@ graph TD
 ```
 
 <details>
-  <summary>Example: Parent Compound Medication</summary>
+<summary>Example: Parent Compound Medication</summary>
 
 ```ts
 {
@@ -345,7 +345,7 @@ graph TD
 </details>
 
 <details>
-  <summary>Example: Child Dose Variation</summary>
+<summary>Example: Child Dose Variation</summary>
 
 ```ts
 {
@@ -451,7 +451,7 @@ graph TD
 - Supports efficient formulary navigation and management
 
 <details>
-  <summary>Example: Traditional Single Compounded Medication</summary>
+<summary>Example: Traditional Single Compounded Medication</summary>
 
 ```ts
 {

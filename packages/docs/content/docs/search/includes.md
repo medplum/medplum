@@ -40,7 +40,7 @@ For example, the search query described above for `Observation`, `Patient`, and 
 {{< /tabs >}}
 
 <details>
-  <summary>Example response</summary>
+<summary>Example response</summary>
 
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="includesResponse" >}}
 </details>
@@ -105,7 +105,7 @@ to search for `Observation` resources, plus the `Patient` resources they refer t
 {{< /tabs >}}
 
 <details>
-  <summary>Example response</summary>
+<summary>Example response</summary>
 
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="iterateResponse" >}}
 </details>
@@ -193,19 +193,19 @@ flowchart TD
 ```
 
 <details>
-  <summary>Example: Get a `Patient` and their `RelatedPerson`</summary>
+<summary>Example: Get a <code>Patient</code> and their <code>RelatedPerson</code></summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="TypeScript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="relatedPersonCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 In this example we:
@@ -238,19 +238,19 @@ flowchart TD
 ```
 
 <details>
-  <summary>Example: Get a `Patient` and their `RelatedPerson` modeled as a `Patient`</summary>
+<summary>Example: Get a <code>Patient</code> and their <code>RelatedPerson</code> modeled as a <code>Patient</code></summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="TypeScript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonPatientTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="relatedPersonPatientCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="relatedPersonPatientCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 This example is similar to the first, but includes an additional step.
@@ -285,19 +285,19 @@ flowchart TD
 ```
 
 <details>
-  <summary>Example: Find all practitioners and roles at a specific location</summary>
+<summary>Example: Find all practitioners and roles at a specific location</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="TypeScript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="locationPractitionerRoleTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="locationPractitionerRoleCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="locationPractitionerRoleCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 In this example, we:
@@ -330,19 +330,19 @@ flowchart TD
 ```
 
 <details>
-  <summary>Example: Search for all members of the `CareTeam` of a `Patient`</summary>
+<summary>Example: Search for all members of the <code>CareTeam</code> of a <code>Patient</code></summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="TypeScript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="TypeScript" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="careTeamTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="ts" blocks="careTeamCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/includes.ts" language="bash" blocks="careTeamCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 In this example we:

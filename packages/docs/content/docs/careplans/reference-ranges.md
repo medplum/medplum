@@ -43,19 +43,19 @@ A range is defined by the following properties:
 | `qualifiedInterval.range.condition` | How to interpret observation values in this interval                                       | "High"    |
 
 <details>
-  <summary>Example: 10 - 100 mg/dL</summary>
+<summary>Example: 10 - 100 mg/dL</summary>
 
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="midRange" >}}
 </details>
 
 <details>
-  <summary>Example: Less or equal to than 5 mg/dL </summary>
+<summary>Example: Less or equal to than 5 mg/dL </summary>
 
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="lowRange" >}}
 </details>
 
 <details>
-  <summary>Example: Greater than or equal to 20 mg/dL </summary>
+<summary>Example: Greater than or equal to 20 mg/dL </summary>
 
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="highRange" >}}
 </details>
@@ -86,9 +86,9 @@ The table below describes which patient attributes can be used to target referen
 | Racial/Ethnic Group | `qualifiedInterval.appliesTo`      | CodeableConcept | _(Example)_ [OMB Race Categories](https://build.fhir.org/ig/HL7/US-Core/ValueSet-omb-race-category.html) | Asian   |
 
 <details>
-  <summary>Example: Age and gender dependent reference ranges</summary>
+<summary>Example: Age and gender dependent reference ranges</summary>
 
-  The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and children.
+The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and children.
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="testosterone" >}}
 </details>
 
@@ -125,7 +125,7 @@ Reference ranges can be categorized into three different types:
 The type of reference range is specified in the `qualifiedInterval.category` field.
 
 <details>
-  <summary>Example</summary>
+<summary>Example</summary>
 
 {{< code-example file="packages/examples/src/careplans/reference-ranges.ts" language="ts" blocks="categories" >}}
 </details>

@@ -26,7 +26,7 @@ To create a [`Patient`](/docs/api/fhir/resources/patient):
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateResponse" >}}
 </details>
@@ -45,7 +45,7 @@ Just as with GraphQL queries, you can alias the newly created resource.
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationCreateResponseAliased" >}}
 </details>
@@ -77,7 +77,7 @@ This examples demonstrates how to create a mutation that creates a [`Communicati
 {{< /tabs >}}
 
 <details>
-  <summary>Example Response</summary>
+<summary>Example Response</summary>
 
 {{< code-example file="packages/examples/src/graphql/mutations.ts" language="ts" blocks="MutationUpdateResponse" >}}
 </details>

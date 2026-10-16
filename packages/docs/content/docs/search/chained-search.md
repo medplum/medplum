@@ -20,19 +20,19 @@ Chained search is only available when using the FHIR Rest API as described here.
 In the below example we search for all [`Observation`](/docs/api/fhir/resources/observation) resources that are linked to a [`Patient`](/docs/api/fhir/resources/patient) with the name of 'homer' using the syntax `patient.name=homer`. The way to read this is "search for all [`Observation`](/docs/api/fhir/resources/observation) resources that reference a [`Patient`](/docs/api/fhir/resources/patient) (using the `patient` search parameter) and has a name of 'homer'.
 
 <details>
-  <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
+<summary>Example: Search for any <a href="/docs/api/fhir/resources/observation"><code>Observations</code></a> about a <a href="/docs/api/fhir/resources/patient"><code>Patient</code></a> with the name 'homer'</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="simpleChainedSearchTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="simpleChainedSearchCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="simpleChainedSearchCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 The target resource for every link in the chain must be unambiguous. If a search parameter can reference multiple resource types, you must specify the resource type in your search.
@@ -44,37 +44,37 @@ In the above example, the `patient` parameter can only search for [`Patient`](/d
 The general syntax for a forward chained search is `<reference searchParam>:<referenced resource type>.<referenced resource searchParam>=<value>`.
 
 <details>
-  <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a subject that is a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
+<summary>Example: Search for any <a href="/docs/api/fhir/resources/observation"><code>Observations</code></a> about a subject that is a <a href="/docs/api/fhir/resources/patient"><code>Patient</code></a> with the name 'homer'</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="chainedSearchTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="chainedSearchCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="chainedSearchCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 You can include more than one link in your chained search. In the below example, we search for [`Observation`](/docs/api/fhir/resources/observation) resources that are linked to an [`Encounter`](/docs/api/fhir/resources/encounter) done by a service-provider with the name of 'Kaiser'.
 
 <details>
-  <summary>Example: A chained search that chains multiple parameters</summary>
+<summary>Example: A chained search that chains multiple parameters</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="multipleChainsTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="multipleChainsCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="multipleChainsCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 ## Reverse Chained Search
@@ -90,19 +90,19 @@ For reverse chaining, the referenced type of the link parameter is never ambiguo
 As another example, you may want to search for any [`Patient`](/docs/api/fhir/resources/patient) resources with a heart rate above 150 ([Loinc Code 8867-4](https://loinc.org/8867-4)) [`Observation`](/docs/api/fhir/resources/observation) made about them.
 
 <details>
-  <summary>Example: Search for any [`Patients`](/docs/api/fhir/resources/patient) that have had an observed heart rate above 150</summary>
+<summary>Example: Search for any <a href="/docs/api/fhir/resources/patient"><code>Patients</code></a> that have had an observed heart rate above 150</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="reverseChainedSearchTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="reverseChainedSearchCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="reverseChainedSearchCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 In the above example `_has:Observation` filters for [`Patient`](/docs/api/fhir/resources/patient) resources that have an [`Observation`](/docs/api/fhir/resources/observation). The `:subject` filters for [`Observation`](/docs/api/fhir/resources/observation) resources that reference a [`Patient`](/docs/api/fhir/resources/patient) in the subject field. This is based on our initial search for a [`Patient`](/docs/api/fhir/resources/patient). Finally, `:code=8867-4` filters for that specific code on the [`Observation`](/docs/api/fhir/resources/observation).
@@ -114,19 +114,19 @@ It is also possible to nest the `_has` parameter.
 In this example we search for a [`Specimen`](/docs/api/fhir/resources/specimen) that is referenced by a [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) that originated from a [`Procedure`](/docs/api/fhir/resources/procedure) on the date of `2023-11-12`.
 
 <details>
-  <summary>Example: Nested reversed chained search</summary>
+<summary>Example: Nested reversed chained search</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="nestedReverseChainTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="nestedReverseChainCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="nestedReverseChainCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>
 
 ### Combining forward and reverse chained search
@@ -136,17 +136,17 @@ You can mix and match chained parameters by combining a forward chained search w
 In the below example, we search for a [`Patient`](/docs/api/fhir/resources/patient) with an [`Observation`](/docs/api/fhir/resources/observation) that was performed by a [`CareTeam`](/docs/api/fhir/resources/careteam) that has a member with the name of 'bob'.
 
 <details>
-  <summary>Example: Combining reverse and forward chained search</summary>
+<summary>Example: Combining reverse and forward chained search</summary>
 
-  {{< tabs groupId="language" >}}
-    {{< tab value="ts" label="Typescript" >}}
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="ts" blocks="combinedChainTs" >}}
-    {{< /tab >}}
-    {{< tab value="cli" label="CLI" >}}
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="combinedChainCli" >}}
-    {{< /tab >}}
-    {{< tab value="curl" label="cURL" >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
 {{< code-example file="packages/examples/src/search/chained-search.ts" language="bash" blocks="combinedChainCurl" >}}
-    {{< /tab >}}
-  {{< /tabs >}}
+  {{< /tab >}}
+{{< /tabs >}}
 </details>

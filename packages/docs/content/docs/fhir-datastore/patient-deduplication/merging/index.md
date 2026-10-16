@@ -26,7 +26,7 @@ The `Patient.link` element is used to connect duplicate patient records via refe
   - `Patient.link.type` takes the value `"replaces"`
 
 <details>
-  <summary>Example: Linking patient records</summary>
+<summary>Example: Linking patient records</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="linkPatientRecords" >}}
 </details>
@@ -57,7 +57,7 @@ Use this approach if:
 - Duplicates are common.
 
 <details>
-  <summary>Example: Merge identifiers of two patient records</summary>
+<summary>Example: Merge identifiers of two patient records</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="mergeIdentifiers" >}}
 </details>
@@ -110,7 +110,7 @@ Rewriting all references to point to the master record simplifies queries for cl
 The most efficient way to retrieve all clinical data associated with a patient is to use the [`readPatientEverything`](/docs/sdk/core.medplumclient.readpatienteverything) operation. This operation returns all resources in the patient compartment in a single request (or paginated across multiple requests for large datasets). The operation supports pagination via the `_count` and `_offset` parameters, and the returned Bundle will include `next` links when additional pages are available. The example below demonstrates how to use `readPatientEverything` to rewrite all clinical data references, including handling pagination to process all resources.
 
 <details>
-  <summary>Example: Update References on Clinical Data</summary>
+<summary>Example: Update References on Clinical Data</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="updateReferences" >}}
 </details>
@@ -126,7 +126,7 @@ Maintaining references to source records is preferable when absolute clarity abo
 In some cases, you may want to completely disable merging for two records. This could be because they are similar, but have been determined not to be duplicates by a human review. In this case you can add them to a Do Not Match List. For more details, see the docs on [Do Not Match Lists](/docs/fhir-datastore/patient-deduplication/matching#do-not-match-lists).
 
 <details>
-  <summary>Example: Add record to a Do Not Match List</summary>
+<summary>Example: Add record to a Do Not Match List</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts" language="ts" blocks="doNotMatch" >}}
 </details>

@@ -75,13 +75,13 @@ The `item` field also provides additional data about the procedure, product, or 
 | `detail`           | A reference to the [`CarePlan`](/docs/api/fhir/resources/careplan) with details describing the service.                                                           |                                                         | CarePlan/improve-vision       |
 
 <details>
-  <summary>Example: A coverage eligibility request for a consultation</summary>
+<summary>Example: A coverage eligibility request for a consultation</summary>
 
 {{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="eligibilityRequest" >}}
 </details>
 
 <details>
-  <summary>Example: A plan coverage and general benefits check</summary>
+<summary>Example: A plan coverage and general benefits check</summary>
 
 {{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="generalBenefitsCheckRequest" >}}
 </details>
@@ -143,13 +143,13 @@ The `item` field is also an array on the `insurance` element of a [`CoverageElig
 {{< /note >}}
 
 <details>
-  <summary>Example: A coverage eligibility response for a basic consultation</summary>
+<summary>Example: A coverage eligibility response for a basic consultation</summary>
 
 {{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="eligibilityResponse" >}}
 </details>
 
 <details>
-  <summary>Example: A plan coverage and general benefits check response</summary>
+<summary>Example: A plan coverage and general benefits check response</summary>
 
 {{< code-example file="packages/examples/src/billing/insurance-eligibility-checks.ts" language="ts" blocks="generalBenefitsCheckResponse" >}}
 </details>

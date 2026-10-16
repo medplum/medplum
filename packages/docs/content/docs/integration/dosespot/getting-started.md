@@ -58,7 +58,7 @@ Example of executing the bot:
 For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
 
 <details>
-  <summary>Example of the MedicationRequest resource that could be created or updated by the bot</summary>
+<summary>Example of the MedicationRequest resource that could be created or updated by the bot</summary>
 
 ```typescript
 {
@@ -200,7 +200,7 @@ This bot gives you the ability to sync prescription history from SureScripts bac
 The Bot will create or update MedicationRequest resources in Medplum for the specified date range and patient.
 
 <details>
-  <summary>Please note that when testing with the DoseSpot sandbox, you must use this patient:</summary>
+<summary>Please note that when testing with the DoseSpot sandbox, you must use this patient:</summary>
 
 ```typescript
 {
@@ -263,7 +263,7 @@ const medicationRequests = await medplum.execute(DOSESPOT_MEDICATION_HISTORY_BOT
 For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
 
 <details>
-  <summary>Example of a MedicationRequest resource that could be created the bot</summary>
+<summary>Example of a MedicationRequest resource that could be created the bot</summary>
 
 ```typescript
 {
@@ -420,7 +420,7 @@ If an NPI identifier is present on the Practitioner resource, it **must** be val
 {{< /warning >}}
 
 <details>
-  <summary>Example of a Practitioner resource with all required fields</summary>
+<summary>Example of a Practitioner resource with all required fields</summary>
 
 ```typescript
 {

@@ -76,7 +76,7 @@ Most tests require setting up some resources in the mock environment before runn
 The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
 <details>
-  <summary>Example: Create Resources</summary>
+<summary>Example: Create Resources</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="create-resources" >}}
 </details>
@@ -90,7 +90,7 @@ The `MockClient` offers the `executeBatch` helper function to easily execute bat
 The below example is from the [find matching patients bot tests](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts). Additionally, you can view the [patient data here](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/patient-data.json).
 
 <details>
-  <summary>Example: Creating a large set of patient data with a batch request</summary>
+<summary>Example: Creating a large set of patient data with a batch request</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts" language="ts" blocks="importPatientData,createBatchData" >}}
 </details>
@@ -106,7 +106,7 @@ If you have a dev project that already has rich data, you can use the Medplum CL
 The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
-  <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
+<summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
 
 {{< code-example file="packages/examples/src/bots/unit-testing-bots.ts" language="ts" blocks="cliAsTransaction" >}}
 </details>
@@ -134,7 +134,7 @@ To check the bot's response, simply check the return value of your `handler` fun
 The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
 
 <details>
-  <summary>Example: Query the results</summary>
+<summary>Example: Query the results</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="query-results" >}}
 </details>
@@ -143,7 +143,7 @@ The after running the Bot, the [finalize-report bot's tests](https://github.com/
 Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning). This can be accomplished by calling your bot twice, and using your test framework's `spyOn` functions to ensure that no resources are created/updated in the second call.
 
 <details>
-  <summary>Example: Idempotency test</summary>
+<summary>Example: Idempotency test</summary>
 
 {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="test-idempotent" >}}
 </details>

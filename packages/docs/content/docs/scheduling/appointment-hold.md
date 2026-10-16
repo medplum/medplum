@@ -127,11 +127,11 @@ Scheduling checks availability for each Actor with respect to their local time z
 Medplum Scheduling starts from a [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) as a representation of a schedulable appointment type. Medplum Scheduling requires embedding a reference to the specific `HealthcareService` in an extension.
 
 <details>
-  <summary>Why this extension?</summary>
+<summary>Why this extension?</summary>
 
-  While codes are a very flexible way to build connections to services, they also create a lot of opportunity for ambiguity. Medplum Scheduling has decided to use explicit references to specific HealthcareServices to resolve that tension.
+While codes are a very flexible way to build connections to services, they also create a lot of opportunity for ambiguity. Medplum Scheduling has decided to use explicit references to specific HealthcareServices to resolve that tension.
 
-  In FHIR R5+ the type of these `serviceType` fields is `CodeableReference(HealthcareService)`, meaning that it will eventually be valid to store a `Reference<HealthcareService>` in this attribute directly. In the meantime, in our FHIR R4 implementation we mimic this feature by using a custom extension.
+In FHIR R5+ the type of these `serviceType` fields is `CodeableReference(HealthcareService)`, meaning that it will eventually be valid to store a `Reference<HealthcareService>` in this attribute directly. In the meantime, in our FHIR R4 implementation we mimic this feature by using a custom extension.
 </details>
 
 ```json

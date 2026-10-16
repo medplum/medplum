@@ -196,16 +196,77 @@ function writePage(page, urlBySource) {
 
   // The conversions below are for markdown and MDX, so hide the code in fenced blocks from them: they would drop
   // its import lines and # comments, and rewrite its JSX
-  const code = maskCodeBlocks(inlinePartials(page.body, path.dirname(sourcePath)));
+  const code = maskCodeBlocks(dedentDetails(inlinePartials(page.body, path.dirname(sourcePath))));
   let body = code.masked;
   body = convertBody(body, sourcePath);
   body = copyAssets(body, page, bundleDir);
   body = rewriteDocLinks(body, sourcePath, urlBySource);
+  body = fixSummaries(body);
 
   const frontMatter = convertFrontMatter(page, body);
   body = body.replace(/^# .+\n?/m, ''); // The layout renders the title
 
   fs.writeFileSync(destFile, code.restore(cleanupWhitespace(frontMatter + '\n\n' + body.trimStart())), 'utf8');
+}
+
+// MDX ignores the indentation of markdown inside JSX like <details>; to CommonMark, four spaces make a code block (a
+// fence indented that far shows as text). Remove the common indentation of each <details> block's prose. Fenced code
+// moves exactly as far as its opening fence, so the code's own indentation is kept.
+function dedentDetails(body) {
+  return body.replace(/^([ \t]*<details\b[^>]*>[ \t]*\n)([\s\S]*?)(\n[ \t]*<\/details>)/gm, (_m, open, inner, close) => {
+    const lines = inner.split('\n');
+    const leading = (line) => /^[ \t]*/.exec(line)[0].length;
+    const indents = [];
+    let fence = '';
+    for (const line of lines) {
+      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker && (!fence || marker.startsWith(fence))) {
+        fence = fence ? '' : marker;
+      } else if (!fence && line.trim()) {
+        indents.push(leading(line));
+      }
+    }
+    const indent = indents.length ? Math.min(...indents) : 0;
+    if (!indent) {
+      return open + inner + close;
+    }
+    fence = '';
+    let shift = 0;
+    const out = lines.map((line) => {
+      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker && !fence) {
+        fence = marker;
+        shift = Math.min(indent, leading(line));
+      } else if (marker && marker.startsWith(fence)) {
+        fence = '';
+        return line.slice(Math.min(shift, leading(line)));
+      } else if (!fence) {
+        return line.slice(Math.min(indent, leading(line)));
+      }
+      return line.slice(Math.min(shift, leading(line)));
+    });
+    return open + out.join('\n') + close;
+  });
+}
+
+// MDX renders markdown inside <summary>, but to CommonMark it's raw HTML, so convert the inline markdown there (code,
+// bold, italics, and links, including [text][ref] references to the page's link definitions) to HTML
+function fixSummaries(body) {
+  const refs = new Map([...body.matchAll(/^ {0,3}\[([^\]]+)\]:\s*(\S+)/gm)].map((m) => [m[1].toLowerCase(), m[2]]));
+  const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return body.replace(/<summary>([\s\S]*?)<\/summary>/g, (_match, inner) => {
+    const codes = [];
+    let html = inner.replace(/`([^`]+)`/g, (_m, code) => `\u0001${codes.push(`<code>${escape(code)}</code>`) - 1}\u0001`);
+    html = html
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (m, text, ref) => {
+        const url = refs.get((ref || text).toLowerCase());
+        return url ? `<a href="${url}">${text}</a>` : m;
+      })
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/(?<![\w*])[*_](?=\S)(.+?)(?<=\S)[*_](?![\w*])/g, '<em>$1</em>');
+    return `<summary>${html.replace(/\u0001(\d+)\u0001/g, (_m, i) => codes[Number(i)])}</summary>`;
+  });
 }
 
 // Replaces the lines inside each fenced code block with a placeholder line, keeping the fence lines themselves (whose

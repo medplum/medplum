@@ -38,7 +38,7 @@ The `issuer` is typically the state (e.g., "State of New York"). Although this e
 To augment the `issuer`, the Davinci PDEX implementation guide [defines an extension](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/StructureDefinition-practitioner-qualification.html) for `Practitioner.qualification`, named `practitioner-qualification`. This extension contains an element, `whereValid` , which allows you to represent medical license jurisdictions using USPS postal codes for convenience.
 
 <details>
-  <summary>Example</summary>
+<summary>Example</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/provider-credentials.ts" language="ts" blocks="practitioner-head,qualifications-head,license,qualifications-tail,practitioner-tail" >}}
 </details>
@@ -51,7 +51,7 @@ A provider's specialty certifications can also be represented Unlike licensure, 
 - **Issuer: **The issuer for specialist certifications are typically professional certification boards (e.g. American Board of Internal Medicine or American College of Obstetricians and Gynecologists )
 
 <details>
-  <summary>Example</summary>
+<summary>Example</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/provider-credentials.ts" language="ts" blocks="practitioner-head,qualifications-head,specialty,qualifications-tail,practitioner-tail" >}}
 </details>

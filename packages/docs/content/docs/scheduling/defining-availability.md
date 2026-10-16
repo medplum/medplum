@@ -76,14 +76,14 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 | `availability`      | [Nested Extension](#availability-extension)                 | Always available                            | Weekly recurring availability windows. When set, appointments must fit inside these windows.                                                                            | Not permitted (use `HealthcareService.availableTime` instead) |                                                           |
 
 <details>
-<summary>Example of the `SchedulingParameters` extension on a `HealthcareService`</summary>
+<summary>Example of the <code>SchedulingParameters</code> extension on a <code>HealthcareService</code></summary>
 
 {{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="schedulingParamsHealthcareService" >}}
 
 </details>
 
 <details>
-<summary>Example of the `SchedulingParameters` extension on a `Schedule`</summary>
+<summary>Example of the <code>SchedulingParameters</code> extension on a <code>Schedule</code></summary>
 
 {{< code-example file="packages/examples/src/scheduling/defining-availability.ts" language="ts" blocks="schedulingParamsSchedule" >}}
 

@@ -164,7 +164,7 @@ Using this feature in the browser can potentially cause CORS issues. If you are 
 However, if you want to allow users to download the [`Binary`](/docs/api/fhir/resources/binary) you will need to use the Medplum provided `download` helper function. This function takes a URL in the `Binary/{id}` format. This string is included in the presigned URL, so you will need to parse it to use the function.
 
 <details>
-  <summary>Example: Download a Binary</summary>
+<summary>Example: Download a Binary</summary>
 
 {{< code-example file="packages/examples/src/fhir-datastore/binary-data.ts" language="ts" blocks="downloadBinary" >}}
 </details>
