@@ -837,7 +837,11 @@ describe('Cron across linked projects', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    const shared = await createTestProject({ withClient: true, withRepo: true });
+    const shared = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      project: { exportedResourceType: ['Bot'] },
+    });
     sharedProject = shared.project;
     const sharedRepo = shared.repo;
     systemRepo = sharedRepo.getSystemRepo();
@@ -970,7 +974,7 @@ describe('Cron across linked projects', () => {
       const shared = await createTestProject({
         withClient: true,
         withRepo: true,
-        project: { features: sharedFeatures as [] },
+        project: { features: sharedFeatures as [], exportedResourceType: ['Bot'] },
       });
       const publisherRepo = shared.repo;
       const bot = await publisherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'published-bot' });

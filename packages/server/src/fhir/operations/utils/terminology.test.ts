@@ -69,7 +69,10 @@ describe('findTerminologyResource', () => {
   test('Prefers current Project over linked Project with newer version and date', () =>
     withTestContext(async () => {
       const url = 'http://example.com/cs-' + randomUUID();
-      const { project: linked, repo: linkedRepo } = await createTestProject({ withRepo: true });
+      const { project: linked, repo: linkedRepo } = await createTestProject({
+        withRepo: true,
+        project: { exportedResourceType: ['CodeSystem'] },
+      });
       await createCodeSystem(linkedRepo, { url, version: '9.9.9', date: '2030-01-01' });
 
       const { repo } = await createTestProject({ withRepo: true, project: linkTo(linked) });
@@ -81,9 +84,18 @@ describe('findTerminologyResource', () => {
   test('Prefers linked Projects in link order', () =>
     withTestContext(async () => {
       const url = 'http://example.com/cs-' + randomUUID();
-      const { project: p1, repo: repo1 } = await createTestProject({ withRepo: true });
-      const { project: p2, repo: repo2 } = await createTestProject({ withRepo: true });
-      const { project: p3, repo: repo3 } = await createTestProject({ withRepo: true });
+      const { project: p1, repo: repo1 } = await createTestProject({
+        withRepo: true,
+        project: { exportedResourceType: ['CodeSystem'] },
+      });
+      const { project: p2, repo: repo2 } = await createTestProject({
+        withRepo: true,
+        project: { exportedResourceType: ['CodeSystem'] },
+      });
+      const { project: p3, repo: repo3 } = await createTestProject({
+        withRepo: true,
+        project: { exportedResourceType: ['CodeSystem'] },
+      });
       const cs1 = await createCodeSystem(repo1, { url });
       const cs2 = await createCodeSystem(repo2, { url });
       const cs3 = await createCodeSystem(repo3, { url });
@@ -101,7 +113,10 @@ describe('findTerminologyResource', () => {
     withTestContext(async () => {
       const url = 'http://example.com/cs-' + randomUUID();
       const base = await createCodeSystem(getTestProjectSystemRepo(), { meta: { project: r4ProjectId }, url });
-      const { project: linked, repo: linkedRepo } = await createTestProject({ withRepo: true });
+      const { project: linked, repo: linkedRepo } = await createTestProject({
+        withRepo: true,
+        project: { exportedResourceType: ['CodeSystem'] },
+      });
       const linkedCodeSystem = await createCodeSystem(linkedRepo, { url });
 
       const { repo: unlinkedRepo } = await createTestProject({ withRepo: true });
@@ -117,7 +132,10 @@ describe('findTerminologyResource', () => {
   test('ownProjectOnly selects the current Project resource ranked below a linked one', () =>
     withTestContext(async () => {
       const url = 'http://example.com/cs-' + randomUUID();
-      const { project: linked, repo: linkedRepo } = await createTestProject({ withRepo: true });
+      const { project: linked, repo: linkedRepo } = await createTestProject({
+        withRepo: true,
+        project: { exportedResourceType: ['CodeSystem'] },
+      });
       await createCodeSystem(linkedRepo, { url, content: 'complete' });
 
       const { repo } = await createTestProject({ withRepo: true, project: linkTo(linked) });
@@ -131,7 +149,11 @@ describe('findTerminologyResource', () => {
   test('Removes extended metadata from the resolved resource', () =>
     withTestContext(async () => {
       const url = 'http://example.com/cs-' + randomUUID();
-      const { project, repo } = await createTestProject({ withRepo: true, extendedMode: false });
+      const { project, repo } = await createTestProject({
+        withRepo: true,
+        extendedMode: false,
+        project: { exportedResourceType: ['CodeSystem'] },
+      });
       await createCodeSystem(repo, { url });
 
       const resolved = await findTerminologyResource(repo, 'CodeSystem', url);

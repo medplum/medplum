@@ -162,6 +162,7 @@ describe('Execute', () => {
 
     const testSetup = await createTestProject({
       project: {
+        exportedResourceType: ['Bot'],
         systemSecret: [
           { name: 'secret1', valueString: 'proj1systemValue1' },
           { name: 'secret2', valueString: 'proj1systemValue2' },
