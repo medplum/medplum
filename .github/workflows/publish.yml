@@ -12,20 +12,18 @@ permissions:
   contents: read
 
 jobs:
-  build_and_check:
-    name: publish
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      NODE_VERSION: '22'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     permissions:
-      contents: write # Required to upload release assets
-      id-token: write
-      pull-requests: write
+      contents: read
+    outputs:
+      is_latest: ${{ steps.check-latest.outputs.result }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,20 +52,12 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
 
-      # publish.sh authenticates only via trusted publishing (OIDC), so fail early if this npm
-      # lacks it. `npm trust` (npm >= 11.10.0) is the closest public probe for that support.
       - name: Install npm from packageManager
-        run: |
-          corepack enable npm
-          if ! npm trust --help > /dev/null 2>&1; then
-            echo "::error::npm $(npm -v) does not support trusted publishing (no 'npm trust' command)"
-            exit 1
-          fi
+        run: corepack enable npm
 
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -102,12 +92,69 @@ jobs:
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
+      # The publish jobs consume this one build, so re-running a failed publish job republishes
+      # (and hash-checks) exactly the bytes the first attempt built.
+      - name: Upload build output
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: packages/*/dist
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
+
+  publish_npm:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # Required for npm trusted publishing and provenance
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      # publish.sh authenticates only via trusted publishing (OIDC), so fail early if this npm
+      # lacks it. `npm trust` (npm >= 11.10.0) is the closest public probe for that support.
+      - name: Install npm from packageManager
+        run: |
+          corepack enable npm
+          if ! npm trust --help > /dev/null 2>&1; then
+            echo "::error::npm $(npm -v) does not support trusted publishing (no 'npm trust' command)"
+            exit 1
+          fi
+
+      - name: Download build output
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: packages
+
       - name: Publish to NPM
         run: ./scripts/publish.sh
 
-      - name: Sync example repos
-        if: steps.check-latest.outputs.result == 'true'
-        run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
+  publish_docker:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download build output
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: packages
 
       - name: Login to Docker Hub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -127,7 +174,7 @@ jobs:
 
       - name: Build and push server Docker image
         run: |
-          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+          if [ "${{ needs.build.outputs.is_latest }}" = "true" ]; then
             ./scripts/build-docker-server.sh --release --latest
           else
             ./scripts/build-docker-server.sh --release
@@ -137,13 +184,51 @@ jobs:
 
       - name: Build and push app Docker image
         run: |
-          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+          if [ "${{ needs.build.outputs.is_latest }}" = "true" ]; then
             ./scripts/build-docker-app.sh --release --latest
           else
             ./scripts/build-docker-app.sh --release
           fi
         env:
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
+
+  # Runs after the NPM publish so the example repos never reference unpublished versions
+  sync_examples:
+    needs: [build, publish_npm]
+    if: needs.build.outputs.is_latest == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Sync example repos
+        run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
+
+  # Runs after the NPM publish because the layer installs the new bot-layer dependencies from the registry
+  deploy_bot_layer:
+    needs: [build, publish_npm]
+    if: needs.build.outputs.is_latest == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC authentication with AWS
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Install npm from packageManager
+        run: corepack enable npm
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -152,7 +237,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy bot layer
-        if: steps.check-latest.outputs.result == 'true' # only deploy latest versions
         run: ./scripts/deploy-bot-layer.sh
 
   build_agent_win64:
