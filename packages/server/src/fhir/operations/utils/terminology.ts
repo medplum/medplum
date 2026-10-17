@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, WithId } from '@medplum/core';
-import { badRequest, EMPTY, OperationOutcomeError, Operator } from '@medplum/core';
+import type { AccessPolicyInteraction, Filter, WithId } from '@medplum/core';
+import { badRequest, EMPTY, forbidden, OperationOutcomeError, Operator } from '@medplum/core';
 import type {
   CodeSystem,
   CodeSystemProperty,
@@ -37,6 +37,8 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   options?: {
     version?: string;
     ownProjectOnly?: boolean;
+    /** Also require permission for this interaction on the resource found. */
+    requireInteraction?: AccessPolicyInteraction;
   }
 ): Promise<WithId<T>> {
   if (!url) {
@@ -70,6 +72,9 @@ export async function findTerminologyResource<T extends TerminologyResource>(
 
   const ranks = projectRanks(repo);
   candidates.sort((a, b) => compareTerminologyResources(a, b, ranks));
+  if (options?.requireInteraction && !repo.canPerformInteraction(options.requireInteraction, candidates[0])) {
+    throw new OperationOutcomeError(forbidden);
+  }
   return repo.removeHiddenFields(candidates[0]); // May need to strip extended mode
 }
 

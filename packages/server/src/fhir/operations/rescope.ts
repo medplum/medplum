@@ -64,9 +64,11 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
     projectId = parsedProjectId;
   }
 
-  // Test if this caller can actually read the user resource
-  // The read will throw NOT FOUND if user does not have permissions
-  const user = await ctx.repo.readResource<User>('User', userId);
+  // Caller needs UPDATE perms for the user
+  // The read throws NOT FOUND if the caller cannot read the user, or FORBIDDEN if they cannot update it
+  const user = await ctx.repo.readResource<User>('User', userId, {
+    requireInteraction: AccessPolicyInteraction.UPDATE,
+  });
 
   if (!(await isCallerAllowedToRescopeUser(ctx, user, params))) {
     return [forbidden];
@@ -100,11 +102,6 @@ async function isCallerAllowedToRescopeUser(
     (params.scope === 'project' && !sufficientRoleForProjectRescope) ||
     (params.scope === 'server' && !sufficientRoleForServerRescope)
   ) {
-    return false;
-  }
-
-  // Caller needs UPDATE perms for the user
-  if (!ctx.repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, user)) {
     return false;
   }
 
