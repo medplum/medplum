@@ -1,3 +1,51 @@
+.eventContent {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: inherit;
+  align-items: inherit;
+  gap: inherit;
+  min-width: 0;
+  min-height: 0;
+}
+
+.eventContent[data-blocked] {
+  .title,
+  .actors {
+    font-size: 12px;
+    line-height: calc(14 / 12);
+  }
+
+  .title {
+    font-weight: 600;
+  }
+
+  .actors {
+    padding-top: 0;
+  }
+
+  &:not([data-one-line]) .title {
+    padding-block: 3px 2px;
+  }
+}
+
+.eventContent[data-one-line] {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+
+  .title {
+    position: static !important;
+    flex-shrink: 0;
+  }
+
+  .actors {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 /* Sits on the title's first line, sized to its text. */
 .icon {
   flex-shrink: 0;

@@ -347,6 +347,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
         initialView="timeGridWeek"
         slotMinHeight={38}
+        eventShortHeight={33}
         colorScheme={colorScheme}
         displayEventEnd={false}
         eventTimeFormat={{ timeStyle: 'short' }}

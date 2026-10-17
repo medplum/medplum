@@ -465,14 +465,20 @@ const followUpVisit = {
  * @param hour - The hour it starts at.
  * @param minutes - How long it lasts.
  * @param recurring - Whether it is an occurrence of a recurring series.
+ * @param status - The appointment's status.
  * @returns The appointment.
  */
-function followUpAppointment(hour: number, minutes: number, recurring = false): Appointment {
+function followUpAppointment(
+  hour: number,
+  minutes: number,
+  recurring = false,
+  status: Appointment['status'] = 'booked'
+): Appointment {
   const start = new Date(2020, 4, 5, hour);
   return {
     resourceType: 'Appointment',
-    id: `follow-up-${minutes}`,
-    status: 'booked',
+    id: `follow-up-${hour}`,
+    status,
     start: start.toISOString(),
     end: new Date(start.getTime() + minutes * 60_000).toISOString(),
     extension: recurring ? [{ url: RecurrenceIdExtensionURI, valueDateTime: start.toISOString() }] : undefined,
@@ -485,17 +491,27 @@ function followUpAppointment(hour: number, minutes: number, recurring = false): 
   };
 }
 
-// Events too short for two lines name the patient beside the service type.
 export const ShortAppointments = (): JSX.Element => {
+  const blockedStart = new Date(2020, 4, 5, 15);
   const sources: MultiCalendarSource[] = [
     {
       schedule: DrAliceSmithSchedule,
-      slots: [],
+      slots: [
+        {
+          resourceType: 'Slot',
+          id: 'short-blocked',
+          status: 'busy-unavailable',
+          start: blockedStart.toISOString(),
+          end: new Date(blockedStart.getTime() + 15 * 60_000).toISOString(),
+          schedule: createReference(DrAliceSmithSchedule),
+        },
+      ],
       appointments: [
         followUpAppointment(9, 15, true),
         followUpAppointment(10, 20),
         followUpAppointment(11, 25),
         followUpAppointment(13, 30),
+        followUpAppointment(14, 15, false, 'pending'),
       ],
     },
   ];

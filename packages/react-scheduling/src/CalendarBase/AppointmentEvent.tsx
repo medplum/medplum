@@ -67,7 +67,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
         {hasServiceType ? (
           <ServiceTypeDisplay appointment={appointment} inherit />
         ) : (
-          <span className={classes.untyped}>Appointment (no service type)</span>
+          <span>Appointment (no service type)</span>
         )}
       </div>
       {opened && (
