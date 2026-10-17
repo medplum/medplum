@@ -12,6 +12,7 @@ import {
   DrOkaforPractitioner,
   DrOkaforSchedule,
   DrRiveraSchedule,
+  ExamRoomA,
   ExamRoomASchedule,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
@@ -325,11 +326,14 @@ describe('AppointmentRescheduleForm', () => {
       expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
     });
 
-    test('Names who a move would take off the visit, and still offers the move', async () => {
+    test.each([
+      ['its Schedule is', () => medplum.updateResource({ ...ExamRoomASchedule, active: false })],
+      ['it is', () => medplum.updateResource({ ...ExamRoomA, status: 'inactive' })],
+    ])('Names who a move takes off the visit when %s inactive, and still offers it', async (_, deactivate) => {
       // A schedule that can no longer be offered back cannot be moved with the visit, and
       // `$reschedule` drops the actors of the schedules it moves off. Refusing outright
       // would leave the visit stuck, so it is said out loud instead.
-      await medplum.updateResource({ ...ExamRoomASchedule, active: false });
+      await deactivate();
       const post = vi.spyOn(medplum, 'post');
 
       await setup(medplum);

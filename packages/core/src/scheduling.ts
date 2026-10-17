@@ -13,9 +13,11 @@ import type {
   Schedule,
 } from '@medplum/fhirtypes';
 import { HTTP_TERMINOLOGY_HL7_ORG } from './constants';
+import type { Dereference } from './types';
 import { isReference } from './types';
 import type { WithId } from './utils';
 import {
+  assertNever,
   createReference,
   deepClone,
   flatMapFilter,
@@ -585,6 +587,28 @@ export function serviceTypeIncludesAllServices(serviceType: CodeableConcept[] | 
       )
     ) ?? false
   );
+}
+
+/**
+ * Returns whether a Schedule actor is turned off: `active: false` for actor types with an `active` flag, or a status
+ * of `inactive` for a Location or Device. Scheduling operations refuse a Schedule whose actor is inactive.
+ * @param actor - The actor resource.
+ * @returns True if the actor is inactive.
+ */
+export function isScheduleActorInactive(actor: Dereference<Schedule['actor'][number]>): boolean {
+  switch (actor.resourceType) {
+    case 'Practitioner':
+    case 'HealthcareService':
+    case 'Patient':
+    case 'PractitionerRole':
+    case 'RelatedPerson':
+      return actor.active === false;
+    case 'Location':
+    case 'Device':
+      return actor.status === 'inactive';
+    default:
+      return assertNever(actor);
+  }
 }
 
 /**

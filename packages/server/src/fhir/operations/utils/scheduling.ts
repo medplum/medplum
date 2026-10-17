@@ -12,6 +12,7 @@ import {
   getReferenceString,
   isDefined,
   isResource,
+  isScheduleActorInactive,
   MEDPLUM_VERSION,
   OperationOutcomeError,
   Operator,
@@ -574,6 +575,25 @@ export function assertAllLoaded<T extends Resource>(
   }
 }
 
+/**
+ * Rejects scheduling onto a Schedule with an inactive actor. An actor the caller can't read
+ * is not checked.
+ *
+ * @param repo - The caller's repository.
+ * @param schedules - The schedules being booked onto.
+ */
+export async function assertActorsActive(repo: Repository, schedules: WithPath<WithId<Schedule>>[]): Promise<void> {
+  const refs = schedules.flatMap((schedule) =>
+    schedule.actor.map((actor, idx) => withPath(actor, `${getPath(schedule)}.actor[${idx}]`))
+  );
+  const actors = await repo.readReferences(refs);
+  actors.forEach((actor, idx) => {
+    if (isResource(actor) && isScheduleActorInactive(actor)) {
+      throw new OperationOutcomeError(badRequest(`${actor.resourceType} is inactive`, getPath(refs[idx])));
+    }
+  });
+}
+
 // Gets SchedulingParameters information for a list of Schedule resources with
 // respect to a specific HealthcareService. Loads `Schedule.actor` references
 // to look for timezone information.
@@ -597,9 +617,12 @@ export async function getSchedulingParametersGroup(
     }
   });
 
-  const actors = await repo
-    .readReferences(schedules.map((schedule) => schedule.actor[0]))
-    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
+  const [actors] = await Promise.all([
+    repo
+      .readReferences(schedules.map((schedule) => schedule.actor[0]))
+      .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' })),
+    assertActorsActive(repo, schedules),
+  ]);
 
   const serviceParams = getHealthcareServiceSchedulingParameters(healthcareService);
 

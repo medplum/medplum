@@ -25,6 +25,7 @@ import {
   getSchedulingRequirements,
   getSchedulingTimezone,
   hasSchedulingParameters,
+  isScheduleActorInactive,
   minutesToSchedulingDuration,
   PARTICIPATION_TYPE_SYSTEM,
   PRIMARY_PERFORMER_CODE,
@@ -761,5 +762,18 @@ describe('minutesToSchedulingDuration', () => {
 
   test.each([0, 1, 30, 60, 1440])('round trips %i through schedulingDurationToMinutes', (minutes) => {
     expect(schedulingDurationToMinutes(minutesToSchedulingDuration(minutes))).toBe(minutes);
+  });
+});
+
+describe('isScheduleActorInactive', () => {
+  test.each([
+    [{ resourceType: 'Practitioner', active: false }, true],
+    [{ resourceType: 'Practitioner' }, false],
+    [{ resourceType: 'Location', status: 'inactive' }, true],
+    [{ resourceType: 'Location', status: 'suspended' }, false],
+    [{ resourceType: 'Device', status: 'inactive' }, true],
+    [{ resourceType: 'PractitionerRole', active: false }, true],
+  ] as const)('%o is inactive: %s', (actor, expected) => {
+    expect(isScheduleActorInactive(actor)).toBe(expected);
   });
 });

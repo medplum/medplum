@@ -6,6 +6,7 @@ import {
   getDisplayString,
   getReferenceString,
   isDefined,
+  isScheduleActorInactive,
   resolveId,
   serviceTypeIncludesAllServices,
   serviceTypeIncludesService,
@@ -14,7 +15,7 @@ import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
-import type { ActorResource, NewActorType } from './ActorPage/actorDraft';
+import type { NewActorType } from './ActorPage/actorDraft';
 import type { ConfigPanelItem } from './ConfigPanel/ConfigPanel';
 import type { ConfigStatus } from './StatusBadge';
 
@@ -111,15 +112,6 @@ export function withStoredService(
 }
 
 /**
- * Whether an actor is turned off: a provider marked inactive, or a room or device whose status is `inactive`.
- * @param resource - The provider, room, or device.
- * @returns True when it is inactive.
- */
-export function isActorInactive(resource: ActorResource): boolean {
-  return resource.resourceType === 'Practitioner' ? resource.active === false : resource.status === 'inactive';
-}
-
-/**
  * Whether an actor can be booked as far as its own status and its Schedule's go. The actor's own status wins:
  * switching the Schedule back on wouldn't make an inactive actor bookable.
  * @param resource - The provider, room, or device.
@@ -127,7 +119,7 @@ export function isActorInactive(resource: ActorResource): boolean {
  * @returns Its status.
  */
 export function getActorStatus(resource: ConfigurableActorResource, scheduleActive: boolean | undefined): ConfigStatus {
-  if (isActorInactive(resource)) {
+  if (isScheduleActorInactive(resource)) {
     return 'inactive';
   }
   return scheduleActive === false ? 'schedule-inactive' : 'active';
@@ -202,7 +194,7 @@ export function buildActorItems(
       id: actor.resource.id,
       label: getDisplayString(actor.resource),
       selected: isActorSelected(actor, selection),
-      inactive: isActorInactive(actor.resource),
+      inactive: isScheduleActorInactive(actor.resource),
       notices: getActorNotices(actor),
     }))
     .filter((item) => matchesFilter(item.label, filter));
