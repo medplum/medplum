@@ -6,7 +6,7 @@ sidebar_position: 2
 
 :::info[Paid Add-On]
 
-Synchronization to [Snowflake](https://www.snowflake.com/) is available through the Data Warehouse Connector (Beta), an optional add-on for paid plans. A Medplum team member creates and enables the pipeline for your project and uses [Secure Data Sharing](https://docs.snowflake.com/en/user-guide/data-sharing-intro) to share the data with you. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
+Synchronization to [Snowflake](https://www.snowflake.com/) is available through the Data Warehouse Connector, an optional add-on for paid plans. A Medplum team member creates and enables the pipeline for your project and uses [Secure Data Sharing](https://docs.snowflake.com/en/user-guide/data-sharing-intro) to share the data with you. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
 
 :::
 

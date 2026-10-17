@@ -6,7 +6,7 @@ sidebar_position: 3
 
 :::info[Paid Add-On]
 
-Redshift sync is available through the Data Warehouse Connector (Beta), an optional add-on for paid plans. A Medplum team member creates and enables the pipeline for your project. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
+Redshift sync is available through the Data Warehouse Connector, an optional add-on for paid plans. A Medplum team member creates and enables the pipeline for your project. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
 
 :::
 

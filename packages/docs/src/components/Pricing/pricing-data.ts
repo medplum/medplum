@@ -142,7 +142,7 @@ const integrationRows: readonly ComparisonRow[] = [
     },
   },
   {
-    label: 'Data Warehouse Connector (Beta)',
+    label: 'Data Warehouse Connector',
     docsHref: '/docs/analytics/redshift',
     description: 'Sync FHIR resources on a schedule for analytics in Snowflake, Amazon Redshift, and other engines.',
     values: {
