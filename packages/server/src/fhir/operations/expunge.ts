@@ -17,7 +17,9 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
 import type { Repository } from '../repo';
+import { SelectQuery } from '../sql';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildBinaryIds } from './utils/binary';
 
@@ -60,6 +62,9 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   }
 }
 
+// Storage objects are deleted after each batch commits, so an interrupted job can orphan up to one batch of them
+const binaryBatchSize = 1000;
+
 export class Expunger {
   readonly repo: Repository;
   readonly compartment: string;
@@ -80,6 +85,7 @@ export class Expunger {
 
   async expungeByResourceType(resourceType: ResourceType): Promise<void> {
     if (resourceType === 'Binary') {
+      await this.expungeProjectBinaries();
       return;
     }
 
@@ -98,6 +104,27 @@ export class Expunger {
       { code: '_deleted', operator: Operator.EQUALS, value: 'true' },
       { code: '_project', operator: Operator.EQUALS, value: this.compartment },
     ]);
+  }
+
+  /**
+   * Binary is not searchable, so select Binary ids by projectId directly, including deleted rows.
+   * This only matches when expunging a Project; other compartments expunge only referenced Binaries.
+   */
+  private async expungeProjectBinaries(): Promise<void> {
+    const batchSize = Math.min(this.maxResultsPerPage, binaryBatchSize);
+    let ids: string[];
+    do {
+      // Read from the writer so a lagging replica cannot return Binaries that were just expunged
+      const rows = await this.repo.sqlRead<{ id: string }>(
+        new SelectQuery('Binary').column('id').where('projectId', '=', this.compartment).limit(batchSize),
+        'Binary',
+        { mode: DatabaseMode.WRITER }
+      );
+      ids = rows.map((r) => r.id);
+      if (ids.length) {
+        await this.repo.expungeResources('Binary', ids);
+      }
+    } while (ids.length === batchSize);
   }
 
   private async expungeMatching(resourceType: ResourceType, filters: Filter[]): Promise<void> {

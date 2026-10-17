@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, LOINC } from '@medplum/core';
-import type { AuditEvent, Observation, Patient } from '@medplum/fhirtypes';
+import type { AuditEvent, Binary, Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -9,6 +9,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getCacheRedis } from '../../redis';
+import { getBinaryStorage } from '../../storage/loader';
 import {
   createTestProject,
   getSuperAdminAccessToken,
@@ -255,6 +256,14 @@ describe('Expunge', () => {
     });
     const deletedPatient = await repo.createResource<Patient>({ resourceType: 'Patient' });
     await repo.deleteResource('Patient', deletedPatient.id);
+    // Unreferenced Binaries, which the compartment search cannot find
+    const binary = await repo.createResource<Binary>({
+      resourceType: 'Binary',
+      contentType: 'text/plain',
+      data: 'aGVsbG8=',
+    });
+    const deletedBinary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+    await repo.deleteResource('Binary', deletedBinary.id);
 
     const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
@@ -287,6 +296,9 @@ describe('Expunge', () => {
     await expectExpungeTombstone(pool, 'Patient', patient2.id);
     await expectExpungeTombstone(pool, 'Patient', patient3.id);
     await expectExpungeTombstone(pool, 'Patient', deletedPatient.id);
+    await expectExpungeTombstone(pool, 'Binary', binary.id);
+    await expectExpungeTombstone(pool, 'Binary', deletedBinary.id);
+    await expect(getBinaryStorage().readBinary(binary)).rejects.toThrow();
     await expectExpungeTombstone(pool, 'Observation', obs.id);
     await expectExpungeTombstone(pool, 'AuditEvent', auditEvent.id);
 
