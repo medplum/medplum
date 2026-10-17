@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Filter } from '@medplum/core';
 import {
   accepted,
   AccessPolicyInteraction,
@@ -89,6 +90,17 @@ export class Expunger {
       return;
     }
 
+    await this.expungeMatching(resourceType, [
+      { code: '_compartment', operator: Operator.EQUALS, value: this.compartment },
+    ]);
+    // Deleted rows have no compartments, only a projectId, so they are found only when expunging a Project
+    await this.expungeMatching(resourceType, [
+      { code: '_deleted', operator: Operator.EQUALS, value: 'true' },
+      { code: '_project', operator: Operator.EQUALS, value: this.compartment },
+    ]);
+  }
+
+  private async expungeMatching(resourceType: ResourceType, filters: Filter[]): Promise<void> {
     const repo = this.repo;
     // NOTE(ThatOneBro 23/01/2025): Attempted to convert this to using `repo.processAllResources`,
     // But it doesn't quite fit the pattern since the "next" links are not usable
@@ -99,7 +111,7 @@ export class Expunger {
       const bundle = await repo.search({
         resourceType,
         count: this.maxResultsPerPage,
-        filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
+        filters,
       });
 
       if (!bundle.entry || bundle.entry.length === 0) {

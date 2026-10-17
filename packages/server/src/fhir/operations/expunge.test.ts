@@ -253,6 +253,8 @@ describe('Expunge', () => {
       resourceType: 'Patient',
       name: [{ given: ['Bob'], family: 'Smith' }],
     });
+    const deletedPatient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    await repo.deleteResource('Patient', deletedPatient.id);
 
     const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
@@ -284,6 +286,7 @@ describe('Expunge', () => {
     await expectExpungeTombstone(pool, 'Patient', patient.id);
     await expectExpungeTombstone(pool, 'Patient', patient2.id);
     await expectExpungeTombstone(pool, 'Patient', patient3.id);
+    await expectExpungeTombstone(pool, 'Patient', deletedPatient.id);
     await expectExpungeTombstone(pool, 'Observation', obs.id);
     await expectExpungeTombstone(pool, 'AuditEvent', auditEvent.id);
 
