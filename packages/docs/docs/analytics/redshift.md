@@ -4,9 +4,9 @@ sidebar_position: 3
 
 # Amazon Redshift
 
-:::info[Enterprise feature]
+:::info[Paid Add-On]
 
-Redshift sync is part of Medplum Enterprise. A Medplum team member creates and enables the pipeline for your project. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
+Redshift sync is available through the Data Warehouse Connector (Beta), an optional add-on for paid plans. A Medplum team member creates and enables the pipeline for your project. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
 
 :::
 
@@ -330,7 +330,7 @@ The tables are open Iceberg, so the engine is your choice. Everything on this pa
 
 Tell us which engine you are using when you open the request and we will point the catalog at it.
 
-If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
+If you are not using the Data Warehouse Connector, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
 
 ## See also
 
