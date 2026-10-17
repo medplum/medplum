@@ -576,12 +576,8 @@ export function assertAllLoaded<T extends Resource>(
 }
 
 /**
- * Rejects scheduling onto a Schedule with an inactive actor.
- *
- * Whether an actor can be booked doesn't depend on who is asking, so actors are read with
- * system privileges: an access policy that hides the actor, or its `active` or `status`,
- * doesn't skip the check. An actor in a project the caller can't see is ignored, so the
- * error can't reveal anything about it.
+ * Rejects scheduling onto a Schedule with an inactive actor. An actor the caller can't read
+ * is not checked.
  *
  * @param repo - The caller's repository.
  * @param schedules - The schedules being booked onto.
@@ -590,16 +586,11 @@ export async function assertActorsActive(repo: Repository, schedules: WithPath<W
   const refs = schedules.flatMap((schedule) =>
     schedule.actor.map((actor, idx) => withPath(actor, `${getPath(schedule)}.actor[${idx}]`))
   );
-  const actors = await repo.getSystemRepo().readReferences(refs);
+  const actors = await repo.readReferences(refs);
   actors.forEach((actor, idx) => {
-    if (!isResource(actor) || !isScheduleActorInactive(actor)) {
-      return;
+    if (isResource(actor) && isScheduleActorInactive(actor)) {
+      throw new OperationOutcomeError(badRequest(`${actor.resourceType} is inactive`, getPath(refs[idx])));
     }
-    const visibleProjects = repo.getSearchProjectIds(actor.resourceType);
-    if (visibleProjects && !visibleProjects.includes(actor.meta?.project as string)) {
-      return;
-    }
-    throw new OperationOutcomeError(badRequest(`${actor.resourceType} is inactive`, getPath(refs[idx])));
   });
 }
 

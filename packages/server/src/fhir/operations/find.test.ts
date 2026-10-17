@@ -1950,19 +1950,7 @@ describe('Appointment/$find', () => {
       });
     });
 
-    test.each([
-      { access: 'cannot read', policy: scheduleOnlyPolicy },
-      {
-        access: 'cannot see `active` on',
-        policy: {
-          ...scheduleOnlyPolicy,
-          resource: [
-            ...(scheduleOnlyPolicy.resource ?? []),
-            { resourceType: 'Practitioner', hiddenFields: ['active'] },
-          ],
-        },
-      },
-    ])('errors when an actor the caller $access is inactive', async ({ policy }) => {
+    test('ignores whether an actor the caller cannot read is active', async () => {
       const inactivePractitioner = await systemRepo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         meta: { project: project.id },
@@ -1972,7 +1960,7 @@ describe('Appointment/$find', () => {
         [{ service: genericVisit, duration: 60, timezone: 'America/Phoenix', availability: monTueAvailability }],
         { actor: [createReference(inactivePractitioner)] }
       );
-      const { accessToken: restrictedToken } = await addTestUser(project, { accessPolicy: policy });
+      const { accessToken: restrictedToken } = await addTestUser(project, { accessPolicy: scheduleOnlyPolicy });
 
       const response = await makeRequest(
         {
@@ -1983,8 +1971,7 @@ describe('Appointment/$find', () => {
         restrictedToken
       );
 
-      expect(response).toHaveStatus(400);
-      expect(response.body.issue[0].details.text).toBe('Practitioner is inactive');
+      expect(response).toHaveStatus(200);
     });
 
     test('ignores whether an actor in another project is active', async () => {
