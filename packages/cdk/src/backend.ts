@@ -34,6 +34,7 @@ import { buildWaf } from './waf';
 export class BackEnd extends Construct {
   vpc: ec2.IVpc;
   botLambdaRole: iam.IRole;
+  lambdaBuildRole: iam.IRole;
   rdsSecretsArn?: string;
   rdsCluster?: rds.DatabaseCluster;
   rdsProxy?: rds.DatabaseProxy;
@@ -100,6 +101,32 @@ export class BackEnd extends Construct {
     // Bot Lambda Role
     this.botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
+    // Lambda MicroVM Build Role
+    this.lambdaBuildRole = new iam.Role(this, 'LambdaBuildRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com').withSessionTags(),
+      description: 'Lambda MicroVM image build role',
+      inlinePolicies: {
+        LambdaBuildPolicies: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['s3:GetObject'],
+              // Only the MicroVM artifact prefix, never the rest of the storage bucket
+              resources: [`arn:aws:s3:::${config.storageBucketName}/bot-microvm/*`],
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              resources: [
+                `arn:aws:logs:${region}:${accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*`,
+                `arn:aws:logs:${region}:${accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*:log-stream:*`,
+              ],
+            }),
+          ],
+        }),
+      },
     });
 
     // RDS
@@ -375,7 +402,7 @@ export class BackEnd extends Construct {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
-          resources: [this.botLambdaRole.roleArn],
+          resources: [this.botLambdaRole.roleArn, this.lambdaBuildRole.roleArn],
         }),
 
         // Lambda: Create, read, update, delete, and invoke functions
@@ -393,6 +420,20 @@ export class BackEnd extends Construct {
             'lambda:DeleteFunction',
           ],
           resources: [`arn:aws:lambda:${region}:${accountNumber}:function:medplum-bot-lambda-*`],
+        }),
+
+        // Lambda MicroVMs: Build images, and run, read, and terminate MicroVMs
+        // https://docs.aws.amazon.com/lambda/latest/dg/microvms-security.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'lambda:CreateMicrovmImage',
+            'lambda:GetMicrovmImage',
+            'lambda:RunMicrovm',
+            'lambda:GetMicrovm',
+            'lambda:TerminateMicrovm',
+          ],
+          resources: [`arn:aws:lambda:${region}:${accountNumber}:microvm-image:medplum-bot-microvm-*`],
         }),
 
         // Lambda: List functions
