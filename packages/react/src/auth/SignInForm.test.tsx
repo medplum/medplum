@@ -147,6 +147,15 @@ function mockFetch(url: string, options: any): Promise<any> {
         code: '1',
       };
     }
+  } else if (options.method === 'GET' && url.endsWith('auth/login/reason')) {
+    status = 200;
+    result = { login: '1', reasonRequired: true };
+  } else if (options.method === 'POST' && url.endsWith('auth/reason')) {
+    status = 200;
+    result = {
+      login: '1',
+      code: '1',
+    };
   } else if (options.method === 'POST' && url.endsWith('auth/scope')) {
     status = 200;
     result = {
@@ -302,6 +311,21 @@ describe('SignInForm', () => {
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
 
     expect(success).toBe(true);
+  });
+
+  test('Login reason required', async () => {
+    const onSuccess = vi.fn();
+    await setup({ login: 'reason', onSuccess });
+
+    expect(await screen.findByText('Reason for access')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Reason', { exact: false }), { target: { value: 'Chart review' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Continue'));
+    });
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
   });
 
   test('Submit success with onCode', async () => {

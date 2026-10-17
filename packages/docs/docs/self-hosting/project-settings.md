@@ -70,6 +70,12 @@ The MFA methods users in a Project can enroll in are controlled by the `allowedM
 
 The `appName` key in `Project.setting` white-labels the MFA content Medplum generates: emailed verification codes and the authenticator app entries created by enrollment QR codes. When unset, both name Medplum. See [Branding MFA emails and authenticator apps](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps).
 
+## Login reason
+
+Set the `loginReasonRequired` key in `Project.setting` to `valueBoolean: true` to require users to enter a reason each time they sign in to the Project. After authentication (and MFA, if enabled), the sign-in flow prompts for a reason before an authorization code is issued, and tokens are not granted to users until a reason has been provided. The reason is stored in `Login.reason`.
+
+A new reason is required for every session. Existing sessions are not reused by `/oauth2/authorize` (so `prompt=none` returns `login_required`), and refresh tokens are disabled, so users must sign in again and enter a new reason when their access token expires.
+
 ## Project SMTP
 
 Projects can send email through their own SMTP relay instead of the server-wide email provider, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for the full configuration reference. Operators can disable this fleet-wide with the [`allowProjectSmtp`](/docs/self-hosting/server-config#allowprojectsmtp) server config setting.
