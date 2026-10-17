@@ -66,11 +66,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
       <div className={cx(info.titleClass, classes.title)}>
         {recurring && <IconRepeat size="1em" className={classes.recurring} role="img" aria-label="Recurring" />}
         {/* With no service type, a placeholder holds the title's place, so the patient stays under it. */}
-        {hasServiceType ? (
-          <ServiceTypeDisplay appointment={appointment} inherit />
-        ) : (
-          <span className={classes.untyped}>Appointment (no service type)</span>
-        )}
+        {hasServiceType ? <ServiceTypeDisplay appointment={appointment} inherit /> : 'Appointment (no service type)'}
       </div>
       {opened && (
         <Popover opened shadow="md" position="right-start">

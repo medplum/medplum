@@ -26,6 +26,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 550;
 }
 
 .eventContent .time,
@@ -33,14 +34,33 @@
   flex-shrink: 0;
 }
 
-/* On one line, the service type gives way to an ellipsis along with the patient. */
+.eventContent :is(.title, .patient, .time) {
+  font-size: 12px;
+  line-height: calc(14 / 12);
+}
+
+.eventContent[data-time-grid]:not([data-one-line]) .title {
+  padding-block: 3px 2px;
+}
+
+.eventContent:not([data-time-grid]) :is(.title, .time) {
+  padding: 0;
+}
+
+.eventContent:is(:not([data-time-grid]), [data-one-line]) {
+  align-items: center;
+  gap: 0;
+
+  .title::after {
+    content: '';
+    display: inline-block;
+    width: 4px;
+  }
+}
+
 .eventContent[data-one-line] {
   flex-direction: row;
-  align-items: baseline;
-  gap: 4px;
 
-  /* Not sticky, so the recurring icon is placed from the event. FullCalendar's skeleton.css makes
-   * titles sticky with `!important`. */
   .title {
     position: static !important;
     flex-shrink: 1;
@@ -51,15 +71,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-
-    /* Empty alt text, so screen readers don't announce the separator. */
-    &::before {
-      content: '•' / '';
-      margin-inline-end: 4px;
-    }
   }
 
-  /* Pinned to the event's end rather than the title's, past the patient. */
   .recurring {
     position: absolute;
     inset-inline-end: 0;
@@ -78,10 +91,6 @@
 }
 
 :global(.dayGridMonth) .recurring {
-  margin-top: 0.125em;
-}
-
-/* Set apart from the service types named by their HealthcareService. */
-.untyped {
-  opacity: 0.75;
+  margin-top: calc((14px - 1em) / 2);
+  margin-inline-end: 4px;
 }
