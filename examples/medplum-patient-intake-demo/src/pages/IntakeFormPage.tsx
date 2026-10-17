@@ -9,6 +9,7 @@ import { useCallback, useContext } from 'react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { Loading } from '../components/Loading';
+import { extractQuestionnaireResponse } from '../extractQuestionnaireResponse';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
 export function IntakeFormPage(): JSX.Element {
@@ -19,33 +20,34 @@ export function IntakeFormPage(): JSX.Element {
   const { questionnaire } = useContext(IntakeQuestionnaireContext);
 
   const handleOnSubmit = useCallback(
-    (response: QuestionnaireResponse) => {
+    async (response: QuestionnaireResponse) => {
       if (!questionnaire || !profile) {
         return;
       }
 
-      medplum
-        .createResource<QuestionnaireResponse>({
+      try {
+        const created = await medplum.createResource<QuestionnaireResponse>({
           ...response,
           author: createReference(profile),
-        })
-        .then(() => {
-          showNotification({
-            icon: <IconCircleCheck />,
-            title: 'Success',
-            message: 'Answers recorded',
-          });
-          navigate(`/Patient`)?.catch(console.error);
-          window.scrollTo(0, 0);
-        })
-        .catch((err) => {
-          showNotification({
-            color: 'red',
-            icon: <IconCircleOff />,
-            title: 'Error',
-            message: normalizeErrorString(err),
-          });
         });
+
+        await extractQuestionnaireResponse(medplum, created);
+
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Answers recorded and structured resources extracted',
+        });
+        await navigate('/Patient');
+        window.scrollTo(0, 0);
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      }
     },
     [medplum, navigate, questionnaire, profile]
   );
