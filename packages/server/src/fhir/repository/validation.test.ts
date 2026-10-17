@@ -181,6 +181,38 @@ describe('Repository validation', () => {
         await expect(repo.createResource({ ...patient, meta: { profile: [profile.url] } })).resolves.toBeDefined();
       }));
 
+    test('Snapshot required bindings allow application display text and a different version on writes', async () =>
+      withTestContext(async () => {
+        const created = await repo.createResource<Patient>({
+          ...patient,
+          meta: { profile: [profile.url] },
+          communication: [
+            {
+              language: {
+                coding: [
+                  { system: 'urn:ietf:bcp:47', code: 'en', display: 'Application label', version: 'other-release' },
+                ],
+              },
+            },
+          ],
+        });
+        expect(created.id).toBeDefined();
+        await expect(
+          repo.updateResource<Patient>({
+            ...created,
+            communication: [
+              {
+                language: {
+                  coding: [
+                    { system: 'urn:ietf:bcp:47', code: 'en', display: 'Updated label', version: 'another-release' },
+                  ],
+                },
+              },
+            ],
+          })
+        ).resolves.toBeDefined();
+      }));
+
     test('Invalid patient with US Core Patient profile (communication.language not in ValueSet)', async () =>
       withTestContext(async () => {
         await expect(
