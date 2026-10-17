@@ -458,11 +458,11 @@ function parseIncludeTarget(input: string): IncludeTarget {
 }
 
 /**
- * Like the FHIR dateTime regex, but seconds are optional when minutes are present.
+ * Like the FHIR dateTime regex, but seconds are optional. Minutes are required with an hour.
  * See: https://hl7.org/fhir/R4/search.html#date
  */
 const searchDateRegex =
-  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3])(:[0-5]\d(:([0-5]\d|60)(\.\d{1,9})?)?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/;
+  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d(:([0-5]\d|60)(\.\d{1,9})?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/;
 
 function isValidSearchValue(searchParam: SearchParameter, searchValue: string): boolean {
   switch (searchParam.type) {
