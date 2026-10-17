@@ -698,6 +698,36 @@ export function getActorCombinations(selections: ActorSelections): ActorCombinat
 }
 
 /**
+ * The candidates of the first combination {@link getActorCombinations} would build,
+ * found without expanding the rest.
+ *
+ * @param selections - What has been chosen.
+ * @returns One candidate per filled row, or an empty list when nothing is chosen or
+ *   nobody can fill every row at once.
+ */
+export function getFirstCombinationCandidates(selections: ActorSelections): ScheduleCandidate[] {
+  const lists = getFilledRequirements(selections).map((requirement) => requirement.candidates);
+  return findFirstCombination(lists, []) ?? [];
+}
+
+function findFirstCombination(
+  lists: readonly (readonly ScheduleCandidate[])[],
+  chosen: readonly ScheduleCandidate[]
+): ScheduleCandidate[] | undefined {
+  if (chosen.length === lists.length) {
+    return [...chosen];
+  }
+  for (const candidate of lists[chosen.length]) {
+    const next = [...chosen, candidate];
+    const found = hasRepeatedActor(next) ? undefined : findFirstCombination(lists, next);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Every way of taking one element from each list, the last list turning fastest.
  * @param lists - The lists to take from. One empty list empties the product.
  * @returns One tuple per combination; one empty tuple when given no lists at all.

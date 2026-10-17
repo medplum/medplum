@@ -33,6 +33,7 @@ import {
   getActorCombinations,
   getCandidateActor,
   getCandidateDisplay,
+  getFirstCombinationCandidates,
   getSelectedActorResources,
   getSelectedCandidates,
   getSelectionError,
@@ -723,6 +724,14 @@ describe('selections', () => {
     expect(
       schedulesOf(getActorCombinations({ Practitioner: [row(RIVERA, OKAFOR), row(OKAFOR, RIVERA)] }))
     ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera']]);
+  });
+
+  test('The first combination is found on its own, skipping anyone named for two rows', () => {
+    expect(getFirstCombinationCandidates({ Practitioner: [row(RIVERA, OKAFOR), row(RIVERA)] })).toStrictEqual([
+      OKAFOR,
+      RIVERA,
+    ]);
+    expect(getFirstCombinationCandidates({ Practitioner: [row(RIVERA), row(RIVERA)] })).toStrictEqual([]);
   });
 
   test('An empty row drops out rather than emptying the search', () => {
