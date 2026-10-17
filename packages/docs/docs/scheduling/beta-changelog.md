@@ -23,7 +23,7 @@ needed to adopt them.
 
 ### What changed
 
-Scheduling APIs will check that the actor of each Schedule they schedule against is not inactive: a `Practitioner`, `PractitionerRole`, `HealthcareService`, `Patient`, or `RelatedPerson` with `active: false`, or a `Location` or `Device` with `status: inactive`. The check applies even when the caller's access policy doesn't allow reading the actor.
+Scheduling APIs will check that the actor of each Schedule they schedule against is not inactive: a `Practitioner`, `PractitionerRole`, `HealthcareService`, `Patient`, or `RelatedPerson` with `active: false`, or a `Location` or `Device` with `status: inactive`.
 
 The `$cancel` operation is still allowed for Appointments with inactive actors. The `$reschedule` operation allows removing a Schedule with an inactive actor from an existing appointment.
 
