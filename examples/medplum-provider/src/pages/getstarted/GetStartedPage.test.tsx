@@ -80,6 +80,7 @@ describe('GetStartedPage', () => {
       expect(screen.getByText('David James Williams')).toBeInTheDocument();
       expect(screen.getByText('Simple Initial Visit + Billing')).toBeInTheDocument();
       expect(screen.getByText('ICD-10-CM Billable Codes')).toBeInTheDocument();
+      expect(screen.getByText('CPT Modifiers')).toBeInTheDocument();
       expect(screen.getByText('Geriatric T2DM Starter')).toBeInTheDocument();
     });
 
@@ -255,6 +256,33 @@ describe('GetStartedPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Import ValueSet' }));
 
       expect(await screen.findByText('ValueSet not permitted on this plan')).toBeInTheDocument();
+    });
+  });
+
+  describe('CPT modifiers ValueSet', () => {
+    test('Upserts the modifiers ValueSet by url, selecting CPT modifier concepts', async () => {
+      const upsertResource = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as WithId<ValueSet>);
+      setup();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Import Modifiers' }));
+
+      expect(await screen.findByText('CPT Modifiers ValueSet ready')).toBeInTheDocument();
+      const [valueSet, search] = upsertResource.mock.calls[0];
+      expect((valueSet as ValueSet).url).toBe('http://www.ama-assn.org/go/cpt/vs/modifiers');
+      expect((valueSet as ValueSet).compose?.include[0]).toEqual({
+        system: 'http://www.ama-assn.org/go/cpt',
+        filter: [{ property: 'tty', op: '=', value: 'MP' }],
+      });
+      expect(search).toEqual({ url: 'http://www.ama-assn.org/go/cpt/vs/modifiers' });
+    });
+
+    test('Reports a failed upsert', async () => {
+      vi.spyOn(medplum, 'upsertResource').mockRejectedValue(new Error('CPT is not loaded'));
+      setup();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Import Modifiers' }));
+
+      expect(await screen.findByText('CPT is not loaded')).toBeInTheDocument();
     });
   });
 

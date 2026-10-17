@@ -47,7 +47,7 @@ describe('ChargeItemPanel', () => {
     medplum.valueSetExpand = vi
       .fn()
       .mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
-        if (params.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers') {
+        if (params.url === 'http://www.ama-assn.org/go/cpt/vs/modifiers') {
           const allModifiers = [
             {
               system: 'http://terminology.hl7.org/CodeSystem/modifiers',
@@ -105,7 +105,7 @@ describe('ChargeItemPanel', () => {
           return {
             resourceType: 'ValueSet',
             id: '9a6769a5-e60e-415b-ac35-8ed865336521',
-            url: 'http://hl7.org/fhir/ValueSet/claim-modifiers',
+            url: 'http://www.ama-assn.org/go/cpt/vs/modifiers',
             version: '4.0.1',
             name: 'ModifierTypeCodes',
             title: 'Modifier type Codes',
@@ -376,7 +376,7 @@ describe('ChargeItemPanel', () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
           const claimModifiersCall = calls.find(
-            (call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers'
+            (call) => call[0]?.url === 'http://www.ama-assn.org/go/cpt/vs/modifiers'
           );
           expect(claimModifiersCall).toBeDefined();
         },
@@ -573,7 +573,7 @@ describe('ChargeItemPanel', () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
           const claimModifiersCall = calls.find(
-            (call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers'
+            (call) => call[0]?.url === 'http://www.ama-assn.org/go/cpt/vs/modifiers'
           );
           expect(claimModifiersCall).toBeDefined();
         },

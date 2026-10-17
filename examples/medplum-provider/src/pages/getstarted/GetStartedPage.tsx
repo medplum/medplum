@@ -15,7 +15,7 @@ import {
   Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { convertToTransactionBundle } from '@medplum/core';
+import { CPT, convertToTransactionBundle } from '@medplum/core';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import { useSyncOrderSet } from '@medplum/react-hooks';
@@ -36,6 +36,7 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import { CPT_MODIFIERS_VALUE_SET } from '../../config/constants';
 import orderSetBundleData from '../../data/order-set-example-bundle.json';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
@@ -50,6 +51,7 @@ export function GetStartedPage(): JSX.Element {
   const [importingPatient, setImportingPatient] = useState(false);
   const [importingVisit, setImportingVisit] = useState(false);
   const [importingIcd10, setImportingIcd10] = useState(false);
+  const [importingCptModifiers, setImportingCptModifiers] = useState(false);
   const [importingOrderSet, setImportingOrderSet] = useState(false);
 
   const handleImportPatient = useCallback(async () => {
@@ -126,6 +128,30 @@ export function GetStartedPage(): JSX.Element {
       showErrorNotification(error);
     } finally {
       setImportingIcd10(false);
+    }
+  }, [medplum]);
+
+  const handleImportCptModifiers = useCallback(async () => {
+    setImportingCptModifiers(true);
+    try {
+      await medplum.upsertResource(
+        {
+          resourceType: 'ValueSet',
+          status: 'active',
+          url: CPT_MODIFIERS_VALUE_SET,
+          title: 'CPT Modifiers',
+          name: 'cpt-modifiers',
+          compose: {
+            include: [{ system: CPT, filter: [{ property: 'tty', op: '=', value: 'MP' }] }],
+          },
+        },
+        { url: CPT_MODIFIERS_VALUE_SET }
+      );
+      showNotification({ color: 'green', title: 'Success', message: 'CPT Modifiers ValueSet ready' });
+    } catch (error) {
+      showErrorNotification(error);
+    } finally {
+      setImportingCptModifiers(false);
     }
   }, [medplum]);
 
@@ -304,6 +330,38 @@ export function GetStartedPage(): JSX.Element {
                   mt="sm"
                 >
                   {importingIcd10 ? 'Importing...' : 'Import ValueSet'}
+                </Button>
+              </Paper>
+              <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
+                <Stack gap="md" className={classes.flexOne}>
+                  <Group gap="sm" align="center">
+                    <IconMedicalCross size={24} color="var(--icon-secondary)" />
+                    <Stack gap={0}>
+                      <Text size="11px" fw={500} className={classes.textLabel}>
+                        Code System
+                      </Text>
+                      <Text fw={600} size="lg">
+                        CPT Modifiers
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Divider />
+                  <Text size="md" className={classes.textSecondary} mb="sm" style={{ flex: 1 }}>
+                    Registers the CPT modifiers ValueSet used by the charge item modifier picker. Requires CPT to be
+                    loaded in the project.
+                  </Text>
+                </Stack>
+                <Button
+                  variant="filled"
+                  size="sm"
+                  fullWidth
+                  onClick={handleImportCptModifiers}
+                  loading={importingCptModifiers}
+                  disabled={importingCptModifiers}
+                  leftSection={<IconDownload size={14} />}
+                  mt="sm"
+                >
+                  {importingCptModifiers ? 'Importing...' : 'Import Modifiers'}
                 </Button>
               </Paper>
               <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
