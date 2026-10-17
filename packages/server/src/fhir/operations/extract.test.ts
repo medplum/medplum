@@ -672,7 +672,12 @@ describe('QuestionnaireResponse/$extract', () => {
         {
           linkId: 'invalid',
           type: 'string',
-          extension: [{ url: contextExtension, valueExpression, valueBoolean: true }],
+          extension: [
+            {
+              url: contextExtension,
+              ...(valueExpression ? { valueExpression } : { valueBoolean: true }),
+            },
+          ],
         },
       ],
     };
