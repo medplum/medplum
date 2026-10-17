@@ -13,11 +13,11 @@ if [[ -z "${MEDPLUM_BASE_URL}" ]]; then
   exit 1
 fi
 
-# Inject env vars into build output. foomedical.com has its own reCAPTCHA key, separate from the app's.
+# Inject env vars into build output. foomedical.com has its own Google client and reCAPTCHA key, separate from the app's.
 find "examples/foomedical/dist" -type f -exec sed -i \
   -e "s|__MEDPLUM_BASE_URL__|${MEDPLUM_BASE_URL}|g" \
   -e "s|__MEDPLUM_CLIENT_ID__||g" \
-  -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
+  -e "s|__GOOGLE_CLIENT_ID__|${FOOMEDICAL_GOOGLE_CLIENT_ID}|g" \
   -e "s|__RECAPTCHA_SITE_KEY__|${FOOMEDICAL_RECAPTCHA_SITE_KEY}|g" \
   {} \;
 
