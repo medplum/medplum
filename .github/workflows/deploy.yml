@@ -83,6 +83,7 @@ jobs:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           DOCS_DESTINATION: www.medplum.com
           FOOMEDICAL_BUCKET: foomedical.com
+          FOOMEDICAL_GOOGLE_CLIENT_ID: 679052511930-8dqur4mmg8egbttgos5pmr4ljtf3etbb.apps.googleusercontent.com
           FOOMEDICAL_RECAPTCHA_SITE_KEY: 6LfFd_8gAAAAAOCVrZQ_aF2CN5b7s91NEYIu5GxL
           GRAPHIQL_BUCKET: graphiql.medplum.com
           GRAPHIQL_AWS_REGION: us-east-1
