@@ -47,6 +47,14 @@ describe('Search Utils', () => {
       },
     ],
 
+    [
+      'Observation?date=le2024-10-01T14:30',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'date', operator: Operator.LESS_THAN_OR_EQUALS, value: '2024-10-01T14:30' }],
+      },
+    ],
+
     [null as unknown as string, new Error('Invalid search URL')],
     [undefined as unknown as string, new Error('Invalid search URL')],
     ['', new Error('Invalid search URL')],
