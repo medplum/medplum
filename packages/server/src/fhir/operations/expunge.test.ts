@@ -287,7 +287,7 @@ describe('Expunge', () => {
     expect(await existsInCache('Patient', patient3.id)).toBe(true);
     expect(await existsInCache('Observation', obs.id)).toBe(true);
 
-    await new Expunger(repo, project.id, 2).expunge();
+    await new Expunger(repo, project.id, { project: true, maxResultsPerPage: 2 }).expunge();
 
     await expectExpungeTombstone(pool, 'Project', project.id);
     await expectExpungeTombstone(pool, 'ClientApplication', client.id);
@@ -311,6 +311,17 @@ describe('Expunge', () => {
     expect(await existsInCache('Observation', obs.id)).toBe(false);
   });
 
+  test('Expunger with another project id as a non-Project compartment leaves that project alone', async () => {
+    const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+    const other = await createTestProject({ withRepo: true });
+    const binary = await other.repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+
+    // e.g. Observation/<other project id>/$expunge?everything=true; must terminate and delete nothing
+    await new Expunger(repo, other.project.id, { maxResultsPerPage: 1 }).expunge();
+
+    expect(await getTestProjectSystemRepo().readResource('Binary', binary.id)).toBeDefined();
+  });
+
   test('Expunger expunges AuditEvent and leaves a history tombstone', async () => {
     const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
     const pool = getDatabasePool(DatabaseMode.WRITER, repo.shardId);
@@ -326,7 +337,7 @@ describe('Expunge', () => {
       source: { observer: { identifier: { value: 'test' } } },
     });
 
-    await new Expunger(repo, project.id, 2).expunge();
+    await new Expunger(repo, project.id, { project: true, maxResultsPerPage: 2 }).expunge();
 
     await expectExpungeTombstone(pool, 'Patient', patient.id);
     await expectExpungeTombstone(pool, 'AuditEvent', auditEvent.id);
