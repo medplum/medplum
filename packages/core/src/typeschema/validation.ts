@@ -597,6 +597,8 @@ class ResourceValidator implements CrawlerVisitor {
     const regex = validationRegexes[type];
     if (regex && !regex.exec(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
+    } else if ((type === 'date' || type === 'dateTime' || type === 'instant') && !isValidCalendarDate(str)) {
+      this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' value'));
     }
   }
 
@@ -619,6 +621,22 @@ class ResourceValidator implements CrawlerVisitor {
       );
     }
   }
+}
+
+/**
+ * Checks that the day exists in its month, e.g. rejects 2023-02-29.
+ * Assumes the input already matched the date, dateTime, or instant regex.
+ * @param str - The date, dateTime, or instant string.
+ * @returns True if the day is valid or not present.
+ */
+function isValidCalendarDate(str: string): boolean {
+  if (str.length < 10) {
+    return true;
+  }
+  const year = Number.parseInt(str.substring(0, 4), 10);
+  const month = Number.parseInt(str.substring(5, 7), 10);
+  const day = Number.parseInt(str.substring(8, 10), 10);
+  return day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 function isIntegerType(propertyType: string): boolean {

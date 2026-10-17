@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
+import { allOk, badRequest, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter } from '@medplum/fhir-router';
-import type { ResourceType } from '@medplum/fhirtypes';
+import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
@@ -443,7 +443,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await validateRepositoryResourceStrictly(ctx.repo, req.body);
+    await validateRepositoryResourceStrictly(ctx.repo, getValidateInput(req));
     return [allOk];
   });
 
@@ -533,4 +533,27 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
 
 function stripPrefix(str: string, prefix: string): string {
   return str.substring(str.indexOf(prefix) + prefix.length);
+}
+
+/**
+ * Returns the resource to validate from a $validate request.
+ * The resource can be posted directly, or wrapped in the "resource" parameter of a Parameters body.
+ * See: https://hl7.org/fhir/R4/resource-operation-validate.html
+ * @param req - The FHIR request.
+ * @returns The resource to validate.
+ */
+function getValidateInput(req: FhirRequest): Resource {
+  const body = req.body as Resource;
+  if (body?.resourceType !== 'Parameters') {
+    return body;
+  }
+  const resourceParam = body.parameter?.find((p) => p.name === 'resource');
+  if (resourceParam?.resource) {
+    return resourceParam.resource;
+  }
+  if (req.params.resourceType === 'Parameters') {
+    // Validating a Parameters resource posted directly
+    return body;
+  }
+  throw new OperationOutcomeError(badRequest('Missing resource parameter'));
 }
