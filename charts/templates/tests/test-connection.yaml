@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "medplum.fullname" . }}-test-healthcheck
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    # before-hook-creation: a failed test pod must not block the next run
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: healthcheck
+      image: busybox:1.36
+      # Retries for up to ~4.5 minutes (inside helm test's default 5m
+      # timeout): first boot runs schema migrations, so the service has no
+      # Ready endpoints for several minutes — that must read as "waiting",
+      # not "failed".
+      command:
+        - /bin/sh
+        - -ec
+        - |
+          url="http://{{ include "medplum.fullname" . }}-service:{{ .Values.service.port | default 80 }}/healthcheck"
+          for i in $(seq 1 54); do
+            if body=$(wget -qO- "$url"); then
+              echo "$body"
+              exit 0
+            fi
+            echo "attempt $i: not ready yet, retrying in 5s"
+            sleep 5
+          done
+          echo "healthcheck did not succeed within ~4.5 minutes"
+          exit 1
