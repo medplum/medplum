@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { LoginState } from '@medplum/core';
 import { ContentType, MedplumClient } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -37,7 +38,7 @@ function accepted(jobId: string): Response {
 describe('CLI project archive and restore', () => {
   let directory: string;
   let fetch: Mock;
-  let requests: { method: string; url: string; body?: unknown }[];
+  let requests: { method: string; url: string; body?: unknown; headers?: unknown }[];
   let jobs: Record<string, AsyncJob>;
 
   beforeAll(() => {
@@ -86,7 +87,7 @@ describe('CLI project archive and restore', () => {
     };
     fetch = vi.fn(async (url: string, init: RequestInit) => {
       const method = init.method ?? 'GET';
-      requests.push({ method, url, body: init.body });
+      requests.push({ method, url, body: init.body, headers: init.headers });
       if (url.endsWith('/Project/p1/$archive')) {
         return accepted('archive');
       }
@@ -96,6 +97,9 @@ describe('CLI project archive and restore', () => {
       const job = /job\/(\w+)\/status$/.exec(url)?.[1];
       if (job) {
         return json(jobs[job]);
+      }
+      if (url.endsWith('/$expunge')) {
+        return json({ resourceType: 'OperationOutcome', issue: [] });
       }
       if (url.endsWith('/Binary/b1')) {
         return method === 'DELETE' ? json({}) : new Response(ndjson, { headers: { 'content-type': 'text/plain' } });
@@ -122,6 +126,7 @@ describe('CLI project archive and restore', () => {
     });
     vi.stubGlobal('fetch', fetch);
     const medplum = new MedplumClient({ fetch, baseUrl: 'https://example.com/' });
+    medplum.getActiveLogin = () => ({ project: { reference: 'Project/p1' } }) as LoginState;
     (createMedplumClient as Mock).mockResolvedValue(medplum);
     console.log = vi.fn();
     vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
@@ -132,29 +137,42 @@ describe('CLI project archive and restore', () => {
   });
 
   test('Archive then restore', async () => {
-    await main(['node', 'index.js', 'project', 'archive', directory, '--project', 'p1', '--cleanup', '--binaries']);
+    await main(['node', 'index.js', 'project', 'archive', directory, '--cleanup', '--binaries']);
 
     expect(readFileSync(join(directory, 'Patient.ndjson'), 'utf8')).toBe(ndjson);
     const manifest = JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8')) as Parameters;
     expect(manifest.parameter?.[1].part?.[1].valueUri).toBe('Patient.ndjson');
-    expect(requests.some((r) => r.method === 'DELETE' && r.url.endsWith('/Binary/b1'))).toBe(true);
+    // Cleanup expunges the server copies only after every file is downloaded
+    const expunged = requests.flatMap((r, i) => (r.url.endsWith('/$expunge') ? [i] : []));
+    const lastDownload = requests.findLastIndex((r) => r.url.endsWith('/Binary/b3'));
+    expect(requests.filter((r) => r.url.endsWith('/$expunge')).map((r) => r.url.split('/').at(-2))).toStrictEqual([
+      'b1',
+      'b3',
+    ]);
+    expect(Math.min(...expunged)).toBeGreaterThan(lastDownload);
     // Only the current, non-deleted Binary is downloaded
     expect(readFileSync(join(directory, 'binaries', binaryId), 'utf8')).toBe('hello');
     expect(requests.some((r) => r.url.endsWith(`/Binary/${deletedBinaryId}`))).toBe(false);
     // A Binary with no stored content is skipped with a warning instead of failing the archive
     expect(console.log).toHaveBeenCalledWith('Warning: 1 Binary resources have no content on the server');
 
-    await main(['node', 'index.js', 'project', 'restore', directory, '--binaries']);
+    requests = [];
+    await main(['node', 'index.js', 'project', 'restore', directory, '--binaries', '--cleanup']);
 
     const upload = requests.find((r) => r.url.includes('/Binary?'));
-    expect(Buffer.from(upload?.body as Uint8Array).toString()).toBe(ndjson);
+    expect(await new Response(upload?.body as Blob).text()).toBe(ndjson);
     const restore = requests.find((r) => r.url.endsWith('/$restore'));
     const restored = JSON.parse(restore?.body as string) as Parameters;
     expect(restored.parameter?.[1].part?.[1].valueUri).toBe('Binary/b2');
     expect(console.log).toHaveBeenCalledWith('Warning: Enable bots');
     const put = requests.find((r) => r.url === 'https://storage.example.com/x');
     expect(put?.method).toBe('PUT');
-    expect(Buffer.from(put?.body as Uint8Array).toString()).toBe('hello');
+    expect(await new Response(put?.body as Blob).text()).toBe('hello');
+    expect(put?.headers).toMatchObject({ 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'text/plain' });
+    // Restore cleanup expunges the uploaded archive files after the restore completes
+    const restoreIndex = requests.findIndex((r) => r.url.endsWith('/$restore'));
+    const expungedUploads = requests.filter((r, i) => i > restoreIndex && r.url.endsWith('/Binary/b2/$expunge'));
+    expect(expungedUploads).toHaveLength(2);
   });
 
   test('Deploy bots', async () => {
@@ -207,7 +225,7 @@ describe('CLI project archive and restore', () => {
         ],
       },
     };
-    await expect(main(['node', 'index.js', 'project', 'archive', directory, '--project', 'p1'])).rejects.toThrow(
+    await expect(main(['node', 'index.js', 'project', 'archive', directory])).rejects.toThrow(
       'Process exited with exit code 1'
     );
     expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining('Job error: Forbidden'));

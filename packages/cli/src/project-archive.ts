@@ -3,8 +3,18 @@
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString, isUUID, normalizeErrorString, resolveId } from '@medplum/core';
 import type { AsyncJob, Binary, Bot, Parameters, ParametersParameter, Resource } from '@medplum/fhirtypes';
-import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  openAsBlob,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
+import { createInterface } from 'node:readline';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream } from 'node:stream/web';
@@ -20,15 +30,15 @@ const BINARY_CONCURRENCY = 5;
 export const projectArchiveCommand = new MedplumCommand('archive')
   .description('Download a full-history archive of a project to a local directory')
   .argument('<directory>', 'Directory to write the archive to')
-  .option('--project <projectId>', 'Project to archive. Defaults to the current project')
   .option('--include-audit-events', 'Include AuditEvent resources')
-  .option('--cleanup', 'Delete the archive files from the server after downloading them')
+  .option('--cleanup', 'Expunge the temporary archive files from the server after downloading them')
   .option('--binaries', 'Also download the current content of each Binary')
   .action(async (directory, options) => {
     const medplum = await createMedplumClient(options);
-    const projectId = options.project ?? resolveId(medplum.getActiveLogin()?.project);
+    // $archive only allows the current project
+    const projectId = resolveId(medplum.getActiveLogin()?.project);
     if (!projectId) {
-      throw new Error('No current project: run `npx medplum login` or pass --project');
+      throw new Error('No current project: run `npx medplum login` and `npx medplum project switch`');
     }
     await archiveProject(medplum, projectId, directory, options);
     if (options.binaries) {
@@ -40,9 +50,10 @@ export const projectRestoreCommand = new MedplumCommand('restore')
   .description('Restore a project archive from a local directory into this server (super admin only)')
   .argument('<directory>', 'Directory containing the archive')
   .option('--binaries', 'Also upload Binary content downloaded with `archive --binaries`')
+  .option('--cleanup', 'Expunge the temporary uploaded archive files from the server after the restore completes')
   .action(async (directory, options) => {
     const medplum = await createMedplumClient(options);
-    await restoreProject(medplum, directory);
+    await restoreProject(medplum, directory, !!options.cleanup);
     if (options.binaries) {
       await uploadBinaries(medplum, directory);
     }
@@ -80,23 +91,29 @@ async function archiveProject(
       Readable.fromWeb(res.body as ReadableStream<Uint8Array>),
       createWriteStream(join(directory, fileName))
     );
-    if (options.cleanup) {
-      await medplum.deleteResource('Binary', resolveId({ reference: output.url.valueUri }) as string);
-    }
-    output.url.valueUri = fileName;
     console.log(`Downloaded ${fileName}`);
   }
 
+  const serverUrls = getOutputs(manifest).map((output) => output.url.valueUri as string);
+  for (const output of getOutputs(manifest)) {
+    output.url.valueUri = getFileName(output.type);
+  }
   writeFileSync(join(directory, MANIFEST_FILE), JSON.stringify(manifest, null, 2));
   console.log(`Archive written to ${directory}`);
+
+  // Only after the whole archive is safely on disk
+  if (options.cleanup) {
+    await expungeBinaries(medplum, serverUrls);
+  }
 }
 
-async function restoreProject(medplum: MedplumClient, directory: string): Promise<void> {
+async function restoreProject(medplum: MedplumClient, directory: string, cleanup: boolean): Promise<void> {
+  // The manifest is only used in memory, so its urls are rewritten in place to the uploaded Binaries
   const manifest = JSON.parse(readFileSync(join(directory, MANIFEST_FILE), 'utf8')) as Parameters;
   for (const output of getOutputs(manifest)) {
     const fileName = getFileName(output.type);
     const binary = await medplum.createBinary({
-      data: readFileSync(join(directory, fileName)),
+      data: await openAsBlob(join(directory, fileName)),
       contentType: NDJSON_CONTENT_TYPE,
       filename: fileName,
     });
@@ -110,12 +127,31 @@ async function restoreProject(medplum: MedplumClient, directory: string): Promis
     console.log(`Warning: ${warning.valueString}`);
   }
   console.log('Restore complete');
+
+  if (cleanup) {
+    await expungeBinaries(
+      medplum,
+      getOutputs(manifest).map((output) => output.url.valueUri as string)
+    );
+  }
+}
+
+/**
+ * Expunges server-side archive files. Deleting would leave their content in binary storage.
+ * @param medplum - The Medplum client.
+ * @param urls - The Binary references.
+ */
+async function expungeBinaries(medplum: MedplumClient, urls: string[]): Promise<void> {
+  for (const url of urls) {
+    await medplum.post(medplum.fhirUrl('Binary', resolveId({ reference: url }) as string, '$expunge'), {});
+  }
+  console.log(`Expunged ${urls.length} archive files from the server`);
 }
 
 async function downloadBinaries(medplum: MedplumClient, directory: string): Promise<void> {
   const binaryDir = join(directory, BINARIES_DIR);
   mkdirSync(binaryDir, { recursive: true });
-  const binaries = readCurrentVersions<Binary>(directory, 'Binary');
+  const binaries = await readCurrentVersions<Binary>(directory, 'Binary');
   let missing = 0;
   // Files are renamed into place when complete, so a rerun skips finished downloads
   await forEachConcurrent(binaries, async (binary) => {
@@ -143,7 +179,7 @@ async function downloadBinaries(medplum: MedplumClient, directory: string): Prom
 
 async function uploadBinaries(medplum: MedplumClient, directory: string): Promise<void> {
   let missing = 0;
-  await forEachConcurrent(readCurrentVersions<Binary>(directory, 'Binary'), async (binary) => {
+  await forEachConcurrent(await readCurrentVersions<Binary>(directory, 'Binary'), async (binary) => {
     const path = join(directory, BINARIES_DIR, binary.id);
     if (!existsSync(path)) {
       missing++;
@@ -154,8 +190,9 @@ async function uploadBinaries(medplum: MedplumClient, directory: string): Promis
     const url = params.parameter?.find((p) => p.name === 'url')?.valueUri as string;
     const res = await fetch(url, {
       method: 'PUT',
-      body: readFileSync(path),
-      headers: binary.contentType ? { 'Content-Type': binary.contentType } : undefined,
+      body: await openAsBlob(path),
+      // Azure SAS uploads require x-ms-blob-type; other storage backends ignore it
+      headers: { 'x-ms-blob-type': 'BlockBlob', ...(binary.contentType ? { 'Content-Type': binary.contentType } : {}) },
     });
     if (!res.ok) {
       throw new Error(`Upload of Binary/${binary.id} failed: ${res.status} ${res.statusText}`);
@@ -169,7 +206,7 @@ async function uploadBinaries(medplum: MedplumClient, directory: string): Promis
 
 async function deployBots(medplum: MedplumClient, directory: string): Promise<void> {
   let failed = 0;
-  for (const bot of readCurrentVersions<Bot>(directory, 'Bot').filter((b) => b.executableCode)) {
+  for (const bot of (await readCurrentVersions<Bot>(directory, 'Bot')).filter((b) => b.executableCode)) {
     try {
       await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {});
       console.log(`Deployed Bot/${bot.id} (${bot.name})`);
@@ -190,13 +227,16 @@ async function deployBots(medplum: MedplumClient, directory: string): Promise<vo
  * @param resourceType - The resource type.
  * @returns The current, non-deleted resources.
  */
-function readCurrentVersions<T extends Resource>(directory: string, resourceType: T['resourceType']): WithId<T>[] {
+async function readCurrentVersions<T extends Resource>(
+  directory: string,
+  resourceType: T['resourceType']
+): Promise<WithId<T>[]> {
   const path = join(directory, getFileName(resourceType));
   if (!existsSync(path)) {
     return [];
   }
   const current = new Map<string, WithId<T>>();
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
+  for await (const line of createInterface({ input: createReadStream(path) })) {
     if (line) {
       const resource = JSON.parse(line) as WithId<T>;
       if (!isUUID(resource.id)) {
@@ -211,9 +251,15 @@ function readCurrentVersions<T extends Resource>(directory: string, resourceType
 
 async function forEachConcurrent<T>(items: T[], fn: (item: T) => Promise<void>): Promise<void> {
   let next = 0;
+  let failed = false;
   const worker = async (): Promise<void> => {
-    while (next < items.length) {
-      await fn(items[next++]);
+    while (!failed && next < items.length) {
+      try {
+        await fn(items[next++]);
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
     }
   };
   await Promise.all(Array.from({ length: BINARY_CONCURRENCY }, worker));
