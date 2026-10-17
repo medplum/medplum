@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { isDateTimeString } from '../fhirpath/utils';
 import { badRequest, OperationOutcomeError } from '../outcomes';
 import type { TypedValue } from '../types';
 import { globalSchema, stringifyTypedValue } from '../types';
@@ -457,20 +458,26 @@ function parseIncludeTarget(input: string): IncludeTarget {
   }
 }
 
-/**
- * Like the FHIR dateTime regex, but seconds are optional. Minutes are required with an hour.
- * See: https://hl7.org/fhir/R4/search.html#date
- */
-const searchDateRegex =
-  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d(:([0-5]\d|60)(\.\d{1,9})?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/;
-
 function isValidSearchValue(searchParam: SearchParameter, searchValue: string): boolean {
   switch (searchParam.type) {
     case 'date':
-      return searchDateRegex.test(searchValue);
+      return isSearchDateString(searchValue);
     default:
       return true;
   }
+}
+
+/**
+ * Returns true if the input is a valid date search value.
+ * Same as the FHIR dateTime format, except seconds are optional when minutes are present.
+ * See: https://hl7.org/fhir/R4/search.html#date
+ * @param input - The search value without a prefix.
+ * @returns True if the input is a valid date search value.
+ */
+function isSearchDateString(input: string): boolean {
+  const withSeconds = input.replace(/(T\d{2}:\d{2})(?=Z|[+-]|$)/, '$1:00');
+  // The dateTime regex allows an hour without minutes, which the search spec does not
+  return isDateTimeString(withSeconds) && !/T\d{2}(?!:)/.test(withSeconds);
 }
 
 const subexpressionPattern = /{{([^{}]+)}}/g;
