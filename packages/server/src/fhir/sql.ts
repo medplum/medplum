@@ -204,6 +204,14 @@ export const Operator = {
       sql.append('::' + paramType);
     }
   },
+  RANGE_CONTAINED_BY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' <@ ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
   RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.appendColumn(column);
     sql.append(' >> ');

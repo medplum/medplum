@@ -47,11 +47,20 @@ describe('Search Utils', () => {
       },
     ],
 
+    [
+      'Observation?date=le2024-10-01T14:30',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'date', operator: Operator.LESS_THAN_OR_EQUALS, value: '2024-10-01T14:30' }],
+      },
+    ],
+
     [null as unknown as string, new Error('Invalid search URL')],
     [undefined as unknown as string, new Error('Invalid search URL')],
     ['', new Error('Invalid search URL')],
     ['Observation?date=12/17', new Error('Invalid format for date search parameter: 12/17')],
     ['Observation?date=012522', new Error('Invalid format for date search parameter: 012522')],
+    ['Observation?date=2028-05-15T14', new Error('Invalid format for date search parameter: 2028-05-15T14')],
   ])('parseSearchRequest($0) => $1', (url, expected) => {
     if (expected instanceof Error) {
       expect(() => parseSearchRequest(url)).toThrow(expected.message);
