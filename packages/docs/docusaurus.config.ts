@@ -58,6 +58,10 @@ const config: Config = {
       {
         redirects: [
           {
+            from: '/enterprise',
+            to: '/pricing',
+          },
+          {
             from: '/docs/communications/organizing-communications',
             to: '/docs/communications/messaging-data-model',
           },
@@ -320,10 +324,6 @@ const config: Config = {
             {
               label: 'Pricing',
               to: '/pricing',
-            },
-            {
-              label: 'Enterprise',
-              to: '/enterprise',
             },
             {
               label: 'Careers',
