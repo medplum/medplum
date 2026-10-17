@@ -1,0 +1,45 @@
+.input[data-empty]:not(:focus)::-webkit-datetime-edit {
+  color: var(--input-placeholder-color);
+}
+
+.input::-webkit-date-and-time-value,
+.input::-webkit-datetime-edit,
+.input::-webkit-datetime-edit-fields-wrapper,
+.input::-webkit-datetime-edit-month-field,
+.input::-webkit-datetime-edit-day-field,
+.input::-webkit-datetime-edit-year-field,
+.input::-webkit-datetime-edit-hour-field,
+.input::-webkit-datetime-edit-minute-field,
+.input::-webkit-datetime-edit-second-field,
+.input::-webkit-datetime-edit-meridiem-field,
+.input::-webkit-datetime-edit-ampm-field,
+.input::-webkit-datetime-edit-text {
+  margin-inline: 0;
+  padding: 0;
+}
+
+.input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.pickerIcon {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.pickerButton:disabled {
+  background-color: transparent;
+}
+
+.pickerButton:disabled .pickerIcon {
+  color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+}
+
+@supports (-moz-appearance: none) {
+  .input {
+    --input-padding-inline-end: calc(var(--input-right-section-size) / 2 - 8px);
+  }
+
+  .pickerButton {
+    display: none;
+  }
+}
