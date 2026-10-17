@@ -260,6 +260,36 @@ describe('Subscription Worker', () => {
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
     }));
 
+  test("Redacts AuditEvent display text when the subscription's project redacts AuditEvents", () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: 'https://example.com/subscription' },
+      });
+      await systemRepo.updateResource<Project>({
+        ...(repo.currentProject() as WithId<Project>),
+        setting: [{ name: 'redactAuditEvents', valueBoolean: true }],
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(patient, 'create');
+
+      const auditEvent = await repo.searchOne<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(auditEvent?.entity?.find((e) => e.what?.reference === getReferenceString(patient))?.what).toStrictEqual({
+        reference: getReferenceString(patient),
+      });
+    }));
+
   test('Status code 201', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';
@@ -2685,7 +2715,6 @@ describe('Subscription Worker', () => {
           requestTime: new Date().toISOString(),
           requestId: ctx?.requestId,
           traceId: ctx?.traceId,
-          authState: ctx?.authState,
         };
 
         // For a websocket subscription, this results in "not found" instead of "gone"

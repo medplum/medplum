@@ -5,7 +5,7 @@ import { assert } from '@medplum/core';
 import type { AsyncJob, Group } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { exportResources } from '../fhir/operations/export';
 import { groupExportResources } from '../fhir/operations/groupexport';
 import { archiveProject } from '../fhir/operations/projectarchive';
@@ -16,11 +16,11 @@ import type { AsyncJobTracking } from './base';
 import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer } from './utils';
 import {
-  assertProjectActive,
   defaultQueueOptions,
   getWorkerBullmqConfig,
   isJobActive,
   queueRegistry,
+  runJobInAuthenticatedContext,
   trackJobMetrics,
 } from './utils';
 
@@ -106,8 +106,7 @@ export async function execBulkExportJob(job: Job<BulkExportJobData | ProjectArch
     return;
   }
   const { authState, requestId, traceId } = job.data;
-  await assertProjectActive(authState.project.id);
-  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, async () => {
+  await runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, async () => {
     const { repo, project } = getAuthenticatedContext();
     const exporter = new BulkExporter(repo, exec.getAsyncJob());
     if (job.name === projectArchiveJobName) {
