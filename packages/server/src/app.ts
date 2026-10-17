@@ -220,6 +220,11 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
     ],
     binaryRouter
   );
+  // Presigned uploads stream the raw body, so like binaryRouter this must precede the body parsers
+  app.use(
+    ['/storage', '/api/storage', '/projects/:projectId/storage', '/api/projects/:projectId/storage'],
+    storageRouter
+  );
 
   // Handle async batch by enqueueing job
   app.post(
@@ -269,7 +274,6 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/shl/', smartHealthLinkRouter);
-  apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
 
   if (config.mcpEnabled) {
