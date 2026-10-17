@@ -728,7 +728,7 @@ export class BackEnd extends Construct {
   ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
-      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
+      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/([^:@]+)[:@](.+)$`
     );
     const nameTagMatches = ecrImageUriRegex.exec(imageName);
     const serverImageName = nameTagMatches?.[1];

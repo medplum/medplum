@@ -26,6 +26,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-ecr": "3.1148.0",
     "@aws-sdk/types": "3.974.6",
     "@medplum/core": "5.2.5",
     "aws-cdk-lib": "2.273.0",
