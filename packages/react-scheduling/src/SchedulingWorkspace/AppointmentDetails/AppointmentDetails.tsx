@@ -13,13 +13,15 @@ import {
   SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Parameters, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconArrowLeft, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
+import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
+import type { AppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
+import { readAppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
@@ -46,6 +48,8 @@ export interface AppointmentDetailsProps {
   readonly canBypassSchedulingRules?: boolean;
   readonly appointment: WithId<Appointment>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /** Called with what `$confirm` wrote: the appointment, now `booked`, and the Slots it holds. */
+  readonly onConfirmed?: (confirmation: AppointmentWrite) => void | Promise<void>;
   /**
    * Called with what a move wrote, after the view has gone back to the details.
    *
@@ -169,6 +173,7 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
  * @param props.cancellationReasonValueSet - The value set to offer cancellation reasons from,
  * in place of the default binding
  * @param props.onCancelled - A callback that can be invoked after a successful $cancel
+ * @param props.onConfirmed - A callback that can be invoked after a successful $confirm
  * @param props.onRescheduled - A callback that can be invoked after a successful $reschedule
  * @param props.onUpdated - A callback that can be invoked after the editable details are saved
  * @param props.procedureBinding - The value set the procedure code field binds to
@@ -182,6 +187,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const {
     appointment,
     onCancelled,
+    onConfirmed,
     onToggleTimeFinder,
     onRescheduled,
     onUpdated,
@@ -194,6 +200,9 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
+  const medplum = useMedplum();
+  const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<unknown>();
 
   const patientLine = (
     <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
@@ -207,6 +216,41 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     },
     [setCancelling, onCancelled]
   );
+
+  const confirm = useCallback(async (): Promise<void> => {
+    setConfirming(true);
+    setConfirmError(undefined);
+    try {
+      const confirmation = readAppointmentWrite(
+        await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+          medplum.fhirUrl('Appointment', appointment.id, '$confirm'),
+          { resourceType: 'Parameters' } satisfies Parameters
+        ),
+        '$confirm'
+      );
+
+      // `$confirm` is a custom operation, so the MedplumClient cannot tell what it changed:
+      // the appointment was booked, and the Slots it holds firmed up from `busy-tentative`.
+      for (const resource of [...confirmation.appointments, ...confirmation.slots]) {
+        medplum.notifyResourceModified({
+          resourceType: resource.resourceType,
+          operation: 'update',
+          id: resource.id,
+          resource,
+        });
+      }
+
+      try {
+        await onConfirmed?.(confirmation);
+      } catch (error) {
+        console.error(error);
+      }
+    } catch (err: unknown) {
+      setConfirmError(err);
+    } finally {
+      setConfirming(false);
+    }
+  }, [appointment.id, medplum, onConfirmed]);
 
   function stopRescheduling(): void {
     setRescheduling(false);
@@ -326,6 +370,17 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
           <Divider />
+          {confirmError !== undefined && (
+            <Alert color="red" title="Could not confirm this appointment">
+              {normalizeErrorString(confirmError)}
+            </Alert>
+          )}
+          {/* `$confirm` also accepts `proposed`, but only what `$hold` left `pending` is offered. */}
+          {appointment.status === 'pending' && (
+            <Button loading={confirming} leftSection={<IconCalendarCheck size={16} stroke={1.8} />} onClick={confirm}>
+              Confirm
+            </Button>
+          )}
           {externalUrl && (
             <Button
               component="a"
