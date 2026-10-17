@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
-import { isDateTimeString } from '../fhirpath/utils';
 import { badRequest, OperationOutcomeError } from '../outcomes';
 import type { TypedValue } from '../types';
 import { globalSchema, stringifyTypedValue } from '../types';
@@ -458,26 +457,29 @@ function parseIncludeTarget(input: string): IncludeTarget {
   }
 }
 
+/**
+ * Date search values follow the FHIR search spec, not the dateTime datatype.
+ *
+ * A stored dateTime is a recorded moment, so the datatype requires seconds whenever a time is present.
+ * A search value describes a window of time, so the search spec allows hours and minutes without seconds,
+ * e.g. `2028-05-15T14:30` means any time during that minute, just as `2028` means any time in that year.
+ * The search spec also requires minutes whenever an hour is present, so `2028-05-15T14` is rejected.
+ *
+ * Shares its structure with `validationRegexes.dateTime` in typeschema/validation.ts; fixes to the shared
+ * parts (year, month, day, offset) usually apply to both.
+ *
+ * See: https://hl7.org/fhir/R4/search.html#date
+ */
+const searchDateRegex =
+  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d(:([0-5]\d|60)(\.\d{1,9})?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/; // NOSONAR
+
 function isValidSearchValue(searchParam: SearchParameter, searchValue: string): boolean {
   switch (searchParam.type) {
     case 'date':
-      return isSearchDateString(searchValue);
+      return searchDateRegex.test(searchValue);
     default:
       return true;
   }
-}
-
-/**
- * Returns true if the input is a valid date search value.
- * Same as the FHIR dateTime format, except seconds are optional when minutes are present.
- * See: https://hl7.org/fhir/R4/search.html#date
- * @param input - The search value without a prefix.
- * @returns True if the input is a valid date search value.
- */
-function isSearchDateString(input: string): boolean {
-  const withSeconds = input.replace(/(T\d{2}:\d{2})(?=Z|[+-]|$)/, '$1:00');
-  // The dateTime regex allows an hour without minutes, which the search spec does not
-  return isDateTimeString(withSeconds) && !/T\d{2}(?!:)/.test(withSeconds);
 }
 
 const subexpressionPattern = /{{([^{}]+)}}/g;
