@@ -440,6 +440,32 @@ export function getAppointmentKey(appointment: Appointment): string {
 }
 
 /**
+ * Finds the offered time holding exactly the visit proposed: the same start, end, and actors.
+ * @param proposal - The visit proposed.
+ * @param days - The days on show, with the times they offered.
+ * @returns The offered time, or undefined when none matches.
+ */
+export function findOfferedTime(proposal: Appointment, days: readonly AppointmentDay[]): Appointment | undefined {
+  if (!proposal.start || !proposal.end) {
+    return undefined;
+  }
+  const start = new Date(proposal.start).getTime();
+  const end = new Date(proposal.end).getTime();
+  const actors = getActorGroupKey(proposal);
+  return days
+    .flatMap((day) => day.groups)
+    .flatMap((group) => group.appointments)
+    .find(
+      (offered) =>
+        offered.start !== undefined &&
+        offered.end !== undefined &&
+        new Date(offered.start).getTime() === start &&
+        new Date(offered.end).getTime() === end &&
+        getActorGroupKey(offered) === actors
+    );
+}
+
+/**
  * Keys the calendar day an instant falls on in a timezone.
  * @param date - The instant to read.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.

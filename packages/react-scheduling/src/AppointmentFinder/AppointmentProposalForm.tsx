@@ -49,6 +49,7 @@ import {
   getUnsatisfiableRows,
 } from './AppointmentFinder.schedules';
 import {
+  findOfferedTime,
   formatTimezoneLabel,
   formatZonedDateTimeInput,
   getAppointmentActors,
@@ -78,6 +79,7 @@ const NO_MARKED_DATES: Date[] = [];
 // Long enough that typing a time does not search on every keystroke, short enough
 // that the warning is there before the user reaches the book button.
 const CONFLICT_DEBOUNCE_MS = 400;
+const NO_CONFLICTS: readonly BookingConflict[] = [];
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
@@ -140,6 +142,12 @@ export interface AppointmentProposalFormProps {
    * already on show.
    */
   readonly defaultStart?: Date;
+  /**
+   * Where a typed time starts out, such as the time clicked on a calendar, for those who
+   * may bypass scheduling rules. Ignored once it has passed, and when rescheduling, which
+   * starts from the visit's own time. A later value replaces whatever was typed or chosen.
+   */
+  readonly defaultTime?: Date;
   /**
    * The `Identifier.system` a project issues medical record numbers under.
    *
@@ -224,6 +232,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     ignoreAppointment,
     ignoreAppointmentSchedules,
     defaultStart,
+    defaultTime,
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
@@ -241,7 +250,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [selections, setSelections] = useState<ActorSelections>(defaultSelections ?? {});
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
-  const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
+  const [picked, setPicked] = useState<Appointment | undefined>(undefined);
   // The fields ignore `defaultValue` after mount, so remounting is the only way to
   // clear their pills. Counters, so a field is never remounted out from under a pick.
   const [actorFieldsKey, setActorFieldsKey] = useState(0);
@@ -252,12 +261,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
-  const [manualDateTime, setManualDateTime] = useState<string | undefined>(undefined);
+  // Held with the opening time it was typed over, so a new opening time is offered afresh.
+  const [manualDateTime, setManualDateTime] = useState<{ value: string; over: number | undefined }>();
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
-
-  const manual = chosen !== undefined && chosen === manualChoice;
 
   // Settles once the time and length fields stop moving; only the conflict lookup waits.
   const [debouncedChoice] = useDebouncedValue(manualChoice, CONFLICT_DEBOUNCE_MS);
@@ -328,7 +336,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // offered from. A typed time carries none: dropping it here would take the proposal
   // away while its fields, and their warnings, stayed on screen saying otherwise.
   const clearChosen = useCallback(
-    (): void => setChosen((current) => (current === manualChoice ? current : undefined)),
+    (): void => setPicked((current) => (current === manualChoice ? current : undefined)),
     [manualChoice]
   );
 
@@ -347,6 +355,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   });
   const { reset: resetDaySearch } = daySearch;
 
+  // A typed time the search also offers is booked as offered, so the operation checks it.
+  const offered = useMemo(
+    () =>
+      manualChoice && picked === manualChoice ? findOfferedTime(manualChoice, daySearch.timeResultsByDay) : undefined,
+    [manualChoice, picked, daySearch.timeResultsByDay]
+  );
+  const chosen = offered ?? picked;
+  const manual = chosen !== undefined && chosen === manualChoice;
+
   // Compared by instant, so a host building the Date inline each render moves nothing.
   const defaultStartTime = defaultStart?.getTime();
   const [followedStartTime, setFollowedStartTime] = useState(defaultStartTime);
@@ -364,7 +381,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [searchedOccurrenceCount, setSearchedOccurrenceCount] = useState(effectiveOccurrenceCount);
   if (searchedOccurrenceCount !== effectiveOccurrenceCount) {
     setSearchedOccurrenceCount(effectiveOccurrenceCount);
-    setChosen(undefined);
+    setPicked(undefined);
     clearManualTime();
     resetDaySearch();
   }
@@ -372,6 +389,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // The first window is back and nothing is holding the search up, so what it found —
   // even if that is nothing — is what is on screen.
   const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
+  const searchingTimes = daySearch.loadingFirstDays || daySearch.loadingMoreDays;
 
   const chosenActors = getAppointmentActors(chosen, actorResources);
 
@@ -414,7 +432,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       // A chosen time is a proposal carrying the Slots it was found for. Booked after
       // a resource changes it would hold whoever is named inside the proposal, and
       // `$book` cannot catch that: the proposal is internally consistent.
-      setChosen(undefined);
+      setPicked(undefined);
       // A different calendar can configure a different length, and nobody asked for
       // the one that happened to be on screen. The typed time goes with it: it was
       // proposed against these schedules, and a field still holding it would read as
@@ -459,14 +477,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
    */
   function clearResources(): void {
     setSelections({});
-    setChosen(undefined);
+    setPicked(undefined);
     clearManualTime();
     setActorFieldsKey((key) => key + 1);
     resetDaySearch();
   }
 
   function chooseTime(next: Appointment): void {
-    setChosen(next);
+    setPicked(next);
     setConflicts([]);
     setWritten(false);
   }
@@ -483,22 +501,28 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
   // A move starts from where the visit is now, so only what changes needs typing.
   const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
-  const effectiveDateTime = manualDateTime ?? (storedStart ? formatZonedDateTimeInput(storedStart, timezone) : '');
+  const openingTime = mode === 'reschedule' ? storedStart : upcoming(defaultTime);
+  const openingTimeValue = openingTime?.getTime();
+  const typedDateTime = manualDateTime?.over === openingTimeValue ? manualDateTime?.value : undefined;
+  const effectiveDateTime = typedDateTime ?? (openingTime ? formatZonedDateTimeInput(openingTime, timezone) : '');
 
   // Proposes the time and length on screen, typed or prefilled, against whichever schedules
-  // are chosen, so a reassignment needs nothing retyped. A searched time is never replaced.
-  const reproposeKey = searching && canBypassSchedulingRules && storedStart ? scheduleKey : undefined;
-  const [reproposedKey, setReproposedKey] = useState<string>();
-  if (reproposeKey !== reproposedKey) {
-    setReproposedKey(reproposeKey);
-    if (reproposeKey !== undefined && (!chosen || manual)) {
+  // are chosen, so a reassignment needs nothing retyped. A searched time is replaced only
+  // by a new opening time, which is a new time asked for.
+  const reproposeKey =
+    searching && canBypassSchedulingRules && (mode === 'book' || storedStart) ? scheduleKey : undefined;
+  const [reproposed, setReproposed] = useState<{ key?: string; openingTime?: number }>({});
+  if (reproposeKey !== reproposed.key || openingTimeValue !== reproposed.openingTime) {
+    const reopened = openingTimeValue !== reproposed.openingTime;
+    setReproposed({ key: reproposeKey, openingTime: openingTimeValue });
+    if (reproposeKey !== undefined && (reopened || !picked || picked === manualChoice)) {
       proposeManualTime(effectiveDateTime, effectiveDurationMinutes);
     }
   }
 
   // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
   if (!canBypassSchedulingRules && manualChoice) {
-    setChosen((current) => (current === manualChoice ? undefined : current));
+    setPicked((current) => (current === manualChoice ? undefined : current));
     clearManualTime();
   }
 
@@ -509,7 +533,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
    * @param durationMinutes - How long the visit runs.
    */
   function enterManualTime(dateTime: string, durationMinutes: number | undefined): void {
-    setManualDateTime(dateTime);
+    setManualDateTime({ value: dateTime, over: openingTimeValue });
     setManualDurationMinutes(durationMinutes);
     proposeManualTime(dateTime, durationMinutes);
   }
@@ -534,7 +558,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0 || unchanged) {
       setManualChoice(undefined);
       // Only ever clears a manual time: a time from the search is not this field's to drop.
-      setChosen((current) => (current === manualChoice ? undefined : current));
+      setPicked((current) => (current === manualChoice ? undefined : current));
       return;
     }
 
@@ -545,7 +569,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       durationMinutes,
     });
     setManualChoice(proposal);
-    setChosen(proposal);
+    setPicked(proposal);
     setWritten(false);
   }
 
@@ -555,8 +579,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // A keystroke moves the proposal and nothing else here, so debouncing that one value
   // holds the search off until typing settles while a change of visit type or of actors
   // still looks up at once.
+  //
+  // Held until the search is back, since a time it offers is booked as offered and needs no lookup.
   useEffect(() => {
     if (
+      searchingTimes ||
       chosen !== debouncedChoice ||
       !debouncedChoice?.start ||
       !debouncedChoice.end ||
@@ -591,7 +618,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
+  }, [medplum, searchingTimes, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
@@ -765,7 +792,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               dateTime={effectiveDateTime}
               durationMinutes={effectiveDurationMinutes}
               timezone={timezone}
-              conflicts={conflicts}
+              conflicts={manual ? conflicts : NO_CONFLICTS}
               onChange={enterManualTime}
             />
           )}
@@ -1120,6 +1147,14 @@ function buildBooking(options: BuildBookingOptions): Appointment {
  */
 function toScheduleKey(references: readonly string[]): string {
   return [...references].sort((a, b) => a.localeCompare(b)).join(',');
+}
+
+/**
+ * @param date - An instant, if any.
+ * @returns The instant while it is still ahead, otherwise undefined.
+ */
+function upcoming(date: Date | undefined): Date | undefined {
+  return date && date.getTime() > Date.now() ? date : undefined;
 }
 
 /**
