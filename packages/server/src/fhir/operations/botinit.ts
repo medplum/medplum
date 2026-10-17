@@ -15,7 +15,7 @@ import type { AccessPolicy, Attachment, Binary, Bot, Project, ProjectMembership,
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import type { Repository } from '../../fhir/repo';
+import type { Repository, SystemRepository } from '../../fhir/repo';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
 import { makeOperationDefinition } from './definitions';
@@ -121,6 +121,10 @@ export async function createBot(
     executableCode,
   });
 
+  // AccessPolicy is project-scoped and cannot be written through global-only routing.
+  // ProjectMembership is a global resource type, so it stays on the global repo.
+  const accessPolicy =
+    params.accessPolicy ?? (await createDefaultBotAccessPolicy(repo.getSystemRepo(), project.id, params.name));
   const systemRepo = getGlobalSystemRepo();
   await systemRepo.createResource<ProjectMembership>({
     meta: {
@@ -130,7 +134,7 @@ export async function createBot(
     project: createReference(project),
     user: createReference(bot),
     profile: createReference(bot),
-    accessPolicy: params.accessPolicy,
+    accessPolicy,
   });
 
   if (executableCode) {
@@ -140,6 +144,21 @@ export async function createBot(
   }
 
   return bot;
+}
+
+async function createDefaultBotAccessPolicy(
+  systemRepo: SystemRepository,
+  projectId: string,
+  botName: string
+): Promise<Reference<AccessPolicy>> {
+  const policy = await systemRepo.createResource<AccessPolicy>({
+    meta: { project: projectId },
+    resourceType: 'AccessPolicy',
+    name: `${botName} Bot Access Policy`,
+    // Wildcard grants every interaction. Project-admin resource types are excluded from `*`.
+    resource: [{ resourceType: '*' }],
+  });
+  return createReference(policy);
 }
 
 async function createCodeBinary(repo: Repository, attachment: Attachment): Promise<Attachment> {

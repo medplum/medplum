@@ -50,7 +50,7 @@ To create a Bot, navigate to the [Project Admin panel](https://app.medplum.com/a
 
 ![Create a Bot](/img/app/bots/create_bot.png)
 
-On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](/docs/access/access-policies) on the Bot, which can restrict the read/write privileges of the bot's code. By default, Bots have read/write access to all resources.
+On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](/docs/access/access-policies) on the Bot. If you leave it blank, Medplum creates an AccessPolicy named `<bot name> Bot Access Policy` that grants read and write access to all resource types, and assigns it to the Bot's ProjectMembership. Choose an existing policy to restrict what the bot can read and write.
 
 ![Enter Bot Properties](/img/app/bots/enter_bot_properties.png)
 
