@@ -764,7 +764,7 @@ describe('Infra', () => {
     template.resourcePropertiesCountIs('AWS::ElastiCache::ReplicationGroup', { CacheNodeType: 'cache.t4g.medium' }, 1);
   });
 
-  test('Lambda MicroVM build role', async () => {
+  test('Lambda MicroVM roles', async () => {
     const sourceConfig = {
       ...baseConfig,
       stackName: 'MedplumLambdaBuildRoleStack',
@@ -780,6 +780,7 @@ describe('Infra', () => {
         Statement: [
           {
             Action: ['sts:AssumeRole', 'sts:TagSession'],
+            Condition: { StringEquals: { 'aws:SourceAccount': baseConfig.accountNumber } },
             Effect: 'Allow',
             Principal: { Service: 'lambda.amazonaws.com' },
           },
@@ -811,29 +812,56 @@ describe('Infra', () => {
     });
 
     template.hasResourceProperties('AWS::IAM::Role', {
+      Description: 'Lambda MicroVM execution role',
+      Policies: [
+        {
+          PolicyName: 'LambdaMicrovmExecutionPolicies',
+          PolicyDocument: {
+            Statement: [
+              {
+                Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+                Effect: 'Allow',
+                Resource: [
+                  `arn:aws:logs:${baseConfig.region}:${baseConfig.accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*`,
+                  `arn:aws:logs:${baseConfig.region}:${baseConfig.accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*:log-stream:*`,
+                ],
+              },
+            ],
+            Version: '2012-10-17',
+          },
+        },
+      ],
+    });
+
+    template.hasResourceProperties('AWS::IAM::Role', {
       Description: 'Medplum Server Task Execution Role',
       Policies: Match.arrayWith([
         Match.objectLike({
           PolicyDocument: {
             Statement: Match.arrayWith([
-              Match.objectLike({
-                Action: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
+              {
+                Action: 'iam:PassRole',
+                Condition: { StringEquals: { 'iam:PassedToService': 'lambda.amazonaws.com' } },
                 Effect: 'Allow',
-                Resource: Match.arrayWith([
+                Resource: [
                   { 'Fn::GetAtt': [Match.stringLikeRegexp('BotLambdaRole'), 'Arn'] },
                   { 'Fn::GetAtt': [Match.stringLikeRegexp('LambdaBuildRole'), 'Arn'] },
-                ]),
-              }),
-              {
-                Action: [
-                  'lambda:CreateMicrovmImage',
-                  'lambda:GetMicrovmImage',
-                  'lambda:RunMicrovm',
-                  'lambda:GetMicrovm',
-                  'lambda:TerminateMicrovm',
+                  { 'Fn::GetAtt': [Match.stringLikeRegexp('LambdaMicrovmExecutionRole'), 'Arn'] },
                 ],
+              },
+              {
+                Action: ['lambda:GetMicrovmImage', 'lambda:RunMicrovm', 'lambda:GetMicrovm', 'lambda:TerminateMicrovm'],
                 Effect: 'Allow',
                 Resource: `arn:aws:lambda:${baseConfig.region}:${baseConfig.accountNumber}:microvm-image:medplum-bot-microvm-*`,
+              },
+              { Action: 'lambda:CreateMicrovmImage', Effect: 'Allow', Resource: '*' },
+              {
+                Action: 'lambda:PassNetworkConnector',
+                Effect: 'Allow',
+                Resource: [
+                  `arn:aws:lambda:${baseConfig.region}:aws:network-connector:aws-network-connector:INTERNET_EGRESS`,
+                  `arn:aws:lambda:${baseConfig.region}:aws:network-connector:aws-network-connector:NO_INGRESS`,
+                ],
               },
             ]),
           },

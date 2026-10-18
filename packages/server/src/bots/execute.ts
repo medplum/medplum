@@ -3,7 +3,7 @@
 import { resolveId } from '@medplum/core';
 import { runInLambda } from '../cloud/aws/execute';
 import { runInLambdaStreaming } from '../cloud/aws/executestreaming';
-import { executeMicrovmBot } from '../cloud/aws/microvm';
+import { executeMicrovmBot, getMicrovmAccessTokenLifetime } from '../cloud/aws/microvm';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { getConfig } from '../config/loader';
 import { recordHistogramValue } from '../otel/otel';
@@ -41,7 +41,12 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
     const context: BotExecutionContext = {
       ...request,
-      accessToken: await getBotAccessToken(bot, runAs),
+      // MicroVMs outlive the standard 1h token, so they get one that lasts the whole run
+      accessToken: await getBotAccessToken(
+        bot,
+        runAs,
+        bot.runtimeVersion === 'awslambdamicrovm' ? getMicrovmAccessTokenLifetime(bot) : undefined
+      ),
       secrets: await getBotSecrets(bot, runAs),
     };
 

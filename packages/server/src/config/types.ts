@@ -273,6 +273,9 @@ export interface MedplumServerConfig {
 
   /** Optional AWS Lambda MicroVM build role ARN. */
   awsLambdaMicrovmBuildRoleArn?: string;
+
+  /** Optional AWS Lambda MicroVM execution role ARN. Without it, MicroVMs write no runtime logs. */
+  awsLambdaMicrovmExecutionRoleArn?: string;
 }
 
 export interface MedplumCapabilityStatementConfig {

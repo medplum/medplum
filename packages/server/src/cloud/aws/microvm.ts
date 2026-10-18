@@ -34,6 +34,20 @@ export const MICROVM_ARTIFACT_PREFIX = 'bot-microvm/';
 /** CloudWatch log group prefix for MicroVM images. The image build role can only write under this prefix. */
 export const MICROVM_LOG_GROUP_PREFIX = '/aws/lambda-microvms/medplum-bot-';
 
+/** MicroVM run duration for Bots without a `timeout`. */
+export const DEFAULT_MICROVM_TIMEOUT_SECONDS = 3600;
+
+/** Extra access token lifetime, so the agent can still close its AsyncJob at the very end of the run. */
+const MICROVM_ACCESS_TOKEN_MARGIN_SECONDS = 300;
+
+export function getMicrovmTimeout(bot: Bot): number {
+  return bot.timeout ?? DEFAULT_MICROVM_TIMEOUT_SECONDS;
+}
+
+export function getMicrovmAccessTokenLifetime(bot: Bot): number {
+  return getMicrovmTimeout(bot) + MICROVM_ACCESS_TOKEN_MARGIN_SECONDS;
+}
+
 export function getBotMicrovmName(bot: WithId<Bot>): string {
   // The server's IAM policy is scoped to images with this prefix
   return `medplum-bot-microvm-${bot.id}`;
@@ -128,17 +142,19 @@ export async function executeMicrovmBot(context: BotExecutionContext): Promise<B
       new RunMicrovmCommand({
         imageIdentifier: image.imageArn,
         clientToken: asyncJob.id,
-        maximumDurationInSeconds: bot.timeout,
+        maximumDurationInSeconds: getMicrovmTimeout(bot),
+        executionRoleArn: config.awsLambdaMicrovmExecutionRoleArn,
+        logging: config.awsLambdaMicrovmExecutionRoleArn
+          ? { cloudWatch: { logGroup: `${MICROVM_LOG_GROUP_PREFIX}${bot.id}` } }
+          : undefined,
         runHookPayload: JSON.stringify({ ...buildLambdaPayload(context), asyncJob: createReference(asyncJob) }),
-        ingressNetworkConnectors: [`arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:ALL_INGRESS`],
+        // Omitting ingress defaults to HTTP_INGRESS, so it has to be disabled explicitly
+        ingressNetworkConnectors: [`arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:NO_INGRESS`],
         egressNetworkConnectors: [
           `arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:INTERNET_EGRESS`,
         ],
-        idlePolicy: {
-          autoResumeEnabled: true,
-          maxIdleDurationSeconds: 900,
-          suspendedDurationSeconds: 300,
-        },
+        // No idlePolicy: without ingress there is no traffic, so an idle policy would suspend and then
+        // terminate a working MicroVM. The run is bounded by maximumDurationInSeconds instead.
       })
     );
 
@@ -238,7 +254,6 @@ function microvmOutput(microvm: RunMicrovmResponse | GetMicrovmResponse): Parame
   const values: Record<string, string | undefined> = {
     microvmId: microvm.microvmId,
     state: microvm.state,
-    endpoint: microvm.endpoint,
     stateReason: microvm.stateReason,
   };
   return {

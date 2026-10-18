@@ -96,6 +96,7 @@ describe('MicroVM', () => {
     config.awsRegion = 'us-east-1';
     config.awsLambdaMicrovmBaseImageArn = 'arn:base-image';
     config.awsLambdaMicrovmBuildRoleArn = 'arn:build-role';
+    config.awsLambdaMicrovmExecutionRoleArn = 'arn:execution-role';
     config.sseCustomerKey = undefined;
     initBinaryStorage('s3:my-bucket');
 
@@ -195,7 +196,15 @@ describe('MicroVM', () => {
         imageIdentifier: 'arn:image',
         clientToken: asyncJob.id,
         maximumDurationInSeconds: 3600,
+        executionRoleArn: 'arn:execution-role',
+        logging: { cloudWatch: { logGroup: `/aws/lambda-microvms/medplum-bot-${bot.id}` } },
       });
+      // Egress only: the MicroVM is never reachable from the internet
+      expect(input.idlePolicy).toBeUndefined();
+      expect(input.ingressNetworkConnectors).toEqual([
+        'arn:aws:lambda:us-east-1:aws:network-connector:aws-network-connector:NO_INGRESS',
+      ]);
+      expect(asyncJob.output?.parameter?.find((p) => p.name === 'endpoint')).toBeUndefined();
       expect(JSON.parse(input.runHookPayload as string)).toMatchObject({
         bot: { reference: `Bot/${bot.id}` },
         input: { hello: 'world' },

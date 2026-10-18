@@ -35,6 +35,7 @@ export class BackEnd extends Construct {
   vpc: ec2.IVpc;
   botLambdaRole: iam.IRole;
   lambdaBuildRole: iam.IRole;
+  lambdaMicrovmExecutionRole: iam.IRole;
   rdsSecretsArn?: string;
   rdsCluster?: rds.DatabaseCluster;
   rdsProxy?: rds.DatabaseProxy;
@@ -103,9 +104,14 @@ export class BackEnd extends Construct {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
 
+    // Lambda MicroVM roles are assumed by Lambda on behalf of this account only
+    const microvmServicePrincipal = new iam.ServicePrincipal('lambda.amazonaws.com', {
+      conditions: { StringEquals: { 'aws:SourceAccount': accountNumber } },
+    }).withSessionTags();
+
     // Lambda MicroVM Build Role
     this.lambdaBuildRole = new iam.Role(this, 'LambdaBuildRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com').withSessionTags(),
+      assumedBy: microvmServicePrincipal,
       description: 'Lambda MicroVM image build role',
       inlinePolicies: {
         LambdaBuildPolicies: new iam.PolicyDocument({
@@ -116,6 +122,27 @@ export class BackEnd extends Construct {
               // Only the MicroVM artifact prefix, never the rest of the storage bucket
               resources: [`arn:aws:s3:::${config.storageBucketName}/bot-microvm/*`],
             }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              resources: [
+                `arn:aws:logs:${region}:${accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*`,
+                `arn:aws:logs:${region}:${accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*:log-stream:*`,
+              ],
+            }),
+          ],
+        }),
+      },
+    });
+
+    // Lambda MicroVM Execution Role
+    // Only grants runtime logs; MicroVMs reach Medplum with their bot access token, not AWS credentials
+    this.lambdaMicrovmExecutionRole = new iam.Role(this, 'LambdaMicrovmExecutionRole', {
+      assumedBy: microvmServicePrincipal,
+      description: 'Lambda MicroVM execution role',
+      inlinePolicies: {
+        LambdaMicrovmExecutionPolicies: new iam.PolicyDocument({
+          statements: [
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
               actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
@@ -401,8 +428,19 @@ export class BackEnd extends Construct {
         // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
-          resources: [this.botLambdaRole.roleArn, this.lambdaBuildRole.roleArn],
+          actions: ['iam:ListRoles', 'iam:GetRole'],
+          resources: [this.botLambdaRole.roleArn],
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['iam:PassRole'],
+          resources: [
+            this.botLambdaRole.roleArn,
+            this.lambdaBuildRole.roleArn,
+            this.lambdaMicrovmExecutionRole.roleArn,
+          ],
+          // Separate statement, since iam:ListRoles and iam:GetRole never carry this key
+          conditions: { StringEquals: { 'iam:PassedToService': 'lambda.amazonaws.com' } },
         }),
 
         // Lambda: Create, read, update, delete, and invoke functions
@@ -426,14 +464,25 @@ export class BackEnd extends Construct {
         // https://docs.aws.amazon.com/lambda/latest/dg/microvms-security.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: [
-            'lambda:CreateMicrovmImage',
-            'lambda:GetMicrovmImage',
-            'lambda:RunMicrovm',
-            'lambda:GetMicrovm',
-            'lambda:TerminateMicrovm',
-          ],
+          actions: ['lambda:GetMicrovmImage', 'lambda:RunMicrovm', 'lambda:GetMicrovm', 'lambda:TerminateMicrovm'],
           resources: [`arn:aws:lambda:${region}:${accountNumber}:microvm-image:medplum-bot-microvm-*`],
+        }),
+
+        // Lambda MicroVMs: CreateMicrovmImage is authorized on '*', since the image does not exist yet
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:CreateMicrovmImage'],
+          resources: ['*'],
+        }),
+
+        // Lambda MicroVMs: Only internet egress and no ingress, so bots can never be given an endpoint
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:PassNetworkConnector'],
+          resources: [
+            `arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:INTERNET_EGRESS`,
+            `arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:NO_INGRESS`,
+          ],
         }),
 
         // Lambda: List functions
