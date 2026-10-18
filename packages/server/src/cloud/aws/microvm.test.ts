@@ -5,6 +5,7 @@ import {
   GetMicrovmCommand,
   GetMicrovmImageCommand,
   LambdaMicrovmsClient,
+  ResourceNotFoundException,
   RunMicrovmCommand,
   TerminateMicrovmCommand,
 } from '@aws-sdk/client-lambda-microvms';
@@ -17,8 +18,8 @@ import { initAppServices, shutdownApp } from '../../app';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionContext } from '../../bots/types';
 import { getConfig, loadTestConfig } from '../../config/loader';
-import type { Repository } from '../../fhir/repo';
 import { deployBot } from '../../fhir/operations/deploy';
+import type { Repository } from '../../fhir/repo';
 import { getProjectSystemRepo } from '../../fhir/repo';
 import { initBinaryStorage } from '../../storage/loader';
 import { createTestProject } from '../../test.setup';
@@ -101,7 +102,7 @@ describe('MicroVM', () => {
     const config = getConfig();
     config.awsRegion = 'us-east-1';
     config.awsLambdaMicrovmBaseImageArn = 'arn:base-image';
-    config.awsLambdaMicrovmBuildRoleArn = 'arn:build-role';
+    config.awsLambdaMicrovmBuildRoleArn = 'arn:aws:iam::123456789012:role/build';
     config.awsLambdaMicrovmExecutionRoleArn = 'arn:execution-role';
     config.sseCustomerKey = undefined;
     initBinaryStorage('s3:my-bucket');
@@ -131,7 +132,7 @@ describe('MicroVM', () => {
       expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)[0].args[0].input).toMatchObject({
         name: `medplum-bot-microvm-${bot.id}`,
         baseImageArn: 'arn:base-image',
-        buildRoleArn: 'arn:build-role',
+        buildRoleArn: 'arn:aws:iam::123456789012:role/build',
         codeArtifact: { uri: `s3://my-bucket/bot-microvm/${bot.id}/${key}` },
         logging: { cloudWatch: { logGroup: `/aws/lambda-microvms/medplum-bot-${bot.id}` } },
       });
@@ -146,7 +147,7 @@ describe('MicroVM', () => {
 
       config.awsLambdaMicrovmBuildRoleArn = undefined;
       await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('Missing AWS Lambda MicroVM build role ARN');
-      config.awsLambdaMicrovmBuildRoleArn = 'arn:build-role';
+      config.awsLambdaMicrovmBuildRoleArn = 'arn:aws:iam::123456789012:role/build';
 
       initBinaryStorage('file:' + process.cwd());
       await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('requires S3 storage');
@@ -186,7 +187,7 @@ describe('MicroVM', () => {
       expect(result.success).toBe(true);
       expect(result.logResult).toBe('MicroVM vm-1 started');
       expect(mockMicrovmClient.commandCalls(GetMicrovmImageCommand)[0].args[0].input).toEqual({
-        imageIdentifier: `medplum-bot-microvm-${bot.id}`,
+        imageIdentifier: `arn:aws:lambda:us-east-1:123456789012:microvm-image:medplum-bot-microvm-${bot.id}`,
       });
 
       const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', result.asyncJob?.id as string);
@@ -220,7 +221,9 @@ describe('MicroVM', () => {
     });
 
     test('Fails when the image is not deployed', async () => {
-      mockMicrovmClient.on(GetMicrovmImageCommand).resolves({});
+      mockMicrovmClient
+        .on(GetMicrovmImageCommand)
+        .rejects(new ResourceNotFoundException({ message: 'Not found', $metadata: {} }));
 
       const result = await executeMicrovmBot(context);
 

@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { GetMicrovmResponse, RunMicrovmResponse } from '@aws-sdk/client-lambda-microvms';
+import type { GetMicrovmImageOutput, GetMicrovmResponse, RunMicrovmResponse } from '@aws-sdk/client-lambda-microvms';
 import {
   CreateMicrovmImageCommand,
   GetMicrovmCommand,
   GetMicrovmImageCommand,
   LambdaMicrovmsClient,
+  ResourceNotFoundException,
   RunMicrovmCommand,
   TerminateMicrovmCommand,
 } from '@aws-sdk/client-lambda-microvms';
@@ -72,6 +73,21 @@ export async function isMicrovmJob(asyncJob: AsyncJob): Promise<boolean> {
 export function getBotMicrovmName(bot: WithId<Bot>): string {
   // The server's IAM policy is scoped to images with this prefix
   return `medplum-bot-microvm-${bot.id}`;
+}
+
+/**
+ * Returns the ARN of a Bot's MicroVM image. The MicroVM API only accepts image ARNs, not names.
+ * @param bot - The Bot.
+ * @returns The image ARN.
+ */
+export function getBotMicrovmImageArn(bot: WithId<Bot>): string {
+  const { awsRegion, awsLambdaMicrovmBuildRoleArn } = getConfig();
+  // The server config has no account ID, but images are built in the build role's account
+  const [, partition, , , accountId] = awsLambdaMicrovmBuildRoleArn?.split(':') ?? [];
+  if (!partition || !accountId) {
+    throw new Error('Missing AWS Lambda MicroVM build role ARN in configuration');
+  }
+  return `arn:${partition}:lambda:${awsRegion}:${accountId}:microvm-image:${getBotMicrovmName(bot)}`;
 }
 
 export async function deployBotMicrovmImage(bot: WithId<Bot>, binary: WithId<Binary>): Promise<string> {
@@ -141,9 +157,14 @@ export async function executeMicrovmBot(context: BotExecutionContext): Promise<B
   const region = config.awsRegion;
   const client = getMicrovmClient();
 
-  const image = await client.send(new GetMicrovmImageCommand({ imageIdentifier: getBotMicrovmName(bot) }));
-  if (!image.imageArn) {
-    return { success: false, logResult: 'MicroVM image is not deployed' };
+  let image: GetMicrovmImageOutput;
+  try {
+    image = await client.send(new GetMicrovmImageCommand({ imageIdentifier: getBotMicrovmImageArn(bot) }));
+  } catch (err) {
+    if (err instanceof ResourceNotFoundException) {
+      return { success: false, logResult: 'MicroVM image is not deployed' };
+    }
+    throw err;
   }
 
   // Create the handle before starting the MicroVM, so that the AsyncJob ID can double as the
