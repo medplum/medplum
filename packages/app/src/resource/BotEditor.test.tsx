@@ -166,6 +166,36 @@ describe('BotEditor', () => {
     expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
+  test.each([
+    ['completed', 'Success'],
+    ['error', 'Bot job error'],
+  ] as const)('MicroVM bot waits for its %s AsyncJob', async (status, message) => {
+    const medplum = new MockClient();
+    const microvmBot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      code: 'console.log("foo");',
+      runtimeVersion: 'awslambdamicrovm',
+    });
+    const post = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'AsyncJob', status });
+
+    await setup(`/Bot/${microvmBot.id}/editor`, medplum);
+    expect(await screen.findByText('Execute')).toBeInTheDocument();
+    (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'ok' });
+    };
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Execute'));
+    });
+
+    expect(post.mock.calls[0][3]).toEqual({ headers: { Prefer: 'respond-async' }, pollStatusOnAccepted: true });
+    expect(await screen.findByText(message)).toBeInTheDocument();
+  });
+
   test('Legacy bot', async () => {
     // Bots now use "sourceCode" and "executableCode" instead of "code"
     // While "code" is deprecated, it is still supported for legacy bots

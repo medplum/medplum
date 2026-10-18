@@ -25,7 +25,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
 } from '@medplum/core';
-import type { Bot } from '@medplum/fhirtypes';
+import type { AsyncJob, Bot } from '@medplum/fhirtypes';
 import { sendCommand, useMedplum } from '@medplum/react';
 import { IconBolt, IconChevronDown, IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
 import type { JSX, SyntheticEvent } from 'react';
@@ -176,19 +176,31 @@ export function BotEditor(): JSX.Element | null {
       setSseEvents(undefined);
       try {
         const input = await getSampleInput();
-        const result = await medplum.post(medplum.fhirUrl('Bot', id, '$execute'), input, contentType);
+        // MicroVM bots only run asynchronously, so wait for their AsyncJob and show it as the result
+        const microvm = bot?.runtimeVersion === 'awslambdamicrovm';
+        const result = await medplum.post(
+          medplum.fhirUrl('Bot', id, '$execute'),
+          input,
+          contentType,
+          microvm ? { headers: { Prefer: 'respond-async' }, pollStatusOnAccepted: true } : undefined
+        );
         await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
           command: 'setValue',
           value: result,
         });
-        showNotification({ color: 'green', message: 'Success' });
+        const jobStatus = microvm ? (result as AsyncJob).status : 'completed';
+        if (jobStatus === 'completed') {
+          showNotification({ color: 'green', message: 'Success' });
+        } else {
+          showNotification({ color: 'red', message: `Bot job ${jobStatus}`, autoClose: false });
+        }
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
     },
-    [medplum, id, getSampleInput, contentType]
+    [medplum, id, bot?.runtimeVersion, getSampleInput, contentType]
   );
 
   const executeBotSSE = useCallback(
