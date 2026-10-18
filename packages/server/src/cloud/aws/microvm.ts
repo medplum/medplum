@@ -33,6 +33,12 @@ import { S3Storage } from './storage';
 /** The `Project.features` code that allows the experimental MicroVM runtime. Only super admins can set it. */
 export const MICROVM_PROJECT_FEATURE = 'aws-lambda-microvm';
 
+/**
+ * Extension on the `AsyncJob` that records its MicroVM. Kept out of `output`, which the bot
+ * replaces when it closes out the job.
+ */
+export const MICROVM_ID_EXTENSION = 'https://medplum.com/fhir/StructureDefinition/microvm-id';
+
 /** The `AsyncJob.type` used for MicroVM bot invocations. */
 export const MICROVM_ASYNC_JOB_TYPE = 'aws-lambda-microvm';
 
@@ -245,6 +251,7 @@ export async function executeMicrovmBot(context: BotExecutionContext): Promise<B
       logResult: `MicroVM ${microvm.microvmId} started`,
       asyncJob: await repo.updateResource<AsyncJob>({
         ...asyncJob,
+        extension: [...(asyncJob.extension ?? []), { url: MICROVM_ID_EXTENSION, valueString: microvm.microvmId }],
         status: 'active',
         output: microvmOutput(microvm),
       }),
@@ -325,7 +332,7 @@ export async function terminateMicrovm(asyncJob: AsyncJob): Promise<void> {
 }
 
 export function getMicrovmId(asyncJob: AsyncJob): string | undefined {
-  return getOutputValue(asyncJob, 'microvmId');
+  return asyncJob.extension?.find((e) => e.url === MICROVM_ID_EXTENSION)?.valueString;
 }
 
 function getOutputValue(asyncJob: AsyncJob, name: string): string | undefined {

@@ -30,6 +30,7 @@ import {
   getMicrovmId,
   isMicrovmJob,
   MICROVM_ASYNC_JOB_TYPE,
+  MICROVM_ID_EXTENSION,
   reconcileMicrovmJob,
   terminateMicrovm,
 } from './microvm';
@@ -57,14 +58,9 @@ describe('MicroVM', () => {
       status: withMicrovm ? 'active' : 'accepted',
       request: `Bot/${bot.id}/$execute`,
       requestTime: new Date().toISOString(),
+      extension: withMicrovm ? [{ url: MICROVM_ID_EXTENSION, valueString: 'vm-1' }] : undefined,
       output: withMicrovm
-        ? {
-            resourceType: 'Parameters',
-            parameter: [
-              { name: 'microvmId', valueString: 'vm-1' },
-              { name: 'state', valueString: 'RUNNING' },
-            ],
-          }
+        ? { resourceType: 'Parameters', parameter: [{ name: 'state', valueString: 'RUNNING' }] }
         : undefined,
     });
   }
@@ -314,9 +310,10 @@ describe('MicroVM', () => {
   });
 
   describe('terminateMicrovm', () => {
-    test('Terminates the MicroVM behind the job', async () => {
+    test('Terminates the MicroVM behind the job, even after the bot replaced the output', async () => {
       mockMicrovmClient.on(TerminateMicrovmCommand).resolves({});
-      await terminateMicrovm(await createMicrovmJob());
+      const job = await createMicrovmJob();
+      await terminateMicrovm({ ...job, output: { resourceType: 'Parameters', parameter: [] } });
       expect(mockMicrovmClient.commandCalls(TerminateMicrovmCommand)[0].args[0].input).toEqual({
         microvmIdentifier: 'vm-1',
       });
