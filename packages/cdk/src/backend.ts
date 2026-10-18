@@ -64,6 +64,7 @@ export class BackEnd extends Construct {
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
+  microvmParameters: ssm.StringParameter[];
   workersParameter?: ssm.StringParameter;
   rdsClusterParameterGroup?: rds.ParameterGroup;
   rdsWriterParameterGroup?: rds.ParameterGroup;
@@ -794,6 +795,21 @@ export class BackEnd extends Construct {
       description: 'Bot lambda execution role ARN',
       stringValue: this.botLambdaRole.roleArn,
     });
+
+    // Lambda MicroVM bot runtime; bots still need the aws-lambda-microvm project feature
+    const microvmParameters = {
+      awsLambdaMicrovmBaseImageArn: `arn:aws:lambda:${region}:aws:microvm-image:al2023-1`,
+      awsLambdaMicrovmBuildRoleArn: this.lambdaBuildRole.roleArn,
+      awsLambdaMicrovmExecutionRoleArn: this.lambdaMicrovmExecutionRole.roleArn,
+    };
+    this.microvmParameters = Object.entries(microvmParameters).map(
+      ([key, value]) =>
+        new ssm.StringParameter(this, `${key}Parameter`, {
+          tier: ssm.ParameterTier.STANDARD,
+          parameterName: `/medplum/${name}/${key}`,
+          stringValue: value,
+        })
+    );
 
     // Workers configuration
     if (config.workers) {

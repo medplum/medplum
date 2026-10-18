@@ -811,6 +811,19 @@ describe('Infra', () => {
       ],
     });
 
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: `/medplum/${config.name}/awsLambdaMicrovmBaseImageArn`,
+      Value: `arn:aws:lambda:${baseConfig.region}:aws:microvm-image:al2023-1`,
+    });
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: `/medplum/${config.name}/awsLambdaMicrovmBuildRoleArn`,
+      Value: { 'Fn::GetAtt': [Match.stringLikeRegexp('LambdaBuildRole'), 'Arn'] },
+    });
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: `/medplum/${config.name}/awsLambdaMicrovmExecutionRoleArn`,
+      Value: { 'Fn::GetAtt': [Match.stringLikeRegexp('LambdaMicrovmExecutionRole'), 'Arn'] },
+    });
+
     template.hasResourceProperties('AWS::IAM::Role', {
       Description: 'Lambda MicroVM execution role',
       Policies: [
