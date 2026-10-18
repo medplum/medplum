@@ -152,6 +152,8 @@ export async function deployBotMicrovmImage(bot: WithId<Bot>, binary: WithId<Bin
     buildRoleArn,
     logging: { cloudWatch: { logGroup: `${MICROVM_LOG_GROUP_PREFIX}${bot.id}` } },
     hooks: MICROVM_HOOKS,
+    // Lets bots sandbox their own processes (e.g. network namespaces); the VM stays the boundary
+    additionalOsCapabilities: ['ALL'],
   };
 
   const client = getMicrovmClient();

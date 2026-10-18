@@ -136,6 +136,7 @@ describe('MicroVM', () => {
         codeArtifact: { uri: `s3://my-bucket/bot-microvm/${bot.id}/${key}` },
         logging: { cloudWatch: { logGroup: `/aws/lambda-microvms/medplum-bot-${bot.id}` } },
         hooks: { port: 8080, microvmHooks: { run: 'ENABLED' }, microvmImageHooks: { ready: 'ENABLED' } },
+        additionalOsCapabilities: ['ALL'],
       });
     });
 
