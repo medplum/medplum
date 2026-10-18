@@ -61503,7 +61503,8 @@
               "range-search",
               "log-streaming",
               "async-batch",
-              "archive"
+              "archive",
+              "aws-lambda-microvm"
             ]
           },
           "type": "array"

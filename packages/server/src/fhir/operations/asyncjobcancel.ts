@@ -3,7 +3,7 @@
 import { allOk, assert, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { AsyncJob } from '@medplum/fhirtypes';
-import { MICROVM_ASYNC_JOB_TYPE, terminateMicrovm } from '../../cloud/aws/microvm';
+import { isMicrovmJob, terminateMicrovm } from '../../cloud/aws/microvm';
 import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
 
@@ -33,7 +33,7 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
   switch (job.status) {
     case 'accepted':
     case 'active':
-      if (job.type === MICROVM_ASYNC_JOB_TYPE) {
+      if (await isMicrovmJob(job)) {
         // Cancelling a MicroVM job has to actually stop the MicroVM; nothing else will
         await terminateMicrovm(job);
       }

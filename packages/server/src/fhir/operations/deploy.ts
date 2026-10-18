@@ -16,7 +16,7 @@ import { Readable } from 'node:stream';
 import { isBotEnabledForProject } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
-import { deployBotMicrovmImage } from '../../cloud/aws/microvm';
+import { deployBotMicrovmImage, isMicrovmEnabledForProject } from '../../cloud/aws/microvm';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
@@ -93,6 +93,10 @@ export async function deployBot(
 
   if (!(await isBotEnabledForProject(bot.meta?.project as string))) {
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
+  }
+
+  if (bot.runtimeVersion === 'awslambdamicrovm' && !(await isMicrovmEnabledForProject(bot.meta?.project))) {
+    throw new OperationOutcomeError(badRequest('AWS Lambda MicroVM bots not enabled'));
   }
 
   const result: DeployResult = { warnings: [] };

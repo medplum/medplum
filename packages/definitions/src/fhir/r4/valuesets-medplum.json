@@ -332,6 +332,11 @@
             "code": "archive",
             "display": "Archive",
             "definition": "Allow project admins to export a history-preserving archive of the project with Project/$archive"
+          },
+          {
+            "code": "aws-lambda-microvm",
+            "display": "AWS Lambda MicroVM",
+            "definition": "Allow deploying and running bots with the experimental AWS Lambda MicroVM runtime"
           }
         ]
       }

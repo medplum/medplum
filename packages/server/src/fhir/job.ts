@@ -5,7 +5,7 @@ import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import type { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { MICROVM_ASYNC_JOB_TYPE, reconcileMicrovmJob } from '../cloud/aws/microvm';
+import { isMicrovmJob, reconcileMicrovmJob } from '../cloud/aws/microvm';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
@@ -27,7 +27,7 @@ jobRouter.get('/:id/status', async (req: Request, res: Response) => {
   // for job state when the job exhausts the available FHIR quota
   let asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
 
-  if (asyncJob.type === MICROVM_ASYNC_JOB_TYPE && !finalJobStatusCodes.includes(asyncJob.status)) {
+  if (!finalJobStatusCodes.includes(asyncJob.status) && (await isMicrovmJob(asyncJob))) {
     // Nothing polls MicroVMs, so the handle is refreshed from AWS on read
     asyncJob = await reconcileMicrovmJob(ctx.repo.getSystemRepo(), asyncJob);
   }

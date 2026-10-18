@@ -12,15 +12,18 @@ import {
 } from '@aws-sdk/client-lambda-microvms';
 import type { WithId } from '@medplum/core';
 import { createReference, normalizeErrorString, OperationOutcomeError, preconditionFailed } from '@medplum/core';
-import type { AsyncJob, Binary, Bot, Parameters } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bot, Parameters, Project } from '@medplum/fhirtypes';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
 import type { Repository } from '../../fhir/repo';
-import { getProjectSystemRepo } from '../../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { buildLambdaPayload } from './execute';
 import { S3Storage } from './storage';
+
+/** The `Project.features` code that allows the experimental MicroVM runtime. Only super admins can set it. */
+export const MICROVM_PROJECT_FEATURE = 'aws-lambda-microvm';
 
 /** The `AsyncJob.type` used for MicroVM bot invocations. */
 export const MICROVM_ASYNC_JOB_TYPE = 'aws-lambda-microvm';
@@ -46,6 +49,24 @@ export function getMicrovmTimeout(bot: Bot): number {
 
 export function getMicrovmAccessTokenLifetime(bot: Bot): number {
   return getMicrovmTimeout(bot) + MICROVM_ACCESS_TOKEN_MARGIN_SECONDS;
+}
+
+export async function isMicrovmEnabledForProject(projectId: string | undefined): Promise<boolean> {
+  if (!projectId) {
+    return false;
+  }
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', projectId);
+  return !!project.features?.includes(MICROVM_PROJECT_FEATURE);
+}
+
+/**
+ * Returns true if the server should act on this `AsyncJob` as a MicroVM handle.
+ * Checking the feature keeps a forged job in another project from reaching the AWS API.
+ * @param asyncJob - The AsyncJob.
+ * @returns True if the job is a MicroVM job in a project with the MicroVM feature.
+ */
+export async function isMicrovmJob(asyncJob: AsyncJob): Promise<boolean> {
+  return asyncJob.type === MICROVM_ASYNC_JOB_TYPE && (await isMicrovmEnabledForProject(asyncJob.meta?.project));
 }
 
 export function getBotMicrovmName(bot: WithId<Bot>): string {

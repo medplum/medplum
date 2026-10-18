@@ -14,9 +14,11 @@ import type { AsyncJob, Binary, Bot, ProjectMembership } from '@medplum/fhirtype
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { initAppServices, shutdownApp } from '../../app';
+import { executeBot } from '../../bots/execute';
 import type { BotExecutionContext } from '../../bots/types';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import type { Repository } from '../../fhir/repo';
+import { deployBot } from '../../fhir/operations/deploy';
 import { getProjectSystemRepo } from '../../fhir/repo';
 import { initBinaryStorage } from '../../storage/loader';
 import { createTestProject } from '../../test.setup';
@@ -24,6 +26,7 @@ import {
   deployBotMicrovmImage,
   executeMicrovmBot,
   getMicrovmId,
+  isMicrovmJob,
   MICROVM_ASYNC_JOB_TYPE,
   reconcileMicrovmJob,
   terminateMicrovm,
@@ -68,7 +71,10 @@ describe('MicroVM', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    const testProject = await createTestProject({ withClient: true });
+    const testProject = await createTestProject({
+      withClient: true,
+      project: { features: ['bots', 'aws-lambda-microvm'] },
+    });
     projectId = testProject.project.id;
     membership = testProject.membership;
     systemRepo = await getProjectSystemRepo(projectId);
@@ -292,5 +298,48 @@ describe('MicroVM', () => {
     await expect(reconcileMicrovmJob(systemRepo, job)).resolves.toBe(job);
     await terminateMicrovm(job);
     expect(mockMicrovmClient.calls()).toHaveLength(0);
+  });
+
+  describe('Project feature', () => {
+    let otherMembership: WithId<ProjectMembership>;
+    let otherRepo: Repository;
+    let otherBot: WithId<Bot>;
+
+    beforeAll(async () => {
+      // Bots are enabled, but the MicroVM feature is not
+      const otherProject = await createTestProject({ withClient: true });
+      otherMembership = otherProject.membership;
+      otherRepo = await getProjectSystemRepo(otherProject.project.id);
+      otherBot = await otherRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        meta: { project: otherProject.project.id },
+        name: 'Other MicroVM Bot',
+        runtimeVersion: 'awslambdamicrovm',
+      });
+    });
+
+    test('Does not deploy or run MicroVM bots without the feature', async () => {
+      await expect(deployBot(otherRepo, otherBot, 'code')).rejects.toThrow('AWS Lambda MicroVM bots not enabled');
+
+      const result = await executeBot({
+        bot: otherBot,
+        runAs: otherMembership,
+        input: {},
+        contentType: 'application/json',
+      });
+      expect(result).toMatchObject({ success: false, logResult: 'AWS Lambda MicroVM bots not enabled' });
+      expect(mockMicrovmClient.calls()).toHaveLength(0);
+    });
+
+    test('Ignores MicroVM jobs in projects without the feature', async () => {
+      const forged = await otherRepo.createResource<AsyncJob>({
+        ...(await createMicrovmJob()),
+        id: undefined,
+        meta: { project: otherBot.meta?.project },
+      });
+
+      await expect(isMicrovmJob(await createMicrovmJob())).resolves.toBe(true);
+      await expect(isMicrovmJob(forged)).resolves.toBe(false);
+    });
   });
 });
