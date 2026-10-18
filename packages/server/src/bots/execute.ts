@@ -3,6 +3,7 @@
 import { resolveId } from '@medplum/core';
 import { runInLambda } from '../cloud/aws/execute';
 import { runInLambdaStreaming } from '../cloud/aws/executestreaming';
+import { executeMicrovmBot, getMicrovmAccessTokenLifetime, isMicrovmEnabledForProject } from '../cloud/aws/microvm';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { getConfig } from '../config/loader';
 import { recordHistogramValue } from '../otel/otel';
@@ -33,14 +34,22 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   const execStart = process.hrtime.bigint();
   // The bot runs with runAs's identity in runAs's project, so that is the project entitled to
   // run bots -- not the one that happens to own the bot.
-  if (await isBotEnabledForProject(resolveId(runAs.project) as string)) {
+  const projectId = resolveId(runAs.project) as string;
+  if (bot.runtimeVersion === 'awslambdamicrovm' && !(await isMicrovmEnabledForProject(projectId))) {
+    result = { success: false, logResult: 'AWS Lambda MicroVM bots not enabled' };
+  } else if (await isBotEnabledForProject(projectId)) {
     if (getConfig().storeBotInput) {
       await writeBotInputToStorage(request);
     }
 
     const context: BotExecutionContext = {
       ...request,
-      accessToken: await getBotAccessToken(bot, runAs),
+      // MicroVMs outlive the standard 1h token, so they get one that lasts the whole run
+      accessToken: await getBotAccessToken(
+        bot,
+        runAs,
+        bot.runtimeVersion === 'awslambdamicrovm' ? getMicrovmAccessTokenLifetime(bot) : undefined
+      ),
       secrets: await getBotSecrets(bot, runAs),
     };
 
@@ -52,6 +61,8 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       } else {
         result = await runInLambda(context);
       }
+    } else if (bot.runtimeVersion === 'awslambdamicrovm') {
+      result = await executeMicrovmBot(context);
     } else if (bot.runtimeVersion === 'vmcontext') {
       result = await runInVmContext(context);
     } else if (bot.runtimeVersion === 'fission') {

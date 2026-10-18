@@ -254,7 +254,16 @@ export function clearBotAccessTokenCache(): void {
   botAccessTokenInFlight.clear();
 }
 
-export function getBotAccessToken(bot: WithId<Bot>, runAs: WithId<ProjectMembership>): Promise<string> {
+export function getBotAccessToken(
+  bot: WithId<Bot>,
+  runAs: WithId<ProjectMembership>,
+  lifetimeSeconds?: number
+): Promise<string> {
+  if (lifetimeSeconds !== undefined) {
+    // A custom lifetime outlasts the cache window, so the token is never shared or cached
+    return ensureBotAccessToken(runAs, undefined, `${lifetimeSeconds}s`);
+  }
+
   const versionId = runAs.meta?.versionId;
   if (!versionId) {
     // Without a versionId, changes to the membership can't be detected, so the token is never cached
@@ -270,7 +279,11 @@ export function getBotAccessToken(bot: WithId<Bot>, runAs: WithId<ProjectMembers
   return pending;
 }
 
-async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: string | undefined): Promise<string> {
+async function ensureBotAccessToken(
+  runAs: WithId<ProjectMembership>,
+  cacheKey: string | undefined,
+  lifetime?: string
+): Promise<string> {
   const systemRepo = getGlobalSystemRepo();
   if (cacheKey) {
     const cached = botAccessTokenCache.get(cacheKey);
@@ -293,13 +306,16 @@ async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: 
   });
 
   // Create the access token
-  const accessToken = await generateAccessToken({
-    login_id: login.id,
-    sub: resolveId(runAs.user?.reference as Reference),
-    username: resolveId(runAs.user?.reference as Reference) as string,
-    profile: runAs.profile?.reference as string,
-    scope: 'openid',
-  });
+  const accessToken = await generateAccessToken(
+    {
+      login_id: login.id,
+      sub: resolveId(runAs.user?.reference as Reference),
+      username: resolveId(runAs.user?.reference as Reference) as string,
+      profile: runAs.profile?.reference as string,
+      scope: 'openid',
+    },
+    { lifetime }
+  );
 
   if (cacheKey) {
     botAccessTokenCache.set(cacheKey, {

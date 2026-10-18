@@ -16,6 +16,7 @@ import { Readable } from 'node:stream';
 import { isBotEnabledForProject } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
+import { deployBotMicrovmImage, isMicrovmEnabledForProject } from '../../cloud/aws/microvm';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
@@ -94,6 +95,10 @@ export async function deployBot(
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
   }
 
+  if (bot.runtimeVersion === 'awslambdamicrovm' && !(await isMicrovmEnabledForProject(bot.meta?.project))) {
+    throw new OperationOutcomeError(badRequest('AWS Lambda MicroVM bots not enabled'));
+  }
+
   const result: DeployResult = { warnings: [] };
   if (!bot.runAsUser) {
     const botProject = bot.meta?.project;
@@ -112,6 +117,7 @@ export async function deployBot(
   let updatedBot: WithId<Bot> | undefined;
 
   let codeToDeploy = code;
+  let binaryToDeploy: WithId<Binary> | undefined;
   if (code) {
     const contentType = ContentType.JAVASCRIPT;
 
@@ -121,6 +127,7 @@ export async function deployBot(
       contentType,
     });
     await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(code));
+    binaryToDeploy = binary;
 
     // Update the bot
     updatedBot = await repo.updateResource<Bot>({
@@ -132,11 +139,12 @@ export async function deployBot(
       },
     });
   } else {
-    const binary = await repo.readReference<Binary>({
-      reference: (bot.executableCode as Attachment).url,
-    });
-    const stream = await getBinaryStorage().readBinary(binary);
-    codeToDeploy = await readStreamToString(stream);
+    const attachment = bot.executableCode as Attachment;
+    binaryToDeploy = await repo.readReference<Binary>({ reference: attachment.url });
+    if (attachment.contentType !== 'application/x-zip-compressed') {
+      const stream = await getBinaryStorage().readBinary(binaryToDeploy);
+      codeToDeploy = await readStreamToString(stream);
+    }
   }
 
   let latestBot = updatedBot ?? bot;
@@ -155,6 +163,8 @@ export async function deployBot(
     } else {
       await deployLambda(latestBot, codeToDeploy as string);
     }
+  } else if (latestBot.runtimeVersion === 'awslambdamicrovm') {
+    await deployBotMicrovmImage(latestBot, binaryToDeploy);
   } else if (latestBot.runtimeVersion === 'fission') {
     await deployFissionBot(latestBot, codeToDeploy as string);
   }

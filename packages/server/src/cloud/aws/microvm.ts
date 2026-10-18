@@ -1,0 +1,356 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import type {
+  GetMicrovmImageOutput,
+  GetMicrovmResponse,
+  Hooks,
+  RunMicrovmResponse,
+  UpdateMicrovmImageRequest,
+} from '@aws-sdk/client-lambda-microvms';
+import {
+  CreateMicrovmImageCommand,
+  GetMicrovmCommand,
+  GetMicrovmImageCommand,
+  LambdaMicrovmsClient,
+  ResourceNotFoundException,
+  RunMicrovmCommand,
+  TerminateMicrovmCommand,
+  UpdateMicrovmImageCommand,
+} from '@aws-sdk/client-lambda-microvms';
+import type { WithId } from '@medplum/core';
+import { createReference, normalizeErrorString, OperationOutcomeError, preconditionFailed } from '@medplum/core';
+import type { AsyncJob, Binary, Bot, Parameters, Project } from '@medplum/fhirtypes';
+import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import { getConfig } from '../../config/loader';
+import type { Repository } from '../../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../../fhir/repo';
+import { getLogger } from '../../logger';
+import { getBinaryStorage } from '../../storage/loader';
+import { buildLambdaPayload } from './execute';
+import { S3Storage } from './storage';
+
+/** The `Project.features` code that allows the experimental MicroVM runtime. Only super admins can set it. */
+export const MICROVM_PROJECT_FEATURE = 'aws-lambda-microvm';
+
+/**
+ * Extension on the `AsyncJob` that records its MicroVM. Kept out of `output`, which the bot
+ * replaces when it closes out the job.
+ */
+export const MICROVM_ID_EXTENSION = 'https://medplum.com/fhir/StructureDefinition/microvm-id';
+
+/** The `AsyncJob.type` used for MicroVM bot invocations. */
+export const MICROVM_ASYNC_JOB_TYPE = 'aws-lambda-microvm';
+
+/**
+ * S3 key prefix for MicroVM code artifacts. The image build role can only read under this prefix,
+ * so it never has access to the rest of the storage bucket.
+ */
+export const MICROVM_ARTIFACT_PREFIX = 'bot-microvm/';
+
+/**
+ * Lifecycle hooks the bot artifact must serve on port 8080. `/run` delivers the bot payload, and
+ * Lambda requires `/ready` whenever any MicroVM hook is enabled.
+ */
+const MICROVM_HOOKS: Hooks = {
+  port: 8080,
+  microvmHooks: { run: 'ENABLED', runTimeoutInSeconds: 30 },
+  microvmImageHooks: { ready: 'ENABLED', readyTimeoutInSeconds: 600 },
+};
+
+/** CloudWatch log group prefix for MicroVM images. The image build role can only write under this prefix. */
+export const MICROVM_LOG_GROUP_PREFIX = '/aws/lambda-microvms/medplum-bot-';
+
+/** MicroVM run duration for Bots without a `timeout`. */
+export const DEFAULT_MICROVM_TIMEOUT_SECONDS = 3600;
+
+/** Extra access token lifetime, so the agent can still close its AsyncJob at the very end of the run. */
+const MICROVM_ACCESS_TOKEN_MARGIN_SECONDS = 300;
+
+export function getMicrovmTimeout(bot: Bot): number {
+  return bot.timeout ?? DEFAULT_MICROVM_TIMEOUT_SECONDS;
+}
+
+export function getMicrovmAccessTokenLifetime(bot: Bot): number {
+  return getMicrovmTimeout(bot) + MICROVM_ACCESS_TOKEN_MARGIN_SECONDS;
+}
+
+export async function isMicrovmEnabledForProject(projectId: string | undefined): Promise<boolean> {
+  if (!projectId) {
+    return false;
+  }
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', projectId);
+  return !!project.features?.includes(MICROVM_PROJECT_FEATURE);
+}
+
+/**
+ * Returns true if the server should act on this `AsyncJob` as a MicroVM handle.
+ * Checking the feature keeps a forged job in another project from reaching the AWS API.
+ * @param asyncJob - The AsyncJob.
+ * @returns True if the job is a MicroVM job in a project with the MicroVM feature.
+ */
+export async function isMicrovmJob(asyncJob: AsyncJob): Promise<boolean> {
+  return asyncJob.type === MICROVM_ASYNC_JOB_TYPE && (await isMicrovmEnabledForProject(asyncJob.meta?.project));
+}
+
+export function getBotMicrovmName(bot: WithId<Bot>): string {
+  // The server's IAM policy is scoped to images with this prefix
+  return `medplum-bot-microvm-${bot.id}`;
+}
+
+/**
+ * Returns the ARN of a Bot's MicroVM image. The MicroVM API only accepts image ARNs, not names.
+ * @param bot - The Bot.
+ * @returns The image ARN.
+ */
+export function getBotMicrovmImageArn(bot: WithId<Bot>): string {
+  const { awsRegion, awsLambdaMicrovmBuildRoleArn } = getConfig();
+  // The server config has no account ID, but images are built in the build role's account
+  const [, partition, , , accountId] = awsLambdaMicrovmBuildRoleArn?.split(':') ?? [];
+  if (!partition || !accountId) {
+    throw new Error('Missing AWS Lambda MicroVM build role ARN in configuration');
+  }
+  return `arn:${partition}:lambda:${awsRegion}:${accountId}:microvm-image:${getBotMicrovmName(bot)}`;
+}
+
+export async function deployBotMicrovmImage(bot: WithId<Bot>, binary: WithId<Binary>): Promise<string> {
+  const config = getConfig();
+
+  const baseImageArn = config.awsLambdaMicrovmBaseImageArn;
+  if (!baseImageArn) {
+    throw new Error('Missing AWS Lambda MicroVM base image ARN in configuration');
+  }
+
+  const buildRoleArn = config.awsLambdaMicrovmBuildRoleArn;
+  if (!buildRoleArn) {
+    throw new Error('Missing AWS Lambda MicroVM build role ARN in configuration');
+  }
+
+  const storage = getBinaryStorage();
+  if (!(storage instanceof S3Storage)) {
+    throw new Error('AWS Lambda MicroVM requires S3 storage');
+  }
+
+  if (config.sseCustomerKey) {
+    // The build role cannot read objects encrypted with a customer-provided key
+    throw new Error('AWS Lambda MicroVM does not support SSE-C storage');
+  }
+
+  if (binary.contentType !== 'application/zip' && binary.contentType !== 'application/x-zip-compressed') {
+    throw new Error('AWS Lambda MicroVM bots require a zip file containing a Dockerfile');
+  }
+
+  // Copy the code into the artifact prefix rather than pointing the build at the Binary itself
+  const name = getBotMicrovmName(bot);
+  const key = `${MICROVM_ARTIFACT_PREFIX}${bot.id}/${binary.id}/${binary.meta?.versionId}`;
+  await storage.copyFile(storage.getKey(binary), key);
+
+  // Updates do not inherit any of these, so every build sends all of them
+  const build: Omit<UpdateMicrovmImageRequest, 'imageIdentifier'> = {
+    codeArtifact: { uri: `s3://${storage.bucket}/${key}` },
+    baseImageArn,
+    buildRoleArn,
+    logging: { cloudWatch: { logGroup: `${MICROVM_LOG_GROUP_PREFIX}${bot.id}` } },
+    hooks: MICROVM_HOOKS,
+    // Lets bots sandbox their own processes (e.g. network namespaces); the VM stays the boundary
+    additionalOsCapabilities: ['ALL'],
+  };
+
+  const client = getMicrovmClient();
+  const imageArn = getBotMicrovmImageArn(bot);
+  let exists = true;
+  try {
+    await client.send(new GetMicrovmImageCommand({ imageIdentifier: imageArn }));
+  } catch (err) {
+    if (!(err instanceof ResourceNotFoundException)) {
+      throw err;
+    }
+    exists = false;
+  }
+
+  // A second CreateMicrovmImage with the same name fails, so redeploys build a new image version
+  const microvmImage = exists
+    ? await client.send(new UpdateMicrovmImageCommand({ imageIdentifier: imageArn, ...build }))
+    : await client.send(new CreateMicrovmImageCommand({ name, ...build }));
+
+  getLogger().info(exists ? 'Updating MicroVM image' : 'Creating MicroVM image', {
+    name,
+    baseImageArn,
+    buildRoleArn,
+    imageArn: microvmImage.imageArn,
+  });
+  return microvmImage.imageArn as string;
+}
+
+let client: LambdaMicrovmsClient | undefined;
+
+export function getMicrovmClient(): LambdaMicrovmsClient {
+  client ??= new LambdaMicrovmsClient({ region: getConfig().awsRegion });
+  return client;
+}
+
+/**
+ * Starts a MicroVM for a Bot and returns an `AsyncJob` handle for it.
+ *
+ * MicroVMs can run for hours, so this never waits for the run to finish. The `AsyncJob`
+ * is the handle used to check on the run ({@link reconcileMicrovmJob}) and to stop it
+ * ({@link terminateMicrovm}). The agent inside the MicroVM is expected to close out the
+ * `AsyncJob` itself when it finishes.
+ * @param context - The bot execution context.
+ * @returns The bot execution result, carrying the `AsyncJob` handle.
+ */
+export async function executeMicrovmBot(context: BotExecutionContext): Promise<BotExecutionResult> {
+  const { bot } = context;
+  const config = getConfig();
+  const region = config.awsRegion;
+  const client = getMicrovmClient();
+
+  let image: GetMicrovmImageOutput;
+  try {
+    image = await client.send(new GetMicrovmImageCommand({ imageIdentifier: getBotMicrovmImageArn(bot) }));
+  } catch (err) {
+    if (err instanceof ResourceNotFoundException) {
+      return { success: false, logResult: 'MicroVM image is not deployed' };
+    }
+    throw err;
+  }
+
+  // Create the handle before starting the MicroVM, so that the AsyncJob ID can double as the
+  // RunMicrovm idempotency token, and so that a failed start still leaves a record behind.
+  const repo = await getProjectSystemRepo(bot.meta?.project as string);
+  const asyncJob = await repo.createResource<AsyncJob>({
+    resourceType: 'AsyncJob',
+    type: MICROVM_ASYNC_JOB_TYPE,
+    status: 'accepted',
+    request: `${config.baseUrl}fhir/R4/Bot/${bot.id}/$execute`,
+    requestTime: new Date().toISOString(),
+    meta: { project: bot.meta?.project },
+  });
+
+  try {
+    const microvm = await client.send(
+      new RunMicrovmCommand({
+        imageIdentifier: image.imageArn,
+        clientToken: asyncJob.id,
+        maximumDurationInSeconds: getMicrovmTimeout(bot),
+        executionRoleArn: config.awsLambdaMicrovmExecutionRoleArn,
+        logging: config.awsLambdaMicrovmExecutionRoleArn
+          ? { cloudWatch: { logGroup: `${MICROVM_LOG_GROUP_PREFIX}${bot.id}` } }
+          : undefined,
+        runHookPayload: JSON.stringify({ ...buildLambdaPayload(context), asyncJob: createReference(asyncJob) }),
+        // Omitting ingress defaults to HTTP_INGRESS, so it has to be disabled explicitly
+        ingressNetworkConnectors: [`arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:NO_INGRESS`],
+        egressNetworkConnectors: [
+          `arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:INTERNET_EGRESS`,
+        ],
+        // No idlePolicy: without ingress there is no traffic, so an idle policy would suspend and then
+        // terminate a working MicroVM. The run is bounded by maximumDurationInSeconds instead.
+      })
+    );
+
+    return {
+      success: true,
+      logResult: `MicroVM ${microvm.microvmId} started`,
+      asyncJob: await repo.updateResource<AsyncJob>({
+        ...asyncJob,
+        extension: [...(asyncJob.extension ?? []), { url: MICROVM_ID_EXTENSION, valueString: microvm.microvmId }],
+        status: 'active',
+        output: microvmOutput(microvm),
+      }),
+    };
+  } catch (err) {
+    await repo.updateResource<AsyncJob>({
+      ...asyncJob,
+      status: 'error',
+      transactionTime: new Date().toISOString(),
+      output: { resourceType: 'Parameters', parameter: [{ name: 'error', valueString: normalizeErrorString(err) }] },
+    });
+    return { success: false, logResult: normalizeErrorString(err) };
+  }
+}
+
+/**
+ * Refreshes a MicroVM `AsyncJob` from the live state of its MicroVM.
+ *
+ * Nothing on the server polls MicroVMs, so the handle is brought up to date lazily whenever
+ * someone reads it. A MicroVM that has terminated while its `AsyncJob` is still open means the
+ * agent died without reporting a result, which is recorded as an error.
+ * @param repo - The repository used to update the AsyncJob.
+ * @param asyncJob - The AsyncJob handle to refresh.
+ * @returns The refreshed AsyncJob, or the original if nothing changed.
+ */
+export async function reconcileMicrovmJob(repo: Repository, asyncJob: WithId<AsyncJob>): Promise<WithId<AsyncJob>> {
+  const microvmId = getMicrovmId(asyncJob);
+  if (!microvmId) {
+    return asyncJob;
+  }
+
+  let microvm: GetMicrovmResponse;
+  try {
+    microvm = await getMicrovmClient().send(new GetMicrovmCommand({ microvmIdentifier: microvmId }));
+  } catch (err) {
+    getLogger().warn('Failed to read MicroVM state', {
+      asyncJob: asyncJob.id,
+      microvmId,
+      error: normalizeErrorString(err),
+    });
+    return asyncJob;
+  }
+
+  const terminated = microvm.state === 'TERMINATED';
+  if (!terminated && microvm.state === getOutputValue(asyncJob, 'state')) {
+    // Avoid writing a new version of the AsyncJob on every status poll
+    return asyncJob;
+  }
+
+  try {
+    return await repo.updateResource<AsyncJob>(
+      {
+        ...asyncJob,
+        status: terminated ? 'error' : 'active',
+        transactionTime: terminated ? new Date().toISOString() : undefined,
+        output: microvmOutput(microvm),
+      },
+      // Conditional update so a stale read never clobbers the agent's completion or another poller
+      { ifMatch: asyncJob.meta?.versionId }
+    );
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && err.outcome.id === preconditionFailed.id) {
+      return repo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    }
+    throw err;
+  }
+}
+
+/**
+ * Terminates the MicroVM behind an `AsyncJob` handle, if it still has one.
+ * @param asyncJob - The AsyncJob handle.
+ */
+export async function terminateMicrovm(asyncJob: AsyncJob): Promise<void> {
+  const microvmId = getMicrovmId(asyncJob);
+  if (microvmId) {
+    await getMicrovmClient().send(new TerminateMicrovmCommand({ microvmIdentifier: microvmId }));
+  }
+}
+
+export function getMicrovmId(asyncJob: AsyncJob): string | undefined {
+  return asyncJob.extension?.find((e) => e.url === MICROVM_ID_EXTENSION)?.valueString;
+}
+
+function getOutputValue(asyncJob: AsyncJob, name: string): string | undefined {
+  return asyncJob.output?.parameter?.find((p) => p.name === name)?.valueString;
+}
+
+function microvmOutput(microvm: RunMicrovmResponse | GetMicrovmResponse): Parameters {
+  const values: Record<string, string | undefined> = {
+    microvmId: microvm.microvmId,
+    state: microvm.state,
+    stateReason: microvm.stateReason,
+  };
+  return {
+    resourceType: 'Parameters',
+    parameter: Object.entries(values)
+      .filter(([, value]) => value !== undefined)
+      .map(([name, value]) => ({ name, valueString: value })),
+  };
+}

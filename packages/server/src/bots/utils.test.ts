@@ -133,6 +133,19 @@ describe('getBotAccessToken', () => {
       expect(token3).not.toBe(token1);
     }));
 
+  test('Custom lifetime mints an uncached token that lasts that long', () =>
+    withTestContext(async () => {
+      const cached = await getBotAccessToken(bot, membership);
+      const token1 = await getBotAccessToken(bot, membership, 4 * 3600);
+      const token2 = await getBotAccessToken(bot, membership, 4 * 3600);
+      expect(token1).not.toBe(cached);
+      expect(token2).not.toBe(token1);
+
+      const { iat, exp } = parseJWTPayload(token1) as { iat: number; exp: number };
+      expect(exp - iat).toBe(4 * 3600);
+      expect(await getBotAccessToken(bot, membership)).toBe(cached);
+    }));
+
   test('New token for a different bot on the same membership', () =>
     withTestContext(async () => {
       const otherBot = { resourceType: 'Bot', id: 'bot-2' } as WithId<Bot>;
