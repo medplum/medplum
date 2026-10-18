@@ -8,6 +8,7 @@ import {
   ResourceNotFoundException,
   RunMicrovmCommand,
   TerminateMicrovmCommand,
+  UpdateMicrovmImageCommand,
 } from '@aws-sdk/client-lambda-microvms';
 import { CopyObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { WithId } from '@medplum/core';
@@ -119,8 +120,11 @@ describe('MicroVM', () => {
   });
 
   describe('deployBotMicrovmImage', () => {
+    const notFound = new ResourceNotFoundException({ message: 'Not found', $metadata: {} });
+
     test('Builds from a copy in the artifact prefix', async () => {
       const key = `${binary.id}/${binary.meta?.versionId}`;
+      mockMicrovmClient.on(GetMicrovmImageCommand).rejects(notFound);
 
       await expect(deployBotMicrovmImage(bot, binary)).resolves.toBe('arn:image');
 
@@ -135,6 +139,24 @@ describe('MicroVM', () => {
         buildRoleArn: 'arn:aws:iam::123456789012:role/build',
         codeArtifact: { uri: `s3://my-bucket/bot-microvm/${bot.id}/${key}` },
         logging: { cloudWatch: { logGroup: `/aws/lambda-microvms/medplum-bot-${bot.id}` } },
+        hooks: { port: 8080, microvmHooks: { run: 'ENABLED' }, microvmImageHooks: { ready: 'ENABLED' } },
+      });
+    });
+
+    test('Redeploys as a new version of the existing image', async () => {
+      const imageArn = `arn:aws:lambda:us-east-1:123456789012:microvm-image:medplum-bot-microvm-${bot.id}`;
+      mockMicrovmClient.on(GetMicrovmImageCommand).resolves({ imageArn });
+      mockMicrovmClient.on(UpdateMicrovmImageCommand).resolves({ imageArn });
+
+      await expect(deployBotMicrovmImage(bot, binary)).resolves.toBe(imageArn);
+
+      expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)).toHaveLength(0);
+      expect(mockMicrovmClient.commandCalls(UpdateMicrovmImageCommand)[0].args[0].input).toMatchObject({
+        imageIdentifier: imageArn,
+        baseImageArn: 'arn:base-image',
+        buildRoleArn: 'arn:aws:iam::123456789012:role/build',
+        logging: { cloudWatch: { logGroup: `/aws/lambda-microvms/medplum-bot-${bot.id}` } },
+        hooks: { microvmHooks: { run: 'ENABLED' } },
       });
     });
 
@@ -155,6 +177,12 @@ describe('MicroVM', () => {
       config.sseCustomerKey = Buffer.alloc(32).toString('base64');
       initBinaryStorage('s3:my-bucket');
       await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('does not support SSE-C');
+      config.sseCustomerKey = undefined;
+
+      const javascript = { ...binary, contentType: 'application/javascript' };
+      await expect(deployBotMicrovmImage(bot, javascript)).rejects.toThrow(
+        'require a zip file containing a Dockerfile'
+      );
 
       expect(mockS3Client.commandCalls(CopyObjectCommand)).toHaveLength(0);
       expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)).toHaveLength(0);

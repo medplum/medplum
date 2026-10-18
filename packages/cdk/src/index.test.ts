@@ -850,7 +850,13 @@ describe('Infra', () => {
                 ],
               },
               {
-                Action: ['lambda:GetMicrovmImage', 'lambda:RunMicrovm', 'lambda:GetMicrovm', 'lambda:TerminateMicrovm'],
+                Action: [
+                  'lambda:GetMicrovmImage',
+                  'lambda:UpdateMicrovmImage',
+                  'lambda:RunMicrovm',
+                  'lambda:GetMicrovm',
+                  'lambda:TerminateMicrovm',
+                ],
                 Effect: 'Allow',
                 Resource: `arn:aws:lambda:${baseConfig.region}:${baseConfig.accountNumber}:microvm-image:medplum-bot-microvm-*`,
               },

@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { GetMicrovmImageOutput, GetMicrovmResponse, RunMicrovmResponse } from '@aws-sdk/client-lambda-microvms';
+import type {
+  GetMicrovmImageOutput,
+  GetMicrovmResponse,
+  Hooks,
+  RunMicrovmResponse,
+  UpdateMicrovmImageRequest,
+} from '@aws-sdk/client-lambda-microvms';
 import {
   CreateMicrovmImageCommand,
   GetMicrovmCommand,
@@ -10,6 +16,7 @@ import {
   ResourceNotFoundException,
   RunMicrovmCommand,
   TerminateMicrovmCommand,
+  UpdateMicrovmImageCommand,
 } from '@aws-sdk/client-lambda-microvms';
 import type { WithId } from '@medplum/core';
 import { createReference, normalizeErrorString, OperationOutcomeError, preconditionFailed } from '@medplum/core';
@@ -34,6 +41,16 @@ export const MICROVM_ASYNC_JOB_TYPE = 'aws-lambda-microvm';
  * so it never has access to the rest of the storage bucket.
  */
 export const MICROVM_ARTIFACT_PREFIX = 'bot-microvm/';
+
+/**
+ * Lifecycle hooks the bot artifact must serve on port 8080. `/run` delivers the bot payload, and
+ * Lambda requires `/ready` whenever any MicroVM hook is enabled.
+ */
+const MICROVM_HOOKS: Hooks = {
+  port: 8080,
+  microvmHooks: { run: 'ENABLED', runTimeoutInSeconds: 30 },
+  microvmImageHooks: { ready: 'ENABLED', readyTimeoutInSeconds: 600 },
+};
 
 /** CloudWatch log group prefix for MicroVM images. The image build role can only write under this prefix. */
 export const MICROVM_LOG_GROUP_PREFIX = '/aws/lambda-microvms/medplum-bot-';
@@ -113,24 +130,47 @@ export async function deployBotMicrovmImage(bot: WithId<Bot>, binary: WithId<Bin
     throw new Error('AWS Lambda MicroVM does not support SSE-C storage');
   }
 
+  if (binary.contentType !== 'application/zip' && binary.contentType !== 'application/x-zip-compressed') {
+    throw new Error('AWS Lambda MicroVM bots require a zip file containing a Dockerfile');
+  }
+
   // Copy the code into the artifact prefix rather than pointing the build at the Binary itself
   const name = getBotMicrovmName(bot);
   const key = `${MICROVM_ARTIFACT_PREFIX}${bot.id}/${binary.id}/${binary.meta?.versionId}`;
   await storage.copyFile(storage.getKey(binary), key);
 
+  // Updates do not inherit any of these, so every build sends all of them
+  const build: Omit<UpdateMicrovmImageRequest, 'imageIdentifier'> = {
+    codeArtifact: { uri: `s3://${storage.bucket}/${key}` },
+    baseImageArn,
+    buildRoleArn,
+    logging: { cloudWatch: { logGroup: `${MICROVM_LOG_GROUP_PREFIX}${bot.id}` } },
+    hooks: MICROVM_HOOKS,
+  };
+
   const client = getMicrovmClient();
+  const imageArn = getBotMicrovmImageArn(bot);
+  let exists = true;
+  try {
+    await client.send(new GetMicrovmImageCommand({ imageIdentifier: imageArn }));
+  } catch (err) {
+    if (!(err instanceof ResourceNotFoundException)) {
+      throw err;
+    }
+    exists = false;
+  }
 
-  const microvmImage = await client.send(
-    new CreateMicrovmImageCommand({
-      name,
-      codeArtifact: { uri: `s3://${storage.bucket}/${key}` },
-      baseImageArn,
-      buildRoleArn,
-      logging: { cloudWatch: { logGroup: `${MICROVM_LOG_GROUP_PREFIX}${bot.id}` } },
-    })
-  );
+  // A second CreateMicrovmImage with the same name fails, so redeploys build a new image version
+  const microvmImage = exists
+    ? await client.send(new UpdateMicrovmImageCommand({ imageIdentifier: imageArn, ...build }))
+    : await client.send(new CreateMicrovmImageCommand({ name, ...build }));
 
-  getLogger().info('Creating MicroVM image', { name, baseImageArn, buildRoleArn, imageArn: microvmImage.imageArn });
+  getLogger().info(exists ? 'Updating MicroVM image' : 'Creating MicroVM image', {
+    name,
+    baseImageArn,
+    buildRoleArn,
+    imageArn: microvmImage.imageArn,
+  });
   return microvmImage.imageArn as string;
 }
 

@@ -464,7 +464,13 @@ export class BackEnd extends Construct {
         // https://docs.aws.amazon.com/lambda/latest/dg/microvms-security.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['lambda:GetMicrovmImage', 'lambda:RunMicrovm', 'lambda:GetMicrovm', 'lambda:TerminateMicrovm'],
+          actions: [
+            'lambda:GetMicrovmImage',
+            'lambda:UpdateMicrovmImage',
+            'lambda:RunMicrovm',
+            'lambda:GetMicrovm',
+            'lambda:TerminateMicrovm',
+          ],
           resources: [`arn:aws:lambda:${region}:${accountNumber}:microvm-image:medplum-bot-microvm-*`],
         }),
 
