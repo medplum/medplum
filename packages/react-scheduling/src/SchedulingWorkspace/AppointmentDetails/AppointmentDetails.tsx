@@ -370,16 +370,18 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
           <Divider />
-          {confirmError !== undefined && (
-            <Alert color="red" title="Could not confirm this appointment">
-              {normalizeErrorString(confirmError)}
-            </Alert>
-          )}
           {/* `$confirm` also accepts `proposed`, but only what `$hold` left `pending` is offered. */}
           {appointment.status === 'pending' && (
-            <Button loading={confirming} leftSection={<IconCalendarCheck size={16} stroke={1.8} />} onClick={confirm}>
-              Confirm
-            </Button>
+            <>
+              {confirmError !== undefined && (
+                <Alert color="red" title="Could not confirm this appointment">
+                  {normalizeErrorString(confirmError)}
+                </Alert>
+              )}
+              <Button loading={confirming} leftSection={<IconCalendarCheck size={16} stroke={1.8} />} onClick={confirm}>
+                Confirm
+              </Button>
+            </>
           )}
           {externalUrl && (
             <Button
