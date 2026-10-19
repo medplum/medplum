@@ -165,6 +165,12 @@ export interface AppointmentProposalFormProps {
    * rather than leaving it on a time nobody chose.
    */
   readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
+  /**
+   * Called with the appointment that would be booked, a searched or typed time, and with
+   * `undefined` once there is none. Status `proposed`, so a host can draw it on a calendar of
+   * its own as a visit not yet booked. Called on mount, too.
+   */
+  readonly onChangeProposal?: (proposal: Appointment | undefined) => void;
   /** The ValueSet the procedure code field binds to. Defaults to the full CPT value set. */
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
@@ -227,6 +233,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onToggleTimeFinder,
     onChangeService,
     onChangeTime,
+    onChangeProposal,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
     onSubmit,
@@ -387,6 +394,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       onChangeTime?.(toRange(chosen));
     }
   }, [chosen, onChangeTime]);
+
+  useEffect(() => onChangeProposal?.(chosen), [chosen, onChangeProposal]);
 
   function toggleFinder(): void {
     setFinding(!finding);

@@ -1187,6 +1187,22 @@ describe('AppointmentProposalForm', () => {
       expect(onChangeTime).toHaveBeenLastCalledWith(undefined);
     });
 
+    test('Reports the proposal, and its drop', async () => {
+      const onChangeProposal = vi.fn();
+      setup(medplum, { onChangeProposal });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      expect(onChangeProposal).toHaveBeenLastCalledWith(
+        expect.objectContaining({ resourceType: 'Appointment', status: 'proposed', start: expect.any(String) })
+      );
+
+      await chooseDay('18');
+
+      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
+    });
+
     test('Opens the time search on the day the host named', async () => {
       // In the following month, so the month the calendar would otherwise open on
       // cannot pass this by accident.
