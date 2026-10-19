@@ -4,8 +4,9 @@ A small Node.js script that demonstrates **server side token exchange** against 
 
 It takes an access token issued by an **external identity provider (IdP)** and exchanges it for a
 Medplum access token using the OAuth2 [Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693)
-grant. It can optionally target a specific `ProjectMembership` via `membership_id`, which lets the
-same external identity authenticate into a project other than the client's own project.
+grant. It can optionally target a specific `ProjectMembership` via `membership_id`. A hosted
+`ClientApplication` can select memberships in its own project; a self-hosted server-level provider
+can resolve memberships across projects.
 
 Unlike the browser based [medplum-client-external-idp-demo](../medplum-client-external-idp-demo),
 the token exchange itself can be a direct server-to-server call. This demo shows how to do that.
@@ -89,8 +90,8 @@ in your project:
    UserInfo URL, Client ID, and Client Secret.
 4. Use the `ClientApplication`'s **ID** as `MEDPLUM_AUTH_PROVIDER_ID`.
 
-See [Token Exchange](https://www.medplum.com/docs/auth/methods/token-exchange) and
-[External Identity Providers](https://www.medplum.com/docs/auth/methods/external-identity-providers)
+See [Token Exchange](https://www.medplum.com/docs/auth/token-exchange) and
+[External Identity Providers](https://www.medplum.com/docs/auth/external-identity-providers)
 for full details.
 
 ## Usage

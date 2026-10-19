@@ -50,7 +50,7 @@ Configure an external IDP on the Medplum `ClientApplication`. For example, your 
   - Multiple upstream IDPs within one application need additional routing, such as an identity broker.
 - **Best fit:** Each application selects a known IDP or broker for its users.
 
-Implementation: [External Identity Providers](/docs/auth/external-identity-providers).
+Implementation: [Application-based routing](/docs/auth/external-identity-providers#application-based-routing).
 
 ### Option C: External IDP with domain-based routing
 
@@ -85,7 +85,7 @@ Medplum handles the external IDP callback and returns an authorization code to y
   - Does not provide the client with an external access token for other services.
 - **Best fit:** Medplum is the primary client API and redirect login fits your application. Start here unless another flow meets a specific requirement.
 
-Implementation: [External Identity Providers](/docs/auth/external-identity-providers).
+Implementation: [External IDP authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow).
 
 ### Option B: Token exchange
 
@@ -129,7 +129,7 @@ Your backend retains each user's exchanged Medplum token and uses it to fulfill 
   - Live updates need a backend-to-client delivery path; components expecting direct Medplum access need adaptation.
 - **Best fit:** Your architecture requires backend mediation or keeping Medplum credentials out of the client.
 
-Implementation: [Token Exchange](/docs/auth/token-exchange).
+Implementation: [Shared token exchange setup](/docs/auth/token-exchange#set-up-your-clientapplication), [client-held tokens](/docs/auth/token-exchange#client-held-medplum-tokens), and [server-held tokens](/docs/auth/token-exchange#server-held-medplum-tokens).
 
 ### Option C: On-Behalf-Of (single machine-to-machine user)
 

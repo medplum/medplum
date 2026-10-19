@@ -7,7 +7,7 @@ tags: [auth]
 
 ## Introduction
 
-[Using Medplum as IDP](/docs/auth/medplum-as-idp) describes the OAuth2 Authorization Code flow using a full browser redirect: your user leaves your application, authenticates on a Medplum-hosted page, and is redirected back with a code.
+[Medplum Redirect Login](/docs/auth/medplum-as-idp) describes the OAuth2 Authorization Code flow using a full browser redirect: your user leaves your application, authenticates on a Medplum-hosted page, and is redirected back with a code.
 
 **Embedded login** is the same underlying OAuth2 Authorization Code flow with PKCE — it just skips the redirect. The email/password form is rendered directly inside your own application, using the `<SignInForm>` React component or the [`startLogin()`](/docs/sdk/core.medplumclient.startlogin) SDK method directly. Your user never sees another domain.
 

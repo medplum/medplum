@@ -9,26 +9,24 @@ tags: [auth]
 The [Authentication Decision Guide](/docs/decision-guides/authentication) helps you compare identity providers, account matching, and token-flow architectures.
 :::
 
-This page helps you choose the correct authentication method for your application, whether it's a browser, a server, or a device. The primary goal is to guide you to the right documentation page based on your use case.
+Use this directory to find setup instructions, SDK examples, and authentication reference material. User authentication can run in a browser, a native application, or through your backend. Application authentication gives a service its own access to Medplum.
 
-For **user-facing applications (web or mobile apps)**, use [_browser-based authentication_](#browser-based-authentication).
+## Sign-in and Identity Providers {/* #browser-based-authentication */}
+
+These pages explain login flows and provider configuration. Provider routing selects where the user authenticates; the login flow determines how your application obtains Medplum credentials.
+
+| Implementation task | Documentation |
+| --- | --- |
+| Redirect users to a Medplum-hosted login page | [Medplum Redirect Login](/docs/auth/medplum-as-idp) |
+| Render the Medplum email/password form inside your application | [Embedded Login](/docs/auth/embedded-login) |
+| Authenticate through an external IDP and have Medplum handle its callback | [External IDP authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow) |
+| Configure an external IDP for a particular application | [Application-based routing](/docs/auth/external-identity-providers#application-based-routing) |
+| Route users to corporate SSO by email domain | [Domain-level Identity Providers](/docs/auth/domain-level-identity-providers) |
+| Configure Medplum's Google sign-in integration | [Google Authentication](/docs/auth/google-auth) |
 
 :::caution[Patient Login]
 The Medplum App (https://app.medplum.com) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. To provide patient access, you must build a custom patient portal using the Medplum SDK.
 :::
-
-For applications running in a **trusted, back-end environment**, use [_server-side authentication_](#server-side-authentication).
-
-## Browser-based Authentication
-
-This category is for user-facing applications that connect directly to Medplum. These applications run in untrusted environments (browsers, native apps) and use **identity providers** to authenticate a user.
-
-| Method                                                         | **Choose to...**                                                                                    |
-| :------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
-| [Medplum as IDP](/docs/auth/medplum-as-idp)                    | (default) **Get going fast**, and don't have external compliance requirements.                      |
-| [External IDP](/docs/auth/external-identity-providers.mdx)     | Connect to an external IDP, like [Google Auth](/docs/auth/google-auth), Auth0, or AWS Cognito.      |
-| [Domain-level IDP](/docs/auth/domain-level-identity-providers) | Use your enterprise, domain-level **corporate identity solution.**                                  |
-| [Direct External Auth](/docs/auth/direct-external-auth)        | Authenticate directly with an external IDP token, without a token exchange flow (self-hosted only). |
 
 ### Mobile activation before account creation
 
@@ -36,18 +34,35 @@ Some mobile apps need to verify an activation code before the patient or user ac
 
 Do not embed a long-lived `client_secret` in a mobile binary. Treat native mobile apps as public clients. Use a short-lived, narrowly scoped activation credential that can only call the activation workflow. The activation workflow should validate the code, expiration, intended patient, and retry limits before creating or linking the Medplum user account. After activation, use the normal authentication flow for future sessions.
 
-## Server-side Authentication
+## User Tokens and Delegation
 
-This category is for back-end services. These applications do not directly authenticate a user but operate on behalf of an application or device. They can be used to:
+Use these pages when your application already authenticates the user or a trusted system establishes the user context. Token exchange can run in either the client or backend. On-Behalf-Of uses an application's credentials with a user context supplied on each request.
 
-- integrate with legacy systems
-- connect to a medical device
-- build a proxy API
-- connect to a CI/CD pipeline
+| Implementation task | Documentation |
+| --- | --- |
+| Exchange an external user access token, then call Medplum from the client | [Token Exchange: client-held Medplum tokens](/docs/auth/token-exchange#client-held-medplum-tokens) |
+| Exchange an external user access token and keep Medplum calls in your backend | [Token Exchange: server-held Medplum tokens](/docs/auth/token-exchange#server-held-medplum-tokens) |
+| Have a privileged application delegate individual requests to a user | [On-Behalf-Of](/docs/auth/on-behalf-of) |
+| Create a one-time code after user authentication and consent have occurred | [Pre-Authorized Code](/docs/auth/pre-authorized-code) |
+| Accept external JWTs directly on a self-hosted Medplum server | [Direct External Authentication](/docs/auth/direct-external-auth) |
 
-Use the [**Client Credentials Flow**](/docs/auth/client-credentials) to allow your application to use its own client key and secret to obtain a token. When working through proxy API layers, you can [enable on-behalf-of authentication](/docs/auth/on-behalf-of) with client credentials to act on behalf of other entities.
+## Application Authentication {/* #server-side-authentication */}
 
-For issuer-initiated workflows such as wallet handoff or magic links, use [**Pre-Authorized Code**](/docs/auth/pre-authorized-code) to mint a one-time code and redeem it at the token endpoint without an authorization redirect.
+These pages explain how a trusted service authenticates as a `ClientApplication`. A backend using a user's exchanged token follows the [server-held token instructions](/docs/auth/token-exchange#server-held-medplum-tokens) instead.
+
+| Implementation task | Documentation |
+| --- | --- |
+| Obtain an application token using a client ID and secret | [Client Credentials](/docs/auth/client-credentials) |
+| Authenticate the application using a signed JWT | [Client Assertion](/docs/auth/client-assertion) |
+| Authenticate the application using a client certificate | [Mutual TLS (mTLS)](/docs/auth/mtls), including infrastructure prerequisites |
+
+For delegated user requests, first authenticate the application, then follow [On-Behalf-Of](/docs/auth/on-behalf-of#how-to-use). Application authentication alone does not select an end user.
+
+## Sessions and MFA
+
+- [Access Token Management](/docs/auth/session-management): token lifetimes and refresh behavior.
+- [Logout](/docs/auth/logout): session revocation.
+- [Multi-Factor Authentication](/docs/auth/mfa): enrollment, login challenges, and recovery administration for Medplum-managed authentication. Configure external-IDP MFA with that provider.
 
 ---
 

@@ -4,13 +4,13 @@ toc_max_heading_level: 2
 tags: [auth]
 ---
 
-# Using Medplum as IDP
+# Medplum Redirect Login {/* #using-medplum-as-idp */}
 
 ## Introduction
 
-When building your own healthcare App, you can use Medplum as an **identity provider** using the OAuth2 Authorization Code flow. Medplum provides OAuth2 endpoints to authenticate Patients and Practitioners and share data with your application.
+Use the OAuth2 authorization-code flow to redirect users to a Medplum-hosted login page and receive a code at your application's callback. This page documents redirect login; [Embedded Login](/docs/auth/embedded-login) documents rendering the email/password form within your application.
 
-This guide will go over the basics of Medplum's OAuth2 authorization code flow, and you can find more detailed documentation in the [API Section](/docs/api/oauth/).
+For external identity provider configuration and its callback flow, see [External Identity Providers](/docs/auth/external-identity-providers). Detailed endpoint parameters are in the [OAuth2 API reference](/docs/api/oauth).
 
 We also have a **[minimal demo on Github](https://github.com/medplum/medplum-oauth-demo)** that implements a simple authorization code login.
 
