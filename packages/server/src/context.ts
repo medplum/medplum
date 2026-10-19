@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, OperationOutcomeError, badRequest, forbidden, isGone, isNotFound, parseLogLevel } from '@medplum/core';
+import {
+  Logger,
+  OperationOutcomeError,
+  badRequest,
+  forbidden,
+  isGone,
+  isNotFound,
+  parseLogLevel,
+  resolveId,
+} from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -200,25 +209,32 @@ export function closeRequestContext(): void {
   }
 }
 
+export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
+  if (requestId && traceId) {
+    return requestContextStore.run(new RequestContext(requestId, traceId), fn);
+  } else {
+    return fn();
+  }
+}
+
 /**
- * Runs `fn` in a request context carrying the given IDs.
- * @param requestId - The request ID; without it, `fn` runs in the current context.
- * @param traceId - The trace ID; without it, `fn` runs in the current context.
+ * Runs `fn` in a new request context, generating any missing IDs.
+ * @param requestId - The request ID to log under; generated if absent.
+ * @param traceId - The trace ID to log under; generated if absent.
  * @param fn - The work to run.
  * @param loggerMetadata - Optional fields added to every log line in the context.
  * @returns The result of `fn`.
  */
-export function tryRunInRequestContext<T>(
+export function runInRequestContext<T>(
   requestId: string | undefined,
   traceId: string | undefined,
   fn: () => T,
   loggerMetadata?: Record<string, unknown>
 ): T {
-  if (requestId && traceId) {
-    return requestContextStore.run(new RequestContext(requestId, traceId, undefined, loggerMetadata), fn);
-  } else {
-    return fn();
-  }
+  return requestContextStore.run(
+    new RequestContext(requestId ?? randomUUID(), traceId ?? generateTraceId(), undefined, loggerMetadata),
+    fn
+  );
 }
 
 /** Thrown when a serialized auth state's project or membership has been deactivated or deleted. */
@@ -258,6 +274,7 @@ async function refreshAuthState(authState: Readonly<AuthState>): Promise<AuthSta
   let project: WithId<Project>;
   let membership: WithId<ProjectMembership>;
   let onBehalfOfMembership: WithId<ProjectMembership> | undefined;
+  let onBehalfOfProject: WithId<Project> | undefined;
   try {
     [project, membership, onBehalfOfMembership] = await Promise.all([
       systemRepo.readResource<Project>('Project', authState.project.id),
@@ -265,6 +282,10 @@ async function refreshAuthState(authState: Readonly<AuthState>): Promise<AuthSta
       authState.onBehalfOfMembership &&
         systemRepo.readResource<ProjectMembership>('ProjectMembership', authState.onBehalfOfMembership.id),
     ]);
+    // A super admin can act on behalf of a member of another project, and the work then runs there
+    if (onBehalfOfMembership && resolveId(onBehalfOfMembership.project) !== project.id) {
+      onBehalfOfProject = await systemRepo.readReference<Project>(onBehalfOfMembership.project);
+    }
   } catch (err) {
     if (err instanceof OperationOutcomeError && (isNotFound(err.outcome) || isGone(err.outcome))) {
       throw new RevokedAuthStateError(err.outcome, { cause: err });
@@ -274,7 +295,7 @@ async function refreshAuthState(authState: Readonly<AuthState>): Promise<AuthSta
 
   const inactiveReason =
     getInactiveReason(project, membership) ??
-    (onBehalfOfMembership && getInactiveReason(project, onBehalfOfMembership));
+    (onBehalfOfMembership && getInactiveReason(onBehalfOfProject ?? project, onBehalfOfMembership));
   if (inactiveReason) {
     throw new RevokedAuthStateError(badRequest(inactiveReason));
   }

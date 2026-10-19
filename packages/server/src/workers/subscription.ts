@@ -40,7 +40,7 @@ import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
-import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getRequestContext, runInRequestContext, tryGetRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
 import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
@@ -168,7 +168,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
     worker = new Worker<SubscriptionJobData>(
       queueName,
       trackJobMetrics('subscription', (job) =>
-        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job), {
+        runInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job), {
           projectId: job.data.target.projectId,
           subscriptionId: job.data.subscriptionId,
         })

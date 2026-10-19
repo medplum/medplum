@@ -13,11 +13,12 @@ import {
   RequestContext,
   RevokedAuthStateError,
   runInAuthenticatedContext,
+  runInRequestContext,
   tryGetRequestContext,
   tryRunInRequestContext,
 } from './context';
 import type { SystemRepository } from './fhir/repo';
-import { Repository } from './fhir/repo';
+import { getGlobalSystemRepo, Repository } from './fhir/repo';
 import type { AuthState } from './oauth/middleware';
 import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
@@ -55,6 +56,15 @@ describe('RequestContext', () => {
     });
     tryRunInRequestContext('request', 'trace', () => {
       expect(tryGetRequestContext()).toBeDefined();
+    });
+  });
+
+  test('runInRequestContext generates missing IDs', () => {
+    runInRequestContext(undefined, undefined, () => {
+      expect(getRequestContext()).toMatchObject({ requestId: expect.any(String), traceId: expect.any(String) });
+    });
+    runInRequestContext('request', 'trace', () => {
+      expect(getRequestContext()).toMatchObject({ requestId: 'request', traceId: 'trace' });
     });
   });
 
@@ -219,6 +229,26 @@ describe('RequestContext', () => {
       ).catch((e: unknown) => e);
       expect(err).toBeInstanceOf(RevokedAuthStateError);
       expect((err as RevokedAuthStateError).outcome.issue[0].details?.text).toBe('Profile not active');
+    });
+
+    test('Rejects an on-behalf-of membership whose own project is inactive', async () => {
+      const otherProject = await getGlobalSystemRepo().createResource<Project>({
+        resourceType: 'Project',
+        active: false,
+      });
+      const { profile: onBehalfOf, membership: onBehalfOfMembership } = await createMembership({
+        project: createReference(otherProject),
+      });
+
+      const err = await runInAuthenticatedContext(
+        { ...authState, onBehalfOf, onBehalfOfMembership },
+        undefined,
+        undefined,
+        undefined,
+        () => undefined
+      ).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RevokedAuthStateError);
+      expect((err as RevokedAuthStateError).outcome.issue[0].details?.text).toBe('Project not active');
     });
 
     test('Rethrows other read failures unchanged so the job can be retried', async () => {
