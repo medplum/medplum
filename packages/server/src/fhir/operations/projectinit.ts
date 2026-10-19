@@ -3,8 +3,8 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import {
   badRequest,
-  createReference,
   created,
+  createReference,
   getResourceTypes,
   projectAdminResourceTypes,
   protectedResourceTypes,
