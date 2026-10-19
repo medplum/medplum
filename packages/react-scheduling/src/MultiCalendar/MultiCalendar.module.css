@@ -185,8 +185,10 @@
   }
 
   /* A draft, not yet saved, is hatched with its tint under a solid outline, so it can't be taken
-   * for a stored appointment of any status. Placed after the outlined statuses, which it overrides. */
+   * for a stored appointment of any status. Placed after the outlined statuses, which it overrides.
+   * Clicks pass through it to the time it covers. */
   :global(.appointment.draft) {
+    pointer-events: none;
     background: repeating-linear-gradient(
       -45deg,
       var(--appointment-tint) 0 6px,

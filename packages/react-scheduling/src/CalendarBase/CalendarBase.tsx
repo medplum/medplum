@@ -43,7 +43,7 @@ export interface FhirEventSource {
   interactive?: boolean;
 }
 
-export type ExtendedEvent =
+export type ExtendedEvent = (
   | {
       type: 'appointment';
       appointment: Appointment;
@@ -53,12 +53,16 @@ export type ExtendedEvent =
       type: 'slot';
       slot: Slot;
       schedule?: WithId<Schedule>;
-    };
+    }
+) & {
+  interactive?: boolean;
+};
 
 function appointmentsToEvents(
   appointments: Appointment[],
   schedule: WithId<Schedule> | undefined,
-  extra?: Partial<EventInput>
+  extra?: Partial<EventInput>,
+  details?: { interactive?: boolean }
 ): EventInput[] {
   return appointments
     .filter((appointment) => appointment.start && appointment.end)
@@ -71,7 +75,7 @@ function appointmentsToEvents(
         title: name,
         start: appointment.start,
         end: appointment.end,
-        extendedProps: { type: 'appointment', appointment, schedule } satisfies ExtendedEvent,
+        extendedProps: { type: 'appointment', appointment, schedule, ...details } satisfies ExtendedEvent,
         className: `appointment ${appointment.status}`,
         ...extra,
       };
@@ -130,14 +134,15 @@ function slotTitle(slot: Slot): string {
 function slotsToEvents(
   slots: Slot[],
   schedule: WithId<Schedule> | undefined,
-  extra?: Partial<EventInput>
+  extra?: Partial<EventInput>,
+  interactive?: boolean
 ): EventInput[] {
   return slots.map((slot) => ({
     id: slot.id,
     start: slot.start,
     end: slot.end,
     title: slotTitle(slot),
-    extendedProps: { type: 'slot', slot, schedule } satisfies ExtendedEvent,
+    extendedProps: { type: 'slot', slot, schedule, interactive } satisfies ExtendedEvent,
     className: `slot ${slot.status}`,
     ...extra,
   }));
@@ -206,8 +211,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         return {
           ...source,
           events: [
-            ...appointmentsToEvents(appointments, schedule, appointmentExtra),
-            ...slotsToEvents(filteredSlots, schedule, slotExtra),
+            ...appointmentsToEvents(appointments, schedule, appointmentExtra, { interactive }),
+            ...slotsToEvents(filteredSlots, schedule, slotExtra, interactive),
           ],
         };
       }),
@@ -224,6 +229,10 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const rawEventClick = useCallback(
     (eventClickInfo: EventClickInfo) => {
       const ext = eventClickInfo.event.extendedProps as ExtendedEvent;
+      // FullCalendar's `interactive` only takes an event out of the tab order; it still reports clicks.
+      if (ext.interactive === false) {
+        return;
+      }
       if (ext.type === 'appointment') {
         onSelectAppointment?.(ext.appointment, ext.schedule);
       } else if (ext.type === 'slot') {
@@ -385,7 +394,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         datesSet={(info) => onRangeChange?.({ start: info.start, end: info.end })}
         className={cx(classes.calendar, controller.view?.type)}
         eventDidMount={(info) => {
-          if (hasDoubleClickHandler) {
+          if (hasDoubleClickHandler && (info.event.extendedProps as ExtendedEvent).interactive !== false) {
             eventDataRef.current.set(info.el, info.event);
             info.el.addEventListener('dblclick', handleDblClick);
           }

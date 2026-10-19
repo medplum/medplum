@@ -12,7 +12,7 @@ import {
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import type { MultiCalendarSource } from './MultiCalendar';
 import { MultiCalendar } from './MultiCalendar';
@@ -110,7 +110,7 @@ describe('MultiCalendar', () => {
     expect(await within(blocked).findByText('Alice Smith')).toBeInTheDocument();
   });
 
-  test('draws a source marked not interactive without making its events clickable', () => {
+  test('draws a source marked not interactive without making its events clickable', async () => {
     const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
       resourceType: 'Appointment',
       id,
@@ -123,10 +123,17 @@ describe('MultiCalendar', () => {
       { appointments: [appointment('clickable', 'Homer Simpson', 0)], slots: [] },
       { appointments: [appointment('inert', 'Jane Williams', 60)], slots: [], interactive: false },
     ];
-    renderWithMedplum(<MultiCalendar sources={sources} onSelectAppointment={() => undefined} />, medplum);
+    const onSelectAppointment = vi.fn();
+    renderWithMedplum(<MultiCalendar sources={sources} onSelectAppointment={onSelectAppointment} />, medplum);
 
     expect(screen.getByText(/Homer Simpson/).closest('.event')).toHaveAttribute('role', 'button');
     expect(screen.getByText(/Jane Williams/).closest('.event')).not.toHaveAttribute('role', 'button');
+
+    // FullCalendar still reports a click on an event it draws as not interactive.
+    await userEvent.click(screen.getByText(/Jane Williams/));
+    expect(onSelectAppointment).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByText(/Homer Simpson/));
+    expect(onSelectAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 'clickable' }), undefined);
   });
 
   test('marks the appointments of a draft source, and only those, as drafts', () => {
