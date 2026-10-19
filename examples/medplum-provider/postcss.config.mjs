@@ -5,6 +5,7 @@ import simpleVars from 'postcss-simple-vars';
 
 const config = {
   plugins: [
+    // Leave light-dark() native, as our packages' own builds publish it.
     mantinePreset({ features: { lightDarkFunction: false } }),
     simpleVars({
       variables: {
