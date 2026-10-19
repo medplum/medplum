@@ -28,8 +28,8 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import type { SystemRepository } from '../repo';
-import { getShardSystemRepo } from '../repo';
-import { buildProjectShard, getDefaultShardId, getProjectShardId } from '../sharding';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
+import { buildProjectShard, getDefaultShardId, GLOBAL_SHARD_ID, normalizeShardId } from '../sharding';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -134,18 +134,43 @@ export async function createProject(
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const config = getConfig();
   const shardId = getDefaultShardId();
-  const systemRepo = getShardSystemRepo(shardId);
 
-  log.info('Project creation request received', { shardId: systemRepo.shardId, name: projectName });
+  log.info('Project creation request received', { shardId, name: projectName });
+
+  if (normalizeShardId(shardId) === GLOBAL_SHARD_ID) {
+    // Project and global resource types share a database, so create everything in one transaction
+    return getShardSystemRepo(shardId).withTransaction(
+      (txRepo) => createProjectResources(shardId, txRepo, txRepo, projectName, admin),
+      { resourceTypes: ['Project', 'AccessPolicy', 'ClientApplication', 'Practitioner', 'ProjectMembership'] }
+    );
+  }
+
+  // Skip background jobs: their post-commit Project lookup would run before the Project is created
+  const projectShardRepo = getShardSystemRepo(shardId, undefined, { skipBackgroundJobs: true });
+  return createProjectResources(shardId, projectShardRepo, getGlobalSystemRepo(), projectName, admin);
+}
+
+async function createProjectResources(
+  shardId: string,
+  projectShardRepo: SystemRepository,
+  globalRepo: SystemRepository,
+  projectName: string,
+  admin: WithId<User> | undefined
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
+}> {
+  const log = getLogger();
+  const config = getConfig();
 
   // AccessPolicy and ProfileResource are project resource types while the Project, ClientApplication, and
   // ProjectMembership are global. Pre-generate and assign Project.id so the project resource types can reference
   // the project before it is created.
-  const projectId = systemRepo.generateId();
+  const projectId = globalRepo.generateId();
 
-  const projectShardRepo = getShardSystemRepo(shardId, undefined, { skipBackgroundJobs: true });
   const { patientAccessPolicy, relatedPersonAccessPolicy, adminAccessPolicy, practitionerAccessPolicy, profile } =
     await projectShardRepo.withTransaction(
       async (txRepo) => {
@@ -174,7 +199,7 @@ export async function createProject(
     );
 
   log.info('Default access policies and profile created', {
-    shardId: systemRepo.shardId,
+    shardId,
     projectId,
     patientAccessPolicyId: patientAccessPolicy.id,
     relatedPersonAccessPolicyId: relatedPersonAccessPolicy.id,
@@ -183,7 +208,7 @@ export async function createProject(
     profileId: profile?.id,
   });
 
-  const result = await systemRepo.withTransaction(
+  const result = await globalRepo.withTransaction(
     async (txRepo) => {
       const project = await txRepo.createResource<Project>(
         {
@@ -223,7 +248,7 @@ export async function createProject(
   log.info('Project created', {
     id: result.project.id,
     name: projectName,
-    shardId: getProjectShardId(result.project),
+    shardId,
   });
 
   return result;

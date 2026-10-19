@@ -567,6 +567,26 @@ describe('External auth', () => {
   });
 });
 
+describe('External auth with sharding', () => {
+  const app = express();
+
+  beforeAll(async () => {
+    await initApp(app, await loadTestConfig({ sharded: true }));
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('Identity-less token for an unknown URL project returns 401', async () => {
+    const jwt = createFakeJwt({ iss: 'https://unknown-issuer.example.com', sub: randomUUID() });
+    const res = await request(app)
+      .get(`/projects/${randomUUID()}/oauth2/userinfo`)
+      .set('Authorization', 'Bearer ' + jwt);
+    expect(res).toHaveStatus(401);
+  });
+});
+
 function createFakeJwt(claims: Record<string, unknown>): string {
   return `header.${encodeBase64Url(JSON.stringify(claims))}.signature`;
 }

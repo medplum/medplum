@@ -310,5 +310,8 @@ export function getProjectShardId(project: Project): string | undefined {
  * @returns The normalized shard ID of the project's active shard.
  */
 export function getNormalizedProjectShardId(project: Project): string {
+  if (!isShardingEnabled()) {
+    return GLOBAL_SHARD_ID;
+  }
   return normalizeShardId(getProjectShardId(project));
 }

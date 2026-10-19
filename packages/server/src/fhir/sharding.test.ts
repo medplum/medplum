@@ -11,6 +11,7 @@ import {
   getAllShards,
   getAllShardsExceptGlobal,
   getDefaultShardId,
+  getNormalizedProjectShardId,
   getShardConfig,
   GLOBAL_SHARD_ID,
   globalShardResourceTypes,
@@ -194,6 +195,12 @@ describe('Without shards configured', () => {
     expect(Array.from(getAllShards(), (shard) => shard.id)).toStrictEqual([GLOBAL_SHARD_ID]);
     expect(Array.from(getAllShardsExceptGlobal(), (shard) => shard.id)).toStrictEqual([]);
   });
+
+  test('getNormalizedProjectShardId routes to the global shard even when Project.shard names another shard', () => {
+    expect(getNormalizedProjectShardId({ resourceType: 'Project', shard: [{ id: TEST_SHARD_ID }] })).toStrictEqual(
+      GLOBAL_SHARD_ID
+    );
+  });
 });
 
 describe('With shards configured', () => {
@@ -203,6 +210,12 @@ describe('With shards configured', () => {
 
   test('Sharding is enabled', () => {
     expect(isShardingEnabled()).toBe(true);
+  });
+
+  test('getNormalizedProjectShardId routes to the shard named by Project.shard', () => {
+    expect(getNormalizedProjectShardId({ resourceType: 'Project', shard: [{ id: TEST_SHARD_ID }] })).toStrictEqual(
+      TEST_SHARD_ID
+    );
   });
 
   describe('getDefaultShardId', () => {

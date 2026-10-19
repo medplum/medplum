@@ -3006,6 +3006,10 @@ export function getShardSystemRepo(
 export async function getProjectSystemRepo(
   projectInput: string | Reference<Project> | WithId<Project>
 ): Promise<SystemRepository> {
+  if (!isShardingEnabled()) {
+    return getShardSystemRepo(GLOBAL_SHARD_ID);
+  }
+
   let project: Project;
   if (typeof projectInput === 'string') {
     project = await getGlobalSystemRepo().readResource<Project>('Project', projectInput);

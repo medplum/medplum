@@ -8,7 +8,9 @@ import {
   forbidden,
   getDateProperty,
   getReferenceString,
+  isGone,
   isJwt,
+  isNotFound,
   isString,
   OperationOutcomeError,
   Operator,
@@ -1460,7 +1462,16 @@ async function getExternalBearerClient(
   projectId: string,
   issuer: string
 ): Promise<WithId<ClientApplication> | undefined> {
-  const projectRepo = await getProjectSystemRepo(projectId);
+  let projectRepo: SystemRepository;
+  try {
+    projectRepo = await getProjectSystemRepo(projectId);
+  } catch (err) {
+    // An unknown project matches no client, same as an unknown issuer
+    if (err instanceof OperationOutcomeError && (isNotFound(err.outcome) || isGone(err.outcome))) {
+      return undefined;
+    }
+    throw err;
+  }
   const clients = await projectRepo.searchResources<ClientApplication>({
     resourceType: 'ClientApplication',
     filters: [

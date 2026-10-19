@@ -61,7 +61,7 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import type { SystemRepository } from './repo';
-import { getShardSystemRepo, Repository } from './repo';
+import { getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
 import { getResourceCacheEntry } from './repository/resource-cache';
 import { ExpungedHistoryTag } from './repository/row-builder';
@@ -2324,6 +2324,11 @@ describe('FHIR Repo', () => {
     // construction from that context must not append duplicate synthetic projects.
     expect(repo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
     expect(clonedRepo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
+  });
+
+  test('getProjectSystemRepo routes to the global shard without reading the Project', async () => {
+    const repo = await getProjectSystemRepo(randomUUID());
+    expect(repo.shardId).toStrictEqual(GLOBAL_SHARD_ID);
   });
 });
 
