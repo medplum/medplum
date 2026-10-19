@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   CalendarRef,
+  DayHeaderInfo,
   EventApi,
   EventClickInfo,
   EventDisplayInfo,
@@ -37,6 +38,7 @@ export interface FhirEventSource {
   slots: Slot[];
   appointments: Appointment[];
   color?: string;
+  className?: string;
 }
 
 export type ExtendedEvent =
@@ -94,6 +96,25 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
   );
 }
 
+function isTodaysWeekday(info: DayHeaderInfo): boolean {
+  const now = new Date();
+  return (
+    !info.dayNumberText && info.dow === now.getDay() && now >= info.view.currentStart && now < info.view.currentEnd
+  );
+}
+
+function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
+  return (
+    <span className={cx(classes.dayHeaderText, isTodaysWeekday(info) && classes.todayWeekday)}>
+      {info.textParts.map((part, i) => (
+        <span key={i} className={part.type === 'day' ? classes.dayNumber : undefined}>
+          {part.value}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function slotTitle(slot: Slot): string {
   if (slot.status === 'free') {
     return 'Available';
@@ -131,6 +152,8 @@ export interface CalendarBaseProps extends Omit<
   onDoubleClickSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onSelectInterval?: (interval: DateTimeRange) => void;
   selection?: DateTimeRange;
+  /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
+  selectedId?: string;
   eventSources: FhirEventSource[];
 
   onRangeChange?: (range: DateTimeRange) => void;
@@ -158,6 +181,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     onDoubleClickSlot,
     onSelectInterval,
     selection,
+    selectedId,
     loading,
     ...fullCalendarProps
   } = props;
@@ -345,6 +369,12 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
         }}
         eventContent={renderEventContent}
+        dayHeaderContent={renderDayHeaderContent}
+        dayCellTopInnerClass={classes.dayCellTopInner}
+        slotHeaderInnerClass={classes.slotHeaderInner}
+        nowIndicatorLineClass={classes.nowIndicatorLine}
+        nowIndicatorDotClass={classes.nowIndicatorDot}
+        nowIndicatorHeaderClass={classes.nowIndicatorHeader}
         {...fullCalendarProps}
         ref={calendarRef}
         eventSources={eventSources}
@@ -364,6 +394,9 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           cx(props.eventClass, classes.event, {
             [classes.clickable]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
+            // Judged when the event is drawn, so one that ends while on show stays unmarked until redrawn.
+            past: !!evt.event.end && evt.event.end.getTime() <= Date.now(),
+            selected: evt.event.id === selectedId,
           })
         }
         eventTimeClass={cx(props.eventTimeClass, classes.eventTime)}

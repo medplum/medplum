@@ -102,6 +102,14 @@ export interface Project {
   identifier?: Identifier[];
 
   /**
+   * Whether this project is in active use. When a project is inactive, no
+   * one can log in to the project, existing sessions in the project stop
+   * working, and its subscriptions, cron bots, and async jobs do not run.
+   * Can only be set by a super admin.
+   */
+  active?: boolean;
+
+  /**
    * A name associated with the Project.
    */
   name?: string;

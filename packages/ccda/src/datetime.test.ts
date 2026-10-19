@@ -12,17 +12,29 @@ describe('mapCcdaToFhirDate', () => {
   });
 
   test('should handle year only', () => {
-    expect(mapCcdaToFhirDate('2024')).toBe('2024-01-01');
+    expect(mapCcdaToFhirDate('2024')).toBe('2024');
+  });
+
+  test('should handle year and month', () => {
+    expect(mapCcdaToFhirDate('201703')).toBe('2017-03');
   });
 });
 
 describe('mapCcdaToFhirDateTime', () => {
   test('should handle YYYY', () => {
-    expect(mapCcdaToFhirDateTime('2024')).toBe('2024-01-01T00:00:00Z');
+    expect(mapCcdaToFhirDateTime('2024')).toBe('2024');
+  });
+
+  test('should handle YYYYMM', () => {
+    expect(mapCcdaToFhirDateTime('201703')).toBe('2017-03');
   });
 
   test('should handle YYYYMMDD', () => {
-    expect(mapCcdaToFhirDateTime('20240101')).toBe('2024-01-01T00:00:00Z');
+    expect(mapCcdaToFhirDateTime('20240101')).toBe('2024-01-01');
+  });
+
+  test('should preserve hour precision', () => {
+    expect(mapCcdaToFhirDateTime('2017031514')).toBe('2017-03-15T14:00:00Z');
   });
 
   test('should handle YYYYMMDDHHMM', () => {
@@ -47,6 +59,10 @@ describe('mapCcdaToFhirDateTime', () => {
 
   test('should handle negative timezone offset', () => {
     expect(mapCcdaToFhirDateTime('20241005120000-0500')).toBe('2024-10-05T12:00:00-05:00');
+  });
+
+  test('should handle fractional seconds before timezone offset', () => {
+    expect(mapCcdaToFhirDateTime('20170315143000.123-0500')).toBe('2017-03-15T14:30:00.123-05:00');
   });
 
   test('should convert +0000 timezone to Z', () => {

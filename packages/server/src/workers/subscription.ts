@@ -40,10 +40,10 @@ import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
-import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getRequestContext, runInRequestContext, tryGetRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
-import { findProjectMembership } from '../fhir/projectmembership';
+import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
@@ -126,6 +126,8 @@ export interface SubscriptionJobData {
   readonly requestTime: string;
   readonly requestId?: string;
   readonly traceId?: string;
+  // PENDING{v5.3} Remove, along with where addSubscriptionJobs sets it. Unread by this release; still
+  // written for workers on earlier releases during a rolling deploy.
   readonly authState?: AuthState;
   readonly verbose?: boolean;
 }
@@ -166,11 +168,10 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
     worker = new Worker<SubscriptionJobData>(
       queueName,
       trackJobMetrics('subscription', (job) =>
-        job.data.authState
-          ? runInAuthenticatedContext(job.data.authState, job.data.requestId, job.data.traceId, undefined, () =>
-              execSubscriptionJob(job)
-            )
-          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+        runInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job), {
+          projectId: job.data.target.projectId,
+          subscriptionId: job.data.subscriptionId,
+        })
       ),
       {
         ...getWorkerBullmqConfig(config, 'subscription', defaultOptions),
@@ -359,6 +360,11 @@ export async function addSubscriptionJobs(
     return;
   }
 
+  if (getInactiveReason(project)) {
+    logFn('Project is not active, skipping subscriptions');
+    return;
+  }
+
   const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
@@ -433,6 +439,7 @@ export async function addSubscriptionJobs(
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
+        // PENDING{v5.3} Remove with SubscriptionJobData.authState
         authState: ctx?.authState,
         verbose: options?.verbose,
       });
@@ -615,6 +622,8 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   let systemRepo: SystemRepository;
+  // The subscription's project, not the writer's: AuditEvents are recorded there and follow its redaction setting.
+  let project: WithId<Project> | undefined;
   let subscription: WithId<Subscription> | undefined;
   let rewrittenResource: Resource;
 
@@ -641,6 +650,15 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       // If the subscription has been disabled, then stop processing it.
       logFn(`Subscription ${subscriptionId} is not active`);
       return;
+    }
+
+    // Jobs queued before the project was deactivated are dropped, not delivered late.
+    if (!job.data.target.system) {
+      project = await systemRepo.readResource<Project>('Project', job.data.target.projectId);
+      if (getInactiveReason(project)) {
+        logFn(`Project ${project.id} is not active`);
+        return;
+      }
     }
 
     if (job.data.interaction !== 'delete') {
@@ -676,14 +694,30 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // Errors in this try/catch are considered to be issues in the client's rest hook or bot
     // and should trigger retries according to the subscription's max attempts
     if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+      await execBot(
+        systemRepo,
+        project,
+        job,
+        subscription,
+        rewrittenResource,
+        job.data.interaction,
+        job.data.requestTime
+      );
     } else {
-      await sendRestHook(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+      await sendRestHook(
+        systemRepo,
+        project,
+        job,
+        subscription,
+        rewrittenResource,
+        job.data.interaction,
+        job.data.requestTime
+      );
     }
     // Success - reset the failure counter
     await clearSubscriptionFailures(subscription.id);
   } catch (err) {
-    await catchJobError(systemRepo, subscription, job, err);
+    await catchJobError(systemRepo, project, subscription, job, err);
   }
 }
 
@@ -730,6 +764,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
 /**
  * Sends a rest-hook subscription.
  * @param systemRepo - The system repository.
+ * @param project - The subscription's project; undefined for a system subscription.
  * @param job - The subscription job details.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
@@ -738,6 +773,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
  */
 async function sendRestHook(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
@@ -780,6 +816,7 @@ async function sendRestHook(
     const success = isJobSuccessful(subscription, response.status);
     await createSubscriptionAuditEvent(
       systemRepo,
+      project,
       resource,
       requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -799,6 +836,7 @@ async function sendRestHook(
     });
     await createSubscriptionAuditEvent(
       systemRepo,
+      project,
       resource,
       requestTime,
       AuditEventOutcome.MinorFailure,
@@ -877,6 +915,7 @@ function buildRestHookHeaders(
 /**
  * Executes a Bot subscription.
  * @param systemRepo - The system repository.
+ * @param project - The subscription's project.
  * @param job - The subscription job.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
@@ -885,6 +924,7 @@ function buildRestHookHeaders(
  */
 async function execBot(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
@@ -900,17 +940,25 @@ async function execBot(
   }
 
   // URL should be a Bot reference string
+  // SHARDING: this reads the Bot through the triggering project's shard, but the Bot can live in another
+  // project (a linked project, or any project for a server-scoped Subscription), and `Bot/<id>` doesn't
+  // say which. Proposed fix: search the global shard for `ProjectMembership?profile=Bot/<id>`, read the
+  // Bot from each candidate project's shard until found, and cache Bot ID -> project since Bots don't move.
+  // Alternatives considered: store the Bot's project on the Subscription at write time (a per-write
+  // lookup, but a field that can go stale and needs a migration, and linked-project Subscriptions would
+  // need it too), or try every shard (simple, but one read per shard per job unless cached).
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
-  const project = subscription.meta?.project as string;
+  // A project-scoped Subscription only fires for its own project, so the Bot runs there. A
+  // server-scoped one has no project: a runAsUser Bot runs where the requester is a member (the
+  // triggering project), and any other Bot runs as itself in its home project.
+  const projectId = subscription.meta?.project ?? (bot.runAsUser ? job.data.target.projectId : bot.meta?.project);
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;
   let runAs: WithId<ProjectMembership> | undefined;
-  if (bot.runAsUser) {
-    runAs = await findProjectMembership(project, requester);
-  } else {
-    runAs = await findProjectMembership(project, createReference(bot));
+  if (projectId) {
+    runAs = await findProjectMembership(projectId, bot.runAsUser ? requester : createReference(bot));
   }
 
   if (!runAs) {
@@ -924,6 +972,7 @@ async function execBot(
     subscription,
     bot,
     runAs,
+    runAsProject: project,
     requester,
     input: body,
     contentType: ContentType.FHIR_JSON,
@@ -935,6 +984,7 @@ async function execBot(
 
 async function catchJobError(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   subscription: WithId<Subscription>,
   job: Job<SubscriptionJobData>,
   err: unknown
@@ -949,7 +999,7 @@ async function catchJobError(
     const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
     const result = await recordSubscriptionFailure(subscription.id, triggers);
     if (result) {
-      await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
+      await autoDisableSubscription(systemRepo, project, result.trigger, subscription, result.failureCount);
     }
     // Throw a special error type to force BullMQ to move the job to failed state, instead of retrying again
     throw new UnrecoverableError(err instanceof Error ? err.message : 'Subscription exhausted available retries');
@@ -966,6 +1016,7 @@ async function catchJobError(
 
 async function autoDisableSubscription(
   systemRepo: SystemRepository,
+  project: WithId<Project> | undefined,
   trigger: SubscriptionAutoDisableTrigger,
   subscription: WithId<Subscription>,
   failureCount: number
@@ -989,6 +1040,7 @@ async function autoDisableSubscription(
 
         await createSubscriptionAuditEvent(
           txRepo,
+          project,
           subscription,
           new Date().toISOString(),
           AuditEventOutcome.SeriousFailure,

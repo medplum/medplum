@@ -189,6 +189,28 @@ describe('SchedulingWorkspace appointment details', () => {
     await waitFor(() => expect(container.querySelector('.appointment')).not.toBeInTheDocument());
   });
 
+  test('confirming a pending appointment redraws the details and the calendar as booked', async () => {
+    await medplum.updateResource({ ...APPOINTMENT, status: 'pending' });
+    // Answered the way a server answers, for the same reason as the cancellation above:
+    // the stub's own writes would announce themselves.
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'transaction-response',
+      entry: [{ resource: { ...APPOINTMENT, status: 'booked' } }],
+    });
+    const { container } = renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await clickAppointment();
+    expect(container.querySelector('.appointment.pending')).toBeInTheDocument();
+
+    await userEvent.click(within(details() as HTMLElement).getByRole('button', { name: 'Confirm' }));
+
+    // Booked now, so there is nothing left to confirm.
+    await waitFor(() => expect(within(details() as HTMLElement).getByText('booked')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
+    await waitFor(() => expect(container.querySelector('.appointment.booked')).toBeInTheDocument());
+  });
+
   test('a refusal does not outlive the details it was raised in', async () => {
     vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Appointment cannot be canceled'));
     renderWithMedplum(<SchedulingWorkspace />, medplum);

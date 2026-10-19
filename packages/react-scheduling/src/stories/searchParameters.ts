@@ -299,6 +299,20 @@ export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Appointment-slot',
+        url: 'http://hl7.org/fhir/SearchParameter/Appointment-slot',
+        name: 'slot',
+        status: 'draft',
+        description: 'The slots that this appointment is filling',
+        code: 'slot',
+        base: ['Appointment'],
+        type: 'reference',
+        expression: 'Appointment.slot',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Slot-schedule',
         url: 'http://hl7.org/fhir/SearchParameter/Slot-schedule',
         name: 'schedule',

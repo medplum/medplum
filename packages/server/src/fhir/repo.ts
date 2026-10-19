@@ -42,7 +42,12 @@ import {
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import type {
+  CreateResourceOptions,
+  DeleteResourceOptions,
+  ReadHistoryOptions,
+  UpdateResourceOptions,
+} from '@medplum/fhir-router';
 import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
@@ -691,7 +696,7 @@ export class Repository extends FhirRepository implements Disposable {
     return resource;
   }
 
-  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+  async readReferences<T extends Resource>(references: readonly Reference<T>[]): Promise<(WithId<T> | Error)[]> {
     await this.recordFhirQuota(references.length * FhirQuotaCost.READ);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
@@ -1463,7 +1468,11 @@ export class Repository extends FhirRepository implements Disposable {
     );
   }
 
-  async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+  async deleteResource<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: DeleteResourceOptions
+  ): Promise<void> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1475,6 +1484,11 @@ export class Repository extends FhirRepository implements Disposable {
     } catch (err) {
       const outcomeErr = err as OperationOutcomeError;
       if (isGone(outcomeErr.outcome)) {
+        if (options?.ifMatch) {
+          // Trying to delete something that was already deleted tells us that someone mutated this
+          // since our requested version; report that error.
+          throw new OperationOutcomeError(preconditionFailed);
+        }
         return; // Resource is already deleted, return successfully
       }
       throw err;
@@ -1483,6 +1497,9 @@ export class Repository extends FhirRepository implements Disposable {
     try {
       if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
+      }
+      if (options?.ifMatch && resource.meta?.versionId !== options.ifMatch) {
+        throw new OperationOutcomeError(preconditionFailed);
       }
 
       await preCommitValidation(this, resource, 'delete');
@@ -1515,6 +1532,15 @@ export class Repository extends FhirRepository implements Disposable {
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(
           async (txRepo) => {
+            if (options?.ifMatch) {
+              // Re-check against the snapshot this transaction writes from. A write committed after this
+              // read fails the upsert below with a serialization error, and the retry lands back here.
+              const current = await txRepo.readResourceFromDatabase<T>(resourceType, id);
+              if (current.meta?.versionId !== options.ifMatch) {
+                throw new OperationOutcomeError(preconditionFailed);
+              }
+            }
+
             // FHIR logical delete: retain history and append a new deleted version. Instance
             // reads and vread of that version return HTTP 410 Gone; prior versions stay readable.
             const versionId = txRepo.generateId();
@@ -1561,9 +1587,9 @@ export class Repository extends FhirRepository implements Disposable {
       }
 
       if (!this.context.skipBackgroundJobs) {
-        await addBackgroundJobs(resource, resource, {
-          project: await this.getProjectById(resource.meta?.project),
-          interaction: 'delete',
+        await this.postCommit(async () => {
+          const project = await this.getProjectById(resource.meta?.project);
+          await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
         });
       }
     } catch (err) {
@@ -2496,7 +2522,7 @@ export class Repository extends FhirRepository implements Disposable {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       subtype,
-      this.context.projects?.[0]?.id as string,
+      this.context.projects?.[0],
       this.context.author,
       this.context.remoteAddress,
       outcome,
@@ -2669,7 +2695,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param references - Array of FHIR references.
    * @returns Array of cache entries or undefined.
    */
-  private async getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+  private async getCacheEntries(references: readonly Reference[]): Promise<(CacheEntry | undefined)[]> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       return new Array(references.length);
@@ -3036,6 +3062,7 @@ function isRestorableToProject(resource: Resource, projectId: string): boolean {
 }
 
 const superAdminProjectFields = [
+  'active',
   'superAdmin',
   'features',
   'link',

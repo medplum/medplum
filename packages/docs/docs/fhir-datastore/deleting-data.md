@@ -29,6 +29,23 @@ However, the original content of the resource is not destroyed. It can still be 
 - Reading resource history: `GET Patient/123/_history`
 - Reading a resource version: `GET Patient/123/_history/1`
 
+### Preventing Conflicting Deletes
+
+If another user may have changed a resource since you read it, send its version in the `If-Match` header. The delete only succeeds if the resource is still at that version; otherwise it fails with `412 Precondition Failed` and nothing is deleted.
+
+```bash
+curl -X DELETE 'https://api.medplum.com/fhir/R4/Patient/123' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'If-Match: W/"<versionId>"'
+```
+
+```typescript
+const patient = await medplum.readResource('Patient', '123');
+await medplum.deleteResource('Patient', '123', {
+  headers: { 'If-Match': `W/"${patient.meta?.versionId}"` },
+});
+```
+
 :::caution[Referential Integrity on Deletes]
 
 Referential integrity is **not** supported for deletes at this time.

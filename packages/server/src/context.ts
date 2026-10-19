@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, OperationOutcomeError, badRequest, forbidden, parseLogLevel } from '@medplum/core';
+import {
+  Logger,
+  OperationOutcomeError,
+  badRequest,
+  forbidden,
+  isGone,
+  isNotFound,
+  parseLogLevel,
+  resolveId,
+} from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -16,7 +25,9 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter, getFhirQuotaConfig } from './fhir/fhirquota';
+import { getInactiveReason } from './fhir/projectmembership';
 import type { Repository, SuperAdminRepository, SystemRepository } from './fhir/repo';
+import { getGlobalSystemRepo } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { getLogger, globalLogger, writeLineToStdout } from './logger';
 import type { AuthState } from './oauth/middleware';
@@ -206,6 +217,40 @@ export function tryRunInRequestContext<T>(requestId: string | undefined, traceId
   }
 }
 
+/**
+ * Runs `fn` in a new request context, generating any missing IDs.
+ * @param requestId - The request ID to log under; generated if absent.
+ * @param traceId - The trace ID to log under; generated if absent.
+ * @param fn - The work to run.
+ * @param loggerMetadata - Optional fields added to every log line in the context.
+ * @returns The result of `fn`.
+ */
+export function runInRequestContext<T>(
+  requestId: string | undefined,
+  traceId: string | undefined,
+  fn: () => T,
+  loggerMetadata?: Record<string, unknown>
+): T {
+  return requestContextStore.run(
+    new RequestContext(requestId ?? randomUUID(), traceId ?? generateTraceId(), undefined, loggerMetadata),
+    fn
+  );
+}
+
+/** Thrown when a serialized auth state's project or membership has been deactivated or deleted. */
+export class RevokedAuthStateError extends OperationOutcomeError {}
+
+/**
+ * Runs `fn` as the user in `authState`, with its project and memberships re-read so `fn` sees their
+ * current versions rather than the serialized ones.
+ * @param authState - The serialized auth state to run as.
+ * @param requestId - The request ID to log under; generated if absent.
+ * @param traceId - The trace ID to log under; generated if absent.
+ * @param options - Options for the authenticated context.
+ * @param fn - The work to run.
+ * @returns The result of `fn`.
+ * @throws RevokedAuthStateError if the project or a membership has since been deactivated or deleted.
+ */
 export async function runInAuthenticatedContext<T>(
   authState: Readonly<AuthState>,
   requestId: string | undefined,
@@ -213,11 +258,48 @@ export async function runInAuthenticatedContext<T>(
   options: AuthenticatedContextOptions | undefined,
   fn: () => T
 ): Promise<T> {
-  const repo = await getRepoForLogin(authState, true);
+  const currentAuthState = await refreshAuthState(authState);
+  const repo = await getRepoForLogin(currentAuthState, true);
   requestId ??= randomUUID();
   traceId ??= generateTraceId();
 
-  return requestContextStore.run(new AuthenticatedRequestContext(requestId, traceId, authState, repo, options), fn);
+  return requestContextStore.run(
+    new AuthenticatedRequestContext(requestId, traceId, currentAuthState, repo, options),
+    fn
+  );
+}
+
+async function refreshAuthState(authState: Readonly<AuthState>): Promise<AuthState> {
+  const systemRepo = getGlobalSystemRepo();
+  let project: WithId<Project>;
+  let membership: WithId<ProjectMembership>;
+  let onBehalfOfMembership: WithId<ProjectMembership> | undefined;
+  let onBehalfOfProject: WithId<Project> | undefined;
+  try {
+    [project, membership, onBehalfOfMembership] = await Promise.all([
+      systemRepo.readResource<Project>('Project', authState.project.id),
+      systemRepo.readResource<ProjectMembership>('ProjectMembership', authState.membership.id),
+      authState.onBehalfOfMembership &&
+        systemRepo.readResource<ProjectMembership>('ProjectMembership', authState.onBehalfOfMembership.id),
+    ]);
+    // A super admin can act on behalf of a member of another project, and the work then runs there
+    if (onBehalfOfMembership && resolveId(onBehalfOfMembership.project) !== project.id) {
+      onBehalfOfProject = await systemRepo.readReference<Project>(onBehalfOfMembership.project);
+    }
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && (isNotFound(err.outcome) || isGone(err.outcome))) {
+      throw new RevokedAuthStateError(err.outcome, { cause: err });
+    }
+    throw err;
+  }
+
+  const inactiveReason =
+    getInactiveReason(project, membership) ??
+    (onBehalfOfMembership && getInactiveReason(onBehalfOfProject ?? project, onBehalfOfMembership));
+  if (inactiveReason) {
+    throw new RevokedAuthStateError(badRequest(inactiveReason));
+  }
+  return { ...authState, project, membership, onBehalfOfMembership };
 }
 
 export function buildTracingExtension(): Extension | undefined {

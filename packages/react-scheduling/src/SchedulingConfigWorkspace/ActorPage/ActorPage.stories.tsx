@@ -13,10 +13,14 @@ import { searchConfigurableActors, searchConfigurableServices } from '../../conf
 import { withFixtures } from '../../stories/decorators';
 import {
   ConfigFixtures,
+  DrBrooksPractitioner,
+  DrLindqvistPractitioner,
+  DrMensahPractitioner,
   DrNguyenPractitioner,
   DrPatelPractitioner,
   DrReyesPractitioner,
   ExamRoomC,
+  ManyVisitTypesFixtures,
 } from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
 
@@ -111,6 +115,19 @@ export const ProviderTimeZone = (): JSX.Element => (
 );
 
 /**
+ * Dr. Elena Brooks works at both clinics. Another system linked her to the main clinic, so it is shown locked,
+ * marked Linked by another system, and can't be removed. The satellite clinic was linked here, so it can be
+ * removed. Nothing asks when it is, since the main clinic still limits where she is offered.
+ *
+ * Saving turns the satellite's role off rather than deleting it, and adding the satellite back turns the same role
+ * on again.
+ * @returns The story.
+ */
+export const ProviderServiceFacilities = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrBrooksPractitioner.id} />
+);
+
+/**
  * A room being created, marked as new and not saved yet. Nothing is written until Create, which is refused until
  * it has a name. It starts active and is typed as a room, at the service facility picked from the same list
  * booking filters by. Its Schedule is created with it, and visit types can be offered once it is created.
@@ -140,3 +157,23 @@ export const CreateRoom = (): JSX.Element => {
     </Box>
   );
 };
+
+/**
+ * Dr. Elin Lindqvist offers 70 visit types, listed twenty at a time. Filter them by name, tick several, or tick the
+ * box above the list to take every match, and stop offering them together. Cardiology Follow-up has custom hours.
+ * @returns The story.
+ */
+export const ProviderWithManyVisitTypes = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrLindqvistPractitioner.id} />
+);
+ProviderWithManyVisitTypes.decorators = [withFixtures(ManyVisitTypesFixtures)];
+
+/**
+ * Dr. Kwame Mensah offers every visit type, so none can be stopped on its own, but each can be customized:
+ * Neurology New Patient Visit has custom hours. Switching Offer all visit types off keeps only that one.
+ * @returns The story.
+ */
+export const ProviderOfferingAllVisitTypes = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrMensahPractitioner.id} />
+);
+ProviderOfferingAllVisitTypes.decorators = [withFixtures(ManyVisitTypesFixtures)];

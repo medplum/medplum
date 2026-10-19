@@ -110,7 +110,7 @@ Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/heal
     <tr>
       <td><a href="https://www.dawsystems.com/">ScriptSure</a></td>
       <td>E-Prescribe</td>
-      <td>API-driven e-prescribing with custom FHIR operations and bots</td>
+      <td>Custom prescribing workflows with FHIR operations and bots, plus a hosted iframe</td>
       <td><a href="/docs/integration/scriptsure">ScriptSure Integration</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>

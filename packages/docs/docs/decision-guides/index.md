@@ -5,9 +5,9 @@ sidebar_position: 3
 
 # Decision Guides
 
-Use these guides to make application design, workflow, and rollout decisions before implementation. Each guide connects your requirements to recommended approaches, alternatives, and tradeoffs.
+Use these guides to make application design, workflow, and rollout decisions before implementation. Each guide connects your requirements to recommended approaches, data models, and downstream responsibilities.
 
-Decision guides help you decide what to build and why. The linked technical docs explain configuration, data models, APIs, and implementation examples.
+Use the guides and technical docs together: the guide explains which approach fits your situation and what it requires; the linked technical docs provide configuration, APIs, and implementation examples.
 
 ## Application Design
 
@@ -61,7 +61,7 @@ Choose how to order labs and imaging, coordinate fulfillment, match incoming res
 
 ### E-Prescribe
 
-Scope your e-prescribing workflow – iframe vs. integrated prescribing UI, controlled substances, prescriber enrollment and identity verification, and vendor integration approach.
+Scope your e-prescribing workflow – hosted iframe vs. custom workflow, controlled substances, prescriber enrollment and identity verification, and vendor integration approach.
 
 - **[Decision Guide →](/docs/decision-guides/e-prescribe)**
 - **Docs:** [Medications](/docs/medications)
@@ -104,3 +104,7 @@ Scope a migration to Medplum – source-system inventory, data ownership, identi
 
 - **[Decision Guide →](/docs/decision-guides/data-migration)**
 - **Docs:** [Migrating to Medplum](/docs/migration)
+
+---
+
+More guides will be added as additional workflow areas are scoped. If you'd like a guide for a workflow not listed here, reach out on our [Discord](https://discord.gg/medplum) or email [support@medplum.com](mailto:support@medplum.com).

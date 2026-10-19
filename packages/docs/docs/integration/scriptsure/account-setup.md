@@ -54,7 +54,7 @@ After completing sign-up, your ScriptSure user ID must be linked to your Medplum
 
 1. Open [provider.medplum.com](https://provider.medplum.com) and navigate to a patient.
 2. Click the **ScriptSure** tab.
-3. Confirm the ScriptSure prescribing UI appears.
+3. Confirm the hosted ScriptSure prescribing flow appears.
 
 ## Adding additional admin users
 

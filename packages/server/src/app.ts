@@ -46,7 +46,7 @@ import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { drainStdout, getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
-import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnAllShards } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -220,6 +220,11 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
     ],
     binaryRouter
   );
+  // Presigned uploads stream the raw body, so like binaryRouter this must precede the body parsers
+  app.use(
+    ['/storage', '/api/storage', '/projects/:projectId/storage', '/api/projects/:projectId/storage'],
+    storageRouter
+  );
 
   // Handle async batch by enqueueing job
   app.post(
@@ -269,7 +274,6 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/shl/', smartHealthLinkRouter);
-  apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
 
   if (config.mcpEnabled) {
@@ -295,7 +299,7 @@ export async function initAppServices(config: ServerConfig): Promise<void> {
   initHeartbeat(config);
   initOtelHeartbeat();
   initServerRegistryHeartbeatListener();
-  await maybeAutoRunPendingPostDeployMigration();
+  await maybeAutoRunPendingPostDeployMigrationOnAllShards();
 }
 
 export async function shutdownApp(): Promise<void> {

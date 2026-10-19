@@ -202,6 +202,25 @@ describe('FHIR Router', () => {
     expect(res2).toMatchObject(preconditionFailed);
   });
 
+  test('Delete with precondition', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+    const [res1] = await router.handleRequest(
+      { ...makeSimpleRequest('DELETE', `/Patient/${patient.id}`), headers: { 'if-match': 'W/"incorrect"' } },
+      repo
+    );
+    expect(res1).toMatchObject(preconditionFailed);
+
+    const [res2] = await router.handleRequest(
+      {
+        ...makeSimpleRequest('DELETE', `/Patient/${patient.id}`),
+        headers: { 'if-match': `W/"${patient.meta?.versionId}"` },
+      },
+      repo
+    );
+    expect(res2).toMatchObject(allOk);
+  });
+
   test('Search by post', async () => {
     const [res, bundle] = await router.handleRequest(
       makeSimpleRequest('POST', '/Patient/_search', { name: 'Simpson' }),

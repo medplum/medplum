@@ -9,7 +9,7 @@ import type { CSSProperties, JSX, ReactNode } from 'react';
 import { useId, useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
-import { getTimezoneOptions } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
+import { getTimezoneOptions, timezoneFilter } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
 import { hasEditableName } from './actorDraft';
 
@@ -26,8 +26,8 @@ export interface ActorGeneralProps {
 }
 
 /**
- * The General section of an actor's page. A provider's name and NPIs are read-only, since the system providers
- * come from keeps them, and where a provider works is recorded on their roles rather than here.
+ * The General section's own fields. A provider's name and NPIs are read-only, since the system providers come
+ * from keeps them; where a provider works is edited below these, through their roles.
  * @param props - The actor, its fields, and the change handlers.
  * @returns The section's fields.
  */
@@ -193,6 +193,7 @@ function TimezoneField(props: {
       styles={warn ? { wrapper: WARNING_INPUT } : undefined}
       inputWrapperOrder={['label', 'input', 'description', 'error']}
       data={options}
+      filter={timezoneFilter}
       value={value ?? null}
       placeholder="Not set"
       onChange={(next) => onChange(next ?? undefined)}

@@ -91,3 +91,32 @@ export function formatWhen(period: { readonly start?: string; readonly end?: str
   const times = [formatZonedTime(start), end && formatZonedTime(end)].filter(Boolean).join(' – ');
   return `${formatDayHeading(start)} · ${times}`;
 }
+
+/** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
+const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
+
+/**
+ * Whether the server would accept cancelling the appointment.
+ * @param appointment - The appointment to cancel.
+ * @returns True when its status is one `Appointment/:id/$cancel` accepts.
+ */
+export function isCancelable(appointment: Appointment): boolean {
+  return CANCELABLE_STATUSES.has(appointment.status);
+}
+
+/**
+ * The statuses `Appointment/:id/$reschedule` accepts. It refuses any other with a 400.
+ *
+ * The same statuses a cancellation accepts today, but a guard of its own: what can be
+ * called off and what can be moved are separate questions to the server.
+ */
+const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
+
+/**
+ * Whether the server would accept rescheduling the appointment.
+ * @param appointment - The appointment to reschedule.
+ * @returns True when its status is one `Appointment/:id/$reschedule` accepts.
+ */
+export function isReschedulable(appointment: Appointment): boolean {
+  return RESCHEDULABLE_STATUSES.has(appointment.status);
+}

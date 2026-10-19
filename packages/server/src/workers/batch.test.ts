@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import { DelayedError, Worker } from 'bullmq';
+import { DelayedError, UnrecoverableError, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
@@ -545,6 +545,33 @@ describe('Batch worker', () => {
         const { processor } = captureWorker();
         await expect(processor({ data: { authState } } as unknown as Job)).rejects.toThrow(TypeError);
       }));
+
+    test.each([
+      ['project', 'Project not active'],
+      ['membership', 'Profile not active'],
+    ] as const)('Fails the AsyncJob without processing entries when the %s has been deactivated', (key, reason) =>
+      withTestContext(async () => {
+        const { processor, failedHandler } = captureWorker();
+        const { asyncJob, job } = await setupReentrantJob(singleEntryBundle());
+        const loadSpy = vi.spyOn(BatchCheckpointStore.prototype, 'loadInputBundle');
+        await systemRepo.updateResource({ ...authState[key], active: false });
+        try {
+          const err = await processor(job).catch((e: unknown) => e);
+          expect(err).toBeInstanceOf(UnrecoverableError);
+          await failedHandler(job, err as Error);
+        } finally {
+          await systemRepo.updateResource({ ...authState[key], active: true });
+        }
+
+        expect(loadSpy).not.toHaveBeenCalled();
+        const finished = await readAsyncJob(asyncJob.id);
+        expect(finished.status).toStrictEqual('error');
+        expect(finished.output?.parameter).toContainEqual({
+          name: 'outcome',
+          resource: expect.objectContaining({ issue: [expect.objectContaining({ details: { text: reason } })] }),
+        });
+      })
+    );
 
     test('Verbose logging fields resolve the async job reference', () =>
       withTestContext(async () => {

@@ -249,7 +249,7 @@ async function computeExpansion(
         displayLanguage: params.displayLanguage,
         filter: deferredFilter ? undefined : filter,
       });
-      for (const c of await validateEnumeratedConcepts(codeSystem, codings, params)) {
+      for (const c of await validateEnumeratedConcepts(repo, codeSystem, codings, params)) {
         if (c && (!deferredFilter || matchesTextFilter(c.display, deferredFilter))) {
           c.id = undefined;
           expansion.push(c);
@@ -264,6 +264,7 @@ async function computeExpansion(
 }
 
 async function validateEnumeratedConcepts(
+  repo: Repository,
   codeSystem: WithId<CodeSystem>,
   codings: Coding[],
   params: ValueSetExpandParameters
@@ -277,15 +278,17 @@ async function validateEnumeratedConcepts(
     }
   }
   if (!overriddenIndexes.length) {
-    return validateCodings(codeSystem, codings, params);
+    return validateCodings(repo, codeSystem, codings, params);
   }
 
   const overridden = await validateCodings(
+    repo,
     codeSystem,
     overriddenIndexes.map((i) => codings[i])
   );
   const translated = translatedIndexes.length
     ? await validateCodings(
+        repo,
         codeSystem,
         translatedIndexes.map((i) => codings[i]),
         params
