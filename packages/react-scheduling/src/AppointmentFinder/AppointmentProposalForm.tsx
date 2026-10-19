@@ -28,6 +28,7 @@ import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { useChanged } from '../hooks/useChanged';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
@@ -354,9 +355,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // Whatever moves the count moves what was found under it, the field going away included:
   // a proposal carries the series it was found for, and a typed time books a single visit.
   // Adjusted during render, so no time found under the old count is ever offered under the new.
-  const [searchedOccurrenceCount, setSearchedOccurrenceCount] = useState(effectiveOccurrenceCount);
-  if (searchedOccurrenceCount !== effectiveOccurrenceCount) {
-    setSearchedOccurrenceCount(effectiveOccurrenceCount);
+  const occurrenceCountChanged = useChanged(effectiveOccurrenceCount);
+  if (occurrenceCountChanged) {
     setChosen(undefined);
     clearManualTime();
     resetDaySearch();
