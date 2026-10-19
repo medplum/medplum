@@ -28,6 +28,7 @@ import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants'
 import { sendEmail } from '../email/email';
 import { getProjectAppName } from '../email/utils';
 import { sendOutcome } from '../fhir/outcomes';
+import { getInactiveReason } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
@@ -107,6 +108,10 @@ export function isPractitionerEmailDomainAllowed(
  * @returns An OperationOutcome describing the rejection, or undefined if registration is allowed.
  */
 export function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
+  const inactiveReason = getInactiveReason(project);
+  if (inactiveReason) {
+    return badRequest(inactiveReason);
+  }
   if (!project.defaultPatientAccessPolicy) {
     return badRequest('Project does not allow open registration');
   }

@@ -221,6 +221,45 @@ describe('Subscription Worker', () => {
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
     }));
 
+  test('Does not send subscriptions when project is inactive', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await findAndExecDispatchJob(patient, 'create');
+      const subscriptionQueue = getSubscriptionQueue();
+      const [, jobData] = (subscriptionQueue?.add as Mock).mock.lastCall as [string, SubscriptionJobData];
+      expect(jobData.id).toBe(patient.id);
+
+      const project = await systemRepo.updateResource<Project>({
+        ...(repo.currentProject() as WithId<Project>),
+        active: false,
+      });
+
+      // A job queued before the project was deactivated is dropped
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await execSubscriptionJob({ id: '1', data: jobData, attemptsMade: 0 } as unknown as Job<SubscriptionJobData>);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      // And no new jobs are queued
+      (subscriptionQueue?.add as Mock).mockClear();
+      await addSubscriptionJobs(patient, undefined, { project, interaction: 'update' });
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
   test('Status code 201', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';
@@ -829,6 +868,115 @@ describe('Subscription Worker', () => {
       } finally {
         getConfig().serverScopedSubscriptionsEnabled = savedConfig;
         // Clean up the server-scoped subscription so it does not leak into the shared system project
+        await superAdminRepo.deleteResource('Subscription', serverSub.id);
+      }
+    }));
+
+  test('Server-scoped subscription executes a Bot as itself in the Bot project', () =>
+    withTestContext(async () => {
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
+      getConfig().serverScopedSubscriptionsEnabled = true;
+
+      const botProjectId = botRepo.currentProject()?.id;
+      assert(botProjectId);
+
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Server-scoped Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + botProjectId },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const serverSub = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: getReferenceString(bot) },
+      });
+      expect(serverSub.meta?.project).toBeUndefined();
+
+      try {
+        // The triggering project is neither the Bot's project nor one the Bot is a member of
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await findAndExecSubscriptionJob(patient, 'create', serverSub);
+
+        const auditEvents = await botRepo.searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(serverSub) }],
+        });
+        expect(auditEvents).toHaveLength(1);
+        expect(auditEvents[0].outcome).toStrictEqual(AuditEventOutcome.Success);
+        expect(auditEvents[0].meta?.project).toStrictEqual(botProjectId);
+        // Not runAsUser, so the Bot runs as its own membership
+        expect(auditEvents[0].agent?.find((a) => !a.requestor)?.who?.reference).toStrictEqual(getReferenceString(bot));
+      } finally {
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
+        await superAdminRepo.deleteResource('Subscription', serverSub.id);
+      }
+    }));
+
+  test('Server-scoped subscription executes a runAsUser Bot as the requester in the triggering project', () =>
+    withTestContext(async () => {
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
+      getConfig().serverScopedSubscriptionsEnabled = true;
+
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Server-scoped runAsUser Bot',
+        runAsUser: true,
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      // The requester's membership lives here; Bots must be enabled where the Bot runs
+      const tenant = await createTestProject({ withClient: true, withRepo: true });
+
+      const serverSub = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: getReferenceString(bot) },
+      });
+      expect(serverSub.meta?.project).toBeUndefined();
+
+      try {
+        const patient = await tenant.repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await findAndExecSubscriptionJob(patient, 'create', serverSub);
+
+        const auditEvents = await tenant.repo.searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(serverSub) }],
+        });
+        expect(auditEvents).toHaveLength(1);
+        expect(auditEvents[0].outcome).toStrictEqual(AuditEventOutcome.Success);
+        expect(auditEvents[0].meta?.project).toStrictEqual(tenant.project.id);
+        expect(auditEvents[0].agent?.find((a) => !a.requestor)?.who?.reference).toStrictEqual(
+          getReferenceString(tenant.client)
+        );
+      } finally {
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
         await superAdminRepo.deleteResource('Subscription', serverSub.id);
       }
     }));

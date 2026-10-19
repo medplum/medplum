@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, LOINC } from '@medplum/core';
-import type { AuditEvent, Observation, Patient } from '@medplum/fhirtypes';
+import type { AuditEvent, Binary, Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -9,6 +9,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getCacheRedis } from '../../redis';
+import { getBinaryStorage } from '../../storage/loader';
 import {
   createTestProject,
   getSuperAdminAccessToken,
@@ -253,6 +254,16 @@ describe('Expunge', () => {
       resourceType: 'Patient',
       name: [{ given: ['Bob'], family: 'Smith' }],
     });
+    const deletedPatient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    await repo.deleteResource('Patient', deletedPatient.id);
+    // Unreferenced Binaries, which the compartment search cannot find
+    const binary = await repo.createResource<Binary>({
+      resourceType: 'Binary',
+      contentType: 'text/plain',
+      data: 'aGVsbG8=',
+    });
+    const deletedBinary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+    await repo.deleteResource('Binary', deletedBinary.id);
 
     const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
@@ -276,7 +287,7 @@ describe('Expunge', () => {
     expect(await existsInCache('Patient', patient3.id)).toBe(true);
     expect(await existsInCache('Observation', obs.id)).toBe(true);
 
-    await new Expunger(repo, project.id, 2).expunge();
+    await new Expunger(repo, project.id, { project: true, maxResultsPerPage: 2 }).expunge();
 
     await expectExpungeTombstone(pool, 'Project', project.id);
     await expectExpungeTombstone(pool, 'ClientApplication', client.id);
@@ -284,6 +295,10 @@ describe('Expunge', () => {
     await expectExpungeTombstone(pool, 'Patient', patient.id);
     await expectExpungeTombstone(pool, 'Patient', patient2.id);
     await expectExpungeTombstone(pool, 'Patient', patient3.id);
+    await expectExpungeTombstone(pool, 'Patient', deletedPatient.id);
+    await expectExpungeTombstone(pool, 'Binary', binary.id);
+    await expectExpungeTombstone(pool, 'Binary', deletedBinary.id);
+    await expect(getBinaryStorage().readBinary(binary)).rejects.toThrow();
     await expectExpungeTombstone(pool, 'Observation', obs.id);
     await expectExpungeTombstone(pool, 'AuditEvent', auditEvent.id);
 
@@ -294,6 +309,17 @@ describe('Expunge', () => {
     expect(await existsInCache('Patient', patient2.id)).toBe(false);
     expect(await existsInCache('Patient', patient3.id)).toBe(false);
     expect(await existsInCache('Observation', obs.id)).toBe(false);
+  });
+
+  test('Expunger with another project id as a non-Project compartment leaves that project alone', async () => {
+    const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+    const other = await createTestProject({ withRepo: true });
+    const binary = await other.repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+
+    // e.g. Observation/<other project id>/$expunge?everything=true; must terminate and delete nothing
+    await new Expunger(repo, other.project.id, { maxResultsPerPage: 1 }).expunge();
+
+    expect(await getTestProjectSystemRepo().readResource('Binary', binary.id)).toBeDefined();
   });
 
   test('Expunger expunges AuditEvent and leaves a history tombstone', async () => {
@@ -311,7 +337,7 @@ describe('Expunge', () => {
       source: { observer: { identifier: { value: 'test' } } },
     });
 
-    await new Expunger(repo, project.id, 2).expunge();
+    await new Expunger(repo, project.id, { project: true, maxResultsPerPage: 2 }).expunge();
 
     await expectExpungeTombstone(pool, 'Patient', patient.id);
     await expectExpungeTombstone(pool, 'AuditEvent', auditEvent.id);

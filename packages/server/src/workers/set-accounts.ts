@@ -11,6 +11,7 @@ import { getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
+  assertProjectActive,
   defaultQueueOptions,
   getWorkerBullmqConfig,
   isJobActive,
@@ -99,6 +100,7 @@ export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<
   }
 
   await exec.startAsync(async () => {
+    await assertProjectActive(job.data.authState.project.id);
     return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true }, exec.getAsyncJob().id);
   });
 }

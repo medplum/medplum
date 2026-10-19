@@ -293,7 +293,6 @@ export const medplumEslintConfig = [
       '**/coverage/',
       '**/dist/',
       '**/node_modules/',
-      '**/babel.config.*',
       '**/jest.sequencer.*',
       '**/postcss.config.*',
       '**/rollup.config.*',

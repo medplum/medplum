@@ -747,9 +747,12 @@ describe('Cron resource', () => {
       executeBotSpy.mockRestore();
     }));
 
-  test('execBot skips a job whose project lost the cron feature, but keeps its schedule', () =>
+  test.each<[string, Partial<Project>]>([
+    ['lost the cron feature', { features: [] }],
+    ['is inactive', { active: false }],
+  ])('execBot skips a job whose project %s, but keeps its schedule', (_, projectUpdate) =>
     withTestContext(async () => {
-      // A project of its own, so turning the feature off does not disturb the shared one
+      // A project of its own, so the update does not disturb the shared one
       const gated = await createTestProject({
         withClient: true,
         withRepo: true,
@@ -772,7 +775,7 @@ describe('Cron resource', () => {
         targetReference: createReference(gatedBot),
       });
 
-      await systemRepo.updateResource<Project>({ ...gated.project, features: [] });
+      await systemRepo.updateResource<Project>({ ...gated.project, ...projectUpdate });
 
       const queue = getCronQueue() as any;
       queue.removeJobScheduler.mockClear();
@@ -781,10 +784,11 @@ describe('Cron resource', () => {
       await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       expect(executeBotSpy).not.toHaveBeenCalled();
-      // The feature can come back, and nothing re-registers a job that was dropped
+      // The project can come back, and nothing re-registers a job that was dropped
       expect(queue.removeJobScheduler).not.toHaveBeenCalled();
       executeBotSpy.mockRestore();
-    }));
+    })
+  );
 });
 
 /*
