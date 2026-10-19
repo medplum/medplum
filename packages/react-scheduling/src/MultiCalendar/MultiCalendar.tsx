@@ -22,6 +22,11 @@ export interface MultiCalendarSource {
   color?: keyof MantineThemeColors;
   /** False draws the source's events as not clickable, whatever click handlers the calendar has. */
   interactive?: boolean;
+  /**
+   * Draws the source's appointments as not yet saved, such as a visit a form is about to book:
+   * hatched and outlined, apart from any appointment stored as proposed.
+   */
+  draft?: boolean;
 }
 
 export interface MultiCalendarProps {
@@ -56,14 +61,14 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
   const { sources, className, ...calendarBaseProps } = props;
 
   const eventSources = useMemo((): FhirEventSource[] => {
-    return sources.map((source, i) => {
+    return sources.map(({ draft, ...source }, i) => {
       let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
       colorName ||= getSchedulingColor(source.schedule);
 
       // Convert color name into a concrete color value we can pass to FullCalendar, and a class
       // that styles can pick the color out by.
       const resolved = resolveThemeColor(theme, colorName, i);
-      return { ...source, color: theme.colors[resolved][7], className: `color-${resolved}` };
+      return { ...source, color: theme.colors[resolved][7], className: cx(`color-${resolved}`, draft && 'draft') };
     });
   }, [sources, theme]);
 

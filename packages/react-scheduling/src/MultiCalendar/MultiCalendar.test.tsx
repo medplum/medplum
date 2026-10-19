@@ -129,6 +129,25 @@ describe('MultiCalendar', () => {
     expect(screen.getByText(/Jane Williams/).closest('.event')).not.toHaveAttribute('role', 'button');
   });
 
+  test('marks the appointments of a draft source, and only those, as drafts', () => {
+    const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status: 'proposed',
+      start: new Date(baseDate.getTime() + offsetMinutes * 60 * 1000).toISOString(),
+      end: new Date(baseDate.getTime() + (offsetMinutes + 30) * 60 * 1000).toISOString(),
+      participant: [{ actor: { reference: `Patient/${id}`, display }, status: 'needs-action' }],
+    });
+    const sources: MultiCalendarSource[] = [
+      { appointments: [appointment('stored', 'Homer Simpson', 0)], slots: [] },
+      { appointments: [appointment('unsaved', 'Jane Williams', 60)], slots: [], draft: true },
+    ];
+    renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
+
+    expect(screen.getByText(/Homer Simpson/).closest('.event')).not.toHaveClass('draft');
+    expect(screen.getByText(/Jane Williams/).closest('.event')).toHaveClass('draft');
+  });
+
   test('names everyone a slot holds time for, and gives its time when its schedule is unknown', async () => {
     const room = await medplum.createResource({ resourceType: 'Location', name: 'Exam Room A' });
     const schedule: WithId<Schedule> = {
