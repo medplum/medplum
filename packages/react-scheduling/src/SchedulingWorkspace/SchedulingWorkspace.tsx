@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -11,7 +11,6 @@ import {
 } from '@medplum/core';
 import type { Appointment, Extension, HealthcareService, Location, Reference, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
-import { IconLayoutSidebarLeftExpand } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -166,7 +165,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [candidatesLoading, setCandidatesLoading] = useState(false);
 
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
@@ -433,25 +431,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
-      {sidebarCollapsed && (
-        <Box className={classes.sidebarRail}>
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            aria-label="Show calendars"
-            onClick={() => setSidebarCollapsed(false)}
-          >
-            <IconLayoutSidebarLeftExpand size={18} />
-          </ActionIcon>
-        </Box>
-      )}
-      {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
-      <Box className={classes.sidebar} hidden={sidebarCollapsed}>
+      <Box className={classes.sidebar}>
         <CalendarsPanel
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
-          onCollapse={() => setSidebarCollapsed(true)}
           filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
         />
       </Box>

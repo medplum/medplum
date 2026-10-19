@@ -10,13 +10,7 @@
 
 .sidebar {
   flex-shrink: 0;
-  width: 300px;
   overflow-y: auto;
-}
-
-.sidebarRail {
-  flex-shrink: 0;
-  padding-top: var(--mantine-spacing-xs);
 }
 
 .calendar {
