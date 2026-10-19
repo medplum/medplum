@@ -7,11 +7,11 @@ download_slug: diagnostic-orders
 
 # Diagnostic Orders Decision Guide
 
-Use this guide to design laboratory and imaging workflows, from placing an order through reviewing results and completing follow-up. Decide which steps your application owns, how it connects to performing facilities, and who handles exceptions. Leave with a defined ordering approach, result model, and owner for each stage.
+Use this guide to choose how your application orders diagnostic services, receives results, and coordinates follow-up. Each decision connects your requirements to a data model, integration approach, and operational responsibility, with links to implementation details.
 
 _Companion to [Labs and Imaging](/docs/labs-imaging), [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging), and [Results and Review](/docs/labs-imaging/results-and-review)._
 
-This guide covers laboratory and imaging workflows. Use the integration-specific docs for vendor setup and supported operations. The review queues and follow-up rules below are application design recommendations to implement with Medplum resources.
+The review queues and follow-up rules are application patterns to implement with Medplum resources. Confirm each facility's supported operations before committing to a workflow.
 
 ---
 
@@ -49,68 +49,74 @@ List the performing labs and imaging facilities, existing interfaces, vendor acc
 
 ## Section 2: Approach-Defining Decisions
 
-Resolve these choices before selecting components or building interfaces. If a capability is out of scope, skip its detailed section.
+Choose the path that matches your application's responsibilities:
 
-| Decision | What changes based on the answer | Details |
-| --- | --- | --- |
-| External integration, internal fulfillment, or results only? | Connectivity, write authority, and whether local originating orders exist | 3.1 |
-| Vendor menu or internally maintained catalog? | Catalog ownership, order codes, grouping, and maintenance | 3.2 |
-| Clinician orders directly or staff prepare for authorization? | Draft/release workflow, required information, and permissions | 3.3 |
-| On-site collection, external collection, home kit, or imaging? | Specimen tracking, logistics, and appointment coordination | 3.4 |
-| Can the destination amend, cancel, and support recurring orders? | Replacement orders, acknowledgment tracking, and occurrence tracking | 3.5 |
-| Matched results only or unsolicited results too? | Identity resolution, exception ownership, and backfill | 3.6 |
-| Structured values, original documents, or diagnostic images? | Result modeling, trends, extraction, and viewer integration | 3.7 |
-| Who reviews, communicates, and follows up? | Review queues, coverage, escalation, and closure rules | 3.8 |
-| Which teams share access and operational responsibility? | Memberships, policies, and exception queues | 3.9 |
+- **Ordering externally:** Cover all nine decisions; skip imaging details if you only order labs.
+- **Receiving results only:** Start with connectivity (3.1), then matching, display, review, and access (3.6–3.9). Skip 3.2–3.5 unless you also coordinate fulfillment.
+- **Performing tests internally:** Cover all nine decisions, including catalog ownership and specimen or appointment tracking. Separately scope the system that performs the tests.
+- **Displaying diagnostic images:** Include the storage/viewer and context-synchronization choices in 3.7, whichever path you use.
+
+| Decision | What your choice determines |
+| --- | --- |
+| [3.1 Integration path](#31-how-will-orders-and-results-cross-system-boundaries) | Interfaces, write authority, and integration operations |
+| [3.2 Catalog and order grouping](#32-what-can-clinicians-order-and-who-maintains-the-menu) | Definitions, codes, order boundaries, and maintenance |
+| [3.3 Order release](#33-what-must-happen-before-an-order-can-be-released) | Required information, authorization, and transmission |
+| [3.4 Fulfillment](#34-how-will-the-patient-or-specimen-reach-the-performing-facility) | Specimens, appointments, and assigned work |
+| [3.5 Changes and exceptions](#35-what-happens-when-an-order-changes-or-never-completes) | Replacement, cancellation, and recurring-order tracking |
+| [3.6 Result matching](#36-how-will-incoming-results-find-the-correct-patient-and-order) | Identifiers, reconciliation, and exception queues |
+| [3.7 Result formats and imaging](#37-what-result-detail-must-the-application-display-and-use) | Observations, documents, images, and viewer integration |
+| [3.8 Review and follow-up](#38-what-closes-the-loop-after-results-arrive) | Ownership, escalation, and completion evidence |
+| [3.9 Access and operations](#39-who-can-access-the-data-and-resolve-operational-failures) | Policies and responsibility for unresolved work |
 
 ## Section 3: Key Decisions
 
 ### 3.1 How will orders and results cross system boundaries?
 
-**Questions:** Which facilities must be supported at launch? Is electronic ordering required, or is a requisition sufficient? Can the interface return acknowledgments and status updates? Who handles setup and exceptions?
+Choose an integration path for each facility. Confirm ordering, acknowledgments, cancellations, status updates, and result delivery separately; capabilities vary by destination.
 
-| Situation | Recommended approach |
+| Situation | Approach and downstream implications |
 | --- | --- |
-| Using the Medplum Health Gorilla integration | Follow its onboarding, order profiles, send/receive Bots, and account requirements. Confirm the needed facilities and capabilities before committing the workflow. |
-| Connecting directly to a lab or imaging facility | Scope the HL7v2 or API interface in both directions, including identifiers, acknowledgments, corrections, cancellations, and recovery. |
-| Performing tests internally | Create the operational FHIR resources through your application; separately scope the laboratory or imaging system that performs and reports the work. |
-| Requisition or manual handoff | Track who handed off the order and how completion will be reconciled. Producing a document does not establish that the facility accepted the order. |
-| Receiving results only | Start with patient matching, source identifiers, and review ownership. Allow results without a local originating order. |
+| Medplum Health Gorilla integration | Adopt its order profiles, send/receive Bots, and account requirements. Confirm facility coverage and assign integration exception ownership. See [Health Gorilla](/docs/integration/health-gorilla). |
+| Direct lab or imaging interface | Own the HL7v2 or API mapping, identifiers, acknowledgments, corrections, and recovery in each supported direction. See [HL7 interfacing](/docs/integration/hl7-interfacing). |
+| Internal testing | Create operational orders and results in your application; define which laboratory or imaging system owns performance and reporting. |
+| Requisition or manual handoff | Track handoff and acceptance separately, with an owner to reconcile completion. A generated requisition does not establish acceptance. |
+| Results only | Preserve source identifiers and support reports without local originating orders. Build patient matching and review routing (3.6–3.8). |
 
 #### Do you need an on-site protocol bridge?
 
-- **Devices or systems use HL7/MLLP, ASTM, or DICOM inside a facility network:** Use the [Medplum Agent](/docs/agent) to bridge supported local protocols to Medplum. Assign an owner for the host, channel configuration, connectivity, and recovery. Bots handle workflow-specific mapping and reconciliation; transporting a message does not establish that its patient, order, or result was matched correctly.
-- **Imaging equipment sends DICOM C-STORE:** Use the Agent's [DICOM channel](/docs/dicom/agent-dimse). Select `storage=dicomweb` to populate Medplum's DICOM resources for viewing, and check the documented server/Agent version requirements. The default `binary` mode stores files for Bot processing and does not populate that imaging model.
-- **The source already supports HTTPS APIs or DICOMweb:** Integrate directly; an Agent is not required solely because the data is diagnostic. DICOMweb sources can send studies through STOW-RS. The [Medplum CLI](/docs/dicom/cli) also supports file/directory uploads for testing or controlled imports.
+- **Local HL7/MLLP, ASTM, or DICOM equipment:** Use the [Medplum Agent](/docs/agent) for supported protocols. Your team operates the local host and connectivity, and implements workflow mapping and reconciliation. For imaging, follow the [DICOM channel setup](/docs/dicom/agent-dimse).
+- **HTTPS API or DICOMweb source:** Connect directly without an Agent. Your integration still owns mapping, reconciliation, and recovery. See the [DICOMweb API](/docs/dicom/dicomweb-api) for image ingestion.
 
-**Decide before building:** Name the authoritative system for the order, fulfillment status, and report. Define which updates may flow back into each system.
-
-References: [Health Gorilla](/docs/integration/health-gorilla), [HL7 interfacing](/docs/integration/hl7-interfacing).
+Name the authoritative system for the order, fulfillment status, and report, and define which updates may flow back.
 
 ### 3.2 What can clinicians order, and who maintains the menu?
 
-**Questions:** Are tests selected from a performing lab's menu or an internally curated catalog? Are panels ordered as a unit? Do visit templates offer common order sets? Who maintains codes and required questions when a vendor changes its menu?
+First choose who owns the catalog, then decide how selections become patient-specific orders.
 
-| Situation | Recommended approach |
+#### Who owns the catalog?
+
+| Choice | Data model and maintenance implications |
 | --- | --- |
-| External laboratory menu | Preserve the performing lab's orderable codes and requirements. A standardized observation code alone may not identify an orderable test in that lab's compendium. |
-| Internal diagnostic catalog | Use the documented catalog model: `ObservationDefinition` for measurements, `SpecimenDefinition` for specimen requirements, `PlanDefinition` for orderable services or panels, and `ActivityDefinition` for the procedures that fulfill them. |
-| One orderable panel | A panel can be one requested service with multiple result observations. Follow the destination's panel definition rather than creating an order for every analyte. |
-| Several independent services ordered together | Use separate `ServiceRequest` resources. A shared `requisition` can group requests; `basedOn` describes a request being fulfilled, not an arbitrary shopping-cart grouping. Follow any integration-specific profile. |
-| Health Gorilla orders | Follow its parent order and individual test `ServiceRequest` structure. Each test references the parent through `basedOn`; some labs require splitting into separate requisitions. |
-| Reusable clinical order sets | Keep reusable definitions separate from the patient-specific `ServiceRequest` instances they generate. Assign an owner for changes. |
+| Performing lab's menu | Preserve its orderable codes and required questions; assign someone to maintain vendor changes. A standardized observation code alone may not identify an orderable test. |
+| Internally maintained catalog | Define measurements with `ObservationDefinition`, specimen requirements with `SpecimenDefinition`, orderable services/panels with `PlanDefinition`, and procedures with `ActivityDefinition`. Your team owns those definitions. See [Diagnostic Catalog](/docs/careplans/diagnostic-catalog). |
 
-Use verified terminology mappings and preserve source codes. Leave an unresolved mapping explicitly unresolved rather than guessing a LOINC, SNOMED, or diagnosis code.
+If clinicians also need reusable order sets, keep those definitions separate from the patient-specific `ServiceRequest` instances they generate and assign an owner for changes.
 
-**Record:** Catalog owner, code source, order boundaries, and requisition grouping. The [FHIR R4 ServiceRequest specification](https://hl7.org/fhir/R4/servicerequest.html#scope) distinguishes a single requested service from multiple requests.
+#### How will selections become orders?
 
-References: [Diagnostic Catalog](/docs/careplans/diagnostic-catalog), [Health Gorilla order structure](/docs/integration/health-gorilla/sending-orders#order-structure).
+| Choice | Order structure |
+| --- | --- |
+| One orderable panel | Can be one requested service with multiple result observations. Follow the destination's panel definition. |
+| Several independent services | Create separate `ServiceRequest` resources; group them with a shared `requisition` when appropriate. `basedOn` identifies a request being fulfilled, rather than an arbitrary selection group. |
+| Health Gorilla ordering | Use its parent order and individual test `ServiceRequest` structure, linked through `basedOn`. Some labs require separate requisitions. See [Health Gorilla order structure](/docs/integration/health-gorilla/sending-orders#order-structure). |
+
+Preserve source codes and use verified terminology mappings. Flag unresolved mappings for review.
 
 ### 3.3 What must happen before an order can be released?
 
 **Questions:** Can staff prepare orders for a clinician? Are orders placed within an encounter or independently? Which demographics, indications, Ask on Order Entry (AOE) answers, billing details, and supporting documents does the destination require?
 
-**Recommended baseline:** Represent the request with `ServiceRequest`, including the patient, requesting clinician, intended service, and performing organization when known. Link the encounter when applicable. Use `status = draft` while composing and `intent = order` for an actual clinical order; define a controlled authorization and transmission step.
+Represent the request with `ServiceRequest`, including patient, requester, service, and performer when known. Link the encounter when applicable. If preparation precedes authorization, use `status = draft` with `intent = order`, and define who can release it.
 
 | Requirement | Design consequence |
 | --- | --- |
@@ -119,9 +125,7 @@ References: [Diagnostic Catalog](/docs/careplans/diagnostic-catalog), [Health Go
 | Insurance, patient, or account billing | Capture the billing route and required supporting information before sending. For Health Gorilla, check practitioner and practice lab account requirements. |
 | Imaging requires authorization or scheduling coordination | Assign that work explicitly and decide whether it must finish before transmission, scheduling, or performance. |
 
-Saving a FHIR order and successfully transmitting it are separate events. Follow the chosen integration's lifecycle: Health Gorilla's send Bot changes the order to `active` after transmission and uses `on-hold` for processing errors.
-
-**Record:** Who prepares, authorizes, and sends the order, and what must be present at each step.
+Track saving, authorization, and transmission separately. Follow the chosen integration's lifecycle rather than treating a saved order as successfully sent.
 
 References: [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging), [Health Gorilla Sending Orders](/docs/integration/health-gorilla/sending-orders).
 
@@ -137,9 +141,7 @@ References: [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging), 
 | Imaging at another facility | Track the appointment handoff and expected completion. Use `Appointment` if your application manages scheduling; otherwise reconcile the external appointment status. |
 | Multiple specimens or collection times | Preserve the individual specimen relationships and independent progress. Use the integration's order-splitting behavior when required. |
 
-If your application only needs to display the clinical order state, use `ServiceRequest` directly. Add `Task` when staff need assigned work such as arranging collection or chasing an appointment; set `focus` to the relevant order and `for` to the patient. Define operational progress separately from the clinical order status. See the [FHIR R4 Task relationship to requests](https://hl7.org/fhir/R4/task.html#bnr).
-
-**Record:** Fulfillment owner, required tracking steps, and evidence that each step finished.
+**If you only display clinical order state,** use `ServiceRequest`. **If staff need assignments, deadlines, or escalation,** add `Task`, with `focus` on the order and `for` referencing the patient. Track that work separately from order status. See [Tasks and Work Queues](/docs/careplans/tasks).
 
 ### 3.5 What happens when an order changes or never completes?
 
@@ -157,69 +159,54 @@ If your application only needs to display the clinical order state, use `Service
 
 **Integration constraint:** Updating an active Health Gorilla order in Medplum does not modify it in the performing lab's system. Do not offer an edit action that implies an external change the integration cannot perform.
 
-**Record:** Amendment/replacement rules, cancellation evidence, recurring-order model, and overdue-work owner. A timeout after sending is an uncertain outcome: reconcile the destination's order identifier before resending. Conditional FHIR writes alone do not prevent duplicate external orders.
+After a send timeout, reconcile the destination's order identifier before resending. Preventing duplicate FHIR resources does not prevent duplicate external orders.
 
 References: [Order lifecycle](/docs/integration/health-gorilla/sending-orders#order-lifecycle), [Cancelling and Amending Orders](/docs/labs-imaging/ordering-labs-imaging#cancelling-and-amending-orders).
 
 ### 3.6 How will incoming results find the correct patient and order?
 
-**Questions:** Which identifiers survive the round trip? Can reports arrive without an order? What happens on repeated messages, ambiguous matches, or missed webhooks?
+Choose the identifiers used to match patients, orders, and report revisions. Preserve their source namespaces; one order may produce multiple reports or deliveries.
 
-**Recommended baseline:** Preserve source identifiers with their system namespaces. Link matched reports through `DiagnosticReport.basedOn` and measurements through `DiagnosticReport.result`. Do not assume one order always produces exactly one report or one delivery. In FHIR R4, `DiagnosticReport.basedOn` is optional and repeatable; populate it for known order relationships and validate each linkage. See [DiagnosticReport definitions](https://hl7.org/fhir/R4/diagnosticreport-definitions.html#DiagnosticReport.basedOn).
-
-| Situation | Recommended approach |
+| Situation | Data model and workflow implications |
 | --- | --- |
-| Known patient and order | Match using the agreed source and order identifiers; retain the identifiers needed to reconcile with the performing system. |
-| Known patient, no local order | Retain the report without inventing an order relationship. Route it to an accountable review owner. |
-| Unknown or ambiguous patient | Route for identity resolution. Inspect the connector's behavior before deciding whether new patient creation is acceptable. |
-| Duplicate delivery or replay | Use conditional create/update keyed on stable source identifiers. Distinguish a repeated event from a genuine report revision, and prevent older deliveries from overwriting newer results. |
-| Missed delivery | Provide a reconciliation and backfill process, then review unresolved exceptions. |
+| Known patient and order | Match on agreed identifiers and link known orders through `DiagnosticReport.basedOn`, which can reference multiple orders. Retain source identifiers for reconciliation. |
+| Known patient, no local order | Store the report without inventing an order relationship; `basedOn` is optional. Assign review ownership. |
+| Unknown or ambiguous patient | Route for identity resolution. Check whether the connector creates patients automatically and define how those records are reconciled. |
+| Duplicate delivery or replay | Use conditional create/update keyed on stable source identifiers. Distinguish repeated deliveries from report revisions and prevent older results from overwriting newer ones. See [Working with FHIR](/docs/fhir-datastore/working-with-fhir). |
+| Missed delivery | Provide reconciliation and backfill, with an owner for unresolved exceptions. |
 
-The Health Gorilla receiver flags unsolicited reports with `DetectedIssue`. If it cannot match the patient, it creates a new patient from the supplied demographics and flags an `unknown-patient` issue. Plan a queue to resolve these cases. Other interfaces need their own explicit matching policy.
-
-**Record:** Matching identifiers, duplicate/revision rules, and who resolves unmatched reports.
-
-References: [Receiving Results](/docs/integration/health-gorilla/receiving-results), [Working with FHIR](/docs/fhir-datastore/working-with-fhir).
+**Health Gorilla implication:** Its receiver flags unsolicited reports with `DetectedIssue`. An unmatched patient causes it to create a patient from the supplied demographics and flag an `unknown-patient` issue. Plan a resolution queue; see [Receiving Results](/docs/integration/health-gorilla/receiving-results#resolving-orders-with-results).
 
 ### 3.7 What result detail must the application display and use?
 
-**Questions:** Do users need trends and rules on discrete values, the original report, diagnostic images, or all three? Must results from several performing organizations be compared?
+Choose the formats your users need. Structured values, original reports, and images can coexist; each adds different modeling and integration work.
 
-| Need | Recommended approach |
+| Need | Data model and downstream implications |
 | --- | --- |
-| Discrete lab values and trends | Store `Observation` values with their units, source reference ranges, interpretation, and timing. Validate comparability before combining results across sources. |
-| Report summary and lifecycle | Use `DiagnosticReport` with links to the observations. Preserve partial, preliminary, final, amended, and corrected states as supplied. |
-| Original PDF or narrative report is sufficient | Preserve it through `presentedForm` or the integration's documented `DocumentReference` relationship. You do not need to manufacture discrete observations. |
-| PDF-only source, but trends or rules need discrete results | Add an extraction and verification workflow with source provenance. Treat extracted values as candidates until validated; a PDF attachment alone cannot support reliable numeric trends. |
-| Imaging interpretation only | Use the report's narrative and/or attached radiology report. |
-| Diagnostic images and viewer access | Choose Medplum's DICOM storage and hosted OHIF viewer, or connect an existing archive/viewer. Resolve the imaging choices below. |
-
-For uploaded documents, use Medplum's Binary/Attachment helpers, reference `Binary/{id}`, and set the appropriate `securityContext`. Do not put base64 content in `Attachment.data`.
+| Discrete values, trends, or rules | Store `Observation` values with units, source reference ranges, interpretation, and timing. Validate comparability across sources. |
+| Report summary and lifecycle | Use `DiagnosticReport`, link observations through `result`, and preserve partial, preliminary, final, amended, and corrected states. See [Results and Review](/docs/labs-imaging/results-and-review). |
+| Original PDF or narrative is sufficient | Preserve it through `presentedForm` or the integration's `DocumentReference` relationship. Discrete observations are unnecessary unless the application needs them. See [Binary Data](/docs/fhir-datastore/binary-data) for file storage and access. |
+| PDF-only source, but discrete results are required | Add extraction, verification, and source provenance before using extracted values for trends or rules. |
+| Imaging interpretation only | Display the narrative or attached radiology report; image storage and viewer integration can remain out of scope. |
+| Diagnostic images | Choose archive/viewer ownership below, then decide whether applications need synchronized context. |
 
 #### Where will images live, and how will clinicians view them?
 
-**Questions:** Does a PACS already own the images? Must your application store and display studies? Should the chart and viewer switch patient or study together?
-
 - **Medplum DICOM storage and hosted OHIF viewer**
-  - **Choose when:** Your application needs image storage and viewing without deploying a separate image server and viewer. Medplum's hosted cloud includes a configured [OHIF viewer](https://viewer.medplum.com).
-  - **Advantages:** DICOMweb provides storage (STOW-RS), study/series queries (QIDO-RS), and metadata/frame retrieval (WADO-RS), using Medplum authentication and access policies.
-  - **Tradeoffs:** DICOM support is beta and implements a subset of DICOMweb. Validate the needed modalities, transfer syntaxes, and viewer operations. Current QIDO study queries ignore filtering and pagination parameters; use FHIR search on `DicomStudy` when those are required. Self-hosted OHIF deployment is an enterprise feature.
+  - **Choose when:** You need image storage and viewing without deploying a separate image server and viewer.
+  - **Implications:** Implement ingestion, patient/order reconciliation, and image-access policies. Medplum's custom DICOM resources are distinct from R4 `ImagingStudy`; ingestion does not automatically link a FHIR patient or create an `ImagingStudy`. Create those relationships when required by your workflow.
+  - **Tradeoffs:** DICOM support is beta and implements a subset of DICOMweb. Validate modality and viewer compatibility. Self-hosted OHIF deployment is an enterprise feature.
+  - **Implementation:** [DICOM](/docs/dicom), [Data Model](/docs/dicom/data-model), [OHIF Viewer](/docs/dicom/ohif-viewer).
 - **Existing PACS or external viewer**
-  - **Choose when:** An imaging facility already owns image storage and interpretation, and your application mainly coordinates orders and reviews reports.
-  - **Advantages:** Retains the facility's established archive and viewing workflow; avoids requiring a second image copy just to display the report.
-  - **Tradeoffs:** Define viewer launch, authentication, study identifiers, and image availability with the facility. `DiagnosticReport.imagingStudy` can reference an R4 `ImagingStudy`, but that reference alone does not retrieve images or launch a viewer.
-- **FHIRcast context synchronization**
-  - **Choose when:** Clinicians work across a chart, viewer, or reporting application and need their current patient or study context to stay aligned.
-  - **Advantages:** Medplum supports FHIRcast STU3, and its OHIF integration supports context synchronization. This can accompany either storage choice when the participating applications support it.
-  - **Tradeoffs:** Define the shared session/topic, participating applications, and supported events. FHIRcast synchronizes context; use DICOMweb for image retrieval and persisted resources for order/result state. Each application still needs appropriate authentication and access.
+  - **Choose when:** A facility already owns image storage and interpretation.
+  - **Implications:** Agree viewer launch, authentication, study identifiers, and image availability. Link reports through `DiagnosticReport.imagingStudy` when using R4 `ImagingStudy`.
+  - **Tradeoffs:** Avoids a second archive, but a FHIR reference alone does not retrieve images or launch the viewer; integration with the facility is still required.
 
-**Plan reconciliation explicitly:** Medplum stores images using its custom `DicomStudy`, `DicomSeries`, and `DicomInstance` resources and `Binary` files. These are distinct from FHIR R4 `ImagingStudy`; ingestion does not automatically create an `ImagingStudy` or link a FHIR `Patient`. The DICOM `patientId` is a string, not a patient reference. Use source-aware patient and accession matching, for example in a Bot, and route ambiguous matches for review. If your workflow requires it, create the R4 `ImagingStudy` and report links after reconciliation.
+#### Should the chart and viewer switch context together?
 
-Image upload and image readiness are also separate: pixel extraction runs asynchronously, so a study can appear before its frames are ready to display. Include a loading/retry path. Do not assume replaying an upload is harmless: study and series creation is conditional on DICOM UIDs, but instance creation is not. Define duplicate-instance handling for retries and backfills.
+**If clinicians need synchronized patient or study selection,** evaluate [FHIRcast](/docs/fhircast). Medplum supports FHIRcast STU3 and OHIF context synchronization. Define participating applications, a shared session/topic, and supported events. This can accompany either storage choice when the applications support it.
 
-**Record:** Required result formats, archive/viewer ownership, supported imaging operations, patient/order reconciliation, and whether context synchronization is needed.
-
-References: [Results and Review](/docs/labs-imaging/results-and-review), [Binary Data](/docs/fhir-datastore/binary-data), [DICOM](/docs/dicom), [DICOM Data Model](/docs/dicom/data-model), [DICOMweb API](/docs/dicom/dicomweb-api), [OHIF Viewer](/docs/dicom/ohif-viewer), [FHIRcast](/docs/fhircast).
+**If independent navigation is sufficient,** skip context synchronization. FHIRcast does not replace image retrieval, authentication, or persisted order/result records.
 
 ### 3.8 What closes the loop after results arrive?
 
@@ -230,30 +217,24 @@ References: [Results and Review](/docs/labs-imaging/results-and-review), [Binary
 | Requirement | Suggested application pattern |
 | --- | --- |
 | One reviewer, no separate queue required | Record acknowledgment and the report version reviewed in your clinical workflow, for example with `Provenance`. Do not change the report's clinical status to mean reviewed. |
-| Assigned work, coverage, or overdue review must be tracked | Create a `Task` focused on the report, with the patient in `Task.for`. Define how to record the reviewer, review time, and version reviewed. |
+| Assigned work, coverage, or overdue review | Create a `Task` focused on the report, with the patient in `Task.for`. Record ownership, deadlines, reviewer, review time, and report version. See [Tasks and Work Queues](/docs/careplans/tasks). |
 | Covering clinician or unassigned result | Route through a defined coverage rule and fallback queue. Avoid leaving ownership implicit in the ordering clinician field. |
 | Critical-result escalation | Implement the clinical team's escalation and acknowledgment policy, including coverage and unresolved alerts. An abnormal flag is input to that workflow. |
 | Patient communication | Define release and communication rules with the responsible team. Track communication separately from reviewing the result. |
 | Follow-up testing, visit, or referral | Create the appropriate follow-up resource and assigned work; define whether it must complete before the original review work closes. |
 | Amended or corrected report | Reopen or create review work according to the correction policy, retaining which earlier version was reviewed and communicated. |
 
-Use narrowly scoped Subscriptions and Bots for routing. Account for both creation and updates, including meaningful changes that keep the same report status. Make review-work creation idempotent so repeated deliveries do not create duplicate tasks.
-
-**Record:** Review owner, escalation policy, patient communication rules, correction handling, and what counts as closed.
-
-References: [Task](/docs/api/fhir/resources/task), [Subscription Extensions](/docs/subscriptions/subscription-extensions).
+If routing is automated, use narrowly scoped Subscriptions and Bots. Handle report creation and meaningful updates, even when status is unchanged; conditionally create review work so repeated deliveries do not duplicate tasks. See [Subscription Extensions](/docs/subscriptions/subscription-extensions).
 
 ### 3.9 Who can access the data and resolve operational failures?
 
 **Questions:** Which organizations share patients? Can ordering and covering clinicians see the same results? What can collection staff, integration services, and patients read or change? Who owns failed sends and unresolved matches?
 
-Enforce access with `AccessPolicy` and `ProjectMembership`. Give each patient-specific resource its own applicable patient reference; access does not propagate merely because a resource links to an order or report. Include documents and their Binary security context in that design.
+Use `AccessPolicy` and `ProjectMembership` to enforce the chosen access boundaries; see [Access Policies](/docs/access/access-policies). Give each patient-specific resource its own applicable patient reference; access does not propagate merely because a resource links to an order or report. Include documents and their Binary security context in that design.
 
 For Medplum DICOM storage, explicitly design and test access to the DICOM resources and image binaries. Matching a DICOM patient ID or creating an `ImagingStudy` link does not automatically establish patient-compartment access for the stored images.
 
 Define separate operational ownership for transmission failures, identity exceptions, overdue fulfillment, and unreviewed results. Each queue needs an owner and a resolution action.
-
-**Record:** Access boundaries and owners for each exception queue.
 
 Reference: [Access Control Decision Guide](/docs/decision-guides/access-control).
 
@@ -262,9 +243,9 @@ Reference: [Access Control Decision Guide](/docs/decision-guides/access-control)
 Record these decisions in the implementation plan:
 
 - Services, facilities, integration paths, and supported message types.
-- Catalog owner, ordering permissions, required information, and release rules.
+- Catalog owner, order grouping, ordering permissions, required information, and release rules.
 - Collection or scheduling responsibilities and completion evidence.
-- Identifier mapping, result matching, correction handling, and recovery rules.
+- Identifier mapping, result formats, matching, amendment/cancellation rules, recurring orders, and recovery.
 - Image storage, viewer, context synchronization, and image-access boundaries when in scope.
 - Review, coverage, patient communication, and follow-up ownership.
 - Access boundaries and the definition of a closed diagnostic workflow.
