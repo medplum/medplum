@@ -7,9 +7,11 @@ download_slug: care-coordination
 
 # Care Coordination Decision Guide
 
+Use this guide with your clinical and operations teams to decide what work needs to happen, who owns it, and how to follow it through. Start with the practice's first workflow, then add care plans, case tracking, or decision support as needed.
+
 _Companion to the [Care Coordination](/docs/careplans) docs._
 
-Use this guide with your clinical and operations teams to decide what work needs to happen, who owns it, and how to follow it through. Start with the practice's first workflow, then add care plans, case tracking, or decision support as needed.
+---
 
 ## Section 1: Use Case & Participants
 

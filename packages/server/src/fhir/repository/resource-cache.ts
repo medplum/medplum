@@ -35,7 +35,7 @@ export async function getResourceCacheEntry<T extends Resource>(
  * @param references - Array of FHIR references.
  * @returns Array of cache entries or undefined.
  */
-export async function getResourceCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+export async function getResourceCacheEntries(references: readonly Reference[]): Promise<(CacheEntry | undefined)[]> {
   const referenceKeys: string[] = [];
 
   // Build referenceKeys only for valid input references and track
