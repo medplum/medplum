@@ -25,7 +25,7 @@ import { useMemo, useState } from 'react';
 import { useEligibilityServiceTypes } from '../../hooks/useEligibilityServiceTypes';
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
-import { buildEligibilityServiceTypeItems } from '../../utils/eligibility';
+import { buildEligibilityServiceTypeItems, pickServiceTypes } from '../../utils/eligibility';
 import { showErrorNotification } from '../../utils/notifications';
 import { EligibilityServiceTypeSelect } from './EligibilityServiceTypeSelect';
 import { getErrorMessage } from './utils';
@@ -79,8 +79,11 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
     profile ? { practitioner: getReferenceString(profile) } : undefined,
     { enabled: opened && !!profile }
   );
-  const { codes: serviceTypeCodes, loading: serviceTypesLoading } = useEligibilityServiceTypes(opened);
-  const selectedCodes = chosenCodes ?? serviceTypeCodes;
+  const { serviceTypes, loading: serviceTypesLoading } = useEligibilityServiceTypes(opened);
+  const selectedCodes = useMemo(
+    () => chosenCodes ?? serviceTypes.map((serviceType) => serviceType.code),
+    [chosenCodes, serviceTypes]
+  );
 
   const coverages = useMemo(() => {
     const result = (activeCoverages ?? []).filter((c) => !isSelfPayCoverage(c));
@@ -121,7 +124,7 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
         insurer: selectedCoverage.payor?.[0] as Reference<Organization>,
         provider,
         insurance: [{ focal: true, coverage: createReference(selectedCoverage) }],
-        item: buildEligibilityServiceTypeItems(selectedCodes),
+        item: buildEligibilityServiceTypeItems(pickServiceTypes(serviceTypes, selectedCodes)),
       });
       try {
         await medplum.post(medplum.fhirUrl('CoverageEligibilityRequest', savedRequest.id, '$submit'));
@@ -180,7 +183,7 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
           />
         )}
         {!serviceTypesLoading && (
-          <EligibilityServiceTypeSelect codes={serviceTypeCodes} value={selectedCodes} onChange={setChosenCodes} />
+          <EligibilityServiceTypeSelect serviceTypes={serviceTypes} value={selectedCodes} onChange={setChosenCodes} />
         )}
       </Stack>
     </Modal>

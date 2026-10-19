@@ -5,17 +5,18 @@ import type { WithId } from '@medplum/core';
 import type { ValueSet } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useEligibilityServiceTypes } from '../../hooks/useEligibilityServiceTypes';
+import type { ServiceType } from '../../utils/eligibility';
 import {
   buildEligibilityServiceTypesPatch,
   buildEligibilityServiceTypesValueSet,
-  getEligibilityServiceTypeCodes,
+  fetchX12ServiceTypes,
+  formatServiceTypeLabel,
+  getEligibilityServiceTypes,
+  pickServiceTypes,
 } from '../../utils/eligibility';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { X12_SERVICE_TYPE_CODES } from '../../utils/x12ServiceTypeCodes';
-
-const SERVICE_TYPE_OPTIONS = X12_SERVICE_TYPE_CODES.map((c) => ({ value: c.code, label: `${c.display} (${c.code})` }));
 
 /**
  * Whether two code lists hold the same codes, in any order.
@@ -29,43 +30,62 @@ function sameCodes(a: readonly string[], b: readonly string[]): boolean {
 
 /**
  * The Billing Settings Eligibility tab: picks the X12 service types every eligibility check asks the payer about.
- * The picker offers the codes both eligibility rails accept and starts from what the practice saved, or `30`
- * (Health Benefit Plan Coverage) alone before anything was saved. Save writes the project-wide ValueSet the
- * eligibility modals read, creating it the first time and patching its codes afterwards.
+ * The picker offers every service type in the shared CodeSystem, loaded from the server, and starts from what the
+ * practice saved, or Health Benefit Plan Coverage alone before anything was saved. A saved service type the
+ * CodeSystem no longer lists stays offered so its pick keeps a label. Save writes the project-wide ValueSet the
+ * eligibility modals read, creating it the first time and patching its service types afterwards.
  * @returns The EligibilityServiceTypeSettings React node.
  */
 export function EligibilityServiceTypeSettings(): JSX.Element {
   const medplum = useMedplum();
   const loaded = useEligibilityServiceTypes();
+  const [allServiceTypes, setAllServiceTypes] = useState<ServiceType[]>();
   const [valueSet, setValueSet] = useState<WithId<ValueSet>>();
-  const [savedCodes, setSavedCodes] = useState<string[]>();
+  const [savedServiceTypes, setSavedServiceTypes] = useState<ServiceType[]>();
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchX12ServiceTypes(medplum).then(setAllServiceTypes).catch(showErrorNotification);
+  }, [medplum]);
 
   useEffect(() => {
     if (loaded.loading) {
       return;
     }
     setValueSet(loaded.valueSet);
-    setSavedCodes(loaded.codes);
-    setSelected(loaded.codes);
-  }, [loaded.loading, loaded.valueSet, loaded.codes]);
+    setSavedServiceTypes(loaded.serviceTypes);
+    setSelected(loaded.serviceTypes.map((serviceType) => serviceType.code));
+  }, [loaded.loading, loaded.valueSet, loaded.serviceTypes]);
 
+  const serviceTypes = useMemo(() => {
+    const known = allServiceTypes ?? [];
+    const unlisted = (savedServiceTypes ?? []).filter((saved) => !known.some((s) => s.code === saved.code));
+    return [...known, ...unlisted];
+  }, [allServiceTypes, savedServiceTypes]);
+
+  const data = useMemo(
+    () => serviceTypes.map((serviceType) => ({ value: serviceType.code, label: formatServiceTypeLabel(serviceType) })),
+    [serviceTypes]
+  );
+
+  const savedCodes = savedServiceTypes?.map((serviceType) => serviceType.code);
   const dirty = savedCodes !== undefined && !sameCodes(selected, savedCodes);
 
   const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
+      const picked = pickServiceTypes(serviceTypes, selected);
       const result = valueSet
-        ? await medplum.patchResource('ValueSet', valueSet.id, buildEligibilityServiceTypesPatch(selected))
-        : await medplum.createResource(buildEligibilityServiceTypesValueSet(selected));
-      const codes = getEligibilityServiceTypeCodes(result);
+        ? await medplum.patchResource('ValueSet', valueSet.id, buildEligibilityServiceTypesPatch(picked))
+        : await medplum.createResource(buildEligibilityServiceTypesValueSet(picked));
+      const saved = getEligibilityServiceTypes(result);
       setValueSet(result);
-      setSavedCodes(codes);
-      setSelected(codes);
+      setSavedServiceTypes(saved);
+      setSelected(saved.map((serviceType) => serviceType.code));
       showSuccessNotification({
         title: 'Eligibility service types saved',
-        message: `Eligibility checks now ask about ${codes.length} service ${codes.length === 1 ? 'type' : 'types'}.`,
+        message: `Eligibility checks now ask about ${saved.length} service ${saved.length === 1 ? 'type' : 'types'}.`,
       });
     } catch (err) {
       showErrorNotification(err);
@@ -84,14 +104,14 @@ export function EligibilityServiceTypeSettings(): JSX.Element {
       <MultiSelect
         label="Service types"
         placeholder="Search by name or code"
-        data={SERVICE_TYPE_OPTIONS}
+        data={data}
         value={selected}
         onChange={setSelected}
         searchable
         hidePickedOptions
-        nothingFoundMessage="No matching service type"
+        nothingFoundMessage={allServiceTypes ? 'No matching service type' : 'Loading service types...'}
         maxDropdownHeight={280}
-        disabled={savedCodes === undefined}
+        disabled={savedServiceTypes === undefined}
         error={selected.length === 0 ? 'Pick at least one service type' : undefined}
       />
       <Group justify="flex-end">

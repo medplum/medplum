@@ -47,8 +47,12 @@ import {
   CANDID_PRACTITIONER_PROFILE,
   CHC_PAYER_ID_SYSTEM,
 } from '../../utils/candid';
+import type { ServiceType } from '../../utils/eligibility';
 import { buildEligibilityServiceTypesValueSet, X12_SERVICE_TYPE_CODE_SYSTEM } from '../../utils/eligibility';
 import { BillingSetupPage } from './BillingSetupPage';
+
+const PLAN_COVERAGE: ServiceType = { code: '30', display: 'Health Benefit Plan Coverage' };
+const MENTAL_HEALTH: ServiceType = { code: 'MH', display: 'Mental Health' };
 
 const payersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-payers', name: 'Candid Get Payers' };
 const createProviderBot: WithId<Bot> = {
@@ -2608,6 +2612,34 @@ describe('BillingSetupPage', () => {
   });
   describe('eligibility service types', () => {
     /**
+     * Serves the shared CodeSystem's service types to the picker. Only `$expand` is answered; every other post falls
+     * through to the mock server. `UC` carries no display, as a code the CodeSystem has not been given one for.
+     */
+    const mockExpand = (): void => {
+      const original = medplum.post.bind(medplum);
+      vi.spyOn(medplum, 'post').mockImplementation((url, ...rest) => {
+        if (url.toString().endsWith('ValueSet/$expand')) {
+          return Promise.resolve({
+            resourceType: 'ValueSet',
+            expansion: {
+              contains: [
+                { system: X12_SERVICE_TYPE_CODE_SYSTEM, code: '30', display: 'Health Benefit Plan Coverage' },
+                { system: X12_SERVICE_TYPE_CODE_SYSTEM, code: '33', display: 'Chiropractic' },
+                { system: X12_SERVICE_TYPE_CODE_SYSTEM, code: 'MH', display: 'Mental Health' },
+                { system: X12_SERVICE_TYPE_CODE_SYSTEM, code: 'UC' },
+              ],
+            },
+          });
+        }
+        return original(url, ...rest);
+      });
+    };
+
+    beforeEach(() => {
+      mockExpand();
+    });
+
+    /**
      * Finds the pill for a picked service type. The closed dropdown stays mounted, so the label can also match a
      * hidden option; the pill is the match outside one.
      * @param label - The option label, e.g. `Mental Health (MH)`.
@@ -2637,6 +2669,17 @@ describe('BillingSetupPage', () => {
 
       expect(await findPill('Health Benefit Plan Coverage (30)')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+      expect(medplum.post).toHaveBeenCalledWith(
+        medplum.fhirUrl('ValueSet', '$expand'),
+        expect.objectContaining({
+          parameter: [
+            {
+              name: 'valueSet',
+              resource: expect.objectContaining({ compose: { include: [{ system: X12_SERVICE_TYPE_CODE_SYSTEM }] } }),
+            },
+          ],
+        })
+      );
 
       await user.type(screen.getByRole('textbox', { name: 'Service types' }), 'Mental Health');
       await user.click(await screen.findByRole('option', { name: 'Mental Health (MH)', hidden: true }));
@@ -2670,7 +2713,9 @@ describe('BillingSetupPage', () => {
 
     test('shows the saved codes and patches the ValueSet when they change', async () => {
       const user = userEvent.setup();
-      const valueSet = await medplum.createResource(buildEligibilityServiceTypesValueSet(['30', 'MH']));
+      const valueSet = await medplum.createResource(
+        buildEligibilityServiceTypesValueSet([PLAN_COVERAGE, MENTAL_HEALTH])
+      );
       mockBots({}, valueSet);
       const patchSpy = vi.spyOn(medplum, 'patchResource');
       const showSpy = vi.spyOn(notifications, 'show');
@@ -2700,6 +2745,17 @@ describe('BillingSetupPage', () => {
         },
       ]);
       expect(queryPill('Mental Health (MH)')).toBeUndefined();
+    });
+
+    test('offers a service type the CodeSystem has no display for by its code alone', async () => {
+      const user = userEvent.setup();
+      mockBots();
+      setup('Eligibility');
+
+      await user.type(await screen.findByRole('textbox', { name: 'Service types' }), 'UC');
+      await user.click(await screen.findByRole('option', { name: 'UC', hidden: true }));
+
+      expect(await findPill('UC')).toBeInTheDocument();
     });
 
     test('blocks save without any service type', async () => {
