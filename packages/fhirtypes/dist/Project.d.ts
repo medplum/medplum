@@ -206,6 +206,11 @@ export interface Project {
    * The resource types exported by the project when linked
    */
   exportedResourceType?: ResourceType[];
+
+  /**
+   * The shard(s) associated with this Project
+   */
+  shard?: ProjectShard[];
 }
 
 /**
@@ -289,6 +294,17 @@ export interface ProjectSetting {
  * The secret value.
  */
 export type ProjectSettingValue = boolean | number | string;
+
+/**
+ * The shard(s) associated with this Project
+ */
+export interface ProjectShard {
+
+  /**
+   * The shard id
+   */
+  id?: string;
+}
 
 /**
  * Web application or web site that is associated with the project.

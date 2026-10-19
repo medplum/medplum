@@ -101,6 +101,8 @@ export function collectReferences(resource: Resource): Record<string, TypedValue
   return collector.getReferences();
 }
 
+// SHARDING: references resolve on the writer's shard, so a target on another shard fails as not found,
+// e.g. a super admin writing Enterprise.organization or ProjectMembership.profile for an off-shard project.
 export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
   const references = collectReferences(resource);
   const userReferences: TypedValueWithPath[] = [];

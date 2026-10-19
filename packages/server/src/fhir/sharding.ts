@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { OperationOutcomeError } from '@medplum/core';
-import type { ResourceType } from '@medplum/fhirtypes';
+import type { Project, ProjectShard, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import type { ShardConfig } from '../config/utils';
 import { unsafeConfigKeys } from '../config/utils';
@@ -143,6 +143,8 @@ export function setStrictShardingEnforcement(value: boolean): void {
  *
  * The criterion for adding a type is "must be readable before the shard ID is knowable", which is
  * not the same as "not project-scoped": some of these tables hold rows carrying `meta.project`.
+ * Protected types (always system-owned, see `protectedResourceTypes`) also belong here so that
+ * system-owned resources live on the global shard.
  */
 export const globalShardResourceTypes: ReadonlySet<ResourceType> = new Set([
   'Project', // inherently global since a Project's shard is stored in the Project itself
@@ -156,6 +158,7 @@ export const globalShardResourceTypes: ReadonlySet<ResourceType> = new Set([
   'SmartAppLaunch', // read by id during login
   'DomainConfiguration', // read by domain for external auth flow
   'UserConfiguration', // TODO confirm this makes sense
+  'Enterprise', // protected type, so always system-owned; spans projects
 ]);
 
 /**
@@ -285,4 +288,27 @@ export function shardRoutingError(message: string, diagnostics: string | undefin
     resourceType: 'OperationOutcome',
     issue: [{ severity: 'error', code: 'exception', details: { text: message }, diagnostics }],
   });
+}
+
+export function buildProjectShard(shardId: string): ProjectShard[] | undefined {
+  return isShardingEnabled() ? [{ id: shardId }] : undefined;
+}
+
+/**
+ * Extracts the shardId from the project's active shard.
+ * @param project - The project from which to extract the shard ID.
+ * @returns The project's active shard ID or undefined if no shard is set on the Project
+ */
+export function getProjectShardId(project: Project): string | undefined {
+  return project.shard?.[0]?.id;
+}
+
+/**
+ * Extracts the shardId from the project's active shard and normalizes it. Useful
+ * when possibly working with legacy Project that have no `Project.shard` element.
+ * @param project - The project from which to extract the normalized shard ID.
+ * @returns The normalized shard ID of the project's active shard.
+ */
+export function getNormalizedProjectShardId(project: Project): string {
+  return normalizeShardId(getProjectShardId(project));
 }

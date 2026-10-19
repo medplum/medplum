@@ -49,7 +49,7 @@ import { buildAccessPolicy, getRepoForLogin, reconcileDefaultAccessPolicy } from
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
-import { PLACEHOLDER_SHARD_ID } from './sharding';
+import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from './sharding';
 
 function getRepository(repoContext: Partial<RepositoryContext>): Repository {
   return new Repository({
@@ -2079,6 +2079,7 @@ describe('AccessPolicy', () => {
         project: {
           name: 'Test Project',
           systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
+          shard: [{ id: GLOBAL_SHARD_ID }],
         },
         membership: { admin: true },
         accessPolicy: {
@@ -2089,6 +2090,7 @@ describe('AccessPolicy', () => {
 
       const check1 = await repo.readResource<Project>('Project', project.id);
       expect(check1.id).toStrictEqual(project.id);
+      expect(check1.shard).toBeUndefined();
 
       // Try to change the project name
       // This should succeed
@@ -2106,6 +2108,7 @@ describe('AccessPolicy', () => {
         features: ['bots'],
         systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
         systemSecret: [{ name: 'mySecret', valueString: 'bar' }],
+        shard: [{ id: 'other-shard' }],
       });
       expect(check3.id).toStrictEqual(project.id);
       expect(check3.meta?.versionId).toStrictEqual(check2.meta?.versionId);
@@ -2113,6 +2116,10 @@ describe('AccessPolicy', () => {
       expect(check3.features).toStrictEqual(project.features);
       expect(check3.systemSetting).toBeUndefined();
       expect(check3.systemSecret).toBeUndefined();
+      expect(check3.shard).toBeUndefined();
+      expect((await systemRepo.readResource<Project>('Project', project.id)).shard).toStrictEqual([
+        { id: GLOBAL_SHARD_ID },
+      ]);
 
       const check4 = await repo.readResource<ProjectMembership>('ProjectMembership', membership.id);
       expect(check4.id).toStrictEqual(membership.id);

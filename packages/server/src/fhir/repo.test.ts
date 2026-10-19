@@ -65,7 +65,7 @@ import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
 import { getResourceCacheEntry } from './repository/resource-cache';
 import { ExpungedHistoryTag } from './repository/row-builder';
-import { PLACEHOLDER_SHARD_ID } from './sharding';
+import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -2325,6 +2325,28 @@ describe('FHIR Repo', () => {
     expect(repo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
     expect(clonedRepo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
   });
+});
+
+describe('FHIR Repo with sharding', () => {
+  beforeAll(async () => {
+    await initAppServices(await loadTestConfig({ sharded: true }));
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('Requires a shard only when creating a Project', () =>
+    withTestContext(async () => {
+      using repo = getShardSystemRepo(GLOBAL_SHARD_ID);
+      await expect(repo.createResource<Project>({ resourceType: 'Project', name: 'No shard' })).rejects.toThrow(
+        'Project must specify a shard'
+      );
+
+      // Projects created before sharding have no shard
+      const { project } = await createTestProject();
+      await expect(repo.updateResource<Project>({ ...project, shard: undefined })).resolves.toBeDefined();
+    }));
 });
 
 function shuffleString(s: string): string {

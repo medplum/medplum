@@ -506,7 +506,7 @@ async function upsertProjectMembership(
       }
     },
     {
-      resourceTypes: ['ProjectMembership', profile.resourceType],
+      resourceTypes: ['ProjectMembership'],
       source: 'upsertProjectMembership',
       serializable: true,
     }

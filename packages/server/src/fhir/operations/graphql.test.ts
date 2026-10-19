@@ -15,9 +15,7 @@ import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
-import { normalizeShardId, PLACEHOLDER_SHARD_ID } from '../sharding';
-
-const shardId = normalizeShardId(PLACEHOLDER_SHARD_ID);
+import { getNormalizedProjectShardId } from '../sharding';
 
 const app = express();
 let practitioner: Practitioner;
@@ -28,6 +26,7 @@ let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
 let encounter2: Encounter;
 let bobAccessToken: string;
+let shardId: string;
 
 describe('GraphQL', () => {
   beforeAll(async () => {
@@ -45,9 +44,10 @@ describe('GraphQL', () => {
       });
       accessToken = aliceRegistration.accessToken;
       practitioner = aliceRegistration.profile as Practitioner;
+      shardId = getNormalizedProjectShardId(aliceRegistration.project);
 
       const aliceRepo = new Repository({
-        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+        routing: { kind: 'project-shard', shardId },
         author: createReference(aliceRegistration.profile),
         projects: [aliceRegistration.project],
       });

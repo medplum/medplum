@@ -8,8 +8,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { createTestProject, getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
-import { normalizeShardId, TODO_SHARD_ID } from '../sharding';
+import { createTestProject, getSuperAdminTestProject, initTestAuth } from '../../test.setup';
+import { getNormalizedProjectShardId } from '../sharding';
 import { Column, Condition, SelectQuery } from '../sql';
 import { selectCoding } from './utils/terminology';
 
@@ -45,14 +45,15 @@ describe('CodeSystem $import', () => {
   let snomed: CodeSystem;
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     await initApp(app, config);
+
+    const result = await getSuperAdminTestProject();
+    accessToken = result.accessToken;
+    shardId = getNormalizedProjectShardId(result.project);
   });
 
   beforeEach(async () => {
-    accessToken = await getSuperAdminAccessToken();
-    shardId = normalizeShardId(TODO_SHARD_ID); // get via getSuperAdminTestProject
-
     const resS = await request(app)
       .get(`/fhir/R4/CodeSystem?url=${snomedJSON.url}`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -249,7 +250,7 @@ describe('CodeSystem $import', () => {
   });
 
   test('Allows access by Project admin', async () => {
-    const { accessToken } = await createTestProject({
+    const { project, accessToken } = await createTestProject({
       project: { superAdmin: false },
       membership: { admin: true },
       withAccessToken: true,
@@ -275,7 +276,7 @@ describe('CodeSystem $import', () => {
         ],
       });
     expect(res2).toHaveStatus(200);
-    await assertCodeExists(res.body.id, '184598004');
+    await assertCodeExists(res.body.id, '184598004', getNormalizedProjectShardId(project));
   });
 
   test('Prevents writes by Project admin to linked Project systems', async () => {
@@ -355,7 +356,7 @@ describe('CodeSystem $import', () => {
   });
 
   test('Imports into own Project CodeSystem by ID', async () => {
-    const { accessToken, repo } = await createTestProject({
+    const { project, accessToken, repo } = await createTestProject({
       withAccessToken: true,
       withRepo: true,
       membership: { admin: true },
@@ -376,12 +377,12 @@ describe('CodeSystem $import', () => {
         parameter: [{ name: 'concept', valueCoding: { code, display: 'Own project concept' } }],
       });
     expect(res).toHaveStatus(200);
-    await assertCodeExists(codeSystem.id, code);
+    await assertCodeExists(codeSystem.id, code, getNormalizedProjectShardId(project));
   });
 
   test('Requires update permission on own Project CodeSystem', async () => {
     // Writing a CodeSystem's contents requires permission to update the CodeSystem itself
-    const { accessToken, repo } = await createTestProject({
+    const { project, accessToken, repo } = await createTestProject({
       withAccessToken: true,
       withRepo: true,
       membership: { admin: true },
@@ -403,7 +404,7 @@ describe('CodeSystem $import', () => {
         parameter: [{ name: 'concept', valueCoding: { code, display: 'Read-only policy' } }],
       });
     expect(res).toHaveStatus(403);
-    await assertCodeMissing(codeSystem.id, code);
+    await assertCodeMissing(codeSystem.id, code, getNormalizedProjectShardId(project));
   });
 
   test('Imports concepts and synonym designations', async () => {
@@ -581,8 +582,8 @@ describe('CodeSystem $import', () => {
   });
 });
 
-async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
-  const db = getDatabasePool(DatabaseMode.READER, shardId);
+async function assertCodeExists(system: string | undefined, code: string, codeShardId = shardId): Promise<any> {
+  const db = getDatabasePool(DatabaseMode.READER, codeShardId);
   const coding = await selectCoding(system as string, code)
     .column('isSynonym')
     .where('synonymOf', '=', null)
@@ -591,8 +592,8 @@ async function assertCodeExists(system: string | undefined, code: string): Promi
   return coding[0];
 }
 
-async function assertCodeMissing(system: string | undefined, code: string): Promise<void> {
-  const db = getDatabasePool(DatabaseMode.READER, shardId);
+async function assertCodeMissing(system: string | undefined, code: string, codeShardId = shardId): Promise<void> {
+  const db = getDatabasePool(DatabaseMode.READER, codeShardId);
   const coding = await selectCoding(system as string, code).execute(db);
   expect(coding).toHaveLength(0);
 }

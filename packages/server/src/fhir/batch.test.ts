@@ -15,7 +15,6 @@ import type {
   Practitioner,
   RelatedPerson,
   Task,
-  UserConfiguration,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError } from 'bullmq';
@@ -1971,7 +1970,7 @@ describe('Batch and Transaction processing', () => {
     const queue = getBatchQueue() as any;
     queue.add.mockClear();
 
-    const { accessToken, login, membership, project } = await createTestProject({
+    const { accessToken, membership, project } = await createTestProject({
       withAccessToken: true,
       withClient: true,
       project: {
@@ -2049,12 +2048,9 @@ describe('Batch and Transaction processing', () => {
       } as RateLimiterRes;
     });
 
-    const jobResult = runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-      undefined,
-      undefined,
-      { async: true },
-      () => execBatchJobImpl(job)
+    const { authState, requestId, traceId } = enqueued;
+    const jobResult = runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () =>
+      execBatchJobImpl(job)
     );
 
     await expect(jobResult).resolves.toBe(undefined);
@@ -2094,7 +2090,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
   let accessToken: string;
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     await initApp(app, config);
     ({ accessToken } = await createTestProject({
       project: { features: ['transaction-bundles'] },
