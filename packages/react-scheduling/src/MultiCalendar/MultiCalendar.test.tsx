@@ -147,12 +147,14 @@ describe('MultiCalendar', () => {
     });
     const sources: MultiCalendarSource[] = [
       { appointments: [appointment('stored', 'Homer Simpson', 0)], slots: [] },
-      { appointments: [appointment('unsaved', 'Jane Williams', 60)], slots: [], draft: true },
+      { appointments: [appointment('unsaved', 'Jane Williams', 60)], slots: [], draft: true, label: 'Draft' },
     ];
     renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
 
     expect(screen.getByText(/Homer Simpson/).closest('.event')).not.toHaveClass('draft');
-    expect(screen.getByText(/Jane Williams/).closest('.event')).toHaveClass('draft');
+    // Named by the source's label in place of its patient.
+    expect(screen.queryByText(/Jane Williams/)).not.toBeInTheDocument();
+    expect(screen.getByText('Draft').closest('.event')).toHaveClass('draft');
   });
 
   test('names everyone a slot holds time for, and gives its time when its schedule is unknown', async () => {

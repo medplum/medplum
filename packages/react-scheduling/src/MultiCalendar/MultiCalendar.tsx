@@ -27,6 +27,8 @@ export interface MultiCalendarSource {
    * hatched and outlined, apart from any appointment stored as proposed.
    */
   draft?: boolean;
+  /** Names each of the source's appointments in place of its patient. */
+  label?: string;
 }
 
 export interface MultiCalendarProps {
@@ -85,7 +87,7 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       eventContent={(info) => {
         const ext = info.event.extendedProps as ExtendedEvent;
         if (ext.type === 'appointment') {
-          return <AppointmentEvent appointment={ext.appointment} info={info} />;
+          return <AppointmentEvent appointment={ext.appointment} label={ext.label} info={info} />;
         } else if (ext.type === 'slot') {
           return <SlotEvent slot={ext.slot} schedule={ext.schedule} info={info} />;
         } else {

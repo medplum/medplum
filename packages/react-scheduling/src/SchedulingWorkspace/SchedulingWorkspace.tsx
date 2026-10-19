@@ -303,6 +303,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             appointments: [drawnProposal],
             interactive: false,
             draft: true,
+            label: 'Draft New Appointment',
           } satisfies MultiCalendarSource,
         ]
       : [];

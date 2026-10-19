@@ -108,7 +108,7 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
  */
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
   MultiCalendar: (props: {
-    sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean }[];
+    sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean; label?: string }[];
     onSelectInterval?: (interval: { start: Date; end: Date }) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
     onRangeChange?: (range: { start: Date; end: Date }) => void;
@@ -144,7 +144,13 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
         {/* Stands in for the highlight the real grid draws over the interval it is given. */}
         <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
         {/* Stands in for the events the real grid draws for appointments not yet booked. */}
-        <div data-testid="proposed-time">
+        <div
+          data-testid="proposed-time"
+          data-label={(props.sources ?? [])
+            .filter((source) => source.draft)
+            .map((source) => source.label)
+            .join(',')}
+        >
           {(props.sources ?? [])
             .filter((source) => source.draft)
             .flatMap((source) => source.appointments)
@@ -457,6 +463,24 @@ describe('SchedulingWorkspace booking', () => {
       await chooseDay('19');
 
       expect(proposedTime()).toBe('none');
+    });
+
+    test('Hides the proposal on the Block tab, and draws it again on coming back', async () => {
+      setup();
+      await clickCalendar('tuesday morning');
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseSecondOfferedTime();
+      const proposed = proposedTime();
+      expect(screen.getByTestId('proposed-time')).toHaveAttribute('data-label', 'Draft New Appointment');
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      expect(proposedTime()).toBe('none');
+
+      // The form stays mounted behind the Block tab, so its time is still there to draw.
+      fireEvent.click(screen.getByRole('tab', { name: 'Appointment' }));
+      expect(proposedTime()).toBe(proposed);
     });
 
     test('Moves the mark to each new click, and the proposal only where Book would book', async () => {

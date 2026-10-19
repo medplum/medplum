@@ -41,6 +41,8 @@ export interface FhirEventSource {
   className?: string;
   /** False draws the source's events as not clickable, whatever click handlers the calendar has. */
   interactive?: boolean;
+  /** Names each of the source's appointments in place of its patient. */
+  label?: string;
 }
 
 export type ExtendedEvent = (
@@ -48,6 +50,7 @@ export type ExtendedEvent = (
       type: 'appointment';
       appointment: Appointment;
       schedule?: WithId<Schedule>;
+      label?: string;
     }
   | {
       type: 'slot';
@@ -62,7 +65,7 @@ function appointmentsToEvents(
   appointments: Appointment[],
   schedule: WithId<Schedule> | undefined,
   extra?: Partial<EventInput>,
-  details?: { interactive?: boolean }
+  details?: { interactive?: boolean; label?: string }
 ): EventInput[] {
   return appointments
     .filter((appointment) => appointment.start && appointment.end)
@@ -72,7 +75,7 @@ function appointmentsToEvents(
 
       return {
         id: appointment.id,
-        title: name,
+        title: details?.label ?? name,
         start: appointment.start,
         end: appointment.end,
         extendedProps: { type: 'appointment', appointment, schedule, ...details } satisfies ExtendedEvent,
@@ -95,9 +98,7 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
   return (
     <>
       {info.timeText && <div className={info.timeClass}>{info.timeText}</div>}
-      <div className={info.titleClass}>
-        <AppointmentPatientName appointment={ext.appointment} />
-      </div>
+      <div className={info.titleClass}>{ext.label ?? <AppointmentPatientName appointment={ext.appointment} />}</div>
     </>
   );
 }
@@ -196,7 +197,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const eventSources = useMemo(
     () =>
       props.eventSources.map((fhirSource): EventSourceInput => {
-        const { schedule, slots, appointments, interactive, ...source } = fhirSource;
+        const { schedule, slots, appointments, interactive, label, ...source } = fhirSource;
         const filteredSlots = filterBookedSlots(slots, appointments);
 
         const appointmentExtra = {
@@ -211,7 +212,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         return {
           ...source,
           events: [
-            ...appointmentsToEvents(appointments, schedule, appointmentExtra, { interactive }),
+            ...appointmentsToEvents(appointments, schedule, appointmentExtra, { interactive, label }),
             ...slotsToEvents(filteredSlots, schedule, slotExtra, interactive),
           ],
         };
