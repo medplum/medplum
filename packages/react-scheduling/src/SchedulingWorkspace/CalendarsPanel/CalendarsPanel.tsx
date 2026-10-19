@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Divider, Stack, Text } from '@mantine/core';
-import { IconCalculatorFilled, IconMapPinFilled } from '@tabler/icons-react';
+import { ActionIcon, Box, Divider, Group, Stack, Text } from '@mantine/core';
+import { IconCalculatorFilled, IconLayoutSidebarLeftCollapse, IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react';
 import type { BookableActorType } from '../../actors';
@@ -28,6 +28,8 @@ export interface CalendarsPanelProps {
   /** The rows to show in each section, keyed by the actor type whose schedules they are. */
   readonly items: Readonly<Record<BookableActorType, readonly CalendarsPanelItem[]>>;
   readonly onToggle?: (actorType: BookableActorType, id: string) => void;
+  /** Draws a button beside the title for hiding the panel. The host does the hiding. */
+  readonly onCollapse?: () => void;
   readonly className?: string;
 }
 
@@ -64,13 +66,20 @@ const SECTIONS: readonly CalendarsPanelSection[] = [
  * @returns A React Node with the Calendars panel UI in it
  */
 export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
-  const { items, candidatesLoading, filters, onToggle, className } = props;
+  const { items, candidatesLoading, filters, onToggle, onCollapse, className } = props;
 
   return (
     <Stack gap="xs" className={className}>
-      <Text fz="lg" fw={800} py="xs">
-        Calendars
-      </Text>
+      <Group justify="space-between" wrap="nowrap">
+        <Text fz="lg" fw={800} py="xs">
+          Calendars
+        </Text>
+        {onCollapse && (
+          <ActionIcon variant="subtle" color="gray" aria-label="Hide calendars" onClick={onCollapse}>
+            <IconLayoutSidebarLeftCollapse size={18} />
+          </ActionIcon>
+        )}
+      </Group>
       <Divider />
 
       {filters && (
