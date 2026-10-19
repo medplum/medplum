@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   ALL_SERVICE_TYPES_CODE,
   allServiceTypesCodeableConcept,
+  getReferenceString,
   parseReference,
   SCHEDULING_SERVICE_TYPE_SYSTEM,
   ServiceTypeReferenceURI,
@@ -732,6 +733,13 @@ describe('selections', () => {
       RIVERA,
     ]);
     expect(getFirstCombinationCandidates({ Practitioner: [row(RIVERA), row(RIVERA)] })).toStrictEqual([]);
+
+    const selections = { Practitioner: [row(RIVERA, OKAFOR), row(RIVERA)], Device: [row(ULTRASOUND, ULTRASOUND_2)] };
+    expect(
+      getFirstCombinationCandidates(selections)
+        .map((candidate) => getReferenceString(candidate.schedule))
+        .sort()
+    ).toStrictEqual(schedulesOf(getActorCombinations(selections))[0]);
   });
 
   test('An empty row drops out rather than emptying the search', () => {
