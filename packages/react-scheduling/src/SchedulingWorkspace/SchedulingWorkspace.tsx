@@ -20,6 +20,7 @@ import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBooking
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
+import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
@@ -76,6 +77,8 @@ export interface SchedulingWorkspaceProps {
   /** Called with the Slots written when time is blocked from the pane's Block tab. */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /** Called with what `$confirm` wrote, after a pending appointment is confirmed from its details. */
+  readonly onConfirmed?: (confirmation: AppointmentWrite) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
@@ -130,7 +133,7 @@ export interface SchedulingWorkspaceProps {
  *   over the time on each calendar the user names, reported through `onBlocked`.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
- *   reschedule it.
+ *   reschedule it, or to confirm one still pending.
  * - Shows blocked time: clicking a Slot opens `SlotDetails` in that same pane, saying
  *   whose time it holds, when, and why, and offering to edit its time and comment or
  *   delete it.
@@ -476,6 +479,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             canBypassSchedulingRules={canBypassSchedulingRules}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
+            onConfirmed={props.onConfirmed}
             onRescheduled={props.onRescheduled}
             onToggleTimeFinder={setRescheduleFinderOpen}
             onUpdated={props.onUpdated}
