@@ -1148,43 +1148,41 @@ describe('AppointmentProposalForm', () => {
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
     });
 
-    test('Reports the time as it is chosen', async () => {
-      const onChangeTime = vi.fn();
-      setup(medplum, { onChangeTime });
+    test('Reports the proposal as it is chosen, and its drop when the form goes away', async () => {
+      const onChangeProposal = vi.fn();
+      const { unmount } = renderWithMedplum(
+        <AppointmentProposalForm onSubmit={onSubmit} onChangeProposal={onChangeProposal} />,
+        medplum
+      );
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
-      // Mounting has chosen nothing, and saying so would take down a marker a host
-      // put up when it opened this form.
-      expect(onChangeTime).not.toHaveBeenCalled();
-
       await chooseFirstOfferedTime();
       await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
       await clickBook();
 
-      // The interval reported is the one that got booked, to the instant: a host
-      // marking it on a calendar of its own is marking the visit itself.
+      // Reported to the instant that got booked: a host drawing it is drawing the visit itself.
       const proposal = proposedAppointment();
-      expect(onChangeTime).toHaveBeenLastCalledWith({
-        start: new Date(proposal.start as string),
-        end: new Date(proposal.end as string),
-      });
+      expect(onChangeProposal).toHaveBeenLastCalledWith(
+        expect.objectContaining({ start: proposal.start, end: proposal.end })
+      );
+
+      unmount();
+      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
-    test('Reports the time being dropped when a different day is searched', async () => {
-      const onChangeTime = vi.fn();
-      setup(medplum, { onChangeTime });
+    test('Reports the proposal being dropped when a different day is searched', async () => {
+      const onChangeProposal = vi.fn();
+      setup(medplum, { onChangeProposal });
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      expect(onChangeTime).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(Date) }));
+      expect(onChangeProposal).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(String) }));
 
       await chooseDay('18');
 
-      // The time was on the Monday, and the search has moved to the Tuesday. A host
-      // hears that rather than keeping a marker on a time nobody has chosen.
-      expect(onChangeTime).toHaveBeenLastCalledWith(undefined);
+      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
     test('Reports the proposal, and its drop even when the host moved the day', async () => {
