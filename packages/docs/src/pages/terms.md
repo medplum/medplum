@@ -112,6 +112,22 @@ Medplum owns all of the content we create, but you may use it while you use the 
 
 We authorize you, subject to these Terms, to access and use the Medplum Service and the Medplum Content solely for the use of Medplum's services, at our discretion. Any other use is expressly prohibited. This license is revocable at any time without notice and with or without cause. Unauthorized use of the Medplum Content may violate copyright, trademark, and applicable communications regulations and statutes and is strictly prohibited. You must preserve all copyright, trademarks, service marks, and other proprietary notices contained in the original Medplum Content on any copy you make of the Medplum Content.
 
+## CPT® Content License
+
+The Medplum Service includes Current Procedural Terminology (CPT®) content that Medplum licenses from the American Medical Association ("AMA"). CPT content is copyrighted by the AMA, and CPT is a registered trademark of the AMA. This section applies to your use of CPT content in the Medplum Service. If there is a conflict between this section and any other part of these Terms with respect to CPT content, this section controls.
+
+- License Grant. Medplum, as a party to a license agreement with the AMA, grants you a limited, non-exclusive, non-transferable, non-sublicensable license to use CPT content in the Medplum Service solely for your internal use within the territory in which the AMA has authorized Medplum to distribute CPT content (the "Territory"), which includes the United States. Contact support@medplum.com to confirm whether a country outside the United States is within the Territory.
+- Scope. This license covers only CPT content delivered through the Medplum Service hosted and operated by Medplum. It does not cover self-hosted deployments of Medplum open source software or any other use of CPT content outside the Medplum Service. If you self-host Medplum and wish to use CPT content, you must obtain your own license directly from the AMA.
+- Updates. Delivery of updated CPT content through the Medplum Service depends on a continuing contractual relationship between Medplum and the AMA.
+- Termination and Tail Period. If Medplum's agreement with the AMA terminates or expires, Medplum will notify you. You may continue to use CPT content in the Medplum Service for the remainder of the year of the then-current annual release of CPT (through the end of the applicable calendar year) (the "End User Tail Period"), provided that you continue to comply with these Terms. At the end of the End User Tail Period, the license granted in this section automatically terminates.
+- Restrictions. You may not make CPT content publicly available; create derivative works of CPT content, including translations; or transfer, sell, lease, license, or otherwise make CPT content, or any copy or portion of it, available to any unauthorized party, including a subsidiary, affiliate, or other legal entity, however designated, for any purpose except as expressly permitted in these Terms. You may not remove or obscure any AMA copyright, trademark, or other proprietary notices.
+- Artificial Intelligence. You may not use CPT content to train, fine-tune, or otherwise adapt any artificial intelligence or machine learning model, or deposit or copy CPT content into any public-facing generative AI system. Any AI-generated summary of CPT content produced by the Medplum Service is provided with a notice that it is an AI-generated summary and may not represent official CPT content.
+- Disclaimer. To the extent permitted by applicable law, use of CPT content is at your sole risk, and CPT content is provided "as is" without warranty of any kind. The AMA does not directly or indirectly practice medicine or dispense medical services. Fee schedules, relative value units, conversion factors and/or related components are not assigned by the AMA, are not part of CPT, and the AMA is not recommending their use. CPT content does not replace the AMA's Current Procedural Terminology book or other appropriate coding authority. The coding information contained in CPT content should be used only as a guide.
+- Records and Reports. Medplum pays royalties to the AMA based on your use of the Medplum Service. You agree to keep records and, upon request, provide Medplum with the information needed to calculate those royalties, including the name, city, state, and country of your organization and of its parent organization (if any), and the number of billing providers (full-time equivalents) in your organization who use the Medplum Service. You consent to the release of this information, including your organization's name, to the AMA. You further agree to provide, without delay, additional information that the AMA may reasonably request to verify this information. Nothing in this section requires you to release information that would cause you to violate applicable federal or state privacy laws.
+- U.S. Government End Users. CPT is commercial technical data, which was developed exclusively at private expense by the American Medical Association (AMA), 330 North Wabash Avenue, Chicago, Illinois 60611. This agreement does not grant the Federal Government a direct license to use CPT based on FAR 52.227-14 (Data Rights – General) and DFARS 252.227-7015 (Technical Data – Commercial Items).
+- Your Users. You must ensure that anyone you authorize to access the Medplum Service complies with this section.
+- Third-Party Beneficiary. The AMA is a third-party beneficiary of this section and may enforce it directly against you.
+
 ## Medplum Marks
 
 Medplum, the Medplum logo, and other Medplum logos and product and service names are or may be trademarks of Medplum (the "Medplum Marks"). Without our prior written permission, and except as solely enabled by any link as provided by us, you agree not to display or use in any manner the Medplum Marks.
@@ -256,19 +272,25 @@ You also acknowledge and understand that, with respect to any dispute with the R
 
 ## License Notifications
 
-You use of the Medplum Service is subject to the following copyright notices and licensing terms:
+Your use of the Medplum Service is subject to the following copyright notices and licensing terms:
+
+### CPT® Notices
+
+CPT copyright 2025 American Medical Association. All rights reserved.
+
+Fee schedules, relative value units, conversion factors and/or related components are not assigned by the AMA, are not part of CPT, and the AMA is not recommending their use. The AMA does not directly or indirectly practice medicine or dispense medical services. The AMA assumes no liability for data contained or not contained herein.
+
+CPT is a registered trademark of the American Medical Association.
+
+Your use of CPT content in the Medplum Service is subject to the [CPT® Content License](#cpt-content-license) section of these Terms.
+
+#### U.S. Government End Users
+
+CPT is commercial technical data, which was developed exclusively at private expense by the American Medical Association (AMA), 330 North Wabash Avenue, Chicago, Illinois 60611. Use of CPT in connection with this product shall not be construed to grant the Federal Government a direct license to use CPT based on FAR 52.227-14 (Data Rights – General) and DFARS 252.227-7015 (Technical Data – Commercial Items).
 
 ### UMLS Notices
 
 Bodenreider O. The Unified Medical Language System (UMLS): integrating biomedical terminology. Nucleic Acids Res. 2004 Jan 1;32(Database issue):D267-70. doi: 10.1093/nar/gkh061. PubMed PMID: 14681409; PubMed Central PMCID: PMC308795.
-
-#### CPT2022
-
-CPT™ only Copyright 2021 American Medical Association. All rights Reserved. No fee schedules, basic unit, relative values or related listings are included in CPT™. AMA does not directly or indirectly practice medicine or dispense medical services. AMA assumes no liability for data contained herein.
-
-##### U.S. Government Rights
-
-Medplum includes CPT™ which is commercial technical data and/or computer data bases and/or commercial computer software and/or commercial computer software documentation, as applicable which were developed exclusively at private expense by the American Medical Association, 515 North State Street, Chicago, Illinois, 60610. U.S. Government rights to use, modify, reproduce, release, perform, display, or disclose these technical data and/or computer data bases and/or computer software and/or computer software documentation are subject to the limited rights restrictions of DFARS 252.227-7015(b)(2) (June 1995) and/or subject to the restrictions of DFARS 227.7202-1(a) (June 1995) and DFARS 227.7202-3(a) (June 1995), as applicable for U.S. Department of Defense procurements and the limited rights restrictions of FAR 52.227-14 (June 1987) and/or subject to the restricted rights provisions of FAR 52.227-14 (June 1987) and FAR 52.227-19 (June 1987), as applicable, and any applicable agency FAR Supplements, for non-Department of Defense Federal procurements.
 
 #### LNC273
 
@@ -297,4 +319,4 @@ Courtesy of the U.S. National Library of Medicine.
 
 Medplum includes SNOMED Clinical Terms® (SNOMED CT®) which is used by permission of the International Health Terminology Standards Development Organisation (IHTSDO). All rights reserved. SNOMED CT®, was originally created by The College of American Pathologists. "SNOMED" and "SNOMED CT" are registered trademarks of the IHTSDO. Medplum users in a territory that is not represented by a member of The International Health Terminology Standards Development Organization will be required to pay the SNOMED license fees set forth in the SNOMED CT® Affiliate License Agreement which may be found at: https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/license_agreement_snomed.html.
 
-Last Updated: 2023-04-11
+Last Updated: 2026-10-19
