@@ -4,7 +4,6 @@ import type { Filter } from '@medplum/core';
 import {
   allOk,
   badRequest,
-  DEFAULT_MAX_SEARCH_COUNT,
   extractServiceTypeReferences,
   flatMapFilter,
   getIdentifier,
@@ -20,6 +19,7 @@ import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import type { Repository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { MAX_OCCURRENCE_COUNT } from './utils/recurrence';
 import { assertAllLoaded } from './utils/scheduling';
 
 const confirmOperation = makeOperationDefinition(
@@ -171,11 +171,19 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
       }
       const series = await txRepo.searchResources<Appointment>({
         resourceType: 'Appointment',
-        // A series isn't capped at $book's occurrence count: $book can add sessions to one.
-        count: DEFAULT_MAX_SEARCH_COUNT,
+        // One past the most $book creates, to refuse a series grown beyond it rather than confirm part of it.
+        count: MAX_OCCURRENCE_COUNT + 1,
         filters,
         sortRules: [{ code: 'date' }],
       });
+      if (series.length > MAX_OCCURRENCE_COUNT) {
+        throw new OperationOutcomeError(
+          badRequest(
+            `At most ${MAX_OCCURRENCE_COUNT} occurrences of a series can be confirmed at once`,
+            'Parameters.occurrences'
+          )
+        );
+      }
 
       if (!series.some((occurrence) => occurrence.id === appointment.id)) {
         throw new OperationOutcomeError(

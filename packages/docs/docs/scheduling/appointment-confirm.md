@@ -143,6 +143,9 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/my-appointment-id/$con
   Appointment without a `start` can't be confirmed with `this-and-following`.
 - Every occurrence is confirmed in one transaction, all or none: if any of them fails a check below,
   none is confirmed.
+- At most 6 occurrences are confirmed at once, the most a series
+  [`$book` creates](/docs/scheduling/appointment-book#template-requirements). If more of the series
+  would be confirmed, the request is refused with HTTP 400 Bad Request and none is.
 - `occurrences` other than `this` is refused for an Appointment outside a series. Check for the
   series identifier before offering to confirm more than one occurrence.
 

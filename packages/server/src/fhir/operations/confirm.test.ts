@@ -24,6 +24,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import { MAX_OCCURRENCE_COUNT } from './utils/recurrence';
 
 const app = express();
 const request = supertest(app);
@@ -521,6 +522,45 @@ describe('Appointment/:id/$confirm', () => {
     expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toContain('cannot be searched');
     expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Refuses to confirm more occurrences of a series than $book creates', async () => {
+    const occurrences: WithId<Appointment>[] = [];
+    for (let week = 0; week <= MAX_OCCURRENCE_COUNT; week++) {
+      occurrences.push(
+        await systemRepo.createResource<Appointment>({
+          resourceType: 'Appointment',
+          status: 'proposed',
+          start: new Date(Date.UTC(2026, 4, 15 + 7 * week, 14)).toISOString(),
+          end: new Date(Date.UTC(2026, 4, 15 + 7 * week, 15)).toISOString(),
+          identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'oversized-series' }],
+          participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+          meta: { project: project.project.id },
+        })
+      );
+    }
+    const confirm = (appointment: WithId<Appointment>, occurrences: string): ReturnType<typeof request.post> =>
+      request
+        .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: occurrences }] });
+    const readStatuses = (): Promise<Appointment['status'][]> =>
+      Promise.all(
+        occurrences.map(async (a) => (await systemRepo.readResource<Appointment>('Appointment', a.id)).status)
+      );
+
+    const refused = await confirm(occurrences[0], 'all');
+    expect(refused).toHaveStatus(400);
+    expect(refused.body.issue[0].details.text).toEqual(
+      `At most ${MAX_OCCURRENCE_COUNT} occurrences of a series can be confirmed at once`
+    );
+    expect(refused.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect(await readStatuses()).toEqual(occurrences.map(() => 'proposed'));
+
+    // The limit counts the occurrences found, so the ones following the first still fit.
+    const confirmed = await confirm(occurrences[1], 'this-and-following');
+    expect(confirmed).toHaveStatus(200);
+    expect(await readStatuses()).toEqual(['proposed', ...occurrences.slice(1).map(() => 'booked')]);
   });
 
   test('Succeeds as a batch entry without a resource', async () => {
