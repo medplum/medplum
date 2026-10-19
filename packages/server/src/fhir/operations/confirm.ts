@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter } from '@medplum/core';
+import type { Filter, SearchRequest } from '@medplum/core';
 import {
   allOk,
   badRequest,
   extractServiceTypeReferences,
   flatMapFilter,
   getIdentifier,
+  matchesSearchRequest,
   OperationOutcomeError,
   Operator,
   RecurringAppointmentSeriesIdentifierSystem,
-  serverError,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment, Resource, Slot } from '@medplum/fhirtypes';
@@ -101,6 +101,88 @@ async function confirmAppointment(txRepo: Repository, appointment: Appointment):
   return [updatedAppointment, ...updatedSlots];
 }
 
+function assertConfirmable(appointment: Appointment): void {
+  if (appointment.status !== 'pending' && appointment.status !== 'proposed') {
+    throw new OperationOutcomeError(badRequest(`Appointment cannot be confirmed in '${appointment.status}' status`));
+  }
+}
+
+/**
+ * Searches for the occurrences of an Appointment's recurring series to confirm with it.
+ * Runs outside the confirming transaction, where the search would take predicate locks across the
+ * project's Appointments.
+ *
+ * @param repo - The repository.
+ * @param appointmentId - The Appointment in the URL.
+ * @param occurrences - `this-and-following` or `all`.
+ * @returns The search, to check each occurrence still matches inside the transaction, and the ids
+ * it found in order of start.
+ */
+async function findOccurrences(
+  repo: Repository,
+  appointmentId: string,
+  occurrences: string
+): Promise<{ search: SearchRequest<Appointment>; ids: string[] }> {
+  const appointment = await repo.readResource<Appointment>('Appointment', appointmentId);
+  assertConfirmable(appointment);
+  const seriesId = getIdentifier(appointment, RecurringAppointmentSeriesIdentifierSystem);
+  if (!seriesId) {
+    throw new OperationOutcomeError(
+      badRequest('Appointment is not part of a recurring series', 'Parameters.occurrences')
+    );
+  }
+  // These would change the identifier search below rather than match themselves.
+  if (/[,\\|$]/.test(seriesId) || seriesId.trim() !== seriesId) {
+    throw new OperationOutcomeError(
+      badRequest(
+        'A series identifier with a comma, backslash, pipe, dollar sign, or surrounding whitespace cannot be searched'
+      )
+    );
+  }
+
+  const filters: Filter[] = [
+    {
+      code: 'identifier',
+      operator: Operator.EQUALS,
+      value: `${RecurringAppointmentSeriesIdentifierSystem}|${seriesId}`,
+    },
+    // Occurrences already booked or cancelled are left alone.
+    { code: 'status', operator: Operator.EQUALS, value: 'pending,proposed' },
+  ];
+  if (occurrences === 'this-and-following') {
+    if (!appointment.start) {
+      throw new OperationOutcomeError(
+        badRequest('An Appointment without a start has no following occurrences', 'Parameters.occurrences')
+      );
+    }
+    // Following by start rather than recurrenceId, which is a searchable/sortable parameter.
+    filters.push({ code: 'date', operator: Operator.GREATER_THAN_OR_EQUALS, value: appointment.start });
+  }
+  const search: SearchRequest<Appointment> = {
+    resourceType: 'Appointment',
+    // One past the most $book creates, to refuse a series grown beyond it rather than confirm part of it.
+    count: MAX_OCCURRENCE_COUNT + 1,
+    filters,
+    sortRules: [{ code: 'date' }],
+  };
+  const series = await repo.searchResources(search);
+  if (series.length > MAX_OCCURRENCE_COUNT) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `At most ${MAX_OCCURRENCE_COUNT} occurrences of a series can be confirmed at once`,
+        'Parameters.occurrences'
+      )
+    );
+  }
+
+  const ids = series.map((occurrence) => occurrence.id);
+  // Missed only if it changed since it was read, as by a concurrent $confirm; its status check fails then.
+  if (!ids.includes(appointmentId)) {
+    ids.unshift(appointmentId);
+  }
+  return { search, ids };
+}
+
 /**
  * Handles HTTP requests for the Appointment $confirm operation.
  *
@@ -124,75 +206,19 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
     );
   }
   const appointmentId = req.params.id;
+  const found = occurrences === 'this' ? undefined : await findOccurrences(ctx.repo, appointmentId, occurrences);
   const updatedResources = await ctx.repo.withTransaction(
     async (txRepo) => {
-      const appointment = await txRepo.readResource<Appointment>('Appointment', appointmentId);
-      if (appointment.status !== 'pending' && appointment.status !== 'proposed') {
-        throw new OperationOutcomeError(
-          badRequest(`Appointment cannot be confirmed in '${appointment.status}' status`)
-        );
-      }
-      if (occurrences === 'this') {
-        return confirmAppointment(txRepo, appointment);
-      }
-      const seriesId = getIdentifier(appointment, RecurringAppointmentSeriesIdentifierSystem);
-      if (!seriesId) {
-        throw new OperationOutcomeError(
-          badRequest('Appointment is not part of a recurring series', 'Parameters.occurrences')
-        );
-      }
-      // These would change the identifier search below rather than match themselves.
-      if (/[,\\|$]/.test(seriesId) || seriesId.trim() !== seriesId) {
-        throw new OperationOutcomeError(
-          badRequest(
-            'A series identifier with a comma, backslash, pipe, dollar sign, or surrounding whitespace cannot be searched'
-          )
-        );
-      }
-
-      // Having passed its status check, the Appointment is among the occurrences this finds.
-      const filters: Filter[] = [
-        {
-          code: 'identifier',
-          operator: Operator.EQUALS,
-          value: `${RecurringAppointmentSeriesIdentifierSystem}|${seriesId}`,
-        },
-        // Occurrences already booked or cancelled are left alone.
-        { code: 'status', operator: Operator.EQUALS, value: 'pending,proposed' },
-      ];
-      if (occurrences === 'this-and-following') {
-        if (!appointment.start) {
-          throw new OperationOutcomeError(
-            badRequest('An Appointment without a start has no following occurrences', 'Parameters.occurrences')
-          );
-        }
-        // Following by start rather than recurrenceId, which is a searchable/sortable parameter.
-        filters.push({ code: 'date', operator: Operator.GREATER_THAN_OR_EQUALS, value: appointment.start });
-      }
-      const series = await txRepo.searchResources<Appointment>({
-        resourceType: 'Appointment',
-        // One past the most $book creates, to refuse a series grown beyond it rather than confirm part of it.
-        count: MAX_OCCURRENCE_COUNT + 1,
-        filters,
-        sortRules: [{ code: 'date' }],
-      });
-      if (series.length > MAX_OCCURRENCE_COUNT) {
-        throw new OperationOutcomeError(
-          badRequest(
-            `At most ${MAX_OCCURRENCE_COUNT} occurrences of a series can be confirmed at once`,
-            'Parameters.occurrences'
-          )
-        );
-      }
-
-      if (!series.some((occurrence) => occurrence.id === appointment.id)) {
-        throw new OperationOutcomeError(
-          serverError(new Error('Search for the series missed the Appointment confirmed'))
-        );
-      }
-
       const updated: Resource[] = [];
-      for (const occurrence of series) {
+      for (const id of found?.ids ?? [appointmentId]) {
+        // Read one at a time: a read of several ids can be planned to lock across the project.
+        const occurrence = await txRepo.readResource<Appointment>('Appointment', id);
+        if (id === appointmentId) {
+          assertConfirmable(occurrence);
+        } else if (found && !matchesSearchRequest(occurrence, found.search)) {
+          // Changed since the search, such as by being confirmed or cancelled on its own.
+          continue;
+        }
         updated.push(...(await confirmAppointment(txRepo, occurrence)));
       }
       return updated;
