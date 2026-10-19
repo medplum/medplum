@@ -28,6 +28,7 @@ import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
+import { Repository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
 
@@ -426,6 +427,29 @@ describe('Appointment/$book and $hold with a recurrenceTemplate', () => {
     expect(confirmed).toHaveStatus(200);
 
     expect(await readStatuses(appointments)).toEqual(['booked', 'booked', 'cancelled']);
+  });
+
+  test('$confirm with occurrences=all skips an occurrence cancelled after its series was searched', async () => {
+    const { appointments, slots } = await holdSeries();
+    // Cancel the last occurrence once the series search has found it, before the transaction re-reads it.
+    const searchResources = Repository.prototype.searchResources;
+    const spy = vi.spyOn(Repository.prototype, 'searchResources').mockImplementationOnce(async function (
+      this: Repository,
+      ...args
+    ) {
+      const found = await searchResources.apply(this, args);
+      await systemRepo.updateResource<Appointment>({ ...appointments[2], status: 'cancelled' });
+      return found;
+    });
+
+    const confirmed = await confirm(appointments[0], 'all');
+    expect(confirmed).toHaveStatus(200);
+    spy.mockRestore();
+
+    expect(await readStatuses(appointments)).toEqual(['booked', 'booked', 'cancelled']);
+    // Its Slot is left held, not firmed up as the others are.
+    const lastSlot = slots.find((s) => s.status === 'busy-tentative' && s.start === appointments[2].start);
+    expect(await readStatuses([lastSlot as WithId<Slot>])).toEqual(['busy-tentative']);
   });
 
   test('$confirm with occurrences=all books none of the series when one occurrence fails', async () => {
