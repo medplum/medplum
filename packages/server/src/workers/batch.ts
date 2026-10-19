@@ -141,9 +141,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
 
       try {
         const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-        if (isJobActive(exec.getAsyncJob())) {
-          await exec.failJob(failedErr ?? undefined);
-        }
+        await exec.failJob(failedErr ?? undefined);
       } finally {
         const asyncJobId = job.data.tracking.asyncJobId;
         const logger = getBatchLogger(asyncJobId, job.id);

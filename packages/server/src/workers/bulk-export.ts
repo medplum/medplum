@@ -66,9 +66,7 @@ export const initBulkExportWorker: WorkerInitializer = (config, options) => {
     }
     try {
       const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-      if (isJobActive(exec.getAsyncJob())) {
-        await exec.failJob(err);
-      }
+      await exec.failJob(err);
     } catch (failErr) {
       globalLogger.error('Failed to mark bulk export as failed', { jobId: job.id, error: failErr });
     }

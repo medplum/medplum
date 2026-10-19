@@ -10,7 +10,7 @@ import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
 import { getLogger } from '../../../logger';
 import { getProjectScopedUrl } from '../../../util/url';
-import { CancelledError } from '../../../workers/utils';
+import { CancelledError, isJobActive } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 
@@ -165,6 +165,9 @@ export class AsyncJobExecutor {
     }
     // Job has been cancelled: do not update the async job with additional data
     if (err instanceof CancelledError) {
+      return this.resource;
+    }
+    if (!isJobActive(this.resource)) {
       return this.resource;
     }
 
