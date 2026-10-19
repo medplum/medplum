@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Alert, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { ActionIcon, Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -434,7 +434,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
       {sidebarCollapsed && (
-        <div className={classes.sidebarRail}>
+        <Box className={classes.sidebarRail}>
           <ActionIcon
             variant="subtle"
             color="gray"
@@ -443,10 +443,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           >
             <IconLayoutSidebarLeftExpand size={18} />
           </ActionIcon>
-        </div>
+        </Box>
       )}
       {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
-      <div className={classes.sidebar} hidden={sidebarCollapsed}>
+      <Box className={classes.sidebar} hidden={sidebarCollapsed}>
         <CalendarsPanel
           items={panelItems}
           candidatesLoading={candidatesLoading}
@@ -454,7 +454,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onCollapse={() => setSidebarCollapsed(true)}
           filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
         />
-      </div>
+      </Box>
       <div className={classes.calendar}>
         {displayError !== undefined && (
           <Alert color="red" mb="xs">
