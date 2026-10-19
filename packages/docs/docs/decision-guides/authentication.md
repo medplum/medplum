@@ -27,7 +27,7 @@ An identity provider (IDP) manages credentials and authenticates users. Choose b
 
 ### Option A: Medplum-managed authentication
 
-Use Medplum's built-in email/password login or [Google sign-in](/docs/auth/google-auth). For password-based accounts, Medplum manages credentials, registration, password resets, and MFA.
+Use Medplum's built-in email/password login or Google sign-in. For password-based accounts, Medplum manages credentials, registration, password resets, and MFA.
 
 - **Advantages:**
   - Built-in authentication and login components without a separate IDP integration.
@@ -35,7 +35,7 @@ Use Medplum's built-in email/password login or [Google sign-in](/docs/auth/googl
   - Does not meet a requirement to use an existing corporate IDP.
 - **Best fit:** Applications without an existing identity system, including patient-facing applications.
 
-Implementation: [Redirect login](/docs/auth/medplum-as-idp) or [Embedded Login](/docs/auth/embedded-login).
+Implementation: [Redirect login](/docs/auth/medplum-as-idp), [Embedded Login](/docs/auth/embedded-login), and [Google sign-in](/docs/auth/google-auth).
 
 **Next:** Skip Decisions 2 and 3 and continue to [Before You Implement](#before-you-implement).
 
