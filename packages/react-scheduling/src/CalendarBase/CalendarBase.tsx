@@ -39,6 +39,8 @@ export interface FhirEventSource {
   appointments: Appointment[];
   color?: string;
   className?: string;
+  /** False draws the source's events as not clickable, whatever click handlers the calendar has. */
+  interactive?: boolean;
 }
 
 export type ExtendedEvent =
@@ -189,15 +191,15 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const eventSources = useMemo(
     () =>
       props.eventSources.map((fhirSource): EventSourceInput => {
-        const { schedule, slots, appointments, ...source } = fhirSource;
+        const { schedule, slots, appointments, interactive, ...source } = fhirSource;
         const filteredSlots = filterBookedSlots(slots, appointments);
 
         const appointmentExtra = {
-          interactive: Boolean(props.onSelectAppointment || props.onDoubleClickAppointment),
+          interactive: interactive ?? Boolean(props.onSelectAppointment || props.onDoubleClickAppointment),
         };
 
         const slotExtra = {
-          interactive: Boolean(props.onSelectSlot || props.onDoubleClickSlot),
+          interactive: interactive ?? Boolean(props.onSelectSlot || props.onDoubleClickSlot),
           display: viewType === 'dayGridMonth' ? 'none' : 'auto', // Hide slots in month view
         };
 
