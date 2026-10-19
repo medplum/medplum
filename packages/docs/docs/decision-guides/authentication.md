@@ -27,7 +27,7 @@ An identity provider (IDP) manages credentials and authenticates users. Choose b
 
 ### Option A: Medplum-managed authentication
 
-Medplum manages credentials, registration, password resets, and MFA.
+Use Medplum's built-in email/password login or [Google sign-in](/docs/auth/google-auth). For password-based accounts, Medplum manages credentials, registration, password resets, and MFA.
 
 - **Advantages:**
   - Built-in authentication and login components without a separate IDP integration.
