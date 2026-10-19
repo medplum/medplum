@@ -4,6 +4,7 @@ import type { Filter, SearchRequest } from '@medplum/core';
 import {
   allOk,
   badRequest,
+  EMPTY,
   extractServiceTypeReferences,
   flatMapFilter,
   getIdentifier,
@@ -65,7 +66,7 @@ async function confirmAppointment(txRepo: Repository, appointment: Appointment):
 
   // Fetch slots
   const slots = await txRepo
-    .readReferences(appointment.slot ?? [])
+    .readReferences(appointment.slot ?? EMPTY)
     .then((slots) => withPaths(slots, 'Appointment.slot'));
   assertAllLoaded(slots, 'Loading slots failed');
 
