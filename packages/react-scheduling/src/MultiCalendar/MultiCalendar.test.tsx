@@ -110,6 +110,25 @@ describe('MultiCalendar', () => {
     expect(await within(blocked).findByText('Alice Smith')).toBeInTheDocument();
   });
 
+  test('draws a source marked not interactive without making its events clickable', () => {
+    const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status: 'booked',
+      start: new Date(baseDate.getTime() + offsetMinutes * 60 * 1000).toISOString(),
+      end: new Date(baseDate.getTime() + (offsetMinutes + 30) * 60 * 1000).toISOString(),
+      participant: [{ actor: { reference: `Patient/${id}`, display }, status: 'accepted' }],
+    });
+    const sources: MultiCalendarSource[] = [
+      { appointments: [appointment('clickable', 'Homer Simpson', 0)], slots: [] },
+      { appointments: [appointment('inert', 'Jane Williams', 60)], slots: [], interactive: false },
+    ];
+    renderWithMedplum(<MultiCalendar sources={sources} onSelectAppointment={() => undefined} />, medplum);
+
+    expect(screen.getByText(/Homer Simpson/).closest('.event')).toHaveAttribute('role', 'button');
+    expect(screen.getByText(/Jane Williams/).closest('.event')).not.toHaveAttribute('role', 'button');
+  });
+
   test('names everyone a slot holds time for, and gives its time when its schedule is unknown', async () => {
     const room = await medplum.createResource({ resourceType: 'Location', name: 'Exam Room A' });
     const schedule: WithId<Schedule> = {

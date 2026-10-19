@@ -20,6 +20,8 @@ export interface MultiCalendarSource {
   slots: Slot[];
   appointments: Appointment[];
   color?: keyof MantineThemeColors;
+  /** False draws the source's events as not clickable, whatever click handlers the calendar has. */
+  interactive?: boolean;
 }
 
 export interface MultiCalendarProps {
