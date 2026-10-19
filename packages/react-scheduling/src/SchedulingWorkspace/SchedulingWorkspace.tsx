@@ -527,7 +527,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             </Tabs.List>
             <Tabs.Panel value="appointment">
               <AppointmentBookingForm
-                key={bookingSelection.start.toDateString()}
                 defaultStart={bookingSelection.start}
                 procedureBinding={procedureBinding}
                 diagnosisBinding={diagnosisBinding}
