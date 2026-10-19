@@ -712,10 +712,10 @@ export function getFirstCombinationCandidates(selections: ActorSelections): Sche
 
 function findFirstCombination(
   lists: readonly (readonly ScheduleCandidate[])[],
-  chosen: readonly ScheduleCandidate[]
+  chosen: ScheduleCandidate[]
 ): ScheduleCandidate[] | undefined {
   if (chosen.length === lists.length) {
-    return [...chosen];
+    return chosen;
   }
   for (const candidate of lists[chosen.length]) {
     const next = [...chosen, candidate];
