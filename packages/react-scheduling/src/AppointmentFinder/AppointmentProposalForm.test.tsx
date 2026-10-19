@@ -1187,9 +1187,12 @@ describe('AppointmentProposalForm', () => {
       expect(onChangeTime).toHaveBeenLastCalledWith(undefined);
     });
 
-    test('Reports the proposal, and its drop', async () => {
+    test('Reports the proposal, and its drop even when the host moved the day', async () => {
       const onChangeProposal = vi.fn();
-      setup(medplum, { onChangeProposal });
+      const { rerender } = renderWithMedplum(
+        <AppointmentProposalForm onSubmit={onSubmit} onChangeProposal={onChangeProposal} />,
+        medplum
+      );
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
@@ -1198,8 +1201,15 @@ describe('AppointmentProposalForm', () => {
         expect.objectContaining({ resourceType: 'Appointment', status: 'proposed', start: expect.any(String) })
       );
 
-      await chooseDay('18');
-
+      // A drop the host caused is reported too: a host drawing the proposal draws only
+      // what Book would book.
+      rerender(
+        <AppointmentProposalForm
+          onSubmit={onSubmit}
+          onChangeProposal={onChangeProposal}
+          defaultStart={new Date(2026, 8, 2)}
+        />
+      );
       expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 

@@ -101,8 +101,8 @@ export default {
  * the pointer. The calendar never moves itself to keep either in sight; page to a week
  * they are on and they are there.
  *
- * Clicking a different day with the form part-filled re-opens it on the new day and
- * clears the answers; clicking again inside the day already open leaves them alone.
+ * Clicking another time with the form part-filled keeps the answers and moves the time
+ * search to the day clicked; a day the search already covers is left as it is.
  *
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
  * anything booked from the form — opens its details in the same pane the booking form

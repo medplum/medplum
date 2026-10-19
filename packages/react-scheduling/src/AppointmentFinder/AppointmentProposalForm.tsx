@@ -136,8 +136,10 @@ export interface AppointmentProposalFormProps {
    */
   readonly ignoreAppointmentSchedules?: readonly string[];
   /**
-   * The day the time search opens on, and the day a typed time starts out on.
-   * Defaults to today.
+   * The day the time search opens on. Defaults to today.
+   *
+   * A later value moves the search to its day and keeps every answer, unless that day is
+   * already on show.
    */
   readonly defaultStart?: Date;
   /**
@@ -358,6 +360,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onResultsReplaced: clearChosen,
   });
   const { reset: resetDaySearch } = daySearch;
+
+  // Compared by instant, so a host building the Date inline each render moves nothing.
+  const defaultStartMoved = useChanged(defaultStart?.getTime());
+  if (defaultStartMoved && defaultStart && !daySearch.isDayOnShow(defaultStart)) {
+    setMonth(defaultStart);
+    daySearch.chooseDayRange(defaultStart);
+  }
 
   // Whatever moves the count moves what was found under it, the field going away included:
   // a proposal carries the series it was found for, and a typed time books a single visit.
