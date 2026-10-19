@@ -12,13 +12,14 @@ import type {
   Practitioner,
   PractitionerRole,
   Resource,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
@@ -46,6 +47,7 @@ import {
   CANDID_PRACTITIONER_PROFILE,
   CHC_PAYER_ID_SYSTEM,
 } from '../../utils/candid';
+import { buildEligibilityServiceTypesValueSet, X12_SERVICE_TYPE_CODE_SYSTEM } from '../../utils/eligibility';
 import { BillingSetupPage } from './BillingSetupPage';
 
 const payersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-payers', name: 'Candid Get Payers' };
@@ -291,9 +293,14 @@ describe('BillingSetupPage', () => {
       listProviders?: boolean;
       getContracts?: boolean;
       linkRenderingProvider?: boolean;
-    } = {}
+    } = {},
+    /** The saved eligibility service types ValueSet, served to the Eligibility tab and the eligibility modals. */
+    valueSet?: ValueSet
   ): ReturnType<typeof vi.spyOn> =>
     vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string, query: any) => {
+      if (resourceType === 'ValueSet') {
+        return valueSet;
+      }
       if (resourceType !== 'Bot') {
         return undefined;
       }
@@ -354,7 +361,7 @@ describe('BillingSetupPage', () => {
     return { ...result, router };
   };
 
-  test('renders the four billing tabs, billing organizations first', async () => {
+  test('renders the five billing tabs, billing organizations first', async () => {
     const user = userEvent.setup();
     mockBots();
 
@@ -373,6 +380,9 @@ describe('BillingSetupPage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     expect(await screen.findByText(/payer directory bot is not deployed/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Eligibility' }));
+    expect(await screen.findByRole('textbox', { name: 'Service types' })).toBeInTheDocument();
   });
 
   test('syncs the selected tab with navigation and browser history', async () => {
@@ -2594,6 +2604,132 @@ describe('BillingSetupPage', () => {
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       expect(executeSpy).not.toHaveBeenCalledWith(linkBot.id, expect.anything(), expect.anything());
+    });
+  });
+  describe('eligibility service types', () => {
+    /**
+     * Finds the pill for a picked service type. The closed dropdown stays mounted, so the label can also match a
+     * hidden option; the pill is the match outside one.
+     * @param label - The option label, e.g. `Mental Health (MH)`.
+     * @returns The pill label element, or none when the service type is not picked.
+     */
+    const queryPill = (label: string): HTMLElement | undefined =>
+      screen.queryAllByText(label).find((el) => !el.closest('[role="option"]'));
+    const findPill = (label: string): Promise<HTMLElement> =>
+      waitFor(() => {
+        const pill = queryPill(label);
+        if (!pill) {
+          throw new Error(`No pill for `);
+        }
+        return pill;
+      });
+    const removePill = async (user: UserEvent, label: string): Promise<void> => {
+      const pill = (await findPill(label)).parentElement as HTMLElement;
+      await user.click(within(pill).getByRole('button', { hidden: true }));
+    };
+
+    test('starts from Health Benefit Plan Coverage and saves the picked codes as a new ValueSet', async () => {
+      const user = userEvent.setup();
+      mockBots();
+      const createSpy = vi.spyOn(medplum, 'createResource');
+      const showSpy = vi.spyOn(notifications, 'show');
+      setup('Eligibility');
+
+      expect(await findPill('Health Benefit Plan Coverage (30)')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+      await user.type(screen.getByRole('textbox', { name: 'Service types' }), 'Mental Health');
+      await user.click(await screen.findByRole('option', { name: 'Mental Health (MH)', hidden: true }));
+      expect(await findPill('Mental Health (MH)')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Eligibility checks now ask about 2 service types.' })
+        )
+      );
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'ValueSet',
+          url: 'https://www.medplum.com/provider/eligibility-service-types',
+          compose: {
+            include: [
+              {
+                system: X12_SERVICE_TYPE_CODE_SYSTEM,
+                concept: [
+                  { code: '30', display: 'Health Benefit Plan Coverage' },
+                  { code: 'MH', display: 'Mental Health' },
+                ],
+              },
+            ],
+          },
+        })
+      );
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    test('shows the saved codes and patches the ValueSet when they change', async () => {
+      const user = userEvent.setup();
+      const valueSet = await medplum.createResource(buildEligibilityServiceTypesValueSet(['30', 'MH']));
+      mockBots({}, valueSet);
+      const patchSpy = vi.spyOn(medplum, 'patchResource');
+      const showSpy = vi.spyOn(notifications, 'show');
+      setup('Eligibility');
+
+      expect(await findPill('Mental Health (MH)')).toBeInTheDocument();
+      await removePill(user, 'Mental Health (MH)');
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Eligibility checks now ask about 1 service type.' })
+        )
+      );
+      expect(patchSpy).toHaveBeenCalledWith('ValueSet', valueSet.id, [
+        {
+          op: 'replace',
+          path: '/compose',
+          value: {
+            include: [
+              {
+                system: X12_SERVICE_TYPE_CODE_SYSTEM,
+                concept: [{ code: '30', display: 'Health Benefit Plan Coverage' }],
+              },
+            ],
+          },
+        },
+      ]);
+      expect(queryPill('Mental Health (MH)')).toBeUndefined();
+    });
+
+    test('blocks save without any service type', async () => {
+      const user = userEvent.setup();
+      mockBots();
+      setup('Eligibility');
+
+      expect(await findPill('Health Benefit Plan Coverage (30)')).toBeInTheDocument();
+      await removePill(user, 'Health Benefit Plan Coverage (30)');
+
+      expect(screen.getByText('Pick at least one service type')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    test('reports a failed save and keeps the picks', async () => {
+      const user = userEvent.setup();
+      mockBots();
+      vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Server down'));
+      const showSpy = vi.spyOn(notifications, 'show');
+      setup('Eligibility');
+
+      await user.type(await screen.findByRole('textbox', { name: 'Service types' }), 'Chiropractic');
+      await user.click(await screen.findByRole('option', { name: 'Chiropractic (33)', hidden: true }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'Server down' }))
+      );
+      expect(queryPill('Chiropractic (33)')).toBeDefined();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     });
   });
 });
