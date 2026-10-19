@@ -137,10 +137,10 @@ export interface SchedulingWorkspaceProps {
  * - Shows blocked time: clicking a Slot opens `SlotDetails` in that same pane, saying
  *   whose time it holds, when, and why, and offering to edit its time and comment or
  *   delete it.
- * - Highlights the time last chosen, wherever it was chosen: the click that opened the
- *   pane, then whatever the form's time search settles on, and nothing while the form
- *   holds no time. The calendar is never moved to reach it — a highlight off the week
- *   on screen is kept, and is drawn again on paging back to it.
+ * - Highlights the time clicked, and draws the visit the form would book as a draft
+ *   appointment beside it, from whenever the form holds a time until it drops it. The
+ *   calendar is never moved to reach either; one off the week on screen is drawn again
+ *   on paging back to it.
  * - Can open on a site the host chooses: `defaultLocation` is where the Location filter,
  *   and so the booking form, starts.
  *
@@ -184,8 +184,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
 
-  // What the calendar highlights, one per pane tab: a hidden tab's form still reports its time
-  const [highlight, setHighlight] = useState<DateTimeRange>();
+  // The visit the booking form would book, drawn on the calendar apart from the click that
+  // opened it, so each has one writer.
+  const [proposal, setProposal] = useState<Appointment>();
+  // What the calendar highlights while blocking: the block form's time, which a click resets.
   const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
@@ -289,6 +291,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       slots: [],
       appointments: group,
     }));
+    // Hidden with the Appointment tab, as the selection follows the tab on show. A draft, and
+    // not clickable: there is nothing booked yet to open.
+    const drawnProposal = paneTab === 'appointment' ? proposal : undefined;
+    const proposalReference = extractServiceTypeReferences(drawnProposal?.serviceType)[0]?.reference;
+    const proposalSources = drawnProposal
+      ? [
+          {
+            color: proposalReference ? serviceColor(proposalReference) : 'gray',
+            slots: [],
+            appointments: [drawnProposal],
+            interactive: false,
+            draft: true,
+          } satisfies MultiCalendarSource,
+        ]
+      : [];
     const legend = groups
       .map(({ reference, group, color }): ServiceTypeLegendItem => ({
         id: reference ?? 'none',
@@ -300,11 +317,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return {
-      sources: [...calendarSources, ...serviceSources],
+      sources: [...calendarSources, ...serviceSources, ...proposalSources],
       serviceTypes: legend,
       servicesPending: groups.length < allGroups.length,
     };
-  }, [activeCandidates, slots, appointments, services, medplum, theme]);
+  }, [activeCandidates, slots, appointments, services, medplum, theme, paneTab, proposal]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -312,13 +329,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setSelectedAppointment(undefined);
     setSelectedSlotId(undefined);
     setBookingSelection(interval);
-    setHighlight(interval);
     setBlockHighlight(interval);
   }, []);
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
-    setHighlight(undefined);
+    setProposal(undefined);
     setBlockHighlight(undefined);
     setTimeFinderOpen(false);
   }, []);
@@ -456,7 +472,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
           onSelectSlot={selectSlot}
-          selection={blocking ? blockHighlight : highlight}
+          selection={blocking ? blockHighlight : bookingSelection}
           selectedId={openAppointment?.id ?? openSlot?.id}
         />
         <div className={classes.footer}>
@@ -524,7 +540,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 appointmentExtensions={appointmentExtensions}
                 allowRecurring
                 onToggleTimeFinder={setTimeFinderOpen}
-                onChangeTime={setHighlight}
+                onChangeProposal={setProposal}
                 onBooked={finishBooking}
                 defaultLocation={selectedLocation}
                 defaultService={selectedService}
