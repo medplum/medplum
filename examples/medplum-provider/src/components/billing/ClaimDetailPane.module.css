@@ -1,0 +1,45 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  min-height: 64px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+}
+
+.title {
+  min-width: 0;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--mantine-spacing-md);
+}
+
+.stats {
+  border: 1px solid var(--app-shell-border-color);
+  border-radius: var(--mantine-radius-md);
+}
+
+.stat {
+  padding: 8px 10px;
+
+  &:not(:last-child) {
+    border-inline-end: 1px solid var(--app-shell-border-color);
+  }
+}
+
+.card {
+  border: 1px solid var(--app-shell-border-color);
+  border-radius: var(--mantine-radius-md);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+}
+
+.note {
+  border-bottom: 1px solid var(--app-shell-border-color);
+}

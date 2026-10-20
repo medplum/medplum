@@ -12,6 +12,7 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
+  IconReceipt,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -27,6 +28,7 @@ import { HIDE_GET_STARTED_SETTING } from './utils/projectSettings';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 
+import { BillingPage } from './pages/billing/BillingPage';
 import { EncountersPage } from './pages/encounter/EncountersPage';
 import { FaxPage } from './pages/fax/FaxPage';
 import { GetStartedPage } from './pages/getstarted/GetStartedPage';
@@ -63,8 +65,8 @@ import {
   BillingOrganizationsSettingsPage,
   BillingPayersSettingsPage,
   BillingPractitionersSettingsPage,
+  ChargeItemsSettingsPage,
 } from './pages/settings/BillingSettingsPages';
-import { ChargeItemsSettingsPage } from './pages/settings/ChargeItemsSettingsPage';
 import { IntegrationsSettingsPage } from './pages/settings/IntegrationsSettingsPage';
 import { MembersSettingsPage } from './pages/settings/MembersSettingsPage';
 import { PreferencesSettingsPage } from './pages/settings/PreferencesSettingsPage';
@@ -197,6 +199,7 @@ export function App(): JSX.Element | null {
                     },
                   },
                   { icon: <IconPrinter />, label: 'Faxes', href: '/Fax/Communication' },
+                  ...(hasBilling ? [{ icon: <IconReceipt />, label: 'Billing', href: '/Billing/Claims' }] : []),
                 ],
               },
               {
@@ -348,6 +351,7 @@ export function App(): JSX.Element | null {
                 <Route path="schedule/visit-service-types" element={<VisitServiceTypesSettingsPage />} />
                 <Route path="*" element={<Navigate to={`${SETTINGS_PATH}/account`} replace />} />
               </Route>
+              {hasBilling && <Route path="/Billing/*" element={<BillingPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />

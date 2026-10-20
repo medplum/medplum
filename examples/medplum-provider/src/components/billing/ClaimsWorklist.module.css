@@ -1,0 +1,33 @@
+.root {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.withPane {
+  grid-template-columns: minmax(0, 1fr) 460px;
+
+  @mixin smaller-than $mantine-breakpoint-lg {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.main {
+  min-width: 0;
+  padding: var(--mantine-spacing-md);
+}
+
+.pane {
+  border-inline-start: 1px solid var(--app-shell-border-color);
+  position: sticky;
+  top: var(--app-shell-header-height, 0px);
+  height: calc(100vh - var(--app-shell-header-height, 0px));
+
+  @mixin smaller-than $mantine-breakpoint-lg {
+    position: static;
+    height: auto;
+    border-inline-start: 0;
+    border-top: 1px solid var(--app-shell-border-color);
+  }
+}

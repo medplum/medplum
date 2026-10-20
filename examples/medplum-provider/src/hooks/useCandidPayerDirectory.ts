@@ -10,10 +10,11 @@ import { buildPayerRefreshOps, isPayerNotFoundError, parsePayerSearchPage } from
 import { CANDID_GET_PAYERS_BOT_IDENTIFIER, CANDID_PAYER_UUID_SYSTEM } from '../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../utils/notifications';
 
-// Candid's directory paginates by opaque cursor with no total count, so the pagination control
-// can only offer loaded pages plus one; stepping onto the extra page fetches the next page with
-// the stored cursor and appends it to the loaded results.
+// Candid's directory paginates by opaque cursor with no total count, so a search loads every match up
+// to SEARCH_RESULT_LIMIT before showing any, and pages through them here with an exact page count.
+// Candid serves up to 100 per request by default, so this is usually a single bot call.
 const SEARCH_PAGE_SIZE = 20;
+const SEARCH_RESULT_LIMIT = 100;
 
 /**
  * State and operations for the Candid payer directory.
@@ -22,8 +23,8 @@ const SEARCH_PAGE_SIZE = 20;
  * - `importedUuids` — Candid payer UUIDs of the payers imported into the project.
  * - `payersVersion` — increments whenever an import or refresh changes the imported payers, so the list can refetch.
  * - `searchResults` — the current page of directory search results, or undefined before the first search.
- * - `pageCount` — pages reachable in the pagination control: loaded pages plus one past them
- *   when the directory has more.
+ * - `truncated` — whether the directory has more matches than the SEARCH_RESULT_LIMIT loaded.
+ * - `pageCount` — pages of loaded search results.
  * - `page` — 1-based current search results page.
  * - `importPayers` — persists the directory entries with the given Candid payer UUIDs (across all
  *   loaded results).
@@ -36,14 +37,14 @@ export interface CandidPayerDirectory {
   importedUuids: Set<string>;
   payersVersion: number;
   searchResults: Organization[] | undefined;
+  truncated: boolean;
   pageCount: number;
   page: number;
   searching: boolean;
-  fetchingPage: boolean;
   importing: boolean;
   refreshing: boolean;
   search: (term: string) => Promise<void>;
-  setPage: (pageNumber: number) => Promise<void>;
+  setPage: (pageNumber: number) => void;
   clearSearch: () => void;
   importPayers: (uuids: Set<string>) => Promise<void>;
   refreshPayer: (org: WithId<Organization>) => Promise<WithId<Organization> | undefined>;
@@ -54,13 +55,11 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
   const [importedPayers, setImportedPayers] = useState<WithId<Organization>[]>([]);
   const [payersVersion, setPayersVersion] = useState(0);
   const [botId, setBotId] = useState<string | undefined>(undefined);
-  const [activeTerm, setActiveTerm] = useState('');
-  // All loaded search results, appended batch by batch; displayed SEARCH_PAGE_SIZE at a time.
+  // All loaded search results, displayed SEARCH_PAGE_SIZE at a time.
   const [results, setResults] = useState<Organization[] | undefined>(undefined);
+  const [truncated, setTruncated] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
   const [searching, setSearching] = useState(false);
-  const [fetchingPage, setFetchingPage] = useState(false);
   const [importing, setImporting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -90,10 +89,10 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
     [importedPayers]
   );
 
-  const fetchPage = async (term: string, pageToken?: string): Promise<CandidPayerPage> => {
+  const fetchPage = async (term: string, limit: number, pageToken?: string): Promise<CandidPayerPage> => {
     const result = (await medplum.executeBot(
       botId as string,
-      { searchTerm: term, limit: SEARCH_PAGE_SIZE, ...(pageToken && { pageToken }) },
+      { searchTerm: term, limit, ...(pageToken && { pageToken }) },
       'application/json'
     )) as Parameters;
     return parsePayerSearchPage(result);
@@ -106,11 +105,18 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
     const trimmed = term.trim();
     setSearching(true);
     try {
-      const page = await fetchPage(trimmed);
-      setActiveTerm(trimmed);
-      setResults(page.items ?? []);
+      const loaded: Organization[] = [];
+      let pageToken: string | undefined;
+      do {
+        const page = await fetchPage(trimmed, SEARCH_RESULT_LIMIT - loaded.length, pageToken);
+        const items = page.items ?? [];
+        loaded.push(...items);
+        // An empty page with a cursor would loop forever
+        pageToken = items.length > 0 ? page.nextPageToken : undefined;
+      } while (pageToken && loaded.length < SEARCH_RESULT_LIMIT);
+      setResults(loaded.slice(0, SEARCH_RESULT_LIMIT));
+      setTruncated(loaded.length > SEARCH_RESULT_LIMIT || !!pageToken);
       setPageIndex(0);
-      setNextPageToken(page.nextPageToken);
     } catch (error) {
       showErrorNotification(error);
     } finally {
@@ -118,36 +124,14 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
     }
   };
 
-  const setPage = async (pageNumber: number): Promise<void> => {
-    const index = pageNumber - 1;
-    const loaded = results?.length ?? 0;
-    if (index < Math.ceil(loaded / SEARCH_PAGE_SIZE)) {
-      setPageIndex(index);
-      return;
-    }
-    if (!botId || !nextPageToken) {
-      return;
-    }
-    setFetchingPage(true);
-    try {
-      const page = await fetchPage(activeTerm, nextPageToken);
-      const fetched = page.items ?? [];
-      const merged = loaded + fetched.length;
-      setResults((prev) => [...(prev ?? []), ...fetched]);
-      setPageIndex(Math.min(index, Math.max(Math.ceil(merged / SEARCH_PAGE_SIZE) - 1, 0)));
-      setNextPageToken(fetched.length > 0 ? page.nextPageToken : undefined);
-    } catch (error) {
-      showErrorNotification(error);
-    } finally {
-      setFetchingPage(false);
-    }
+  const setPage = (pageNumber: number): void => {
+    setPageIndex(pageNumber - 1);
   };
 
   const clearSearch = (): void => {
-    setActiveTerm('');
     setResults(undefined);
+    setTruncated(false);
     setPageIndex(0);
-    setNextPageToken(undefined);
   };
 
   const importPayers = async (uuids: Set<string>): Promise<void> => {
@@ -229,10 +213,10 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
     searchResults: results
       ? results.slice(pageIndex * SEARCH_PAGE_SIZE, (pageIndex + 1) * SEARCH_PAGE_SIZE)
       : undefined,
-    pageCount: results ? Math.ceil(results.length / SEARCH_PAGE_SIZE) + (nextPageToken ? 1 : 0) : 0,
+    truncated,
+    pageCount: results ? Math.ceil(results.length / SEARCH_PAGE_SIZE) : 0,
     page: pageIndex + 1,
     searching,
-    fetchingPage,
     importing,
     refreshing,
     search,

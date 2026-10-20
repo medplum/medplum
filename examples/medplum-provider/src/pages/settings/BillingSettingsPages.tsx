@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router';
 import { CandidBillingOrganizations } from '../../components/billing/CandidBillingOrganizations';
 import { CandidBillingPractitioners } from '../../components/billing/CandidBillingPractitioners';
 import { CandidImportedPayers } from '../../components/billing/CandidImportedPayers';
+import { ChargeItemDefinitions } from '../../components/billing/ChargeItemDefinitions';
 import { SettingsPage, SettingsPanel } from '../../components/settings/SettingsLayout';
 import { useCandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
 
@@ -47,6 +48,20 @@ export function BillingPayersSettingsPage(): JSX.Element {
     <SettingsPage title="Payers" description="Payers you are enrolled with and can submit claims to.">
       <SettingsPanel>
         <CandidImportedPayers directory={directory} resourceId={resourceId} onNavigate={setResourceId} />
+      </SettingsPanel>
+    </SettingsPage>
+  );
+}
+
+export function ChargeItemsSettingsPage(): JSX.Element {
+  const [resourceId, setResourceId] = useResourceIdParam();
+  return (
+    <SettingsPage
+      title="Charge Items"
+      description="The fee schedule used to price charge items when you code an encounter."
+    >
+      <SettingsPanel>
+        <ChargeItemDefinitions resourceId={resourceId} onNavigate={setResourceId} />
       </SettingsPanel>
     </SettingsPage>
   );

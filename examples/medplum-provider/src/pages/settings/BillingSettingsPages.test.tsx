@@ -10,6 +10,7 @@ import {
   BillingOrganizationsSettingsPage,
   BillingPayersSettingsPage,
   BillingPractitionersSettingsPage,
+  ChargeItemsSettingsPage,
 } from './BillingSettingsPages';
 import { renderSettingsPage } from './settingsTestUtils';
 
@@ -39,7 +40,7 @@ describe('BillingSettingsPages', () => {
 
     expect(screen.getByRole('heading', { name: 'Billing Organizations' })).toBeInTheDocument();
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Add billing organization' })).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
     await waitFor(() => expect(router.state.location.search).toBe(''));
@@ -48,6 +49,7 @@ describe('BillingSettingsPages', () => {
   test.each([
     ['Billing Practitioners', <BillingPractitionersSettingsPage key="practitioners" />],
     ['Payers', <BillingPayersSettingsPage key="payers" />],
+    ['Charge Items', <ChargeItemsSettingsPage key="charge-items" />],
   ])('renders the %s page', async (title, element) => {
     await renderSettingsPage(medplum, element);
     expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();

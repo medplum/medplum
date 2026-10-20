@@ -118,7 +118,7 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
         const billsIndividually = !organization || roles.some((other) => other.id !== role?.id && !other.organization);
         built = withCandidPractitionerExtensions(built, billsIndividually);
       }
-      const saved = await medplum.updateResource(built as WithId<Practitioner>);
+      const saved = await medplum.updateResource(built);
       if (organization) {
         if (role) {
           await medplum.patchResource('PractitionerRole', role.id, [
