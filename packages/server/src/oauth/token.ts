@@ -258,7 +258,8 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  if (isAuthorizationCodeExpired(login)) {
+  const issuedAt = Date.parse(login.meta?.lastUpdated ?? '');
+  if (!Number.isFinite(issuedAt) || Date.now() - issuedAt >= AUTH_CODE_EXPIRATION_MS) {
     sendTokenError(res, 'invalid_grant', 'Authorization code expired');
     return;
   }
@@ -298,21 +299,6 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   await sendTokenResponse(req, res, login, client);
-}
-
-/**
- * Returns whether the authorization code on a Login is too old to redeem.
- *
- * The code is minted when the Login is created or re-issued for an existing session, and every
- * later step of the login ceremony (profile selection, MFA) updates the Login, so `meta.lastUpdated`
- * bounds the code's age. `authTime` is not used because a Login re-issued for an existing session
- * keeps the original authentication time, which can be up to the session's max_age old.
- * @param login - The Login found by authorization code.
- * @returns True if the code has expired or the Login has no usable timestamp.
- */
-function isAuthorizationCodeExpired(login: Login): boolean {
-  const issuedAt = Date.parse(login.meta?.lastUpdated ?? '');
-  return !Number.isFinite(issuedAt) || Date.now() - issuedAt >= AUTH_CODE_EXPIRATION_MS;
 }
 
 /**
