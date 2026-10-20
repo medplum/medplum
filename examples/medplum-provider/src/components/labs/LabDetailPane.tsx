@@ -86,8 +86,9 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
         <>
           {order && (
             <LabOrderDetails
-              key={order.id}
+              key={`${order.id}:${item.resourceType === 'DiagnosticReport' ? item.id : ''}`}
               order={order}
+              selectedReportId={item.resourceType === 'DiagnosticReport' ? item.id : undefined}
               onChange={(updated) => {
                 setOrder(updated);
                 onOrderChange?.(updated);
