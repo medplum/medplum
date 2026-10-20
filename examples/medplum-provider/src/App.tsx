@@ -13,7 +13,7 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
-  IconReceipt2,
+  IconReceipt,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -29,6 +29,7 @@ import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
 
+import { BillingPage } from './pages/billing/BillingPage';
 import { EncountersPage } from './pages/encounter/EncountersPage';
 import { FaxPage } from './pages/fax/FaxPage';
 import { GetStartedPage } from './pages/getstarted/GetStartedPage';
@@ -62,7 +63,6 @@ import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
 import { InternalSchedulingWorkspacePage } from './pages/scheduling/InternalSchedulingWorkspacePage';
 import { SearchPage } from './pages/SearchPage';
-import { BillingSetupPage } from './pages/settings/BillingSetupPage';
 import { SignInPage } from './pages/SignInPage';
 import { SmartHealthLinkImportModal } from './pages/smart/SmartHealthLinkImportModal';
 import { SmartHealthLinkImportPage } from './pages/smart/SmartHealthLinkImportPage';
@@ -176,6 +176,7 @@ export function App(): JSX.Element | null {
                     },
                   },
                   { icon: <IconPrinter />, label: 'Faxes', href: '/Fax/Communication' },
+                  ...(hasBilling ? [{ icon: <IconReceipt />, label: 'Billing', href: '/Billing/Claims' }] : []),
                 ],
               },
               {
@@ -193,9 +194,6 @@ export function App(): JSX.Element | null {
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
-                  ...(hasBilling
-                    ? [{ icon: <IconReceipt2 />, label: 'Billing Settings', href: '/Settings/Billing' }]
-                    : []),
                   ...(hasDoseSpot
                     ? [
                         {
@@ -308,7 +306,7 @@ export function App(): JSX.Element | null {
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               {/* Must precede the /:resourceType catch-alls below */}
-              {hasBilling && <Route path="/Settings/Billing/*" element={<BillingSetupPage />} />}
+              {hasBilling && <Route path="/Billing/*" element={<BillingPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />

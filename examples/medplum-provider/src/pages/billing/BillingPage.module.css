@@ -1,0 +1,55 @@
+/* The tabs, the configuration gear and the queues share one left column; the selected queue fills the rest. */
+.page {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: calc(100vh - var(--app-shell-header-height, 0px));
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-body));
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sidebar {
+  border-inline-end: 1px solid var(--app-shell-border-color);
+  position: sticky;
+  top: var(--app-shell-header-height, 0px);
+  height: calc(100vh - var(--app-shell-header-height, 0px));
+  display: flex;
+  flex-direction: column;
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    position: static;
+    height: auto;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--app-shell-border-color);
+  }
+}
+
+.sidebarHeader {
+  height: 56px;
+  flex: none;
+  padding: 0 var(--mantine-spacing-xs) 0 var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--app-shell-border-color);
+}
+
+.sidebarNav {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--mantine-spacing-xs);
+}
+
+.content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.padded {
+  padding: var(--mantine-spacing-md);
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    padding: var(--mantine-spacing-xs);
+  }
+}
