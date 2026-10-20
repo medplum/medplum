@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { act, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { CodeInput } from './CodeInput';
 
@@ -64,5 +64,25 @@ describe('CodeInput', () => {
     await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     expect(screen.getByText('Test Display')).toBeDefined();
+  });
+
+  test('Follows controlled value', async () => {
+    const ui = (value: string | null): JSX.Element => (
+      <MedplumProvider medplum={medplum}>
+        <CodeInput {...defaultProps} value={value} />
+      </MedplumProvider>
+    );
+    let rerender: (ui: JSX.Element) => void = () => undefined;
+    await act(async () => {
+      rerender = render(ui('abc')).rerender;
+    });
+    expect(screen.getByText('abc')).toBeInTheDocument();
+
+    await act(async () => rerender(ui('xyz')));
+    expect(screen.queryByText('abc')).not.toBeInTheDocument();
+    expect(screen.getByText('xyz')).toBeInTheDocument();
+
+    await act(async () => rerender(ui(null)));
+    expect(screen.queryByText('xyz')).not.toBeInTheDocument();
   });
 });

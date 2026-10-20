@@ -5,7 +5,7 @@ import { getDisplayString, getReferenceString, isReference, isResource } from '@
 import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -135,6 +135,12 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
    * resolved on mount. Treated as uncontrolled — changes after mount are ignored.
    */
   readonly defaultValue?: (T | Reference<T>)[];
+  /**
+   * The selected values, each a full resource or a reference to resolve. Passing this (`[]` for none)
+   * makes the input controlled; see `AsyncAutocompleteProps.value`. A reference that cannot be read
+   * is left out of the selection.
+   */
+  readonly value?: readonly (T | Reference<T>)[];
   readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
   readonly required?: boolean;
@@ -159,14 +165,16 @@ export function MultiResourceInput<T extends Resource = Resource>(
   const { resourceType, searchCriteria } = props;
   const ItemComponent = props.itemComponent ?? DefaultResourceItemComponent;
   const onChange = props.onChange;
+  const controlled = props.value !== undefined;
+  const { resources: valueResources, remember } = useControlledResources(props.value);
 
   // Capture initial defaultValue at mount — treated as uncontrolled (initial-only).
   // The Mantine MultiSelect component does not reliably handle changes to defaultValue after mount.
-  const initialDefaultValue = useRef(props.defaultValue);
+  const initialDefaultValue = useRef(controlled ? undefined : props.defaultValue);
 
   // undefined = still resolving references, [] = ready with no defaults, T[] = ready with resolved resources
   const [defaultResources, setDefaultResources] = useState<T[] | undefined>(
-    !props.defaultValue || props.defaultValue.length === 0 ? [] : undefined
+    controlled || !props.defaultValue || props.defaultValue.length === 0 ? [] : undefined
   );
 
   useEffect(() => {
@@ -216,11 +224,14 @@ export function MultiResourceInput<T extends Resource = Resource>(
 
   const handleChange = useCallback(
     (newResources: T[]) => {
+      if (controlled) {
+        remember(newResources);
+      }
       if (onChange) {
         onChange(newResources);
       }
     },
-    [onChange]
+    [controlled, remember, onChange]
   );
 
   if (defaultResources === undefined) {
@@ -238,6 +249,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
       required={props.required}
       itemComponent={ItemComponent}
       defaultValue={defaultResources}
+      value={valueResources}
       placeholder={props.placeholder}
       maxValues={props.maxValues}
       toOption={toOption}
@@ -247,4 +259,78 @@ export function MultiResourceInput<T extends Resource = Resource>(
       clearable={props.clearable ?? true}
     />
   );
+}
+
+/**
+ * Resolves a controlled `value` to resources. Resources the user picks are remembered by reference
+ * string, so a pick the parent stores as a reference comes back without a refetch. While a reference
+ * is being read, the last fully resolved selection is shown.
+ * @param value - The controlled value, or undefined when uncontrolled.
+ * @returns The resources to show, and `remember` for resources the user picked.
+ */
+function useControlledResources<T extends Resource>(
+  value: readonly (T | Reference<T>)[] | undefined
+): { resources: T[] | undefined; remember: (resources: T[]) => void } {
+  const medplum = useMedplum();
+  // null marks a reference that could not be read
+  const [known, setKnown] = useState<Record<string, T | null>>({});
+
+  const remember = useCallback((resources: T[]) => {
+    setKnown((prev) => {
+      const next = { ...prev };
+      for (const resource of resources) {
+        const key = getReferenceString(resource);
+        if (key) {
+          next[key] = resource;
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const { resolved, pendingKey } = useMemo(() => {
+    if (!value) {
+      return { resolved: undefined, pendingKey: '' };
+    }
+    const resolved: T[] = [];
+    const pending = new Set<string>();
+    for (const item of value) {
+      if (isResource<T>(item)) {
+        resolved.push(item);
+      } else if (isReference<T>(item)) {
+        const resource = known[item.reference];
+        if (resource) {
+          resolved.push(resource);
+        } else if (resource === undefined) {
+          pending.add(item.reference);
+        }
+      }
+    }
+    return { resolved, pendingKey: pending.size > 0 ? JSON.stringify([...pending]) : '' };
+  }, [value, known]);
+
+  useEffect(() => {
+    if (!pendingKey) {
+      return;
+    }
+    const references: string[] = JSON.parse(pendingKey);
+    Promise.allSettled(references.map((reference) => medplum.readReference<T>({ reference })))
+      .then((results) => {
+        setKnown((prev) => {
+          const next = { ...prev };
+          results.forEach((result, i) => {
+            next[references[i]] = result.status === 'fulfilled' ? result.value : null;
+          });
+          return next;
+        });
+      })
+      .catch(() => {});
+  }, [medplum, pendingKey]);
+
+  const [lastResolved, setLastResolved] = useState(resolved);
+  if (!pendingKey && resolved !== lastResolved) {
+    setLastResolved(resolved);
+  }
+
+  return { resources: pendingKey ? lastResolved : resolved, remember };
 }

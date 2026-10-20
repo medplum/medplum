@@ -538,4 +538,63 @@ describe('AsyncAutocomplete', () => {
     await typeInAutocomplete(input, 'zzz');
     expect(screen.getByText('Empty::zzz')).toBeInTheDocument();
   });
+
+  describe('controlled', () => {
+    function pills(): ReturnType<typeof within> {
+      return within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
+    }
+
+    test('follows value from the parent without remounting', async () => {
+      const props = { toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={apple} />);
+      expect(pills().getByText('Apple')).toBeInTheDocument();
+
+      const input = screen.getByRole('searchbox');
+      await typeInAutocomplete(input, 'ch');
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={[banana, cherry]} />);
+      expect(pills().queryByText('Apple')).not.toBeInTheDocument();
+      expect(pills().getByText('Banana')).toBeInTheDocument();
+      expect(pills().getByText('Cherry')).toBeInTheDocument();
+      expect(screen.getByRole('searchbox')).toBe(input);
+      expect(input).toHaveValue('ch');
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      expect(pills().queryByText('Banana')).not.toBeInTheDocument();
+      expect(pills().queryByText('Cherry')).not.toBeInTheDocument();
+    });
+
+    test('reports edits through onChange without applying them', async () => {
+      const onChange = vi.fn();
+      render(
+        <AsyncAutocomplete<TestOption>
+          clearable
+          value={[apple]}
+          toOption={toOption}
+          loadOptions={defaultLoadOptions}
+          onChange={onChange}
+        />
+      );
+
+      await selectAutocompleteOption(screen.getByRole('searchbox'), 'Banana', 'Banana');
+      expect(onChange).toHaveBeenLastCalledWith([apple, banana]);
+      expect(pills().queryByText('Banana')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByTitle('Clear all'));
+      expect(onChange).toHaveBeenLastCalledWith([]);
+      expect(pills().getByText('Apple')).toBeInTheDocument();
+    });
+
+    test('clears the search text when value fills the last slot', async () => {
+      const props = { maxValues: 1, toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'ch');
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={apple} />);
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      expect(screen.getByRole('searchbox')).toHaveValue('');
+    });
+  });
 });

@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
+import type { Patient, Reference } from '@medplum/fhirtypes';
 import { HomerSimpson, MargeSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { JSX } from 'react';
+import { useState } from 'react';
+import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
 import {
   act,
   clickAutocompleteOption,
@@ -11,6 +15,7 @@ import {
   screen,
   selectAutocompleteOption,
   typeInAutocomplete,
+  within,
 } from '../test-utils/render';
 import type { MultiResourceInputProps } from './MultiResourceInput';
 import { MultiResourceInput } from './MultiResourceInput';
@@ -179,5 +184,71 @@ describe('MultiResourceInput', () => {
 
     // After selecting one item with maxValues=1, the input field should no longer be shown
     expect(screen.queryByPlaceholderText('Test')).not.toBeInTheDocument();
+  });
+
+  describe('controlled', () => {
+    function pills(): ReturnType<typeof within> {
+      return within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
+    }
+
+    function renderControlled(
+      value: MultiResourceInputProps<Patient>['value']
+    ): (value: MultiResourceInputProps<Patient>['value']) => Promise<void> {
+      const ui = (v: typeof value): JSX.Element => (
+        <MedplumProvider medplum={medplum}>
+          <MultiResourceInput<Patient> resourceType="Patient" name="foo" placeholder="Test" value={v} />
+        </MedplumProvider>
+      );
+      const { rerender } = render(ui(value));
+      return async (next) => {
+        await act(async () => rerender(ui(next)));
+      };
+    }
+
+    test('resolves references and follows value from the parent', async () => {
+      const setValue = renderControlled([createReference(HomerSimpson)]);
+      expect(await pills().findByText('Homer Simpson')).toBeInTheDocument();
+      const input = screen.getByPlaceholderText('Test');
+
+      await setValue([MargeSimpson]);
+      expect(pills().queryByText('Homer Simpson')).not.toBeInTheDocument();
+      expect(pills().getByText('Marge Simpson')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Test')).toBe(input);
+
+      await setValue([]);
+      expect(pills().queryByText('Marge Simpson')).not.toBeInTheDocument();
+    });
+
+    test('leaves out references that cannot be read', async () => {
+      renderControlled([createReference(HomerSimpson), { reference: 'Patient/does-not-exist' }]);
+      expect(await pills().findByText('Homer Simpson')).toBeInTheDocument();
+    });
+
+    test('a pick stored as a reference comes back without a refetch', async () => {
+      function Parent(): JSX.Element {
+        const [value, setValue] = useState<Reference<Patient>[]>([]);
+        return (
+          <MultiResourceInput<Patient>
+            resourceType="Patient"
+            name="foo"
+            placeholder="Test"
+            value={value}
+            onChange={(patients) => setValue(patients.map(createReference))}
+          />
+        );
+      }
+      render(
+        <MedplumProvider medplum={medplum}>
+          <Parent />
+        </MedplumProvider>
+      );
+      const readReference = vi.spyOn(medplum, 'readReference');
+
+      await typeInAutocomplete(screen.getByPlaceholderText('Test'), 'Simpson');
+      await clickAutocompleteOption('Homer Simpson');
+
+      expect(pills().getByText('Homer Simpson')).toBeInTheDocument();
+      expect(readReference).not.toHaveBeenCalled();
+    });
   });
 });
