@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { AsyncJob } from '@medplum/fhirtypes';
 import express from 'express';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../../app';
@@ -108,6 +109,24 @@ describe('AsyncJobExecutor', () => {
       expect(resource.status).toBe('accepted');
       expect(contentLocation).toContain(baseUrl);
       expect(contentLocation).toContain(resource.id);
+    }));
+
+  test('failJob leaves a job that is no longer active unchanged', () =>
+    withTestContext(async () => {
+      const cancelled = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'cancelled',
+        requestTime: new Date().toISOString(),
+        request: 'http://example.com/async',
+      });
+
+      const result = await new AsyncJobExecutor(systemRepo, cancelled).failJob(new Error('boom'));
+      expect(result.status).toBe('cancelled');
+
+      const refreshed = await systemRepo.readResource<AsyncJob>('AsyncJob', cancelled.id);
+      expect(refreshed.status).toBe('cancelled');
+      assert(refreshed.meta?.versionId);
+      expect(refreshed.meta.versionId).toStrictEqual(cancelled.meta?.versionId);
     }));
 
   test('getContentLocation with error', async () => {

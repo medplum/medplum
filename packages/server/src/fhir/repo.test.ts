@@ -173,7 +173,7 @@ describe('FHIR Repo', () => {
             createAuditEvent(
               RestfulOperationType,
               ReadInteraction,
-              randomUUID(),
+              { resourceType: 'Project', id: randomUUID() },
               { reference: 'Practitioner/user-123' },
               undefined,
               AuditEventOutcome.Success
@@ -314,7 +314,7 @@ describe('FHIR Repo', () => {
     const data = createAuditEvent(
       RestfulOperationType,
       ReadInteraction,
-      projectId,
+      testProject,
       undefined,
       undefined,
       AuditEventOutcome.Success,

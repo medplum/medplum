@@ -36,7 +36,9 @@ echo "$FILES_CHANGED"
 
 DEPLOY_APP=false
 DEPLOY_DOCS=false
+DEPLOY_FOOMEDICAL=false
 DEPLOY_GRAPHIQL=false
+DEPLOY_PROVIDER=false
 DEPLOY_SERVER=false
 DEPLOY_STORYBOOK=false
 
@@ -55,12 +57,22 @@ fi
 if [[ "$FILES_CHANGED" =~ cicd-deploy.sh ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
+  DEPLOY_FOOMEDICAL=true
   DEPLOY_GRAPHIQL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_SERVER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ deploy-introspection-schema.sh ]]; then
   DEPLOY_GRAPHIQL=true
+fi
+
+if [[ "$FILES_CHANGED" =~ examples/foomedical ]] || [[ "$FILES_CHANGED" =~ deploy-foomedical.sh ]]; then
+  DEPLOY_FOOMEDICAL=true
+fi
+
+if [[ "$FILES_CHANGED" =~ examples/medplum-provider ]] || [[ "$FILES_CHANGED" =~ deploy-provider-app.sh ]]; then
+  DEPLOY_PROVIDER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/app ]]; then
@@ -74,12 +86,18 @@ fi
 if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
+  DEPLOY_FOOMEDICAL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_SERVER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
   DEPLOY_SERVER=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/dosespot ]]; then
+  DEPLOY_PROVIDER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
@@ -99,6 +117,14 @@ if [[ "$FILES_CHANGED" =~ packages/graphiql ]]; then
   DEPLOY_GRAPHIQL=true
 fi
 
+if [[ "$FILES_CHANGED" =~ packages/health-gorilla ]]; then
+  DEPLOY_PROVIDER=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/scriptsure ]]; then
+  DEPLOY_PROVIDER=true
+fi
+
 if [[ "$FILES_CHANGED" =~ packages/server ]]; then
   DEPLOY_SERVER=true
 fi
@@ -111,22 +137,29 @@ fi
 # we need to be careful not to use a matching prefix here.
 if [[ "$FILES_CHANGED" =~ packages/react/ ]]; then
   DEPLOY_APP=true
+  DEPLOY_FOOMEDICAL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/react-hooks ]]; then
   DEPLOY_APP=true
+  DEPLOY_FOOMEDICAL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/react-scheduling ]]; then
+  DEPLOY_PROVIDER=true
   DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FORCE" = true ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
+  DEPLOY_FOOMEDICAL=true
   DEPLOY_GRAPHIQL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_SERVER=true
   DEPLOY_STORYBOOK=true
 fi
@@ -145,7 +178,7 @@ read -r -d '' PAYLOAD <<- EOM
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy server: ${DEPLOY_SERVER}\\n\\n* Deploy storybook: ${DEPLOY_STORYBOOK}"
+        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy foomedical: ${DEPLOY_FOOMEDICAL}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy provider: ${DEPLOY_PROVIDER}\\n\\n* Deploy server: ${DEPLOY_SERVER}\\n\\n* Deploy storybook: ${DEPLOY_STORYBOOK}"
       }
     }
   ]
@@ -158,11 +191,11 @@ curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHO
 # Run the appropriate deploy scripts
 #
 
-if [[ "$DEPLOY_APP" = true ]]; then
-  echo "Deploy app"
-
-  # We create a subshell for the build since we need to set the env vars to our placeholders for the Docker build
-  # We will replace the placeholders later with our actual env vars in deploy-app.sh
+# Runs `npm run <script> -- <turbo args>` in a subshell with the env vars set to placeholders, which the
+# deploy-*.sh scripts later replace with real values in the build output
+build_with_placeholders() {
+  local script="$1"
+  shift
   (
     export MEDPLUM_BASE_URL="__MEDPLUM_BASE_URL__"
     export MEDPLUM_CLIENT_ID="__MEDPLUM_CLIENT_ID__"
@@ -170,8 +203,13 @@ if [[ "$DEPLOY_APP" = true ]]; then
     export MEDPLUM_AWS_TEXTRACT_ENABLED="__MEDPLUM_AWS_TEXTRACT_ENABLED__"
     export GOOGLE_CLIENT_ID="__GOOGLE_CLIENT_ID__"
     export RECAPTCHA_SITE_KEY="__RECAPTCHA_SITE_KEY__"
-    npm run build -- --force --filter=@medplum/app
+    npm run "$script" -- "$@"
   )
+}
+
+if [[ "$DEPLOY_APP" = true ]]; then
+  echo "Deploy app"
+  build_with_placeholders build --force --filter=@medplum/app
 
   source ./scripts/build-docker-app.sh --latest
   source ./scripts/deploy-app.sh
@@ -196,9 +234,25 @@ if [[ "$DEPLOY_STORYBOOK" = true ]]; then
   source ./scripts/deploy-storybook.sh
 fi
 
-# Deploy docs last since it is the slowest
+# Deploy docs near the end since it is the slowest
 if [[ "$DEPLOY_DOCS" = true ]]; then
   echo "Deploy docs"
   npm run build:docs
   source ./scripts/deploy-docs.sh
+fi
+
+# Examples deploy after docs so their failures can't block docs
+
+if [[ "$DEPLOY_FOOMEDICAL" = true ]]; then
+  echo "Deploy foomedical"
+  # --only: build:fast already built all of its dependencies
+  build_with_placeholders build:all --only --filter=foomedical || exit 1
+  source ./scripts/deploy-foomedical.sh
+fi
+
+if [[ "$DEPLOY_PROVIDER" = true ]]; then
+  echo "Deploy provider"
+  # Not --only: it depends on packages build:fast skips (react-scheduling, dosespot, etc.)
+  build_with_placeholders build:all --filter=medplum-provider || exit 1
+  source ./scripts/deploy-provider-app.sh
 fi

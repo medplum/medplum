@@ -154,12 +154,10 @@ export function normalizeBotExecutionResult(result: BotExecutionResult): BotExec
  * Takes the project rather than the bot, because the two differ: a bot shared from a linked project
  * runs in the caller's project, and it is the caller who has to be entitled to run bots. Deploying
  * that same bot is a write to the project that owns it, so callers name the project they mean.
- * @param projectId - The project to check.
+ * @param project - The project to check.
  * @returns True if the project has the `bots` feature.
  */
-export async function isBotEnabledForProject(projectId: string): Promise<boolean> {
-  const systemRepo = getGlobalSystemRepo();
-  const project = await systemRepo.readResource<Project>('Project', projectId);
+export function isBotEnabledForProject(project: Project): boolean {
   return !!project.features?.includes('bots');
 }
 

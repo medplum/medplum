@@ -258,7 +258,7 @@ describe('CalendarBase', () => {
   // Week view always lays out columns Sun..Sat regardless of which week is showing,
   // so day-of-week behavior can be asserted by position without depending on "today".
   const getWeekGridCells = (container: HTMLElement): Element[] =>
-    Array.from(container.querySelectorAll('[role="gridcell"][data-date]'));
+    Array.from(container.querySelectorAll('[role="cell"][data-date]'));
 
   describe('CalendarToolbar', () => {
     test('renders toolbar with navigation buttons', async () => {
