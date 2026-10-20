@@ -111,6 +111,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
         <CodeableConceptInput
           key={modifierKey}
           binding={CPT_MODIFIERS_VALUE_SET}
+          creatable={false}
           label="Modifiers"
           name="modifiers"
           path="modifiers"

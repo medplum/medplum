@@ -13,6 +13,7 @@ import {
   Stack,
   Text,
   Title,
+  Tooltip,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { CPT, convertToTransactionBundle } from '@medplum/core';
@@ -35,7 +36,7 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CPT_MODIFIERS_VALUE_SET } from '../../config/constants';
 import orderSetBundleData from '../../data/order-set-example-bundle.json';
 import patientBundleData from '../../data/patient-david-james-williams.json';
@@ -45,6 +46,35 @@ import { deleteExistingDefinitions } from './deleteExistingDefinitions';
 import classes from './GetStartedPage.module.css';
 import { buildOrderSetImportNotification } from './orderSetImportNotification';
 
+const ICD10_CM = 'http://hl7.org/fhir/sid/icd-10-cm';
+
+/**
+ * Reports whether a code system declaring the UMLS term type (`tty`) property is loaded in the project.
+ *
+ * The ValueSets registered here filter by term type, which the server only applies when the CodeSystem declares
+ * the property. The stub CodeSystems shipped with every project do not, so without a real import the ValueSet
+ * would register fine and then expand to nothing.
+ * @param system - The CodeSystem url.
+ * @returns undefined while checking, then whether a qualifying CodeSystem was found.
+ */
+function useTermTypesLoaded(system: string): boolean | undefined {
+  const medplum = useMedplum();
+  const [loaded, setLoaded] = useState<boolean>();
+
+  useEffect(() => {
+    medplum
+      .searchResources('CodeSystem', { url: system })
+      .then((systems) => setLoaded(systems.some((cs) => cs.property?.some((p) => p.code === 'tty'))))
+      .catch(() => setLoaded(false));
+  }, [medplum, system]);
+
+  return loaded;
+}
+
+function missingCodeSystemHint(url: string): string {
+  return `CodeSystem ${url} required`;
+}
+
 export function GetStartedPage(): JSX.Element {
   const medplum = useMedplum();
   const syncOrderSet = useSyncOrderSet();
@@ -53,6 +83,8 @@ export function GetStartedPage(): JSX.Element {
   const [importingIcd10, setImportingIcd10] = useState(false);
   const [importingCptModifiers, setImportingCptModifiers] = useState(false);
   const [importingOrderSet, setImportingOrderSet] = useState(false);
+  const icd10Loaded = useTermTypesLoaded(ICD10_CM);
+  const cptLoaded = useTermTypesLoaded(CPT);
 
   const handleImportPatient = useCallback(async () => {
     setImportingPatient(true);
@@ -115,7 +147,7 @@ export function GetStartedPage(): JSX.Element {
           compose: {
             include: [
               {
-                system: 'http://hl7.org/fhir/sid/icd-10-cm',
+                system: ICD10_CM,
                 filter: [{ property: 'tty', op: '=', value: 'PT' }],
               },
             ],
@@ -130,6 +162,9 @@ export function GetStartedPage(): JSX.Element {
       setImportingIcd10(false);
     }
   }, [medplum]);
+
+  const icd10Label = icd10Loaded === false ? 'ICD-10 codes not installed' : 'Import ValueSet';
+  const cptModifiersLabel = cptLoaded === false ? 'CPT codes not installed' : 'Import Modifiers';
 
   const handleImportCptModifiers = useCallback(async () => {
     setImportingCptModifiers(true);
@@ -316,21 +351,27 @@ export function GetStartedPage(): JSX.Element {
                   </Group>
                   <Divider />
                   <Text size="md" className={classes.textSecondary} mb="sm" style={{ flex: 1 }}>
-                    Registers the ICD-10-CM billable codes ValueSet used for diagnosis code lookup.
+                    Registers the ICD-10-CM billable codes ValueSet used for diagnosis code lookup. Requires ICD-10-CM
+                    to be loaded in the project.
                   </Text>
                 </Stack>
-                <Button
-                  variant="filled"
-                  size="sm"
-                  fullWidth
-                  onClick={handleImportIcd10}
-                  loading={importingIcd10}
-                  disabled={importingIcd10}
-                  leftSection={<IconDownload size={14} />}
-                  mt="sm"
-                >
-                  {importingIcd10 ? 'Importing...' : 'Import ValueSet'}
-                </Button>
+                <Tooltip label={missingCodeSystemHint(ICD10_CM)} disabled={icd10Loaded !== false} multiline w={360}>
+                  <span>
+                    <Button
+                      variant="filled"
+                      size="sm"
+                      fullWidth
+                      onClick={handleImportIcd10}
+                      loading={importingIcd10}
+                      disabled={!icd10Loaded || importingIcd10}
+                      leftSection={<IconDownload size={14} />}
+                      mt="sm"
+                      className={classes.importButton}
+                    >
+                      {importingIcd10 ? 'Importing...' : icd10Label}
+                    </Button>
+                  </span>
+                </Tooltip>
               </Paper>
               <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
                 <Stack gap="md" className={classes.flexOne}>
@@ -351,18 +392,23 @@ export function GetStartedPage(): JSX.Element {
                     loaded in the project.
                   </Text>
                 </Stack>
-                <Button
-                  variant="filled"
-                  size="sm"
-                  fullWidth
-                  onClick={handleImportCptModifiers}
-                  loading={importingCptModifiers}
-                  disabled={importingCptModifiers}
-                  leftSection={<IconDownload size={14} />}
-                  mt="sm"
-                >
-                  {importingCptModifiers ? 'Importing...' : 'Import Modifiers'}
-                </Button>
+                <Tooltip label={missingCodeSystemHint(CPT)} disabled={cptLoaded !== false} multiline w={360}>
+                  <span>
+                    <Button
+                      variant="filled"
+                      size="sm"
+                      fullWidth
+                      onClick={handleImportCptModifiers}
+                      loading={importingCptModifiers}
+                      disabled={!cptLoaded || importingCptModifiers}
+                      leftSection={<IconDownload size={14} />}
+                      mt="sm"
+                      className={classes.importButton}
+                    >
+                      {importingCptModifiers ? 'Importing...' : cptModifiersLabel}
+                    </Button>
+                  </span>
+                </Tooltip>
               </Paper>
               <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
                 <Stack gap="md" className={classes.flexOne}>

@@ -3,6 +3,7 @@
 
 import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { notFound, OperationOutcomeError } from '@medplum/core';
 import type { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -147,6 +148,15 @@ describe('ChargeItemPanel', () => {
   test('renders modifiers input', () => {
     setup();
     expect(screen.getByText('Modifiers')).toBeInTheDocument();
+  });
+
+  test('disables the modifiers input when the CPT modifiers ValueSet is not registered', async () => {
+    vi.mocked(medplum.valueSetExpand).mockRejectedValue(new OperationOutcomeError(notFound));
+    setup();
+
+    expect(await screen.findByText('This field is unavailable.')).toBeInTheDocument();
+    // A disabled autocomplete renders no searchbox, so there is nothing to type a modifier into
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
 
   test('handles delete charge item', async () => {
