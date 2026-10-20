@@ -501,6 +501,7 @@ const FHIR_DECIMAL = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/;
  * Prefixes such as `gt` must already be removed.
  * @param type - The search parameter type, `number` or `quantity`.
  * @param value - The search value with any operator prefix removed.
+ * @returns True when every numeric token is a FHIR decimal.
  */
 export function isNumericSearchValue(type: 'number' | 'quantity', value: string): boolean {
   if (type === 'quantity') {
