@@ -12,6 +12,7 @@ import {
   SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   ServiceTypeReferenceURI,
+  toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -27,6 +28,7 @@ import {
   DiagnosisCodes,
   DrRiveraPractitioner,
   ElderJordanPatient,
+  MainClinic,
   MilesCooperPatient,
   PatientFixtures,
   PROCEDURE_VALUE_SET,
@@ -312,8 +314,25 @@ describe('AppointmentDetails', () => {
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
     expect(screen.queryByText('Notes')).not.toBeInTheDocument();
     expect(screen.queryByText('Repeats')).not.toBeInTheDocument();
+    expect(screen.queryByText('Service facility')).not.toBeInTheDocument();
     // A participant whose resource can't be read says so.
     expect(await screen.findByText('[Not found]')).toBeInTheDocument();
+  });
+
+  test('names the service facility the visit is held at by the Location it points at', async () => {
+    await medplum.createResource(MainClinic);
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      supportingInformation: [
+        // Another Location, not stamped as the site.
+        { reference: 'Location/exam-room-a' },
+        { ...toAppointmentSiteReference(MainClinic), display: 'Stale display' },
+      ],
+    });
+
+    expect(await screen.findByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+    expect(screen.getByText('Service facility')).toBeInTheDocument();
+    expect(screen.queryByText('Stale display')).not.toBeInTheDocument();
   });
 
   test('names a participant stored without a display by the resource it points at', async () => {

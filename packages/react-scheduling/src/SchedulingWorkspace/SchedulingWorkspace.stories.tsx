@@ -131,6 +131,10 @@ export default {
  * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
  * "Delete" takes it off the calendar.
  *
+ * The imaging visits on Monday, Tuesday and Wednesday record **Uro Associates - Main Clinic**
+ * as their site, so their details name it as the service facility. The telehealth visits
+ * record none, and their details leave the line out.
+ *
  * Eliana Garcia's Tuesday telehealth visit with Dr. Brown is the second of three, weekly, and is
  * marked as recurring; page a week back or forward for the first and third.
  *
