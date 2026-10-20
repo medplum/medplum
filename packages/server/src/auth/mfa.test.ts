@@ -1413,6 +1413,34 @@ describe('MFA', () => {
     expect(optedOut.body.code).toBeUndefined();
   });
 
+  test('login-enroll rejects an MFA method the project does not allow', async () => {
+    const email = `login-enroll-method${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Login',
+        lastName: 'EnrollMethod',
+        projectName: `Login Enroll Method ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    // No allowedMfaMethods setting, so only TOTP is allowed.
+    await setProjectMfaRequired(project, true);
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaEnrollRequired).toBe(true);
+    expect(loginRes.body.allowedMfaMethods).toStrictEqual(['totp']);
+
+    const res = await request(app)
+      .post('/auth/mfa/login-enroll')
+      .type('json')
+      .send({ login: loginRes.body.login, method: 'email' });
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('MFA method not allowed'));
+  });
+
   test('project mfaRequired setting only tightens, never relaxes a user requirement', async () => {
     const email = `project-mfa-tighten${randomUUID()}@example.com`;
     const password = 'password!@#';
