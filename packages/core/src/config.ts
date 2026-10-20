@@ -288,6 +288,7 @@ export interface MedplumInfraConfig {
   hostedZoneName?: string;
   wafLogGroupName?: string;
   wafLogGroupCreate?: boolean;
+  blockedEmailDomains?: string;
   additionalContainers?: {
     name: string;
     image: string;
