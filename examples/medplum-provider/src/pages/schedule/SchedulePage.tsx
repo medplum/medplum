@@ -222,7 +222,7 @@ export function SchedulePage(): JSX.Element | null {
           <ActionIcon
             variant="subtle"
             aria-label="Schedule settings"
-            onClick={() => navigate(`/Calendar/Schedule/${id}/settings`)}
+            onClick={() => navigate(`/settings/schedule/visit-service-types?schedule=${id}`)}
           >
             <IconSettings />
           </ActionIcon>

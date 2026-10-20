@@ -64,6 +64,8 @@ function getLoginKey(login: LoginState): string {
 export interface HeaderDropdownProps {
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
+  /** When set, replaces "Account settings" with a "Settings" item that links here. */
+  readonly settingsHref?: string;
 }
 
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
@@ -121,9 +123,9 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
       </Menu.Item>
       <Menu.Item
         leftSection={<IconSettings size={16} color={MENU_ICON_COLOR} />}
-        onClick={() => navigate(`/${getReferenceString(profile as ProfileResource)}`)}
+        onClick={() => navigate(props.settingsHref ?? `/${getReferenceString(profile as ProfileResource)}`)}
       >
-        <Text size="sm">Account settings</Text>
+        <Text size="sm">{props.settingsHref ? 'Settings' : 'Account settings'}</Text>
       </Menu.Item>
 
       <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">

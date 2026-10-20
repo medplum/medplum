@@ -1,0 +1,49 @@
+/* Typography and color tokens mirror the Get Started page. */
+.page {
+  min-height: 100vh;
+  background-color: var(--mantine-color-body);
+  --text-secondary: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-5));
+  --text-label: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
+  --icon-secondary: light-dark(var(--mantine-color-gray-5), var(--mantine-color-gray-6));
+}
+
+.container {
+  max-width: 800px;
+}
+
+.textSecondary {
+  color: var(--text-secondary);
+}
+
+.sectionIcon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--mantine-color-white);
+  background-color: var(--mantine-color-yellow-8);
+}
+
+.card > * + * {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.card :global(.mantine-Table-th) {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-label);
+}
+
+.card a {
+  color: var(--mantine-color-blue-6);
+  text-decoration: none;
+}
+
+.card a:hover {
+  text-decoration: underline;
+}
