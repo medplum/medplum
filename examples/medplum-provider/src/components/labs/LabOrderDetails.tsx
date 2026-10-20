@@ -38,6 +38,14 @@ import { LabReportContent } from './LabReportContent';
 interface LabOrderDetailsProps {
   order: ServiceRequest;
   onChange?: (order: WithId<ServiceRequest>) => void;
+  /**
+   * When the caller has a specific DiagnosticReport in hand (e.g. the user picked one report
+   * out of several for this order in a list), show that report instead of defaulting to the
+   * order's most-recently-updated one. An order can have more than one report - e.g. a
+   * multi-day culture result that's been resent with additional findings - and without this,
+   * there was no way to view anything but the single latest report.
+   */
+  selectedReportId?: string;
 }
 
 interface ProgressStep {
@@ -50,7 +58,7 @@ interface ProgressStep {
 }
 
 export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
-  const { order, onChange } = props;
+  const { order, onChange, selectedReportId } = props;
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
@@ -82,22 +90,26 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     }
   }, [medplum, order.id, onChange]);
 
-  // Filter DiagnosticReports for this specific order
+  // Fetch every DiagnosticReport for this order - an order can have more than one (e.g. a
+  // multi-day culture result resent with additional findings), and the caller may want to show
+  // a specific one via selectedReportId rather than always the most recently updated.
   useEffect(() => {
-    const fetchPrimaryReport = async (): Promise<void> => {
-      const primaryReport = await medplum.searchResources('DiagnosticReport', {
+    const fetchReports = async (): Promise<void> => {
+      const reports = await medplum.searchResources('DiagnosticReport', {
         'based-on': `ServiceRequest/${order.id}`,
         _sort: '-_lastUpdated',
-        _count: 1,
       });
-      setDiagnosticReports(primaryReport);
+      setDiagnosticReports(reports);
     };
 
-    fetchPrimaryReport().catch(showErrorNotification);
+    fetchReports().catch(showErrorNotification);
   }, [medplum, order.id]);
 
-  // Get the primary diagnostic report for this order
-  const primaryReport = diagnosticReports.length > 0 ? diagnosticReports[0] : undefined;
+  // Prefer the explicitly selected report, if one was given and it belongs to this order;
+  // otherwise fall back to the most recently updated report.
+  const primaryReport =
+    (selectedReportId && diagnosticReports.find((report) => report.id === selectedReportId)) ||
+    (diagnosticReports.length > 0 ? diagnosticReports[0] : undefined);
 
   const { issues: detectedIssues, acknowledgeIssue } = useLabDetectedIssues(diagnosticReports.map((report) => report.id));
 
