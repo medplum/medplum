@@ -389,7 +389,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   useEffect(() => {
     onChangeProposal?.(chosen);
   }, [chosen, onChangeProposal]);
-  useEffect(() => () => onChangeProposal?.(undefined), [onChangeProposal]);
+  // Read at unmount, so a host passing a new callback each render isn't told `undefined` each time.
+  const latestOnChangeProposal = useRef(onChangeProposal);
+  useEffect(() => {
+    latestOnChangeProposal.current = onChangeProposal;
+  }, [onChangeProposal]);
+  useEffect(() => () => latestOnChangeProposal.current?.(undefined), []);
 
   function toggleFinder(): void {
     setFinding(!finding);
