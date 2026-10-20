@@ -6,6 +6,7 @@ import {
   evalFhirPathTyped,
   flatMapFilter,
   getSearchParameterDetails,
+  isNumericSearchValue,
   OperationOutcomeError,
   Operator,
   SearchParameterType,
@@ -365,6 +366,14 @@ export function buildRangeColumnsSearchFilter(
     );
     colType = impl.type === SearchParameterType.DATE ? ColumnType.DATERANGE : ColumnType.TSTZRANGE;
   } else {
+    if (
+      filter.operator !== Operator.MISSING &&
+      filter.operator !== Operator.PRESENT &&
+      !isNumericSearchValue(param.type === 'quantity' ? 'quantity' : 'number', filter.value)
+    ) {
+      const kind = param.type === 'quantity' ? 'quantity' : 'number';
+      throw new OperationOutcomeError(badRequest(`Invalid ${kind} value: ${filter.value}`));
+    }
     range = parseNumberToRange(Number.parseFloat(filter.value), approximate);
     colType = ColumnType.NUMRANGE;
   }
