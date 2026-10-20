@@ -21,12 +21,12 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "typescript": "6.0.3",
     "vite": "8.3.4"
   },
-  "packageManager": "npm@11.21.0",
+  "packageManager": "npm@11.21.1",
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
   }
