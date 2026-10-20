@@ -138,6 +138,23 @@ describe('SchedulingWorkspace', () => {
     expect(roomRow).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('collapsing the sidebar hides it, and expanding it keeps what was deselected', async () => {
+    const medplum = await setupClient();
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+    const providerRow = calendarRow('Dr. Maya Rivera');
+    await userEvent.click(providerRow);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hide calendars' }));
+    expect(providerRow).not.toBeVisible();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));
+    expect(providerRow).toBeVisible();
+    expect(providerRow).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('button', { name: 'Show calendars' })).toBeNull();
+  });
+
   test('shows the empty state for sections with no schedules', async () => {
     // A fresh MockClient always seeds its own default provider (Dr. Alice Smith)
     // and its Schedule, but no devices or rooms, so those two sections stay empty

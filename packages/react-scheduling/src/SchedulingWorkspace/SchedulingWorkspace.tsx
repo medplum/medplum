@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -434,14 +434,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
-      <div className={classes.sidebar}>
+      <Box className={classes.sidebar}>
         <CalendarsPanel
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
           filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
         />
-      </div>
+      </Box>
       <div className={classes.calendar}>
         {displayError !== undefined && (
           <Alert color="red" mb="xs">
