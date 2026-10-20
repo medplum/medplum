@@ -58,6 +58,7 @@ import {
   getNativeInputType,
   isViewerTimezone,
   parseZonedDateTimeInput,
+  startOfDay,
 } from './AppointmentFinder.times';
 import { AppointmentPatientInput } from './AppointmentPatientInput';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
@@ -351,9 +352,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   });
   const { reset: resetDaySearch } = daySearch;
 
-  // Compared by instant, so a host building the Date inline each render moves nothing.
+  // Compared by day, so a host building `new Date()` each render moves nothing.
   // A day already gone opens the search on today, so it is on show whenever today is.
-  const defaultStartMoved = useChanged(defaultStart?.getTime());
+  const defaultStartMoved = useChanged(defaultStart && startOfDay(defaultStart).getTime());
   if (defaultStartMoved && defaultStart && !daySearch.isDayOnShow(floorToNow(defaultStart))) {
     setMonth(defaultStart);
     daySearch.chooseDayRange(defaultStart);
