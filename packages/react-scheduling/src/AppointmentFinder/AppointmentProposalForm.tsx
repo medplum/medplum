@@ -43,6 +43,7 @@ import {
 import type { ActorSelections, SelectionBlocker } from './AppointmentFinder.schedules';
 import {
   getActorCombinations,
+  getFirstCombinationCandidates,
   getSelectedActorResources,
   getSelectedCandidates,
   getSelectionError,
@@ -300,10 +301,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     () => toScheduleKey(candidates.map((candidate) => getReferenceString(candidate.schedule))),
     [candidates]
   );
+  // A typed time is held the way the first `$find` result would be: one actor per row.
+  const manualCandidates = useMemo(() => getFirstCombinationCandidates(selections), [selections]);
+  const manualScheduleKey = useMemo(
+    () => toScheduleKey(manualCandidates.map((candidate) => getReferenceString(candidate.schedule))),
+    [manualCandidates]
+  );
   // What the visit is held on now, so a move that keeps it can be told apart. The schedules
   // the form opens on can leave out ones that are no longer eligible, which a move drops.
   const [openingScheduleKey] = useState(() =>
-    ignoreAppointmentSchedules ? toScheduleKey(ignoreAppointmentSchedules) : scheduleKey
+    ignoreAppointmentSchedules ? toScheduleKey(ignoreAppointmentSchedules) : manualScheduleKey
   );
 
   // `$find` applies each Schedule's own parameters, so the actors in one search need not
@@ -449,8 +456,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   const configuredDurationMinutes = useMemo(
-    () => (service ? resolveBookingGeometry(service, candidates[0]?.schedule).duration : undefined),
-    [service, candidates]
+    () => (service ? resolveBookingGeometry(service, manualCandidates[0]?.schedule).duration : undefined),
+    [service, manualCandidates]
   );
 
   const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
@@ -505,10 +512,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     const start = parseZonedDateTimeInput(dateTime, timezone);
     // Moving a visit to exactly where it already is would rewrite its Slots for nothing.
     const unchanged =
-      scheduleKey === openingScheduleKey &&
+      manualScheduleKey === openingScheduleKey &&
       start?.getTime() === storedStart?.getTime() &&
       durationMinutes === storedDurationMinutes;
-    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0 || unchanged) {
+    if (!start || !durationMinutes || durationMinutes <= 0 || !service || manualCandidates.length === 0 || unchanged) {
       setManualChoice(undefined);
       // Only ever clears a manual time: a time from the search is not this field's to drop.
       setChosen((current) => (current === manualChoice ? undefined : current));
@@ -517,7 +524,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
     const proposal = buildElevatedBooking({
       service,
-      schedules: candidates.map((candidate) => candidate.schedule),
+      schedules: manualCandidates.map((candidate) => candidate.schedule),
       start,
       durationMinutes,
     });
@@ -538,7 +545,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       !debouncedChoice?.start ||
       !debouncedChoice.end ||
       !service ||
-      candidates.length === 0
+      manualCandidates.length === 0
     ) {
       // Nothing to look up; whatever was found last was cleared by the change that got here.
       return () => {};
@@ -549,7 +556,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     findBookingConflicts({
       medplum,
       service,
-      candidates,
+      candidates: manualCandidates,
       range,
       ignoredSlotReferences: ignoreAppointment?.slot?.map(getReferenceString).filter(isDefined),
     })
@@ -568,7 +575,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
+  }, [medplum, chosen, debouncedChoice, service, manualCandidates, ignoreAppointment]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);

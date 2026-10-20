@@ -269,6 +269,23 @@ describe('AppointmentRescheduleForm', () => {
       expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
     });
 
+    test('proposes nothing when the move only offers an alternative to an actor it keeps', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await openTimeFinder();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('keeps a typed time when an alternative is added, held on the first actor in the row', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await clickReschedule();
+      const schedules = onRescheduled.mock.calls[0][0].slots.map((slot: Slot) => slot.schedule.reference);
+      expect(schedules).toContain(`Schedule/${DrRiveraSchedule.id}`);
+      expect(schedules).not.toContain(`Schedule/${DrOkaforSchedule.id}`);
+    });
+
     test('asks for a length when the appointment has none, rather than using the configured one', async () => {
       const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });

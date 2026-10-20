@@ -175,7 +175,7 @@ function timezoneWarning(): HTMLElement | null {
 function pickTimezone(zone: string): void {
   fireEvent.focus(timezoneField());
   fireEvent.change(timezoneField(), { target: { value: zone } });
-  fireEvent.click(screen.getByText(zone));
+  fireEvent.click(screen.getByRole('option'));
 }
 
 function sentResources(medplum: MockClient): Resource[] {
@@ -1123,7 +1123,7 @@ describe('ActorPage', () => {
       expect(await screen.findByText('Rejected by policy')).toBeInTheDocument();
       expect(sentResources(medplum).map((resource) => resource.resourceType)).toEqual(['Practitioner', 'Schedule']);
       expect(onSynced).not.toHaveBeenCalled();
-      expect(timezoneField()).toHaveValue('America/Chicago');
+      expect(timezoneField()).toHaveValue('(CT) Central Time');
       expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toHaveValue('15 min');
       expect(saveBar()).not.toBeNull();
     });

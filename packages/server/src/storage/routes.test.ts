@@ -12,7 +12,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
 import { getTestProjectSystemRepo } from '../fhir/repository/test-utils';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import { getBinaryStorage } from './loader';
 
 const app = express();
@@ -108,6 +108,8 @@ describe('Storage Routes', () => {
     const url = await getBinaryStorage().getPresignedUrl(binary, { upload: true });
     const res = await request(server).put(toPath(url)).set('Content-Type', 'text/plain').send('foo bar baz quux');
     expect(res).toHaveStatus(200);
+    // text/plain is also handled by a global body parser, which must not consume the upload
+    expect(await streamToString(await getBinaryStorage().readBinary(binary))).toBe('foo bar baz quux');
   });
 
   test('Write mismatched content type', async () => {

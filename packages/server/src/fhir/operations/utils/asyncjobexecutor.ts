@@ -10,7 +10,7 @@ import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
 import { getLogger } from '../../../logger';
 import { getProjectScopedUrl } from '../../../util/url';
-import { CancelledError } from '../../../workers/utils';
+import { CancelledError, isJobActive } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 
@@ -167,6 +167,9 @@ export class AsyncJobExecutor {
     if (err instanceof CancelledError) {
       return this.resource;
     }
+    if (!isJobActive(this.resource)) {
+      return this.resource;
+    }
 
     const failedJob: WithId<AsyncJob> = {
       ...this.resource,
@@ -180,8 +183,10 @@ export class AsyncJobExecutor {
       };
       failedJob.output.parameter ??= [];
 
-      if (err instanceof OperationOutcomeError) {
-        failedJob.output.parameter.push({ name: 'outcome', resource: err.outcome });
+      // A wrapper such as BullMQ's UnrecoverableError keeps the structured outcome as its cause.
+      const outcomeErr = err instanceof OperationOutcomeError ? err : err.cause;
+      if (outcomeErr instanceof OperationOutcomeError) {
+        failedJob.output.parameter.push({ name: 'outcome', resource: outcomeErr.outcome });
       } else {
         failedJob.output.parameter.push(
           { name: 'error', valueString: err.message },

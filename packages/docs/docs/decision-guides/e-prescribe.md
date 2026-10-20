@@ -7,9 +7,13 @@ download_slug: e-prescribe
 
 # E-Prescribe Decision Guide
 
+Use this guide to choose an e-prescribing integration and plan the workflow around it. Work through hosted versus custom prescribing workflows, prescriber enrollment, controlled substances, and practice structure to define what your application builds, what the vendor handles, and what must be ready before go-live.
+
 _Companion to the [E-Prescribe (eRx)](/docs/medications/e-prescibe) docs._
 
-E-prescribing in Medplum is part of the [Medplum EHR](/solutions/medplum-ehr), not a standalone product. It runs through an integration with an e-prescribing vendor connected to the SureScripts network. This space is less about the FHIR data model than a sequence of **integration and enrollment decisions**: whether prescribing uses the vendor's hosted flow or a custom workflow, whether you send controlled substances, and how prescribers get enrolled and verified. This guide moves from those high-level decisions down to feature detail.
+E-prescribing in Medplum is part of the [Medplum EHR](/solutions/medplum-ehr), not a standalone product. It runs through an integration with an e-prescribing vendor connected to the SureScripts network.
+
+---
 
 ## Section 1: Use Case & Participants
 
