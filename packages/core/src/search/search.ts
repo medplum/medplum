@@ -462,9 +462,35 @@ function isValidSearchValue(searchParam: SearchParameter, searchValue: string): 
   switch (searchParam.type) {
     case 'date':
       return isDateTimeString(searchValue);
+    case 'number':
+    case 'quantity':
+      return isNumericSearchValue(searchParam.type, searchValue);
     default:
       return true;
   }
+}
+
+/**
+ * FHIR decimal syntax for number and quantity search values.
+ * @see https://hl7.org/fhir/R4/datatypes.html#decimal
+ */
+const FHIR_DECIMAL = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/;
+
+/**
+ * Returns true if a number or quantity search value uses FHIR decimal syntax.
+ *
+ * Number values may be a comma-separated list of decimals.
+ * Quantity values use `[number]|[system]|[code]`; only the number is checked.
+ * Prefixes such as `gt` must already be removed.
+ * @param type - The search parameter type, `number` or `quantity`.
+ * @param value - The search value with any operator prefix removed.
+ */
+export function isNumericSearchValue(type: 'number' | 'quantity', value: string): boolean {
+  if (type === 'quantity') {
+    const pipe = value.indexOf('|');
+    return FHIR_DECIMAL.test(pipe === -1 ? value : value.slice(0, pipe));
+  }
+  return splitSearchOnComma(value).every((part) => FHIR_DECIMAL.test(part));
 }
 
 const subexpressionPattern = /{{([^{}]+)}}/g;

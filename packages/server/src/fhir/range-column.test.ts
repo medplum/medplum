@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Filter } from '@medplum/core';
-import { getSearchParameter, Operator, UCUM } from '@medplum/core';
+import { getSearchParameter, getStatus, OperationOutcomeError, Operator, UCUM } from '@medplum/core';
 import type {
   AllergyIntolerance,
   CarePlan,
@@ -15,9 +15,11 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { buildRangeColumns, buildRangeColumnsSearchFilter, parseDateTimeToRange } from './range-column';
+import type { Repository } from './repo';
+import { buildSearchExpression } from './search';
 import type { ColumnSearchParameterImplementation, RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
-import { SqlBuilder } from './sql';
+import { SelectQuery, SqlBuilder } from './sql';
 import { loadStructureDefinitions } from './structure';
 
 beforeAll(() => {
@@ -445,6 +447,90 @@ describe('buildRangeColumnsSearchFilter', () => {
     condition.buildSql(sql);
     expect(sql.toString()).toStrictEqual(expect.stringContaining(' && $1'));
     expect(sql.getValues()).toStrictEqual(['(,0.05)']);
+  });
+
+  test.each([
+    ['Observation', 'value-quantity', 'undefined', 'Invalid quantity value: undefined'],
+    ['RiskAssessment', 'probability', 'undefined', 'Invalid number value: undefined'],
+  ] as const)('rejects %s?%s=%s', (resourceType, code, value, message) => {
+    const param = getSearchParameter(resourceType, code);
+    if (!param) {
+      throw new Error('Missing search parameter');
+    }
+
+    let thrown: unknown;
+    try {
+      buildRangeColumnsSearchFilter(resourceType, resourceType, param, {
+        code,
+        operator: Operator.EQUALS,
+        value,
+      });
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(OperationOutcomeError);
+    const outcome = (thrown as OperationOutcomeError).outcome;
+    expect(getStatus(outcome)).toBe(400);
+    expect(outcome.issue[0]?.code).toBe('invalid');
+    expect(outcome.issue[0]?.details?.text).toBe(message);
+  });
+
+  test('column search rejects undefined before binding double precision', () => {
+    const repo = { supportsRangeSearch: () => false } as unknown as Repository;
+    const selectQuery = new SelectQuery('Observation');
+    let thrown: unknown;
+    try {
+      buildSearchExpression(repo, selectQuery, 'Observation', {
+        resourceType: 'Observation',
+        filters: [{ code: 'value-quantity', operator: Operator.EQUALS, value: 'undefined' }],
+      });
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(OperationOutcomeError);
+    const outcome = (thrown as OperationOutcomeError).outcome;
+    expect(getStatus(outcome)).toBe(400);
+    expect(outcome.issue[0]?.code).toBe('invalid');
+    expect(outcome.issue[0]?.details?.text).toBe('Invalid quantity value: undefined');
+  });
+
+  test('column search binds the quantity number and ignores units', () => {
+    const repo = { supportsRangeSearch: () => false } as unknown as Repository;
+    const selectQuery = new SelectQuery('Observation');
+    const expr = buildSearchExpression(repo, selectQuery, 'Observation', {
+      resourceType: 'Observation',
+      filters: [
+        {
+          code: 'value-quantity',
+          operator: Operator.GREATER_THAN,
+          value: '80|http://unitsofmeasure.org|kg',
+        },
+      ],
+    });
+    if (!expr) {
+      throw new Error('Missing search expression');
+    }
+    const sql = new SqlBuilder();
+    expr.buildSql(sql);
+    expect(sql.toString()).toContain('"Observation"."valueQuantity" > $1');
+    expect(sql.getValues()).toStrictEqual(['80']);
+  });
+
+  test('quantity units still match the numeric token', () => {
+    const valueQuantity = getSearchParameter('Observation', 'value-quantity');
+    if (!valueQuantity) {
+      throw new Error('Missing search parameter');
+    }
+
+    const filter: Filter = {
+      code: 'value-quantity',
+      operator: Operator.EQUALS,
+      value: '5.4|http://unitsofmeasure.org|kg',
+    };
+    const condition = buildRangeColumnsSearchFilter('Observation', 'Observation', valueQuantity, filter);
+    const sql = new SqlBuilder();
+    condition.buildSql(sql);
+    expect(sql.getValues()).toStrictEqual(['[5.4,5.4]']);
   });
 
   test('constructs approximate numeric range filter', () => {
