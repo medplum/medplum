@@ -94,7 +94,7 @@ export interface UseDaySearchResult {
    * A day picked on its own is a stretch of one, so a click and a drag come in the same way.
    */
   readonly chooseDayRange: (start: Date, end?: Date) => void;
-  /** Whether the day an instant falls on is already searched, a day already gone counting as today. */
+  /** Whether the day an instant falls on is already searched. */
   readonly isDayOnShow: (date: Date) => boolean;
   /** Reaches further than the days already answered, keeping them on screen. */
   readonly showMoreDays: () => void;
@@ -168,8 +168,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   const isDayOnShow = useCallback(
     (date: Date): boolean => {
-      const day = floorToNow(date);
-      return day >= startOfDay(selectedDayRange.start) && day <= selectedDayRange.end;
+      return date >= startOfDay(selectedDayRange.start) && date <= selectedDayRange.end;
     },
     [selectedDayRange]
   );
@@ -277,7 +276,7 @@ function reaskEveryDayOnShow(previous: DaySearch): DaySearch {
  * @param date - Any instant during the day.
  * @returns The later of that instant and now.
  */
-function floorToNow(date: Date): Date {
+export function floorToNow(date: Date): Date {
   const now = new Date();
   return date > now ? date : now;
 }

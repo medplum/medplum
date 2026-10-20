@@ -66,7 +66,7 @@ import { BookingRequirementFields } from './BookingRequirementFields';
 import { buildElevatedBooking } from './buildElevatedBooking';
 import type { BookingConflict } from './findConflicts';
 import { describeConflict, findBookingConflicts } from './findConflicts';
-import { useDaySearch } from './useDaySearch';
+import { floorToNow, useDaySearch } from './useDaySearch';
 import { getRescheduleDurationMinutes } from './writeElevatedReschedule';
 
 // The visit type decides which actors can be asked for at all, so nothing below it
@@ -352,8 +352,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const { reset: resetDaySearch } = daySearch;
 
   // Compared by instant, so a host building the Date inline each render moves nothing.
+  // A day already gone opens the search on today, so it is on show whenever today is.
   const defaultStartMoved = useChanged(defaultStart?.getTime());
-  if (defaultStartMoved && defaultStart && !daySearch.isDayOnShow(defaultStart)) {
+  if (defaultStartMoved && defaultStart && !daySearch.isDayOnShow(floorToNow(defaultStart))) {
     setMonth(defaultStart);
     daySearch.chooseDayRange(defaultStart);
   }
