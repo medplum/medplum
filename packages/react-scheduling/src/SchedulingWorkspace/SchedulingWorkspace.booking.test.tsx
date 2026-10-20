@@ -33,6 +33,7 @@ import {
   choosePatient,
   chooseRepeat,
   chooseSecondOfferedTime,
+  chosenTimeField,
   clickBook,
   codePill,
   dragDays,
@@ -107,7 +108,7 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
  */
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
   MultiCalendar: (props: {
-    sources?: { appointments: Appointment[] }[];
+    sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean; label?: string }[];
     onSelectInterval?: (interval: { start: Date; end: Date }) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
     onRangeChange?: (range: { start: Date; end: Date }) => void;
@@ -133,6 +134,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
           </button>
         ))}
         {(props.sources ?? [])
+          .filter((source) => source.interactive !== false)
           .flatMap((source) => source.appointments)
           .map((appointment) => (
             <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
@@ -141,6 +143,20 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
           ))}
         {/* Stands in for the highlight the real grid draws over the interval it is given. */}
         <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
+        {/* Stands in for the events the real grid draws for appointments not yet booked. */}
+        <div
+          data-testid="proposed-time"
+          data-label={(props.sources ?? [])
+            .filter((source) => source.draft)
+            .map((source) => source.label)
+            .join(',')}
+        >
+          {(props.sources ?? [])
+            .filter((source) => source.draft)
+            .flatMap((source) => source.appointments)
+            .map((appointment) => new Date(appointment.start as string).toISOString())
+            .join(',') || 'none'}
+        </div>
       </div>
     );
   },
@@ -192,6 +208,14 @@ function bookedProposal(post: MockInstance<MockClient['post']>): Appointment {
  */
 function markedTime(): string {
   return screen.getByTestId('marked-time').textContent ?? '';
+}
+
+/**
+ * What the calendar draws as not yet booked.
+ * @returns The proposed appointments' starts, or 'none' while there are none.
+ */
+function proposedTime(): string {
+  return screen.getByTestId('proposed-time').textContent ?? '';
 }
 
 describe('SchedulingWorkspace booking', () => {
@@ -365,28 +389,32 @@ describe('SchedulingWorkspace booking', () => {
     expect(markedTime()).toBe('none');
   });
 
-  test('Re-opens on a different day, clearing what was answered for the old one', async () => {
+  test('Keeps what was answered, and searches the new day, when a different day is clicked', async () => {
+    const get = vi.spyOn(medplum, 'get');
     setup();
     await clickCalendar('tuesday morning');
     await chooseImagingService();
-    expect(hasPill('Ultrasound Imaging')).toBe(true);
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
 
     await clickCalendar('thursday');
 
-    // A different day is a different visit, and the answers were for the old one.
-    expect(hasPill('Ultrasound Imaging')).toBe(false);
+    expect(hasPill('Ultrasound Imaging')).toBe(true);
+    expect(new Date(lastFindStart(get) as string).getDate()).toBe(THURSDAY_MORNING.getDate());
   });
 
-  test('Keeps what was answered when the same day is clicked again', async () => {
+  test('Keeps the time chosen when the day already searched is clicked again', async () => {
     setup();
     await clickCalendar('tuesday morning');
     await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    await chooseSecondOfferedTime();
 
     await clickCalendar('tuesday afternoon');
 
-    // Clicking around inside the day being booked is not a change of mind about which
-    // day it is, and must not take the answers away.
     expect(hasPill('Ultrasound Imaging')).toBe(true);
+    expect(chosenTimeField()).toBeInTheDocument();
   });
 
   describe('Marking the time being booked', () => {
@@ -399,41 +427,80 @@ describe('SchedulingWorkspace booking', () => {
       expect(markedTime()).toBe(TUESDAY_MORNING.toISOString());
     });
 
-    test('Moves the mark to the time chosen in the form', async () => {
+    test('Draws the time chosen in the form as a proposal, leaving the mark on the click', async () => {
       const post = vi.spyOn(medplum, 'post');
       setup();
       await clickCalendar('tuesday morning');
+      expect(proposedTime()).toBe('none');
 
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
-      // The second time on offer, because the first is the very time that was
-      // clicked: a mark that never moved would pass for one that followed.
+      // The second time on offer, because the first is the very time that was clicked.
       await chooseSecondOfferedTime();
-      const marked = markedTime();
+      const proposed = proposedTime();
+      expect(markedTime()).toBe(TUESDAY_MORNING.toISOString());
 
       await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
       await clickBook();
 
-      // Marked to the instant that got booked, not merely somewhere else.
-      expect(marked).toBe(new Date(bookedProposal(post).start as string).toISOString());
+      // Drawn at the instant that got booked, not merely somewhere else.
+      expect(proposed).toBe(new Date(bookedProposal(post).start as string).toISOString());
+      expect(proposedTime()).toBe('none');
     });
 
-    test('Takes the mark down when the form drops the time', async () => {
+    test('Takes the proposal down when the form drops the time', async () => {
       setup();
       await clickCalendar('tuesday morning');
-
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseSecondOfferedTime();
-      expect(markedTime()).not.toBe('none');
+      expect(proposedTime()).not.toBe('none');
 
-      // Searching another day drops the time, and a mark left on the old one would
+      // Searching another day drops the time, and a proposal left on the old one would
       // be pointing at a time nobody has chosen.
       await chooseDay('19');
 
-      expect(markedTime()).toBe('none');
+      expect(proposedTime()).toBe('none');
+    });
+
+    test('Hides the proposal on the Block tab, and draws it again on coming back', async () => {
+      setup();
+      await clickCalendar('tuesday morning');
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseSecondOfferedTime();
+      const proposed = proposedTime();
+      expect(screen.getByTestId('proposed-time')).toHaveAttribute('data-label', 'Draft New Appointment');
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      expect(proposedTime()).toBe('none');
+
+      // The form stays mounted behind the Block tab, so its time is still there to draw.
+      fireEvent.click(screen.getByRole('tab', { name: 'Appointment' }));
+      expect(proposedTime()).toBe(proposed);
+    });
+
+    test('Moves the mark to each new click, and the proposal only where Book would book', async () => {
+      setup();
+      await clickCalendar('tuesday morning');
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseSecondOfferedTime();
+      const proposed = proposedTime();
+
+      // The day is already searched, so the time chosen is kept, and stays drawn.
+      await clickCalendar('tuesday afternoon');
+      expect(markedTime()).toBe(TUESDAY_AFTERNOON.toISOString());
+      expect(proposedTime()).toBe(proposed);
+
+      // Another day drops it.
+      await clickCalendar('thursday');
+      expect(markedTime()).toBe(THURSDAY_MORNING.toISOString());
+      expect(proposedTime()).toBe('none');
     });
   });
 
