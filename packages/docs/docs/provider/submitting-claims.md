@@ -54,10 +54,6 @@ You can also run an eligibility check against the coverage from the patient's Co
 
 After submission, the "Details & Billing" tab replaces the submit button with a claim status panel. It shows the Candid claim status, the submitted amount and time, and a **View Claim on Candid** button that opens the claim in the Candid portal. The status refreshes from Candid when you reopen the Visit, so you can track the claim from `waiting_for_provider` through to `finalized_paid` without leaving Medplum Provider.
 
-:::tip
-If you do not use Candid, the same tab lets you **Export Claim** as a CMS 1500 PDF, or submit to [Stedi](/docs/integration/stedi/claim-submission/professional-claims) when that integration is enabled.
-:::
-
 ## Related Resources
 
 - [Candid Health Integration](/docs/integration/candid): claim submission, eligibility, and payer directory operations
