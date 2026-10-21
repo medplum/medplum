@@ -67,6 +67,7 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
   const result = await executeBot({
     bot,
     runAs: ctx.membership,
+    runAsProject: ctx.project,
     requester: ctx.membership.profile,
     input: req.body,
     contentType: ContentType.JSON,

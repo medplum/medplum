@@ -355,7 +355,7 @@ function applyProjectAdminAccessPolicy(
         // Project admins have full access to their own project, except for a few sensitive fields
         resourceType: 'Project',
         criteria: `Project?_id=${resolveId(membership.project)}`,
-        readonlyFields: ['features', 'link', 'systemSetting'],
+        readonlyFields: ['active', 'features', 'link', 'systemSetting'],
         hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
         interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
       },

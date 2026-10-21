@@ -99,6 +99,7 @@ jobs:
         # Rules:
         #   - packages/app                  -> app preview
         #   - packages/docs                 -> docs preview
+        #   - examples/foomedical           -> foomedical preview
         #   - examples/medplum-provider     -> provider preview
         #   - packages/{storybook,mock}     -> storybook preview
         #   - packages/react-scheduling     -> provider + storybook previews
@@ -114,6 +115,7 @@ jobs:
 
           deploy_app=false
           deploy_docs=false
+          deploy_foomedical=false
           deploy_provider=false
           deploy_storybook=false
 
@@ -121,12 +123,14 @@ jobs:
           if changed '^packages/(core|react|react-hooks)/'; then
             deploy_app=true
             deploy_docs=true
+            deploy_foomedical=true
             deploy_provider=true
             deploy_storybook=true
           fi
 
           if changed '^packages/app/'; then deploy_app=true; fi
           if changed '^packages/docs/'; then deploy_docs=true; fi
+          if changed '^examples/foomedical/'; then deploy_foomedical=true; fi
           if changed '^examples/medplum-provider/'; then deploy_provider=true; fi
           if changed '^packages/(storybook|mock)/'; then deploy_storybook=true; fi
           if changed '^packages/react-scheduling/'; then
@@ -135,15 +139,16 @@ jobs:
           fi
 
           deploy_any=false
-          if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_provider" = true ] || [ "$deploy_storybook" = true ]; then
+          if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_foomedical" = true ] || [ "$deploy_provider" = true ] || [ "$deploy_storybook" = true ]; then
             deploy_any=true
           fi
 
-          echo "Decision: app=$deploy_app docs=$deploy_docs provider=$deploy_provider storybook=$deploy_storybook any=$deploy_any"
+          echo "Decision: app=$deploy_app docs=$deploy_docs foomedical=$deploy_foomedical provider=$deploy_provider storybook=$deploy_storybook any=$deploy_any"
 
           {
             echo "deploy_app=$deploy_app"
             echo "deploy_docs=$deploy_docs"
+            echo "deploy_foomedical=$deploy_foomedical"
             echo "deploy_provider=$deploy_provider"
             echo "deploy_storybook=$deploy_storybook"
             echo "deploy_any=$deploy_any"
@@ -200,6 +205,15 @@ jobs:
         env:
           AWS_REGION: 'us-east-1'
           DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+      - name: Deploy foomedical preview
+        if: steps.changes.outputs.deploy_foomedical == 'true'
+        run: './scripts/deploy-foomedical.sh'
+        env:
+          AWS_REGION: 'us-east-1'
+          FOOMEDICAL_BUCKET: preview.medplum.dev/previews/foomedical-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          FOOMEDICAL_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
+          FOOMEDICAL_RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
+          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
       - name: Deploy provider app preview
         if: steps.changes.outputs.deploy_provider == 'true'
         run: './scripts/deploy-provider-app.sh'
@@ -221,6 +235,7 @@ jobs:
         env:
           DEPLOY_APP: ${{ steps.changes.outputs.deploy_app }}
           DEPLOY_DOCS: ${{ steps.changes.outputs.deploy_docs }}
+          DEPLOY_FOOMEDICAL: ${{ steps.changes.outputs.deploy_foomedical }}
           DEPLOY_PROVIDER: ${{ steps.changes.outputs.deploy_provider }}
           DEPLOY_STORYBOOK: ${{ steps.changes.outputs.deploy_storybook }}
         with:
@@ -235,6 +250,9 @@ jobs:
             }
             if (process.env.DEPLOY_DOCS === 'true') {
               rows.push(`| Docs      | https://docs-${login}-${n}.preview.medplum.dev |`);
+            }
+            if (process.env.DEPLOY_FOOMEDICAL === 'true') {
+              rows.push(`| Foo Medical | https://foomedical-${login}-${n}.preview.medplum.dev |`);
             }
             if (process.env.DEPLOY_PROVIDER === 'true') {
               rows.push(`| Provider  | https://provider-${login}-${n}.preview.medplum.dev |`);

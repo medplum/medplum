@@ -17,7 +17,7 @@ import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getAllowedProjects } from '../fhir/accesspolicy';
-import { findProjectMembership } from '../fhir/projectmembership';
+import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
 import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
@@ -327,7 +327,9 @@ async function unregisterCronJob(cron: WithId<Cron>, reason: string): Promise<vo
 async function resolveCronJob(
   systemRepo: Repository,
   cronId: string
-): Promise<{ bot: WithId<Bot>; runAs: WithId<ProjectMembership>; cron: WithId<Cron> } | undefined> {
+): Promise<
+  { bot: WithId<Bot>; runAs: WithId<ProjectMembership>; project: WithId<Project>; cron: WithId<Cron> } | undefined
+> {
   const cron = await systemRepo.readResource<Cron>('Cron', cronId);
 
   if (!getCronStringForCron(cron)) {
@@ -344,11 +346,11 @@ async function resolveCronJob(
     return undefined;
   }
 
-  if (!project.features?.includes('cron')) {
+  if (!project.features?.includes('cron') || getInactiveReason(project)) {
     // addCronJobs refuses to register without the feature, so a job that outlived it must not run.
-    // The schedule stays registered: the feature can come back, and nothing re-registers a dropped
-    // job, so unregistering would strand the Cron.
-    getLogger().info('Skipping cron job, project does not have the cron feature', {
+    // The schedule stays registered: the feature or the project can come back, and nothing
+    // re-registers a dropped job, so unregistering would strand the Cron.
+    getLogger().info('Skipping cron job, project is inactive or does not have the cron feature', {
       cronId: cron.id,
       projectId: project.id,
     });
@@ -380,7 +382,7 @@ async function resolveCronJob(
     throw new Error('Cron onBehalfOf membership belongs to a different project');
   }
 
-  return { bot, runAs, cron };
+  return { bot, runAs, project, cron };
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
@@ -389,6 +391,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   let bot: WithId<Bot>;
   let runAs: WithId<ProjectMembership> | undefined;
   let input: unknown;
+  let project: WithId<Project> | undefined;
   let cron: WithId<Cron> | undefined;
 
   if (job.data.resourceType === 'Cron') {
@@ -398,6 +401,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     }
     bot = resolved.bot;
     runAs = resolved.runAs;
+    project = resolved.project;
     cron = resolved.cron;
     // The whole Cron goes to the target, so a bot reads its parameters alongside the schedule
     input = resolved.cron;
@@ -411,7 +415,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     throw new Error('Could not find project membership for bot');
   }
 
-  await executeBot({ bot, runAs, input, cron, contentType: ContentType.FHIR_JSON });
+  await executeBot({ bot, runAs, runAsProject: project, input, cron, contentType: ContentType.FHIR_JSON });
 }
 
 export async function removeBullMQJobByKey(schedulerId: string): Promise<void> {

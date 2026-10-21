@@ -7,7 +7,11 @@ download_slug: intake
 
 # Intake & Registration Decision Guide
 
+Use this guide to design how patients, caregivers, and staff complete intake and registration. Work through identity matching, forms, prefill, data extraction, coverage, consent, and post-submission actions to define the information you collect and what happens when intake is complete.
+
 _Companion to the [Intake & Registration](/docs/intake) docs._
+
+---
 
 ## Section 1: Use Case & Participants
 

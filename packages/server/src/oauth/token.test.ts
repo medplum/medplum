@@ -22,6 +22,7 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
+import { AUTH_CODE_EXPIRATION_MS } from '../constants';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
 import {
@@ -292,6 +293,24 @@ describe('OAuth2 Token', () => {
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
   });
+
+  test.each(['ProjectMembership', 'Project'] as const)(
+    'Token for client credentials with inactive %s',
+    async (type) => {
+      const inactive = await createTestProject({ withClient: true });
+      const target = type === 'Project' ? inactive.project : inactive.membership;
+      await withTestContext(() => systemRepo.updateResource({ ...target, active: false }));
+
+      const res = await request(app).post('/oauth2/token').type('form').send({
+        grant_type: 'client_credentials',
+        client_id: inactive.client.id,
+        client_secret: inactive.client.secret,
+      });
+      expect(res).toHaveStatus(400);
+      expect(res.body.error).toBe('access_denied');
+      expect(res.body.error_description).toBe(type === 'Project' ? 'Project not active' : 'Profile not active');
+    }
+  );
 
   test('Token for client credentials with missing client_id', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
@@ -578,6 +597,45 @@ describe('OAuth2 Token', () => {
     expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid code');
+  });
+
+  test('Token for authorization_code with expired code', async () => {
+    const createLogin = (lastUpdated: string): Promise<WithId<Login>> =>
+      systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        meta: { lastUpdated },
+        authMethod: 'password',
+        project: createReference(project),
+        client: createReference(client),
+        membership: createReference(adminMembership),
+        user: adminMembership.user,
+        authTime: new Date().toISOString(),
+        scope: 'openid',
+        nonce: randomUUID(),
+        code: generateSecret(16),
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+
+    const freshLogin = await createLogin(new Date().toISOString());
+    const res1 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: freshLogin.code,
+      code_verifier: 'xyz',
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.access_token).toBeDefined();
+
+    const staleLogin = await createLogin(new Date(Date.now() - AUTH_CODE_EXPIRATION_MS - 1000).toISOString());
+    expect(staleLogin.meta?.lastUpdated).not.toBe(freshLogin.meta?.lastUpdated);
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: staleLogin.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.error).toBe('invalid_grant');
+    expect(res2.body.error_description).toBe('Authorization code expired');
   });
 
   test('Token for authorization_code with invalid client ID', async () => {
@@ -1185,12 +1243,13 @@ describe('OAuth2 Token', () => {
     expect(res3.body.error_description).toBe('Token revoked');
   });
 
-  test('Refresh token membership inactive', async () => {
-    // Use a dedicated user so deactivating the membership does not affect other tests
+  test.each(['ProjectMembership', 'Project'] as const)('Refresh token with inactive %s', async (type) => {
+    // Use a dedicated user and project so deactivating them does not affect other tests
     const inactiveEmail = `test-${randomUUID()}@example.com`;
     const inactivePassword = 'test-password';
+    const { project: inactiveProject } = await createTestProject();
     await inviteUser({
-      project,
+      project: inactiveProject,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Test',
@@ -1219,17 +1278,12 @@ describe('OAuth2 Token', () => {
     const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
-    // Deactivate the membership
     const login = loginBundle.entry?.[0]?.resource as Login;
     const membership = await systemRepo.readReference<ProjectMembership>(
       login.membership as Reference<ProjectMembership>
     );
-    await withTestContext(() =>
-      systemRepo.updateResource({
-        ...membership,
-        active: false,
-      })
-    );
+    const target = type === 'Project' ? inactiveProject : membership;
+    await withTestContext(() => systemRepo.updateResource({ ...target, active: false }));
 
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
@@ -1237,7 +1291,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('access_denied');
-    expect(res3.body.error_description).toBe('Profile not active');
+    expect(res3.body.error_description).toBe(type === 'Project' ? 'Project not active' : 'Profile not active');
   });
 
   test('Refresh token Basic auth success', async () => {

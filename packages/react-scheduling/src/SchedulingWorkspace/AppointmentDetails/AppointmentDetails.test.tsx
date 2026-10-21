@@ -12,6 +12,7 @@ import {
   SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   ServiceTypeReferenceURI,
+  toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -19,6 +20,7 @@ import type { RenderResult } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM } from '../../constants';
 import { installCancelStub } from '../../stories/mockCancel';
+import { installConfirmStub } from '../../stories/mockConfirm';
 import { installValueSetStub } from '../../stories/mockValueSet';
 import {
   AuthorizationValueSets,
@@ -26,6 +28,7 @@ import {
   DiagnosisCodes,
   DrRiveraPractitioner,
   ElderJordanPatient,
+  MainClinic,
   MilesCooperPatient,
   PatientFixtures,
   PROCEDURE_VALUE_SET,
@@ -121,6 +124,16 @@ const BOOKED_APPOINTMENT: WithId<Appointment> = {
   ],
 };
 
+const TENTATIVE_SLOT: WithId<Slot> = { ...HELD_SLOT, id: 'slot-rivera-tue-tentative', status: 'busy-tentative' };
+
+/** Held through `$hold`, on time it has not yet firmed up. */
+const PENDING_APPOINTMENT: WithId<Appointment> = {
+  ...BOOKED_APPOINTMENT,
+  id: 'appt-rivera-imaging-tue-pending',
+  status: 'pending',
+  slot: [{ reference: `Slot/${TENTATIVE_SLOT.id}` }],
+};
+
 const AUTHORIZED_APPOINTMENT: WithId<Appointment> = {
   ...BOOKED_APPOINTMENT,
   id: 'appt-rivera-infusion-tue',
@@ -139,6 +152,7 @@ const AUTHORIZED_APPOINTMENT: WithId<Appointment> = {
 
 let medplum: MockClient;
 let restoreCancel: () => void;
+let restoreConfirm: () => void;
 let restoreValueSet: () => void;
 
 beforeEach(async () => {
@@ -156,10 +170,14 @@ beforeEach(async () => {
   await medplum.createResource(HELD_SCHEDULE);
   await medplum.createResource(HELD_SLOT);
   await medplum.createResource(BOOKED_APPOINTMENT);
+  await medplum.createResource(TENTATIVE_SLOT);
+  await medplum.createResource(PENDING_APPOINTMENT);
   restoreCancel = installCancelStub(medplum);
+  restoreConfirm = installConfirmStub(medplum);
   restoreValueSet = installValueSetStub(medplum);
   return () => {
     restoreCancel();
+    restoreConfirm();
     restoreValueSet();
   };
 });
@@ -296,8 +314,25 @@ describe('AppointmentDetails', () => {
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
     expect(screen.queryByText('Notes')).not.toBeInTheDocument();
     expect(screen.queryByText('Repeats')).not.toBeInTheDocument();
+    expect(screen.queryByText('Service facility')).not.toBeInTheDocument();
     // A participant whose resource can't be read says so.
     expect(await screen.findByText('[Not found]')).toBeInTheDocument();
+  });
+
+  test('names the service facility the visit is held at by the Location it points at', async () => {
+    await medplum.createResource(MainClinic);
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      supportingInformation: [
+        // Another Location, not stamped as the site.
+        { reference: 'Location/exam-room-a' },
+        { ...toAppointmentSiteReference(MainClinic), display: 'Stale display' },
+      ],
+    });
+
+    expect(await screen.findByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+    expect(screen.getByText('Service facility')).toBeInTheDocument();
+    expect(screen.queryByText('Stale display')).not.toBeInTheDocument();
   });
 
   test('names a participant stored without a display by the resource it points at', async () => {
@@ -445,6 +480,52 @@ describe('AppointmentDetails', () => {
     // And it is on the appointment the operation wrote.
     const stored = await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id);
     expect(stored.cancelationReason?.coding?.[0].code).toBe('prov-hosp');
+  });
+
+  test('confirming a pending appointment books it through $confirm', async () => {
+    const notify = vi.spyOn(medplum, 'notifyResourceModified');
+    const onConfirmed = vi.fn();
+    renderWithMedplum(<AppointmentDetails appointment={PENDING_APPOINTMENT} onConfirmed={onConfirmed} />, medplum);
+    await screen.findByText('Miles Cooper');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalled());
+    expect(onConfirmed.mock.calls[0][0]).toMatchObject({
+      appointments: [{ id: PENDING_APPOINTMENT.id, status: 'booked' }],
+      slots: [{ id: TENTATIVE_SLOT.id, status: 'busy' }],
+    });
+
+    // The operation firmed up the time as well as the visit, and the client is told of both.
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'Appointment',
+        operation: 'update',
+        id: PENDING_APPOINTMENT.id,
+        resource: expect.objectContaining({ status: 'booked' }),
+      })
+    );
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'Slot',
+        operation: 'update',
+        id: TENTATIVE_SLOT.id,
+        resource: expect.objectContaining({ status: 'busy' }),
+      })
+    );
+  });
+
+  test('shows the refusal when $confirm fails', async () => {
+    const onConfirmed = vi.fn();
+    vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Schedule is inactive'));
+    renderWithMedplum(<AppointmentDetails appointment={PENDING_APPOINTMENT} onConfirmed={onConfirmed} />, medplum);
+    await screen.findByText('Miles Cooper');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByText('Schedule is inactive')).toBeInTheDocument();
+    expect(onConfirmed).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeEnabled();
   });
 
   test('says where a visit falls in the series it was booked in', async () => {
