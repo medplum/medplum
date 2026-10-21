@@ -154,13 +154,15 @@ function buildGraphQLQuery(input: string): string {
   const shortcut = parseSearchShortcut(input);
   if (shortcut) {
     const value = JSON.stringify(shortcut.value);
+    // GraphQL argument names use underscores for dashes, like fhirParamToGraphQLField in fhir-router.
+    const arg = shortcut.param.replaceAll('-', '_');
     const targets = SEARCH_SHORTCUTS[shortcut.param];
-    const queries = [];
+    const queries: string[] = [];
     if (targets.includes('Patient')) {
-      queries.push(`Patients1: PatientList(${shortcut.param}: ${value}, _count: 5) { ${PATIENT_SELECTION} }`);
+      queries.push(`Patients1: PatientList(${arg}: ${value}, _count: 5) { ${PATIENT_SELECTION} }`);
     }
     if (targets.includes('ServiceRequest')) {
-      queries.push(`ServiceRequestList(${shortcut.param}: ${value}, _count: 5) { ${SERVICE_REQUEST_SELECTION} }`);
+      queries.push(`ServiceRequestList(${arg}: ${value}, _count: 5) { ${SERVICE_REQUEST_SELECTION} }`);
     }
     return `{ ${queries.join(' ')} }`.replaceAll(/\s+/g, ' ');
   }
