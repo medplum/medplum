@@ -48,7 +48,7 @@ describe('ChargeItemPanel', () => {
     medplum.valueSetExpand = vi
       .fn()
       .mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
-        if (params.url === 'http://www.ama-assn.org/go/cpt/vs/modifiers') {
+        if (params.url === 'https://medplum.com/fhir/ValueSet/procedure-modifiers') {
           const allModifiers = [
             {
               system: 'http://terminology.hl7.org/CodeSystem/modifiers',
@@ -106,7 +106,7 @@ describe('ChargeItemPanel', () => {
           return {
             resourceType: 'ValueSet',
             id: '9a6769a5-e60e-415b-ac35-8ed865336521',
-            url: 'http://www.ama-assn.org/go/cpt/vs/modifiers',
+            url: 'https://medplum.com/fhir/ValueSet/procedure-modifiers',
             version: '4.0.1',
             name: 'ModifierTypeCodes',
             title: 'Modifier type Codes',
@@ -150,7 +150,7 @@ describe('ChargeItemPanel', () => {
     expect(screen.getByText('Modifiers')).toBeInTheDocument();
   });
 
-  test('disables the modifiers input when the CPT modifiers ValueSet is not registered', async () => {
+  test('disables the modifiers input when the procedure modifiers ValueSet is not registered', async () => {
     vi.mocked(medplum.valueSetExpand).mockRejectedValue(new OperationOutcomeError(notFound));
     setup();
 
@@ -385,10 +385,10 @@ describe('ChargeItemPanel', () => {
         () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const claimModifiersCall = calls.find(
-            (call) => call[0]?.url === 'http://www.ama-assn.org/go/cpt/vs/modifiers'
+          const modifiersCall = calls.find(
+            (call) => call[0]?.url === 'https://medplum.com/fhir/ValueSet/procedure-modifiers'
           );
-          expect(claimModifiersCall).toBeDefined();
+          expect(modifiersCall).toBeDefined();
         },
         { timeout: 5000 }
       );
@@ -582,10 +582,10 @@ describe('ChargeItemPanel', () => {
         () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const claimModifiersCall = calls.find(
-            (call) => call[0]?.url === 'http://www.ama-assn.org/go/cpt/vs/modifiers'
+          const modifiersCall = calls.find(
+            (call) => call[0]?.url === 'https://medplum.com/fhir/ValueSet/procedure-modifiers'
           );
-          expect(claimModifiersCall).toBeDefined();
+          expect(modifiersCall).toBeDefined();
         },
         { timeout: 5000 }
       );

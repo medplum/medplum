@@ -7,7 +7,7 @@ export const SAVE_TIMEOUT_MS = 1500;
 export const CPT_COPYRIGHT_NOTICE = `CPT® copyright ${new Date().getFullYear()} American Medical Association. All rights reserved.`;
 
 /**
- * The ValueSet of CPT modifiers, registered from the Get Started page. It selects the modifier concepts of the
- * CPT code system by their UMLS term type, so it only expands once CPT is loaded in the project.
+ * The ValueSet of procedure modifiers, registered from the Get Started page. It selects the modifier concepts of
+ * the CPT code system by their UMLS term type, so it only expands once CPT is loaded in the project.
  */
-export const CPT_MODIFIERS_VALUE_SET = 'http://www.ama-assn.org/go/cpt/vs/modifiers';
+export const PROCEDURE_MODIFIERS_VALUE_SET = 'https://medplum.com/fhir/ValueSet/procedure-modifiers';

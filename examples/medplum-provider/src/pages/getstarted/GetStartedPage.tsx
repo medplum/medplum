@@ -16,8 +16,9 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { MedplumClient } from '@medplum/core';
 import { CPT, convertToTransactionBundle } from '@medplum/core';
-import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, ValueSet } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import { useSyncOrderSet } from '@medplum/react-hooks';
 import {
@@ -37,7 +38,7 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { CPT_MODIFIERS_VALUE_SET } from '../../config/constants';
+import { PROCEDURE_MODIFIERS_VALUE_SET } from '../../config/constants';
 import orderSetBundleData from '../../data/order-set-example-bundle.json';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
@@ -47,6 +48,7 @@ import classes from './GetStartedPage.module.css';
 import { buildOrderSetImportNotification } from './orderSetImportNotification';
 
 const ICD10_CM = 'http://hl7.org/fhir/sid/icd-10-cm';
+const ICD10_BILLABLE_VALUE_SET = 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable';
 
 /**
  * Reports whether a code system declaring the UMLS term type (`tty`) property is loaded in the project.
@@ -75,13 +77,30 @@ function missingCodeSystemHint(url: string): string {
   return `CodeSystem ${url} required`;
 }
 
+/**
+ * Installs a ValueSet from scratch, first deleting every copy already registered under its canonical url.
+ *
+ * Updating in place would keep the earliest copy and any duplicates from older imports; starting fresh leaves
+ * exactly one ValueSet behind the url the pickers bind to.
+ * @param medplum - Medplum client instance.
+ * @param valueSet - The ValueSet to install, carrying a canonical url.
+ */
+async function installValueSet(medplum: MedplumClient, valueSet: ValueSet): Promise<void> {
+  await deleteExistingDefinitions(medplum, {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: [{ resource: valueSet }],
+  });
+  await medplum.createResource(valueSet);
+}
+
 export function GetStartedPage(): JSX.Element {
   const medplum = useMedplum();
   const syncOrderSet = useSyncOrderSet();
   const [importingPatient, setImportingPatient] = useState(false);
   const [importingVisit, setImportingVisit] = useState(false);
   const [importingIcd10, setImportingIcd10] = useState(false);
-  const [importingCptModifiers, setImportingCptModifiers] = useState(false);
+  const [importingModifiers, setImportingModifiers] = useState(false);
   const [importingOrderSet, setImportingOrderSet] = useState(false);
   const icd10Loaded = useTermTypesLoaded(ICD10_CM);
   const cptLoaded = useTermTypesLoaded(CPT);
@@ -137,24 +156,21 @@ export function GetStartedPage(): JSX.Element {
   const handleImportIcd10 = useCallback(async () => {
     setImportingIcd10(true);
     try {
-      await medplum.upsertResource(
-        {
-          resourceType: 'ValueSet',
-          status: 'active',
-          url: 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable',
-          title: 'ICD-10-CM Billable Codes',
-          name: 'icd10cm-billable',
-          compose: {
-            include: [
-              {
-                system: ICD10_CM,
-                filter: [{ property: 'tty', op: '=', value: 'PT' }],
-              },
-            ],
-          },
+      await installValueSet(medplum, {
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: ICD10_BILLABLE_VALUE_SET,
+        title: 'ICD-10-CM Billable Codes',
+        name: 'icd10cm-billable',
+        compose: {
+          include: [
+            {
+              system: ICD10_CM,
+              filter: [{ property: 'tty', op: '=', value: 'PT' }],
+            },
+          ],
         },
-        { url: 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable' }
-      );
+      });
       showNotification({ color: 'green', title: 'Success', message: 'ICD-10-CM Billable Codes ValueSet ready' });
     } catch (error) {
       showErrorNotification(error);
@@ -164,29 +180,26 @@ export function GetStartedPage(): JSX.Element {
   }, [medplum]);
 
   const icd10Label = icd10Loaded === false ? 'ICD-10 codes not installed' : 'Import ValueSet';
-  const cptModifiersLabel = cptLoaded === false ? 'CPT codes not installed' : 'Import Modifiers';
+  const modifiersLabel = cptLoaded === false ? 'Procedure codes not installed' : 'Import Modifiers';
 
-  const handleImportCptModifiers = useCallback(async () => {
-    setImportingCptModifiers(true);
+  const handleImportModifiers = useCallback(async () => {
+    setImportingModifiers(true);
     try {
-      await medplum.upsertResource(
-        {
-          resourceType: 'ValueSet',
-          status: 'active',
-          url: CPT_MODIFIERS_VALUE_SET,
-          title: 'CPT Modifiers',
-          name: 'cpt-modifiers',
-          compose: {
-            include: [{ system: CPT, filter: [{ property: 'tty', op: '=', value: 'MP' }] }],
-          },
+      await installValueSet(medplum, {
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: PROCEDURE_MODIFIERS_VALUE_SET,
+        title: 'Procedure Modifiers',
+        name: 'procedure-modifiers',
+        compose: {
+          include: [{ system: CPT, filter: [{ property: 'tty', op: '=', value: 'MP' }] }],
         },
-        { url: CPT_MODIFIERS_VALUE_SET }
-      );
-      showNotification({ color: 'green', title: 'Success', message: 'CPT Modifiers ValueSet ready' });
+      });
+      showNotification({ color: 'green', title: 'Success', message: 'Procedure Modifiers ValueSet ready' });
     } catch (error) {
       showErrorNotification(error);
     } finally {
-      setImportingCptModifiers(false);
+      setImportingModifiers(false);
     }
   }, [medplum]);
 
@@ -342,7 +355,7 @@ export function GetStartedPage(): JSX.Element {
                     <IconMedicalCross size={24} color="var(--icon-secondary)" />
                     <Stack gap={0}>
                       <Text size="11px" fw={500} className={classes.textLabel}>
-                        Code System
+                        Value Set
                       </Text>
                       <Text fw={600} size="lg">
                         ICD-10-CM Billable Codes
@@ -379,17 +392,17 @@ export function GetStartedPage(): JSX.Element {
                     <IconMedicalCross size={24} color="var(--icon-secondary)" />
                     <Stack gap={0}>
                       <Text size="11px" fw={500} className={classes.textLabel}>
-                        Code System
+                        Value Set
                       </Text>
                       <Text fw={600} size="lg">
-                        CPT Modifiers
+                        Procedure Modifiers
                       </Text>
                     </Stack>
                   </Group>
                   <Divider />
                   <Text size="md" className={classes.textSecondary} mb="sm" style={{ flex: 1 }}>
-                    Registers the CPT modifiers ValueSet used by the charge item modifier picker. Requires CPT to be
-                    loaded in the project.
+                    Registers the procedure modifiers ValueSet used by the charge item modifier picker. Requires the
+                    CPT® code system to be loaded in the project.
                   </Text>
                 </Stack>
                 <Tooltip label={missingCodeSystemHint(CPT)} disabled={cptLoaded !== false} multiline w={360}>
@@ -398,14 +411,14 @@ export function GetStartedPage(): JSX.Element {
                       variant="filled"
                       size="sm"
                       fullWidth
-                      onClick={handleImportCptModifiers}
-                      loading={importingCptModifiers}
-                      disabled={!cptLoaded || importingCptModifiers}
+                      onClick={handleImportModifiers}
+                      loading={importingModifiers}
+                      disabled={!cptLoaded || importingModifiers}
                       leftSection={<IconDownload size={14} />}
                       mt="sm"
                       className={classes.importButton}
                     >
-                      {importingCptModifiers ? 'Importing...' : cptModifiersLabel}
+                      {importingModifiers ? 'Importing...' : modifiersLabel}
                     </Button>
                   </span>
                 </Tooltip>

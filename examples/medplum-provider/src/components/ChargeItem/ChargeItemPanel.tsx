@@ -8,7 +8,7 @@ import { CodeableConceptInput, useMedplum } from '@medplum/react';
 import { IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { CPT_MODIFIERS_VALUE_SET } from '../../config/constants';
+import { PROCEDURE_MODIFIERS_VALUE_SET } from '../../config/constants';
 import { applyChargeItemDefinition } from '../../utils/chargeitems';
 
 const CHARGE_ITEM_MODIFIER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/chargeitem-modifier`;
@@ -110,7 +110,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
 
         <CodeableConceptInput
           key={modifierKey}
-          binding={CPT_MODIFIERS_VALUE_SET}
+          binding={PROCEDURE_MODIFIERS_VALUE_SET}
           creatable={false}
           label="Modifiers"
           name="modifiers"
