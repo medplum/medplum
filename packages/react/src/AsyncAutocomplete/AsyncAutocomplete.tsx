@@ -26,8 +26,7 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly defaultValue?: T | T[];
   /**
    * The selected items. Passing this (`null` or `[]` for none) makes the component controlled: user
-   * edits are only reported through `onChange`, and the selection shows whatever `value` says.
-   * Switching between controlled and uncontrolled after mount is not supported.
+   * edits only call `onChange`. Switching between controlled and uncontrolled after mount is not supported.
    */
   readonly value?: T | readonly T[] | null;
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
@@ -100,8 +99,8 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [abortController, setAbortController] = useState<AbortController>();
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
 
-  // The search input is hidden once the cap is reached, by the user or by `value`. Reset the search
-  // state so it doesn't linger with stale options and no input left to dismiss it.
+  // The search input is hidden at the cap, which `value` can also reach. Clear the search so stale
+  // text and options don't linger with no input left to dismiss them.
   const capReached = !!maxValues && selected.length >= maxValues;
   const [prevCapReached, setPrevCapReached] = useState(capReached);
   if (capReached !== prevCapReached) {
