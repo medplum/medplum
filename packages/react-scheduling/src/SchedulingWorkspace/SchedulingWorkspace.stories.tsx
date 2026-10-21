@@ -95,14 +95,14 @@ export default {
  * visit is this story's, raised from `onBooked`: the workspace reports what was booked
  * and leaves how to say so to whatever is hosting it.
  *
- * The grid marks the time being booked, and the mark follows the answers: picking a time
- * in the search moves it there, and searching another day takes it down. Hovering open
- * time marks nothing — a whole-column tint cannot say which time is under the pointer.
- * The calendar never moves itself to keep the mark in sight; page to a week the marked
- * time is on and it is there.
+ * The grid highlights the time clicked. Picking a time in the search draws the visit it
+ * would book as a draft, hatched and outlined, and searching another day takes it down.
+ * Hovering open time marks nothing — a whole-column tint cannot say which time is under
+ * the pointer. The calendar never moves itself to keep either in sight; page to a week
+ * they are on and they are there.
  *
- * Clicking a different day with the form part-filled re-opens it on the new day and
- * clears the answers; clicking again inside the day already open leaves them alone.
+ * Clicking another time with the form part-filled keeps the answers and moves the time
+ * search to the day clicked; a day the search already covers is left as it is.
  *
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
  * anything booked from the form — opens its details in the same pane the booking form
@@ -130,6 +130,10 @@ export default {
  * Blocked time opens in that pane too: click Exam Room A's "Blocked" block on Thursday to
  * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
  * "Delete" takes it off the calendar.
+ *
+ * The imaging visits on Monday, Tuesday and Wednesday record **Uro Associates - Main Clinic**
+ * as their site, so their details name it as the service facility. The telehealth visits
+ * record none, and their details leave the line out.
  *
  * Eliana Garcia's Tuesday telehealth visit with Dr. Brown is the second of three, weekly, and is
  * marked as recurring; page a week back or forward for the first and third.
