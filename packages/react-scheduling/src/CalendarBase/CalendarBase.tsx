@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  CalendarApi,
   CalendarRef,
   DayHeaderInfo,
   EventApi,
@@ -120,6 +121,10 @@ function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
       ))}
     </span>
   );
+}
+
+function scrollToTimeOfDay(api: CalendarApi, time: Date): void {
+  api.scrollToTime({ hours: time.getHours(), minutes: time.getMinutes() });
 }
 
 function slotTitle(slot: Slot): string {
@@ -320,16 +325,24 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     }
   }, [startMs, endMs]);
 
-  // Keyed on the instant for the same reason as the selection above.
+  // Keyed on the instant for the same reason as the selection above. FullCalendar scrolls
+  // back to `scrollTime` whenever it pages, so a scroll asked for alongside the page would
+  // be undone: it waits for the new dates to be set.
   const revealMs = revealTime?.getTime();
+  const pendingScrollRef = useRef<Date>(undefined);
   useEffect(() => {
     const api = calendarRef.current?.getApi();
     if (!api || revealMs === undefined) {
       return;
     }
     const time = new Date(revealMs);
-    api.gotoDate(time);
-    api.scrollToTime({ hours: time.getHours(), minutes: time.getMinutes() });
+    const { activeStart, activeEnd } = api.view;
+    if (time >= activeStart && time < activeEnd) {
+      scrollToTimeOfDay(api, time);
+    } else {
+      pendingScrollRef.current = time;
+      api.gotoDate(time);
+    }
   }, [revealMs]);
 
   return (
@@ -410,7 +423,14 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         eventSources={eventSources}
         controller={controller}
         headerToolbar={false}
-        datesSet={(info) => onRangeChange?.({ start: info.start, end: info.end })}
+        datesSet={(info) => {
+          const api = calendarRef.current?.getApi();
+          if (api && pendingScrollRef.current) {
+            scrollToTimeOfDay(api, pendingScrollRef.current);
+            pendingScrollRef.current = undefined;
+          }
+          onRangeChange?.({ start: info.start, end: info.end });
+        }}
         className={cx(classes.calendar, controller.view?.type)}
         eventDidMount={(info) => {
           if (hasDoubleClickHandler && (info.event.extendedProps as ExtendedEvent).interactive !== false) {
