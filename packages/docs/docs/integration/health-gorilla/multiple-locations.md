@@ -172,14 +172,3 @@ If the parent `ServiceRequest` does not have the extension, the bot sends the He
 | More than one, or all locations   | The subtenant practice itself, with the practice's main contact details on the requisition |
 
 When a practitioner works at more than one location, an order without a location can therefore show another location's address, phone, or fax on the requisition. To avoid this, always set the location on orders from multi-location practices.
-
-### Verifying the Location Sent
-
-For each order, the `send-to-health-gorilla` bot saves the exact request it sent to Health Gorilla, and the response, as `DocumentReference`s linked to the order (`hg-create-request-group-payload.json` and `hg-create-request-group-response.json`). To confirm which location was used, check the `requestgroup-authorizedBy` extension in each:
-
-- **Payload:** what Medplum sent: a `tl-...` location ID, or the tenant if no location was specified.
-- **Response:** the location Health Gorilla actually used.
-
-```bash
-medplum get 'DocumentReference?related=ServiceRequest/{order-id}'
-```
