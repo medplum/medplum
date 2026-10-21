@@ -374,6 +374,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // even if that is nothing — is what is on screen.
   const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
 
+  // The times scroll apart from the form, so days picked from the form's calendar or the
+  // host's would otherwise land wherever "Show more days" left the column. Keyed on the
+  // picked start's identity, which every pick replaces, even of the same day, and paging
+  // further does not.
+  const resultsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (resultsRef.current) {
+      resultsRef.current.scrollTop = 0;
+    }
+  }, [daySearch.selectedDayRange.start]);
+
   const chosenActors = getAppointmentActors(chosen, actorResources);
 
   // The ref holds what the host was last told, so mounting reports nothing and a
@@ -751,7 +762,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       </Stack>
 
       {searching && (
-        <Stack className={classes.results} gap="lg">
+        <Stack ref={resultsRef} className={classes.results} gap="lg">
           {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
               dateTime={effectiveDateTime}
