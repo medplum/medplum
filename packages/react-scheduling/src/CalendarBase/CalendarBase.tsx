@@ -334,14 +334,28 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
-          <Button variant="default" size="xs" fz="sm" onClick={() => controller.today()}>
+          <Button variant="default" size="sm" fw={400} onClick={() => controller.today()}>
             Today
           </Button>
-          <Group gap={4}>
-            <ActionIcon variant="subtle" color="gray" aria-label="Previous" onClick={() => controller.prev()}>
+          <Group gap="xs">
+            <ActionIcon
+              variant="default"
+              size="input-sm"
+              radius="xl"
+              c="dimmed"
+              aria-label="Previous"
+              onClick={() => controller.prev()}
+            >
               <IconChevronLeft size={16} />
             </ActionIcon>
-            <ActionIcon variant="subtle" color="gray" aria-label="Next" onClick={() => controller.next()}>
+            <ActionIcon
+              variant="default"
+              size="input-sm"
+              radius="xl"
+              c="dimmed"
+              aria-label="Next"
+              onClick={() => controller.next()}
+            >
               <IconChevronRight size={16} />
             </ActionIcon>
           </Group>
