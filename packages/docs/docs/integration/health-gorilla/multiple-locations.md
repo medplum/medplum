@@ -8,27 +8,37 @@ This guide describes how to work with multiple locations in Health Gorilla. This
 
 ## Resource Overview
 
-The Medplum resources involved in multi-location lab ordering, and how they reference each other:
+The Medplum resources involved in multi-location lab ordering, and how they reference each other. In this example, each practitioner works at one location and orders from it:
 
 ```mermaid
-graph LR
-    Test["Child ServiceRequest<br>Test"]
-    Order["Parent ServiceRequest<br>Lab Order"]
-    Practitioner["Practitioner"]
-    LocA["Practice Location Organization<br>type: PRL<br>identifier: tl-..."]
-    LocB["Practice Location Organization<br>type: PRL<br>identifier: tl-..."]
-    Subtenant["Subtenant Organization<br>identifier: t-..."]
+graph TD
+    TestA["Child ServiceRequest<br>Test"]
+    TestB["Child ServiceRequest<br>Test"]
+    OrderA["Parent ServiceRequest<br>Lab Order A"]
+    OrderB["Parent ServiceRequest<br>Lab Order B"]
+    PracA["Practitioner A"]
+    PracB["Practitioner B"]
+    LocA["Practice Location A<br>Organization<br>type: PRL<br>identifier: tl-..."]
+    LocB["Practice Location B<br>Organization<br>type: PRL<br>identifier: tl-..."]
     Lab["Performing Lab Organization<br>e.g. Labcorp<br>identifier: f-..."]
+    Subtenant["Subtenant Organization<br>identifier: t-..."]
 
-    Test -->|basedOn| Order
-    Order -->|requester| Practitioner
-    Order -->|"authorizedBy<br>(requestingLocation)"| LocA
-    Order -->|performer| Lab
-    Practitioner -->|practitioner-location| LocA
-    Practitioner -->|practitioner-location| LocB
-    Practitioner -->|"account numbers<br>(AN identifier,<br>lab-org-account)"| Lab
+    TestA -->|basedOn| OrderA
+    TestB -->|basedOn| OrderB
+    OrderA -->|requester| PracA
+    OrderB -->|requester| PracB
+    OrderA -->|"authorizedBy<br>(requestingLocation)"| LocA
+    OrderB -->|"authorizedBy<br>(requestingLocation)"| LocB
+    PracA -->|practitioner-location| LocA
+    PracB -->|practitioner-location| LocB
+    OrderA -->|performer| Lab
+    OrderB -->|performer| Lab
+    PracA -->|"account numbers<br>(AN identifier,<br>lab-org-account)"| Lab
+    PracB -->|"account numbers<br>(AN identifier,<br>lab-org-account)"| Lab
     LocA -->|partOf| Subtenant
     LocB -->|partOf| Subtenant
+    LocA ~~~ Lab
+    LocB ~~~ Lab
 
     classDef org fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
     classDef location fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
@@ -37,8 +47,8 @@ graph LR
 
     class Subtenant,Lab org
     class LocA,LocB location
-    class Practitioner practitioner
-    class Order,Test order
+    class PracA,PracB practitioner
+    class OrderA,OrderB,TestA,TestB order
 ```
 
 - **Practice locations** are `Organization`s `partOf` the subtenant. Each gets its `tl-...` identifier from [`$health-gorilla-sync-location`](#creating-a-practice-location).
