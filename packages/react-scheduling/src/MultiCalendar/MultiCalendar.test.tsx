@@ -12,7 +12,7 @@ import {
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import type { MultiCalendarSource } from './MultiCalendar';
 import { MultiCalendar } from './MultiCalendar';
@@ -108,6 +108,53 @@ describe('MultiCalendar', () => {
     // A week says when a slot is by where it is drawn, so the line under its title names whose time it is.
     const blocked = screen.getByText(/Blocked/).closest<HTMLElement>('.event') as HTMLElement;
     expect(await within(blocked).findByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('draws a source marked not interactive without making its events clickable', async () => {
+    const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status: 'booked',
+      start: new Date(baseDate.getTime() + offsetMinutes * 60 * 1000).toISOString(),
+      end: new Date(baseDate.getTime() + (offsetMinutes + 30) * 60 * 1000).toISOString(),
+      participant: [{ actor: { reference: `Patient/${id}`, display }, status: 'accepted' }],
+    });
+    const sources: MultiCalendarSource[] = [
+      { appointments: [appointment('clickable', 'Homer Simpson', 0)], slots: [] },
+      { appointments: [appointment('inert', 'Jane Williams', 60)], slots: [], interactive: false },
+    ];
+    const onSelectAppointment = vi.fn();
+    renderWithMedplum(<MultiCalendar sources={sources} onSelectAppointment={onSelectAppointment} />, medplum);
+
+    expect(screen.getByText(/Homer Simpson/).closest('.event')).toHaveAttribute('role', 'button');
+    expect(screen.getByText(/Jane Williams/).closest('.event')).not.toHaveAttribute('role', 'button');
+
+    // FullCalendar still reports a click on an event it draws as not interactive.
+    await userEvent.click(screen.getByText(/Jane Williams/));
+    expect(onSelectAppointment).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByText(/Homer Simpson/));
+    expect(onSelectAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 'clickable' }), undefined);
+  });
+
+  test('marks the appointments of a draft source, and only those, as drafts', () => {
+    const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status: 'proposed',
+      start: new Date(baseDate.getTime() + offsetMinutes * 60 * 1000).toISOString(),
+      end: new Date(baseDate.getTime() + (offsetMinutes + 30) * 60 * 1000).toISOString(),
+      participant: [{ actor: { reference: `Patient/${id}`, display }, status: 'needs-action' }],
+    });
+    const sources: MultiCalendarSource[] = [
+      { appointments: [appointment('stored', 'Homer Simpson', 0)], slots: [] },
+      { appointments: [appointment('unsaved', 'Jane Williams', 60)], slots: [], draft: true, label: 'Draft' },
+    ];
+    renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
+
+    expect(screen.getByText(/Homer Simpson/).closest('.event')).not.toHaveClass('draft');
+    // Named by the source's label in place of its patient.
+    expect(screen.queryByText(/Jane Williams/)).not.toBeInTheDocument();
+    expect(screen.getByText('Draft').closest('.event')).toHaveClass('draft');
   });
 
   test('names everyone a slot holds time for, and gives its time when its schedule is unknown', async () => {

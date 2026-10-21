@@ -21,6 +21,8 @@ import { AppointmentPatientName } from './AppointmentPatientName';
 
 export interface AppointmentEventProps {
   readonly appointment: Appointment;
+  /** Shown in place of the patient's name. */
+  readonly label?: string;
   /** What FullCalendar hands its event content, to draw the event as it would. */
   readonly info: EventDisplayInfo;
 }
@@ -35,7 +37,7 @@ export interface AppointmentEventProps {
  * @returns The event's content.
  */
 export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
-  const { appointment, info } = props;
+  const { appointment, label, info } = props;
   const hasServiceType = !!partitionServiceTypes(appointment).visitType;
   // A time grid says when the visit is by where it is drawn, so there the line under the service
   // type names the patient; a month's row has room for the service type and its time alone.
@@ -53,9 +55,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
       onMouseLeave={() => setOpened(false)}
     >
       {inTimeGrid ? (
-        <div className={info.timeClass}>
-          <AppointmentPatientName appointment={appointment} />
-        </div>
+        <div className={info.timeClass}>{label ?? <AppointmentPatientName appointment={appointment} />}</div>
       ) : (
         info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
       )}
@@ -76,7 +76,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
           </Popover.Target>
           {/* A floor on the width so most cards come out the same size. */}
           <Popover.Dropdown miw={260}>
-            <AppointmentCard appointment={appointment} info={info} />
+            <AppointmentCard appointment={appointment} label={label} info={info} />
           </Popover.Dropdown>
         </Popover>
       )}
@@ -91,7 +91,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
  * @returns The card's content.
  */
 function AppointmentCard(props: AppointmentEventProps): JSX.Element {
-  const { appointment, info } = props;
+  const { appointment, label, info } = props;
   const primary = getPrimaryProvider(appointment);
   const { start, end } = info.event;
   const hasServiceType = !!partitionServiceTypes(appointment).visitType;
@@ -100,9 +100,7 @@ function AppointmentCard(props: AppointmentEventProps): JSX.Element {
   return (
     <Stack gap={4}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
-        <Text fw={500}>
-          <AppointmentPatientName appointment={appointment} />
-        </Text>
+        <Text fw={500}>{label ?? <AppointmentPatientName appointment={appointment} />}</Text>
         <AppointmentStatusBadge status={appointment.status} size="sm" />
       </Group>
       <Divider />

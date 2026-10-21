@@ -27,6 +27,7 @@ import headerDropdownClasses from './HeaderDropdown.module.css';
 import classes from './Navbar.module.css';
 import type { SpotlightLinkAction } from './Spotlight';
 import { Spotlight } from './Spotlight';
+import { userMenuMiddlewares } from './userMenuMiddlewares';
 
 export interface NavbarLink {
   readonly icon?: JSX.Element;
@@ -218,6 +219,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
               shadow="md"
               radius="md"
               position="top-start"
+              middlewares={userMenuMiddlewares}
               transitionProps={{ transition: 'fade-up' }}
               opened={userMenuOpened}
               onClose={() => setUserMenuOpened(false)}
