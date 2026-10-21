@@ -162,6 +162,11 @@ export interface CalendarBaseProps extends Omit<
   selection?: DateTimeRange;
   /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
   selectedId?: string;
+  /**
+   * An instant to bring on screen, such as the start of an appointment just booked: the
+   * calendar pages to its day and scrolls to its time whenever a different one is given.
+   */
+  revealTime?: Date;
   eventSources: FhirEventSource[];
 
   onRangeChange?: (range: DateTimeRange) => void;
@@ -190,6 +195,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     onSelectInterval,
     selection,
     selectedId,
+    revealTime,
     loading,
     ...fullCalendarProps
   } = props;
@@ -313,6 +319,18 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
       api.unselect();
     }
   }, [startMs, endMs]);
+
+  // Keyed on the instant for the same reason as the selection above.
+  const revealMs = revealTime?.getTime();
+  useEffect(() => {
+    const api = calendarRef.current?.getApi();
+    if (!api || revealMs === undefined) {
+      return;
+    }
+    const time = new Date(revealMs);
+    api.gotoDate(time);
+    api.scrollToTime({ hours: time.getHours(), minutes: time.getMinutes() });
+  }, [revealMs]);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>

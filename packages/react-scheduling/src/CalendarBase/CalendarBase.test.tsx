@@ -678,4 +678,18 @@ describe('CalendarBase', () => {
       expect(highlightedDays(container)).toEqual([3]);
     });
   });
+
+  describe('revealTime', () => {
+    test('pages to the week holding the time it is given', async () => {
+      const onRangeChange = vi.fn();
+      const { rerender } = setup({ eventSources: [], onRangeChange });
+      const threeWeeksOut = new Date(baseDate.getTime() + 21 * 24 * 60 * 60 * 1000);
+
+      rerender(<CalendarBase eventSources={[]} onRangeChange={onRangeChange} revealTime={threeWeeksOut} />);
+
+      const range = onRangeChange.mock.lastCall?.[0];
+      expect(range.start.getTime()).toBeLessThanOrEqual(threeWeeksOut.getTime());
+      expect(range.end.getTime()).toBeGreaterThan(threeWeeksOut.getTime());
+    });
+  });
 });

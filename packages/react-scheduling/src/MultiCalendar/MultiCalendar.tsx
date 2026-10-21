@@ -40,6 +40,8 @@ export interface MultiCalendarProps {
   onRangeChange?: (range: DateTimeRange) => void;
   selection?: DateTimeRange;
   selectedId?: string;
+  /** An instant to bring on screen: the calendar pages to its day and scrolls to its time when it changes. */
+  revealTime?: Date;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;

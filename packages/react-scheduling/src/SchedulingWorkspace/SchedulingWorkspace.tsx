@@ -129,6 +129,8 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ *   The new appointment then opens in the pane, selected on the calendar, which pages
+ *   to its day and scrolls to its time.
  * - Blocks time from the calendar: the same pane has a Block tab, writing a `busy` Slot
  *   over the time on each calendar the user names, reported through `onBlocked`.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
@@ -181,6 +183,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
   const [selectedSlotId, setSelectedSlotId] = useState<string>();
+  // Where the calendar was last sent: the start of the appointment just booked.
+  const [revealTime, setRevealTime] = useState<Date>();
 
   const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
 
@@ -346,14 +350,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
   }, []);
 
-  const finishBooking = useCallback(
-    (booking: AppointmentBooking): void | Promise<void> => {
-      closeBooking();
-      return onBooked?.(booking);
-    },
-    [closeBooking, onBooked]
-  );
-
   const finishBlock = useCallback(
     (slots: WithId<Slot>[]): void | Promise<void> => {
       closeBooking();
@@ -374,6 +370,20 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       }
     },
     [closeBooking, selectedAppointment?.id]
+  );
+
+  // Opens what was booked, the first visit of a recurring series, and brings it on screen,
+  // so it isn't lost on the calendar or in a week off screen.
+  const finishBooking = useCallback(
+    (booking: AppointmentBooking): void | Promise<void> => {
+      const [first] = booking.appointments;
+      selectAppointment(first);
+      if (first.start) {
+        setRevealTime(new Date(first.start));
+      }
+      return onBooked?.(booking);
+    },
+    [selectAppointment, onBooked]
   );
 
   const closeAppointment = useCallback((): void => {
@@ -475,6 +485,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectSlot={selectSlot}
           selection={blocking ? blockHighlight : bookingSelection}
           selectedId={openAppointment?.id ?? openSlot?.id}
+          revealTime={revealTime}
         />
         <div className={classes.footer}>
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
