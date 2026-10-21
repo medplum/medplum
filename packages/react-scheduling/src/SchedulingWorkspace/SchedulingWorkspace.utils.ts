@@ -92,6 +92,24 @@ export function formatWhen(period: { readonly start?: string; readonly end?: str
   return `${formatDayHeading(start)} · ${times}`;
 }
 
+/**
+ * Whether the appointment ended on a day before today, which closes it to changes.
+ *
+ * Days are the viewer's, the same ones `formatWhen` names.
+ *
+ * @param appointment - The appointment to check.
+ * @param now - The time to judge from.
+ * @returns True once local midnight has passed since it ended, or since it started when it has no end.
+ */
+export function isFromPreviousDay(appointment: Appointment, now = new Date()): boolean {
+  const last = appointment.end ?? appointment.start;
+  if (!last) {
+    return false;
+  }
+  const startOfToday = new Date(now).setHours(0, 0, 0, 0);
+  return new Date(last).getTime() <= startOfToday;
+}
+
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
 const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 

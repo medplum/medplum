@@ -19,7 +19,7 @@ import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
 import type { AppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
 import { readAppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
@@ -30,7 +30,7 @@ import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
-import { formatWhen, isCancelable, isReschedulable } from '../SchedulingWorkspace.utils';
+import { formatWhen, isCancelable, isFromPreviousDay, isReschedulable } from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
@@ -167,7 +167,8 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 /**
  * Shows a detail view of a single appointment
  *
- * Has sub-views for rescheduling and cancelling the appointment.
+ * Has sub-views for rescheduling and cancelling the appointment. One that ended on a day
+ * before today is shown read-only.
  *
  * @param props - The React props
  * @param props.appointment - The Appointment resource to detail
@@ -204,6 +205,17 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const medplum = useMedplum();
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<unknown>();
+  // Midnight can pass with a form open, so each render checks again.
+  const locked = isFromPreviousDay(appointment);
+  const editOpen = editing && !locked;
+  const cancelOpen = cancelling && !locked;
+  const rescheduleOpen = rescheduling && !locked;
+
+  useEffect(() => {
+    if (locked && rescheduling) {
+      onToggleTimeFinder?.(false);
+    }
+  }, [locked, rescheduling, onToggleTimeFinder]);
 
   const patientLine = (
     <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
@@ -266,7 +278,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     return onRescheduled?.(reschedule);
   }
 
-  if (cancelling) {
+  if (cancelOpen) {
     return (
       <Stack gap="sm" className={classes.details}>
         {patientLine}
@@ -285,7 +297,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     );
   }
 
-  if (rescheduling) {
+  if (rescheduleOpen) {
     return (
       <Stack gap="sm" className={classes.details}>
         <Group justify="space-between" wrap="nowrap">
@@ -322,7 +334,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   return (
     <Stack gap="sm" className={classes.details}>
       <AppointmentStatusBadge status={appointment.status} />
-      {!editing && patientLine}
+      {!editOpen && patientLine}
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
       <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
@@ -342,7 +354,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
-      {editing ? (
+      {editOpen ? (
         <AppointmentDetailsForm
           appointment={appointment}
           procedureBinding={procedureBinding}
@@ -370,11 +382,11 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           />
         </>
       )}
-      {!editing && (
+      {!editOpen && (
         <Stack gap="sm" className={classes.actions}>
           <Divider />
           {/* `$confirm` also accepts `proposed`, but only what `$hold` left `pending` is offered. */}
-          {appointment.status === 'pending' && (
+          {!locked && appointment.status === 'pending' && (
             <>
               {confirmError !== undefined && (
                 <Alert color="red" title="Could not confirm this appointment">
@@ -397,27 +409,35 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               View details
             </Button>
           )}
-          <Button variant="outline" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          {isReschedulable(appointment) && (
-            <Button
-              variant="outline"
-              leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
-              onClick={() => setRescheduling(true)}
-            >
-              Reschedule
-            </Button>
-          )}
-          <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
-            Cancel Appointment
-          </Button>
-          {!cancelable && (
+          {locked ? (
             <Text size="sm" c="dimmed">
-              {appointment.status === 'cancelled'
-                ? 'This appointment is cancelled.'
-                : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+              {"Appointments from a previous day can't be changed."}
             </Text>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+              {isReschedulable(appointment) && (
+                <Button
+                  variant="outline"
+                  leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
+                  onClick={() => setRescheduling(true)}
+                >
+                  Reschedule
+                </Button>
+              )}
+              <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
+                Cancel Appointment
+              </Button>
+              {!cancelable && (
+                <Text size="sm" c="dimmed">
+                  {appointment.status === 'cancelled'
+                    ? 'This appointment is cancelled.'
+                    : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+                </Text>
+              )}
+            </>
           )}
         </Stack>
       )}
