@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  extractServiceTypeReferences,
+  getAppointmentSite,
+  isDefined,
+  normalizeErrorString,
+  resolveId,
+} from '@medplum/core';
 import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -74,7 +80,8 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * @returns The form.
  */
 export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps): JSX.Element {
-  const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
+  const { appointment, onRescheduled, defaultStart, defaultServiceFacility, canBypassSchedulingRules, ...formProps } =
+    props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
 
@@ -179,6 +186,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         {...formProps}
         mode="reschedule"
         canBypassSchedulingRules={canBypassSchedulingRules}
+        defaultServiceFacility={defaultServiceFacility ?? getAppointmentSite(appointment)}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}

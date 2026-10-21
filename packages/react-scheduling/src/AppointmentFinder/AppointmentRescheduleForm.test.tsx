@@ -13,8 +13,10 @@ import {
   DrOkaforSchedule,
   DrRiveraSchedule,
   ExamRoomASchedule,
+  MainClinic,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
+  SatelliteClinic,
 } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
@@ -341,6 +343,22 @@ describe('AppointmentRescheduleForm', () => {
       expect(hasPill(/Ultrasound 1/)).toBe(true);
       expect(hasPill(/Exam Room A/)).toBe(true);
       expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
+    });
+
+    test('Opens on the service facility the visit is held at, unless the host names another', async () => {
+      const rendered = await setup(medplum);
+      expect(hasPill(MainClinic.name as string)).toBe(true);
+      rendered.unmount();
+
+      const unsited: WithId<Appointment> = { ...APPOINTMENT, id: 'appt-unsited', supportingInformation: undefined };
+      await medplum.createResource(unsited);
+      const unsitedRendered = await setup(medplum, { appointment: unsited });
+      expect(hasPill(MainClinic.name as string)).toBe(false);
+      unsitedRendered.unmount();
+
+      await setup(medplum, { defaultServiceFacility: SatelliteClinic });
+      expect(hasPill(SatelliteClinic.name as string)).toBe(true);
+      expect(hasPill(MainClinic.name as string)).toBe(false);
     });
 
     test('Names who a move would take off the visit, and still offers the move', async () => {
