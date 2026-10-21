@@ -1,0 +1,135 @@
+---
+slug: healthcare-business-models
+title: 'Healthcare Business Models: How Digital Health Companies Make Money (and How They Scale)'
+authors: maddyli
+tags: [community]
+keywords: ['value-based care', 'fee for service', 'digital health business model', 'RAF score', 'HCC coding', 'HEDIS', 'capitation']
+---
+
+# Healthcare Business Models: How Digital Health Companies Make Money (and How They Scale)
+
+When a company builds on Medplum, we spend a lot of time together on FHIR resources, workflows, and integrations. But some important design decisions are often downstream of a different question: _how does the business get paid?_ A pediatric SMS clinic, a value-based care provider for older adults, and a company billing Medicaid for in-home disability care all make different design decisions and prioritize development differently because they make money in fundamentally different ways.
+
+This post is a tour of the business models that show up across our customer base — fee-for-service versus value-based care, the role of Medicare and Medicaid, the metrics that drive payment in value-based care, and the way digital health companies tend to evolve as they scale. If you're building on Medplum, understanding where you sit on these spectrums helps you understand what you need to build.
+
+{/* truncate */}
+
+## Fee-for-Service vs. Value-Based Care
+
+The two poles of healthcare reimbursement are **fee-for-service (FFS)** and **value-based care (VBC)**.
+
+**Fee-for-service** is the traditional model, and it's what most people picture when they think about healthcare. A provider renders a service, submits a claim to the payer (the patient's insurance), and the payer approves or denies it. Payment comes _after_ the service. The common critique of FFS is that it rewards volume: because providers are paid per service, the incentive is to do more — sometimes ordering the extra MRI, or waiting for symptoms to progress to the point where a payer will agree to cover a treatment.
+
+**Value-based care** tries to correct for that. Instead of paying purely for volume, VBC ties reimbursement to the _quality_ of care delivered. The theory is that this rewards providers for keeping patients healthy — but it also shifts financial risk onto the provider.
+
+FFS and VBC aren't a binary. They're the ends of a spectrum, and providers tend to move along it one step at a time.
+
+## The Spectrum from FFS to Full Capitation
+
+| Model | How providers are paid | Provider risk |
+| --- | --- | --- |
+| **Fee-for-service** | A predetermined fee for each individual service rendered. | Low — pure volume. |
+| **Pay-for-performance** | Still FFS, plus a bonus or penalty based on quality metrics reported at the end of a period (e.g. a bonus if a share of patients complete a colon cancer screening). | Low–medium. |
+| **Shared risk / bundled payments** | A single lump sum for an episode of care (e.g. a knee surgery), later divided among the surgeon, anesthesiologist, PCP, and others involved. | Medium — rewards coordination. |
+| **Full capitation** | A fixed **per-member-per-month (PMPM)** payment for each patient, regardless of whether they're seen that month. | High — the provider absorbs the cost of care. |
+
+Under **full capitation**, the provider receives a set monthly payment per patient. If the patient never comes in, the provider keeps the difference; if the patient needs expensive care, the provider is on the hook. That raises the central question of value-based care: _how much should the monthly payment be for a given patient?_ An older patient with diabetes and complications is expected to cost far more than a young, healthy one. Getting that number right is what the metrics further down this post are all about.
+
+## Who Pays: Medicare and Medicaid
+
+Two of the largest players in U.S. healthcare — and in value-based care specifically — are Medicare and Medicaid. They're easy to confuse, so it's worth being precise.
+
+- **Medicare** is **federally funded and administered**, so it's consistent across states. Eligibility is for people 65 and older, plus some people with disabilities, and it's **not** means-tested — income doesn't matter. If you qualify in one state, you qualify in all of them.
+- **Medicaid** is **state-administered** with partial federal funding and federal guidelines. It's generally for people with lower income, and because states set the eligibility tests, it **varies state to state**. Someone can qualify in one state and not another.
+
+The federal government shapes Medicaid through the money it sends states — both mandates ("if you take this funding, you must do X") and incentives ("we'll give you more if you cover Y"). It's a carrot-and-stick relationship, which is part of why Medicaid looks different depending on where you are.
+
+It's also possible to qualify for **both** ("dual eligible"). In that case Medicare is generally the primary payer, and Medicaid covers what Medicare doesn't.
+
+Medicare itself has several parts, which trips people up because they don't map cleanly onto one dimension:
+
+| Part | Covers |
+| --- | --- |
+| **Part A** | Hospital / inpatient care (traditional Medicare, paid directly by the government). |
+| **Part B** | Medical / outpatient care (traditional Medicare, paid directly by the government). |
+| **Part C (Medicare Advantage)** | The government partners with private insurers, who administer Parts A, B, and D under Medicare's guidelines. |
+| **Part D** | Prescription drugs (optional, often private). |
+| **Medigap** | Optional private supplemental insurance to help cover out-of-pocket costs under original Medicare. |
+
+**Medicare Advantage (Part C)** is especially relevant below: it's where the government pays a private insurer to take on a patient, and the size of that payment is driven by how sick the patient is expected to be.
+
+:::note Why this matters for builders on Medplum
+
+Our customers target these payers based on who they serve. A company serving older adults may lean toward Medicare; a company providing in-home care for children with disabilities may bill Medicaid; a company serving a general audience may bill commercial insurance via FFS or charge patients directly (what we call **direct consumer payment**). Which payer you target changes what you need to build — eligibility checks, claim formats, reporting obligations, and more.
+
+:::
+
+## Baselining and Metrics: HEDIS, RAF, and HCC Coding
+
+If value-based care pays you based on quality and risk, then _measuring_ quality and risk becomes the whole game. Two acronyms do most of the work here.
+
+### HEDIS — measuring quality
+
+**HEDIS** (Healthcare Effectiveness Data and Information Set) is a set of benchmarks, maintained by the nonprofit NCQA, that carriers use to assess care delivery and highlight gaps. Most HEDIS measures take the form of a **denominator and a numerator**: _of all patients with diabetes (denominator), how many got a blood sugar test (numerator)?_ The government and NCQA publish detailed rules about who's included and excluded.
+
+A lot of HEDIS activity is really the government trying to enforce a floor of basic preventive care. One Medicare program, for example, penalizes hospitals with unusually high rates of hospital-acquired conditions (think infections you'd typically only get from a hospital stay) — effectively nudging facilities toward better hygiene practices. These penalties and bonuses can stack: a provider participating in multiple programs can see a meaningful share of its annual payments at stake.
+
+Reporting is still early-stage. Many providers — especially those taking Medicare or Medicaid money — are required to report, and some private insurers pay bonuses just for reporting. But plenty of providers don't report at all, often because their data isn't in one place yet, or their systems can't produce it. A surprising amount of the industry is still working on the basic muscle of _capturing the data in the first place_.
+
+### RAF and HCC — measuring risk
+
+The **Risk Adjustment Factor (RAF) score** is the one CMS (the Centers for Medicare and Medicaid Services) actually uses to set payments — notably the premiums paid to Medicare Advantage (Part C) plans. The RAF model is a linear calculation, published annually by CMS (famously written in SAS), that combines a patient's **demographic profile** and **disease profile** into a single risk score. A higher score means a higher expected cost, and therefore a higher payment.
+
+The disease side of that calculation runs on **HCC (Hierarchical Condition Category) codes**. One HCC code maps to many ICD-10 codes. Diabetes is a good example: there are roughly 70–80 ICD-10 codes for diabetes, but HCC compresses them into a handful of categories — diabetes _without_ complications, _with acute_ complications, and _with chronic_ complications. Those categories carry different weights, because a patient with chronic complications is likely to interact with the system far more often than one without.
+
+### Why coding is existential in VBC
+
+Here's where it gets concrete. Consider the same patient, coded two ways:
+
+| Scenario | Conditions captured as HCC codes | RAF score | Approx. PMPM payment |
+| --- | --- | --- | --- |
+| **Incorrectly coded** | Conditions present but not coded → HCC weight counts as zero | Lower | ~$750 |
+| **Correctly coded** | Same conditions, captured with the right HCC codes | Higher | ~$2,680 |
+
+Same patient, same illnesses — but if the conditions aren't coded, their HCC weight is zero, the RAF score drops, and the monthly payment can be roughly a third of what it should be. Now imagine mis-coding a meaningful share of your population: those patients still use your services at their true acuity, but you've locked in payments based on a healthier population than you actually have, with no way to recoup the difference.
+
+That gap doesn't usually come from anything exotic. A clinician writes a note without entering a code; nobody circles back to add it; or the diagnosis happened at a _different_ facility entirely — an amputation at the VA, say, while you're treating the patient for diabetes — and the record never made it into your system. This is exactly why value-based care customers work so hard to aggregate data from many sources into the richest possible patient history: in a VBC model, a diagnosis buried in an outside record can be the difference between a $750 and a $2,680 payment.
+
+:::tip For Builders on Medplum
+
+When you move toward value-based care, **data completeness stops being a nice-to-have and becomes revenue.** Rich patient history, de-duplicated and aggregated across sources ([patient deduplication](/docs/fhir-datastore/patient-deduplication)), accurate coding, and reliable reporting are the infrastructure that makes VBC work. If you're capitated and your records are incomplete, you're leaving money on the table on every member, every month.
+
+:::
+
+## How Digital Health Companies Evolve as They Scale
+
+:::note A specific subset of business models
+
+Many of the companies we work with are digital health companies, and the ladder below is how we generally see _that_ subset grow. It isn't universal — a hospital system, a lab, or a life sciences company follows a different path — but if you're a venture-backed digital health company, you'll probably recognize some of these rungs.
+
+:::
+
+Zoom out from any single payment model and a pattern emerges in how digital health companies tend to grow. It's anecdotal — not a law of nature — but we see it again and again. As patient volume grows, companies climb a ladder:
+
+**1. Direct consumer payments.** Early on, patient volume is low. Billing insurance at that stage usually means out-of-network rates, unpredictable reimbursement, and the risk of hitting early customers with surprise bills. So many companies simply charge patients directly and keep insurance out of it.
+
+**2. Fee-for-service.** With more volume, a company can negotiate in-network rates directly with payers, and the administrative cost of dealing with insurance — submitting claims, working denials, managing the revenue cycle — gets amortized across more patients. (This is why an entire category of [revenue cycle management (RCM)](/docs/decision-guides/rcm-billing) software exists.) At this point companies start billing insurance themselves.
+
+**3. Employee benefits managers.** Larger still, and a company can sell to the benefits managers at big employers — contracting once to bring on many patients at a time. (If you've ever gotten a free One Medical membership through work, that's this model.) Roughly **half of the U.S. population is insured through an employer**, so employers have real incentives to keep premiums down and to offer wellness-oriented services that keep their workforce healthy.
+
+**4. Self-insured employers.** Very large employers can **self-insure** — Walmart is the classic example. Instead of partnering with an insurer, the employer pays for employees' care directly, with the financial risk spread across a huge population. Self-insured employers are often especially receptive to wellness and digital health services, because improving employee health directly lowers the claims they'll pay later.
+
+**5. Payers and government programs.** The top of the ladder. Once a company has proven its model at scale — "patients on our platform walk more and develop less diabetes" — it can go straight to the insurers and government programs that are ultimately on the hook for those costs. A payer might resell your product to its entire member population, or even cover a device or app because it prevents costlier claims down the line. (Payers have paid for everything from smartwatches to meditation apps to _rides to the doctor_, because a chauffeured annual physical is cheaper than the complication it prevents.)
+
+Two threads run underneath this ladder. One is **control over your own economics**: a company that employs its own physicians — or owns its own pharmacy — has more say over what it charges, and can often get a prescribed drug or a piece of durable medical equipment (DME) covered by insurance even when the _visit_ itself isn't in-network. The other is **urgency**: for a VC-backed company, climbing to the next rung is often an existential race, run with one eye on the roadmap and one eye on the runway. Getting a new CPT code recognized, or qualifying to bill Medicaid, is frequently the unlock that lets a company move up — and it's why so many of our customers treat these milestones as make-or-break.
+
+## What This Means for Building on Medplum
+
+Every rung on that ladder raises the bar on infrastructure, and it maps directly onto what we invest in:
+
+- **Scale.** Climbing the ladder means orders of magnitude more patients — some of our customers operate at more than a million. The platform has to handle that patient volume without the data layer becoming the bottleneck, which is why performance and scalability sit at the center of our [roadmap](/blog/2025-roadmap).
+- **Interoperability and data aggregation.** Value-based care lives or dies on complete patient histories pulled from many sources. Our work on [patient deduplication](/docs/fhir-datastore/patient-deduplication), integrations, and interoperability exists to make that history as rich as possible.
+- **Billing and RCM.** Moving from direct payment to fee-for-service means claims, denials, and [revenue cycle management](/docs/billing) — infrastructure a company doesn't need on day one but can't scale without.
+- **Reporting.** HEDIS reporting and accurate HCC coding depend on having clean, structured, queryable data in one place — the thing a FHIR-native data store is built to provide.
+
+The through-line is that your business model isn't a detail to hand off to the billing team — it determines what you build, in what order, and when. The clearer you are about where you sit on these spectrums and where you're trying to go next, the easier it is to decide what to build now versus what can wait. And it's exactly the problem we're building Medplum to grow with you on, at every rung of the ladder.
