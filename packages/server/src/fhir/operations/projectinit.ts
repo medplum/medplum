@@ -264,11 +264,9 @@ async function createAdminAccessPolicy(
 }
 
 /**
- * Resource types that non-admin Practitioners can read but not edit.
- *
- * The first group is knowledge, terminology, and conformance data managed at the project level.
- * The second group is security-sensitive configuration. Bot stays readable, which is all
- * `Bot/$execute` checks. `Bot/$deploy` also updates the Bot, so it is denied.
+ * Resource types that non-admin Practitioners can read but not edit. These are curated knowledge,
+ * terminology, and conformance resources typically managed at the project/admin level rather than
+ * by front-line users.
  */
 export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'MedicationKnowledge',
@@ -278,11 +276,6 @@ export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'ValueSet',
   'StructureDefinition',
   'CodeSystem',
-  'AccessPolicy',
-  'Bot',
-  'ClientApplication',
-  'Subscription',
-  'UserConfiguration',
 ];
 
 async function createPractitionerAccessPolicy(
@@ -307,13 +300,6 @@ async function createPractitionerAccessPolicy(
     meta: { project: projectId },
     name,
     resource: [
-      // Must precede the `*` entry. satisfiedAccessPolicy uses the first match, so a later
-      // ClientApplication entry would never supply these hidden fields.
-      {
-        resourceType: 'ClientApplication',
-        readonly: true,
-        hiddenFields: ['secret', 'retiringSecret'],
-      },
       { resourceType: '*', readonly: true },
       ...writableResourceTypes.map((resourceType) => ({ resourceType })),
     ],
