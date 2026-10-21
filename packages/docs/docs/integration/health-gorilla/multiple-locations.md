@@ -119,32 +119,7 @@ curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/\$health-gorilla-sync
 
 Each lab order is placed from one practice location. Health Gorilla uses that location's address, phone, and fax in the header of the order requisition (eReq) sent to the lab, and its address for the ordering physician on the result report. Set the location explicitly on every order. Otherwise, Health Gorilla chooses one for you (see [If No Location Is Specified](#if-no-location-is-specified)).
 
-The location is stored as the `https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy` extension on the **parent** lab order `ServiceRequest`, the one with the `MedplumHealthGorillaOrder` profile. Child test `ServiceRequest`s do not need it. The extension references the Medplum practice-location `Organization` (or a `Location`) that carries the Health Gorilla `tl-...` identifier:
-
-```js
-{
-  "resourceType": "ServiceRequest",
-  "meta": {
-    "profile": ["https://medplum.com/profiles/integrations/health-gorilla/StructureDefinition/MedplumHealthGorillaOrder"]
-  },
-  "extension": [
-    {
-      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy",
-      "valueReference": { "reference": "Organization/{practice-location-id}" } // Medplum practice-location Organization
-    }
-  ],
-  "status": "draft",
-  "intent": "order",
-  "requester": { "reference": "Practitioner/{practitioner-id}" }
-  // ...
-}
-```
-
-When the order is sent, the `send-to-health-gorilla` bot reads the referenced resource's Health Gorilla identifier and sends it to Health Gorilla as the order's `authorizedBy` ([Health Gorilla docs](https://developer.healthgorilla.com/docs/diagnostic-network#requestgroup---authorizedby)).
-
-### Setting the Location
-
-If you use the [`useHealthGorillaLabOrder`](./sending-orders.md#creating-an-order-form-in-react) hook, pass `requestingLocation` and `createOrderBundle()` adds the extension for you:
+Pass the location as `requestingLocation` to the [`useHealthGorillaLabOrder`](./sending-orders.md#creating-an-order-form-in-react) hook. It takes the Medplum practice-location `Organization` (or a `Location`), or a reference to it:
 
 ```tsx
 const labOrderReturn = useHealthGorillaLabOrder({
@@ -154,7 +129,7 @@ const labOrderReturn = useHealthGorillaLabOrder({
 });
 ```
 
-`createLabOrderBundle()` from `@medplum/health-gorilla-core` accepts the same `requestingLocation` option. If you build the order resources yourself, add the extension to the parent `ServiceRequest` before calling `$health-gorilla-send`. Once the order is `active`, its location cannot be changed.
+`createOrderBundle()` records the location on the order, and the `send-to-health-gorilla` bot sends that location's Health Gorilla ID as the order's `authorizedBy` ([Health Gorilla docs](https://developer.healthgorilla.com/docs/diagnostic-network#requestgroup---authorizedby)). `createLabOrderBundle()` from `@medplum/health-gorilla-core` accepts the same `requestingLocation` option. If you create lab orders without these helpers, set the `https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy` extension (a reference to the location) on the parent order `ServiceRequest` before calling `$health-gorilla-send`. Once the order is `active`, its location cannot be changed.
 
 ### Requirements
 
@@ -164,7 +139,7 @@ const labOrderReturn = useHealthGorillaLabOrder({
 
 ### If No Location Is Specified
 
-If the parent `ServiceRequest` does not have the extension, the bot sends the Health Gorilla tenant as `authorizedBy`, and Health Gorilla resolves it to a location itself:
+If no location is set on the order, the bot sends the Health Gorilla tenant as `authorizedBy`, and Health Gorilla resolves it to a location itself:
 
 | Practitioner's enrolled locations | Location used on the order                                                                                                                                                               |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
