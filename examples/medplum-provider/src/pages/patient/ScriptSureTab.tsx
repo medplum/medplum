@@ -41,7 +41,7 @@ export function ScriptSureTab(): JSX.Element {
     },
     onError: (err) => {
       setFailed(true);
-      showNotification({ color: 'red', title: 'Error', message: getErrorMessage(err) });
+      showNotification({ color: 'red', title: 'Error', message: getErrorMessage(err), autoClose: false });
     },
   });
 

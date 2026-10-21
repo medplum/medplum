@@ -18,7 +18,8 @@ export function ScriptSurePage(): JSX.Element {
         title: 'Successfully connected to ScriptSure',
         message: '',
       }),
-    onError: (err) => showNotification({ color: 'red', title: 'Error', message: getErrorMessage(err) }),
+    onError: (err) =>
+      showNotification({ color: 'red', title: 'Error', message: getErrorMessage(err), autoClose: false }),
   });
 
   // The bot returns a UI-agnostic URL; the app appends `darkmode=on|off` once
