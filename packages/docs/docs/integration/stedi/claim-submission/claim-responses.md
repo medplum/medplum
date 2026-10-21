@@ -71,22 +71,24 @@ Each stored `DocumentReference` carries these identifiers:
 
 ## ClaimResponse linking
 
-The submit-claim bot stamps the **patient control number** (X12 CLM01) onto the `Claim` as an identifier with system `https://www.stedi.com/patient-control-number`. The payer echoes that same value back on the 277/835, so the claim-response flow can correlate an inbound report to the originating `Claim` and its `ClaimResponse`.
+The submit-claim bot stamps the **patient control number** (X12 CLM01) onto the `Claim` as an identifier with system `https://www.stedi.com/patient-control-number`. The payer echoes that same value back on the 277/835, so the claim-response flow can correlate an inbound report to the originating `Claim` and its active `ClaimResponse` (matching the control number's original, lowercase, and uppercase variants).
 
-When a match is found, a flat extension is added to the `ClaimResponse` referencing the stored report `DocumentReference`:
+When a unique `Claim` and a single active `ClaimResponse` match, the processor updates extensions on the `ClaimResponse`:
 
-| Transaction | Extension URL on `ClaimResponse` |
-|-------------|----------------------------------|
-| 277 | `https://www.stedi.com/fhir/StructureDefinition/claim-response-277-report` |
-| 835 | `https://www.stedi.com/fhir/StructureDefinition/claim-response-835-report` |
+| Extension URL on `ClaimResponse` | Behavior |
+|----------------------------------|----------|
+| `https://www.stedi.com/fhir/StructureDefinition/claim-response-277-report` | Appended once per distinct 277 `DocumentReference` (deduplicated by document ID). Collect all 277 links with `.filter()` rather than `.find()`; array order is insertion order, not payer chronology |
+| `https://www.stedi.com/fhir/StructureDefinition/claim-response-835-report` | Replaced with a reference to the latest 835 `DocumentReference` |
+| `https://medplum.com/fhir/StructureDefinition/source-claim-status` | `valueCodeableConcept` recording the extracted X12 claim status (277 STC01 category and status codes, or 835 CLP02 claim status code) when present on newly ingested reports |
 
-Linking is **best-effort**: if the control number, `Claim`, or `ClaimResponse` cannot be found, the report is still stored in full as a `DocumentReference` — no data is lost. A single claim per transaction is assumed (only the first control number found in a report is correlated), which matches how claims are submitted (one `Claim` per Stedi transaction).
+Linking is **best-effort**: if the control number, a unique `Claim`, or a single active `ClaimResponse` cannot be found, the report is still stored in full as a `DocumentReference` — no data is lost. A single claim per transaction is assumed (only the first control number found in a report is correlated), which matches how claims are submitted (one `Claim` per Stedi transaction).
 
-## Idempotency
+## Idempotency and recovery
 
-Processing is idempotent on the Stedi **inbound `transactionId`** (not the webhook `event.id`). Before fetching a report, the flow checks whether a `DocumentReference` already exists with identifier `https://www.stedi.com/transactions/inbound|<transactionId>`; if so, the transaction is skipped.
+Processing is keyed on the Stedi **inbound `transactionId`** (`https://www.stedi.com/transactions/inbound|<transactionId>`), not the webhook `event.id`, so webhook and poller runs can safely overlap and replays with a new `event.id` are deduplicated:
 
-This makes it safe for the webhook and the poller to overlap — re-processing the same transaction is a no-op — and safely ignores webhook replays delivered with a new `event.id`.
+- **277 reports** use conditional `DocumentReference` creation and version-checked `ClaimResponse` updates (retrying up to three times on version conflicts). If an earlier execution was interrupted, replaying the transaction finishes attachment storage, appends the 277 link if missing, and initializes `source-claim-status` only when the current `ClaimResponse` has no existing `source-claim-status` extension, no 835 link, and no other or unresolvable 277 report links. Replay never replaces an existing `source-claim-status` extension; responses with competing or ambiguous report history leave missing status unchanged for manual review while still recovering a missing link. Adding a missing link or initializing a missing `source-claim-status` updates the `ClaimResponse` (and can trigger matching update subscriptions); once linked with no eligible status recovery remaining, further replays perform no `ClaimResponse` write and return `skipped`.
+- **835 reports** check whether a `DocumentReference` already exists for the inbound `transactionId` before fetching; if so, the transaction is skipped immediately.
 
 ## Setting up webhooks
 
@@ -227,8 +229,8 @@ The operation returns a summary of the run:
 |-------|---------|
 | `since` | Start of the poll window (the previous checkpoint) |
 | `checkpoint` | New checkpoint timestamp, captured **before** fetching so transactions arriving mid-run are not skipped next time |
-| `processedCount` | Inbound 277/835 transactions newly stored on this run |
-| `skippedCount` | Transactions skipped (already processed, or not inbound 277/835) |
+| `processedCount` | Inbound 277/835 transactions newly stored on this run, plus stored 277 transactions whose replay recovered a missing `ClaimResponse` link or missing `source-claim-status` |
+| `skippedCount` | Inbound 277/835 transactions skipped because they were already processed with no `ClaimResponse` update needed |
 
 ### Checkpoint
 
