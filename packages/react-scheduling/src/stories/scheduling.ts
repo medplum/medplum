@@ -23,6 +23,7 @@ import {
   setScheduleSchedulingParameter,
   SNOMED,
   TimezoneExtensionURI,
+  toAppointmentSiteReference,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -1220,6 +1221,7 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   end: '2020-05-05T17:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   slot: RiveraImagingHeldSlots.map(createReference),
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(MilesCooperPatient) },
@@ -1276,6 +1278,7 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
     createReference(DrOkaforPractitioner)
   ),
   slot: OkaforImagingHeldSlots.map(createReference),
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
 };
 
 /** Open availability outside the booked visits, on the pinned "today." */
@@ -1408,6 +1411,7 @@ export const MondayImagingAppointment: WithId<Appointment> = {
   end: mondayMorningAt(9, 30),
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   slot: MondayImagingHeldSlots.map(createReference),
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: { reference: 'Patient/pt-patel', display: 'Anika Patel' } },

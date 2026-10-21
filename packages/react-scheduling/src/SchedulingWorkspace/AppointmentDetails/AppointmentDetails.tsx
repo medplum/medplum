@@ -4,6 +4,7 @@ import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core
 import type { WithId } from '@medplum/core';
 import {
   formatCodeableConcept,
+  getAppointmentSite,
   getExtension,
   getExtensionValue,
   normalizeErrorString,
@@ -314,6 +315,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
   const externalUrl = getExternalUrl(appointment);
+  const site = getAppointmentSite(appointment);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
@@ -337,6 +339,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             : undefined
         }
       />
+      <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
       {editing ? (
