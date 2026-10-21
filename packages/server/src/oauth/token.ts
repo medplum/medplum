@@ -34,6 +34,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import { AUTH_CODE_EXPIRATION_MS } from '../constants';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getInactiveReason } from '../fhir/projectmembership';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -254,6 +255,12 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
 
   if (login.revoked) {
     sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
+
+  const issuedAt = Date.parse(login.meta?.lastUpdated ?? '');
+  if (!Number.isFinite(issuedAt) || Date.now() - issuedAt >= AUTH_CODE_EXPIRATION_MS) {
+    sendTokenError(res, 'invalid_grant', 'Authorization code expired');
     return;
   }
 
