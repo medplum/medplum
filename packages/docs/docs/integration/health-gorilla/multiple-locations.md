@@ -166,9 +166,9 @@ const labOrderReturn = useHealthGorillaLabOrder({
 
 If the parent `ServiceRequest` does not have the extension, the bot sends the Health Gorilla tenant as `authorizedBy`, and Health Gorilla resolves it to a location itself:
 
-| Practitioner's enrolled locations | Location used on the order                                                                 |
-| --------------------------------- | ------------------------------------------------------------------------------------------ |
-| Exactly one                       | That location                                                                              |
-| More than one, or all locations   | The subtenant practice itself, with the practice's main contact details on the requisition |
+| Practitioner's enrolled locations | Location used on the order                                                                                                                                                               |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exactly one                       | That location                                                                                                                                                                            |
+| More than one, or all locations   | The subtenant practice itself. The requisition shows the contact details of the first location listed for the practice in Health Gorilla, even if the practitioner is not enrolled there |
 
-When a practitioner works at more than one location, an order without a location can therefore show another location's address, phone, or fax on the requisition. To avoid this, always set the location on orders from multi-location practices.
+When a practitioner works at more than one location, an order without a location can therefore show an unrelated location's address, phone, or fax on the requisition. To avoid this, always set the location on orders from multi-location practices.
