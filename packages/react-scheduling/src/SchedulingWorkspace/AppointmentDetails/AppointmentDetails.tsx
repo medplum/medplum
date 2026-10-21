@@ -30,7 +30,7 @@ import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
-import { formatWhen, isCancelable, isFromPreviousDay, isReschedulable } from '../SchedulingWorkspace.utils';
+import { formatWhen, isCancelable, isPastEditWindow, isReschedulable } from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
@@ -167,8 +167,8 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 /**
  * Shows a detail view of a single appointment
  *
- * Has sub-views for rescheduling and cancelling the appointment. One that ended on a day
- * before today is shown read-only.
+ * Has sub-views for rescheduling and cancelling the appointment. One that ended more than
+ * 12 hours ago is shown read-only.
  *
  * @param props - The React props
  * @param props.appointment - The Appointment resource to detail
@@ -205,8 +205,8 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const medplum = useMedplum();
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<unknown>();
-  // Midnight can pass with a form open, so each render checks again.
-  const locked = isFromPreviousDay(appointment);
+  // The cutoff can pass with a form open, so each render checks again.
+  const locked = isPastEditWindow(appointment);
   const editOpen = editing && !locked;
   const cancelOpen = cancelling && !locked;
   const rescheduleOpen = rescheduling && !locked;
@@ -411,7 +411,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           )}
           {locked ? (
             <Text size="sm" c="dimmed">
-              {"Appointments from a previous day can't be changed."}
+              {"Appointments that ended more than 12 hours ago can't be changed."}
             </Text>
           ) : (
             <>

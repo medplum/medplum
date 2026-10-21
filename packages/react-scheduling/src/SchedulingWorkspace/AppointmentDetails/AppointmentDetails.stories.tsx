@@ -236,12 +236,12 @@ export const ExternalLink = (): JSX.Element => (
 );
 
 /**
- * A visit from a day before today, which can no longer be changed. Only the link to it
- * in the external system is left.
+ * A visit that ended more than 12 hours ago, which can no longer be changed. Only the link
+ * to it in the external system is left.
  *
  * @returns The story.
  */
-export const PreviousDay = (): JSX.Element => (
+export const PastEditWindow = (): JSX.Element => (
   <Paper withBorder p="md" maw={320}>
     <AppointmentDetails
       appointment={{ ...ExternalAppointment, start: '2020-05-01T14:00:00Z', end: '2020-05-01T15:00:00Z' }}

@@ -92,22 +92,21 @@ export function formatWhen(period: { readonly start?: string; readonly end?: str
   return `${formatDayHeading(start)} · ${times}`;
 }
 
+/** How long after an appointment ends it can still be changed. */
+const EDIT_WINDOW_MS = 12 * 60 * 60 * 1000;
+
 /**
- * Whether the appointment ended on a day before today, which closes it to changes.
- *
- * Days are the viewer's, the same ones `formatWhen` names.
- *
+ * Whether the appointment ended long enough ago that it is closed to changes.
  * @param appointment - The appointment to check.
  * @param now - The time to judge from.
- * @returns True once local midnight has passed since it ended, or since it started when it has no end.
+ * @returns True once 12 hours have passed since it ended, or since it started when it has no end.
  */
-export function isFromPreviousDay(appointment: Appointment, now = new Date()): boolean {
+export function isPastEditWindow(appointment: Appointment, now = new Date()): boolean {
   const last = appointment.end ?? appointment.start;
   if (!last) {
     return false;
   }
-  const startOfToday = new Date(now).setHours(0, 0, 0, 0);
-  return new Date(last).getTime() <= startOfToday;
+  return now.getTime() - new Date(last).getTime() >= EDIT_WINDOW_MS;
 }
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */

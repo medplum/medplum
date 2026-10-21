@@ -157,7 +157,7 @@ let restoreConfirm: () => void;
 let restoreValueSet: () => void;
 
 beforeEach(async () => {
-  // On the day of the visits, which closes to changes once that day is over.
+  // At the visits themselves, well inside the 12 hours they stay open to changes.
   vi.setSystemTime(new Date(BOOKED_APPOINTMENT.start as string));
   medplum = new MockClient();
   await medplum.createResource(SERVICE);
@@ -650,25 +650,24 @@ describe('AppointmentDetails', () => {
   });
 });
 
-describe('AppointmentDetails from a previous day', () => {
-  // Two days on, so the visit is a day behind in any timezone the tests run in.
-  const TWO_DAYS_LATER = new Date(2020, 4, 7, 9);
+describe('AppointmentDetails more than 12 hours after it ended', () => {
+  const LATER = new Date('2020-05-06T06:00:00Z');
 
   test('offers nothing but the link to the visit', async () => {
-    vi.setSystemTime(TWO_DAYS_LATER);
+    vi.setSystemTime(LATER);
     const url = 'https://foomedical.com/appointments?mrn=123';
     renderDetails({ ...PENDING_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
     await screen.findByText('Miles Cooper');
 
     expect(screen.getByRole('link', { name: 'View details' })).toHaveAttribute('href', url);
-    expect(screen.getByText("Appointments from a previous day can't be changed.")).toBeInTheDocument();
+    expect(screen.getByText("Appointments that ended more than 12 hours ago can't be changed.")).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(rescheduleButton()).not.toBeInTheDocument();
     expect(cancelButton()).not.toBeInTheDocument();
   });
 
-  test('closes a reschedule left open past midnight, and takes back its room', async () => {
+  test('closes a reschedule left open past the cutoff, and takes back its room', async () => {
     const onToggleTimeFinder = vi.fn();
     const details = (): JSX.Element => (
       <AppointmentDetails appointment={BOOKED_APPOINTMENT} onToggleTimeFinder={onToggleTimeFinder} />
@@ -677,10 +676,12 @@ describe('AppointmentDetails from a previous day', () => {
     await userEvent.click(rescheduleButton() as HTMLElement);
     expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
 
-    vi.setSystemTime(TWO_DAYS_LATER);
+    vi.setSystemTime(LATER);
     rerender(details());
 
-    expect(await screen.findByText("Appointments from a previous day can't be changed.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Appointments that ended more than 12 hours ago can't be changed.")
+    ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Reschedule appointment' })).not.toBeInTheDocument();
     expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
   });
