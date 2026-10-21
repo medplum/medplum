@@ -6,6 +6,45 @@ sidebar_position: 4
 
 This guide describes how to work with multiple locations in Health Gorilla. This is especially relevant for Management Services Organizations (MSOs) or practices with multiple clinic locations where different practitioners are assigned to different locations.
 
+## Resource Overview
+
+The Medplum resources involved in multi-location lab ordering, and how they reference each other:
+
+```mermaid
+graph LR
+    Test["Child ServiceRequest<br>Test"]
+    Order["Parent ServiceRequest<br>Lab Order"]
+    Practitioner["Practitioner"]
+    LocA["Practice Location Organization<br>type: PRL<br>identifier: tl-..."]
+    LocB["Practice Location Organization<br>type: PRL<br>identifier: tl-..."]
+    Subtenant["Subtenant Organization<br>identifier: t-..."]
+    Lab["Performing Lab Organization<br>e.g. Labcorp<br>identifier: f-..."]
+
+    Test -->|basedOn| Order
+    Order -->|requester| Practitioner
+    Order -->|"authorizedBy<br>(requestingLocation)"| LocA
+    Order -->|performer| Lab
+    Practitioner -->|practitioner-location| LocA
+    Practitioner -->|practitioner-location| LocB
+    Practitioner -->|"account numbers<br>(AN identifier,<br>lab-org-account)"| Lab
+    LocA -->|partOf| Subtenant
+    LocB -->|partOf| Subtenant
+
+    classDef org fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
+    classDef location fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
+    classDef practitioner fill:#D4BCF2,stroke:#333,stroke-width:2px
+    classDef order fill:#A5D6A7,stroke:#333,stroke-width:2px
+
+    class Subtenant,Lab org
+    class LocA,LocB location
+    class Practitioner practitioner
+    class Order,Test order
+```
+
+- **Practice locations** are `Organization`s `partOf` the subtenant. Each gets its `tl-...` identifier from [`$health-gorilla-sync-location`](#creating-a-practice-location).
+- **Practitioners** are linked to the locations they work at, and carry their lab account numbers per lab (see [Lab Account Numbers](./sending-orders.md#lab-account-numbers)).
+- **Each lab order** references its practitioner and lab, and the one location it is placed from (see [Specifying the Order's Location](#specifying-the-orders-location)).
+
 ## Medplum Data Model
 
 To support multiple locations, you will use `Organization` resources in Medplum to represent both the subtenant and the individual practice locations.
