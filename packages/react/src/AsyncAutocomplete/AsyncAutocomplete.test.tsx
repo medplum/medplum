@@ -596,5 +596,20 @@ describe('AsyncAutocomplete', () => {
       rerender(<AsyncAutocomplete<TestOption> {...props} value={null} />);
       expect(screen.getByRole('searchbox')).toHaveValue('');
     });
+
+    test('drops a search still pending when value fills the last slot', async () => {
+      const props = { maxValues: 1, toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      await act(async () => {
+        fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'an' } });
+      });
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={apple} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(screen.queryByText('Banana')).not.toBeInTheDocument();
+    });
   });
 });

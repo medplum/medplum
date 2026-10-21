@@ -27,6 +27,7 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   /**
    * The selected items. Passing this (`null` or `[]` for none) makes the component controlled: user
    * edits only call `onChange`. Switching between controlled and uncontrolled after mount is not supported.
+   * Don't pass it with `maxValues={0}`.
    */
   readonly value?: T | readonly T[] | null;
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
@@ -88,10 +89,12 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const items = controlledItems ?? uncontrolledItems;
   const setItems = useCallback(
     (newItems: T[]): void => {
-      setUncontrolledItems(newItems);
+      if (controlledItems === undefined) {
+        setUncontrolledItems(newItems);
+      }
       onChange(newItems);
     },
-    [onChange]
+    [controlledItems, onChange]
   );
   const selected = useMemo(() => items.map(toOption), [items, toOption]);
   const [search, setSearch] = useState('');
@@ -121,12 +124,20 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const abortControllerRef = useRef<AbortController>(abortController);
   const autoSubmitRef = useRef<boolean>(false);
   const selectedRef = useRef(selected);
+  const capReachedRef = useRef(capReached);
   useLayoutEffect(() => {
     searchRef.current = search;
     timerRef.current = timer;
     abortControllerRef.current = abortController;
     selectedRef.current = selected;
+    capReachedRef.current = capReached;
   });
+
+  useEffect(() => {
+    if (capReached) {
+      combobox.closeDropdown();
+    }
+  }, [capReached, combobox]);
 
   const handleValueAdd = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
@@ -149,19 +160,21 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           // Remove from the front
           newSelected.shift();
         }
-
-        if (newSelected.length >= maxValues) {
-          combobox.closeDropdown();
-        }
       }
 
       setItems(newSelected.map((v) => v.resource));
     },
-    [maxValues, onChange, combobox, setItems]
+    [maxValues, onChange, setItems]
   );
 
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
+
+    // A search still pending when the cap hid the input is dropped, auto-submit included.
+    if (capReachedRef.current) {
+      autoSubmitRef.current = false;
+      return;
+    }
 
     if (searchRef.current === lastValueRef.current && loadOptions === lastLoadOptionsRef.current) {
       // Same search input and loadOptions function, move on
@@ -179,17 +192,22 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
     loadOptions(searchRef.current ?? '', newAbortController.signal)
       .then((newValues: T[]) => {
-        if (!newAbortController.signal.aborted) {
-          const newOptions = newValues.map(toOption);
-          setOptions(newOptions);
-          if (autoSubmitRef.current) {
-            if (newOptions.length > 0) {
-              handleValueAdd(newOptions[0]);
-            }
-            autoSubmitRef.current = false;
-          } else if (newValues.length > 0) {
-            combobox.openDropdown();
+        if (newAbortController.signal.aborted) {
+          return;
+        }
+        if (capReachedRef.current) {
+          autoSubmitRef.current = false;
+          return;
+        }
+        const newOptions = newValues.map(toOption);
+        setOptions(newOptions);
+        if (autoSubmitRef.current) {
+          if (newOptions.length > 0) {
+            handleValueAdd(newOptions[0]);
           }
+          autoSubmitRef.current = false;
+        } else if (newValues.length > 0) {
+          combobox.openDropdown();
         }
       })
       .catch((err) => {
@@ -281,7 +299,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           // We need to wait for the results to come in.
           autoSubmitRef.current = true;
         }
-      } else if (e.key === 'Backspace' && search.length === 0) {
+      } else if (e.key === 'Backspace' && search.length === 0 && selected.length > 0) {
         killEvent(e);
         handleValueRemove(selected[selected.length - 1]);
       }

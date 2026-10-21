@@ -277,10 +277,11 @@ function useControlledResources<T extends Resource>(
 
   const remember = useCallback((resources: T[]) => {
     setKnown((prev) => {
-      const next = { ...prev };
+      let next = prev;
       for (const resource of resources) {
         const key = getReferenceString(resource);
-        if (key) {
+        if (key && prev[key] !== resource) {
+          next = next === prev ? { ...prev } : next;
           next[key] = resource;
         }
       }
@@ -298,7 +299,7 @@ function useControlledResources<T extends Resource>(
       if (isResource<T>(item)) {
         resolved.push(item);
       } else if (isReference<T>(item)) {
-        const resource = known[item.reference];
+        const resource = item.reference in known ? known[item.reference] : medplum.getCachedReference(item);
         if (resource) {
           resolved.push(resource);
         } else if (resource === undefined) {
@@ -307,7 +308,7 @@ function useControlledResources<T extends Resource>(
       }
     }
     return { resolved, pendingKey: pending.size > 0 ? JSON.stringify([...pending]) : '' };
-  }, [value, known]);
+  }, [medplum, value, known]);
 
   useEffect(() => {
     if (!pendingKey) {

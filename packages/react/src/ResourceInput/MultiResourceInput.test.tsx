@@ -249,6 +249,7 @@ describe('MultiResourceInput', () => {
 
       expect(pills().getByText('Homer Simpson')).toBeInTheDocument();
       expect(readReference).not.toHaveBeenCalled();
+      readReference.mockRestore();
     });
   });
 });
