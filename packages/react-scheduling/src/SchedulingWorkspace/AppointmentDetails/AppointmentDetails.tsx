@@ -318,7 +318,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
   const externalUrl = getExternalUrl(appointment);
   const site = getAppointmentSite(appointment);
-  const { primary, providers, others } = partitionActors(appointment);
+  const { primary, providers, rooms, devices, others } = partitionActors(appointment);
   const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
@@ -333,6 +333,8 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
       <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
       <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
+      <Detail label="Rooms" value={listActors(rooms)} />
+      <Detail label="Devices" value={listActors(devices)} />
       <Detail label="With" value={listActors(others)} />
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
@@ -421,28 +423,44 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
 }
 
 /**
- * Sorts who the visit is held on into its primary provider, its other providers, and
- * everything else, such as rooms and devices.
+ * Sorts who the visit is held on into its primary provider, its other providers, its rooms
+ * and devices, and anything else.
  * @param appointment - The appointment being described.
  * @returns The primary provider when one is marked, and the rest in the order the appointment lists them.
  */
 function partitionActors(appointment: Appointment): {
   primary?: Reference;
   providers: Reference[];
+  rooms: Reference[];
+  devices: Reference[];
   others: Reference[];
 } {
   const marked = getPrimaryProvider(appointment);
   const primary = marked?.reference ? marked : undefined;
   const providers: Reference[] = [];
+  const rooms: Reference[] = [];
+  const devices: Reference[] = [];
   const others: Reference[] = [];
   for (const actor of getNonPatientActors(appointment)) {
     if (primary && actor.reference === primary.reference) {
       continue;
     }
-    const isProvider = actor.reference?.startsWith('Practitioner/') || actor.reference?.startsWith('PractitionerRole/');
-    (isProvider ? providers : others).push(actor);
+    switch (actor.reference?.split('/')[0]) {
+      case 'Practitioner':
+      case 'PractitionerRole':
+        providers.push(actor);
+        break;
+      case 'Location':
+        rooms.push(actor);
+        break;
+      case 'Device':
+        devices.push(actor);
+        break;
+      default:
+        others.push(actor);
+    }
   }
-  return { primary, providers, others };
+  return { primary, providers, rooms, devices, others };
 }
 
 function listActors(actors: Reference[]): JSX.Element[] | undefined {

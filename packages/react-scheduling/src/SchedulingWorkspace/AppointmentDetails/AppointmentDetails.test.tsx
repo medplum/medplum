@@ -31,6 +31,7 @@ import {
   DrOkaforPractitioner,
   DrRiveraPractitioner,
   ElderJordanPatient,
+  ExamRoomA,
   MainClinic,
   MilesCooperPatient,
   PatientFixtures,
@@ -352,13 +353,18 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('MRN')).toBeInTheDocument();
   });
 
-  test('names the primary provider apart from the other providers and resources', async () => {
+  test('names the primary provider apart from the other providers, rooms, and devices', async () => {
     await medplum.createResource(DrOkaforPractitioner);
+    await medplum.createResource(ExamRoomA);
     const primary = createReference(DrOkaforPractitioner);
     renderDetails({
       ...BOOKED_APPOINTMENT,
       participant: setPrimaryProvider(
-        [...BOOKED_APPOINTMENT.participant, { status: 'accepted', actor: primary }],
+        [
+          ...BOOKED_APPOINTMENT.participant,
+          { status: 'accepted', actor: primary },
+          { status: 'accepted', actor: createReference(ExamRoomA) },
+        ],
         primary
       ),
     });
@@ -366,7 +372,9 @@ describe('AppointmentDetails', () => {
     expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
     expect(screen.getByText('Primary provider').parentElement).toHaveTextContent('Dr. Tunde Okafor');
     expect(screen.getByText('Other providers').parentElement).toHaveTextContent('Dr. Maya Rivera');
-    expect(screen.getByText('With').parentElement).toHaveTextContent('Ultrasound 1 (Main Campus)');
+    expect(screen.getByText('Rooms').parentElement).toHaveTextContent('Exam Room A');
+    expect(screen.getByText('Devices').parentElement).toHaveTextContent('Ultrasound 1 (Main Campus)');
+    expect(screen.queryByText('With')).not.toBeInTheDocument();
   });
 
   test('names a participant stored without a display by the resource it points at', async () => {
