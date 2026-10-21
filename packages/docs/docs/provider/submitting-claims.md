@@ -57,5 +57,6 @@ After submission, the "Details & Billing" tab replaces the submit button with a 
 ## Related Resources
 
 - [Candid Health Integration](/docs/integration/candid): claim submission, eligibility, and payer directory operations
+- [Candid Health API Documentation](https://docs.joincandidhealth.com/introduction/overview): Candid's own reference for encounters, claim statuses, and the payer portal
 - [RCM & Billing Decision Guide](/docs/decision-guides/rcm-billing)
 - [Visits](./visits)
