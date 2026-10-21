@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import {
   CPT,
+  createReference,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
   REQUIRES_DIAGNOSIS_CODE,
@@ -12,6 +13,7 @@ import {
   SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   ServiceTypeReferenceURI,
+  setPrimaryProvider,
   toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
@@ -26,6 +28,7 @@ import {
   AuthorizationValueSets,
   DIAGNOSIS_VALUE_SET,
   DiagnosisCodes,
+  DrOkaforPractitioner,
   DrRiveraPractitioner,
   ElderJordanPatient,
   MainClinic,
@@ -315,6 +318,10 @@ describe('AppointmentDetails', () => {
     expect(screen.queryByText('Notes')).not.toBeInTheDocument();
     expect(screen.queryByText('Repeats')).not.toBeInTheDocument();
     expect(screen.queryByText('Service facility')).not.toBeInTheDocument();
+    expect(screen.queryByText('MRN')).not.toBeInTheDocument();
+    // With no primary marked, every provider is listed alike.
+    expect(screen.getByText('Providers')).toBeInTheDocument();
+    expect(screen.queryByText('Primary provider')).not.toBeInTheDocument();
     // A participant whose resource can't be read says so.
     expect(await screen.findByText('[Not found]')).toBeInTheDocument();
   });
@@ -333,6 +340,33 @@ describe('AppointmentDetails', () => {
     expect(await screen.findByText('Uro Associates - Main Clinic')).toBeInTheDocument();
     expect(screen.getByText('Service facility')).toBeInTheDocument();
     expect(screen.queryByText('Stale display')).not.toBeInTheDocument();
+  });
+
+  test("shows the patient's medical record number", async () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      participant: [{ status: 'accepted', actor: createReference(ElderJordanPatient) }],
+    });
+
+    expect(await screen.findByText('MRN-0041')).toBeInTheDocument();
+    expect(screen.getByText('MRN')).toBeInTheDocument();
+  });
+
+  test('names the primary provider apart from the other providers and resources', async () => {
+    await medplum.createResource(DrOkaforPractitioner);
+    const primary = createReference(DrOkaforPractitioner);
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      participant: setPrimaryProvider(
+        [...BOOKED_APPOINTMENT.participant, { status: 'accepted', actor: primary }],
+        primary
+      ),
+    });
+
+    expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
+    expect(screen.getByText('Primary provider').parentElement).toHaveTextContent('Dr. Tunde Okafor');
+    expect(screen.getByText('Other providers').parentElement).toHaveTextContent('Dr. Maya Rivera');
+    expect(screen.getByText('With').parentElement).toHaveTextContent('Ultrasound 1 (Main Campus)');
   });
 
   test('names a participant stored without a display by the resource it points at', async () => {

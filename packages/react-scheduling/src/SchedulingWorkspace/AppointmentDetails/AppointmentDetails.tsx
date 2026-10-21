@@ -7,6 +7,7 @@ import {
   getAppointmentSite,
   getExtension,
   getExtensionValue,
+  getPrimaryProvider,
   normalizeErrorString,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
@@ -14,9 +15,9 @@ import {
   SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Parameters, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Parameters, Reference, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
@@ -27,6 +28,7 @@ import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentR
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
+import { getMedicalRecordNumber } from '../../patients';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
@@ -197,7 +199,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     mrnSystem,
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
-  const otherActors = getNonPatientActors(appointment);
+  const patientResource = useResource(patient);
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -316,6 +318,8 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
   const externalUrl = getExternalUrl(appointment);
   const site = getAppointmentSite(appointment);
+  const { primary, providers, others } = partitionActors(appointment);
+  const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
@@ -323,22 +327,13 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     <Stack gap="sm" className={classes.details}>
       <AppointmentStatusBadge status={appointment.status} />
       {!editing && patientLine}
+      {!editing && <Detail label="MRN" value={mrn} />}
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
       <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
-      <Detail
-        label="With"
-        value={
-          otherActors.length > 0
-            ? otherActors.map((actor, index) => (
-                <Fragment key={actor.reference ?? `actor-${index}`}>
-                  {index > 0 && ', '}
-                  <ResourceName value={actor} link={false} inherit />
-                </Fragment>
-              ))
-            : undefined
-        }
-      />
+      <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
+      <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
+      <Detail label="With" value={listActors(others)} />
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
@@ -423,6 +418,43 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       )}
     </Stack>
   );
+}
+
+/**
+ * Sorts who the visit is held on into its primary provider, its other providers, and
+ * everything else, such as rooms and devices.
+ * @param appointment - The appointment being described.
+ * @returns The primary provider when one is marked, and the rest in the order the appointment lists them.
+ */
+function partitionActors(appointment: Appointment): {
+  primary?: Reference;
+  providers: Reference[];
+  others: Reference[];
+} {
+  const marked = getPrimaryProvider(appointment);
+  const primary = marked?.reference ? marked : undefined;
+  const providers: Reference[] = [];
+  const others: Reference[] = [];
+  for (const actor of getNonPatientActors(appointment)) {
+    if (primary && actor.reference === primary.reference) {
+      continue;
+    }
+    const isProvider = actor.reference?.startsWith('Practitioner/') || actor.reference?.startsWith('PractitionerRole/');
+    (isProvider ? providers : others).push(actor);
+  }
+  return { primary, providers, others };
+}
+
+function listActors(actors: Reference[]): JSX.Element[] | undefined {
+  if (actors.length === 0) {
+    return undefined;
+  }
+  return actors.map((actor, index) => (
+    <Fragment key={actor.reference ?? `actor-${index}`}>
+      {index > 0 && ', '}
+      <ResourceName value={actor} link={false} inherit />
+    </Fragment>
+  ));
 }
 
 /**
