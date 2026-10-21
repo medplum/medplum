@@ -153,7 +153,11 @@ export function MedicationsPage(): JSX.Element {
   useEffect(() => {
     iframeUrlRef.current = iframeUrl;
   }, [iframeUrl]);
-  /** MR id for iframe session + polling when URL/detail selection lags behind a new order. */
+  /**
+   * The MR the iframe modal was opened for: it alone drives the session refresh and
+   * sync polling. The URL selection is never used as a fallback, since the Draft tab
+   * auto-selects a row and an order-set launch has no MR of its own.
+   */
   const [iframePollMrId, setIframePollMrId] = useState<string | undefined>();
   /** Draft MR ids the MedCart checkout modal polls for sync after a cart checkout. */
   const [cartWatchIds, setCartWatchIds] = useState<string[]>([]);
@@ -170,13 +174,31 @@ export function MedicationsPage(): JSX.Element {
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
   const hasScriptSure = hasScriptSureIdentifier(membership);
 
-  // The list rows are a `_fields` projection, so the selection is always read in full
-  // (and re-read whenever the list reloads, keeping the details current).
+  /**
+   * The list rows are a `_fields` projection, so the selection is always read in full
+   * and re-read whenever the list reloads, keeping the details current. A failed read
+   * (e.g. a cart draft the bot hard-deleted while it was selected) resolves to nothing
+   * rather than toasting, since the stale id is dropped from the URL right after.
+   */
   const resolveSelected = useCallback(
-    async (id: string, _items: WithId<MedicationRequest>[], client: MedplumClient) =>
-      client.readResource('MedicationRequest', id, { cache: 'reload' }),
+    async (
+      id: string,
+      _items: WithId<MedicationRequest>[],
+      client: MedplumClient
+    ): Promise<WithId<MedicationRequest> | undefined> => {
+      try {
+        return await client.readResource('MedicationRequest', id, { cache: 'reload' });
+      } catch {
+        return undefined;
+      }
+    },
     []
   );
+
+  /** Drops the selected order from the URL (keeping the tab/page query) so the next item auto-selects. */
+  const clearSelection = useCallback((): void => {
+    navigate(`/Patient/${patientId}/MedicationRequest${location.search}`, { replace: true })?.catch(console.error);
+  }, [navigate, patientId, location.search]);
 
   const getOrderUrl = useCallback(
     (order: MedicationRequest): string => {
@@ -309,13 +331,16 @@ export function MedicationsPage(): JSX.Element {
       });
       return res?.url ?? iframeUrlRef.current;
     }
-    const mrId = iframePollMrId ?? medicationRequestId;
-    if (!mrId) {
+    if (!iframePollMrId) {
       return iframeUrlRef.current;
     }
-    const res = await orderMedication({ patientId, medicationRequestId: mrId, organization: selectedOrganization });
+    const res = await orderMedication({
+      patientId,
+      medicationRequestId: iframePollMrId,
+      organization: selectedOrganization,
+    });
     return res.launchUrl;
-  }, [patientId, medicationRequestId, iframePollMrId, iframeMode, medplum, orderMedication, selectedOrganization]);
+  }, [patientId, iframePollMrId, iframeMode, medplum, orderMedication, selectedOrganization]);
 
   const closeIframeModal = useCallback((): void => {
     setIframeModalOpened(false);
@@ -466,6 +491,9 @@ export function MedicationsPage(): JSX.Element {
           });
         }
         medplum.invalidateSearches('MedicationRequest');
+        if (item?.status !== 'failed' && mrId === medicationRequestId) {
+          clearSelection();
+        }
         refreshList();
         await refreshCartCount();
       } catch (e) {
@@ -474,7 +502,7 @@ export function MedicationsPage(): JSX.Element {
         setRemovingId(undefined);
       }
     },
-    [patient, removeFromCart, medplum, refreshList, refreshCartCount]
+    [patient, removeFromCart, medplum, refreshList, refreshCartCount, medicationRequestId, clearSelection]
   );
 
   const handleClearCart = useCallback(async (): Promise<void> => {
@@ -503,6 +531,10 @@ export function MedicationsPage(): JSX.Element {
         });
       }
       medplum.invalidateSearches('MedicationRequest');
+      const removedIds = res.items.filter((i) => i.status !== 'failed').map((i) => i.medicationRequestId);
+      if (medicationRequestId && removedIds.includes(medicationRequestId)) {
+        clearSelection();
+      }
       refreshList();
       await refreshCartCount();
     } catch (e) {
@@ -510,7 +542,7 @@ export function MedicationsPage(): JSX.Element {
     } finally {
       setClearingCart(false);
     }
-  }, [patient, clearCart, medplum, refreshList, refreshCartCount]);
+  }, [patient, clearCart, medplum, refreshList, refreshCartCount, medicationRequestId, clearSelection]);
 
   if (!patient || !patientId) {
     return <Loading />;
@@ -526,14 +558,13 @@ export function MedicationsPage(): JSX.Element {
   // The MedCart widget URL carries a fresh session token from `$checkout-medications`
   // and re-running checkout would re-submit the cart, so that mode never refreshes.
   // Other modes refresh the single-order/chart session token in place.
-  const canRefreshLaunchUrl = !isCartCheckoutMode && Boolean(iframePollMrId || medicationRequestId);
+  const canRefreshLaunchUrl = !isCartCheckoutMode && Boolean(iframePollMrId);
   const modalRefreshLaunchUrl = canRefreshLaunchUrl ? refreshLaunchUrl : undefined;
   let medicationRequestIdsToWatch: string[] | undefined;
   if (isCartCheckoutMode) {
     medicationRequestIdsToWatch = cartWatchIds;
   } else {
-    const singleWatchId = iframePollMrId ?? medicationRequestId;
-    medicationRequestIdsToWatch = singleWatchId ? [singleWatchId] : undefined;
+    medicationRequestIdsToWatch = iframePollMrId ? [iframePollMrId] : undefined;
   }
 
   const showCart = hasScriptSure && activeTab === 'draft';
