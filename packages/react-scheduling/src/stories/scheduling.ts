@@ -1303,7 +1303,7 @@ export const ExamRoomABlockedSlot: WithId<Slot> = {
   comment: 'Equipment maintenance',
 };
 
-/** Availability at the satellite site, for when the location filter is switched. */
+/** Availability at the satellite site, for when the service facility filter is switched. */
 export const SatelliteRoomFreeSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-satellite-room-free-fri',

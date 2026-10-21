@@ -45,8 +45,8 @@ function setup(defaultValue?: CalendarFilterValues): {
   return { latest: () => reported, reports: () => count };
 }
 
-function locationField(): HTMLElement {
-  return screen.getByPlaceholderText('All locations');
+function serviceFacilityField(): HTMLElement {
+  return screen.getByPlaceholderText('All service facilities');
 }
 
 function serviceField(): HTMLElement {
@@ -56,11 +56,11 @@ function serviceField(): HTMLElement {
 describe('CalendarFilters', () => {
   installAutocompleteTimers();
 
-  describe('Location', () => {
+  describe('Service facility', () => {
     test('offers the sites, not the rooms held inside them', async () => {
       setup();
 
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
 
       expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
       expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('CalendarFilters', () => {
       const searchResources = vi.spyOn(medplum, 'searchResources');
       setup();
 
-      await typeInAutocomplete(locationField(), 'Satellite');
+      await typeInAutocomplete(serviceFacilityField(), 'Satellite');
 
       expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
       expect(screen.queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument();
@@ -87,17 +87,17 @@ describe('CalendarFilters', () => {
     test('reports the chosen site', async () => {
       const { latest } = setup();
 
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
       await clickAutocompleteOption('Uro Associates - Satellite');
 
-      expect(latest().location?.id).toBe('satellite-clinic');
+      expect(latest().serviceFacility?.id).toBe('satellite-clinic');
     });
 
     test('taking the pill off goes back to every site', async () => {
       const { latest } = setup();
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
       await clickAutocompleteOption('Uro Associates - Satellite');
-      expect(latest().location?.id).toBe('satellite-clinic');
+      expect(latest().serviceFacility?.id).toBe('satellite-clinic');
 
       // The pill's own remove button, which is the only way back: it is aria-hidden with
       // tabindex=-1, and capping the field at one value hides the input backspace would
@@ -105,10 +105,10 @@ describe('CalendarFilters', () => {
       // Tracked in https://github.com/medplum/medplum/issues/10609.
       await removePill('Uro Associates - Satellite');
 
-      expect(latest().location).toBeUndefined();
+      expect(latest().serviceFacility).toBeUndefined();
       // Shown as well as reported: an empty field is what "all of them" reads as, so a
       // stale pill would leave the sidebar claiming a filter that no longer stands.
-      expect(locationField()).toBeInTheDocument();
+      expect(serviceFacilityField()).toBeInTheDocument();
       expect(screen.queryByText('Uro Associates - Satellite')).not.toBeInTheDocument();
     });
   });
@@ -157,7 +157,7 @@ describe('CalendarFilters', () => {
 
     test('a chosen site narrows the visit types to the ones held there', async () => {
       setup();
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
       await clickAutocompleteOption('Uro Associates - Satellite');
 
       await openAutocomplete(serviceField());
@@ -171,16 +171,16 @@ describe('CalendarFilters', () => {
 
   describe('starting on a site', () => {
     test('shows the site without reporting it', async () => {
-      const { reports } = setup({ location: SatelliteClinic });
+      const { reports } = setup({ serviceFacility: SatelliteClinic });
       await settleAutocomplete();
 
       expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
-      expect(screen.queryByPlaceholderText('All locations')).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('All service facilities')).not.toBeInTheDocument();
       expect(reports()).toBe(0);
     });
 
     test('narrows the visit types to the ones held there from the start', async () => {
-      setup({ location: SatelliteClinic });
+      setup({ serviceFacility: SatelliteClinic });
 
       await openAutocomplete(serviceField());
 
@@ -189,13 +189,13 @@ describe('CalendarFilters', () => {
     });
 
     test('taking the pill off goes back to every site', async () => {
-      const { latest } = setup({ location: SatelliteClinic });
+      const { latest } = setup({ serviceFacility: SatelliteClinic });
       await settleAutocomplete();
 
       await removePill('Uro Associates - Satellite');
 
-      expect(latest().location).toBeUndefined();
-      expect(locationField()).toBeInTheDocument();
+      expect(latest().serviceFacility).toBeUndefined();
+      expect(serviceFacilityField()).toBeInTheDocument();
     });
   });
 
@@ -206,7 +206,7 @@ describe('CalendarFilters', () => {
       await clickAutocompleteOption('Ultrasound Imaging');
       expect(latest().service?.id).toBe('ultrasound-imaging');
 
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
       await clickAutocompleteOption('Uro Associates - Satellite');
       await settleAutocomplete();
 
@@ -222,7 +222,7 @@ describe('CalendarFilters', () => {
       await openAutocomplete(serviceField());
       await clickAutocompleteOption('Telehealth Consult');
 
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
       await clickAutocompleteOption('Uro Associates - Satellite');
       await settleAutocomplete();
 
@@ -231,7 +231,7 @@ describe('CalendarFilters', () => {
 
     test('clearing the site keeps a visit type only that site held', async () => {
       const { latest } = setup();
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
       await clickAutocompleteOption('Uro Associates - Main Clinic');
       await openAutocomplete(serviceField());
       await clickAutocompleteOption('Ultrasound Imaging');
@@ -253,7 +253,7 @@ describe('CalendarFilters', () => {
       await openAutocomplete(serviceField());
       await clickAutocompleteOption('Telehealth Consult');
 
-      await openAutocomplete(locationField());
+      await openAutocomplete(serviceFacilityField());
 
       expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
       expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
