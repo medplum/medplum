@@ -119,13 +119,13 @@ curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/\$health-gorilla-sync
 
 Each lab order is placed from one practice location. Health Gorilla uses that location's address, phone, and fax in the header of the order requisition (eReq) sent to the lab, and its address for the ordering physician on the result report. Set the location explicitly on every order. Otherwise, Health Gorilla chooses one for you (see [If No Location Is Specified](#if-no-location-is-specified)).
 
-Pass the location as `requestingLocation` to the [`useHealthGorillaLabOrder`](./sending-orders.md#creating-an-order-form-in-react) hook. It takes the Medplum practice-location `Organization`, or a reference to it:
+Pass the location as `requestingLocation` to the [`useHealthGorillaLabOrder`](./sending-orders.md#creating-an-order-form-in-react) hook. Set it to a reference to the Medplum practice-location `Organization`, the one with the `https://www.healthgorilla.com|tl-...` identifier:
 
 ```tsx
 const labOrderReturn = useHealthGorillaLabOrder({
   patient,
   requester,
-  requestingLocation: { reference: `Organization/${practiceLocationId}` }, // or the Organization resource itself
+  requestingLocation: { reference: `Organization/${practiceLocationId}` }, // Organization with the tl-... identifier
 });
 ```
 
