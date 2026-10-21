@@ -667,23 +667,15 @@ describe('AppointmentDetails more than 12 hours after it ended', () => {
     expect(cancelButton()).not.toBeInTheDocument();
   });
 
-  test('closes a reschedule left open past the cutoff, and takes back its room', async () => {
-    const onToggleTimeFinder = vi.fn();
-    const details = (): JSX.Element => (
-      <AppointmentDetails appointment={BOOKED_APPOINTMENT} onToggleTimeFinder={onToggleTimeFinder} />
-    );
+  test('lets a reschedule opened before the cutoff finish', async () => {
+    const details = (): JSX.Element => <AppointmentDetails appointment={BOOKED_APPOINTMENT} />;
     const { rerender } = renderWithMedplum(details(), medplum);
     await userEvent.click(rescheduleButton() as HTMLElement);
-    expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
 
     vi.setSystemTime(LATER);
     rerender(details());
 
-    expect(
-      await screen.findByText("Appointments that ended more than 12 hours ago can't be changed.")
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Reschedule appointment' })).not.toBeInTheDocument();
-    expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
+    expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
   });
 });
 

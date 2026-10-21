@@ -19,7 +19,7 @@ import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
 import type { AppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
 import { readAppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
@@ -30,7 +30,13 @@ import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
-import { formatWhen, isCancelable, isPastEditWindow, isReschedulable } from '../SchedulingWorkspace.utils';
+import {
+  EDIT_WINDOW_HOURS,
+  formatWhen,
+  isCancelable,
+  isPastEditWindow,
+  isReschedulable,
+} from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
@@ -167,8 +173,8 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 /**
  * Shows a detail view of a single appointment
  *
- * Has sub-views for rescheduling and cancelling the appointment. One that ended more than
- * 12 hours ago is shown read-only.
+ * Has sub-views for rescheduling and cancelling the appointment. One past its edit window
+ * (see `isPastEditWindow`) is shown read-only, though a view already open can still finish.
  *
  * @param props - The React props
  * @param props.appointment - The Appointment resource to detail
@@ -205,17 +211,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const medplum = useMedplum();
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<unknown>();
-  // The cutoff can pass with a form open, so each render checks again.
-  const locked = isPastEditWindow(appointment);
-  const editOpen = editing && !locked;
-  const cancelOpen = cancelling && !locked;
-  const rescheduleOpen = rescheduling && !locked;
-
-  useEffect(() => {
-    if (locked && rescheduling) {
-      onToggleTimeFinder?.(false);
-    }
-  }, [locked, rescheduling, onToggleTimeFinder]);
 
   const patientLine = (
     <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
@@ -278,7 +273,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     return onRescheduled?.(reschedule);
   }
 
-  if (cancelOpen) {
+  if (cancelling) {
     return (
       <Stack gap="sm" className={classes.details}>
         {patientLine}
@@ -297,7 +292,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     );
   }
 
-  if (rescheduleOpen) {
+  if (rescheduling) {
     return (
       <Stack gap="sm" className={classes.details}>
         <Group justify="space-between" wrap="nowrap">
@@ -324,6 +319,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }
 
   const cancelable = isCancelable(appointment);
+  const locked = isPastEditWindow(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
   const externalUrl = getExternalUrl(appointment);
@@ -334,7 +330,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   return (
     <Stack gap="sm" className={classes.details}>
       <AppointmentStatusBadge status={appointment.status} />
-      {!editOpen && patientLine}
+      {!editing && patientLine}
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
       <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
@@ -354,7 +350,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
-      {editOpen ? (
+      {editing ? (
         <AppointmentDetailsForm
           appointment={appointment}
           procedureBinding={procedureBinding}
@@ -382,7 +378,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           />
         </>
       )}
-      {!editOpen && (
+      {!editing && (
         <Stack gap="sm" className={classes.actions}>
           <Divider />
           {/* `$confirm` also accepts `proposed`, but only what `$hold` left `pending` is offered. */}
@@ -411,7 +407,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           )}
           {locked ? (
             <Text size="sm" c="dimmed">
-              {"Appointments that ended more than 12 hours ago can't be changed."}
+              {`Appointments that ended more than ${EDIT_WINDOW_HOURS} hours ago can't be changed.`}
             </Text>
           ) : (
             <>

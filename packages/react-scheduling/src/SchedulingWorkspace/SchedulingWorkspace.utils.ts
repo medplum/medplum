@@ -92,33 +92,33 @@ export function formatWhen(period: { readonly start?: string; readonly end?: str
   return `${formatDayHeading(start)} · ${times}`;
 }
 
-/** How long after an appointment ends it can still be changed. */
-const EDIT_WINDOW_MS = 12 * 60 * 60 * 1000;
+/** How many hours after an appointment ends it can still be changed. */
+export const EDIT_WINDOW_HOURS = 12;
 
 /**
  * Whether the appointment ended long enough ago that it is closed to changes.
  * @param appointment - The appointment to check.
  * @param now - The time to judge from.
- * @returns True once 12 hours have passed since it ended, or since it started when it has no end.
+ * @returns True once `EDIT_WINDOW_HOURS` have passed since it ended, or since it started when it has no end.
  */
 export function isPastEditWindow(appointment: Appointment, now = new Date()): boolean {
   const last = appointment.end ?? appointment.start;
   if (!last) {
     return false;
   }
-  return now.getTime() - new Date(last).getTime() >= EDIT_WINDOW_MS;
+  return now.getTime() - new Date(last).getTime() >= EDIT_WINDOW_HOURS * 60 * 60 * 1000;
 }
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
 const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 /**
- * Whether the server would accept cancelling the appointment.
+ * Whether cancelling the appointment is offered.
  * @param appointment - The appointment to cancel.
- * @returns True when its status is one `Appointment/:id/$cancel` accepts.
+ * @returns True when its status is one `Appointment/:id/$cancel` accepts and it is inside its edit window.
  */
 export function isCancelable(appointment: Appointment): boolean {
-  return CANCELABLE_STATUSES.has(appointment.status);
+  return CANCELABLE_STATUSES.has(appointment.status) && !isPastEditWindow(appointment);
 }
 
 /**
@@ -130,10 +130,10 @@ export function isCancelable(appointment: Appointment): boolean {
 const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 /**
- * Whether the server would accept rescheduling the appointment.
+ * Whether rescheduling the appointment is offered.
  * @param appointment - The appointment to reschedule.
- * @returns True when its status is one `Appointment/:id/$reschedule` accepts.
+ * @returns True when its status is one `Appointment/:id/$reschedule` accepts and it is inside its edit window.
  */
 export function isReschedulable(appointment: Appointment): boolean {
-  return RESCHEDULABLE_STATUSES.has(appointment.status);
+  return RESCHEDULABLE_STATUSES.has(appointment.status) && !isPastEditWindow(appointment);
 }
