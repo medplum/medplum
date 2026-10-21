@@ -356,7 +356,7 @@ describe('AppointmentProposalForm', () => {
 
   describe('Narrowing resources to the chosen site', () => {
     test('Offers a room that belongs to a place inside the chosen site', async () => {
-      setup(medplum, { defaultLocation: MainClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/room/i);
@@ -370,7 +370,7 @@ describe('AppointmentProposalForm', () => {
     test('Offers a device kept inside the chosen site', async () => {
       const sitedDevice: Device = { ...Ultrasound1Device, location: { reference: 'Location/second-floor' } };
       await medplum.updateResource(sitedDevice);
-      setup(medplum, { defaultLocation: MainClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/device/i);
@@ -380,7 +380,7 @@ describe('AppointmentProposalForm', () => {
 
     test('Offers a provider whose role names the chosen site', async () => {
       // Dr. Martinez's role names the main clinic itself, the only way a provider is sited.
-      setup(medplum, { defaultLocation: MainClinic, defaultService: SurgeryService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: SurgeryService });
       await settleAutocomplete();
 
       const input = await openRoleField(/provider/i);
@@ -390,7 +390,7 @@ describe('AppointmentProposalForm', () => {
     });
 
     test('Leaves out a provider whose roles name another site', async () => {
-      setup(medplum, { defaultLocation: SatelliteClinic, defaultService: SurgeryService });
+      setup(medplum, { defaultServiceFacility: SatelliteClinic, defaultService: SurgeryService });
       await settleAutocomplete();
 
       const input = await openRoleField(/provider/i);
@@ -403,7 +403,7 @@ describe('AppointmentProposalForm', () => {
     test('Leaves out a provider sited inside the chosen site rather than at it, while offering a room there', async () => {
       // A room is sited by walking `partOf`; a provider only by a role naming the
       // site exactly.
-      setup(medplum, { defaultLocation: MainClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/provider/i);
@@ -415,7 +415,7 @@ describe('AppointmentProposalForm', () => {
     });
 
     test('Keeps a resource that records nothing about where it is', async () => {
-      setup(medplum, { defaultLocation: SatelliteClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: SatelliteClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/device/i);
@@ -440,7 +440,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
 
       // Unscoped: a search that came back with nothing leaves no dropdown to scope to.
-      await typeInAutocomplete(field(/location/i), 'Exam Room A');
+      await typeInAutocomplete(field(/service facility/i), 'Exam Room A');
 
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
       expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
@@ -450,7 +450,7 @@ describe('AppointmentProposalForm', () => {
     test('Offers a Location that records no physical type', async () => {
       setup(medplum);
 
-      const listbox = await searchField(/location/i, 'Uro Associates');
+      const listbox = await searchField(/service facility/i, 'Uro Associates');
 
       // Neither clinic declares one, and nothing requires it: the field excludes what
       // says it is a room rather than admitting only what says site.
@@ -1120,7 +1120,7 @@ describe('AppointmentProposalForm', () => {
   describe('Mounting the form', () => {
     test('Starts with the answers the host pre-filled', async () => {
       setup(medplum, {
-        defaultLocation: MainClinic,
+        defaultServiceFacility: MainClinic,
         defaultService: UltrasoundImagingService,
         defaultPatient: ElderJordanPatient,
       });
@@ -1345,8 +1345,8 @@ describe('AppointmentProposalForm', () => {
     test.each([
       ['the Location', MainClinic],
       ['a reference to it', createReference(MainClinic)],
-    ])('Records the site the booking was made at, given %s', async (_, defaultLocation) => {
-      setup(medplum, { defaultLocation });
+    ])('Records the site the booking was made at, given %s', async (_, defaultServiceFacility) => {
+      setup(medplum, { defaultServiceFacility });
       await fillBooking();
       await clickBook();
 
@@ -1364,7 +1364,7 @@ describe('AppointmentProposalForm', () => {
 
     test('Keeps the site off the participants, where a room lives', async () => {
       // A site named as a participant would be indistinguishable from a booked room.
-      setup(medplum, { defaultLocation: MainClinic });
+      setup(medplum, { defaultServiceFacility: MainClinic });
       await fillBooking();
       await clickBook();
 
