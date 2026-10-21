@@ -114,7 +114,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
     onRangeChange?: (range: { start: Date; end: Date }) => void;
     selection?: { start: Date; end: Date };
     selectedId?: string;
-    revealTime?: Date;
+    revealDate?: Date;
   }): JSX.Element => {
     // The real grid announces the week it opened on, and nothing is loaded onto the
     // calendar until it does. Announced once, as a grid that is never paged announces it.
@@ -146,8 +146,8 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
         {/* Stands in for the highlight the real grid draws over the interval it is given. */}
         <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
         <div data-testid="selected-id">{props.selectedId ?? 'none'}</div>
-        {/* Stands in for the real grid paging and scrolling to the instant it is given. */}
-        <div data-testid="revealed-time">{props.revealTime?.toISOString() ?? 'none'}</div>
+        {/* Stands in for the real grid paging to the day it is given. */}
+        <div data-testid="revealed-date">{props.revealDate?.toISOString() ?? 'none'}</div>
         {/* Stands in for the events the real grid draws for appointments not yet booked. */}
         <div
           data-testid="proposed-time"
@@ -365,7 +365,7 @@ describe('SchedulingWorkspace booking', () => {
     const [booked] = (onBooked.mock.calls[0][0] as AppointmentBooking).appointments;
     expect(within(detailsPane() as HTMLElement).getByText('Jordan Reyes')).toBeInTheDocument();
     expect(screen.getByTestId('selected-id')).toHaveTextContent(booked.id);
-    expect(screen.getByTestId('revealed-time')).toHaveTextContent(new Date(booked.start as string).toISOString());
+    expect(screen.getByTestId('revealed-date')).toHaveTextContent(new Date(booked.start as string).toISOString());
   });
 
   test('Reports the booking it wrote to the host', async () => {

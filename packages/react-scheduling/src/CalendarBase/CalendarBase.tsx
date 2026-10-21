@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
-  CalendarApi,
   CalendarRef,
   DayHeaderInfo,
   EventApi,
@@ -123,10 +122,6 @@ function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
   );
 }
 
-function scrollToTimeOfDay(api: CalendarApi, time: Date): void {
-  api.scrollToTime({ hours: time.getHours(), minutes: time.getMinutes() });
-}
-
 function slotTitle(slot: Slot): string {
   if (slot.status === 'free') {
     return 'Available';
@@ -168,10 +163,10 @@ export interface CalendarBaseProps extends Omit<
   /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
   selectedId?: string;
   /**
-   * An instant to bring on screen, such as the start of an appointment just booked: the
-   * calendar pages to its day and scrolls to its time whenever a different one is given.
+   * A day to bring on screen, such as that of an appointment just booked: the calendar
+   * pages to it whenever a different instant is given.
    */
-  revealTime?: Date;
+  revealDate?: Date;
   eventSources: FhirEventSource[];
 
   onRangeChange?: (range: DateTimeRange) => void;
@@ -200,7 +195,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     onSelectInterval,
     selection,
     selectedId,
-    revealTime,
+    revealDate,
     loading,
     ...fullCalendarProps
   } = props;
@@ -325,23 +320,11 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     }
   }, [startMs, endMs]);
 
-  // Keyed on the instant for the same reason as the selection above. FullCalendar scrolls
-  // back to `scrollTime` whenever it pages, so a scroll asked for alongside the page would
-  // be undone: it waits for the new dates to be set.
-  const revealMs = revealTime?.getTime();
-  const pendingScrollRef = useRef<Date>(undefined);
+  // Keyed on the instant for the same reason as the selection above.
+  const revealMs = revealDate?.getTime();
   useEffect(() => {
-    const api = calendarRef.current?.getApi();
-    if (!api || revealMs === undefined) {
-      return;
-    }
-    const time = new Date(revealMs);
-    const { activeStart, activeEnd } = api.view;
-    if (time >= activeStart && time < activeEnd) {
-      scrollToTimeOfDay(api, time);
-    } else {
-      pendingScrollRef.current = time;
-      api.gotoDate(time);
+    if (revealMs !== undefined) {
+      calendarRef.current?.getApi().gotoDate(revealMs);
     }
   }, [revealMs]);
 
@@ -423,14 +406,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         eventSources={eventSources}
         controller={controller}
         headerToolbar={false}
-        datesSet={(info) => {
-          const api = calendarRef.current?.getApi();
-          if (api && pendingScrollRef.current) {
-            scrollToTimeOfDay(api, pendingScrollRef.current);
-            pendingScrollRef.current = undefined;
-          }
-          onRangeChange?.({ start: info.start, end: info.end });
-        }}
+        datesSet={(info) => onRangeChange?.({ start: info.start, end: info.end })}
         className={cx(classes.calendar, controller.view?.type)}
         eventDidMount={(info) => {
           if (hasDoubleClickHandler && (info.event.extendedProps as ExtendedEvent).interactive !== false) {
