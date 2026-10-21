@@ -17,7 +17,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
+import { ActionIcon, Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -318,17 +318,17 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
-          <Button.Group>
-            <Button variant="default" size="xs" aria-label="Previous" onClick={() => controller.prev()}>
-              <IconChevronLeft size={12} />
-            </Button>
-            <Button variant="default" size="xs" onClick={() => controller.today()}>
-              Today
-            </Button>
-            <Button variant="default" size="xs" aria-label="Next" onClick={() => controller.next()}>
-              <IconChevronRight size={12} />
-            </Button>
-          </Button.Group>
+          <Button variant="default" size="xs" fz="sm" onClick={() => controller.today()}>
+            Today
+          </Button>
+          <Group gap={4}>
+            <ActionIcon variant="subtle" color="gray" aria-label="Previous" onClick={() => controller.prev()}>
+              <IconChevronLeft size={16} />
+            </ActionIcon>
+            <ActionIcon variant="subtle" color="gray" aria-label="Next" onClick={() => controller.next()}>
+              <IconChevronRight size={16} />
+            </ActionIcon>
+          </Group>
           <Group>
             <MonthPickerButton
               size="compact-md"
