@@ -8,7 +8,7 @@ import type {
   MedicationCheckoutResponse,
   WithId,
 } from '@medplum/core';
-import { gone, OperationOutcomeError } from '@medplum/core';
+import { forbidden, gone, OperationOutcomeError } from '@medplum/core';
 import type { Bundle, MedicationRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -598,6 +598,24 @@ describe('MedicationsPage', () => {
     });
     expect(await screen.findByText('Cart cleared')).toBeInTheDocument();
     expect(screen.queryByText('Gone')).not.toBeInTheDocument();
+  });
+
+  test('A detail read that fails for a reason other than Gone/NotFound surfaces an error toast', async () => {
+    const medplum = new MockClient();
+    const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet')];
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, drafts));
+    const realRead = medplum.readResource.bind(medplum);
+    vi.spyOn(medplum, 'readResource').mockImplementation((async (rt: string, id: string, opts?: unknown) => {
+      if (rt === 'MedicationRequest') {
+        throw new OperationOutcomeError(forbidden);
+      }
+      return realRead(rt as 'Patient', id, opts as undefined);
+    }) as unknown as typeof medplum.readResource);
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-a?status=draft`, medplum);
+
+    expect((await screen.findAllByText('Forbidden')).length).toBeGreaterThan(0);
   });
 
   test('Launching an order set opens its own URL and never orders the auto-selected draft', async () => {

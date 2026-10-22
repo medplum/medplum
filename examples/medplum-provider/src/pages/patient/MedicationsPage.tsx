@@ -3,7 +3,7 @@
 import { ActionIcon, Box, Button, Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { hideNotification, showNotification, updateNotification } from '@mantine/notifications';
 import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
-import { Operator } from '@medplum/core';
+import { isGone, isNotFound, normalizeOperationOutcome, Operator } from '@medplum/core';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
@@ -176,9 +176,10 @@ export function MedicationsPage(): JSX.Element {
 
   /**
    * The list rows are a `_fields` projection, so the selection is always read in full
-   * and re-read whenever the list reloads, keeping the details current. A failed read
-   * (e.g. a cart draft the bot hard-deleted while it was selected) resolves to nothing
-   * rather than toasting, since the stale id is dropped from the URL right after.
+   * and re-read whenever the list reloads, keeping the details current. A deleted or
+   * missing order (e.g. a cart draft the bot hard-deleted while it was selected) resolves
+   * to nothing rather than toasting, since the stale id is dropped from the URL right after.
+   * Any other failure is rethrown so the board surfaces it.
    */
   const resolveSelected = useCallback(
     async (
@@ -188,8 +189,12 @@ export function MedicationsPage(): JSX.Element {
     ): Promise<WithId<MedicationRequest> | undefined> => {
       try {
         return await client.readResource('MedicationRequest', id, { cache: 'reload' });
-      } catch {
-        return undefined;
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        if (isGone(outcome) || isNotFound(outcome)) {
+          return undefined;
+        }
+        throw err;
       }
     },
     []
