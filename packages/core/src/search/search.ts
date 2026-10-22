@@ -624,6 +624,15 @@ export function invalidSearchOperator(operator: Operator, searchParameterCodeOrI
   return badRequest(`Invalid operator ${operator} for ${searchParameterCodeOrId}`);
 }
 
+/**
+ * Returns true if the search filter is a chained search (forward chain or reverse chain via `_has`).
+ * @param filter - The search filter.
+ * @returns True if the filter is a chained search filter.
+ */
+export function isChainedSearchFilter(filter: Filter): boolean {
+  return filter.code.startsWith('_has:') || filter.code.includes('.');
+}
+
 export function getSearchResourceTypes(searchRequest: SearchRequest): ResourceType[] {
   return searchRequest.types ?? [searchRequest.resourceType];
 }
