@@ -166,26 +166,26 @@ describe('SchedulingWorkspace', () => {
     expect(screen.getByText('No rooms found')).toBeInTheDocument();
   });
 
-  describe('Location filter', () => {
+  describe('Service facility filter', () => {
     test('choosing a site narrows the calendars to the ones held there', async () => {
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
       await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
 
-      await chooseFilter('All locations', 'Uro Associates - Satellite');
+      await chooseFilter('All service facilities', 'Uro Associates - Satellite');
 
       // Exam Room A sits under the main clinic, two `partOf` hops from the satellite.
       await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
       expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument();
     });
 
-    test('going back to All locations restores the calendars a site hid', async () => {
+    test('going back to All service facilities restores the calendars a site hid', async () => {
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
       await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
-      await chooseFilter('All locations', 'Uro Associates - Satellite');
+      await chooseFilter('All service facilities', 'Uro Associates - Satellite');
       await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
 
       await clearFilter('Uro Associates - Satellite');
@@ -210,8 +210,8 @@ describe('SchedulingWorkspace', () => {
       await waitFor(() => expect(screen.getByText('No providers or staff found')).toBeInTheDocument());
 
       search.mockClear();
-      await chooseFilter('All locations', 'Uro Associates - Satellite');
-      await waitFor(() => expect(screen.queryByPlaceholderText('All locations')).not.toBeInTheDocument());
+      await chooseFilter('All service facilities', 'Uro Associates - Satellite');
+      await waitFor(() => expect(screen.queryByPlaceholderText('All service facilities')).not.toBeInTheDocument());
       await waitFor(() => expect(screen.queryByLabelText(/^Loading /)).not.toBeInTheDocument());
 
       // The visit type still stands, so this is one site change and nothing else.
@@ -227,21 +227,24 @@ describe('SchedulingWorkspace', () => {
     test.each([
       ['the Location', SatelliteClinic],
       ['a reference to it', { reference: 'Location/satellite-clinic' }],
-    ])('given %s, lists only the calendars held there', async (_, defaultLocation) => {
+    ])('given %s, lists only the calendars held there', async (_, defaultServiceFacility) => {
       const medplum = await setupClient();
-      renderWithMedplum(<SchedulingWorkspace defaultLocation={defaultLocation} />, medplum);
+      renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={defaultServiceFacility} />, medplum);
 
       await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
       expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
       expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
-      expect(screen.queryByPlaceholderText('All locations')).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('All service facilities')).not.toBeInTheDocument();
     });
 
     // Not once on every site and again on the host's once the filter catches up.
     test('searches the calendars only once', async () => {
       const medplum = await setupClient();
       const search = vi.spyOn(medplum, 'search');
-      renderWithMedplum(<SchedulingWorkspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />, medplum);
+      renderWithMedplum(
+        <SchedulingWorkspace defaultServiceFacility={{ reference: 'Location/satellite-clinic' }} />,
+        medplum
+      );
 
       await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
       await waitFor(() => expect(screen.queryByLabelText(/^Loading /)).not.toBeInTheDocument());
@@ -253,7 +256,7 @@ describe('SchedulingWorkspace', () => {
 
     test('is only where the filter starts: taking the pill off shows every site', async () => {
       const medplum = await setupClient();
-      renderWithMedplum(<SchedulingWorkspace defaultLocation={SatelliteClinic} />, medplum);
+      renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={SatelliteClinic} />, medplum);
       await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
 
       await clearFilter('Uro Associates - Satellite');

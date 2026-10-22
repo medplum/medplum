@@ -291,7 +291,7 @@ describe('SchedulingWorkspace booking', () => {
   });
 
   test('Starts on the site the workspace was opened on', async () => {
-    renderWithMedplum(<SchedulingWorkspace defaultLocation={SatelliteClinic} />, medplum);
+    renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={SatelliteClinic} />, medplum);
     await clickCalendar();
 
     const pane = screen.getByRole('region', { name: 'Book appointment' });

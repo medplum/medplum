@@ -7,6 +7,7 @@ import {
   getAppointmentSite,
   getExtension,
   getExtensionValue,
+  getPrimaryProvider,
   normalizeErrorString,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
@@ -14,9 +15,9 @@ import {
   SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Parameters, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Parameters, Reference, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
@@ -27,10 +28,17 @@ import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentR
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
+import { getMedicalRecordNumber } from '../../patients';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
-import { formatWhen, isCancelable, isReschedulable } from '../SchedulingWorkspace.utils';
+import {
+  EDIT_WINDOW_HOURS,
+  formatWhen,
+  isCancelable,
+  isPastEditWindow,
+  isReschedulable,
+} from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
@@ -167,7 +175,8 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 /**
  * Shows a detail view of a single appointment
  *
- * Has sub-views for rescheduling and cancelling the appointment.
+ * Has sub-views for rescheduling and cancelling the appointment. One past its edit window
+ * (see `isPastEditWindow`) is shown read-only, though a view already open can still finish.
  *
  * @param props - The React props
  * @param props.appointment - The Appointment resource to detail
@@ -197,7 +206,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     mrnSystem,
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
-  const otherActors = getNonPatientActors(appointment);
+  const patientResource = useResource(patient);
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -312,10 +321,13 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }
 
   const cancelable = isCancelable(appointment);
+  const locked = isPastEditWindow(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
   const externalUrl = getExternalUrl(appointment);
   const site = getAppointmentSite(appointment);
+  const { primary, providers, rooms, devices, others } = partitionActors(appointment);
+  const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
@@ -323,22 +335,15 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     <Stack gap="sm" className={classes.details}>
       <AppointmentStatusBadge status={appointment.status} />
       {!editing && patientLine}
+      {!editing && <Detail label="MRN" value={mrn} />}
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
       <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
-      <Detail
-        label="With"
-        value={
-          otherActors.length > 0
-            ? otherActors.map((actor, index) => (
-                <Fragment key={actor.reference ?? `actor-${index}`}>
-                  {index > 0 && ', '}
-                  <ResourceName value={actor} link={false} inherit />
-                </Fragment>
-              ))
-            : undefined
-        }
-      />
+      <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
+      <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
+      <Detail label="Rooms" value={listActors(rooms)} />
+      <Detail label="Devices" value={listActors(devices)} />
+      <Detail label="With" value={listActors(others)} />
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
@@ -374,7 +379,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
         <Stack gap="sm" className={classes.actions}>
           <Divider />
           {/* `$confirm` also accepts `proposed`, but only what `$hold` left `pending` is offered. */}
-          {appointment.status === 'pending' && (
+          {!locked && appointment.status === 'pending' && (
             <>
               {confirmError !== undefined && (
                 <Alert color="red" title="Could not confirm this appointment">
@@ -397,32 +402,93 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               View details
             </Button>
           )}
-          <Button variant="outline" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          {isReschedulable(appointment) && (
-            <Button
-              variant="outline"
-              leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
-              onClick={() => setRescheduling(true)}
-            >
-              Reschedule
-            </Button>
-          )}
-          <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
-            Cancel Appointment
-          </Button>
-          {!cancelable && (
+          {locked ? (
             <Text size="sm" c="dimmed">
-              {appointment.status === 'cancelled'
-                ? 'This appointment is cancelled.'
-                : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+              {`Appointments that ended more than ${EDIT_WINDOW_HOURS} hours ago can't be changed.`}
             </Text>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+              {isReschedulable(appointment) && (
+                <Button
+                  variant="outline"
+                  leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
+                  onClick={() => setRescheduling(true)}
+                >
+                  Reschedule
+                </Button>
+              )}
+              <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
+                Cancel Appointment
+              </Button>
+              {!cancelable && (
+                <Text size="sm" c="dimmed">
+                  {appointment.status === 'cancelled'
+                    ? 'This appointment is cancelled.'
+                    : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+                </Text>
+              )}
+            </>
           )}
         </Stack>
       )}
     </Stack>
   );
+}
+
+/**
+ * Sorts who the visit is held on into its primary provider, its other providers, its rooms
+ * and devices, and anything else.
+ * @param appointment - The appointment being described.
+ * @returns The primary provider when one is marked, and the rest in the order the appointment lists them.
+ */
+function partitionActors(appointment: Appointment): {
+  primary?: Reference;
+  providers: Reference[];
+  rooms: Reference[];
+  devices: Reference[];
+  others: Reference[];
+} {
+  const marked = getPrimaryProvider(appointment);
+  const primary = marked?.reference ? marked : undefined;
+  const providers: Reference[] = [];
+  const rooms: Reference[] = [];
+  const devices: Reference[] = [];
+  const others: Reference[] = [];
+  for (const actor of getNonPatientActors(appointment)) {
+    if (primary && actor.reference === primary.reference) {
+      continue;
+    }
+    switch (actor.reference?.split('/')[0]) {
+      case 'Practitioner':
+      case 'PractitionerRole':
+        providers.push(actor);
+        break;
+      case 'Location':
+        rooms.push(actor);
+        break;
+      case 'Device':
+        devices.push(actor);
+        break;
+      default:
+        others.push(actor);
+    }
+  }
+  return { primary, providers, rooms, devices, others };
+}
+
+function listActors(actors: Reference[]): JSX.Element[] | undefined {
+  if (actors.length === 0) {
+    return undefined;
+  }
+  return actors.map((actor, index) => (
+    <Fragment key={actor.reference ?? `actor-${index}`}>
+      {index > 0 && ', '}
+      <ResourceName value={actor} link={false} inherit />
+    </Fragment>
+  ));
 }
 
 /**

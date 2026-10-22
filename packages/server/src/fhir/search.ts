@@ -17,6 +17,7 @@ import {
   getDataType,
   getSearchParameter,
   invalidSearchOperator,
+  isChainedSearchFilter,
   isUUID,
   OperationOutcomeError,
   Operator,
@@ -856,10 +857,6 @@ function addSearchFilters(
   if (expr) {
     selectQuery.predicate.expressions.push(expr);
   }
-}
-
-export function isChainedSearchFilter(filter: Filter): boolean {
-  return filter.code.startsWith('_has:') || filter.code.includes('.');
 }
 
 export function buildSearchExpression(

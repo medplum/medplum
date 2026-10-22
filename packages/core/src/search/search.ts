@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
-import { isDateTimeString } from '../fhirpath/utils';
 import { badRequest, OperationOutcomeError } from '../outcomes';
 import type { TypedValue } from '../types';
 import { globalSchema, stringifyTypedValue } from '../types';
+import { isValidCalendarDate } from '../typeschema/validation';
 import { append, EMPTY, sortStringArray } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
@@ -458,10 +458,27 @@ function parseIncludeTarget(input: string): IncludeTarget {
   }
 }
 
+/**
+ * Date search values follow the FHIR search spec, not the dateTime datatype.
+ *
+ * A stored dateTime is a recorded moment, so the datatype requires seconds whenever a time is present.
+ * A search value describes a window of time, so the search spec allows hours and minutes without seconds,
+ * e.g. `2028-05-15T14:30` means any time during that minute, just as `2028` means any time in that year.
+ * The search spec also requires minutes whenever an hour is present, so `2028-05-15T14` is rejected.
+ * A time zone offset is only allowed with a time, and leap seconds (`:60`) are rejected because JavaScript cannot parse them.
+ *
+ * Shares its structure with `validationRegexes.dateTime` in typeschema/validation.ts; fixes to the shared
+ * parts (year, month, day) usually apply to both.
+ *
+ * See: https://hl7.org/fhir/R4/search.html#date
+ */
+const searchDateRegex =
+  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d{1,9})?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))?)?)?)?$/; // NOSONAR
+
 function isValidSearchValue(searchParam: SearchParameter, searchValue: string): boolean {
   switch (searchParam.type) {
     case 'date':
-      return isDateTimeString(searchValue);
+      return searchDateRegex.test(searchValue) && isValidCalendarDate(searchValue);
     default:
       return true;
   }
@@ -622,6 +639,15 @@ export function invalidSearchOperator(operator: Operator, searchParameterCodeOrI
     return invalidSearchModifier(operator, searchParameterCodeOrId);
   }
   return badRequest(`Invalid operator ${operator} for ${searchParameterCodeOrId}`);
+}
+
+/**
+ * Returns true if the search filter is a chained search (forward chain or reverse chain via `_has`).
+ * @param filter - The search filter.
+ * @returns True if the filter is a chained search filter.
+ */
+export function isChainedSearchFilter(filter: Filter): boolean {
+  return filter.code.startsWith('_has:') || filter.code.includes('.');
 }
 
 export function getSearchResourceTypes(searchRequest: SearchRequest): ResourceType[] {
