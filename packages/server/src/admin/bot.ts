@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import { singularize } from '@medplum/core';
+import { forbidden, OperationOutcomeError, singularize } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -15,13 +14,11 @@ export const createBotValidator = makeValidationMiddleware([
 
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  let project: WithId<Project>;
-  if (ctx.project.superAdmin) {
-    const projectId = singularize(req.params.projectId) as string;
-    project = await ctx.systemRepo.readResource<Project>('Project', projectId);
-  } else {
-    project = ctx.project;
+  const projectId = singularize(req.params.projectId) as string;
+  if (!ctx.project.superAdmin && projectId !== ctx.project.id) {
+    throw new OperationOutcomeError(forbidden);
   }
+  const project = await ctx.repo.readResource<Project>('Project', projectId);
   const bot = await createBot(ctx.repo, project, req.body);
   res.status(201).json(bot);
 }

@@ -73,7 +73,7 @@ describe('Bot admin', () => {
     expect(res4).toHaveStatus(400);
   });
 
-  test('Create bot as superadmin - verify projectID', async () => {
+  test('Super admin creates bot in target project', async () => {
     const { project } = await createTestProject();
 
     const superAdminAccessToken = await getSuperAdminAccessToken();
@@ -97,5 +97,27 @@ describe('Bot admin', () => {
       filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'Bot/' + botId }],
     });
     expect(resolveId(membership?.project)).toBe(project.id);
+  });
+
+  test('Super admin creates bot in missing project', async () => {
+    const superAdminAccessToken = await getSuperAdminAccessToken();
+    const res = await request(app)
+      .post('/admin/projects/' + randomUUID() + '/bot')
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .type('json')
+      .send({ name: 'Missing project bot' });
+    expect(res).toHaveStatus(404);
+  });
+
+  test('Project admin cannot create bot in another project', async () => {
+    const { project: otherProject } = await createTestProject();
+    const { accessToken } = await createTestProject({ membership: { admin: true }, withAccessToken: true });
+
+    const res = await request(app)
+      .post('/admin/projects/' + otherProject.id + '/bot')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Cross project bot' });
+    expect(res).toHaveStatus(403);
   });
 });
