@@ -216,7 +216,7 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  * The workspace as a host opens it on one site, such as the facility a user launched
  * scheduling from.
  *
- * The host passes a reference to the Location, and the Location filter starts on **Uro Associates
+ * The host passes a reference to the Location, and the Service facility filter starts on **Uro Associates
  * - Satellite**: only the calendars held there are listed, and the visit types on offer
  * are the ones the satellite holds. Click open time and the booking form starts on the
  * satellite too, which is the site the booked appointment records.
@@ -225,12 +225,14 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  *
  * @returns The story.
  */
-export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
+export const AtASite = (): JSX.Element => (
+  <Workspace defaultServiceFacility={{ reference: 'Location/satellite-clinic' }} />
+);
 AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
-  readonly defaultLocation?: Reference<Location>;
+  readonly defaultServiceFacility?: Reference<Location>;
 }
 
 /**
@@ -246,7 +248,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
-        defaultLocation={props.defaultLocation}
+        defaultServiceFacility={props.defaultServiceFacility}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={({ appointments }) => {

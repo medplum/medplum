@@ -692,6 +692,30 @@ describe('FHIR Routes', () => {
       }));
   });
 
+  test('chainedSearchOnReader only routes chained searches to reader', async () => {
+    const token = await initTestAuth({
+      project: { systemSetting: [{ name: 'chainedSearchOnReader', valueBoolean: true }] },
+    });
+
+    for (const [url, expectReader] of [
+      ['/fhir/R4/Observation?subject:Patient.name=Alice', true],
+      ['/fhir/R4/Patient?_has:Observation:subject:status=final', true],
+      ['/fhir/R4/Patient?name=Alice', false],
+    ] as const) {
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
+      try {
+        const res = await request(app)
+          .get(url)
+          .set('Authorization', 'Bearer ' + token);
+        expect(res).toHaveStatus(200);
+        expect(readerSpy).toHaveBeenCalledTimes(expectReader ? 1 : 0);
+        expect(writerSpy).toHaveBeenCalledTimes(expectReader ? 0 : 1);
+      } finally {
+        restore();
+      }
+    }
+  });
+
   test('Search invalid resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patientx`)

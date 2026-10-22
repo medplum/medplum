@@ -23,7 +23,7 @@ export interface AppointmentActorSelectProps {
    * device anywhere inside it counts, a provider only if one of their
    * PractitionerRoles names it.
    */
-  readonly location?: Reference<Location> | WithId<Location>;
+  readonly serviceFacility?: Reference<Location> | WithId<Location>;
   readonly defaultValue?: readonly ScheduleCandidate[];
   readonly onChange: (candidates: readonly ScheduleCandidate[]) => void;
   readonly error?: string;
@@ -58,10 +58,10 @@ export interface AppointmentActorSelectProps {
  * @returns The field for one actor type.
  */
 export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.Element {
-  const { actorType, service, location, defaultValue, onChange, error, disabled, candidates } = props;
+  const { actorType, service, serviceFacility, defaultValue, onChange, error, disabled, candidates } = props;
   const medplum = useMedplum();
   const resolvedService = useResource<HealthcareService>(service);
-  const locationReference = location && getReferenceString(location);
+  const serviceFacilityReference = serviceFacility && getReferenceString(serviceFacility);
   const lowercaseLabel = getActorTypeLabel(actorType).toLowerCase();
   const label = props.label ?? getActorTypeLabel(actorType);
   const required = props.required ?? isActorTypeRequired(actorType);
@@ -77,12 +77,12 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
         ? searchScheduleCandidates(medplum, resolvedService, {
             actorType,
             query,
-            location: locationReference ? { reference: locationReference } : undefined,
+            location: serviceFacilityReference ? { reference: serviceFacilityReference } : undefined,
             signal,
           })
         : [];
     },
-    [medplum, resolvedService, locationReference, actorType, candidates]
+    [medplum, resolvedService, serviceFacilityReference, actorType, candidates]
   );
 
   const handleChange = useCallback((candidates: ScheduleCandidate[]) => onChange(candidates), [onChange]);

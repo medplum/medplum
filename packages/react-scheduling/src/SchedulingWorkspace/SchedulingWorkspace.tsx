@@ -109,11 +109,11 @@ export interface SchedulingWorkspaceProps {
    */
   readonly appointmentExtensions?: readonly Extension[];
   /**
-   * The site the Location filter starts on, e.g. the facility the host launched
+   * The site the Service facility filter starts on, e.g. the facility the host launched
    * scheduling from. The user can still change or clear it. Read once on mount; key
    * the workspace to start it over on another site.
    */
-  readonly defaultLocation?: Reference<Location> | WithId<Location>;
+  readonly defaultServiceFacility?: Reference<Location> | WithId<Location>;
 }
 
 /**
@@ -141,7 +141,7 @@ export interface SchedulingWorkspaceProps {
  *   appointment beside it, from whenever the form holds a time until it drops it. The
  *   calendar is never moved to reach either; one off the week on screen is drawn again
  *   on paging back to it.
- * - Can open on a site the host chooses: `defaultLocation` is where the Location filter,
+ * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
  *
  * @param props - Component props
@@ -157,7 +157,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
-    defaultLocation,
+    defaultServiceFacility,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -171,9 +171,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
-  const initialFilters: CalendarFilterValues = defaultLocation ? { location: defaultLocation } : NO_FILTERS;
+  const initialFilters: CalendarFilterValues = defaultServiceFacility
+    ? { serviceFacility: defaultServiceFacility }
+    : NO_FILTERS;
   const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
-  const { service: selectedService, location: selectedLocation } = filters;
+  const { service: selectedService, serviceFacility: selectedServiceFacility } = filters;
 
   const [range, setRange] = useState<DateTimeRange>();
 
@@ -205,7 +207,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         const candidates = await searchScheduleCandidates(medplum, selectedService, {
           actorType,
           query: '',
-          location: selectedLocation,
+          location: selectedServiceFacility,
           signal: controller.signal,
           count: 250,
         });
@@ -229,7 +231,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       });
     return () => controller.abort();
-  }, [medplum, selectedService, selectedLocation]);
+  }, [medplum, selectedService, selectedServiceFacility]);
 
   const activeCandidates = useMemo(() => {
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
@@ -546,7 +548,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 onToggleTimeFinder={setTimeFinderOpen}
                 onChangeProposal={setProposal}
                 onBooked={finishBooking}
-                defaultLocation={selectedLocation}
+                defaultServiceFacility={selectedServiceFacility}
                 defaultService={selectedService}
               />
             </Tabs.Panel>

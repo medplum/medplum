@@ -1046,11 +1046,12 @@ export async function getLoginForAccessToken(
     verifyResult = await verifyJwt(accessToken, expectedIssuer);
   } catch {
     const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
-    if (externalAuthState) {
-      const repo = await getRepoForLogin(externalAuthState, undefined, req?.ip);
-      return { authState: externalAuthState, repo };
+    if (!externalAuthState) {
+      return undefined;
     }
-    return undefined;
+    const { login, project, membership } = externalAuthState;
+    const systemRepo = await getProjectSystemRepo(project);
+    return makeAuthResult(systemRepo, req, login, project, membership, { accessToken, remoteAddress: req?.ip });
   }
 
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
@@ -1249,19 +1250,19 @@ async function tryAddOnBehalfOf(
  * Tries to authenticate the user using an external authentication provider.
  * This function checks if the access token is a valid JWT and corresponds to an external authentication provider.
  * If the token is valid, it retrieves the user's profile and project membership.
- * If successful, it returns the auth state containing the login, project, membership, and user configuration.
+ * If successful, it returns the login, project, and membership.
  * If the token is invalid or does not correspond to an external provider, it returns undefined.
  *
  * @param systemRepo - The system repository.
  * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
- * @returns The auth state if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
+ * @returns The login, project, and membership if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
  */
 async function tryExternalAuth(
   systemRepo: SystemRepository,
   req: Request | undefined,
   accessToken: string
-): Promise<AuthState | undefined> {
+): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
   const externalAuthProviders = getConfig().externalAuthProviders;
   if (!isJwt(accessToken)) {
     // Not a JWT, so we cannot verify it
@@ -1315,8 +1316,7 @@ async function tryExternalAuth(
     await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
   }
 
-  const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  return { login, project, membership, userConfig };
+  return { login, project, membership };
 }
 
 async function tryExternalAuthLogin(

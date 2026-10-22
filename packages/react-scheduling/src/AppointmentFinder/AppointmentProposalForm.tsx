@@ -108,7 +108,7 @@ export interface AppointmentProposalFormProps {
   /** What the proposal is for. Defaults to booking a new visit. */
   readonly mode?: AppointmentProposalMode;
   /** Pre-fills where the visit is, for a host that already knows. */
-  readonly defaultLocation?: Reference<Location> | WithId<Location>;
+  readonly defaultServiceFacility?: Reference<Location> | WithId<Location>;
   /** Pre-fills the visit type, for a deep link or a reschedule. */
   readonly defaultService?: WithId<HealthcareService>;
   /** Pre-fills who the visit is for, for a host launching from a patient's chart. */
@@ -216,7 +216,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const medplum = useMedplum();
   const {
     mode = 'book',
-    defaultLocation,
+    defaultServiceFacility,
     defaultService,
     defaultPatient,
     defaultSelections,
@@ -235,7 +235,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     allowRecurring,
   } = props;
 
-  const [location, setLocation] = useState<Reference<Location> | WithId<Location> | undefined>(defaultLocation);
+  const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
+    defaultServiceFacility
+  );
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
   const [selections, setSelections] = useState<ActorSelections>(defaultSelections ?? {});
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
@@ -441,8 +443,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     clearResources();
   }
 
-  function chooseLocation(next: WithId<Location> | undefined): void {
-    setLocation(next);
+  function chooseServiceFacility(next: WithId<Location> | undefined): void {
+    setServiceFacility(next);
     clearResources();
     // A fixed visit type is not the site's to drop: the appointment is on file for it
     // whatever site is being searched, and a site that cannot hold it simply offers no
@@ -620,7 +622,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         }
         // The site stamped on the booking carries its name, so a pre-filled reference is
         // read here rather than holding up the form while it loads.
-        const site = location && (isResource(location) ? location : await medplum.readReference(location));
+        const site =
+          serviceFacility &&
+          (isResource(serviceFacility) ? serviceFacility : await medplum.readReference(serviceFacility));
         const booking = buildBooking({
           proposal: chosen,
           patient,
@@ -650,12 +654,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       <Stack className={classes.form} gap="sm">
         <ResourceInput<WithId<Location>>
           resourceType="Location"
-          name="location"
-          label="Location"
-          placeholder="Any location"
+          name="serviceFacility"
+          label="Service facility"
+          placeholder="Any service facility"
           searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
-          defaultValue={defaultLocation as WithId<Location> | Reference<WithId<Location>> | undefined}
-          onChange={chooseLocation}
+          defaultValue={defaultServiceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
+          onChange={chooseServiceFacility}
           clearable={false}
         />
 
@@ -672,7 +676,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         ) : (
           <AppointmentServiceSelect
             key={serviceFieldKey}
-            location={location}
+            serviceFacility={serviceFacility}
             // From state, not the prop: `defaultService` on a remount would put back
             // the visit type the remount was clearing.
             defaultValue={service}
@@ -685,7 +689,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           key={`actors-${actorFieldsKey}`}
           value={selections}
           service={service}
-          location={location}
+          serviceFacility={serviceFacility}
           disabled={!service}
           errors={actorErrors}
           onChange={chooseResources}

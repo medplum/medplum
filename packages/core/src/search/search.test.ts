@@ -5,7 +5,14 @@ import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import type { SearchRequest } from './search';
-import { Operator, formatSearchQuery, parseSearchRequest, parseXFhirQuery, splitSearchOnComma } from './search';
+import {
+  Operator,
+  formatSearchQuery,
+  isChainedSearchFilter,
+  parseSearchRequest,
+  parseXFhirQuery,
+  splitSearchOnComma,
+} from './search';
 
 describe('Search Utils', () => {
   beforeAll(() => {
@@ -532,5 +539,13 @@ describe('Search Utils', () => {
     expect(splitSearchOnComma('x\\,')).toStrictEqual(['x,']);
     expect(splitSearchOnComma('\\,y')).toStrictEqual([',y']);
     expect(splitSearchOnComma('x\\,,y')).toStrictEqual(['x,', 'y']);
+  });
+
+  test.each<[string, boolean]>([
+    ['subject:Patient.name', true],
+    ['_has:Observation:subject:status', true],
+    ['name', false],
+  ])('isChainedSearchFilter(%s)', (code, expected) => {
+    expect(isChainedSearchFilter({ code, operator: Operator.EQUALS, value: 'x' })).toBe(expected);
   });
 });
