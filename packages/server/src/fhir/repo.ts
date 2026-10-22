@@ -826,7 +826,7 @@ export class Repository extends FhirRepository implements Disposable {
           .where('id', '=', id)
           .orderBy('lastUpdated', true)
           .limit(clamp(0, options?.limit ?? 100, DEFAULT_MAX_SEARCH_COUNT))
-          .offset(Math.max(0, options?.offset ?? 0)),
+          .offset(options?.offset),
         resourceType,
         { source: 'repo.readHistory' }
       );
