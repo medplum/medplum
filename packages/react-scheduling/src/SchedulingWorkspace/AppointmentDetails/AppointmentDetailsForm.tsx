@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack } from '@mantine/core';
+import { Alert, Button, Stack, Textarea } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
@@ -34,7 +34,7 @@ export interface AppointmentDetailsFormProps {
 }
 
 /**
- * Edits the patient, and whatever the visit type asked for at booking.
+ * Edits the patient, whatever the visit type asked for at booking, and the notes.
  *
  * Fields are filled from the appointment at mount. Saving is a plain update: the time and
  * Slots are untouched.
@@ -60,12 +60,13 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     () => getPatientParticipant(appointment)?.actor as Reference<Patient> | undefined
   );
   const [values, setValues] = useState<BookingRequirementValues>(() => readRequirementValues(appointment));
+  const [comment, setComment] = useState(appointment.comment ?? '');
   const [saving, setSaving] = useState(false);
   // A host still handing over the pre-save appointment would otherwise re-offer the same write.
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown>();
 
-  const edited = isEdited(appointment, patient, values, requirements);
+  const edited = isEdited(appointment, patient, values, requirements) || comment.trim() !== (appointment.comment ?? '');
   const complete = patient !== undefined && hasRequiredValues(values, requirements);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
@@ -85,7 +86,11 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     setSaving(true);
     setSaveError(undefined);
     try {
-      const updated = await medplum.updateResource(buildAppointmentUpdate(appointment, patient, values, requirements));
+      const updated = await medplum.updateResource({
+        ...buildAppointmentUpdate(appointment, patient, values, requirements),
+        // FHIR has no empty strings, so cleared notes are left off.
+        comment: comment.trim() || undefined,
+      });
       setSaved(true);
       try {
         await onUpdated?.(updated);
@@ -107,6 +112,16 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
         required
         onChange={choosePatient}
         error={!patient ? 'Select a patient.' : undefined}
+      />
+      <Textarea
+        label="Notes"
+        autosize
+        minRows={2}
+        value={comment}
+        onChange={(event) => {
+          setComment(event.currentTarget.value);
+          setSaved(false);
+        }}
       />
       {service && requirements.size > 0 && (
         <BookingRequirementFields

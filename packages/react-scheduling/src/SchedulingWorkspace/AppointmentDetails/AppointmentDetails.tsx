@@ -79,7 +79,7 @@ export interface AppointmentDetailsProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
-  /** Called with the appointment as written, after the patient or the visit type's codes are saved. */
+  /** Called with the appointment as written, after the patient, the visit type's codes, or the notes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
 
@@ -337,7 +337,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="Devices" value={listActors(devices)} />
       <Detail label="With" value={listActors(others)} />
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
-      <Detail label="Notes" value={appointment.comment ?? appointment.description} />
+      {!editing && <Detail label="Notes" value={appointment.comment} />}
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
       {editing ? (
         <AppointmentDetailsForm

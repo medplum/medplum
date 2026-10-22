@@ -1010,6 +1010,28 @@ describe('AppointmentDetails editing', () => {
     expect(stored.extension).toEqual(AUTHORIZED_APPOINTMENT.extension);
   });
 
+  test('edits the notes in place of showing them, and clears them', async () => {
+    renderEditable(BOOKED_APPOINTMENT);
+    await screen.findByText('Miles Cooper');
+
+    const notes = screen.getByRole('textbox', { name: 'Notes' });
+    expect(notes).toHaveValue('Bring prior films');
+    // Only in the field: the detail line it replaces is gone.
+    expect(screen.getByText('Bring prior films')).toBe(notes);
+    expect(saveButton()).toBeDisabled();
+
+    fireEvent.change(notes, { target: { value: '  Bring prior films and referral  ' } });
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBe(
+      'Bring prior films and referral'
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Notes' }), { target: { value: ' ' } });
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBeUndefined();
+  });
+
   test('discards unsaved changes when editing is cancelled', async () => {
     const update = vi.spyOn(medplum, 'updateResource');
     renderEditable(AUTHORIZED_APPOINTMENT);
