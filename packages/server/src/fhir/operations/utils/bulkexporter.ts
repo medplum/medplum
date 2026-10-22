@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Parameters, ParametersParameter, Project, Resource } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, Parameters, ParametersParameter, Project, Resource } from '@medplum/fhirtypes';
 import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
@@ -42,6 +42,7 @@ export class BulkExporter {
   private resource: WithId<AsyncJob> | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSets = new Map<string, Set<string>>();
+  private deletedWriter: BulkFileWriter | undefined;
 
   constructor(repo: Repository, resource?: WithId<AsyncJob>) {
     this.repo = repo;
@@ -72,30 +73,43 @@ export class BulkExporter {
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
     let writer = this.writers[resourceType];
     if (!writer) {
-      if (!this.resource) {
-        throw new Error('Export must be started before writing output');
-      }
-      // Like the AsyncJob, the output Binary is bookkeeping for a read operation, so create it
-      // with the system repo (scoped to the caller's project + account compartment so they can
-      // presign/download it). The exported data was already access-checked when read.
-      const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
-      const binary = await this.repo.getSystemRepo().createResource<Binary>({
-        resourceType: 'Binary',
-        contentType: NDJSON_CONTENT_TYPE,
-        // Bind export output Binary authorization to the export job context.
-        // Binary read/presign paths must be able to read this reference.
-        securityContext: {
-          reference: getReferenceString(this.resource),
-        },
-        meta: {
-          project: this.repo.currentProject()?.id,
-          accounts: accountCompartment ? [accountCompartment] : undefined,
-        },
-      });
-      writer = new BulkFileWriter(binary);
+      writer = await this.createWriter();
       this.writers[resourceType] = writer;
     }
     return writer;
+  }
+
+  /**
+   * Writes one line of the `deleted` output: a transaction Bundle of DELETE entries.
+   * @param bundle - The transaction Bundle.
+   */
+  async writeDeletedBundle(bundle: Bundle): Promise<void> {
+    this.deletedWriter ??= await this.createWriter();
+    await this.deletedWriter.write(bundle);
+  }
+
+  private async createWriter(): Promise<BulkFileWriter> {
+    if (!this.resource) {
+      throw new Error('Export must be started before writing output');
+    }
+    // Like the AsyncJob, the output Binary is bookkeeping for a read operation, so create it
+    // with the system repo (scoped to the caller's project + account compartment so they can
+    // presign/download it). The exported data was already access-checked when read.
+    const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
+    const binary = await this.repo.getSystemRepo().createResource<Binary>({
+      resourceType: 'Binary',
+      contentType: NDJSON_CONTENT_TYPE,
+      // Bind export output Binary authorization to the export job context.
+      // Binary read/presign paths must be able to read this reference.
+      securityContext: {
+        reference: getReferenceString(this.resource),
+      },
+      meta: {
+        project: this.repo.currentProject()?.id,
+        accounts: accountCompartment ? [accountCompartment] : undefined,
+      },
+    });
+    return new BulkFileWriter(binary);
   }
 
   async closeWriter(resourceType: string): Promise<void> {
@@ -138,6 +152,7 @@ export class BulkExporter {
     for (const writer of Object.values(this.writers)) {
       await writer.close();
     }
+    await this.deletedWriter?.close();
 
     // Clear remaining tracked resources to free memory immediately
     this.resourceSets.clear();
@@ -163,18 +178,25 @@ export class BulkExporter {
   }
 
   formatOutput(parameters: ParametersParameter[]): Parameters {
-    return {
-      resourceType: 'Parameters',
-      parameter: [
-        ...parameters,
-        ...Object.entries(this.writers).map(([resourceType, writer]) => ({
-          name: 'output',
-          part: [
-            { name: 'type', valueCode: resourceType },
-            { name: 'url', valueUri: getReferenceString(writer.binary) },
-          ],
-        })),
-      ],
-    };
+    const parameter: ParametersParameter[] = [
+      ...parameters,
+      ...Object.entries(this.writers).map(([resourceType, writer]) => ({
+        name: 'output',
+        part: [
+          { name: 'type', valueCode: resourceType },
+          { name: 'url', valueUri: getReferenceString(writer.binary) },
+        ],
+      })),
+    ];
+    if (this.deletedWriter) {
+      parameter.push({
+        name: 'deleted',
+        part: [
+          { name: 'type', valueCode: 'Bundle' },
+          { name: 'url', valueUri: getReferenceString(this.deletedWriter.binary) },
+        ],
+      });
+    }
+    return { resourceType: 'Parameters', parameter };
   }
 }
