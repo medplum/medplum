@@ -7,6 +7,7 @@ import {
   arrayify,
   badRequest,
   concatUrls,
+  getReferenceString,
   getResourceTypes,
   isString,
   OperationOutcomeError,
@@ -16,7 +17,7 @@ import {
   singularize,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { BundleEntry, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { queueBulkExport } from '../../workers/bulk-export';
@@ -87,11 +88,19 @@ async function startExport(req: FhirRequest, exportType: 'System' | 'Patient'): 
   const { baseUrl } = getConfig();
   const { since, types, typeFilters } = parseExportParameters(req);
   const typeFilterSearches = parseTypeFilters(ctx.repo, typeFilters);
+  // Deleted rows have no compartments or search columns to evaluate access policy criteria against
+  const includeDeleted = !!since && ctx.membership.admin === true;
 
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-  await queueBulkExport(bulkDataExport, { exportLevel: exportType, types, since, typeFilters: typeFilterSearches });
+  await queueBulkExport(bulkDataExport, {
+    exportLevel: exportType,
+    types,
+    since,
+    typeFilters: typeFilterSearches,
+    includeDeleted,
+  });
 
   return [accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)];
 }
@@ -163,15 +172,59 @@ export async function exportResources(
   types: string[] | undefined,
   exportLevel: string,
   since?: string,
-  typeFilters?: SearchRequest[]
+  typeFilters?: SearchRequest[],
+  includeDeleted?: boolean
 ): Promise<void> {
   for (const resourceType of getExportResourceTypes(exporter.repo, exportLevel, types)) {
     const typeFilterSearches = typeFilters?.filter((search) => search.resourceType === resourceType);
     await exportResourceType(exporter, resourceType, exportPageSize, since, typeFilterSearches);
+    // _typeFilter criteria cannot be evaluated against deleted rows, so omit deletions for filtered types
+    if (includeDeleted && since && !typeFilterSearches?.length) {
+      await exportDeletedResourceType(exporter, resourceType, since);
+    }
   }
 
   // Close the exporter
   await exporter.close(project);
+}
+
+/**
+ * Writes resources of one type deleted since the given time to the `deleted` output,
+ * one transaction Bundle of DELETE entries per page.
+ * @param exporter - The bulk exporter.
+ * @param resourceType - The resource type.
+ * @param since - Only include resources deleted at or after this time.
+ */
+async function exportDeletedResourceType(
+  exporter: BulkExporter,
+  resourceType: ResourceType,
+  since: string
+): Promise<void> {
+  let entry: BundleEntry[] = [];
+  const flush = async (): Promise<void> => {
+    if (entry.length) {
+      await exporter.writeDeletedBundle({ resourceType: 'Bundle', type: 'transaction', entry });
+      entry = [];
+    }
+  };
+  await exporter.repo.processAllResources(
+    {
+      resourceType,
+      count: exportPageSize,
+      filters: [
+        { code: '_deleted', operator: Operator.EQUALS, value: 'true' },
+        { code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since },
+      ],
+      sortRules: [{ code: '_lastUpdated', descending: false }],
+    },
+    async (resource) => {
+      entry.push({ request: { method: 'DELETE', url: getReferenceString(resource) } });
+      if (entry.length >= exportPageSize) {
+        await flush();
+      }
+    }
+  );
+  await flush();
 }
 
 export async function exportResourceType<T extends Resource>(
