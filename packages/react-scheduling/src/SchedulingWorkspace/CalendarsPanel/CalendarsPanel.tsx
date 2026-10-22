@@ -25,7 +25,7 @@ export interface CalendarsPanelProps {
   /** Shows a loading indicator on every section while their candidates are being fetched. */
   readonly candidatesLoading?: boolean;
   /**
-   * The fields narrowing which calendars are worth listing at all, shown above them —
+   * The fields narrowing what the calendar draws, shown above the lists —
    * or omitted to leave the filters out entirely, which is what a host filtering
    * nothing should pass. The panel renders whatever is given and reads none of it.
    */
@@ -58,7 +58,7 @@ const SECTIONS: readonly CalendarsPanelSection[] = [
 
 /**
  * A sidebar panel for selecting calendars, grouped under collapsible sections, above
- * which a host may place the fields narrowing which calendars are worth listing at all.
+ * which a host may place the fields narrowing what the calendar draws.
  * The whole panel collapses to a single button that brings it back.
  *
  * This is a presentational component that renders whatever is passed in. It does not
@@ -100,7 +100,7 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
 
         {filters && (
           <>
-            <Box mb="xs" role="group" aria-label="Filter calendars">
+            <Box mb="xs" role="group" aria-label="Filter appointments">
               {filters}
             </Box>
             <Divider />

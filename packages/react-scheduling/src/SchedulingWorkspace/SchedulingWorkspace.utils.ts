@@ -1,10 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
+import {
+  extractServiceTypeReferences,
+  getAppointmentSite,
+  getExtensionValue,
+  getReferenceString,
+  serviceTypeIncludesService,
+  TimezoneExtensionURI,
+} from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { formatDayHeading, formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
+import type { CalendarFilterValues } from './CalendarFilters';
 
 /** The zones the calendars on show are kept in, and whether any of them is unknown. */
 export interface CalendarTimezones {
@@ -69,6 +77,24 @@ export function groupAppointmentsByService(
     groups.set(reference, group);
   }
   return groups;
+}
+
+/**
+ * Reports whether an appointment is what the calendar filters ask for.
+ *
+ * Sites match by exact reference, with no `partOf` walk. An appointment recording no site
+ * matches only when no site is chosen.
+ *
+ * @param appointment - The appointment to check.
+ * @param filters - The chosen site and service type, either absent for all of them.
+ * @returns Whether the appointment is at the chosen site and for the chosen service type.
+ */
+export function matchesCalendarFilters(appointment: Appointment, filters: CalendarFilterValues): boolean {
+  const { serviceFacility, service } = filters;
+  if (serviceFacility && getAppointmentSite(appointment)?.reference !== getReferenceString(serviceFacility)) {
+    return false;
+  }
+  return !service || serviceTypeIncludesService(appointment.serviceType, service);
 }
 
 /**
