@@ -288,8 +288,9 @@ export class Repository extends FhirRepository implements Disposable {
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
    * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
    * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
+   * 20. 10/22/26 - Range column sort values are -infinity for ranges unbounded below
    */
-  static readonly VERSION: number = 19;
+  static readonly VERSION: number = 20;
 
   /**
    * Constructs a new Repository instance.

@@ -109,7 +109,7 @@ describe('buildRangeColumns', () => {
       '2026-04-04T12:34:56.000Z',
     ],
     [{ start: '2026-04-18T11:22:33.456Z' }, `[2026-04-18T11:22:33.456Z,)`, '2026-04-18T11:22:33.456Z'],
-    [{ end: '2026-04-18T11:22:33.456Z' }, `(,2026-04-18T11:22:33.456Z]`, '2026-04-18T11:22:33.456Z'],
+    [{ end: '2026-04-18T11:22:33.456Z' }, `(,2026-04-18T11:22:33.456Z]`, '-infinity'],
   ])('explicit Period: %j', (period, expectedRange, expectedSort) => {
     const valueDate = getSearchParameter('Observation', 'value-date');
     if (!valueDate) {
@@ -229,12 +229,12 @@ describe('buildRangeColumns', () => {
     expect(columns.__valueQuantitySort).toStrictEqual(102);
   });
 
-  test.each<[Quantity['comparator'], string]>([
-    ['>', '(98.6,)'],
-    ['>=', '[98.6,)'],
-    ['<', '(,98.6)'],
-    ['<=', '(,98.6]'],
-  ])('Quantity range with comparator: %s', (comparator, expected) => {
+  test.each<[Quantity['comparator'], string, number]>([
+    ['>', '(98.6,)', 98.6],
+    ['>=', '[98.6,)', 98.6],
+    ['<', '(,98.6)', Number.NEGATIVE_INFINITY],
+    ['<=', '(,98.6]', Number.NEGATIVE_INFINITY],
+  ])('Quantity range with comparator: %s', (comparator, expected, expectedSort) => {
     const value = getSearchParameter('Observation', 'value-quantity');
     if (!value) {
       throw new Error('Missing search parameter');
@@ -260,7 +260,7 @@ describe('buildRangeColumns', () => {
     buildRangeColumns(value, impl, columns, resource);
 
     expect(columns.__valueQuantity).toStrictEqual(expected);
-    expect(columns.__valueQuantitySort).toStrictEqual(98.6);
+    expect(columns.__valueQuantitySort).toStrictEqual(expectedSort);
   });
 
   test.each<[Timing, string, string]>([
@@ -460,5 +460,32 @@ describe('buildRangeColumnsSearchFilter', () => {
     condition.buildSql(sql);
     expect(sql.toString()).toStrictEqual(expect.stringContaining(' && $1'));
     expect(sql.getValues()).toStrictEqual(['[0.45,0.55)']);
+  });
+
+  test.each<[Operator, string, string, string[]]>([
+    [Operator.EQUALS, '5', ' && $1::numrange AND "Observation"."__valueQuantitySort" <= $2', ['[5,5]', '5']],
+    [Operator.LESS_THAN, '5', ' && $1::numrange AND "Observation"."__valueQuantitySort" <= $2', ['(,5)', '5']],
+    [
+      Operator.LESS_THAN_OR_EQUALS,
+      '5',
+      ' && $1::numrange AND "Observation"."__valueQuantitySort" <= $2',
+      ['(,5]', '5'],
+    ],
+    [Operator.ENDS_BEFORE, '5', ' << $1::numrange AND "Observation"."__valueQuantitySort" <= $2', ['[5,5]', '5']],
+    [Operator.GREATER_THAN, '5', ' && $1', ['(5,)']],
+    [Operator.NOT_EQUALS, '5', ' && $1', ['[5,5]']],
+  ])('bounds sort column for scalar param: %s %s', (operator, value, expectedSql, values) => {
+    const valueQuantity = getSearchParameter('Observation', 'value-quantity');
+    if (!valueQuantity) {
+      throw new Error('Missing search parameter');
+    }
+
+    const filter: Filter = { code: 'value-quantity', operator, value };
+    const condition = buildRangeColumnsSearchFilter('Observation', 'Observation', valueQuantity, filter);
+
+    const sql = new SqlBuilder();
+    condition.buildSql(sql);
+    expect(sql.toString()).toStrictEqual(expect.stringContaining(expectedSql));
+    expect(sql.getValues()).toStrictEqual(values);
   });
 });
