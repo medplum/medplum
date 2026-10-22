@@ -3,9 +3,8 @@
 
 export type PlanId = 'free' | 'production' | 'premium' | 'enterprise';
 
-export interface Entitlement {
-  readonly text: string;
-}
+export type Entitlement =
+  boolean | string | { readonly text: string; readonly link: { readonly text: string; readonly href: string } };
 
 export interface ComparisonRow {
   readonly label: string;
@@ -17,33 +16,33 @@ export interface ComparisonRow {
 export interface ComparisonGroup {
   readonly title: string;
   readonly rows: readonly ComparisonRow[];
+  readonly note?: {
+    readonly prefix: string;
+    readonly link: { readonly text: string; readonly href: string };
+    readonly suffix: string;
+  };
 }
 
 export const salesUrl = 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a';
-const productionCheckoutUrl = 'https://buy.stripe.com/bIY16F88LgtKfDO146';
 
-const value = (text: string): Entitlement => ({ text });
-const unavailable = value('Not Included');
-const included = value('Included');
 const hostingRows: readonly ComparisonRow[] = [
   {
     label: 'Deployment',
-    docsHref: '/docs/self-hosting/considerations',
     values: {
-      free: value('Medplum-hosted'),
-      production: value('Medplum-hosted'),
-      premium: value('Medplum-hosted'),
-      enterprise: value('Hosted or self-hosted'),
+      free: 'Medplum-hosted',
+      production: 'Medplum-hosted',
+      premium: 'Medplum-hosted',
+      enterprise: { text: 'Hosted or', link: { text: 'self-hosted', href: '/docs/self-hosting/considerations' } },
     },
   },
   {
     label: 'Production and Staging Environments',
     description: 'Included with paid hosted plans. Self-hosted environments are customer-managed.',
-    values: { free: unavailable, production: included, premium: included, enterprise: included },
+    values: { free: false, production: true, premium: true, enterprise: true },
   },
   {
     label: 'Custom Domains',
-    values: { free: unavailable, production: value('1'), premium: value('5'), enterprise: value('10') },
+    values: { free: false, production: '1', premium: '5', enterprise: '10' },
   },
 ];
 
@@ -52,38 +51,38 @@ const platformRows: readonly ComparisonRow[] = [
     label: 'Bots',
     docsHref: '/docs/bots',
     description: 'Run custom code to automate workflows and connect external systems.',
-    values: { free: unavailable, production: included, premium: included, enterprise: included },
+    values: { free: false, production: true, premium: true, enterprise: true },
   },
   {
     label: 'Scheduled Bots',
     docsHref: '/docs/bots/bot-cron-job',
     description: 'Run Bots on a recurring schedule.',
-    values: { free: unavailable, production: unavailable, premium: included, enterprise: included },
+    values: { free: false, production: false, premium: true, enterprise: true },
   },
   {
     label: 'Async Batch',
     docsHref: '/docs/fhir-datastore/processing-async-bundles',
     description: 'Process FHIR batches in the background.',
-    values: { free: unavailable, production: included, premium: included, enterprise: included },
+    values: { free: false, production: true, premium: true, enterprise: true },
   },
   {
     label: 'Concurrent WebSocket Connections',
     docsHref: '/docs/react/use-subscription',
     description: 'Simultaneous connections that receive real-time updates when resources change.',
-    values: { free: unavailable, production: unavailable, premium: value('2,000'), enterprise: value('5,000') },
+    values: { free: false, production: false, premium: '2,000', enterprise: '5,000' },
   },
 ];
 
 const integrationRows: readonly ComparisonRow[] = [
   {
     label: 'e-Prescribing',
-    docsHref: '/docs/integration/dosespot',
+    docsHref: '/docs/decision-guides/e-prescribe#related-integrations',
     description: 'Electronic prescribing. Additional usage is billed separately.',
     values: {
-      free: unavailable,
-      production: unavailable,
-      premium: value('Included Allowance'),
-      enterprise: value('Larger Included Allowance'),
+      free: false,
+      production: false,
+      premium: 'Included Allowance',
+      enterprise: 'Larger Included Allowance',
     },
   },
   {
@@ -91,21 +90,20 @@ const integrationRows: readonly ComparisonRow[] = [
     docsHref: '/docs/integration/health-gorilla',
     description: 'Lab ordering and results. Additional usage is billed separately.',
     values: {
-      free: unavailable,
-      production: unavailable,
-      premium: value('Included Allowance'),
-      enterprise: value('Larger Included Allowance'),
+      free: false,
+      production: false,
+      premium: 'Included Allowance',
+      enterprise: 'Larger Included Allowance',
     },
   },
   {
     label: 'Health Information Exchange (HIE)',
-    docsHref: '/docs/integration/health-gorilla',
     description: 'Exchange patient records. Additional usage is billed separately.',
     values: {
-      free: unavailable,
-      production: unavailable,
-      premium: value('Included Allowance'),
-      enterprise: value('Larger Included Allowance'),
+      free: false,
+      production: false,
+      premium: 'Included Allowance',
+      enterprise: 'Larger Included Allowance',
     },
   },
   {
@@ -113,21 +111,21 @@ const integrationRows: readonly ComparisonRow[] = [
     docsHref: '/docs/integration/efax',
     description: 'Send and receive faxes. Usage is billed separately.',
     values: {
-      free: unavailable,
-      production: unavailable,
-      premium: value('Available; Usage Fees Apply'),
-      enterprise: value('Available; Usage Fees Apply'),
+      free: false,
+      production: false,
+      premium: 'Available; Usage Fees Apply',
+      enterprise: 'Available; Usage Fees Apply',
     },
   },
   {
     label: 'Clearinghouse',
-    docsHref: '/docs/integration',
+    docsHref: '/docs/integration/stedi',
     description: 'Claims and eligibility. Usage is billed separately.',
     values: {
-      free: unavailable,
-      production: unavailable,
-      premium: value('Available; Usage Fees Apply'),
-      enterprise: value('Available; Usage Fees Apply'),
+      free: false,
+      production: false,
+      premium: 'Available; Usage Fees Apply',
+      enterprise: 'Available; Usage Fees Apply',
     },
   },
   {
@@ -135,21 +133,21 @@ const integrationRows: readonly ComparisonRow[] = [
     docsHref: '/docs/agent',
     description: 'Connect to HL7-enabled healthcare systems through Medplum Agent.',
     values: {
-      free: unavailable,
-      production: value('Paid Add-On'),
-      premium: value('Paid Add-On'),
-      enterprise: value('Paid Add-On'),
+      free: false,
+      production: 'Paid Add-On',
+      premium: 'Paid Add-On',
+      enterprise: 'Paid Add-On',
     },
   },
   {
     label: 'Data Warehouse Connector',
-    docsHref: '/docs/analytics/redshift',
+    docsHref: '/docs/analytics/snowflake',
     description: 'Sync FHIR resources on a schedule for analytics in Snowflake, Amazon Redshift, and other engines.',
     values: {
-      free: unavailable,
-      production: value('Paid Add-On'),
-      premium: value('Paid Add-On'),
-      enterprise: value('Paid Add-On'),
+      free: false,
+      production: 'Paid Add-On',
+      premium: 'Paid Add-On',
+      enterprise: 'Paid Add-On',
     },
   },
 ];
@@ -158,12 +156,12 @@ const terminologyRows: readonly ComparisonRow[] = [
   {
     label: 'Terminology Validation',
     docsHref: '/docs/api/fhir/operations/valueset-validate-code',
-    values: { free: unavailable, production: unavailable, premium: included, enterprise: included },
+    values: { free: false, production: false, premium: true, enterprise: true },
   },
   {
     label: 'Managed Terminology (UMLS)',
     description: 'Medplum-hosted service. Self-hosted deployments require customer-provided terminology licenses.',
-    values: { free: unavailable, production: unavailable, premium: included, enterprise: value('Hosted only') },
+    values: { free: false, production: false, premium: true, enterprise: 'Hosted only' },
   },
 ];
 
@@ -180,84 +178,90 @@ export const groups: readonly ComparisonGroup[] = [
         docsHref: '/docs/access/access-policies',
         description: 'Control read and write access to resources and fields.',
         values: {
-          free: value('Testing only'),
-          production: value('3'),
-          premium: value('10'),
-          enterprise: value('20'),
+          free: 'Testing only',
+          production: '3',
+          premium: '10',
+          enterprise: '20',
         },
       },
       {
         label: 'Google Authentication',
         docsHref: '/docs/auth/google-auth',
-        values: { free: included, production: included, premium: included, enterprise: included },
+        values: { free: true, production: true, premium: true, enterprise: true },
       },
       {
         label: 'Required Google Authentication',
         description: 'Require users on your domain to sign in through Google.',
-        values: { free: unavailable, production: included, premium: included, enterprise: included },
+        values: { free: false, production: true, premium: true, enterprise: true },
       },
       {
         label: 'WAF Protection',
         description: 'For Medplum-hosted deployments. Self-hosted infrastructure is customer-managed.',
-        values: { free: included, production: included, premium: included, enterprise: included },
+        values: { free: true, production: true, premium: true, enterprise: true },
       },
       {
         label: 'IP Address Restrictions',
         docsHref: '/docs/access/ip-access-rules',
-        values: { free: unavailable, production: unavailable, premium: included, enterprise: included },
+        values: { free: false, production: false, premium: true, enterprise: true },
       },
       {
         label: 'SCIM Administration',
         docsHref: '/docs/api/scim/overview',
-        values: { free: unavailable, production: unavailable, premium: unavailable, enterprise: included },
+        values: { free: false, production: false, premium: false, enterprise: true },
       },
       {
         label: 'External Log Streaming',
         docsHref: '/docs/integration/log-streaming',
-        values: { free: unavailable, production: unavailable, premium: included, enterprise: included },
+        values: { free: false, production: false, premium: true, enterprise: true },
       },
     ],
   },
   {
     title: 'Compliance and Agreements',
+    note: {
+      prefix: 'See',
+      link: { text: 'Medplum’s compliance documentation', href: '/docs/compliance' },
+      suffix:
+        'for our SOC 2 Type II audit, HITRUST e1 certification for our AWS-hosted platform, and ONC-certified product.',
+    },
     rows: [
       {
         label: 'ONC-Certified EHR',
         docsHref: '/docs/compliance/onc',
         description: 'Available under your Medplum agreement.',
-        values: { free: unavailable, production: unavailable, premium: included, enterprise: included },
+        values: { free: false, production: false, premium: true, enterprise: true },
       },
       {
         label: 'ONC Certification Guidance',
         description: 'Guidance on certification paths for custom applications and self-hosted deployments.',
-        values: { free: unavailable, production: unavailable, premium: included, enterprise: included },
+        values: { free: false, production: false, premium: true, enterprise: true },
       },
       {
         label: 'Security Incident Response',
         description: 'Incident response assistance, scoped separately from the availability SLA.',
         values: {
-          free: unavailable,
-          production: value('Paid Add-On'),
-          premium: value('Paid Add-On'),
-          enterprise: value('Paid Add-On'),
+          free: false,
+          production: 'Paid Add-On',
+          premium: 'Paid Add-On',
+          enterprise: 'Paid Add-On',
         },
       },
       {
         label: 'Audit Support',
         description: 'Support during audits required by health system and payer partnerships.',
-        values: { free: unavailable, production: unavailable, premium: unavailable, enterprise: included },
+        values: { free: false, production: false, premium: false, enterprise: true },
       },
       {
         label: 'Standard MSA',
-        values: { free: unavailable, production: included, premium: included, enterprise: included },
+        values: { free: false, production: true, premium: true, enterprise: true },
       },
       {
         label: 'Standard BAA',
         values: {
-          free: unavailable,
-          production: included,
-          premium: included,
-          enterprise: value('Included for hosted'),
+          free: false,
+          production: true,
+          premium: true,
+          enterprise: 'Included for hosted',
         },
       },
     ],
@@ -268,35 +272,35 @@ export const groups: readonly ComparisonGroup[] = [
       {
         label: 'Assigned Forward-Deployed Engineer',
         description: 'Technical advice, architecture guidance, and examples.',
-        values: { free: unavailable, production: unavailable, premium: included, enterprise: included },
+        values: { free: false, production: false, premium: true, enterprise: true },
       },
       {
         label: 'Assigned Deployment Strategist',
         description: 'Product and workflow design, implementation strategy, and stakeholder alignment.',
-        values: { free: unavailable, production: unavailable, premium: unavailable, enterprise: included },
+        values: { free: false, production: false, premium: false, enterprise: true },
       },
       {
         label: 'Support Channels',
         values: {
-          free: value('Discord and GitHub'),
-          production: value('Discord and GitHub'),
-          premium: value('Private Slack and email'),
-          enterprise: value('Agreed support channels'),
+          free: 'Discord and GitHub',
+          production: 'Discord and GitHub',
+          premium: 'Private Slack and email',
+          enterprise: 'Agreed support channels',
         },
       },
       {
         label: 'Hosted Availability SLA',
         description: 'Does not apply to customer-operated infrastructure.',
         values: {
-          free: unavailable,
-          production: unavailable,
-          premium: value('Per agreement'),
-          enterprise: value('Per agreement'),
+          free: false,
+          production: false,
+          premium: 'Per agreement',
+          enterprise: 'Per agreement',
         },
       },
       {
         label: 'Shared Roadmap',
-        values: { free: unavailable, production: unavailable, premium: unavailable, enterprise: included },
+        values: { free: false, production: false, premium: false, enterprise: true },
       },
     ],
   },
@@ -330,8 +334,8 @@ export const plans: readonly {
     price: '$2,000',
     startingPrice: true,
     period: '/month',
-    cta: 'Sign Up',
-    href: productionCheckoutUrl,
+    cta: 'Contact Us',
+    href: salesUrl,
   },
   {
     id: 'premium',
@@ -340,8 +344,8 @@ export const plans: readonly {
     price: '$6,000',
     startingPrice: true,
     period: '/month',
-    cta: 'Sign Up',
-    href: 'https://buy.stripe.com/6oEbLj9cPb9q63e4gk',
+    cta: 'Contact Us',
+    href: salesUrl,
   },
   {
     id: 'enterprise',

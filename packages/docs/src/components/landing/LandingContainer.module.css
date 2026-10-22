@@ -21,3 +21,18 @@
   padding-inline: var(--layout-gutter);
   box-sizing: border-box;
 }
+
+/* Base typography and surface shared by marketing pages. */
+.page {
+  font-family: var(--landing-font-display);
+  color: var(--landing-color-heading);
+  background: var(--landing-surface);
+  line-height: var(--landing-body-leading);
+}
+
+.bodyText {
+  font-family: var(--landing-font-body);
+  font-size: var(--landing-body-size);
+  line-height: var(--landing-lead-leading);
+  color: var(--landing-color-body);
+}

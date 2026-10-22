@@ -2,11 +2,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .page {
-  font-family: var(--landing-font-display);
-  color: var(--landing-color-heading);
-  background: var(--landing-surface);
+  composes: page from '../../components/landing/LandingContainer.module.css';
   width: 100%;
-  line-height: var(--landing-body-leading);
 
   /* Height of the category nav once it collapses into a sticky horizontal bar below
      996px. SolutionsCategoryNav sizes the bar FROM this value, so it stays true. */

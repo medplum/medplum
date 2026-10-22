@@ -12,15 +12,20 @@ function StatusIcon({ included }: { readonly included: boolean }): JSX.Element {
 }
 
 function FeatureValue({ value }: { readonly value: Entitlement }): JSX.Element {
-  const included = value.text === 'Included';
-  const excluded = value.text === 'Not Included';
-  return included || excluded ? (
-    <span className={included ? styles.included : styles.excluded}>
-      <StatusIcon included={included} />
-      <span className={styles.srOnly}>{value.text}</span>
-    </span>
+  if (typeof value === 'boolean') {
+    return (
+      <span className={value ? styles.included : styles.excluded}>
+        <StatusIcon included={value} />
+        <span className="sr-only">{value ? 'Included' : 'Not Included'}</span>
+      </span>
+    );
+  }
+  return typeof value === 'string' ? (
+    <span>{value}</span>
   ) : (
-    <span>{value.text}</span>
+    <span>
+      {value.text} <Link href={value.link.href}>{value.link.text}</Link>
+    </span>
   );
 }
 
@@ -39,10 +44,9 @@ export default function PricingPage(): JSX.Element {
         </header>
         <section className={styles.shell} id="hosted-plans" aria-labelledby="hosted-heading">
           <div className={styles.sectionHeading}>
-            <div>
-              <h2 id="hosted-heading">Plans</h2>
-            </div>
-            <Link href={salesUrl}>Contact Us</Link>
+            <h2 className={styles.sectionTitle} id="hosted-heading">
+              Plans
+            </h2>
           </div>
           <div className={styles.planGrid}>
             {plans.map((plan) => (
@@ -56,14 +60,12 @@ export default function PricingPage(): JSX.Element {
                     </Link>
                   )}
                 </p>
-                {plan.price ? (
+                {plan.price && (
                   <p className={styles.price}>
-                    <span className={styles.priceQualifier}>{plan.startingPrice ? 'Starts at' : '\u00a0'}</span>
+                    {plan.startingPrice && <span className={styles.priceQualifier}>Starts at</span>}
                     {plan.price}
                     <span>{plan.period}</span>
                   </p>
-                ) : (
-                  <div className={styles.priceSpacer} aria-hidden="true" />
                 )}
                 <LandingButton variant="purple" to={plan.href}>
                   {plan.cta}
@@ -77,9 +79,9 @@ export default function PricingPage(): JSX.Element {
         </section>
         <section className={`${styles.shell} ${styles.section}`} id="comparison" aria-labelledby="comparison-heading">
           <div className={styles.sectionHeading}>
-            <div>
-              <h2 id="comparison-heading">Plan Comparison</h2>
-            </div>
+            <h2 className={styles.sectionTitle} id="comparison-heading">
+              Plan Comparison
+            </h2>
             <div className={styles.legend} aria-label="Comparison key">
               <span>
                 <span className={styles.included} aria-hidden="true">
@@ -111,7 +113,7 @@ export default function PricingPage(): JSX.Element {
           </div>
           <div className={styles.comparison}>
             <table>
-              <caption className={styles.srOnly}>
+              <caption className="sr-only">
                 Medplum plan inclusions. Check marks mean included; minus signs mean not included. On small screens,
                 select a plan to view.
               </caption>
@@ -139,24 +141,18 @@ export default function PricingPage(): JSX.Element {
                       {group.title}
                     </th>
                   </tr>
-                  {group.title === 'Compliance and Agreements' && (
+                  {group.note && (
                     <tr className={styles.groupNote}>
                       <td colSpan={plans.length + 1}>
-                        See <Link href="/docs/compliance">Medplum’s compliance documentation</Link> for our SOC 2 Type
-                        II audit, HITRUST e1 certification for our AWS-hosted platform, and ONC-certified product.
+                        {group.note.prefix} <Link href={group.note.link.href}>{group.note.link.text}</Link>{' '}
+                        {group.note.suffix}
                       </td>
                     </tr>
                   )}
                   {group.rows.map((row) => (
                     <tr key={row.label}>
                       <th scope="row">
-                        {row.docsHref ? (
-                          <Link className={styles.featureLink} href={row.docsHref}>
-                            {row.label}
-                          </Link>
-                        ) : (
-                          row.label
-                        )}
+                        {row.docsHref ? <Link href={row.docsHref}>{row.label}</Link> : row.label}
                         {row.description && <span className={styles.rowDescription}>{row.description}</span>}
                       </th>
                       {plans.map((plan) => (
@@ -171,7 +167,13 @@ export default function PricingPage(): JSX.Element {
             </table>
           </div>
           <p className={styles.billingNote}>
-            Hosted plans are subject to <Link href="/docs/rate-limits">API rate limits</Link>.
+            Technical limits shown apply to Medplum-hosted deployments. See our{' '}
+            <Link href="/docs/rate-limits">API rate limits</Link>.
+          </p>
+          <p className={styles.billingNote}>
+            <strong>Enterprise Self-Hosting:</strong> Enterprise includes optional setup, provisioning, and upgrade
+            assistance with temporary, customer-approved access. Your team handles ongoing operations, monitoring, and
+            on-call response.
           </p>
           <p className={styles.billingNote}>
             Medplum’s hosted service can also be purchased through{' '}
