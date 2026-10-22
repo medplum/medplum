@@ -1,20 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, deepEquals, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
-import type { Device, Location, Practitioner, Reference } from '@medplum/fhirtypes';
+import { deepClone, deepEquals, generateId, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
+import type { Device, HumanName, Location, Practitioner, Reference } from '@medplum/fhirtypes';
 import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, SCHEDULING_CONFIG_PROVIDER_SYSTEM } from '../../constants';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** A provider, room, or device, as stored or as the page would store it. */
 export type ActorResource = Practitioner | Location | Device;
 
-/** The kinds of actor the workspace creates. Providers come from elsewhere. */
-export type NewActorType = 'Location' | 'Device';
+/**
+ * The kinds of actor the workspace creates. A provider created here has no NPI, since one with an NPI comes from
+ * elsewhere.
+ */
+export type NewActorType = 'Practitioner' | 'Location' | 'Device';
 
 /** What the page holds for the actor itself. */
 export interface ActorGeneralFields {
-  /** A room's name, or a new device's. Unused for a provider or a stored device, whose names are read-only. */
+  /** A room's name, or a new device's. Unused for a provider or a stored device. */
   readonly name: string;
+  /** The given and family names of a provider the workspace created. Other providers' names are read-only. */
+  readonly given?: string;
+  readonly family?: string;
   /** Whether the actor is on: `Practitioner.active`, or a room's or device's `status` not being `inactive`. */
   readonly active: boolean;
   /** A room's `partOf`, or a device's `location`. */
@@ -24,12 +30,20 @@ export interface ActorGeneralFields {
 }
 
 /**
- * A room or device that hasn't been saved yet. Rooms are typed `ro`, so the service facility pickers never
- * offer one as a service facility.
+ * A provider, room, or device that hasn't been saved yet. A provider carries the workspace's marker, so the
+ * workspace keeps its name and status. Rooms are typed `ro`, so the service facility pickers never offer one as a
+ * service facility.
  * @param resourceType - What to create.
  * @returns The resource to start from.
  */
-export function newActorResource(resourceType: NewActorType): Location | Device {
+export function newActorResource(resourceType: NewActorType): ActorResource {
+  if (resourceType === 'Practitioner') {
+    return {
+      resourceType: 'Practitioner',
+      active: true,
+      identifier: [{ system: SCHEDULING_CONFIG_PROVIDER_SYSTEM, value: generateId() }],
+    };
+  }
   if (resourceType === 'Location') {
     return {
       resourceType: 'Location',
@@ -63,6 +77,29 @@ export function isOwnProvider(practitioner: Practitioner): boolean {
 }
 
 /**
+ * Why the actor's name can't be saved, by field: a room's or new device's name, or the given or family name of a
+ * provider the workspace created.
+ * @param resource - The actor as the page would store it.
+ * @param fields - What the page holds.
+ * @returns Each empty required name field's error.
+ */
+export function getNameErrors(
+  resource: ActorResource,
+  fields: ActorGeneralFields
+): Partial<Record<'name' | 'given' | 'family', string>> {
+  if (resource.resourceType === 'Practitioner') {
+    if (!isOwnProvider(resource)) {
+      return {};
+    }
+    return {
+      ...(!fields.given?.trim() && { given: 'A first name is required.' }),
+      ...(!fields.family?.trim() && { family: 'A last name is required.' }),
+    };
+  }
+  return hasEditableName(resource) && !fields.name.trim() ? { name: 'A name is required.' } : {};
+}
+
+/**
  * Seeds the page's General fields from the actor.
  * @param resource - The provider, room, or device, as stored or as newly started.
  * @returns What the page opens with.
@@ -71,7 +108,11 @@ export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralField
   const timezone = getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
   const active = !isActorInactive(resource);
   if (resource.resourceType === 'Practitioner') {
-    return { name: '', active, timezone };
+    if (!isOwnProvider(resource)) {
+      return { name: '', active, timezone };
+    }
+    const [name] = resource.name ?? [];
+    return { name: '', given: name?.given?.join(' ') ?? '', family: name?.family ?? '', active, timezone };
   }
   if (resource.resourceType === 'Location') {
     return { name: resource.name ?? '', active, location: resource.partOf, timezone };
@@ -80,8 +121,8 @@ export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralField
 }
 
 /**
- * Builds the actor to store from what the page holds. Only what was edited is rewritten, so a provider's
- * save changes its time zone and nothing an external system maintains.
+ * Builds the actor to store from what the page holds. Only what was edited is rewritten, so saving a provider
+ * from elsewhere changes its time zone and nothing that system maintains.
  * @param base - The actor as stored, or as newly started.
  * @param fields - What the page holds.
  * @param initial - What the page opened with.
@@ -101,6 +142,9 @@ export function buildActorResource<T extends ActorResource>(
     setActive(draft, fields.active);
   }
   if (draft.resourceType === 'Practitioner') {
+    if (isOwnProvider(draft) && (fields.given !== initial.given || fields.family !== initial.family)) {
+      setProviderName(draft, fields.given ?? '', fields.family ?? '');
+    }
     return draft;
   }
   if (hasEditableName(draft) && fields.name !== initial.name) {
@@ -139,6 +183,19 @@ function setName(resource: Location | Device, name: string): void {
   } else {
     resource.deviceName = [{ name, type: 'user-friendly-name' }];
   }
+}
+
+// Rewrites the first name the workspace stored, keeping anything else on it, like a prefix added elsewhere. Its
+// `text` would go stale, so it's dropped.
+function setProviderName(resource: Practitioner, given: string, family: string): void {
+  const [first, ...rest] = resource.name ?? [];
+  const name: HumanName = {
+    ...(first ?? { use: 'official' }),
+    given: given.trim().split(/\s+/),
+    family: family.trim(),
+  };
+  delete name.text;
+  resource.name = [name, ...rest];
 }
 
 function setLocation(resource: Location | Device, location: Reference<Location> | undefined): void {
