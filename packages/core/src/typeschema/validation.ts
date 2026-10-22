@@ -629,7 +629,7 @@ class ResourceValidator implements CrawlerVisitor {
  * @param str - The date, dateTime, or instant string.
  * @returns True if the day is valid or not present.
  */
-function isValidCalendarDate(str: string): boolean {
+export function isValidCalendarDate(str: string): boolean {
   if (str.length < 10) {
     return true;
   }
