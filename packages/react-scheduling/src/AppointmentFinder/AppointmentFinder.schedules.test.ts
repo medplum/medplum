@@ -750,20 +750,16 @@ describe('selections', () => {
     ]);
   });
 
-  test('A required role left empty stops the search', () => {
+  test('Searches a device alone, with no provider', () => {
     const selections: ActorSelections = { Device: [row(ULTRASOUND)] };
 
-    // The combination is still buildable — it is the caller that must not run it.
     expect(schedulesOf(getActorCombinations(selections))).toStrictEqual([['Schedule/schedule-ultrasound-1']]);
-    expect(getSelectionError(selections)).toStrictEqual({
-      message: 'Choose at least one provider first.',
-      severity: 'incomplete',
-    });
+    expect(getSelectionError(selections)).toBeUndefined();
   });
 
-  test('A required role whose only row is empty is a role left empty', () => {
-    expect(getSelectionError({ Practitioner: [row()] })).toStrictEqual({
-      message: 'Choose at least one provider first.',
+  test('Rows that are all empty are nothing chosen', () => {
+    expect(getSelectionError({ Practitioner: [row()], Location: [row()] })).toStrictEqual({
+      message: 'Choose at least one provider, room, or device first.',
       severity: 'incomplete',
     });
   });
@@ -817,10 +813,10 @@ describe('selections', () => {
     ).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor', 'Ultrasound 1']);
   });
 
-  test('Accepts a search once a provider is chosen', () => {
+  test('Accepts a search once anyone is chosen', () => {
     expect(getSelectionError({ Practitioner: [row(RIVERA)] })).toBeUndefined();
     expect(getSelectionError({})).toStrictEqual({
-      message: 'Choose at least one provider first.',
+      message: 'Choose at least one provider, room, or device first.',
       severity: 'incomplete',
     });
   });
