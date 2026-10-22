@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ResourceModifiedEvent, WithId } from '@medplum/core';
-import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  createReference,
+  getAppointmentSite,
+  getReferenceString,
+  setPrimaryProvider,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -23,6 +29,7 @@ import {
   chooseActor,
   chooseDay,
   chooseFirstOfferedTime,
+  chooseSite,
   chosenTimeField,
   hasPill,
   lastFindParams,
@@ -53,6 +60,13 @@ const HELD_SLOTS: WithId<Slot>[] = RiveraImagingHeldSlots.map((slot) => ({
 
 /** The schedules those times are on, which are the ones a move keeps unless it is told otherwise. */
 const HELD_SCHEDULES = HELD_SLOTS.map((slot) => slot.schedule.reference as string);
+
+/** The same visit, recording no site. */
+const UNSITED_APPOINTMENT: WithId<Appointment> = {
+  ...APPOINTMENT,
+  id: 'appt-unsited',
+  supportingInformation: undefined,
+};
 
 /** Every mount needs one, and it is the only prop a host must supply besides the visit. */
 const onRescheduled = vi.fn();
@@ -350,8 +364,7 @@ describe('AppointmentRescheduleForm', () => {
       expect(hasPill(MainClinic.name as string)).toBe(true);
       rendered.unmount();
 
-      const unsited: WithId<Appointment> = { ...APPOINTMENT, id: 'appt-unsited', supportingInformation: undefined };
-      await medplum.createResource(unsited);
+      const unsited = await medplum.createResource(UNSITED_APPOINTMENT);
       const unsitedRendered = await setup(medplum, { appointment: unsited });
       expect(hasPill(MainClinic.name as string)).toBe(false);
       unsitedRendered.unmount();
@@ -571,6 +584,26 @@ describe('AppointmentRescheduleForm', () => {
       const schedules = parameterValues(lastRescheduleParameters(post), 'schedule');
       expect(schedules).toContain('Schedule/schedule-exam-room-b');
       expect(schedules).not.toContain('Schedule/schedule-exam-room-a');
+    });
+
+    test('Moves the visit to a newly chosen service facility before moving its time', async () => {
+      // `$reschedule` keeps whatever site it finds, so the site is written first.
+      const unsited = await medplum.createResource(UNSITED_APPOINTMENT);
+      vi.spyOn(medplum, 'updateResource').mockRejectedValueOnce(new Error('Precondition failed'));
+      const post = vi.spyOn(medplum, 'post');
+      await setup(medplum, { appointment: unsited });
+
+      await chooseSite('Main Clinic', MainClinic.name as string);
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await moveToAnotherTime();
+
+      expect(screen.getByText('Precondition failed')).toBeInTheDocument();
+      expect(lastRescheduleParameters(post)).toBeUndefined();
+
+      await clickReschedule();
+
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(getAppointmentSite(reschedule.appointments[0])?.reference).toBe(getReferenceString(MainClinic));
     });
 
     test('Leaves the visit type on file, and the codes booked with it, alone', async () => {

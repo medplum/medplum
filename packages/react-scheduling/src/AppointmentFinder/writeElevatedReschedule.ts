@@ -4,6 +4,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import {
   createReference,
   extractServiceTypeReferences,
+  getAppointmentSite,
   getExtension,
   getReferenceString,
   isDefined,
@@ -13,7 +14,7 @@ import {
   serviceTypeIncludesService,
   setPrimaryProvider,
 } from '@medplum/core';
-import type { Appointment, AppointmentParticipant, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, AppointmentParticipant, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
 import { buildElevatedBooking } from './buildElevatedBooking';
 
@@ -54,11 +55,26 @@ export function getProposedSchedules(proposal: Appointment): string[] {
 }
 
 /**
+ * The appointment's `supportingInformation`, with its site swapped for the one the proposal names.
+ * @param existing - The appointment being moved.
+ * @param proposal - The time it is moving to, carrying the site chosen for it.
+ * @returns The entries to write, or undefined when the proposal names no site or the one on file.
+ */
+export function getMovedSupportingInformation(existing: Appointment, proposal: Appointment): Reference[] | undefined {
+  const site = getAppointmentSite(proposal);
+  const current = getAppointmentSite(existing);
+  if (!site || site.reference === current?.reference) {
+    return undefined;
+  }
+  return [...(existing.supportingInformation ?? []).filter((entry) => entry !== current), site];
+}
+
+/**
  * Moves an existing appointment without checking availability, start alignment, or length.
- * Rebuilds geometry from current schedules at the proposal's start and length, preserving the
- * stored appointment's metadata and marking it with `SchedulingUnvalidatedReschedule`. As
- * `$reschedule` does, an occurrence of a recurring series moved to a new start is also marked
- * with R5's `occurrenceChanged`.
+ * Rebuilds geometry from current schedules at the proposal's start and length, moves it to the
+ * proposal's site, preserves the stored appointment's other metadata, and marks it with
+ * `SchedulingUnvalidatedReschedule`. As `$reschedule` does, an occurrence of a recurring
+ * series moved to a new start is also marked with R5's `occurrenceChanged`.
  *
  * Writes in order: creates the new Slots, moves the appointment onto them with one
  * conditional update, then deletes the old Slots. The appointment is only ever wholly at its
@@ -165,8 +181,10 @@ export async function writeElevatedReschedule(
     ];
   }
 
+  const supportingInformation = getMovedSupportingInformation(existing, proposal);
   const updated: WithId<Appointment> = {
     ...existing,
+    ...(supportingInformation && { supportingInformation }),
     extension,
     start: geometry.start,
     end: geometry.end,

@@ -5,6 +5,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
+  getAppointmentSite,
   getDisplayString,
   getReferenceString,
   getSchedulingRequirements,
@@ -176,7 +177,7 @@ export interface AppointmentProposalFormProps {
    * changes; rejecting shows the reason as the write's refusal, every answer kept.
    *
    * In `book` mode the proposal carries the patient and the visit type's required
-   * codes; in `reschedule` mode it is the time as `$find` offered it, untouched.
+   * codes; in `reschedule` mode it is the time as `$find` offered it, plus a newly chosen site.
    */
   readonly onSubmit: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
   /** Extensions to put on every appointment this form books. */
@@ -597,6 +598,27 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setWritten(false);
   }
 
+  /**
+   * Tags a reschedule proposal with a newly chosen service facility.
+   *
+   * Returns the proposal unchanged when the chosen facility is the one the appointment is
+   * already at.
+   *
+   * @param proposal - An unsaved Appointment proposal.
+   * @returns The proposal, with the new site among its `supportingInformation`.
+   */
+  async function withChangedSite(proposal: Appointment): Promise<Appointment> {
+    const onFile = ignoreAppointment && getAppointmentSite(ignoreAppointment);
+    if (!serviceFacility || getReferenceString(serviceFacility) === onFile?.reference) {
+      return proposal;
+    }
+    const site = isResource(serviceFacility) ? serviceFacility : await medplum.readReference(serviceFacility);
+    return {
+      ...proposal,
+      supportingInformation: [...(proposal.supportingInformation ?? []), toAppointmentSiteReference(site)],
+    };
+  }
+
   async function handleSubmit(): Promise<void> {
     if (!chosen || detailsOutstanding) {
       return;
@@ -626,7 +648,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       } else {
         // A reschedule updates a subset of fields, and does not collect all
         // the other fields that an original booking requires.
-        await onSubmit(chosen, { manual });
+        await onSubmit(await withChangedSite(chosen), { manual });
       }
       setWritten(true);
     } catch (error) {
