@@ -6,7 +6,6 @@ import { execSync } from 'child_process';
 import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
-import { medplumAliases } from '../../aliases.mjs';
 import packageJson from './package.json' with { type: 'json' };
 
 if (!existsSync(path.join(import.meta.dirname, '.env'))) {
@@ -39,11 +38,6 @@ export default defineConfig({
     cssTarget: ['chrome123', 'edge123', 'firefox120', 'safari17.5', 'ios17.5'], // Native `light-dark()` support
   },
   resolve: {
-    alias: {
-      ...medplumAliases,
-      '@medplum/core': path.resolve(import.meta.dirname, '../core/src'),
-      '@medplum/react': path.resolve(import.meta.dirname, '../react/src'),
-      '@medplum/react-hooks': path.resolve(import.meta.dirname, '../react-hooks/src'),
-    },
+    alias: [{ find: /^@medplum\/([\w-]+)$/, replacement: path.resolve(import.meta.dirname, '../$1/src') }],
   },
 });

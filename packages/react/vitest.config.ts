@@ -3,7 +3,6 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../aliases.mjs';
 
 export default defineConfig({
   plugins: [
@@ -25,10 +24,10 @@ export default defineConfig({
     },
   ],
   resolve: {
-    alias: {
-      ...medplumAliases,
-      signature_pad: resolve(import.meta.dirname, 'src/test-mocks/signature_pad.ts'),
-    },
+    alias: [
+      { find: /^@medplum\/([\w-]+)$/, replacement: resolve(import.meta.dirname, '../$1/src') },
+      { find: 'signature_pad', replacement: resolve(import.meta.dirname, 'src/test-mocks/signature_pad.ts') },
+    ],
   },
   test: {
     name: '@medplum/react',

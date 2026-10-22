@@ -4,7 +4,6 @@ import react from '@vitejs/plugin-react';
 import { copyFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../aliases.mjs';
 
 if (!existsSync(resolve(import.meta.dirname, '.env'))) {
   copyFileSync(resolve(import.meta.dirname, '.env.defaults'), resolve(import.meta.dirname, '.env'));
@@ -31,12 +30,7 @@ export default defineConfig({
     },
   ],
   resolve: {
-    alias: {
-      ...medplumAliases,
-      '@medplum/core': resolve(import.meta.dirname, '../core/src'),
-      '@medplum/react': resolve(import.meta.dirname, '../react/src'),
-      '@medplum/react-hooks': resolve(import.meta.dirname, '../react-hooks/src'),
-    },
+    alias: [{ find: /^@medplum\/([\w-]+)$/, replacement: resolve(import.meta.dirname, '../$1/src') }],
   },
   test: {
     name: '@medplum/app',
