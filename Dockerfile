@@ -21,7 +21,7 @@
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
 
 # Stage 1: Build the application and install production dependencies
-FROM dhi.io/node:24.22-dev@sha256:bafdfcbb9cafd172f2648712de827748c3a2cec995ee557c01d9e1e6258b283c AS build-stage
+FROM dhi.io/node:24.22-dev@sha256:d0c56416229a92a3ba524472bd208ee3faf15c52a64fb3463cab8b8896abc76b AS build-stage
 ENV NODE_ENV=production
 WORKDIR /usr/src/medplum
 ADD ./medplum-server-metadata.tar.gz ./
@@ -29,7 +29,7 @@ RUN npm ci --omit=dev && \
   rm package-lock.json
 
 # Stage 2: Create the runtime image
-FROM dhi.io/node:24.22@sha256:957801221fdcd80a47e5eb9260923775a28cca0bde9e1828b19e847ce62e56b0 AS runtime-stage
+FROM dhi.io/node:24.22@sha256:77ff330717a5eac05ae49c07752d99b91a76d047b18b8687834dcf305e246964 AS runtime-stage
 ENV NODE_ENV=production
 WORKDIR /usr/src/medplum
 COPY --from=build-stage /usr/src/medplum/ ./
