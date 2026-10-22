@@ -1,4 +1,5 @@
 import Link from '@docusaurus/Link';
+import useBrokenLinks from '@docusaurus/useBrokenLinks';
 import { IconCheck, IconMinus } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
 import { JSX, useState } from 'react';
@@ -30,6 +31,9 @@ function FeatureValue({ value }: { readonly value: Entitlement }): JSX.Element {
 }
 
 export default function PricingPage(): JSX.Element {
+  const { collectAnchor } = useBrokenLinks();
+  collectAnchor('hosted-plans');
+  collectAnchor('comparison');
   const [mobilePlan, setMobilePlan] = useState<PlanId>('free');
   return (
     <Layout title="Pricing" description="Compare Medplum plans, features, support, and hosting options.">
