@@ -17,6 +17,7 @@ import {
   getDataType,
   getSearchParameter,
   invalidSearchOperator,
+  isNumericSearchValue,
   isUUID,
   OperationOutcomeError,
   Operator,
@@ -1025,6 +1026,8 @@ function buildNormalSearchFilterExpression(
       return buildDateSearchFilter(table, impl, filter);
     case 'quantity':
       return buildQuantitySearchFilter(table, impl, filter);
+    case 'number':
+      return buildNumberSearchFilter(impl, filter);
     default: {
       const values = splitSearchOnComma(filter.value).map(
         (v) => new Condition(new Column(undefined, impl.columnName), fhirOperatorToSqlOperator(filter.operator), v)
@@ -1485,6 +1488,24 @@ export function buildDateSearchFilter(
 }
 
 /**
+ * Builds a number search filter.
+ * @param impl - The search parameter implementation info.
+ * @param filter - The search filter.
+ * @returns The select query condition.
+ */
+function buildNumberSearchFilter(impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
+  if (!isNumericSearchValue('number', filter.value)) {
+    throw new OperationOutcomeError(badRequest('Invalid number value: ' + filter.value));
+  }
+
+  const values = splitSearchOnComma(filter.value).map(
+    (v) => new Condition(new Column(undefined, impl.columnName), fhirOperatorToSqlOperator(filter.operator), v)
+  );
+  const expr = new Disjunction(values);
+  return impl.array ? new ArraySubquery(new Column(undefined, impl.columnName), expr) : expr;
+}
+
+/**
  * Builds a quantity search filter.
  * @param table - The resource table name.
  * @param impl - The search parameter implementation info.
@@ -1497,7 +1518,7 @@ function buildQuantitySearchFilter(
   filter: Filter
 ): Expression {
   const [number, _system, _code] = splitN(filter.value, '|', 3);
-  if (!number) {
+  if (!isNumericSearchValue('quantity', filter.value)) {
     throw new OperationOutcomeError(badRequest('Invalid quantity value: ' + filter.value));
   }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { OperationOutcomeError, getStatus } from '../outcomes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import type { SearchRequest } from './search';
@@ -59,6 +60,28 @@ describe('Search Utils', () => {
       expect(parseSearchRequest(url)).toMatchObject(expected);
       expect(parseSearchRequest(new URL('http://example.com/' + url))).toMatchObject(expected);
     }
+  });
+
+  test.each([
+    ['Observation?value-quantity=undefined', 'Invalid format for quantity search parameter: undefined'],
+    ['RiskAssessment?probability=undefined', 'Invalid format for number search parameter: undefined'],
+  ])('%s returns 400 invalid', (url, message) => {
+    let thrown: unknown;
+    try {
+      parseSearchRequest(url);
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(OperationOutcomeError);
+    const outcome = (thrown as OperationOutcomeError).outcome;
+    expect(getStatus(outcome)).toBe(400);
+    expect(outcome.issue).toEqual([
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: { text: message },
+      },
+    ]);
   });
 
   test('parseSearchRequest with query dictionary', () => {
