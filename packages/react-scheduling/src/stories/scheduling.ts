@@ -1176,6 +1176,7 @@ export const AppointmentPatientFixtures = [
   buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
   buildPatient('pt-patel', 'Anika', 'Patel', '1983-03-19'),
   buildPatient('pt-novak', 'Theo', 'Novak', '1967-10-08'),
+  buildPatient('pt-shah', 'Priya', 'Shah', '1992-05-26'),
 ];
 
 /**
@@ -1498,6 +1499,34 @@ function garciaSeriesOccurrence(position: number): Pick<Appointment, 'identifier
   };
 }
 
+export const SatelliteTelehealthHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'brown-thu',
+  status: 'busy',
+  schedule: createReference(DrBrownSchedule),
+  start: '2020-05-07T20:00:00Z',
+  end: '2020-05-07T20:20:00Z',
+};
+
+/** A telehealth visit Dr. Brown sees from the satellite, so the satellite has a visit to filter to. */
+export const SatelliteTelehealthAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appointment-brown-thu',
+  status: 'booked',
+  start: SatelliteTelehealthHeldSlot.start,
+  end: SatelliteTelehealthHeldSlot.end,
+  serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+  slot: [createReference(SatelliteTelehealthHeldSlot)],
+  supportingInformation: [toAppointmentSiteReference(SatelliteClinic)],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+      { status: 'accepted', actor: { reference: 'Patient/pt-shah', display: 'Priya Shah' } },
+    ],
+    createReference(DrBrownPractitioner)
+  ),
+};
+
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-chen-infusion-thu',
@@ -1531,6 +1560,7 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
   slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(ElderJordanPatient) },
@@ -1573,6 +1603,8 @@ export const CalendarWeekFixtures = [
   MondayTelehealthAppointment,
   ...GarciaSeriesSlots,
   ...GarciaSeriesAppointments,
+  SatelliteTelehealthHeldSlot,
+  SatelliteTelehealthAppointment,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,

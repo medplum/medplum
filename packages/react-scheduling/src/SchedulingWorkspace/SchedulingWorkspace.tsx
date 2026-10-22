@@ -38,7 +38,7 @@ import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
-import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
+import { getCalendarTimezones, groupAppointmentsByService, matchesCalendarFilters } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
@@ -113,7 +113,7 @@ export interface SchedulingWorkspaceProps {
    * scheduling from. The user can still change or clear it. Read once on mount; key
    * the workspace to start it over on another site.
    */
-  readonly defaultServiceFacility?: Reference<Location> | WithId<Location>;
+  readonly defaultServiceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
 }
 
 /**
@@ -145,9 +145,15 @@ export interface SchedulingWorkspaceProps {
  *   appointment beside it, from whenever the form holds a time until it drops it. The
  *   calendar is never moved to reach either; one off the week on screen is drawn again
  *   on paging back to it.
+ * - Filters calendars and what is booked on them: the Service facility and Visit Type filters
+ *   narrow the calendars listed to the ones held at that site and offering that service type,
+ *   and the appointments drawn to the ones recording that site and naming that service type.
+ *   Under either filter, only the drawn appointments' Slots, such as their buffers, are shown:
+ *   Slots record no site, and most blocks name no service type, so apply to every one, and
+ *   showing each block that might apply would clutter the calendar.
  * - Keeps an open appointment or blocked time open until it is closed, even once paging,
- *   filtering, or hiding its calendars takes it off the calendar, with a notice saying when hidden
- *   calendars are why.
+ *   filtering, or hiding its calendars takes it off the calendar, with a notice saying when the
+ *   filters or hidden calendars are why.
  * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
  *
@@ -177,7 +183,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
-  // because the candidate search below is keyed on them.
+  // because they narrow the calendars listed and the appointments drawn, and start the
+  // booking form.
   const initialFilters: CalendarFilterValues = defaultServiceFacility
     ? { serviceFacility: defaultServiceFacility }
     : NO_FILTERS;
@@ -259,7 +266,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
   const services = useAppointmentServices(appointments);
 
-  const { sources, serviceTypes, servicesPending, isOnShownCalendar } = useMemo(() => {
+  const { sources, serviceTypes, servicesPending, shownSlots, isOnShownCalendar } = useMemo(() => {
     const isSettled = (reference: string): boolean =>
       services.has(reference) || medplum.getCachedReference({ reference }) !== undefined;
     // The color the HealthcareService names, or else one picked by its reference, so it holds
@@ -277,7 +284,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       appointment.participant.some(
         (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
       );
-    const visibleAppointments = (appointments ?? []).filter(isOnShownCalendar);
+    const appointmentsOnShow = (appointments ?? []).filter(isOnShownCalendar);
+    const visibleAppointments = appointmentsOnShow.filter((appointment) =>
+      matchesCalendarFilters(appointment, filters)
+    );
     const allGroups = Array.from(groupAppointmentsByService(visibleAppointments));
     // Held back until the service is read, or has failed to be, rather than drawn in one color
     // and then repainted in the one it names.
@@ -287,8 +297,18 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
     // its own appointments. A held-back appointment's Slots stay, so its time isn't shown as free.
+    // Under a filter, only the Slots the drawn appointments hold are shown. Slots record no site,
+    // and most blocks name no service type, so apply to every one: showing each block that might
+    // apply would clutter the calendar.
+    const visibleSlots = new Set(
+      visibleAppointments.flatMap((appointment) => (appointment.slot ?? []).map(getReferenceString))
+    );
+    const shownSlots =
+      filters.service || filters.serviceFacility
+        ? (slots ?? []).filter((slot) => visibleSlots.has(getReferenceString(slot)))
+        : (slots ?? []);
     const openSlots = filterBookedSlots(
-      slots ?? [],
+      shownSlots,
       groups.flatMap(({ group }) => group)
     );
     const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
@@ -334,9 +354,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       sources: [...calendarSources, ...serviceSources, ...proposalSources],
       serviceTypes: legend,
       servicesPending: groups.length < allGroups.length,
+      shownSlots,
       isOnShownCalendar,
     };
-  }, [activeCandidates, slots, appointments, services, medplum, theme, paneTab, proposal]);
+  }, [activeCandidates, slots, appointments, filters, services, medplum, theme, paneTab, proposal]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -466,12 +487,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   }
   const openAppointment = loadedAppointment ?? selectedAppointment;
 
-  // Only hidden calendars get a notice: a status the calendar doesn't load, such as cancelled, or a
-  // time in another week, already says why it isn't drawn.
+  // Only the filters and hidden calendars get a notice: a status the calendar doesn't load, such as
+  // cancelled, or a time in another week, already says why it isn't drawn.
   let hiddenNotice: string | undefined;
   const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
-  if (openAppointment && statuses.includes(openAppointment.status) && !isOnShownCalendar(openAppointment)) {
-    hiddenNotice = "None of this appointment's calendars are shown.";
+  if (openAppointment && statuses.includes(openAppointment.status)) {
+    if (!matchesCalendarFilters(openAppointment, filters)) {
+      hiddenNotice = 'The calendar filters hide this appointment.';
+    } else if (!isOnShownCalendar(openAppointment)) {
+      hiddenNotice = "None of this appointment's calendars are shown.";
+    }
   }
 
   // Kept open until closed, as the open appointment is.
@@ -481,10 +506,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   }
   const openSlot = loadedSlot ?? selectedSlot;
 
-  // One in another week gets no notice: its time already says why.
+  // The calendar loads only the Slots on calendars shown, so one loaded and not drawn is hidden by
+  // the filters. One in another week isn't loaded, and its time already says why.
   let slotNotice: string | undefined;
   if (openSlot && !schedules.some((schedule) => getReferenceString(schedule) === openSlot.schedule.reference)) {
     slotNotice = "This blocked time's calendar isn't shown.";
+  } else if (loadedSlot && !shownSlots.includes(loadedSlot)) {
+    slotNotice = 'The calendar filters hide this blocked time.';
   }
   const otherBlockSlots =
     openSlot && newBlockSlots?.some((slot) => slot.id === openSlot.id)

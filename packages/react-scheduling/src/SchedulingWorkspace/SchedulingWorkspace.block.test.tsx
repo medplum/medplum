@@ -65,6 +65,8 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
   }),
 }));
 
+const FILTERED_NOTICE = 'The calendar filters hide this blocked time.';
+
 async function dragCalendar(): Promise<void> {
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: 'drag tuesday noon' }));
@@ -135,6 +137,7 @@ describe('SchedulingWorkspace blocking', () => {
     expect(screen.getByText('slot Schedule/schedule-dr-rivera busy-unavailable')).toBeInTheDocument();
     const details = screen.getByRole('region', { name: 'Blocked time details' });
     expect(within(details).getByText('Lunch')).toBeInTheDocument();
+    expect(within(details).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
   });
 
   test('Opens a block over several calendars on one drawn, listing the others', async () => {
@@ -181,6 +184,22 @@ describe('SchedulingWorkspace blocking', () => {
 
     expect(screen.getByRole('region', { name: 'Blocked time details' })).toBeInTheDocument();
     expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 25, 12, 0).toISOString());
+  });
+
+  test('Opens a block the filters hide, saying so', async () => {
+    renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={{ reference: 'Location/main-clinic' }} />, medplum);
+
+    await dragCalendar();
+    await chooseTab('Block');
+    await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+    });
+
+    // No appointment holds it, so under a filter it isn't drawn.
+    expect(screen.queryByText('slot Schedule/schedule-dr-rivera busy-unavailable')).not.toBeInTheDocument();
+    const details = screen.getByRole('region', { name: 'Blocked time details' });
+    expect(within(details).getByText(FILTERED_NOTICE)).toBeInTheDocument();
   });
 
   test('Keeps each tab’s answers and its own highlight across a switch, and the tab across clicks', async () => {
