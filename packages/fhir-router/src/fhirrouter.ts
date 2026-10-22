@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Operation } from '@medplum/core';
+import type { Operation, SearchRequest } from '@medplum/core';
 import {
   EventTarget,
   OperationOutcomeError,
   allOk,
   badRequest,
   created,
+  isChainedSearchFilter,
   isResource,
   normalizeOperationOutcome,
   notFound,
@@ -42,6 +43,7 @@ export type FhirRequest = {
 };
 
 export type FhirRequestConfig = {
+  chainedSearchOnReader?: boolean;
   graphqlBatchedSearchSize?: number;
   graphqlMaxDepth?: number;
   graphqlMaxSearches?: number;
@@ -90,10 +92,10 @@ async function search(
   _router: FhirRouter,
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
-  setSearchRepositoryMode(req, repo, options);
-
   const { resourceType } = req.params;
-  const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, req.query));
+  const searchRequest = parseSearchRequest(resourceType as ResourceType, req.query);
+  setSearchRepositoryMode(req, repo, searchRequest, options);
+  const bundle = await repo.search(searchRequest);
   return [allOk, bundle];
 }
 
@@ -104,12 +106,11 @@ async function searchMultipleTypes(
   _router: FhirRouter,
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
-  setSearchRepositoryMode(req, repo, options);
-
   const searchRequest = parseSearchRequest('MultipleTypes', req.query);
   if (!searchRequest.types || searchRequest.types.length === 0) {
     return [badRequest('No types specified')];
   }
+  setSearchRepositoryMode(req, repo, searchRequest, options);
   const bundle = await repo.search(searchRequest);
   return [allOk, bundle];
 }
@@ -121,16 +122,27 @@ async function searchByPost(
   _router: FhirRouter,
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
-  setSearchRepositoryMode(req, repo, options);
-
   const { resourceType } = req.params;
   const query = req.body as Record<string, string[] | string | undefined>;
-  const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
+  const searchRequest = parseSearchRequest(resourceType as ResourceType, query);
+  setSearchRepositoryMode(req, repo, searchRequest, options);
+  const bundle = await repo.search(searchRequest);
   return [allOk, bundle];
 }
 
-function setSearchRepositoryMode(req: FhirRequest, repo: FhirRepository, options?: FhirRouteOptions): void {
-  if (!options?.batch && req.config?.searchOnReader) {
+function setSearchRepositoryMode(
+  req: FhirRequest,
+  repo: FhirRepository,
+  searchRequest: SearchRequest,
+  options?: FhirRouteOptions
+): void {
+  if (options?.batch) {
+    return;
+  }
+  if (
+    req.config?.searchOnReader ||
+    (req.config?.chainedSearchOnReader && searchRequest.filters?.some(isChainedSearchFilter))
+  ) {
     repo.setMode(RepositoryMode.READER);
   }
 }
