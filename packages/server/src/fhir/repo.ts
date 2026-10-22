@@ -95,6 +95,7 @@ import {
   HistoryInteraction,
   isReadOnlyAction,
   logAuditEvent,
+  MAX_AUDIT_EVENT_ENTITIES,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
@@ -704,26 +705,42 @@ export class Repository extends FhirRepository implements Disposable {
 
     const result: (WithId<T> | Error)[] = new Array(references.length);
     const succeeded: Resource[] = [];
+    // AuditEvent reads are logged apart from other reads, since AuditEvents about AuditEvents are never saved
+    const auditEventsRead: Resource[] = [];
     const failed = new Map<string, Reference[]>();
+    let i = 0;
     try {
-      for (let i = 0; i < result.length; i++) {
+      for (; i < result.length; i++) {
         let entryResult = await this.processReadReferenceEntry(references[i], cacheEntries[i]);
         if (entryResult instanceof Error) {
           const error = normalizeErrorString(entryResult);
           failed.set(error, append(failed.get(error), references[i]));
         } else {
           entryResult = this.removeHiddenFields(entryResult);
-          succeeded.push(entryResult);
+          (entryResult.resourceType === 'AuditEvent' ? auditEventsRead : succeeded).push(entryResult);
         }
         result[i] = entryResult as WithId<T> | Error;
       }
+    } catch (err) {
+      const error = normalizeErrorString(err);
+      failed.set(error, append(failed.get(error), references[i]));
+      throw err;
     } finally {
       const durationMs = Date.now() - startTime;
-      if (succeeded.length) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: succeeded, durationMs });
-      }
-      for (const [error, resource] of failed) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, error, { resource, durationMs });
+      const logReads = (
+        outcome: AuditEventOutcome,
+        error: string | undefined,
+        resources: (Resource | Reference)[]
+      ): void => {
+        for (let j = 0; j < resources.length; j += MAX_AUDIT_EVENT_ENTITIES) {
+          const resource = resources.slice(j, j + MAX_AUDIT_EVENT_ENTITIES);
+          this.logEvent(ReadInteraction, outcome, error, { resource, durationMs });
+        }
+      };
+      logReads(AuditEventOutcome.Success, undefined, succeeded);
+      logReads(AuditEventOutcome.Success, undefined, auditEventsRead);
+      for (const [error, resources] of failed) {
+        logReads(AuditEventOutcome.MinorFailure, error, resources);
       }
     }
 
@@ -2493,8 +2510,12 @@ export class Repository extends FhirRepository implements Disposable {
   ): void {
     const resources = arrayify(options?.resource);
     const isSystem = this.context.author.reference === 'system';
-    const resourceTypes = new Set(resources?.map((r) => (isResource(r) ? r.resourceType : undefined)));
-    const resourceType = resourceTypes.size === 1 ? resourceTypes.values().next().value : undefined;
+    const resourceTypeCounts = new Map<string | undefined, number>();
+    for (const r of resources ?? [undefined]) {
+      const type = isResource(r) ? r.resourceType : undefined;
+      resourceTypeCounts.set(type, (resourceTypeCounts.get(type) ?? 0) + 1);
+    }
+    const resourceType = resourceTypeCounts.size === 1 ? resourceTypeCounts.keys().next().value : undefined;
 
     if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
@@ -2505,17 +2526,19 @@ export class Repository extends FhirRepository implements Disposable {
         },
       });
     }
-    incrementCounter(
-      `medplum.fhir.interaction.${subtype.code}.count`,
-      {
-        attributes: {
-          system: isSystem,
-          resourceType,
-          result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+    for (const [type, count] of resourceTypeCounts) {
+      incrementCounter(
+        `medplum.fhir.interaction.${subtype.code}.count`,
+        {
+          attributes: {
+            system: isSystem,
+            resourceType: type,
+            result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+          },
         },
-      },
-      resources?.length || 1
-    );
+        count
+      );
+    }
 
     if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
       // Don't log system read or audit events

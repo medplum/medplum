@@ -194,6 +194,9 @@ export const AuditEventOutcome = {
 } as const;
 export type AuditEventOutcome = (typeof AuditEventOutcome)[keyof typeof AuditEventOutcome];
 
+/** Upper bound on `entity[]` per AuditEvent, so batched reads don't produce unbounded log lines and resources. */
+export const MAX_AUDIT_EVENT_ENTITIES = 1000;
+
 export function createAuditEvent(
   type: AuditEventType,
   subtype: AuditEventSubtype,

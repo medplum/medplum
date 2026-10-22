@@ -33,6 +33,7 @@ import type {
   Questionnaire,
   Reference,
   ResearchDefinition,
+  Resource,
   ResourceType,
   ServiceRequest,
   Subscription,
@@ -47,6 +48,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger, globalLogger } from '../logger';
+import * as otelModule from '../otel/otel';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
 import {
@@ -496,62 +498,142 @@ describe('FHIR Repo', () => {
       }
     }));
 
-  test('Logs one AuditEvent per outcome and distinct error for readReferences', () =>
+  test('readReferences logs grouped AuditEvents', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
       const prevLogAuditEvents = getConfig().logAuditEvents;
+      const prevSaveAuditEvents = getConfig().saveAuditEvents;
       getConfig().logAuditEvents = true;
+      getConfig().saveAuditEvents = true;
       const logger = globalLogger as unknown as { write: (msg: string) => void };
       const writeSpy = vi.spyOn(logger, 'write').mockImplementation(() => undefined);
-
-      try {
-        const p1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
-        const p2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
-        const deleted = await repo.createResource<Patient>({ resourceType: 'Patient' });
-        await repo.deleteResource('Patient', deleted.id);
-        const missing = { reference: `Patient/${randomUUID()}` };
-        const external = { reference: 'https://example.com/Patient/123' };
-
-        writeSpy.mockClear();
-        await repo.readReferences([
-          createReference(p1),
-          missing,
-          createReference(deleted),
-          createReference(p2),
-          external,
-        ]);
-
-        const readEvents = writeSpy.mock.calls
+      const counterSpy = vi.spyOn(otelModule, 'incrementCounter');
+      const saveSpy = vi.spyOn(
+        Repository.prototype as unknown as { updateResourceImpl: (r: Resource) => Promise<Resource> },
+        'updateResourceImpl'
+      );
+      const internals = repo as unknown as {
+        processReadReferenceEntry: (ref: Reference, entry: unknown) => Promise<unknown>;
+      };
+      const entityRefs = (e: AuditEvent): (string | undefined)[] | undefined =>
+        e.entity?.map((entity) => entity.what?.reference);
+      const readAuditEvents = (): AuditEvent[] =>
+        writeSpy.mock.calls
           .map((call) => call[0])
           .filter((s) => s.includes('"resourceType":"AuditEvent"'))
           .map((s) => JSON.parse(s) as AuditEvent)
           .filter((e) => e.subtype?.[0]?.code === 'read');
-        const writtenLogs = readEvents.map((e) => ({
-          outcome: e.outcome,
-          outcomeDesc: e.outcomeDesc,
-          entity: e.entity?.map((entity) => entity.what?.reference),
-        }));
+      const savedEntities = (): (string | undefined)[][] =>
+        saveSpy.mock.calls
+          .map((call) => call[0])
+          .filter((r): r is AuditEvent => r.resourceType === 'AuditEvent')
+          .map((e) => e.entity?.map((entity) => entity.what?.reference) ?? []);
 
-        expect(writtenLogs).toContainExactly([
-          {
-            outcome: AuditEventOutcome.Success,
-            outcomeDesc: undefined,
-            entity: [getReferenceString(p1), getReferenceString(p2)],
-          },
-          {
-            outcome: AuditEventOutcome.MinorFailure,
-            outcomeDesc: 'Not found',
-            entity: [missing.reference, external.reference],
-          },
-          {
-            outcome: AuditEventOutcome.MinorFailure,
-            outcomeDesc: 'Gone',
-            entity: [getReferenceString(deleted)],
-          },
+      try {
+        const p1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const p2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const p3 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const pr = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+        const auditEvent = await repo.createResource<AuditEvent>({
+          resourceType: 'AuditEvent',
+          type: RestfulOperationType,
+          recorded: new Date().toISOString(),
+          agent: [{ requestor: true }],
+          source: { observer: createReference(p1) },
+        });
+        const deleted = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        await repo.deleteResource('Patient', deleted.id);
+
+        const failures = [
+          { reference: `Patient/${randomUUID()}` },
+          ...Array.from({ length: 2000 }, (_, i) => ({ reference: `https://example.com/Patient/${i}` })),
+        ];
+        writeSpy.mockClear();
+        counterSpy.mockClear();
+        saveSpy.mockClear();
+        await repo.readReferences<Patient | Practitioner | AuditEvent>([
+          createReference(p1),
+          createReference(pr),
+          createReference(deleted),
+          createReference(auditEvent),
+          createReference(p2),
+          ...failures,
         ]);
+
+        // AuditEvent reads are logged apart from other successes
+        const events = readAuditEvents();
+        const successes = events.filter((e) => e.outcome === AuditEventOutcome.Success);
+        expect(successes.map(entityRefs)).toContainExactly([
+          [getReferenceString(auditEvent)],
+          [getReferenceString(p1), getReferenceString(pr), getReferenceString(p2)],
+        ]);
+
+        // Failures are logged per distinct error, with entities per AuditEvent capped
+        const failed = events.filter((e) => e.outcome === AuditEventOutcome.MinorFailure);
+        const notFound = failed.filter((e) => e.outcomeDesc === 'Not found');
+        expect(notFound.map((e) => e.entity?.length)).toContainExactly([1000, 1000, 1]);
+        expect(notFound.flatMap((e) => entityRefs(e) ?? [])).toContainExactly(failures.map((f) => f.reference));
+        expect(failed.filter((e) => e.outcomeDesc === 'Gone').map(entityRefs)).toStrictEqual([
+          [getReferenceString(deleted)],
+        ]);
+        expect(failed).toHaveLength(notFound.length + 1);
+
+        // Reads are counted per resource type (ignoring background system reads, e.g. after the delete above)
+        const readCounts = counterSpy.mock.calls
+          .filter((call) => call[0] === 'medplum.fhir.interaction.read.count' && call[1]?.attributes?.system === false)
+          .map((call) => ({ ...call[1]?.attributes, n: call[2] }));
+        expect(readCounts).toContainExactly([
+          { system: false, resourceType: 'Patient', result: 'success', n: 2 },
+          { system: false, resourceType: 'Practitioner', result: 'success', n: 1 },
+          { system: false, resourceType: 'AuditEvent', result: 'success', n: 1 },
+          { system: false, resourceType: undefined, result: 'failure', n: 1000 },
+          { system: false, resourceType: undefined, result: 'failure', n: 1000 },
+          { system: false, resourceType: undefined, result: 'failure', n: 1 },
+          { system: false, resourceType: undefined, result: 'failure', n: 1 },
+        ]);
+
+        await vi.waitFor(() =>
+          expect(savedEntities()).toContainEqual([
+            getReferenceString(p1),
+            getReferenceString(pr),
+            getReferenceString(p2),
+          ])
+        );
+        // AuditEvents about AuditEvent reads are never saved
+        expect(savedEntities().flat()).not.toContain(getReferenceString(auditEvent));
+
+        // A throw while reading an entry still logs the failed read, after the reads that preceded it
+        const original = internals.processReadReferenceEntry.bind(repo);
+        const entrySpy = vi
+          .spyOn(internals, 'processReadReferenceEntry')
+          .mockImplementation((ref, entry) =>
+            ref.reference === getReferenceString(p2) ? Promise.reject(new Error('boom')) : original(ref, entry)
+          );
+        try {
+          writeSpy.mockClear();
+          await expect(
+            repo.readReferences([createReference(p1), createReference(p2), createReference(p3)])
+          ).rejects.toThrow('boom');
+
+          expect(
+            readAuditEvents().map((e) => ({
+              outcome: e.outcome,
+              outcomeDesc: e.outcomeDesc,
+              entity: entityRefs(e),
+            }))
+          ).toContainExactly([
+            { outcome: AuditEventOutcome.Success, outcomeDesc: undefined, entity: [getReferenceString(p1)] },
+            { outcome: AuditEventOutcome.MinorFailure, outcomeDesc: 'boom', entity: [getReferenceString(p2)] },
+          ]);
+        } finally {
+          entrySpy.mockRestore();
+        }
       } finally {
         getConfig().logAuditEvents = prevLogAuditEvents;
+        getConfig().saveAuditEvents = prevSaveAuditEvents;
         writeSpy.mockRestore();
+        counterSpy.mockRestore();
+        saveSpy.mockRestore();
       }
     }));
 
