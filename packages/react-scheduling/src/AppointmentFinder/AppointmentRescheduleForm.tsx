@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  extractServiceTypeReferences,
+  getAppointmentSite,
+  isDefined,
+  normalizeErrorString,
+  resolveId,
+} from '@medplum/core';
 import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -70,11 +76,16 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * codes, its authorization, and anything applied at booking keyed to a type it no
  * longer has.
  *
+ * The service facility opens on the site the appointment was booked at. It only narrows
+ * which actors are offered; picking another one clears them, so opening empty would
+ * have the first thing anyone fills in wipe the actors already shown.
+ *
  * @param props - The React props.
  * @returns The form.
  */
 export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps): JSX.Element {
-  const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
+  const { appointment, onRescheduled, defaultStart, defaultServiceFacility, canBypassSchedulingRules, ...formProps } =
+    props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
 
@@ -179,6 +190,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         {...formProps}
         mode="reschedule"
         canBypassSchedulingRules={canBypassSchedulingRules}
+        defaultServiceFacility={defaultServiceFacility ?? getAppointmentSite(appointment)}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}

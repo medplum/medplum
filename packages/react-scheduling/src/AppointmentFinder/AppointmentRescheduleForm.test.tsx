@@ -343,6 +343,14 @@ describe('AppointmentRescheduleForm', () => {
       expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
     });
 
+    test('Opens on the site the visit was booked at', async () => {
+      // An empty facility gets filled in first, and choosing one clears every actor.
+      await setup(medplum);
+
+      expect(hasPill(/Main Clinic/)).toBe(true);
+      expect(hasPill(/Rivera/)).toBe(true);
+    });
+
     test('Names who a move would take off the visit, and still offers the move', async () => {
       // A schedule that can no longer be offered back cannot be moved with the visit, and
       // `$reschedule` drops the actors of the schedules it moves off. Refusing outright
