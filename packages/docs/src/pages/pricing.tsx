@@ -127,13 +127,17 @@ export default function PricingPage(): JSX.Element {
           {groups.map((group) => (
             <tbody key={group.title}>
               <tr>
-                <th colSpan={plans.length + 1}>{group.title}</th>
+                <th colSpan={plans.length + 1}>
+                  <span>{group.title}</span>
+                </th>
               </tr>
               {group.note && (
                 <tr>
                   <td colSpan={plans.length + 1}>
-                    {group.note.prefix} <Link href={group.note.link.href}>{group.note.link.text}</Link>{' '}
-                    {group.note.suffix}
+                    <span>
+                      {group.note.prefix} <Link href={group.note.link.href}>{group.note.link.text}</Link>{' '}
+                      {group.note.suffix}
+                    </span>
                   </td>
                 </tr>
               )}

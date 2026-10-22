@@ -58,6 +58,7 @@
 .legend {
   display: flex;
   gap: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .included,
@@ -86,8 +87,14 @@
   --ifm-table-head-background: var(--ifm-background-surface-color);
 }
 
+/* Collapsed table borders don't move with sticky cells, so sticky cells draw their own
+   dividers with inset shadows. */
 .comparison thead th {
+  position: sticky;
+  top: var(--ifm-navbar-height);
+  z-index: 2;
   vertical-align: top;
+  box-shadow: inset 0 -2px var(--ifm-table-border-color);
 }
 
 .comparison td:not(:first-child) {
@@ -112,19 +119,48 @@
   background: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
 }
 
-/* Infima tables are display: block with overflow: auto, which disables position: sticky.
-   On wide screens restore a normal table so the header can stick; narrow screens keep
-   Infima's sideways scrolling. */
+/* On narrow screens the table is its own scroll container (Infima's overflow: auto), so the
+   header can only stick inside it: cap its height to the viewport and pin the header and
+   feature labels within. Full-width rows (group titles and notes) have no room to stick, so
+   their text sticks instead. */
+@media (max-width: 996px) {
+  .comparison {
+    max-height: calc(100svh - var(--ifm-navbar-height) - 2rem);
+  }
+
+  .comparison thead th {
+    top: 0;
+  }
+
+  .comparison [colspan] > span {
+    position: sticky;
+    left: var(--ifm-table-cell-padding);
+    display: inline-block;
+    max-width: calc(100vw - 4rem);
+  }
+
+  .comparison tr > :first-child:not([colspan]) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 10rem;
+    background: var(--ifm-background-surface-color);
+    box-shadow: inset -1px 0 var(--ifm-table-border-color);
+  }
+
+  .comparison thead tr > :first-child:not([colspan]) {
+    z-index: 3;
+    box-shadow:
+      inset -1px 0 var(--ifm-table-border-color),
+      inset 0 -2px var(--ifm-table-border-color);
+  }
+}
+
+/* On wide screens restore a normal table so the header sticks to the page, not the table. */
 @media (min-width: 997px) {
   .comparison {
     display: table;
     width: 100%;
     overflow: visible;
-  }
-
-  .comparison thead th {
-    position: sticky;
-    top: var(--ifm-navbar-height);
-    z-index: 1;
   }
 }
