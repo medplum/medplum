@@ -1,143 +1,65 @@
 /* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-/* Reuse the marketing page palette, typography, gutters, cards, and CTA components. */
-.page {
-  composes: page from '../components/landing/LandingContainer.module.css';
-}
-.shell {
-  composes: container from '../components/landing/LandingContainer.module.css';
-}
-.hero {
-  text-align: center;
-  padding-block: 5rem 4rem;
-}
 .heroTitle {
-  composes: headline from '../components/landing/ProductsHero.module.css';
-  max-width: 950px;
-  margin-inline: auto;
+  font-size: var(--landing-hero-size);
+  letter-spacing: var(--landing-hero-tracking);
 }
-.intro {
-  composes: lead from '../components/landing/ProductsHero.module.css';
-  max-width: none;
-  margin: 1.5rem auto 0;
+
+.lead {
+  font-size: var(--landing-lead-size);
 }
-.contactIntro {
-  composes: bodyText from '../components/landing/LandingContainer.module.css';
-  max-width: 600px;
-  margin: 1.5rem auto;
-}
-.sectionHeading {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 1.5rem;
-  margin: 0 0 2rem;
-}
+
 .sectionTitle {
-  composes: headline from '../components/landing/ProductsSectionHeader.module.css';
+  font-size: var(--landing-section-size);
+  letter-spacing: var(--landing-section-tracking);
 }
-.sectionHeading .sectionTitle {
-  margin: 0;
-}
-.planGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.5rem;
-}
+
 .planCard {
-  padding: 2rem 1.5rem;
-  border: var(--landing-shadow-card-border);
-  border-radius: var(--landing-radius-card);
-  --plan-text: var(--oc-gray-8);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, #f8d3fd 18%, var(--oc-white)),
-    color-mix(in srgb, #eb7ef9 18%, var(--oc-white))
-  );
-  display: grid;
-  grid-template-rows: subgrid;
-  grid-row: span 4;
-  row-gap: 0;
+  --ifm-card-horizontal-spacing: 1.5rem;
+  --ifm-card-vertical-spacing: 1.5rem;
+  height: 100%;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  box-shadow: none;
 }
-[data-theme='dark'] .planCard {
-  --plan-text: var(--oc-gray-2);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, #f8d3fd 12%, var(--landing-surface-elevated)),
-    color-mix(in srgb, #eb7ef9 28%, var(--landing-surface-elevated))
-  );
-}
-.freeCard {
-  background: var(--oc-white);
-}
-[data-theme='dark'] .freeCard {
-  background: var(--landing-surface-elevated);
-}
+
 .planCard h3 {
   font-size: 1.5rem;
-  font-weight: var(--landing-card-title-weight);
-  letter-spacing: var(--landing-card-title-tracking);
-  margin-bottom: 1rem;
 }
-.audience {
-  composes: bodyText from '../components/landing/LandingContainer.module.css';
-  margin-bottom: 1.5rem;
-  color: var(--plan-text);
+
+.paidCard {
+  border-color: color-mix(in srgb, var(--ifm-color-primary) 20%, var(--ifm-card-background-color));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ifm-color-primary) 3%, var(--ifm-card-background-color)),
+    color-mix(in srgb, var(--ifm-color-primary) 10%, var(--ifm-card-background-color))
+  );
 }
-.planDetails {
-  display: block;
-  margin-top: 0.75rem;
-}
+
 .price {
-  grid-row: 3;
-  align-self: end;
   font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: var(--landing-hero-tracking);
-  line-height: 1.25;
-  margin-bottom: 2rem;
+  font-weight: var(--ifm-font-weight-semibold);
 }
-.price span {
-  font-size: 1rem;
-  color: var(--plan-text);
-  font-weight: 400;
-  letter-spacing: 0;
-  margin-left: 0.25rem;
-}
-.price .priceQualifier {
-  display: block;
-  margin: 0 0 0.375rem;
-  line-height: 1.25;
-}
-.planCard > a {
-  grid-row: 4;
-  align-self: end;
-  --landing-btn-padding: 1rem;
-  --landing-btn-size: 1rem;
+
+.cta {
   width: 100%;
+  --landing-btn-padding: 0.75rem;
+  --landing-btn-size: 1rem;
 }
-.billingNote {
-  composes: bodyText from '../components/landing/LandingContainer.module.css';
-  margin-top: 1.5rem;
-}
-.section {
-  margin-block: var(--landing-section-padding-y);
-}
-.page section {
-  scroll-margin-top: calc(var(--ifm-navbar-height) + 24px);
-}
-.legend {
-  composes: bodyText from '../components/landing/LandingContainer.module.css';
+
+.comparisonHeader {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
 }
-.legend > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+
+.legend {
+  display: flex;
+  gap: 1.5rem;
 }
+
 .included,
 .excluded {
   display: inline-flex;
@@ -145,175 +67,64 @@
   justify-content: center;
   width: 1.875rem;
   height: 1.875rem;
-  flex-shrink: 0;
   border-radius: 50%;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1;
   vertical-align: middle;
 }
+
 .included {
-  color: var(--oc-white);
+  color: var(--ifm-color-white);
   background: var(--ifm-color-primary);
 }
+
 .excluded {
-  color: var(--oc-gray-7);
-  background: var(--oc-gray-1);
+  color: var(--ifm-color-emphasis-700);
+  background: var(--ifm-color-emphasis-200);
 }
-[data-theme='dark'] .included {
-  color: var(--oc-gray-9);
-  background: var(--oc-grape-3);
-}
-[data-theme='dark'] .excluded {
-  color: var(--oc-gray-3);
-  background: var(--oc-gray-8);
-}
+
 .comparison {
-  border: 1px solid var(--landing-border);
-  border-radius: var(--landing-radius-card);
+  --ifm-table-cell-padding: 1rem;
+  --ifm-table-head-background: var(--ifm-background-surface-color);
 }
-.columnPrice {
-  composes: bodyText from '../components/landing/LandingContainer.module.css';
-  display: block;
-  font-weight: 400;
-  margin-top: 0.375rem;
-}
-.comparison table {
-  /* Infima’s block/overflow table defaults prevent the header from sticking. */
-  display: table;
-  overflow: visible;
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin: 0;
-  font-family: var(--landing-font-body);
-  font-size: 1rem;
-  line-height: 1.5;
-}
-.comparison th,
-.comparison td {
-  border: 0;
-  border-bottom: 1px solid var(--landing-divider);
-  padding: 1rem 1.25rem;
-  text-align: center;
-  vertical-align: middle;
-  overflow-wrap: anywhere;
-}
-.comparison thead {
-  position: sticky;
-  top: var(--ifm-navbar-height);
-  z-index: 2;
-  background: var(--landing-surface);
-}
+
 .comparison thead th {
   vertical-align: top;
-  border-bottom-color: var(--landing-border-strong);
-  font-family: var(--landing-font-display);
-  padding-block: 1.5rem;
-  font-weight: 600;
 }
-.comparison th:first-child {
-  width: 32%;
-  text-align: left;
+
+.comparison td:not(:first-child) {
+  font-size: 0.8125rem;
 }
-.comparison thead th:first-child {
-  border-top-left-radius: var(--landing-radius-card);
+
+.comparison thead small {
+  font-weight: normal;
+  white-space: nowrap;
 }
-.comparison thead th:last-child {
-  border-top-right-radius: var(--landing-radius-card);
-}
-.comparison tbody th {
-  font-weight: 500;
-}
-.comparison tbody tr:not(.groupRow):hover {
-  background: var(--landing-surface-muted);
-}
+
+.comparison th,
 .comparison td {
-  border-left: 1px solid var(--landing-divider);
+  text-align: center;
 }
-.comparison tr {
-  background: transparent;
-  border: 0;
-}
-.comparison .groupRow th {
-  font-family: var(--landing-font-display);
-  background: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--landing-surface));
-  padding-block: 0.875rem;
-  font-size: 1rem;
-  font-weight: 600;
+
+.comparison :is(th, td):first-child {
   text-align: left;
 }
-.comparison .groupNote td {
-  font-size: 1.0625rem;
-  text-align: left;
-  border-left: 0;
-  background: var(--landing-surface);
-  color: var(--landing-color-body);
-  line-height: 1.6;
+
+.comparison tbody th {
+  background: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
 }
-.comparison tbody:last-child tr:last-child > * {
-  border-bottom: 0;
-}
-.rowDescription {
-  composes: bodyText from '../components/landing/LandingContainer.module.css';
-  display: block;
-  margin-top: 0.375rem;
-  font-weight: 400;
-}
-.mobilePicker {
-  display: none;
-}
-@media (max-width: 1100px) {
-  .planGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+/* Infima tables are display: block with overflow: auto, which disables position: sticky.
+   On wide screens restore a normal table so the header can stick; narrow screens keep
+   Infima's sideways scrolling. */
+@media (min-width: 997px) {
+  .comparison {
+    display: table;
+    width: 100%;
+    overflow: visible;
   }
-}
-@media (max-width: 700px) {
-  .hero {
-    padding-block: 3rem;
-  }
-  .sectionHeading {
-    display: block;
-  }
-  .planGrid {
-    grid-template-columns: 1fr;
-  }
-  .legend {
-    margin-top: 1rem;
-  }
-  .mobilePicker {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    font-size: 1rem;
-  }
-  .mobilePicker select {
-    flex: 1;
-    min-width: 0;
-    padding: 0.75rem;
-    border: 1px solid var(--landing-border-strong);
-    border-radius: 6px;
-    background: var(--landing-surface);
-    color: var(--landing-color-heading);
-    font: inherit;
-    font-size: 16px;
-  }
-  .comparison .mobileHidden {
-    display: none;
-  }
-  .comparison table {
-    table-layout: auto;
-  }
-  .comparison th:first-child {
-    width: 55%;
-  }
-  .comparison th,
-  .comparison td {
-    padding: 1rem 0.75rem;
-  }
-  .comparison .groupRow th {
-    width: auto;
+
+  .comparison thead th {
+    position: sticky;
+    top: var(--ifm-navbar-height);
+    z-index: 1;
   }
 }

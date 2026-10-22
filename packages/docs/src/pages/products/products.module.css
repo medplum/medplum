@@ -2,8 +2,11 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .page {
-  composes: page from '../../components/landing/LandingContainer.module.css';
+  font-family: var(--landing-font-display);
+  color: var(--landing-color-heading);
+  background: var(--landing-surface);
   width: 100%;
+  line-height: var(--landing-body-leading);
 }
 
 .stackedSections {
@@ -15,6 +18,7 @@
   max-width: var(--layout-max-width);
   margin: 0 auto;
   padding: 0 var(--layout-padding);
+
 }
 
 @media (max-width: 996px) {
