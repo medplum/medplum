@@ -1,14 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, getReferenceString } from '@medplum/core';
-import type { OperationOutcome, OperationOutcomeIssue, Patient } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import type {
+  OperationOutcome,
+  OperationOutcomeIssue,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { getProjectSystemRepo } from './repo';
+import { addTestUser, createTestProject, getSuperAdminTestProject, withTestContext } from '../test.setup';
+import { getGlobalSystemRepo, getProjectSystemRepo } from './repo';
 
 describe('On Behalf Of', () => {
   const app = express();
@@ -459,6 +466,28 @@ describe('On Behalf Of', () => {
           }),
         ],
       });
+    }));
+
+  test('Forbidden for a super admin on behalf of a member of an inactive project', () =>
+    withTestContext(async () => {
+      const { accessToken } = await getSuperAdminTestProject();
+      const project = await getGlobalSystemRepo().createResource<Project>({ resourceType: 'Project', active: false });
+      const projectRepo = await getProjectSystemRepo(project);
+      const profile = await projectRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const membership = await projectRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: { reference: `User/${randomUUID()}` },
+        profile: createReference(profile),
+      });
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
+        .set('Content-Type', ContentType.FHIR_JSON);
+      expect(res1).toHaveStatus(400);
+      expect(res1.body.issue[0].diagnostics).toContain('Forbidden');
     }));
 
   test('Consistent meta.account behavior', () =>

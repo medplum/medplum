@@ -513,7 +513,7 @@ export async function setLoginMembership(
   const auditEvent = createAuditEvent(
     UserAuthenticationEvent,
     LoginEvent,
-    project.id,
+    project,
     membership.profile,
     login.remoteAddress,
     AuditEventOutcome.Success
@@ -1228,7 +1228,15 @@ async function tryAddOnBehalfOf(
     }
   }
 
-  if (getInactiveReason(authState.project, onBehalfOfMembership)) {
+  let onBehalfOfProject = authState.project;
+  if (resolveId(onBehalfOfMembership.project) !== authState.project.id) {
+    try {
+      onBehalfOfProject = await systemRepo.readReference<Project>(onBehalfOfMembership.project);
+    } catch {
+      throw new OperationOutcomeError(forbidden);
+    }
+  }
+  if (getInactiveReason(onBehalfOfProject, onBehalfOfMembership)) {
     throw new OperationOutcomeError(forbidden);
   }
 
@@ -1429,7 +1437,7 @@ async function tryExternalAuthLogin(
     createAuditEvent(
       UserAuthenticationEvent,
       LoginEvent,
-      project.id,
+      project,
       membership.profile,
       login.remoteAddress,
       AuditEventOutcome.Success

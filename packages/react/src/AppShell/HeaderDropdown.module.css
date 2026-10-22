@@ -25,7 +25,43 @@
 }
 
 .dropdown {
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  /* Fallback until floating-ui measures the space beside the menu button. */
+  max-height: calc(100dvh - 80px);
+  /* Scroll the menu when the pinned footer is taller than that space, so Sign out stays reachable. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.accountSection,
+.divider,
+.menuFooter {
+  flex-shrink: 0;
+}
+
+.projectList {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  /* Room for the 2px focus outline and its 2px offset. */
+  padding: 4px;
+}
+
+/* scrollIntoView aligns the border box, so the outline needs its own margin. */
+.projectList :global(.mantine-Menu-item) {
+  scroll-margin: 4px;
+}
+
+/* Two ProjectLoginOption rows (~56px each), plus the focus padding above. */
+.projectList:has(> :nth-child(2)) {
+  min-height: calc(7rem + 8px);
+}
+
+/* A single row does not shrink; the menu scrolls instead. */
+.projectList:has(> :only-child) {
+  flex-shrink: 0;
 }
 
 .dropdown :global(.mantine-Menu-item) {

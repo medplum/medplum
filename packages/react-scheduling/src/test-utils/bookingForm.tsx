@@ -194,12 +194,12 @@ export async function chooseActor(role: RegExp, query: string, name: string): Pr
 }
 
 /**
- * Chooses a site in the location field, which holds one value at a time.
+ * Chooses a site in the service facility field, which holds one value at a time.
  * @param query - What to type.
  * @param name - The site to click out of what came back.
  */
 export async function chooseSite(query: string, name: string): Promise<void> {
-  const listbox = await searchField(/location/i, query);
+  const listbox = await searchField(/service facility/i, query);
   await act(async () => {
     fireEvent.click(within(listbox).getByText(name));
   });

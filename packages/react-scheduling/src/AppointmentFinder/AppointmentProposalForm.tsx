@@ -28,8 +28,8 @@ import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { useChanged } from '../hooks/useChanged';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
-import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -43,6 +43,7 @@ import {
 import type { ActorSelections, SelectionBlocker } from './AppointmentFinder.schedules';
 import {
   getActorCombinations,
+  getFirstCombinationCandidates,
   getSelectedActorResources,
   getSelectedCandidates,
   getSelectionError,
@@ -57,6 +58,7 @@ import {
   getNativeInputType,
   isViewerTimezone,
   parseZonedDateTimeInput,
+  startOfDay,
 } from './AppointmentFinder.times';
 import { AppointmentPatientInput } from './AppointmentPatientInput';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
@@ -65,7 +67,7 @@ import { BookingRequirementFields } from './BookingRequirementFields';
 import { buildElevatedBooking } from './buildElevatedBooking';
 import type { BookingConflict } from './findConflicts';
 import { describeConflict, findBookingConflicts } from './findConflicts';
-import { useDaySearch } from './useDaySearch';
+import { floorToNow, useDaySearch } from './useDaySearch';
 import { getRescheduleDurationMinutes } from './writeElevatedReschedule';
 
 // The visit type decides which actors can be asked for at all, so nothing below it
@@ -106,7 +108,7 @@ export interface AppointmentProposalFormProps {
   /** What the proposal is for. Defaults to booking a new visit. */
   readonly mode?: AppointmentProposalMode;
   /** Pre-fills where the visit is, for a host that already knows. */
-  readonly defaultLocation?: Reference<Location> | WithId<Location>;
+  readonly defaultServiceFacility?: Reference<Location> | WithId<Location>;
   /** Pre-fills the visit type, for a deep link or a reschedule. */
   readonly defaultService?: WithId<HealthcareService>;
   /** Pre-fills who the visit is for, for a host launching from a patient's chart. */
@@ -134,8 +136,10 @@ export interface AppointmentProposalFormProps {
    */
   readonly ignoreAppointmentSchedules?: readonly string[];
   /**
-   * The day the time search opens on, and the day a typed time starts out on.
-   * Defaults to today.
+   * The day the time search opens on. Defaults to today.
+   *
+   * A later value on a day the search doesn't cover moves the search there, dropping a time
+   * found on the old day and keeping every other answer.
    */
   readonly defaultStart?: Date;
   /**
@@ -156,13 +160,11 @@ export interface AppointmentProposalFormProps {
   /** Called with the visit type as it changes. */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
   /**
-   * Called with the time chosen, and with `undefined` once it is dropped.
-   *
-   * Every answer above the time drops it — a different day, a different provider —
-   * so a host pointing at the time on a calendar of its own takes the marker down
-   * rather than leaving it on a time nobody chose.
+   * Called with the appointment that would be booked, a searched or typed time, and with
+   * `undefined` once there is none. Status `proposed`, so a host can draw it on a calendar of
+   * its own as a visit not yet booked. Called on mount, and with `undefined` on unmount.
    */
-  readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
+  readonly onChangeProposal?: (proposal: Appointment | undefined) => void;
   /** The ValueSet the procedure code field binds to. Defaults to the full CPT value set. */
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
@@ -214,7 +216,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const medplum = useMedplum();
   const {
     mode = 'book',
-    defaultLocation,
+    defaultServiceFacility,
     defaultService,
     defaultPatient,
     defaultSelections,
@@ -224,7 +226,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
-    onChangeTime,
+    onChangeProposal,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
     onSubmit,
@@ -233,7 +235,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     allowRecurring,
   } = props;
 
-  const [location, setLocation] = useState<Reference<Location> | WithId<Location> | undefined>(defaultLocation);
+  const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
+    defaultServiceFacility
+  );
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
   const [selections, setSelections] = useState<ActorSelections>(defaultSelections ?? {});
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
@@ -300,10 +304,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     () => toScheduleKey(candidates.map((candidate) => getReferenceString(candidate.schedule))),
     [candidates]
   );
+  // A typed time is held the way the first `$find` result would be: one actor per row.
+  const manualCandidates = useMemo(() => getFirstCombinationCandidates(selections), [selections]);
+  const manualScheduleKey = useMemo(
+    () => toScheduleKey(manualCandidates.map((candidate) => getReferenceString(candidate.schedule))),
+    [manualCandidates]
+  );
   // What the visit is held on now, so a move that keeps it can be told apart. The schedules
   // the form opens on can leave out ones that are no longer eligible, which a move drops.
   const [openingScheduleKey] = useState(() =>
-    ignoreAppointmentSchedules ? toScheduleKey(ignoreAppointmentSchedules) : scheduleKey
+    ignoreAppointmentSchedules ? toScheduleKey(ignoreAppointmentSchedules) : manualScheduleKey
   );
 
   // `$find` applies each Schedule's own parameters, so the actors in one search need not
@@ -344,12 +354,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   });
   const { reset: resetDaySearch } = daySearch;
 
+  // Compared by day, so a host building `new Date()` each render moves nothing.
+  // A day already gone opens the search on today, so it is on show whenever today is.
+  const defaultStartMoved = useChanged(defaultStart && startOfDay(defaultStart).getTime());
+  if (defaultStartMoved && defaultStart && !daySearch.isDayOnShow(floorToNow(defaultStart))) {
+    setMonth(defaultStart);
+    daySearch.chooseDayRange(defaultStart);
+  }
+
   // Whatever moves the count moves what was found under it, the field going away included:
   // a proposal carries the series it was found for, and a typed time books a single visit.
   // Adjusted during render, so no time found under the old count is ever offered under the new.
-  const [searchedOccurrenceCount, setSearchedOccurrenceCount] = useState(effectiveOccurrenceCount);
-  if (searchedOccurrenceCount !== effectiveOccurrenceCount) {
-    setSearchedOccurrenceCount(effectiveOccurrenceCount);
+  const occurrenceCountChanged = useChanged(effectiveOccurrenceCount);
+  if (occurrenceCountChanged) {
     setChosen(undefined);
     clearManualTime();
     resetDaySearch();
@@ -371,15 +388,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     }
   }, [searching, onToggleTimeFinder]);
 
-  // Same shape as above: the ref holds the last time reported, so mounting takes down
-  // no marker the host put up, and clearing a time nobody chose reports no drop.
-  const reportedTime = useRef<Appointment | undefined>(undefined);
   useEffect(() => {
-    if (reportedTime.current !== chosen) {
-      reportedTime.current = chosen;
-      onChangeTime?.(toRange(chosen));
-    }
-  }, [chosen, onChangeTime]);
+    onChangeProposal?.(chosen);
+  }, [chosen, onChangeProposal]);
+  // Read at unmount, so a host passing a new callback each render isn't told `undefined` each time.
+  const latestOnChangeProposal = useRef(onChangeProposal);
+  useEffect(() => {
+    latestOnChangeProposal.current = onChangeProposal;
+  }, [onChangeProposal]);
+  useEffect(() => () => latestOnChangeProposal.current?.(undefined), []);
 
   function toggleFinder(): void {
     setFinding(!finding);
@@ -415,8 +432,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     clearResources();
   }
 
-  function chooseLocation(next: WithId<Location> | undefined): void {
-    setLocation(next);
+  function chooseServiceFacility(next: WithId<Location> | undefined): void {
+    setServiceFacility(next);
     clearResources();
     // A fixed visit type is not the site's to drop: the appointment is on file for it
     // whatever site is being searched, and a site that cannot hold it simply offers no
@@ -449,8 +466,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   const configuredDurationMinutes = useMemo(
-    () => (service ? resolveBookingGeometry(service, candidates[0]?.schedule).duration : undefined),
-    [service, candidates]
+    () => (service ? resolveBookingGeometry(service, manualCandidates[0]?.schedule).duration : undefined),
+    [service, manualCandidates]
   );
 
   const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
@@ -505,10 +522,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     const start = parseZonedDateTimeInput(dateTime, timezone);
     // Moving a visit to exactly where it already is would rewrite its Slots for nothing.
     const unchanged =
-      scheduleKey === openingScheduleKey &&
+      manualScheduleKey === openingScheduleKey &&
       start?.getTime() === storedStart?.getTime() &&
       durationMinutes === storedDurationMinutes;
-    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0 || unchanged) {
+    if (!start || !durationMinutes || durationMinutes <= 0 || !service || manualCandidates.length === 0 || unchanged) {
       setManualChoice(undefined);
       // Only ever clears a manual time: a time from the search is not this field's to drop.
       setChosen((current) => (current === manualChoice ? undefined : current));
@@ -517,7 +534,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
     const proposal = buildElevatedBooking({
       service,
-      schedules: candidates.map((candidate) => candidate.schedule),
+      schedules: manualCandidates.map((candidate) => candidate.schedule),
       start,
       durationMinutes,
     });
@@ -538,7 +555,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       !debouncedChoice?.start ||
       !debouncedChoice.end ||
       !service ||
-      candidates.length === 0
+      manualCandidates.length === 0
     ) {
       // Nothing to look up; whatever was found last was cleared by the change that got here.
       return () => {};
@@ -549,7 +566,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     findBookingConflicts({
       medplum,
       service,
-      candidates,
+      candidates: manualCandidates,
       range,
       ignoredSlotReferences: ignoreAppointment?.slot?.map(getReferenceString).filter(isDefined),
     })
@@ -568,7 +585,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
+  }, [medplum, chosen, debouncedChoice, service, manualCandidates, ignoreAppointment]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
@@ -594,7 +611,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         }
         // The site stamped on the booking carries its name, so a pre-filled reference is
         // read here rather than holding up the form while it loads.
-        const site = location && (isResource(location) ? location : await medplum.readReference(location));
+        const site =
+          serviceFacility &&
+          (isResource(serviceFacility) ? serviceFacility : await medplum.readReference(serviceFacility));
         const booking = buildBooking({
           proposal: chosen,
           patient,
@@ -624,12 +643,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       <Stack className={classes.form} gap="sm">
         <ResourceInput<WithId<Location>>
           resourceType="Location"
-          name="location"
-          label="Location"
-          placeholder="Any location"
+          name="serviceFacility"
+          label="Service facility"
+          placeholder="Any service facility"
           searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
-          defaultValue={defaultLocation as WithId<Location> | Reference<WithId<Location>> | undefined}
-          onChange={chooseLocation}
+          defaultValue={defaultServiceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
+          onChange={chooseServiceFacility}
           clearable={false}
         />
 
@@ -646,7 +665,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         ) : (
           <AppointmentServiceSelect
             key={serviceFieldKey}
-            location={location}
+            serviceFacility={serviceFacility}
             // From state, not the prop: `defaultService` on a remount would put back
             // the visit type the remount was clearing.
             defaultValue={service}
@@ -659,7 +678,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           key={`actors-${actorFieldsKey}`}
           value={selections}
           service={service}
-          location={location}
+          serviceFacility={serviceFacility}
           disabled={!service}
           errors={actorErrors}
           onChange={chooseResources}
@@ -1097,19 +1116,6 @@ function buildBooking(options: BuildBookingOptions): Appointment {
  */
 function toScheduleKey(references: readonly string[]): string {
   return [...references].sort((a, b) => a.localeCompare(b)).join(',');
-}
-
-/**
- * Reads the interval a proposal runs over.
- *
- * @param appointment - The chosen proposal, if one has been chosen.
- * @returns When the visit starts and ends, or undefined until a time is chosen.
- */
-function toRange(appointment: Appointment | undefined): DateTimeRange | undefined {
-  if (!appointment?.start || !appointment.end) {
-    return undefined;
-  }
-  return { start: new Date(appointment.start), end: new Date(appointment.end) };
 }
 
 /**

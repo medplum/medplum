@@ -696,7 +696,7 @@ export class Repository extends FhirRepository implements Disposable {
     return resource;
   }
 
-  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+  async readReferences<T extends Resource>(references: readonly Reference<T>[]): Promise<(WithId<T> | Error)[]> {
     await this.recordFhirQuota(references.length * FhirQuotaCost.READ);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
@@ -2522,7 +2522,7 @@ export class Repository extends FhirRepository implements Disposable {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       subtype,
-      this.context.projects?.[0]?.id as string,
+      this.context.projects?.[0],
       this.context.author,
       this.context.remoteAddress,
       outcome,
@@ -2695,7 +2695,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param references - Array of FHIR references.
    * @returns Array of cache entries or undefined.
    */
-  private async getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+  private async getCacheEntries(references: readonly Reference[]): Promise<(CacheEntry | undefined)[]> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       return new Array(references.length);

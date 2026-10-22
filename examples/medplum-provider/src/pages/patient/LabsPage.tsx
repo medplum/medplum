@@ -235,6 +235,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         onClose={() => setOrderModal(undefined)}
         draftOrder={orderModal === 'new' ? undefined : orderModal}
         onSubmitLabOrder={handleNewOrderCreated}
+        onSaveDraft={handleNewOrderCreated}
       />
     </Box>
   );

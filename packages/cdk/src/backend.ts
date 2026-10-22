@@ -63,6 +63,7 @@ export class BackEnd extends Construct {
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
   workersParameter?: ssm.StringParameter;
+  blockedEmailDomainsParameter?: ssm.StringParameter;
   rdsClusterParameterGroup?: rds.ParameterGroup;
   rdsWriterParameterGroup?: rds.ParameterGroup;
   rdsReaderParameterGroup?: rds.ParameterGroup;
@@ -699,6 +700,15 @@ export class BackEnd extends Construct {
       stringValue: this.botLambdaRole.roleArn,
     });
 
+    if (config.blockedEmailDomains) {
+      this.blockedEmailDomainsParameter = new ssm.StringParameter(this, 'BlockedEmailDomains', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/blockedEmailDomains`,
+        description: 'Blocked email domains',
+        stringValue: config.blockedEmailDomains,
+      });
+    }
+
     // Workers configuration
     if (config.workers) {
       this.workersParameter = new ssm.StringParameter(this, 'WorkersParameter', {
@@ -728,7 +738,7 @@ export class BackEnd extends Construct {
   ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
-      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
+      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/([^:@]+)[:@](.+)$`
     );
     const nameTagMatches = ecrImageUriRegex.exec(imageName);
     const serverImageName = nameTagMatches?.[1];

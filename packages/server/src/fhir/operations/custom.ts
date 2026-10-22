@@ -86,6 +86,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
+    runAsProject: ctx.project,
     requester: ctx.membership.profile,
     input,
     contentType: req.headers?.['content-type'] as string,

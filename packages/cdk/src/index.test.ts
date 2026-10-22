@@ -88,6 +88,33 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('ECR image pinned by digest', async () => {
+    const digest = 'sha256:a3ed4dd54a141f1068831a8a1c6144db1d07261204d39afd1b14be883ff00501';
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumEcrDigestStack',
+      additionalContainers: [
+        {
+          name: 'otel-collector',
+          image: `647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum/otel-collector@${digest}`,
+        },
+      ],
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    expect(JSON.stringify(template.toJSON())).toContain(`/medplum/otel-collector@${digest}`);
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: Match.arrayWith(['ecr:BatchGetImage']),
+            Resource: 'arn:aws:ecr:us-east-1:647991932601:repository/medplum/otel-collector',
+          }),
+        ]),
+      }),
+    });
+  });
+
   test('Custom VPC', async () => {
     // Create a temp config file
     const filename = await writeConfig('./medplum.customvpc.config.json', {

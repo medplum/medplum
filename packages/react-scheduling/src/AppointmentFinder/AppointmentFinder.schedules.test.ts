@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   ALL_SERVICE_TYPES_CODE,
   allServiceTypesCodeableConcept,
+  getReferenceString,
   parseReference,
   SCHEDULING_SERVICE_TYPE_SYSTEM,
   ServiceTypeReferenceURI,
@@ -33,6 +34,7 @@ import {
   getActorCombinations,
   getCandidateActor,
   getCandidateDisplay,
+  getFirstCombinationCandidates,
   getSelectedActorResources,
   getSelectedCandidates,
   getSelectionError,
@@ -723,6 +725,21 @@ describe('selections', () => {
     expect(
       schedulesOf(getActorCombinations({ Practitioner: [row(RIVERA, OKAFOR), row(OKAFOR, RIVERA)] }))
     ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera']]);
+  });
+
+  test('The first combination is found on its own, skipping anyone named for two rows', () => {
+    expect(getFirstCombinationCandidates({ Practitioner: [row(RIVERA, OKAFOR), row(RIVERA)] })).toStrictEqual([
+      OKAFOR,
+      RIVERA,
+    ]);
+    expect(getFirstCombinationCandidates({ Practitioner: [row(RIVERA), row(RIVERA)] })).toStrictEqual([]);
+
+    const selections = { Practitioner: [row(RIVERA, OKAFOR), row(RIVERA)], Device: [row(ULTRASOUND, ULTRASOUND_2)] };
+    expect(
+      getFirstCombinationCandidates(selections)
+        .map((candidate) => getReferenceString(candidate.schedule))
+        .sort()
+    ).toStrictEqual(schedulesOf(getActorCombinations(selections))[0]);
   });
 
   test('An empty row drops out rather than emptying the search', () => {

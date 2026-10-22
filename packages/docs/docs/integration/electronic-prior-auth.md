@@ -314,5 +314,6 @@ Scheduling live troubleshooting sessions is often the fastest way to resolve int
 
 ## Related Reading
 
-- [HTI-4 & CMS-0057-F](/docs/compliance/hti-4) — regulatory background, ONC criteria (g)(31)–(g)(33), certification vs. interoperability testing, and compliance timeline
+- [HTI-4](/docs/compliance/hti-4) — ONC ePA certification criteria and Medplum certification status
+- [CMS-0057-F](/docs/compliance/cms-0057-f) — payer requirements, compliance timeline, and Drummond FHIRplace validation
 - [CDS Hooks](/docs/integration/cds-hooks)
