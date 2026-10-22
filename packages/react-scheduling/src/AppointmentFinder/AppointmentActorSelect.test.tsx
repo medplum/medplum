@@ -37,7 +37,7 @@ async function setupClient(): Promise<MockClient> {
 interface SetupProps {
   readonly actorType?: BookableActorType;
   readonly service?: WithId<HealthcareService>;
-  readonly location?: WithId<Location>;
+  readonly serviceFacility?: WithId<Location>;
   readonly disabled?: boolean;
 }
 
@@ -53,7 +53,7 @@ async function setup(medplum: MockClient, props?: SetupProps): Promise<{ onChang
     <AppointmentActorSelect
       actorType={props?.actorType ?? 'Practitioner'}
       service={props?.service ?? UltrasoundImagingService}
-      location={props?.location}
+      serviceFacility={props?.serviceFacility}
       disabled={props?.disabled}
       onChange={onChange}
     />
@@ -150,7 +150,7 @@ describe('AppointmentActorSelect', () => {
 
   test('Leaves out actors sited at another clinic', async () => {
     const medplum = await setupClient();
-    await setup(medplum, { actorType: 'Location', location: SatelliteClinic });
+    await setup(medplum, { actorType: 'Location', serviceFacility: SatelliteClinic });
 
     await openAutocomplete();
 
@@ -240,7 +240,7 @@ describe('AppointmentActorSelect', () => {
     expect(medplum.search).not.toHaveBeenCalled();
   });
 
-  test('Reruns the search when the location changes', async () => {
+  test('Reruns the search when the service facility changes', async () => {
     const medplum = await setupClient();
     const onChange = vi.fn();
     const { rerender } = renderWithMedplum(
@@ -254,7 +254,7 @@ describe('AppointmentActorSelect', () => {
         <AppointmentActorSelect
           actorType="Location"
           service={UltrasoundImagingService}
-          location={SatelliteClinic}
+          serviceFacility={SatelliteClinic}
           onChange={onChange}
         />
       );

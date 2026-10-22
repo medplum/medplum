@@ -30,13 +30,13 @@ export default {
  * @param props - The React props.
  * @param props.actorType - The type of actor being filled.
  * @param props.service - The service being booked.
- * @param props.location - The site being booked at, if one was chosen.
+ * @param props.serviceFacility - The site being booked at, if one was chosen.
  * @returns The field, once the fixtures are in.
  */
 function Field(props: {
   readonly actorType: BookableActorType;
   readonly service: WithId<HealthcareService>;
-  readonly location?: WithId<Location>;
+  readonly serviceFacility?: WithId<Location>;
 }): JSX.Element | null {
   const [chosen, setChosen] = useState<readonly ScheduleCandidate[]>([]);
 
@@ -46,7 +46,7 @@ function Field(props: {
         <AppointmentActorSelect
           actorType={props.actorType}
           service={props.service}
-          location={props.location}
+          serviceFacility={props.serviceFacility}
           onChange={setChosen}
         />
         <div>{chosen.map((candidate) => candidate.schedule.id).join(', ')}</div>
@@ -66,7 +66,7 @@ export const Provider = (): JSX.Element => <Field actorType="Practitioner" servi
  * @returns The story.
  */
 export const RoomAtAClinic = (): JSX.Element => (
-  <Field actorType="Location" service={UltrasoundImagingService} location={MainClinic} />
+  <Field actorType="Location" service={UltrasoundImagingService} serviceFacility={MainClinic} />
 );
 
 /**

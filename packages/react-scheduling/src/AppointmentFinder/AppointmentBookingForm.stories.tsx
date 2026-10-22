@@ -106,7 +106,11 @@ UntypedMedicalRecordNumbers.decorators = [withFindStub()];
  */
 export const SurgicalTeam = (): JSX.Element => (
   <Document>
-    <AppointmentBookingForm defaultService={SurgeryService} defaultLocation={MainClinic} onBooked={reportBooking} />
+    <AppointmentBookingForm
+      defaultService={SurgeryService}
+      defaultServiceFacility={MainClinic}
+      onBooked={reportBooking}
+    />
   </Document>
 );
 SurgicalTeam.decorators = [withFindStub()];
@@ -132,7 +136,7 @@ export const AuthRequired = (): JSX.Element => (
   <Document>
     <AppointmentBookingForm
       defaultService={InfusionService}
-      defaultLocation={MainClinic}
+      defaultServiceFacility={MainClinic}
       procedureBinding={PROCEDURE_VALUE_SET}
       diagnosisBinding={DIAGNOSIS_VALUE_SET}
       onBooked={reportBooking}
@@ -156,7 +160,7 @@ export const PartialAuthRequired = (): JSX.Element => (
   <Document>
     <AppointmentBookingForm
       defaultService={IronInfusionService}
-      defaultLocation={MainClinic}
+      defaultServiceFacility={MainClinic}
       procedureBinding={PROCEDURE_VALUE_SET}
       diagnosisBinding={DIAGNOSIS_VALUE_SET}
       onBooked={reportBooking}
@@ -178,7 +182,7 @@ export const AuthRequiredMissingValueSets = (): JSX.Element => (
   <Document>
     <AppointmentBookingForm
       defaultService={InfusionService}
-      defaultLocation={MainClinic}
+      defaultServiceFacility={MainClinic}
       procedureBinding={PROCEDURE_VALUE_SET}
       diagnosisBinding={DIAGNOSIS_VALUE_SET}
       onBooked={reportBooking}
@@ -229,7 +233,7 @@ export const SiteAsymmetryByRole = (): JSX.Element => (
         </List>
       </Alert>
       <AppointmentBookingForm
-        defaultLocation={MainClinic}
+        defaultServiceFacility={MainClinic}
         defaultService={UltrasoundImagingService}
         onBooked={reportBooking}
       />
