@@ -3,6 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import {
   append,
+  arrayify,
   createReference,
   flatMapFilter,
   getReferenceString,
@@ -202,7 +203,8 @@ export function createAuditEvent(
   outcome: AuditEventOutcome,
   options?: {
     description?: string;
-    resource?: Resource | Reference;
+    /** Resource(s) recorded as `entity[]`; `entityDetail` applies to the first entity. */
+    resource?: Resource | Reference | (Resource | Reference)[];
     searchQuery?: string;
     entityDetail?: AuditEventEntityDetail[];
     durationMs?: number;
@@ -217,12 +219,11 @@ export function createAuditEvent(
 ): AuditEvent {
   const config = getConfig();
 
-  let entity: AuditEventEntity[] | undefined = undefined;
-  if (options?.resource) {
-    const what: Reference = isResource(options.resource) ? createReference(options.resource) : options.resource;
-    entity = [{ what: applyOptionalRedaction(what, project) }];
-  } else if (options?.searchQuery) {
-    entity = [{ query: options.searchQuery }];
+  let entity = arrayify(options?.resource)?.map((r): AuditEventEntity => ({
+    what: applyOptionalRedaction(isResource(r) ? createReference(r) : r, project),
+  }));
+  if (options?.searchQuery) {
+    entity = append(entity, { query: options.searchQuery });
   }
   if (entity && options?.entityDetail) {
     entity[0].detail = options.entityDetail;

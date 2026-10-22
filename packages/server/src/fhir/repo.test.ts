@@ -496,6 +496,65 @@ describe('FHIR Repo', () => {
       }
     }));
 
+  test('Logs one AuditEvent per outcome and distinct error for readReferences', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const prevLogAuditEvents = getConfig().logAuditEvents;
+      getConfig().logAuditEvents = true;
+      const logger = globalLogger as unknown as { write: (msg: string) => void };
+      const writeSpy = vi.spyOn(logger, 'write').mockImplementation(() => undefined);
+
+      try {
+        const p1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const p2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const deleted = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        await repo.deleteResource('Patient', deleted.id);
+        const missing = { reference: `Patient/${randomUUID()}` };
+        const external = { reference: 'https://example.com/Patient/123' };
+
+        writeSpy.mockClear();
+        await repo.readReferences([
+          createReference(p1),
+          missing,
+          createReference(deleted),
+          createReference(p2),
+          external,
+        ]);
+
+        const readEvents = writeSpy.mock.calls
+          .map((call) => call[0])
+          .filter((s) => s.includes('"resourceType":"AuditEvent"'))
+          .map((s) => JSON.parse(s) as AuditEvent)
+          .filter((e) => e.subtype?.[0]?.code === 'read');
+        const writtenLogs = readEvents.map((e) => ({
+          outcome: e.outcome,
+          outcomeDesc: e.outcomeDesc,
+          entity: e.entity?.map((entity) => entity.what?.reference),
+        }));
+
+        expect(writtenLogs).toContainExactly([
+          {
+            outcome: AuditEventOutcome.Success,
+            outcomeDesc: undefined,
+            entity: [getReferenceString(p1), getReferenceString(p2)],
+          },
+          {
+            outcome: AuditEventOutcome.MinorFailure,
+            outcomeDesc: 'Not found',
+            entity: [missing.reference, external.reference],
+          },
+          {
+            outcome: AuditEventOutcome.MinorFailure,
+            outcomeDesc: 'Gone',
+            entity: [getReferenceString(deleted)],
+          },
+        ]);
+      } finally {
+        getConfig().logAuditEvents = prevLogAuditEvents;
+        writeSpy.mockRestore();
+      }
+    }));
+
   test('Logs mixed transaction access across repo and system repo', async () => {
     const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
     const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Tx Project' });
