@@ -747,6 +747,29 @@ describe('FHIR Routes', () => {
     expect(res).toHaveStatus(400);
   });
 
+  test('Validate unwraps the resource parameter of a Parameters body', async () => {
+    const validate = (resource: Record<string, unknown>): request.Test =>
+      request(app)
+        .post(`/fhir/R4/Patient/$validate`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'resource', resource }] });
+
+    expect(await validate({ resourceType: 'Patient' })).toHaveStatus(200);
+
+    const res = await validate({ resourceType: 'Patient', name: 'x' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].expression).toStrictEqual(['Patient.name']);
+  });
+
+  test('Validate rejects a Parameters body without a resource parameter', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/$validate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Parameters', parameter: [] });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing resource parameter');
+  });
+
   test('Validate wrong content type', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/$validate`)
