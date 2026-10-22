@@ -216,11 +216,8 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       items: buildActorItems(actors[resourceType].items, selection, filter, showInactive),
       loading: actors[resourceType].loading,
       incomplete: !actors[resourceType].complete,
-      // Providers come from elsewhere, so only rooms and devices are created here.
-      ...(resourceType !== 'Practitioner' && {
-        createLabel: `New ${getActorTypeLabel(resourceType).toLowerCase()}`,
-        onCreate: () => startNew({ kind: 'new-actor', resourceType }),
-      }),
+      createLabel: `New ${getActorTypeLabel(resourceType).toLowerCase()}`,
+      onCreate: () => startNew({ kind: 'new-actor', resourceType }),
     })),
   ];
 
