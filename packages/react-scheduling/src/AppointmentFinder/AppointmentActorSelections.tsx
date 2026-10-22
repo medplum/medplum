@@ -99,11 +99,7 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
 
   return (
     <Stack gap={4} role="group" aria-label={label}>
-      {several && (
-        <Input.Label labelElement="div">
-          {label}
-        </Input.Label>
-      )}
+      {several && <Input.Label labelElement="div">{label}</Input.Label>}
 
       {rows.map((row, index) => (
         <Group key={row.id} align="flex-end" wrap="nowrap" gap="xs">
