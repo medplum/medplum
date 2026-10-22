@@ -11,7 +11,7 @@ import { getActorTypeLabel } from '../../actors';
 import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
 import { getTimezoneOptions, timezoneFilter } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
-import { hasEditableName } from './actorDraft';
+import { hasEditableName, isOwnProvider } from './actorDraft';
 
 export interface ActorGeneralProps {
   /** The actor as the page would store it. */
@@ -26,8 +26,9 @@ export interface ActorGeneralProps {
 }
 
 /**
- * The General section's own fields. A provider's name and NPIs are read-only, since the system providers come
- * from keeps them; where a provider works is edited below these, through their roles.
+ * The General section's own fields. A provider's status, name, and NPIs are read-only unless the workspace created
+ * them, since the system the provider comes from keeps them; where a provider works is edited below these, through
+ * their roles.
  * @param props - The actor, its fields, and the change handlers.
  * @returns The section's fields.
  */
@@ -36,6 +37,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
   const typeLabel = getActorTypeLabel(resource.resourceType);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
   const scheduleLocked = !value.active && !scheduleActive;
+  const statusLocked = resource.resourceType === 'Practitioner' && !isOwnProvider(resource);
 
   function update(change: Partial<ActorGeneralFields>): void {
     onChange({ ...value, ...change });
@@ -48,6 +50,11 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
         value={statusLabel(resource)}
         checked={value.active}
         onChange={(active) => update({ active })}
+        disabledReason={
+          statusLocked
+            ? 'Kept by the system this provider comes from. Switch their Schedule off to stop booking them.'
+            : undefined
+        }
       />
       {scheduleActive !== undefined && (
         <StatusSwitch

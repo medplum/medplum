@@ -10,6 +10,9 @@ export const NPI_SYSTEM = HTTP_HL7_ORG + '/fhir/sid/us-npi';
 /** Marks the PractitionerRole the scheduling configuration keeps for a provider, valued with the provider's id. */
 export const SERVICE_FACILITY_ROLE_SYSTEM = 'https://medplum.com/fhir/scheduling-service-facility-role';
 
+/** Marks a provider the scheduling configuration created, and so keeps, valued with a UUID chosen on create. */
+export const SCHEDULING_CONFIG_PROVIDER_SYSTEM = 'https://medplum.com/fhir/scheduling-config-provider';
+
 // Note that these are used by the `Appointment.cancelationReason` field (one
 // "L" in that field name in R4).
 export const APPOINTMENT_CANCELLATION_REASON_VALUE_SET =

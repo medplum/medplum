@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, deepEquals, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
 import type { Device, Location, Practitioner, Reference } from '@medplum/fhirtypes';
-import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM } from '../../constants';
+import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, SCHEDULING_CONFIG_PROVIDER_SYSTEM } from '../../constants';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** A provider, room, or device, as stored or as the page would store it. */
@@ -50,6 +50,16 @@ export function newActorResource(resourceType: NewActorType): Location | Device 
  */
 export function hasEditableName(resource: ActorResource): resource is Location | Device {
   return resource.resourceType === 'Location' || (resource.resourceType === 'Device' && !resource.id);
+}
+
+/**
+ * Whether the workspace keeps the provider: one it created, which carries its marker. Any other comes from an
+ * external system, which keeps its name, NPIs, and status.
+ * @param practitioner - The provider.
+ * @returns True when the workspace created the provider.
+ */
+export function isOwnProvider(practitioner: Practitioner): boolean {
+  return (practitioner.identifier ?? []).some((identifier) => identifier.system === SCHEDULING_CONFIG_PROVIDER_SYSTEM);
 }
 
 /**
