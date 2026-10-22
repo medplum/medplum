@@ -8,7 +8,6 @@ import {
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  isString,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -18,7 +17,11 @@ import type { PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
+import type {
+  ColumnSearchParameterImplementation,
+  RangeColumnSearchParameterImplementation,
+  SearchParameterImplementation,
+} from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { PgQueryable, SqlFunctionDefinition } from '../fhir/sql';
 import { getSearchParamColumnType, MedplumUnaccentFn, TokenArrayToTextFn } from '../fhir/sql';
@@ -424,7 +427,6 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
 interface SearchParameterIndexVariant {
   prefix?: string[];
   suffix?: string[];
-  indexTypes?: IndexType[];
 }
 
 const Unmodified: SearchParameterIndexVariant = {};
@@ -433,6 +435,7 @@ const ProjectScoped: SearchParameterIndexVariant = { prefix: ['projectId'] };
 /**
  * Per-resource index variants, keyed by search parameter code. The listed variants replace the defaults
  * from {@link getSearchParameterIndexVariants}, so include `Unmodified` to keep the plain indexes as well.
+ * Variants do not apply to range column indexes, which are always project-scoped.
  */
 const SearchParameterIndexVariants: Partial<Record<ResourceType, Record<string, SearchParameterIndexVariant[]>>> = {
   Observation: {
@@ -487,8 +490,7 @@ function getSearchParameterIndexVariants(
     !impl.array &&
     (searchParam.code === 'date' || searchParam.code === 'sent')
   ) {
-    // Don't add Project scope to range indexes yet
-    return [Unmodified, { ...ProjectScoped, indexTypes: ['btree'] }];
+    return [Unmodified, ProjectScoped];
   }
   return [Unmodified];
 }
@@ -507,11 +509,22 @@ function getSearchParameterIndexes(
   impl: SearchParameterImplementation
 ): IndexDefinition[] {
   const baseIndexes = getBaseSearchParameterIndexes(impl);
-  return getSearchParameterIndexVariants(resourceType, searchParam, impl).flatMap((variant) =>
-    baseIndexes
-      .filter((index) => !variant.indexTypes || variant.indexTypes.includes(index.indexType))
-      .map((index) => applyIndexVariant(index, variant))
+  const indexes = getSearchParameterIndexVariants(resourceType, searchParam, impl).flatMap((variant) =>
+    baseIndexes.map((index) => applyIndexVariant(index, variant))
   );
+  if (impl.searchStrategy === 'range-column') {
+    indexes.push(...getRangeColumnIndexes(impl));
+  }
+  return indexes;
+}
+
+function getRangeColumnIndexes(impl: RangeColumnSearchParameterImplementation): IndexDefinition[] {
+  const indexes: IndexDefinition[] = [{ columns: ['projectId', impl.rangeColumnName], indexType: 'gist' }];
+  if (!impl.array) {
+    // GiST cannot serve ORDER BY; only scalar params get a sort index, matching the legacy btree column index
+    indexes.push({ columns: ['projectId', impl.sortColumnName], indexType: 'btree' });
+  }
+  return indexes;
 }
 
 function getBaseSearchParameterIndexes(impl: SearchParameterImplementation): IndexDefinition[] {
@@ -530,14 +543,8 @@ function getBaseSearchParameterIndexes(impl: SearchParameterImplementation): Ind
         },
       ];
     case 'range-column':
-      return [
-        // legacy index prior to range-column search strategy
-        { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
-        {
-          columns: [impl.rangeColumnName, impl.sortColumnName],
-          indexType: 'gist',
-        },
-      ];
+      // legacy index prior to range-column search strategy; range indexes come from getRangeColumnIndexes
+      return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
     case 'column':
       return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
     case 'lookup-table':
@@ -1443,15 +1450,8 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
     return tableName + '_pkey';
   }
 
-  let columnNames = index.columns.map((c) => (typeof c === 'string' ? c : c.name));
-  let suffix = index.indexNameSuffix ?? 'idx';
-
-  // Range indexes end with (value, valueSort); name them by the value column, after any prefix columns
-  const [value, sort] = index.columns.slice(-2);
-  if (index.columns.length >= 2 && isString(value) && isString(sort) && sort === `${value}Sort`) {
-    columnNames = columnNames.slice(0, -1);
-    suffix = 'sorted_idx';
-  }
+  const columnNames = index.columns.map((c) => (typeof c === 'string' ? c : c.name));
+  const suffix = index.indexNameSuffix ?? 'idx';
 
   let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';
   indexName += columnNames.map((c) => applyAbbreviations(c, ColumnNameAbbreviations)).join('_');
