@@ -390,8 +390,10 @@ describe('Generator', () => {
         expect(columns).toContainEqual(['projectId', '___tagTextTrgm']);
         expect(columns).toContainEqual(['projectId', '__code']);
         expect(columns).toContainEqual(['projectId', '__codeTextTrgm']);
-        expect(columns).toContainEqual(['projectId', '__dueDate', '__dueDateSort']);
-        expect(columns).toContainEqual(['projectId', '__authoredOn', '__authoredOnSort']);
+        expect(columns).toContainEqual(['projectId', '__dueDate']);
+        expect(columns).toContainEqual(['projectId', '__dueDateSort']);
+        expect(columns).toContainEqual(['projectId', '__authoredOn']);
+        expect(columns).toContainEqual(['projectId', '__authoredOnSort']);
 
         for (const plain of [
           ['status'],
@@ -402,36 +404,39 @@ describe('Generator', () => {
           ['___tagTextTrgm'],
           ['__code'],
           ['__codeTextTrgm'],
-          ['__dueDate', '__dueDateSort'],
-          ['__authoredOn', '__authoredOnSort'],
+          ['__dueDate'],
+          ['__authoredOn'],
         ]) {
           expect(columns).not.toContainEqual(plain);
         }
       });
 
-      test('date project-scopes btree index but leaves range index unscoped', () => {
+      test('date project-scopes legacy btree and range indexes', () => {
         const table = getTable('Appointment');
         const columns = getIndexColumns(table);
         expect(columns).toContainEqual(['date']);
         expect(columns).toContainEqual(['projectId', 'date']);
-        expect(columns).toContainEqual(['__date', '__dateSort']);
-        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['__date']);
+        expect(columns).not.toContainEqual(['__dateSort']);
 
         const queries = getCreateTableQueries(table, { includeIfExists: false });
         expect(queries).toContain(
-          'CREATE INDEX "Appointment___date_sorted_idx" ON "Appointment" USING gist ("__date", "__dateSort")'
+          'CREATE INDEX "Appointment_projectId___date_idx" ON "Appointment" USING gist ("projectId", "__date")'
         );
         expect(queries).toContain(
-          'CREATE INDEX "Appointment___end_sorted_idx" ON "Appointment" USING gist ("__end", "__endSort")'
+          'CREATE INDEX "Appointment_projectId___dateSort_idx" ON "Appointment" ("projectId", "__dateSort")'
+        );
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment_projectId___end_idx" ON "Appointment" USING gist ("projectId", "__end")'
         );
       });
 
-      test('array date is not project-scoped', () => {
+      test('array date has no sort index and leaves legacy index unscoped', () => {
         const columns = getIndexColumns(getTable('MedicationRequest'));
         expect(columns).toContainEqual(['date']);
-        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).toContainEqual(['projectId', '__date']);
         expect(columns).not.toContainEqual(['projectId', 'date']);
-        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', '__dateSort']);
       });
 
       test('Observation subject with date sort suffix', () => {

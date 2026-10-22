@@ -4358,10 +4358,33 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           ],
           sortRules: [{ code: 'due-date' }],
         });
-        expect(bundle.entry?.length).toStrictEqual(2);
-        expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task2.id);
-        expect(bundle.entry?.[1]?.resource?.id).toStrictEqual(task3.id);
+        // Range search sorts the end-only period at -infinity; the legacy column sorts it at its end
+        const expectedOrder = features?.includes('range-search') ? [task3, task2] : [task2, task3];
+        expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual(expectedOrder.map((t) => t.id));
         expect(bundleContains(bundle, task1)).not.toBeTruthy();
+      }));
+
+    test('end-only period overlapping an upper-bounded filter', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        const task = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+          restriction: { period: { end: '2023-06-10T00:00:00.000Z' } },
+        });
+
+        const bundle = await repo.search<Task>({
+          resourceType: 'Task',
+          filters: [
+            { code: 'code', operator: Operator.EQUALS, value: code },
+            { code: 'due-date', operator: Operator.LESS_THAN, value: '2023-06-05T00:00:00.000Z' },
+          ],
+          sortRules: [{ code: 'due-date', descending: true }],
+        });
+        // The period is unbounded below, so it overlaps the filter even though its end is past the bound
+        expect(Boolean(bundleContains(bundle, task))).toStrictEqual(Boolean(features?.includes('range-search')));
       }));
   });
 

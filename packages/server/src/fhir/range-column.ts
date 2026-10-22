@@ -25,7 +25,10 @@ import { shouldSearchParameterExist } from './presence';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
-import { Column, ColumnType, Condition, Negation } from './sql';
+import { Column, ColumnType, Condition, Conjunction, Negation } from './sql';
+
+// Sort value for ranges unbounded below, so that the sort value never exceeds any point in the range
+const DATE_NEGATIVE_INFINITY = '-infinity';
 
 type Interval<T extends number | Date> = {
   left?: T;
@@ -63,25 +66,27 @@ function extractDateTimeParameter(
 
   if (impl.array) {
     let lowest: Date | undefined;
+    let unboundedBelow = false;
     const values = flatMapFilter(typedValues, (v) => {
       const range = buildDateTimeRange(v);
       if (!range) {
         return undefined;
       }
-      const lowerBound = range.left ?? range.right;
-      if (!lowest || (lowerBound && lowest > lowerBound)) {
-        lowest = lowerBound;
+      if (!range.left) {
+        unboundedBelow = true;
+      } else if (!lowest || lowest > range.left) {
+        lowest = range.left;
       }
       return formatRange(range);
     });
     columns[impl.rangeColumnName] = `{${values.join(',')}}`;
-    columns[impl.sortColumnName] = lowest?.toISOString();
+    columns[impl.sortColumnName] = unboundedBelow ? DATE_NEGATIVE_INFINITY : lowest?.toISOString();
     columns[impl.columnName] = typedValues.map((t) => t.value);
   } else {
     const range = buildDateTimeRange(typedValues[0]);
     if (range) {
       columns[impl.rangeColumnName] = formatRange(range);
-      columns[impl.sortColumnName] = range.left?.toISOString() ?? range.right?.toISOString();
+      columns[impl.sortColumnName] = range.left?.toISOString() ?? DATE_NEGATIVE_INFINITY;
       columns[impl.columnName] = typedValues[0].value;
     }
   }
@@ -194,8 +199,8 @@ function extractNumberParameter(
       if (!range) {
         return undefined;
       }
-      const lowerBound = range.left ?? range.right;
-      if (lowest === undefined || (lowerBound !== undefined && lowest > lowerBound)) {
+      const lowerBound = range.left ?? Number.NEGATIVE_INFINITY;
+      if (lowest === undefined || lowest > lowerBound) {
         lowest = lowerBound;
       }
       return formatRange(range);
@@ -207,7 +212,7 @@ function extractNumberParameter(
     if (range) {
       const value = formatRange(range);
       columns[impl.rangeColumnName] = value;
-      columns[impl.sortColumnName] = range.left ?? range.right;
+      columns[impl.sortColumnName] = range.left ?? Number.NEGATIVE_INFINITY;
     }
   }
 }
@@ -307,9 +312,9 @@ export function addRangeColumnsOrderBy(
     the specified sort order when ordering the returned resources.
 
     Current behavior:
-    Sorts by the lower bound of the range. This can result
-    in possibly unexpected/surprising result ordering when a resource has multiple range
-    values for the same field, or if the range is unbounded to the left.
+    Sorts by the lower bound of the range, with ranges unbounded to the left sorting as -infinity.
+    This can result in possibly unexpected/surprising result ordering when a resource has multiple
+    range values for the same field.
   */
   selectQuery.orderBy(new Column(undefined, impl.sortColumnName), sortRule.descending);
 }
@@ -339,27 +344,33 @@ export function buildRangeColumnsSearchFilter(
     colType = ColumnType.NUMRANGE;
   }
   const column = new Column(tableName, impl.rangeColumnName);
+  // A matching range has a point at or below the filter's upper bound, and the stored sort value is the range's lower
+  // bound (or -infinity), so this redundant condition holds for every match; it lets the btree on the sort column
+  // bound an ordered scan, which the GiST index on the range column cannot provide. Only scalar params have that index.
+  const withSortBound = (condition: Expression, upper: number | Date | undefined): Expression =>
+    impl.array || upper === undefined
+      ? condition
+      : new Conjunction([
+          condition,
+          new Condition(new Column(tableName, impl.sortColumnName), '<=', formatEndpoint(upper)),
+        ]);
   switch (filter.operator) {
     case Operator.EXACT: // Alias needed for _filter search
     case Operator.APPROXIMATELY: // Approximate target range calculated above, match against it here
     case Operator.EQUALS:
-      return new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType);
+      return withSortBound(new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType), range.right);
     case Operator.NOT:
     case Operator.NOT_EQUALS:
       return new Negation(new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType));
     case Operator.LESS_THAN:
-      return new Condition(
-        column,
-        'RANGE_OVERLAPS',
-        `(,${formatEndpoint(range.left)}${range.lInc ? ')' : ']'}`,
-        colType
+      return withSortBound(
+        new Condition(column, 'RANGE_OVERLAPS', `(,${formatEndpoint(range.left)}${range.lInc ? ')' : ']'}`, colType),
+        range.left
       );
     case Operator.LESS_THAN_OR_EQUALS:
-      return new Condition(
-        column,
-        'RANGE_OVERLAPS',
-        `(,${formatEndpoint(range.right)}${range.rInc ? ']' : ')'}`,
-        colType
+      return withSortBound(
+        new Condition(column, 'RANGE_OVERLAPS', `(,${formatEndpoint(range.right)}${range.rInc ? ']' : ')'}`, colType),
+        range.right
       );
     case Operator.GREATER_THAN:
       return new Condition(
@@ -378,7 +389,7 @@ export function buildRangeColumnsSearchFilter(
     case Operator.STARTS_AFTER:
       return new Condition(column, 'RANGE_STRICTLY_RIGHT_OF', formatRange(range), colType);
     case Operator.ENDS_BEFORE:
-      return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', formatRange(range), colType);
+      return withSortBound(new Condition(column, 'RANGE_STRICTLY_LEFT_OF', formatRange(range), colType), range.left);
     case Operator.MISSING:
     case Operator.PRESENT: {
       const shouldExist = shouldSearchParameterExist(filter.operator, filter.value);
