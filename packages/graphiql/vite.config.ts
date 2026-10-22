@@ -8,7 +8,6 @@ import { defineConfig } from 'vite';
 // The docs recommend the `vite-plugin-monaco-editor` package, but its exports aren't cleanly
 // compatible with ESM. See https://github.com/vdesjs/vite-plugin-monaco-editor/issues/21
 import monacoEditorEsmPlugin from 'vite-plugin-monaco-editor-esm';
-import { medplumAliases } from '../../aliases.mjs';
 
 if (!existsSync(path.join(import.meta.dirname, '.env'))) {
   copyFileSync(path.join(import.meta.dirname, '.env.defaults'), path.join(import.meta.dirname, '.env'));
@@ -16,11 +15,7 @@ if (!existsSync(path.join(import.meta.dirname, '.env'))) {
 
 export default defineConfig({
   resolve: {
-    alias: {
-      // necessary because styles.css is a side effect of the react package, so we can't use an alias
-      '@medplum/react/styles.css': path.resolve(import.meta.dirname, '../react/dist/esm/index.css'),
-      ...medplumAliases,
-    },
+    alias: [{ find: /^@medplum\/([\w-]+)$/, replacement: path.resolve(import.meta.dirname, '../$1/src') }],
   },
   envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
   plugins: [
