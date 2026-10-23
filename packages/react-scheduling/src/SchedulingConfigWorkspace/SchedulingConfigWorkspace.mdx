@@ -63,7 +63,7 @@ one, which is listed once it is saved. Providers can't be created here.
   without losing anything. A note says when it can't be booked: because it is inactive, or because its Schedule
   is switched off. A provider's status, name, and NPIs (`Practitioner.identifier` with the `us-npi` system) are
   read-only, since they are kept by the system providers come from; switching its Schedule off still stops it being
-  booked. A provider the workspace created (`Practitioner.identifier` with the `scheduling-config-provider` system)
+  booked. A provider the workspace keeps (`Practitioner.identifier` with the `scheduling-config-provider` system)
   is the exception, and its status is edited like a room's. Where a provider works is edited as their service
   facilities (below). A device's name is read-only too, once it is created. A room's name is edited, and so is a
   room's or device's service facility (`Location.partOf`, or `Device.location`), picked from the same Locations
