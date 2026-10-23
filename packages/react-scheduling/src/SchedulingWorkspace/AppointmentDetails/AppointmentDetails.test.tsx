@@ -767,6 +767,18 @@ describe('AppointmentDetails editing', () => {
     expect(saveButton()).toBeDisabled();
   });
 
+  test('asks for a patient when the one on file cannot be read', async () => {
+    renderEditable({
+      ...BOOKED_APPOINTMENT,
+      participant: BOOKED_APPOINTMENT.participant.map((p) =>
+        p.actor?.reference?.startsWith('Patient/') ? { ...p, actor: { reference: 'Patient/deleted' } } : p
+      ),
+    });
+
+    // Waiting on a patient who will never load would hide the field for good.
+    expect(await screen.findByRole('searchbox', { name: /patient/i })).toBeInTheDocument();
+  });
+
   test('asks for no codes a visit type never asked for', async () => {
     renderEditable(BOOKED_APPOINTMENT);
     await screen.findByText('Miles Cooper');

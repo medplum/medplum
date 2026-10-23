@@ -7,6 +7,7 @@ import {
   extractServiceTypeReferences,
   getAppointmentSite,
   getExtensionValue,
+  MRN_IDENTIFIER_TYPE,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
@@ -14,7 +15,7 @@ import {
   SchedulingMedicalNecessityURI,
   toAppointmentSiteReference,
 } from '@medplum/core';
-import type { Appointment, Device, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, Device, Patient, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import { installFindStub } from '../stories/mockFind';
@@ -1305,6 +1306,51 @@ describe('AppointmentProposalForm', () => {
       await typeInAutocomplete(field(/patient/i), 'Whitfield');
 
       expect(await screen.findByText(patientDetail(UntypedMrnPatient, 'MRN-0099'))).toBeInTheDocument();
+
+      // Named that way, the number finds Sam too.
+      await typeInAutocomplete(field(/patient/i), 'MRN-0099');
+      expect(await screen.findByText(patientDetail(UntypedMrnPatient, 'MRN-0099'))).toBeInTheDocument();
+    });
+
+    test('Finds a patient by medical record number, and only by that number', async () => {
+      setup(medplum);
+      await typeInAutocomplete(field(/patient/i), 'MRN-0041');
+
+      expect(await screen.findByText(patientDetail(ElderJordanPatient, 'MRN-0041'))).toBeInTheDocument();
+      expect(screen.queryByText(patientDetail(YoungerJordanPatient))).not.toBeInTheDocument();
+
+      // Sam's identifier is the same shape, but without `mrnSystem` nothing says it
+      // is a medical record number, so matching it would offer a stranger's number.
+      await typeInAutocomplete(field(/patient/i), 'MRN-0099');
+      expect(await screen.findByText('Nothing found')).toBeInTheDocument();
+      expect(screen.queryByText('Sam Whitfield')).not.toBeInTheDocument();
+    });
+
+    test('Finds a patient by any of their medical record numbers, ahead of those named alike', async () => {
+      // Numbered under the project's own system, and typed as a medical record
+      // number by the outside record they arrived with.
+      await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Pat'], family: 'Quinn' }],
+        birthDate: '1970-08-09',
+        identifier: [
+          { type: { coding: [MRN_IDENTIFIER_TYPE] }, value: 'JOR' },
+          { system: MRN_SYSTEM, value: 'MRN-0100' },
+        ],
+      });
+      setup(medplum, { mrnSystem: MRN_SYSTEM });
+
+      // The row shows the typed number, but the project's own finds them too.
+      await typeInAutocomplete(field(/patient/i), 'MRN-0100');
+      expect(await screen.findByText('Pat Quinn')).toBeInTheDocument();
+
+      // All of Pat's other number, and the start of Jordan Reyes's name: the exact
+      // number is the surer match, so it leads.
+      await typeInAutocomplete(field(/patient/i), 'JOR');
+      await screen.findAllByText('Jordan Reyes');
+      const options = screen.getAllByRole('option');
+      expect(options).toHaveLength(3);
+      expect(options[0]).toHaveTextContent('Pat Quinn');
     });
 
     test('Leaves the patient out of the search for times', async () => {
