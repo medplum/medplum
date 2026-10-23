@@ -65,6 +65,10 @@ export interface BatchInitialState {
   bundleInfo: BundlePreprocessInfo;
   resolvedIdentities: Record<string, string>;
   /**
+   * The resource IDs assigned during preprocessing, keyed by their entry index in the original bundle.
+   */
+  assignedIds: Record<number, string>;
+  /**
    * Result entries produced during preprocessing itself (i.e. error responses for malformed
    * entries in a non-transaction bundle), keyed by their index in the original bundle. These
    * entries are never re-processed, so they are captured here rather than in per-entry progress.
@@ -125,6 +129,7 @@ export class BatchProcessor {
   private readonly bundle: Bundle;
   private readonly req: FhirRequest;
   private resolvedIdentities: Record<string, string>;
+  private assignedIds: Record<number, string>;
   private bundleInfo: BundlePreprocessInfo | undefined;
 
   /** The state mutated through processing (and preprocessing) */
@@ -143,6 +148,7 @@ export class BatchProcessor {
     this.bundle = bundle;
     this.req = req;
     this.resolvedIdentities = Object.create(null);
+    this.assignedIds = Object.create(null);
     this.state = {
       position: 0,
       resultEntries: new Array(bundle.entry?.length ?? 0),
@@ -173,6 +179,7 @@ export class BatchProcessor {
   ): BatchProcessor {
     const processor = new BatchProcessor(router, repo, initialState.bundle, req);
     processor.resolvedIdentities = initialState.resolvedIdentities;
+    processor.assignedIds = initialState.assignedIds;
     processor.bundleInfo = {
       ...initialState.bundleInfo,
     };
@@ -274,6 +281,7 @@ export class BatchProcessor {
         updates: this.bundleInfo.updates,
       },
       resolvedIdentities: this.resolvedIdentities,
+      assignedIds: this.assignedIds,
       preprocessResults,
     };
   }
@@ -503,7 +511,7 @@ export class BatchProcessor {
 
     let resolved: { placeholder: string; reference: string } | undefined;
     try {
-      resolved = await this.resolveIdentity(entry, `Bundle.entry[${index}]`);
+      resolved = await this.resolveIdentity(entry, index);
     } catch (err: any) {
       if (err instanceof OperationOutcomeError) {
         return err.outcome;
@@ -526,7 +534,7 @@ export class BatchProcessor {
     return undefined;
   }
 
-  private async resolveIdentity(entry: BundleEntry, path: string): Promise<BundleEntryIdentity | undefined> {
+  private async resolveIdentity(entry: BundleEntry, index: number): Promise<BundleEntryIdentity | undefined> {
     const route = this.getRouteForEntry(entry);
     const interaction = route?.data?.interaction;
     if (!interaction) {
@@ -536,11 +544,11 @@ export class BatchProcessor {
     switch (interaction) {
       case 'create':
         // Ensure that resources to be created have an ID assigned
-        return this.resolveCreateIdentity(entry);
+        return this.resolveCreateIdentity(entry, index);
       case 'delete':
       case 'update':
       case 'patch':
-        return this.resolveModificationIdentity(entry, path);
+        return this.resolveModificationIdentity(entry, index);
       default:
         // Ignore read-only and complex operations
         return undefined;
@@ -551,8 +559,11 @@ export class BatchProcessor {
     return this.router.find(entry.request?.method as HttpMethod, entry.request?.url ?? '');
   }
 
-  private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
+  private async resolveCreateIdentity(entry: BundleEntry, index: number): Promise<BundleEntryIdentity | undefined> {
     const placeholder = entry.fullUrl ?? '';
+    if (entry.resource) {
+      this.assignId(entry.resource, index);
+    }
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
@@ -562,16 +573,21 @@ export class BatchProcessor {
       }
     }
     if (entry.resource) {
-      entry.resource.id = this.repo.generateId();
       return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
     }
     return undefined;
   }
 
+  private assignId(resource: Resource, index: number): void {
+    resource.id = this.repo.generateId();
+    this.assignedIds[index] = resource.id;
+  }
+
   private async resolveModificationIdentity(
     entry: BundleEntry,
-    path: string
+    index: number
   ): Promise<BundleEntryIdentity | undefined> {
+    const path = `Bundle.entry[${index}]`;
     const placeholder = entry.fullUrl ?? '';
     if (entry.request?.url?.includes('?')) {
       const method = entry.request.method;
@@ -595,7 +611,7 @@ export class BatchProcessor {
                 throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
               }
 
-              entry.resource.id = this.repo.generateId();
+              this.assignId(entry.resource, index);
               return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
             }
             return undefined;
@@ -672,7 +688,7 @@ export class BatchProcessor {
     const entry = entries[entryIndex];
     const rewritten = this.rewriteIdsInObject(entry);
     try {
-      this.setResult(entryIndex, await this.processBatchEntry(rewritten));
+      this.setResult(entryIndex, await this.processBatchEntry(rewritten, entryIndex));
       this.state.position = n + 1;
     } catch (err: any) {
       if (this.isTransaction()) {
@@ -702,16 +718,19 @@ export class BatchProcessor {
   /**
    * Processes a single entry from a FHIR batch request.
    * @param entry - The bundle entry.
+   * @param entryIndex - The index of the entry in the original bundle.
    * @returns The bundle entry response.
    */
-  private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
+  private async processBatchEntry(entry: BundleEntry, entryIndex: number): Promise<BundleEntry> {
     const route = this.getRouteForEntry(entry);
     if (!route) {
       throw new OperationOutcomeError(notFound);
     }
 
     const request = this.parseBatchRequest(entry, route);
-    const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true });
+    // Creates use the ID assigned to this entry during preprocessing
+    const assignedId = entry.resource?.id !== undefined && entry.resource.id === this.assignedIds[entryIndex];
+    const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true, assignedId });
 
     if (!isOk(outcome) && this.isTransaction()) {
       throw new OperationOutcomeError(outcome);

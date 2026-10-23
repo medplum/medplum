@@ -190,8 +190,12 @@ export async function setResourceAccounts(
 
       const bundle = await searchPatientCompartment(userRepo, target, search);
       for (const entry of bundle.entry ?? EMPTY) {
-        const resource = entry.resource;
-        if (resource && resource.resourceType !== 'Patient') {
+        if (!entry.resource || entry.resource.resourceType === 'Patient') {
+          continue;
+        }
+        // read with system repo to restore hidden fields
+        const resource = await systemRepo.readResource(entry.resource.resourceType, entry.resource.id);
+        if (userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource)) {
           await updateCompartmentResource(systemRepo, resource, additions, removals);
           count++;
         }
