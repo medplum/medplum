@@ -553,6 +553,50 @@ describe('Appointment/$book', () => {
     expect(response.body.issue[0].expression).toEqual(['Parameters.appointment.contained[0].schedule']);
   });
 
+  test('fails when the Schedule actor is inactive', async () => {
+    const actor = await systemRepo.updateResource<Practitioner>({
+      ...(await makePractitioner({ timezone: 'America/New_York' })),
+      active: false,
+    });
+    const schedule = await makeSchedule({ actor });
+
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe('Practitioner is inactive');
+    expect(response.body.issue[0].expression).toEqual(['Parameters.appointment.contained[0].schedule.actor[0]']);
+  });
+
   test('succeeds when the HealthcareService is explicitly active', async () => {
     const healthcareService = await systemRepo.createResource<HealthcareService>({
       resourceType: 'HealthcareService',

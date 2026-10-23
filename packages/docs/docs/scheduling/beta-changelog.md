@@ -17,6 +17,24 @@ needed to adopt them.
 
 :::
 
+## Scheduling APIs disallow scheduling inactive actors
+
+**Target release:** TBD &nbsp;·&nbsp; **Issues:** [#10763](https://github.com/medplum/medplum/issues/10763)
+
+### What changed
+
+Scheduling APIs will check that the actor of each Schedule they schedule against is not inactive: a `Practitioner`, `PractitionerRole`, `HealthcareService`, `Patient`, or `RelatedPerson` with `active: false`, or a `Location` or `Device` with `status: inactive`.
+
+The `$cancel` operation is still allowed for Appointments with inactive actors. The `$reschedule` operation allows removing a Schedule with an inactive actor from an existing appointment.
+
+### Who is affected
+
+Users of `$find` / `$book` / `$hold` / `$confirm` / `$reschedule` with Schedule resources whose actor is a `Practitioner`, `PractitionerRole`, `HealthcareService`, `Patient`, or `RelatedPerson` with `active` set exactly to `false`, or a `Location` or `Device` with `status` set to `inactive`.
+
+### Migration
+
+We believe this matches the expectations of users of these APIs, and do not offer a programmatic migration. Users impacted may consider reactivating the actor, or setting `active: false` on its Schedule to make the intent explicit.
+
 ## Scheduling APIs disallow using inactive Schedule resources
 
 **Target release:** September 24, 2026 &nbsp;·&nbsp; **Issues:** [#10536](https://github.com/medplum/medplum/issues/10536)

@@ -38,9 +38,9 @@ export interface RescheduleDefaults {
    * Actors the visit is held on whose schedules cannot be offered back, named where they
    * could be read.
    *
-   * A Schedule that is inactive, no longer names the visit type, or is held on an actor
-   * this form does not book leaves its actors out of the rows above — and a move writes
-   * the actors it is given, so these are about to be dropped off the visit.
+   * A Schedule that is inactive, no longer names the visit type, or is held on an inactive
+   * actor or one this form does not book leaves its actors out of the rows above — and a
+   * move writes the actors it is given, so these are about to be dropped off the visit.
    */
   readonly droppedActors: readonly SchedulingActor[];
   /** References to every Schedule the visit is held on now, including those behind `droppedActors`. */
@@ -250,8 +250,8 @@ async function loadActors(
  * The actors a move would take off the visit: those on a held schedule that could not
  * be offered back. These actors will be dropped when `$reschedule` is invoked.
  *
- * This can happen if the Schedule is inactive, is no longer eligible for booking against
- * this visit's service type, or is held on an actor this form does not book.
+ * This can happen if the Schedule or its actor is inactive, is no longer eligible for booking
+ * against this visit's service type, or is held on an actor this form does not book.
  *
  * @param schedules - The schedules the visit is held on.
  * @param candidates - The ones among them that were offered back.

@@ -7,6 +7,7 @@ import {
   getDisplayString,
   getReferenceString,
   isDefined,
+  isScheduleActorInactive,
   lazy,
   SCHEDULING_SERVICE_TYPE_SYSTEM,
   serviceTypeOffersService,
@@ -238,7 +239,12 @@ export function toScheduleCandidate(
     return undefined;
   }
 
-  return { schedule, actorResource: actors.get(referenceStr) };
+  const actorResource = actors.get(referenceStr);
+  if (actorResource && isScheduleActorInactive(actorResource)) {
+    return undefined;
+  }
+
+  return { schedule, actorResource };
 }
 
 /** How far up a `partOf` chain of Locations to look. */

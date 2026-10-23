@@ -8,6 +8,7 @@ import {
   deepClone,
   deepEquals,
   extractServiceTypeReferences,
+  isScheduleActorInactive,
   resolveId,
   SchedulingParametersURI,
   serviceTypeIncludesAllServices,
@@ -29,7 +30,7 @@ import {
   initialAvailabilityFieldsValue,
   toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices, isActorInactive, isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
 
 /** What a Schedule sets for one visit type it offers. */
 export interface OfferingFields {
@@ -147,7 +148,7 @@ export function buildScheduleDraft(
   }
   let draft: Schedule = stored
     ? deepClone(stored)
-    : { resourceType: 'Schedule', active: !isActorInactive(actor), actor: [createReference(actor)] };
+    : { resourceType: 'Schedule', active: !isScheduleActorInactive(actor), actor: [createReference(actor)] };
 
   if (stored && fields.active !== initial.active) {
     draft.active = fields.active;

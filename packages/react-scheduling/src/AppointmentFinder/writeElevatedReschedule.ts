@@ -4,9 +4,11 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import {
   createReference,
   extractServiceTypeReferences,
+  getDisplayString,
   getExtension,
   getReferenceString,
   isDefined,
+  isScheduleActorInactive,
   isValidDate,
   OccurrenceChangedExtensionURI,
   RecurrenceIdExtensionURI,
@@ -101,9 +103,14 @@ export async function writeElevatedReschedule(
   if (oldSlotRefs.some((ref) => !ref || !/^Slot\/[^/]+$/.test(ref))) {
     throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
   }
-  const [service, oldSlots] = await Promise.all([
+  const [service, oldSlots, actors] = await Promise.all([
     medplum.readReference(serviceRefs[0], { cache: 'no-cache' }),
     Promise.all(oldSlotRefs.map((reference) => medplum.readReference<Slot>({ reference }, { cache: 'no-cache' }))),
+    Promise.all(
+      schedules
+        .flatMap((schedule) => schedule.actor)
+        .map((actor) => medplum.readReference(actor, { cache: 'no-cache' }).catch(() => undefined))
+    ),
   ]);
   if (service.active === false) {
     throw new Error('The visit type is inactive.');
@@ -121,6 +128,10 @@ export async function writeElevatedReschedule(
     throw new Error(
       'Every selected schedule must be active, have exactly one actor, and be eligible for this visit type.'
     );
+  }
+  const inactiveActor = actors.find((actor) => actor && isScheduleActorInactive(actor));
+  if (inactiveActor) {
+    throw new Error(`${getDisplayString(inactiveActor)} is inactive.`);
   }
   // A move that keeps its schedules is moving off ones already read above.
   const loadedSchedules = new Map(scheduleRefs.map((reference, index) => [reference, schedules[index]]));
