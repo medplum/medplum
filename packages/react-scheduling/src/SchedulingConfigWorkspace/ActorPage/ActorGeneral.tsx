@@ -21,8 +21,8 @@ export interface ActorGeneralProps {
   /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
   readonly scheduleActive: boolean | undefined;
   readonly onScheduleActiveChange: (active: boolean) => void;
-  /** Why the name can't be saved, once that should be said. */
-  readonly nameError?: string;
+  /** Why the name can't be saved, by field, once that should be said. */
+  readonly nameErrors?: Partial<Record<'name' | 'given' | 'family', string>>;
 }
 
 /**
@@ -33,7 +33,7 @@ export interface ActorGeneralProps {
  * @returns The section's fields.
  */
 export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
-  const { resource, value, onChange, scheduleActive, onScheduleActiveChange, nameError } = props;
+  const { resource, value, onChange, scheduleActive, onScheduleActiveChange, nameErrors } = props;
   const typeLabel = getActorTypeLabel(resource.resourceType);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
   const scheduleLocked = !value.active && !scheduleActive;
@@ -71,16 +71,11 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
   );
 
   if (resource.resourceType === 'Practitioner') {
-    const npis = getNpis(resource);
     return (
       <>
         {statuses}
         <FieldGrid>
-          <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-          <ReadOnlyField
-            label={npis.length > 1 ? 'NPIs' : 'NPI'}
-            value={npis.length > 0 ? npis.join(', ') : undefined}
-          />
+          <ProviderNameFields resource={resource} value={value} errors={nameErrors} onChange={update} />
           <TimezoneField value={value.timezone} onChange={(timezone) => update({ timezone })} />
         </FieldGrid>
       </>
@@ -98,7 +93,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
             required
             value={value.name}
             onChange={(event) => update({ name: event.currentTarget.value })}
-            error={nameError}
+            error={nameErrors?.name}
             placeholder={isRoom ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
           />
         ) : (
@@ -115,6 +110,45 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
           onChange={(timezone) => update({ timezone })}
         />
       </FieldGrid>
+    </>
+  );
+}
+
+// A provider the workspace created has editable names and never an NPI; any other has a read-only name and NPIs.
+function ProviderNameFields(props: {
+  readonly resource: Practitioner;
+  readonly value: ActorGeneralFields;
+  readonly errors: ActorGeneralProps['nameErrors'];
+  readonly onChange: (change: Partial<ActorGeneralFields>) => void;
+}): JSX.Element {
+  const { resource, value, errors, onChange } = props;
+  if (!isOwnProvider(resource)) {
+    const npis = getNpis(resource);
+    return (
+      <>
+        <ReadOnlyField label="Name" value={getDisplayString(resource)} />
+        <ReadOnlyField label={npis.length > 1 ? 'NPIs' : 'NPI'} value={npis.length > 0 ? npis.join(', ') : undefined} />
+      </>
+    );
+  }
+  return (
+    <>
+      <TextInput
+        label="First name"
+        required
+        value={value.given ?? ''}
+        onChange={(event) => onChange({ given: event.currentTarget.value })}
+        error={errors?.given}
+        placeholder="e.g. Jane"
+      />
+      <TextInput
+        label="Last name"
+        required
+        value={value.family ?? ''}
+        onChange={(event) => onChange({ family: event.currentTarget.value })}
+        error={errors?.family}
+        placeholder="e.g. Smith"
+      />
     </>
   );
 }
