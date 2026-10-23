@@ -48,10 +48,14 @@ import {
   CHC_PAYER_ID_SYSTEM,
 } from '../../utils/candid';
 import type { ServiceType } from '../../utils/eligibility';
-import { buildEligibilityServiceTypesValueSet, X12_SERVICE_TYPE_CODE_SYSTEM } from '../../utils/eligibility';
+import {
+  buildEligibilityServiceTypesValueSet,
+  DEFAULT_ELIGIBILITY_SERVICE_TYPE,
+  ELIGIBILITY_SERVICE_TYPES_VALUESET_URL,
+  X12_SERVICE_TYPE_CODE_SYSTEM,
+} from '../../utils/eligibility';
 import { BillingSetupPage } from './BillingSetupPage';
 
-const PLAN_COVERAGE: ServiceType = { code: '30', display: 'Health Benefit Plan Coverage' };
 const MENTAL_HEALTH: ServiceType = { code: 'MH', display: 'Mental Health' };
 
 const payersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-payers', name: 'Candid Get Payers' };
@@ -2651,7 +2655,7 @@ describe('BillingSetupPage', () => {
       waitFor(() => {
         const pill = queryPill(label);
         if (!pill) {
-          throw new Error(`No pill for `);
+          throw new Error(`No pill for ${label}`);
         }
         return pill;
       });
@@ -2663,7 +2667,7 @@ describe('BillingSetupPage', () => {
     test('starts from Health Benefit Plan Coverage and saves the picked codes as a new ValueSet', async () => {
       const user = userEvent.setup();
       mockBots();
-      const createSpy = vi.spyOn(medplum, 'createResource');
+      const createSpy = vi.spyOn(medplum, 'createResourceIfNoneExist');
       const showSpy = vi.spyOn(notifications, 'show');
       setup('Eligibility');
 
@@ -2706,15 +2710,84 @@ describe('BillingSetupPage', () => {
               },
             ],
           },
-        })
+        }),
+        `url=${ELIGIBILITY_SERVICE_TYPES_VALUESET_URL}`
       );
       expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    test('patches the ValueSet another save created first instead of adding a second one', async () => {
+      const user = userEvent.setup();
+      mockBots();
+      const existing = await medplum.createResource(
+        buildEligibilityServiceTypesValueSet([DEFAULT_ELIGIBILITY_SERVICE_TYPE])
+      );
+      vi.spyOn(medplum, 'createResourceIfNoneExist').mockResolvedValue(existing);
+      const patchSpy = vi.spyOn(medplum, 'patchResource');
+      setup('Eligibility');
+
+      await user.type(await screen.findByRole('textbox', { name: 'Service types' }), 'Mental Health');
+      await user.click(await screen.findByRole('option', { name: 'Mental Health (MH)', hidden: true }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(patchSpy).toHaveBeenCalledWith('ValueSet', existing.id, [
+          expect.objectContaining({
+            op: 'add',
+            path: '/compose',
+            value: {
+              include: [
+                {
+                  system: X12_SERVICE_TYPE_CODE_SYSTEM,
+                  concept: [
+                    { code: '30', display: 'Health Benefit Plan Coverage' },
+                    { code: 'MH', display: 'Mental Health' },
+                  ],
+                },
+              ],
+            },
+          }),
+        ])
+      );
+      expect(await findPill('Mental Health (MH)')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    test('keeps the picker and Save disabled when the saved ValueSet cannot be read', async () => {
+      vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string) => {
+        if (resourceType === 'ValueSet') {
+          throw new Error('Forbidden');
+        }
+        return undefined;
+      }) as any);
+      setup('Eligibility');
+
+      expect(await screen.findByText(/Could not load the saved service types: Forbidden/)).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: 'Service types' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+      expect(queryPill('Health Benefit Plan Coverage (30)')).toBeUndefined();
+    });
+
+    test('says the service type list is unavailable when the CodeSystem cannot be expanded', async () => {
+      const user = userEvent.setup();
+      mockBots();
+      vi.spyOn(medplum, 'post').mockRejectedValue(new Error('No CodeSystem'));
+      const showSpy = vi.spyOn(notifications, 'show');
+      setup('Eligibility');
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'No CodeSystem' }))
+      );
+      expect(await findPill('Health Benefit Plan Coverage (30)')).toBeInTheDocument();
+      await user.type(screen.getByRole('textbox', { name: 'Service types' }), 'xyz');
+
+      expect(await screen.findByText('Service type list unavailable')).toBeInTheDocument();
     });
 
     test('shows the saved codes and patches the ValueSet when they change', async () => {
       const user = userEvent.setup();
       const valueSet = await medplum.createResource(
-        buildEligibilityServiceTypesValueSet([PLAN_COVERAGE, MENTAL_HEALTH])
+        buildEligibilityServiceTypesValueSet([DEFAULT_ELIGIBILITY_SERVICE_TYPE, MENTAL_HEALTH])
       );
       mockBots({}, valueSet);
       const patchSpy = vi.spyOn(medplum, 'patchResource');
@@ -2732,7 +2805,7 @@ describe('BillingSetupPage', () => {
       );
       expect(patchSpy).toHaveBeenCalledWith('ValueSet', valueSet.id, [
         {
-          op: 'replace',
+          op: 'add',
           path: '/compose',
           value: {
             include: [
@@ -2773,7 +2846,7 @@ describe('BillingSetupPage', () => {
     test('reports a failed save and keeps the picks', async () => {
       const user = userEvent.setup();
       mockBots();
-      vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Server down'));
+      vi.spyOn(medplum, 'createResourceIfNoneExist').mockRejectedValue(new Error('Server down'));
       const showSpy = vi.spyOn(notifications, 'show');
       setup('Eligibility');
 

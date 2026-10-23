@@ -138,12 +138,13 @@ export function buildEligibilityServiceTypesValueSet(serviceTypes: readonly Serv
 }
 
 /**
- * Builds the patch that replaces the service types of an existing eligibility service types ValueSet.
+ * Builds the patch that replaces the service types of an existing eligibility service types ValueSet. The op is
+ * `add`, which also sets `compose` on a ValueSet that has none, where `replace` would be rejected.
  * @param serviceTypes - The service types to ask about.
  * @returns The JSON Patch operations.
  */
 export function buildEligibilityServiceTypesPatch(serviceTypes: readonly ServiceType[]): PatchOperation[] {
-  return [{ op: 'replace', path: '/compose', value: buildEligibilityServiceTypesCompose(serviceTypes) }];
+  return [{ op: 'add', path: '/compose', value: buildEligibilityServiceTypesCompose(serviceTypes) }];
 }
 
 function toServiceType(code: string, display: string | undefined): ServiceType {

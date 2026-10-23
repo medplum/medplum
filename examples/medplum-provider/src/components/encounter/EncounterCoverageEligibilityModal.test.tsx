@@ -20,10 +20,13 @@ import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import type { ServiceType } from '../../utils/eligibility';
-import { buildEligibilityServiceTypesValueSet, X12_SERVICE_TYPE_CODE_SYSTEM } from '../../utils/eligibility';
+import {
+  buildEligibilityServiceTypesValueSet,
+  DEFAULT_ELIGIBILITY_SERVICE_TYPE,
+  X12_SERVICE_TYPE_CODE_SYSTEM,
+} from '../../utils/eligibility';
 import { EncounterCoverageEligibilityModal } from './EncounterCoverageEligibilityModal';
 
-const PLAN_COVERAGE: ServiceType = { code: '30', display: 'Health Benefit Plan Coverage' };
 const MENTAL_HEALTH: ServiceType = { code: 'MH', display: 'Mental Health' };
 
 const mockCoverage: WithId<Coverage> = {
@@ -367,7 +370,10 @@ describe('EncounterCoverageEligibilityModal', () => {
       const user = userEvent.setup();
       mockSearchOne(medplum, {
         practitionerRole: mockPractitionerRole,
-        valueSet: { ...buildEligibilityServiceTypesValueSet([PLAN_COVERAGE, MENTAL_HEALTH]), id: 'vs-1' },
+        valueSet: {
+          ...buildEligibilityServiceTypesValueSet([DEFAULT_ELIGIBILITY_SERVICE_TYPE, MENTAL_HEALTH]),
+          id: 'vs-1',
+        },
       });
       await setup();
       await waitFor(() => {

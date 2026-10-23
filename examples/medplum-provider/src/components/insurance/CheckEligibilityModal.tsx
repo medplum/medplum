@@ -21,7 +21,7 @@ import {
   useSearchResources,
 } from '@medplum/react';
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useEligibilityServiceTypes } from '../../hooks/useEligibilityServiceTypes';
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
@@ -79,11 +79,17 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
     profile ? { practitioner: getReferenceString(profile) } : undefined,
     { enabled: opened && !!profile }
   );
-  const { serviceTypes, loading: serviceTypesLoading } = useEligibilityServiceTypes(opened);
+  const { serviceTypes, loading: serviceTypesLoading, error: serviceTypesError } = useEligibilityServiceTypes(opened);
   const selectedCodes = useMemo(
     () => chosenCodes ?? serviceTypes.map((serviceType) => serviceType.code),
     [chosenCodes, serviceTypes]
   );
+
+  useEffect(() => {
+    if (serviceTypesError) {
+      showErrorNotification(serviceTypesError);
+    }
+  }, [serviceTypesError]);
 
   const coverages = useMemo(() => {
     const result = (activeCoverages ?? []).filter((c) => !isSelfPayCoverage(c));

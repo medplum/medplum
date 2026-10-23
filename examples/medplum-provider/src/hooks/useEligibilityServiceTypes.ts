@@ -1,18 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { ValueSet } from '@medplum/fhirtypes';
+import { isOk } from '@medplum/core';
+import type { OperationOutcome, ValueSet } from '@medplum/fhirtypes';
 import { useSearchOne } from '@medplum/react';
 import { useMemo } from 'react';
 import type { ServiceType } from '../utils/eligibility';
 import { ELIGIBILITY_SERVICE_TYPES_VALUESET_URL, getEligibilityServiceTypes } from '../utils/eligibility';
 
-/** The practice's eligibility service types: the ValueSet they are saved in, if any, and the service types to ask about. */
+/**
+ * The practice's eligibility service types: the ValueSet they are saved in, if any, and the service types to ask about.
+ * `loading` is true until the ValueSet lookup has answered, and stays true while disabled. `error` is the outcome of
+ * a lookup that failed, in which case `valueSet` is unknown rather than missing and `serviceTypes` is the default.
+ */
 export interface EligibilityServiceTypes {
   readonly valueSet: WithId<ValueSet> | undefined;
   readonly serviceTypes: ServiceType[];
-  /** True until the ValueSet lookup has answered; while disabled it stays true. */
   readonly loading: boolean;
+  readonly error: OperationOutcome | undefined;
 }
 
 /**
@@ -28,5 +33,6 @@ export function useEligibilityServiceTypes(enabled = true): EligibilityServiceTy
     { enabled }
   );
   const serviceTypes = useMemo(() => getEligibilityServiceTypes(valueSet), [valueSet]);
-  return { valueSet, serviceTypes, loading: searching || outcome === undefined };
+  const error = outcome && !isOk(outcome) ? outcome : undefined;
+  return { valueSet, serviceTypes, loading: searching || outcome === undefined, error };
 }

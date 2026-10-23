@@ -78,7 +78,13 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
       : undefined,
     { enabled: opened && !!practitioner }
   );
-  const { serviceTypes, loading: serviceTypesLoading } = useEligibilityServiceTypes(opened);
+  const { serviceTypes, loading: serviceTypesLoading, error: serviceTypesError } = useEligibilityServiceTypes(opened);
+
+  useEffect(() => {
+    if (serviceTypesError) {
+      showErrorNotification(serviceTypesError);
+    }
+  }, [serviceTypesError]);
 
   useEffect(() => {
     if (!opened || !patient?.id) {
@@ -126,7 +132,7 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
                 patient={patient}
                 practitioner={practitioner}
                 defaultBillingOrganization={practitionerRole?.organization}
-                providerLoading={practitionerRoleLoading || serviceTypesLoading}
+                optionsLoading={practitionerRoleLoading || serviceTypesLoading}
                 serviceTypes={serviceTypes}
               />
             ))}
@@ -142,7 +148,7 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
  * @param patient - The patient the coverage belongs to.
  * @param practitioner - The signed-in practitioner the check runs as when no billing organization is picked.
  * @param defaultBillingOrganization - The billing organization on the practitioner's role, preselected in the picker.
- * @param providerLoading - Whether the practitioner's role is still being resolved.
+ * @param optionsLoading - Whether the practitioner's role or the saved service types are still loading.
  * @param serviceTypes - The X12 service types recorded in Billing Settings, offered for each check.
  */
 interface CoverageCardProps {
@@ -150,7 +156,7 @@ interface CoverageCardProps {
   patient: Reference<Patient> | Patient;
   practitioner: Practitioner | undefined;
   defaultBillingOrganization: Reference<Organization> | undefined;
-  providerLoading: boolean;
+  optionsLoading: boolean;
   serviceTypes: readonly ServiceType[];
 }
 
@@ -160,7 +166,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
     patient: patientRef,
     practitioner,
     defaultBillingOrganization,
-    providerLoading,
+    optionsLoading,
     serviceTypes,
   } = props;
   const patient = useResource(patientRef);
@@ -206,7 +212,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
 
   const handleCheckEligibility = async (
     billingOrganization: Reference<Organization> | undefined,
-    serviceTypes: readonly ServiceType[]
+    picked: readonly ServiceType[]
   ): Promise<void> => {
     if (!practitioner || !coverage || !patient) {
       return;
@@ -223,7 +229,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         insurer: coverage.payor?.[0] as Reference<Organization>,
         provider,
         insurance: [{ focal: true, coverage: createReference(coverage) }],
-        item: buildEligibilityServiceTypeItems(serviceTypes),
+        item: buildEligibilityServiceTypeItems(picked),
       };
       const savedRequest = await medplum.createResource(requestBody);
       setLatestRequest(savedRequest);
@@ -252,7 +258,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         <Group gap="xs" style={{ flexShrink: 0 }}>
           <CheckEligibilityButton
             loading={checkingEligibility}
-            disabled={providerLoading || !practitioner}
+            disabled={optionsLoading || !practitioner}
             practitionerName={practitioner ? getDisplayString(practitioner) : undefined}
             defaultBillingOrganization={defaultBillingOrganization}
             serviceTypes={serviceTypes}
