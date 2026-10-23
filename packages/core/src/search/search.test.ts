@@ -5,7 +5,14 @@ import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import type { SearchRequest } from './search';
-import { Operator, formatSearchQuery, parseSearchRequest, parseXFhirQuery, splitSearchOnComma } from './search';
+import {
+  Operator,
+  formatSearchQuery,
+  isChainedSearchFilter,
+  parseSearchRequest,
+  parseXFhirQuery,
+  splitSearchOnComma,
+} from './search';
 
 describe('Search Utils', () => {
   beforeAll(() => {
@@ -47,11 +54,41 @@ describe('Search Utils', () => {
       },
     ],
 
+    [
+      'Observation?date=ge2024-10-01T14:30%2B05:30',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'date', operator: Operator.GREATER_THAN_OR_EQUALS, value: '2024-10-01T14:30+05:30' }],
+      },
+    ],
+    [
+      'Observation?date=2024-02-29',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'date', operator: Operator.EQUALS, value: '2024-02-29' }],
+      },
+    ],
+    [
+      'Observation?date=le2024-10-01T14:30',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'date', operator: Operator.LESS_THAN_OR_EQUALS, value: '2024-10-01T14:30' }],
+      },
+    ],
+
     [null as unknown as string, new Error('Invalid search URL')],
     [undefined as unknown as string, new Error('Invalid search URL')],
     ['', new Error('Invalid search URL')],
     ['Observation?date=12/17', new Error('Invalid format for date search parameter: 12/17')],
     ['Observation?date=012522', new Error('Invalid format for date search parameter: 012522')],
+    ['Observation?date=2028-05-15T14', new Error('Invalid format for date search parameter: 2028-05-15T14')],
+    ['Observation?date=2024-10-01T14:30-', new Error('Invalid format for date search parameter: 2024-10-01T14:30-')],
+    ['Observation?date=2025-01-10%2B05:00', new Error('Invalid format for date search parameter: 2025-01-10+05:00')],
+    [
+      'Observation?date=2026-02-28T12:34:60Z',
+      new Error('Invalid format for date search parameter: 2026-02-28T12:34:60Z'),
+    ],
+    ['Observation?date=2024-02-31', new Error('Invalid format for date search parameter: 2024-02-31')],
   ])('parseSearchRequest($0) => $1', (url, expected) => {
     if (expected instanceof Error) {
       expect(() => parseSearchRequest(url)).toThrow(expected.message);
@@ -532,5 +569,13 @@ describe('Search Utils', () => {
     expect(splitSearchOnComma('x\\,')).toStrictEqual(['x,']);
     expect(splitSearchOnComma('\\,y')).toStrictEqual([',y']);
     expect(splitSearchOnComma('x\\,,y')).toStrictEqual(['x,', 'y']);
+  });
+
+  test.each<[string, boolean]>([
+    ['subject:Patient.name', true],
+    ['_has:Observation:subject:status', true],
+    ['name', false],
+  ])('isChainedSearchFilter(%s)', (code, expected) => {
+    expect(isChainedSearchFilter({ code, operator: Operator.EQUALS, value: 'x' })).toBe(expected);
   });
 });

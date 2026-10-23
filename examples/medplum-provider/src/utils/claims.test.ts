@@ -113,6 +113,23 @@ describe('claims utils', () => {
       expect(result.item).toHaveLength(1);
     });
 
+    test('sets the service facility from the encounter location', () => {
+      const result = buildClaimFromEncounter({
+        patient,
+        encounter: { ...encounter, location: [{ location: { reference: 'Location/loc-1' } }] },
+        practitioner,
+        chargeItems,
+      });
+
+      expect(result.facility).toEqual({ reference: 'Location/loc-1' });
+    });
+
+    test('leaves the service facility unset when the encounter has no location', () => {
+      const result = buildClaimFromEncounter({ patient, encounter, practitioner, chargeItems });
+
+      expect(result.facility).toBeUndefined();
+    });
+
     test('bills through the billing organization when provided', () => {
       const result = buildClaimFromEncounter({
         patient,

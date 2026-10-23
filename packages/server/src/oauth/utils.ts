@@ -44,6 +44,7 @@ import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '.
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
+import { getInactiveReason } from '../fhir/projectmembership';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
@@ -403,7 +404,15 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
     memberships = memberships.filter((m) => m.profile?.reference?.startsWith(profileType));
   }
 
-  return memberships;
+  const projects = await systemRepo.readReferences<Project>(memberships.map((m) => m.project));
+  const activeMemberships = memberships.filter((_, i) => {
+    const project = projects[i];
+    return project instanceof Error || !getInactiveReason(project);
+  });
+  if (memberships.length > 0 && activeMemberships.length === 0) {
+    throw new OperationOutcomeError(badRequest('Project not active'));
+  }
+  return activeMemberships;
 }
 
 /**
@@ -460,13 +469,13 @@ export async function setLoginMembership(
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
-  if (membership.active === false) {
-    throw new OperationOutcomeError(badRequest('Profile not active'));
-  }
-
   // Get the project
   const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readReference<Project>(membership.project);
+  const inactiveReason = getInactiveReason(project, membership);
+  if (inactiveReason) {
+    throw new OperationOutcomeError(badRequest(inactiveReason));
+  }
   const projectSystemRepo = await getProjectSystemRepo(project);
 
   // Make sure the membership satisfies the project requirements
@@ -504,7 +513,7 @@ export async function setLoginMembership(
   const auditEvent = createAuditEvent(
     UserAuthenticationEvent,
     LoginEvent,
-    project.id,
+    project,
     membership.profile,
     login.remoteAddress,
     AuditEventOutcome.Success
@@ -1037,11 +1046,12 @@ export async function getLoginForAccessToken(
     verifyResult = await verifyJwt(accessToken, expectedIssuer);
   } catch {
     const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
-    if (externalAuthState) {
-      const repo = await getRepoForLogin(externalAuthState, undefined, req?.ip);
-      return { authState: externalAuthState, repo };
+    if (!externalAuthState) {
+      return undefined;
     }
-    return undefined;
+    const { login, project, membership } = externalAuthState;
+    const systemRepo = await getProjectSystemRepo(project);
+    return makeAuthResult(systemRepo, req, login, project, membership, { accessToken, remoteAddress: req?.ip });
   }
 
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
@@ -1067,10 +1077,10 @@ export async function getLoginForAccessToken(
   }
 
   const membership = await globalSystemRepo.readReference<ProjectMembership>(login.membership);
-  if (membership.active === false) {
+  const project = await globalSystemRepo.readReference<Project>(membership.project);
+  if (getInactiveReason(project, membership)) {
     return undefined;
   }
-  const project = await globalSystemRepo.readReference<Project>(membership.project);
   const systemRepo = await getProjectSystemRepo(project);
   return makeAuthResult(systemRepo, req, login, project, membership, { accessToken, remoteAddress: req?.ip });
 }
@@ -1106,11 +1116,15 @@ export async function getLoginForBasicAuth(req: Request, token: string): Promise
   }
 
   const membership = await getClientApplicationMembership(systemRepo, client, getProjectIdFromUrl(req.originalUrl));
-  if (!membership || membership.active === false) {
+  if (!membership) {
     return undefined;
   }
 
   const project = await systemRepo.readReference<Project>(membership.project);
+  if (getInactiveReason(project, membership)) {
+    return undefined;
+  }
+
   const login: Login = {
     resourceType: 'Login',
     user: createReference(client),
@@ -1215,7 +1229,15 @@ async function tryAddOnBehalfOf(
     }
   }
 
-  if (onBehalfOfMembership?.active === false) {
+  let onBehalfOfProject = authState.project;
+  if (resolveId(onBehalfOfMembership.project) !== authState.project.id) {
+    try {
+      onBehalfOfProject = await systemRepo.readReference<Project>(onBehalfOfMembership.project);
+    } catch {
+      throw new OperationOutcomeError(forbidden);
+    }
+  }
+  if (getInactiveReason(onBehalfOfProject, onBehalfOfMembership)) {
     throw new OperationOutcomeError(forbidden);
   }
 
@@ -1228,19 +1250,19 @@ async function tryAddOnBehalfOf(
  * Tries to authenticate the user using an external authentication provider.
  * This function checks if the access token is a valid JWT and corresponds to an external authentication provider.
  * If the token is valid, it retrieves the user's profile and project membership.
- * If successful, it returns the auth state containing the login, project, membership, and user configuration.
+ * If successful, it returns the login, project, and membership.
  * If the token is invalid or does not correspond to an external provider, it returns undefined.
  *
  * @param systemRepo - The system repository.
  * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
- * @returns The auth state if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
+ * @returns The login, project, and membership if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
  */
 async function tryExternalAuth(
   systemRepo: SystemRepository,
   req: Request | undefined,
   accessToken: string
-): Promise<AuthState | undefined> {
+): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
   const externalAuthProviders = getConfig().externalAuthProviders;
   if (!isJwt(accessToken)) {
     // Not a JWT, so we cannot verify it
@@ -1294,8 +1316,7 @@ async function tryExternalAuth(
     await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
   }
 
-  const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  return { login, project, membership, userConfig };
+  return { login, project, membership };
 }
 
 async function tryExternalAuthLogin(
@@ -1387,7 +1408,12 @@ async function tryExternalAuthLogin(
     membership = entries?.[0]?.resource;
   }
 
-  if (!membership || membership.active === false) {
+  if (!membership) {
+    return undefined;
+  }
+
+  const project = await systemRepo.readReference<Project>(membership.project);
+  if (getInactiveReason(project, membership)) {
     return undefined;
   }
 
@@ -1407,13 +1433,11 @@ async function tryExternalAuthLogin(
     userAgent: req?.get('User-Agent'),
   });
 
-  const project = await systemRepo.readReference<Project>(membership.project);
-
   logAuditEvent(
     createAuditEvent(
       UserAuthenticationEvent,
       LoginEvent,
-      project.id,
+      project,
       membership.profile,
       login.remoteAddress,
       AuditEventOutcome.Success

@@ -1,18 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bot } from '@medplum/fhirtypes';
-import { CREATE_PDF_CODE, createBotZipFile, deployLambdaInternal } from './deploy';
+import { CREATE_PDF_CODE, createBotZipFile, DELETE_AWS_ENV_CODE, deployLambdaInternal } from './deploy';
 
-const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient, getStatus, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } = require("@medplum/core");
+const CJS_PREFIX =
+  `const { ContentType, Hl7Message, MedplumClient, getStatus, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
-const userCode = require("./user.cjs");
+` +
+  DELETE_AWS_ENV_CODE +
+  `const userCode = require("./user.cjs");
 
 exports.handler = awslambda.streamifyResponse(async (event, responseStream) => {
 `;
 
-const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient, getStatus, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } from '@medplum/core';
+const ESM_PREFIX =
+  `import { ContentType, Hl7Message, MedplumClient, getStatus, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
-import * as userCode from './user.mjs';
+` +
+  DELETE_AWS_ENV_CODE +
+  `const userCode = await import('./user.mjs');
 
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
 `;

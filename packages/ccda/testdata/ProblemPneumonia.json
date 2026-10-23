@@ -237,7 +237,7 @@
           "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
           "display": "Katherine Madison"
         },
-        "onsetDateTime": "2014-02-27T00:00:00Z",
+        "onsetDateTime": "2014-02-27",
         "recordedDate": "2014-03-02T12:45:36-05:00",
         "recorder": {
           "reference": "Practitioner/3dfd1be3-1806-48e9-86dd-7282b2cae74f",

@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  getExtension,
   getPrimaryProvider,
   getReferenceString,
+  OccurrenceChangedExtensionURI,
+  RecurrenceIdExtensionURI,
   SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
   setScheduleSchedulingParameter,
@@ -31,11 +34,11 @@ import {
 const START = new Date('2026-08-18T03:07:00.000Z');
 const DURATION_MS = 2220123;
 
-function proposal(schedules: WithId<Schedule>[] = [DrRiveraSchedule, ExamRoomBSchedule]): Appointment {
+function proposal(schedules: WithId<Schedule>[] = [DrRiveraSchedule, ExamRoomBSchedule], start = START): Appointment {
   return buildElevatedBooking({
     service: UltrasoundImagingService,
     schedules,
-    start: START,
+    start,
     durationMinutes: DURATION_MS / 60000,
   });
 }
@@ -141,6 +144,39 @@ describe('writeElevatedReschedule', () => {
     const result = await writeElevatedReschedule(medplum, existing, proposal([ExamRoomBSchedule, DrRiveraSchedule]));
     expect(getPrimaryProvider(result.appointments[0])).toEqual(DrRiveraSchedule.actor[0]);
     expect(result.appointments[0].participant.filter((p) => p.type?.length)).toHaveLength(1);
+  });
+
+  test('marks an occurrence of a recurring series moved to a new start as changed, as $reschedule does', async () => {
+    const recurrenceId = { url: RecurrenceIdExtensionURI, valuePositiveInt: 2 };
+    const occurrence = await medplum.updateResource({
+      ...existing,
+      extension: [...(existing.extension ?? []), recurrenceId],
+    });
+
+    // Reassigning it to other schedules at the same start keeps it on the series' pattern
+    const reassigned = await writeElevatedReschedule(
+      medplum,
+      occurrence,
+      proposal(undefined, new Date(occurrence.start as string))
+    );
+    expect(getExtension(reassigned.appointment, OccurrenceChangedExtensionURI)).toBeUndefined();
+
+    // Marked once, however many times it is moved, and the rest of its extensions are kept
+    const moved = await writeElevatedReschedule(medplum, reassigned.appointment, proposal());
+    const movedAgain = await writeElevatedReschedule(
+      medplum,
+      moved.appointment,
+      proposal(undefined, new Date(START.valueOf() + 60 * 60000))
+    );
+    for (const { appointment } of [moved, movedAgain]) {
+      expect(appointment.extension).toEqual([
+        { url: 'https://example.org/metadata', valueString: 'keep' },
+        { url: SchedulingBookedByOperationURI, valueString: '5.1.0' },
+        recurrenceId,
+        { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
+        { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+      ]);
+    }
   });
 
   test('writes capacity and buffers for each schedule while preserving pending status', async () => {

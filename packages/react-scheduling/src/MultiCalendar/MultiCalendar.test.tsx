@@ -5,13 +5,14 @@ import type { WithId } from '@medplum/core';
 import {
   createReference,
   getReferenceString,
-  SchedulingScheduleColorURI,
+  RecurrenceIdExtensionURI,
+  SchedulingColorURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import type { MultiCalendarSource } from './MultiCalendar';
 import { MultiCalendar } from './MultiCalendar';
@@ -103,10 +104,57 @@ describe('MultiCalendar', () => {
     expect(screen.getByText(/Available/)).toBeInTheDocument();
     expect(screen.getByText(/Available/).querySelector('svg')).toBeNull();
     expect(screen.getByText(/Blocked/)).toBeInTheDocument();
-    expect(screen.getByText(/Blocked/).querySelector('svg')).toHaveClass('tabler-icon-square-rounded-x-filled');
+    expect(screen.getByText(/Blocked/).querySelector('svg')).toHaveClass('tabler-icon-square-x-filled');
     // A week says when a slot is by where it is drawn, so the line under its title names whose time it is.
     const blocked = screen.getByText(/Blocked/).closest<HTMLElement>('.event') as HTMLElement;
     expect(await within(blocked).findByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('draws a source marked not interactive without making its events clickable', async () => {
+    const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status: 'booked',
+      start: new Date(baseDate.getTime() + offsetMinutes * 60 * 1000).toISOString(),
+      end: new Date(baseDate.getTime() + (offsetMinutes + 30) * 60 * 1000).toISOString(),
+      participant: [{ actor: { reference: `Patient/${id}`, display }, status: 'accepted' }],
+    });
+    const sources: MultiCalendarSource[] = [
+      { appointments: [appointment('clickable', 'Homer Simpson', 0)], slots: [] },
+      { appointments: [appointment('inert', 'Jane Williams', 60)], slots: [], interactive: false },
+    ];
+    const onSelectAppointment = vi.fn();
+    renderWithMedplum(<MultiCalendar sources={sources} onSelectAppointment={onSelectAppointment} />, medplum);
+
+    expect(screen.getByText(/Homer Simpson/).closest('.event')).toHaveAttribute('role', 'button');
+    expect(screen.getByText(/Jane Williams/).closest('.event')).not.toHaveAttribute('role', 'button');
+
+    // FullCalendar still reports a click on an event it draws as not interactive.
+    await userEvent.click(screen.getByText(/Jane Williams/));
+    expect(onSelectAppointment).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByText(/Homer Simpson/));
+    expect(onSelectAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 'clickable' }), undefined);
+  });
+
+  test('marks the appointments of a draft source, and only those, as drafts', () => {
+    const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status: 'proposed',
+      start: new Date(baseDate.getTime() + offsetMinutes * 60 * 1000).toISOString(),
+      end: new Date(baseDate.getTime() + (offsetMinutes + 30) * 60 * 1000).toISOString(),
+      participant: [{ actor: { reference: `Patient/${id}`, display }, status: 'needs-action' }],
+    });
+    const sources: MultiCalendarSource[] = [
+      { appointments: [appointment('stored', 'Homer Simpson', 0)], slots: [] },
+      { appointments: [appointment('unsaved', 'Jane Williams', 60)], slots: [], draft: true, label: 'Draft' },
+    ];
+    renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
+
+    expect(screen.getByText(/Homer Simpson/).closest('.event')).not.toHaveClass('draft');
+    // Named by the source's label in place of its patient.
+    expect(screen.queryByText(/Jane Williams/)).not.toBeInTheDocument();
+    expect(screen.getByText('Draft').closest('.event')).toHaveClass('draft');
   });
 
   test('names everyone a slot holds time for, and gives its time when its schedule is unknown', async () => {
@@ -271,6 +319,34 @@ describe('MultiCalendar', () => {
     expect(screen.queryByText(/^(Practitioner|Device|Location)\//)).not.toBeInTheDocument();
   });
 
+  test('marks occurrences of a recurring series', async () => {
+    const appointments: Appointment[] = [
+      {
+        resourceType: 'Appointment',
+        id: 'apt-recurring',
+        status: 'booked',
+        start: new Date(baseDate.getTime()).toISOString(),
+        end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+        extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }],
+        participant: [{ actor: createReference(HomerSimpson), status: 'accepted' }],
+      },
+      {
+        resourceType: 'Appointment',
+        id: 'apt-single',
+        status: 'booked',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/456', display: 'Jane Roe' }, status: 'accepted' }],
+      },
+    ];
+    renderWithMedplum(<MultiCalendar sources={[{ appointments, slots: [] }]} />, medplum);
+
+    const recurring = within((await screen.findByText('Homer Simpson')).closest('.event') as HTMLElement);
+    expect(recurring.getByRole('img', { name: 'Recurring' })).toBeInTheDocument();
+    const single = within(screen.getByText('Jane Roe').closest('.event') as HTMLElement);
+    expect(single.queryByRole('img', { name: 'Recurring' })).not.toBeInTheDocument();
+  });
+
   describe('source color', () => {
     const createAppointment = (id: string, patientName: string): Appointment => ({
       resourceType: 'Appointment',
@@ -295,7 +371,7 @@ describe('MultiCalendar', () => {
     test('falls back to the schedule color extension when no source color is given', () => {
       const schedule: WithId<Schedule> = {
         ...DrAliceSmithSchedule,
-        extension: [{ url: SchedulingScheduleColorURI, valueString: 'grape' }],
+        extension: [{ url: SchedulingColorURI, valueString: 'grape' }],
       };
       const sources: MultiCalendarSource[] = [
         { schedule, appointments: [createAppointment('a1', 'John Doe')], slots: [] },
@@ -307,7 +383,7 @@ describe('MultiCalendar', () => {
     test('prefers the source color over the schedule color extension', () => {
       const schedule: WithId<Schedule> = {
         ...DrAliceSmithSchedule,
-        extension: [{ url: SchedulingScheduleColorURI, valueString: 'grape' }],
+        extension: [{ url: SchedulingColorURI, valueString: 'grape' }],
       };
       const sources: MultiCalendarSource[] = [
         { schedule, appointments: [createAppointment('a1', 'John Doe')], slots: [], color: 'teal' },
@@ -336,6 +412,8 @@ describe('MultiCalendar', () => {
       renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
       expect(getEventColor(/John Doe/)).toBe(DEFAULT_THEME.colors.indigo[7]);
       expect(getEventColor(/Jane Williams/)).toBe(DEFAULT_THEME.colors.teal[7]);
+      expect(screen.getByText(/John Doe/).closest('.event')).toHaveClass('color-indigo');
+      expect(screen.getByText(/Jane Williams/).closest('.event')).toHaveClass('color-teal');
     });
   });
 });

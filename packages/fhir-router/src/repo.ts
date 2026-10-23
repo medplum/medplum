@@ -44,6 +44,10 @@ export type UpdateResourceOptions = {
   ifMatch?: string;
 };
 
+export type DeleteResourceOptions = {
+  ifMatch?: string;
+};
+
 export type ReadHistoryOptions = {
   offset?: number;
   limit?: number;
@@ -170,8 +174,9 @@ export abstract class FhirRepository {
    * See: https://www.hl7.org/fhir/http.html#delete
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
+   * @param options - Optional delete options.
    */
-  abstract deleteResource(resourceType: string, id: string): Promise<void>;
+  abstract deleteResource(resourceType: string, id: string, options?: DeleteResourceOptions): Promise<void>;
 
   /**
    * Patches a FHIR resource.
@@ -757,9 +762,13 @@ export class MemoryRepository extends FhirRepository {
     return results;
   }
 
-  async deleteResource(resourceType: string, id: string): Promise<void> {
-    if (!this.resources.get(resourceType)?.get(id)) {
+  async deleteResource(resourceType: string, id: string, options?: DeleteResourceOptions): Promise<void> {
+    const existing = this.resources.get(resourceType)?.get(id);
+    if (!existing) {
       throw new OperationOutcomeError(notFound);
+    }
+    if (options?.ifMatch && existing.meta?.versionId !== options.ifMatch) {
+      throw new OperationOutcomeError(preconditionFailed);
     }
     this.resources.get(resourceType)?.delete(id);
   }

@@ -94,6 +94,8 @@ export interface UseDaySearchResult {
    * A day picked on its own is a stretch of one, so a click and a drag come in the same way.
    */
   readonly chooseDayRange: (start: Date, end?: Date) => void;
+  /** Whether the day an instant falls on is already searched. */
+  readonly isDayOnShow: (date: Date) => boolean;
   /** Reaches further than the days already answered, keeping them on screen. */
   readonly showMoreDays: () => void;
   /**
@@ -164,6 +166,13 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     [onResultsReplaced]
   );
 
+  const isDayOnShow = useCallback(
+    (date: Date): boolean => {
+      return date >= startOfDay(selectedDayRange.start) && date <= selectedDayRange.end;
+    },
+    [selectedDayRange]
+  );
+
   // `search.appointments` is the settled result of the current window rather than an
   // in-flight one, because the control that calls this is disabled while `loadingMoreDays`.
   const showMoreDays = useCallback((): void => {
@@ -214,6 +223,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     hasMoreCombinations: combinations.length > searchedCombinations.length,
     searchMoreCombinations,
     chooseDayRange,
+    isDayOnShow,
     showMoreDays,
     reset,
   };
@@ -266,7 +276,7 @@ function reaskEveryDayOnShow(previous: DaySearch): DaySearch {
  * @param date - Any instant during the day.
  * @returns The later of that instant and now.
  */
-function floorToNow(date: Date): Date {
+export function floorToNow(date: Date): Date {
   const now = new Date();
   return date > now ? date : now;
 }

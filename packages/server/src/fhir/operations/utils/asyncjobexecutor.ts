@@ -1,19 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, accepted } from '@medplum/core';
+import { accepted, OperationOutcomeError } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError } from 'bullmq';
 import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
-import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
-import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
 import { getProjectScopedUrl } from '../../../util/url';
-import { CancelledError } from '../../../workers/utils';
+import { CancelledError, isJobActive } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 
@@ -145,26 +142,14 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
-    let updatedJob: WithId<AsyncJob> = {
+    const updatedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
     };
-    if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
-      // This probably needs more validation that its a system-owned AsyncJob.
-      const completedDataVersion = updatedJob.dataVersion;
-      getLogger().info('Marking post-deploy migration complete', {
-        version: `v${completedDataVersion}`,
-      });
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      this.resource = updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
-      await maybeAutoRunPendingPostDeployMigration();
-      return updatedJob;
-    } else {
-      this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
-      return this.resource;
-    }
+    this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
+    return this.resource;
   }
 
   async failJob(err?: Error, output?: Parameters): Promise<WithId<AsyncJob>> {
@@ -182,6 +167,9 @@ export class AsyncJobExecutor {
     if (err instanceof CancelledError) {
       return this.resource;
     }
+    if (!isJobActive(this.resource)) {
+      return this.resource;
+    }
 
     const failedJob: WithId<AsyncJob> = {
       ...this.resource,
@@ -195,8 +183,10 @@ export class AsyncJobExecutor {
       };
       failedJob.output.parameter ??= [];
 
-      if (err instanceof OperationOutcomeError) {
-        failedJob.output.parameter.push({ name: 'outcome', resource: err.outcome });
+      // A wrapper such as BullMQ's UnrecoverableError keeps the structured outcome as its cause.
+      const outcomeErr = err instanceof OperationOutcomeError ? err : err.cause;
+      if (outcomeErr instanceof OperationOutcomeError) {
+        failedJob.output.parameter.push({ name: 'outcome', resource: outcomeErr.outcome });
       } else {
         failedJob.output.parameter.push(
           { name: 'error', valueString: err.message },

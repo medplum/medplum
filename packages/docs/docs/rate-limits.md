@@ -17,8 +17,6 @@ send many requests in quick succession may receive HTTP error responses with sta
 
 All rate limits are calculated per IP address over a one minute window.
 
-Rate limits can be increased for paid plans. Please [contact us](mailto:info+rate-limits@medplum.com?subject=Increase%20rate%20limits) for more information.
-
 ## FHIR Interaction Load Rate Limit
 
 In addition to limits on the number of requests that can be made to the Medplum server, there is a limit on the total load of the interactions made to the Medplum server. Different interactions with the datastore are weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit.
@@ -54,7 +52,7 @@ You can configure rate limits at the **Server**, **Project**, and **User** level
 - **User Level Overrides**: Configured in `UserConfiguration` resources (see [User Configuration](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits)).
 
 :::info[Hosted Medplum]
-On the hosted Medplum service, **Server-level** and **Project-level** rate limits cannot be set by project administrators. If you would like to discuss or adjust your project's rate limits, please reach out to [support@medplum.com](mailto:support@medplum.com). Project admins can still configure **User-level** overrides via `UserConfiguration` (see [below](#setting-a-user-specific-quota-via-projectmembership)).
+On the hosted Medplum service, **Server-level** and **Project-level** rate limits cannot be set by project administrators. Project admins can still configure **User-level** overrides via `UserConfiguration` (see [below](#setting-a-user-specific-quota-via-projectmembership)).
 :::
 
 To view or update the Project-level limits:

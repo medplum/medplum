@@ -19,6 +19,7 @@ import {
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   chooseActor,
+  chooseDay,
   chooseFirstOfferedTime,
   chosenTimeField,
   hasPill,
@@ -269,6 +270,23 @@ describe('AppointmentRescheduleForm', () => {
       expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
     });
 
+    test('proposes nothing when the move only offers an alternative to an actor it keeps', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await openTimeFinder();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('keeps a typed time when an alternative is added, held on the first actor in the row', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await clickReschedule();
+      const schedules = onRescheduled.mock.calls[0][0].slots.map((slot: Slot) => slot.schedule.reference);
+      expect(schedules).toContain(`Schedule/${DrRiveraSchedule.id}`);
+      expect(schedules).not.toContain(`Schedule/${DrOkaforSchedule.id}`);
+    });
+
     test('asks for a length when the appointment has none, rather than using the configured one', async () => {
       const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
@@ -453,6 +471,23 @@ describe('AppointmentRescheduleForm', () => {
       await openTimeFinder();
 
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(true);
+    });
+
+    test('Keeps a time found on another day when a missed visit re-renders', async () => {
+      // A missed visit opens the search on today, and the form is handed a new `new Date()`
+      // on every render. Only a change of day should move the search.
+      const missed = { ...APPOINTMENT, start: '2026-08-14T15:00:00Z', end: '2026-08-14T15:30:00Z' };
+      const rendered = await setup(medplum, { appointment: missed });
+      await openTimeFinder();
+      await chooseDay('19');
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).not.toBeNull();
+
+      vi.setSystemTime(new Date(MONDAY_MORNING.getTime() + 60 * 60 * 1000));
+      rendered.rerender(<AppointmentRescheduleForm appointment={missed} onRescheduled={onRescheduled} />);
+      await settleAutocomplete();
+
+      expect(chosenTimeField()).not.toBeNull();
     });
 
     test('Searches the schedules the visit is held on, until they are changed', async () => {

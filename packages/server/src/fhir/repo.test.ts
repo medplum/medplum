@@ -121,8 +121,8 @@ describe('FHIR Repo', () => {
     }
 
     beforeAll(() => {
-      readerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      writerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      readerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, testProjectRepo.shardId), 'query');
+      writerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, testProjectRepo.shardId), 'query');
     });
 
     beforeEach(() => {
@@ -173,7 +173,7 @@ describe('FHIR Repo', () => {
             createAuditEvent(
               RestfulOperationType,
               ReadInteraction,
-              randomUUID(),
+              { resourceType: 'Project', id: randomUUID() },
               { reference: 'Practitioner/user-123' },
               undefined,
               AuditEventOutcome.Success
@@ -314,7 +314,7 @@ describe('FHIR Repo', () => {
     const data = createAuditEvent(
       RestfulOperationType,
       ReadInteraction,
-      projectId,
+      testProject,
       undefined,
       undefined,
       AuditEventOutcome.Success,
@@ -1057,6 +1057,37 @@ describe('FHIR Repo', () => {
           { ifMatch: 'bad-id' }
         )
       ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
+    }));
+
+  test('Delete resource with ifMatch', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const updated = await systemRepo.updateResource<Patient>({ ...patient, active: true });
+
+      // A stale version leaves the resource in place
+      await expect(
+        systemRepo.deleteResource('Patient', patient.id, { ifMatch: patient.meta?.versionId })
+      ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
+      await expect(systemRepo.readResource<Patient>('Patient', patient.id)).resolves.toMatchObject({ active: true });
+
+      await systemRepo.deleteResource('Patient', patient.id, { ifMatch: updated.meta?.versionId });
+
+      // Once deleted, every version is stale, but a plain delete stays idempotent
+      await expect(
+        systemRepo.deleteResource('Patient', patient.id, { ifMatch: updated.meta?.versionId })
+      ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
+      await systemRepo.deleteResource('Patient', patient.id);
+
+      // Cache-only resources have no database row to re-check
+      const subscription = await testProjectRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      await testProjectRepo.deleteResource('Subscription', subscription.id, { ifMatch: subscription.meta?.versionId });
+      await expect(testProjectRepo.readResource('Subscription', subscription.id)).rejects.toThrow('Not found');
     }));
 
   test('Patch resource with implicit array creation', () =>

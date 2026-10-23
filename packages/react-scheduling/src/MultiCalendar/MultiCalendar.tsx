@@ -3,7 +3,6 @@
 import type { MantineThemeColors } from '@mantine/core';
 import { useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getExtensionValue, SchedulingScheduleColorURI } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -12,7 +11,7 @@ import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
 import type { ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { SlotEvent } from '../CalendarBase/SlotEvent';
-import { resolveThemeColor } from '../colors';
+import { getSchedulingColor, resolveThemeColor } from '../colors';
 import type { DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
 
@@ -21,6 +20,15 @@ export interface MultiCalendarSource {
   slots: Slot[];
   appointments: Appointment[];
   color?: keyof MantineThemeColors;
+  /** False draws the source's events as not clickable, whatever click handlers the calendar has. */
+  interactive?: boolean;
+  /**
+   * Draws the source's appointments as not yet saved, such as a visit a form is about to book:
+   * hatched and outlined, apart from any appointment stored as proposed.
+   */
+  draft?: boolean;
+  /** Names each of the source's appointments in place of its patient. */
+  label?: string;
 }
 
 export interface MultiCalendarProps {
@@ -31,6 +39,7 @@ export interface MultiCalendarProps {
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onRangeChange?: (range: DateTimeRange) => void;
   selection?: DateTimeRange;
+  selectedId?: string;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
@@ -54,19 +63,14 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
   const { sources, className, ...calendarBaseProps } = props;
 
   const eventSources = useMemo((): FhirEventSource[] => {
-    return sources.map((source, i) => {
+    return sources.map(({ draft, ...source }, i) => {
       let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
+      colorName ||= getSchedulingColor(source.schedule);
 
-      if (!colorName) {
-        const extColor = getExtensionValue(source.schedule, SchedulingScheduleColorURI);
-        if (typeof extColor === 'string') {
-          colorName = extColor;
-        }
-      }
-
-      // Convert color name into a concrete color value we can pass to FullCalendar
-      const color = theme.colors[resolveThemeColor(theme, colorName, i)][7];
-      return { ...source, color };
+      // Convert color name into a concrete color value we can pass to FullCalendar, and a class
+      // that styles can pick the color out by.
+      const resolved = resolveThemeColor(theme, colorName, i);
+      return { ...source, color: theme.colors[resolved][7], className: cx(`color-${resolved}`, draft && 'draft') };
     });
   }, [sources, theme]);
 
@@ -78,11 +82,12 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       {...calendarBaseProps}
       eventInnerClass={classes.eventInner}
       eventTimeClass={classes.eventTime}
+      eventTitleClass={classes.eventTitle}
       availableTime={props.availableTime}
       eventContent={(info) => {
         const ext = info.event.extendedProps as ExtendedEvent;
         if (ext.type === 'appointment') {
-          return <AppointmentEvent appointment={ext.appointment} info={info} />;
+          return <AppointmentEvent appointment={ext.appointment} label={ext.label} info={info} />;
         } else if (ext.type === 'slot') {
           return <SlotEvent slot={ext.slot} schedule={ext.schedule} info={info} />;
         } else {

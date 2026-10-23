@@ -100,7 +100,7 @@ interface ClaimReviewPanelProps {
   selfPayCoverage: WithId<Coverage> | undefined;
   initialBillingType: BillingType;
   onClose: () => void;
-  onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
+  onSubmitClaim?: (coverages: Reference<Coverage>[]) => void;
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
   ensureSelfPayCoverage: () => Promise<WithId<Coverage>>;
 }
@@ -261,14 +261,16 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
             Submit to Stedi
           </Button>
         )}
-        <Button
-          size="md"
-          rightSection={<IconArrowUpRight size={16} />}
-          disabled={!canSubmit}
-          onClick={() => handleSubmit(onSubmitClaim)}
-        >
-          Submit to Candid
-        </Button>
+        {onSubmitClaim && (
+          <Button
+            size="md"
+            rightSection={<IconArrowUpRight size={16} />}
+            disabled={!canSubmit}
+            onClick={() => handleSubmit(onSubmitClaim)}
+          >
+            Submit to Candid
+          </Button>
+        )}
       </Group>
     </Stack>
   );
@@ -282,7 +284,9 @@ export interface SubmitClaimModalProps {
   conditions: Condition[];
   practitioner: WithId<Practitioner> | undefined;
   onClose: () => void;
-  onSubmitClaim: (coverages: Reference<Coverage>[]) => void;
+  /** Submits to Candid Health; omitted when the operation is not deployed, which hides the button. */
+  onSubmitClaim?: (coverages: Reference<Coverage>[]) => void;
+  /** Submits to Stedi; omitted when the operation is not deployed, which hides the button. */
   onSubmitToStedi?: (insurance: Reference<Coverage>[]) => void;
   ensureSelfPayCoverage: () => Promise<WithId<Coverage>>;
 }

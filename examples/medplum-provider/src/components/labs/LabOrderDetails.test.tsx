@@ -540,6 +540,43 @@ describe('LabOrderDetails', () => {
         expect(screen.getByText('Order Sent')).toBeInTheDocument();
       });
     });
+
+    test('draft order shows only order details, without the progress tracker', async () => {
+      await act(async () => {
+        setup({ order: { ...mockActiveServiceRequest, status: 'draft' } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Order Date')).toBeInTheDocument();
+      });
+      expect(screen.queryByRole('tab', { name: 'Progress Tracker' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Order Sent')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Resume', () => {
+    test('Active is offered only for drafts and calls onResume without changing the status', async () => {
+      const user = userEvent.setup();
+      const onResume = vi.fn();
+      medplum.patchResource = vi.fn();
+
+      const { unmount } = await act(async () => {
+        return setup({ order: { ...mockActiveServiceRequest, status: 'on-hold' }, onResume });
+      });
+      await user.click(screen.getByRole('button', { name: 'On Hold' }));
+      expect(await screen.findByText('Revoked')).toBeInTheDocument();
+      expect(screen.queryByText('Active')).not.toBeInTheDocument();
+      unmount();
+
+      await act(async () => {
+        setup({ order: { ...mockActiveServiceRequest, status: 'draft' }, onResume });
+      });
+      await user.click(screen.getByRole('button', { name: 'Draft' }));
+      await user.click(await screen.findByText('Active'));
+
+      expect(onResume).toHaveBeenCalled();
+      expect(medplum.patchResource).not.toHaveBeenCalled();
+    });
   });
 
   describe('Diagnostic report', () => {

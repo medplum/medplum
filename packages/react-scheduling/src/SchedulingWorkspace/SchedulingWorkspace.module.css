@@ -10,7 +10,6 @@
 
 .sidebar {
   flex-shrink: 0;
-  width: 300px;
   overflow-y: auto;
 }
 
@@ -44,8 +43,9 @@
 }
 
 /*
- * The pane beside the calendar, holding either the booking form or the details of
- * the appointment that is open. Never both — one takes the other's place.
+ * The pane beside the calendar, holding the booking form, or the details of the
+ * appointment or blocked time that is open. Only one at a time — each takes the
+ * others' place.
  */
 .pane {
   flex-shrink: 0;
@@ -57,6 +57,24 @@
 
 .paneWide {
   width: 760px;
+}
+
+/* The booking pane's tabs pass the pane's height down to the form, so the form and the
+   times beside it each scroll on their own instead of the pane scrolling them together. */
+.paneTabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrolls for a tab that does not scroll itself, as the block form does not. */
+.paneTabPanel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .alert {

@@ -7,7 +7,11 @@ download_slug: rcm-billing
 
 # RCM & Billing Decision Guide
 
+Use this guide to decide which parts of the revenue cycle your application owns and which it delegates to billing partners. Work through coverage, charge capture, claims, remittance, and patient responsibility to define the data model, integrations, and operational handoffs for your reimbursement model.
+
 _Companion to the [Billing](/docs/billing) docs._
+
+---
 
 ## Section 1: Use Case & Participants
 

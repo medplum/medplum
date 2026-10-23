@@ -8,7 +8,7 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { AppointmentServiceSelect } from '../AppointmentFinder/AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
-import { LOCATION_SEARCH_CRITERIA } from '../constants';
+import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 
 /**
  * What the two filters currently narrow calendars to, for `searchScheduleCandidates`.
@@ -23,7 +23,7 @@ export interface CalendarFilterValues {
    * The chosen site, or absent for every site. A reference only when it is the site the
    * filters started on and the user has not changed it.
    */
-  readonly location?: Reference<Location> | WithId<Location>;
+  readonly serviceFacility?: Reference<Location> | WithId<Location>;
   /** The chosen visit type, or absent for every visit type. */
   readonly service?: WithId<HealthcareService>;
 }
@@ -51,27 +51,29 @@ export interface CalendarFiltersProps {
  * changes. A visit type never changes the sites on offer.
  *
  * @param props - Component props
- * @returns A React Node with the Location and Visit Type fields in it
+ * @returns A React Node with the Service Facility and Visit Type fields in it
  */
 export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const { defaultValue, onChange } = props;
-  const [location, setLocation] = useState<Reference<Location> | WithId<Location> | undefined>(defaultValue?.location);
+  const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
+    defaultValue?.serviceFacility
+  );
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultValue?.service);
 
   // Key to remount field relying on `defaultValue` on change
   // see: https://github.com/medplum/medplum/issues/10288
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
 
-  const selectLocation = useCallback(
+  const selectServiceFacility = useCallback(
     (next: WithId<Location> | undefined): void => {
-      setLocation(next);
-      // Clear a service selection if it is not available at the newly selected location
+      setServiceFacility(next);
+      // Clear a service selection if it is not available at the newly selected service facility
       const kept = service && isServiceKeptAtLocation(service, next) ? service : undefined;
       if (kept !== service) {
         setService(undefined);
         setServiceFieldKey((key) => key + 1);
       }
-      onChange({ location: next, service: kept });
+      onChange({ serviceFacility: next, service: kept });
     },
     [onChange, service]
   );
@@ -79,21 +81,21 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const selectService = useCallback(
     (next: WithId<HealthcareService> | undefined): void => {
       setService(next);
-      onChange({ location, service: next });
+      onChange({ serviceFacility, service: next });
     },
-    [location, onChange]
+    [serviceFacility, onChange]
   );
 
   return (
     <Stack gap="xs">
       <ResourceInput<WithId<Location>>
         resourceType="Location"
-        name="location"
-        label="Location"
-        placeholder="All locations"
-        searchCriteria={LOCATION_SEARCH_CRITERIA}
-        defaultValue={location as WithId<Location> | Reference<WithId<Location>> | undefined}
-        onChange={selectLocation}
+        name="serviceFacility"
+        label="Service Facility"
+        placeholder="All service facilities"
+        searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
+        defaultValue={serviceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
+        onChange={selectServiceFacility}
         clearable={false}
       />
       <AppointmentServiceSelect
@@ -101,7 +103,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
         label="Visit Type"
         placeholder="All visit types"
         required={false}
-        location={location}
+        serviceFacility={serviceFacility}
         defaultValue={service}
         onChange={selectService}
       />

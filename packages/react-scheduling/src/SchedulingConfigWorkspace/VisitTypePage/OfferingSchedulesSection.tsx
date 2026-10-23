@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Loader, Stack, Text, UnstyledButton } from '@mantine/core';
+import { Badge, Group, Loader, Stack, Text, UnstyledButton } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getDisplayString, getReferenceString } from '@medplum/core';
+import { getDisplayString, getReferenceString, serviceTypeIncludesAllServices } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconChevronRight } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -88,6 +88,11 @@ function OfferingRow(props: {
           <Text fw={500} truncate>
             {getDisplayString(resource)}
           </Text>
+          {serviceTypeIncludesAllServices(offering.schedule.serviceType) && (
+            <Badge size="xs" variant="light" color="gray">
+              All visit types
+            </Badge>
+          )}
           {scheduleHasOverrides(service, offering.schedule) && <OverridesBadge serviceName={serviceName} />}
         </Group>
         <IconChevronRight size={16} />

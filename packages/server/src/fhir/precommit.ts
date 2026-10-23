@@ -129,6 +129,7 @@ export async function preCommitValidation<T extends Resource>(
       subscription,
       bot,
       runAs,
+      runAsProject: project,
       input: resource,
       contentType: ContentType.FHIR_JSON,
       requestTime: new Date().toISOString(),
