@@ -3271,6 +3271,145 @@ describe('AccessPolicy', () => {
         await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
       }));
   });
+
+  describe('Project admin Login access', () => {
+    let projectA: WithId<Project>;
+    let adminRepo: Repository;
+    let loginA: WithId<Login>;
+    let loginB: WithId<Login>;
+
+    async function loginToProject(
+      project: WithId<Project>,
+      accessPolicy?: WithId<AccessPolicy>
+    ): Promise<{ login: WithId<Login>; membership: WithId<ProjectMembership> }> {
+      const email = `login-${randomUUID()}@example.com`;
+      const password = randomUUID();
+      const { membership } = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Login',
+        lastName: 'User',
+        email,
+        password,
+        membership: { accessPolicy: accessPolicy && createReference(accessPolicy) },
+      });
+      const login = await tryLogin({
+        authMethod: 'password',
+        email,
+        password,
+        projectId: project.id,
+        scope: 'openid offline_access',
+        nonce: randomUUID(),
+        remoteAddress: '127.0.0.1',
+        userAgent: 'test-agent',
+      });
+      return { login, membership };
+    }
+
+    beforeAll(() =>
+      withTestContext(async () => {
+        ({ project: projectA, repo: adminRepo } = await createTestProject({
+          withRepo: true,
+          membership: { admin: true },
+        }));
+        const { project: projectB } = await createTestProject();
+        ({ login: loginA } = await loginToProject(projectA));
+        ({ login: loginB } = await loginToProject(projectB));
+      })
+    );
+
+    test('Login joins project when membership is selected', () =>
+      withTestContext(async () => {
+        expect(loginA.meta?.project).toBe(projectA.id);
+
+        const pending = await getGlobalSystemRepo().createResource<Login>({
+          resourceType: 'Login',
+          project: createReference(projectA),
+          user: { reference: 'User/' + randomUUID() },
+          authMethod: 'password',
+          authTime: new Date().toISOString(),
+        });
+        expect(pending.meta?.project).toBeUndefined();
+      }));
+
+    test('Read and search hide secrets', () =>
+      withTestContext(async () => {
+        expect(loginA.refreshSecret).toBeDefined();
+        expect(loginA.cookie).toBeDefined();
+
+        const read = await adminRepo.readResource<Login>('Login', loginA.id);
+        const searched = await adminRepo.searchResources<Login>({ resourceType: 'Login' });
+        expect(searched.map((l) => l.id)).toContain(loginA.id);
+        for (const login of [read, ...searched]) {
+          expect(login.remoteAddress).toBe('127.0.0.1');
+          expect(login.userAgent).toBe('test-agent');
+          expect(login.authMethod).toBe('password');
+          expect(login.refreshSecret).toBeUndefined();
+          expect(login.cookie).toBeUndefined();
+          expect(login.code).toBeUndefined();
+          expect(login.nonce).toBeUndefined();
+        }
+      }));
+
+    test('History and vread are denied', () =>
+      withTestContext(async () => {
+        await expect(adminRepo.readHistory<Login>('Login', loginA.id)).rejects.toThrow('Forbidden');
+        const versionId = loginA.meta?.versionId as string;
+        await expect(adminRepo.readVersion<Login>('Login', loginA.id, versionId)).rejects.toThrow('Forbidden');
+      }));
+
+    test('Hidden fields cannot be matched by partial search', () =>
+      withTestContext(async () => {
+        for (const code of ['cookie', 'code'] as const) {
+          const value = loginA[code] as string;
+          const results = await adminRepo.searchResources<Login>({
+            resourceType: 'Login',
+            filters: [{ code, operator: Operator.CONTAINS, value: value.slice(0, 8) }],
+          });
+          expect(results).toHaveLength(0);
+        }
+      }));
+
+    test('Cannot access other projects or modify logins', () =>
+      withTestContext(async () => {
+        await expect(adminRepo.readResource<Login>('Login', loginB.id)).rejects.toThrow();
+        const searched = await adminRepo.searchResources<Login>({ resourceType: 'Login' });
+        expect(searched.map((l) => l.id)).not.toContain(loginB.id);
+
+        const read = await adminRepo.readResource<Login>('Login', loginA.id);
+        await expect(adminRepo.updateResource<Login>({ ...read, revoked: true })).rejects.toThrow('Forbidden');
+        await expect(adminRepo.deleteResource('Login', loginA.id)).rejects.toThrow('Forbidden');
+        await expect(
+          adminRepo.createResource<Login>({
+            resourceType: 'Login',
+            authMethod: 'password',
+            user: { reference: 'User/' + randomUUID() },
+            authTime: new Date().toISOString(),
+          })
+        ).rejects.toThrow('Forbidden');
+      }));
+
+    test('Wildcard access policy does not grant Login access', () =>
+      withTestContext(async () => {
+        const accessPolicy = await (
+          await getProjectSystemRepo(projectA)
+        ).createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: projectA.id },
+          resource: [{ resourceType: '*' }],
+        });
+        const { login, membership } = await loginToProject(projectA, accessPolicy);
+        const memberRepo = await getRepoForLogin({
+          login,
+          project: projectA,
+          membership,
+          userConfig: {} as UserConfiguration,
+        });
+
+        await expect(memberRepo.readResource<Login>('Login', loginA.id)).rejects.toThrow();
+        await expect(memberRepo.searchResources<Login>({ resourceType: 'Login' })).rejects.toThrow();
+      }));
+  });
 });
 
 describe('reconcileDefaultAccessPolicy', () => {
