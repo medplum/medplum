@@ -574,9 +574,11 @@ describe('AppointmentRescheduleForm', () => {
     test('Moves the visit to a newly chosen service facility before moving its time', async () => {
       // `$reschedule` keeps whatever site it finds, so the site is written first.
       const unsited = await medplum.createResource(UNSITED_APPOINTMENT);
+      await setup(medplum, { appointment: unsited });
+      // Edited elsewhere while the form is open: the site is still written, onto the newer version.
+      await medplum.updateResource({ ...unsited, comment: 'Edited elsewhere' });
       vi.spyOn(medplum, 'updateResource').mockRejectedValueOnce(new Error('Precondition failed'));
       const post = vi.spyOn(medplum, 'post');
-      await setup(medplum, { appointment: unsited });
 
       await chooseSite('Main Clinic', MainClinic.name as string);
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
@@ -589,6 +591,7 @@ describe('AppointmentRescheduleForm', () => {
 
       const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
       expect(getAppointmentSite(reschedule.appointments[0])?.reference).toBe(getReferenceString(MainClinic));
+      expect(reschedule.appointments[0].comment).toBe('Edited elsewhere');
     });
 
     test('Leaves the visit type on file, and the codes booked with it, alone', async () => {

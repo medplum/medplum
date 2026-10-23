@@ -209,9 +209,18 @@ describe('writeElevatedReschedule', () => {
   });
 
   test('moves the stored appointment rather than a stale copy', async () => {
-    await medplum.updateResource({ ...existing, comment: 'Edited elsewhere' });
-    const result = await writeElevatedReschedule(medplum, existing, proposal());
+    await medplum.updateResource({
+      ...existing,
+      comment: 'Edited elsewhere',
+      supportingInformation: [toAppointmentSiteReference(SatelliteClinic)],
+    });
+    // Still naming the site the stale copy is at, as a facility field left alone would.
+    const atMain = { ...proposal(), supportingInformation: [toAppointmentSiteReference(MainClinic)] };
+
+    const result = await writeElevatedReschedule(medplum, existing, atMain);
+
     expect(result.appointments[0].comment).toBe('Edited elsewhere');
+    expect(result.appointments[0].supportingInformation).toEqual([toAppointmentSiteReference(SatelliteClinic)]);
   });
 
   test('moves the appointment to the site the proposal names, keeping its other supporting information', async () => {

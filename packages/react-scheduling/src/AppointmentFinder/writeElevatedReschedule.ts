@@ -81,7 +81,7 @@ export function getMovedSupportingInformation(existing: Appointment, proposal: A
  * old time or wholly at its new one. A failure before the update deletes the Slots it created;
  * a failure after it leaves the old Slots behind, logged, with the move complete.
  * @param medplum - The client to write through.
- * @param moving - The appointment being moved. Re-read before writing, so a stale copy is not written back.
+ * @param moving - The appointment being moved, as the form opened on it. Re-read before writing, so a stale copy is not written back.
  * @param proposal - The manually chosen start, length, and schedules.
  * @returns The updated appointment and its new slots.
  */
@@ -181,7 +181,10 @@ export async function writeElevatedReschedule(
     ];
   }
 
-  const supportingInformation = getMovedSupportingInformation(existing, proposal);
+  // Whether the site was changed is read off the copy the form opened on, so leaving the field
+  // alone keeps a site chosen elsewhere since.
+  const supportingInformation =
+    getMovedSupportingInformation(moving, proposal) && getMovedSupportingInformation(existing, proposal);
   const updated: WithId<Appointment> = {
     ...existing,
     ...(supportingInformation && { supportingInformation }),

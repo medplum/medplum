@@ -209,7 +209,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
 /**
  * Moves an appointment to the proposal's site, which `$reschedule` leaves alone.
  * @param medplum - The client to write through.
- * @param appointment - The appointment being moved.
+ * @param appointment - The appointment as the form opened on it, which says whether the site was changed.
  * @param proposal - The time it is moving to, carrying the site chosen for it.
  */
 async function writeMovedSite(
@@ -217,11 +217,17 @@ async function writeMovedSite(
   appointment: WithId<Appointment>,
   proposal: Appointment
 ): Promise<void> {
-  const supportingInformation = getMovedSupportingInformation(appointment, proposal);
+  if (!getMovedSupportingInformation(appointment, proposal)) {
+    return;
+  }
+  // Written onto a fresh copy, so an edit made elsewhere since the form opened is neither
+  // lost nor a reason to refuse the move.
+  const existing = await medplum.readResource('Appointment', appointment.id, { cache: 'no-cache' });
+  const supportingInformation = getMovedSupportingInformation(existing, proposal);
   if (supportingInformation) {
     await medplum.updateResource(
-      { ...appointment, supportingInformation },
-      { headers: { 'If-Match': `W/"${appointment.meta?.versionId}"` } }
+      { ...existing, supportingInformation },
+      { headers: { 'If-Match': `W/"${existing.meta?.versionId}"` } }
     );
   }
 }
