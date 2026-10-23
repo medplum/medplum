@@ -248,6 +248,7 @@ const unexportedResourceTypes = [
   'BulkDataExport',
   'AsyncJob',
   'AuditEvent',
+  'Login',
 ];
 
 function canBeExported(resourceType: string): boolean {

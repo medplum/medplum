@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, parseJWTPayload } from '@medplum/core';
+import { allOk, badRequest, parseJWTPayload, resolveId } from '@medplum/core';
 import type { Bot, Login, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { initApp, shutdownApp } from '../app';
@@ -119,6 +119,7 @@ describe('getBotAccessToken', () => {
 
       const authState = (await getLoginForAccessToken(undefined, token2))?.authState;
       expect(authState?.membership.id).toBe(membership.id);
+      expect(authState?.login.meta?.project).toBe(resolveId(membership.project));
     }));
 
   test('New token when membership changes', () =>
