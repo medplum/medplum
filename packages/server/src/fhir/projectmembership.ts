@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { notFound, OperationOutcomeError, Operator, parseReference, resolveId } from '@medplum/core';
+import { badRequest, notFound, OperationOutcomeError, Operator, parseReference, resolveId } from '@medplum/core';
 import type { Project, ProjectMembership, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo } from './repo';
@@ -84,8 +84,13 @@ export async function readMembershipReference<T extends Resource>(
   allowedTypes: readonly ResourceType[],
   allowLinkedProjects = false
 ): Promise<WithId<T>> {
-  const [resourceType] = parseReference(reference);
-  if (!allowedTypes.includes(resourceType)) {
+  let resourceType: string;
+  try {
+    [resourceType] = parseReference(reference);
+  } catch {
+    throw new OperationOutcomeError(badRequest('Invalid reference'));
+  }
+  if (!allowedTypes.includes(resourceType as ResourceType)) {
     throw new OperationOutcomeError(notFound);
   }
 
