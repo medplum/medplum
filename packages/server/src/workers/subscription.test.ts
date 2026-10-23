@@ -2221,22 +2221,15 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy without a project
-      // This should trigger an error when the subscription is executed
-      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
-      });
-
-      const { repo: apTestRepo } = await createTestProject({
+      const { repo: apTestRepo, accessPolicy } = await createTestProject({
         withClient: true,
         withRepo: true,
         project: {
           name: 'AccessPolicy Throw Project',
           features: [],
         },
-        membership: {
-          accessPolicy: createReference(accessPolicy),
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
         },
       });
 
@@ -2292,22 +2285,15 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy without a project
-      // This should trigger an error when the subscription is executed
-      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-      });
-
-      const { repo: apTestRepo } = await createTestProject({
+      const { repo: apTestRepo, accessPolicy } = await createTestProject({
         withClient: true,
         withRepo: true,
         project: {
           name: 'AccessPolicy Not Met but Should Succeed Project',
           features: [],
         },
-        membership: {
-          accessPolicy: createReference(accessPolicy),
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         },
       });
 
@@ -2790,15 +2776,6 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        // Create an access policy without a project
-        // This should trigger an error when the subscription is executed
-        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
-        // Create an access policy in different project
-        // This should trigger an error when the subscription is executed
         const {
           repo: wsRepo,
           project,
@@ -2812,8 +2789,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy Denied Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
@@ -2857,15 +2834,6 @@ describe('Subscription Worker', () => {
         // allow the websocket subscription to bypass the access-policy check.
         const url = 'https://example.com/subscription';
 
-        // An access policy that restricts Patient to a specific ID that will never match our patient.
-        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [
-            { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
-            { resourceType: 'Subscription' },
-          ],
-        });
-
         // Create a project whose membership carries the denying access policy.
         // The project must have 'websocket-subscriptions' enabled so that the websocket
         // subscription is fetched and evaluated.
@@ -2882,8 +2850,12 @@ describe('Subscription Worker', () => {
             name: 'Access Policy Cache Channel Type Isolation Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          // An access policy that restricts Patient to a specific ID that will never match our patient.
+          accessPolicy: {
+            resource: [
+              { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
+              { resourceType: 'Subscription' },
+            ],
           },
         });
 
