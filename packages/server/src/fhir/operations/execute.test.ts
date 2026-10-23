@@ -136,9 +136,34 @@ exports.handler = async function (medplum, event) {
 };
 `,
   ],
+  [
+    `
+export async function handler(medplum, event) {
+  const { input, responseStream } = event;
+  responseStream.startStreaming(input.statusCode, input.headers);
+  responseStream.write('data: Hello\\n\\n');
+  responseStream.end();
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  const { input, responseStream } = event;
+  responseStream.startStreaming(input.statusCode, input.headers);
+  responseStream.write('data: Hello\\n\\n');
+  responseStream.end();
+};
+`,
+  ],
 ] as [string, string][];
 
-type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot' | 'streamingBot' | 'streamingErrorBot';
+type BotName =
+  | 'echoBot'
+  | 'systemEchoBot'
+  | 'booleanBot'
+  | 'binaryBot'
+  | 'streamingBot'
+  | 'streamingErrorBot'
+  | 'streamingHeadersBot';
 const botDefinitions: { name: BotName; system: boolean; code: [string, string]; streaming?: boolean }[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
   { name: 'echoBot', system: false, code: botCodes[0] },
@@ -146,6 +171,7 @@ const botDefinitions: { name: BotName; system: boolean; code: [string, string]; 
   { name: 'binaryBot', system: false, code: botCodes[2] },
   { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
   { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
+  { name: 'streamingHeadersBot', system: false, code: botCodes[5], streaming: true },
 ];
 
 describe('Execute', () => {
@@ -1055,6 +1081,38 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken1)
         .send('input');
+      expect(res).toHaveStatus(400);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+    });
+
+    test.each([{ 'Content-Length': '0' }, { 'content-length': '0' }, { 'Transfer-Encoding': 'identity' }])(
+      'Streaming bot cannot set message framing header %j',
+      async (framingHeaders) => {
+        const res = await request(app)
+          .post(`/fhir/R4/Bot/${bots.streamingHeadersBot.id}/$execute`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Accept', 'text/event-stream')
+          .set('Authorization', 'Bearer ' + accessToken1)
+          .send({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/event-stream', 'X-Test': 'test', ...framingHeaders },
+          });
+        expect(res).toHaveStatus(200);
+        expect(res.headers['content-type']).toBe('text/event-stream');
+        expect(res.headers['x-test']).toBe('test');
+        expect(res.headers['content-length']).toBeUndefined();
+        expect(res.headers['transfer-encoding']).toBe('chunked');
+        expect(res.text).toBe('data: Hello\n\n');
+      }
+    );
+
+    test.each([100, 101, 103, 600, '200'])('Streaming bot cannot set status code %j', async (statusCode) => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingHeadersBot.id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send({ statusCode, headers: { 'Content-Type': 'text/event-stream' } });
       expect(res).toHaveStatus(400);
       expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     });
