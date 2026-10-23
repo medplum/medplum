@@ -527,7 +527,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             <CloseButton aria-label="Close booking form" onClick={closeBooking} />
           </Group>
           {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
-          <Tabs value={paneTab} onChange={(value) => setPaneTab(value as PaneTab)}>
+          <Tabs
+            value={paneTab}
+            onChange={(value) => setPaneTab(value as PaneTab)}
+            classNames={{ root: classes.paneTabs, panel: classes.paneTabPanel }}
+          >
             <Tabs.List mb="sm">
               <Tabs.Tab value="appointment">Appointment</Tabs.Tab>
               <Tabs.Tab value="block">Block</Tabs.Tab>

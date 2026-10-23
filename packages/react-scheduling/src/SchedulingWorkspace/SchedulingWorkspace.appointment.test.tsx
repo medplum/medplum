@@ -37,6 +37,8 @@ let restoreCancel: () => void;
 let restoreValueSet: () => void;
 
 beforeEach(async () => {
+  // At the visit, so a run late in the day does not find it closed to changes.
+  vi.setSystemTime(TODAY_AT_TEN);
   medplum = new MockClient();
   for (const resource of [...SchedulingFixtures, MilesCooperPatient, APPOINTMENT]) {
     await medplum.createResource(resource);

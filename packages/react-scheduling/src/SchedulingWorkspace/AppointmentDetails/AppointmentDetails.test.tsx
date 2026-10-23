@@ -19,6 +19,7 @@ import {
 import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
+import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM } from '../../constants';
 import { installCancelStub } from '../../stories/mockCancel';
@@ -160,6 +161,8 @@ let restoreConfirm: () => void;
 let restoreValueSet: () => void;
 
 beforeEach(async () => {
+  // At the visits themselves, well inside the 12 hours they stay open to changes.
+  vi.setSystemTime(new Date(BOOKED_APPOINTMENT.start as string));
   medplum = new MockClient();
   await medplum.createResource(SERVICE);
   await medplum.createResource(AUTHORIZED_SERVICE);
@@ -686,6 +689,35 @@ describe('AppointmentDetails', () => {
 
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
     expect(cancelButton()).toBeInTheDocument();
+  });
+});
+
+describe('AppointmentDetails more than 12 hours after it ended', () => {
+  const LATER = new Date('2020-05-06T06:00:00Z');
+
+  test('offers nothing but the link to the visit', async () => {
+    vi.setSystemTime(LATER);
+    const url = 'https://foomedical.com/appointments?mrn=123';
+    renderDetails({ ...PENDING_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
+    await screen.findByText('Miles Cooper');
+
+    expect(screen.getByRole('link', { name: 'View details' })).toHaveAttribute('href', url);
+    expect(screen.getByText("Appointments that ended more than 12 hours ago can't be changed.")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(rescheduleButton()).not.toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
+  });
+
+  test('lets a reschedule opened before the cutoff finish', async () => {
+    const details = (): JSX.Element => <AppointmentDetails appointment={BOOKED_APPOINTMENT} />;
+    const { rerender } = renderWithMedplum(details(), medplum);
+    await userEvent.click(rescheduleButton() as HTMLElement);
+
+    vi.setSystemTime(LATER);
+    rerender(details());
+
+    expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
   });
 });
 

@@ -29,7 +29,7 @@ When designing your analytics program, it can be useful to consider the followin
 
 A common pattern for ad-hoc reports is to first ingest FHIR resources into the data warehouse as raw JSON, and then flatten the relevant fields in a second ETL stage.
 
-Medplum Enterprise can run this synchronization for you on a schedule, writing FHIR resources to open Apache Iceberg tables that Snowflake, Amazon Redshift, Amazon Athena, and other engines read directly. See [Snowflake](/docs/analytics/snowflake) or [Amazon Redshift](/docs/analytics/redshift) for the table layout, query patterns, and how to get set up.
+The Data Warehouse Connector, an optional add-on for paid plans, can run this synchronization for you on a schedule, writing FHIR resources to open Apache Iceberg tables that Snowflake, Amazon Redshift, Amazon Athena, and other engines read directly. See [Snowflake](/docs/analytics/snowflake) or [Amazon Redshift](/docs/analytics/redshift) for the table layout, query patterns, and how to get set up.
 
 ## Healthcare Standard Reports
 

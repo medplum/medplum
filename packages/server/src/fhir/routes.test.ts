@@ -692,6 +692,30 @@ describe('FHIR Routes', () => {
       }));
   });
 
+  test('chainedSearchOnReader only routes chained searches to reader', async () => {
+    const token = await initTestAuth({
+      project: { systemSetting: [{ name: 'chainedSearchOnReader', valueBoolean: true }] },
+    });
+
+    for (const [url, expectReader] of [
+      ['/fhir/R4/Observation?subject:Patient.name=Alice', true],
+      ['/fhir/R4/Patient?_has:Observation:subject:status=final', true],
+      ['/fhir/R4/Patient?name=Alice', false],
+    ] as const) {
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
+      try {
+        const res = await request(app)
+          .get(url)
+          .set('Authorization', 'Bearer ' + token);
+        expect(res).toHaveStatus(200);
+        expect(readerSpy).toHaveBeenCalledTimes(expectReader ? 1 : 0);
+        expect(writerSpy).toHaveBeenCalledTimes(expectReader ? 0 : 1);
+      } finally {
+        restore();
+      }
+    }
+  });
+
   test('Search invalid resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patientx`)
@@ -721,6 +745,29 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ resourceType: 'Patient', badProperty: 'bad' });
     expect(res).toHaveStatus(400);
+  });
+
+  test('Validate unwraps the resource parameter of a Parameters body', async () => {
+    const validate = (resource: Record<string, unknown>): request.Test =>
+      request(app)
+        .post(`/fhir/R4/Patient/$validate`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'resource', resource }] });
+
+    expect(await validate({ resourceType: 'Patient' })).toHaveStatus(200);
+
+    const res = await validate({ resourceType: 'Patient', name: 'x' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].expression).toStrictEqual(['Patient.name']);
+  });
+
+  test('Validate rejects a Parameters body without a resource parameter', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/$validate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Parameters', parameter: [] });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing resource parameter');
   });
 
   test('Validate wrong content type', async () => {

@@ -32,7 +32,13 @@ import { getMedicalRecordNumber } from '../../patients';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
-import { formatWhen, isCancelable, isReschedulable } from '../SchedulingWorkspace.utils';
+import {
+  EDIT_WINDOW_HOURS,
+  formatWhen,
+  isCancelable,
+  isPastEditWindow,
+  isReschedulable,
+} from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
@@ -169,7 +175,8 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 /**
  * Shows a detail view of a single appointment
  *
- * Has sub-views for rescheduling and cancelling the appointment.
+ * Has sub-views for rescheduling and cancelling the appointment. One past its edit window
+ * (see `isPastEditWindow`) is shown read-only, though a view already open can still finish.
  *
  * @param props - The React props
  * @param props.appointment - The Appointment resource to detail
@@ -314,6 +321,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }
 
   const cancelable = isCancelable(appointment);
+  const locked = isPastEditWindow(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
   const externalUrl = getExternalUrl(appointment);
@@ -371,7 +379,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
         <Stack gap="sm" className={classes.actions}>
           <Divider />
           {/* `$confirm` also accepts `proposed`, but only what `$hold` left `pending` is offered. */}
-          {appointment.status === 'pending' && (
+          {!locked && appointment.status === 'pending' && (
             <>
               {confirmError !== undefined && (
                 <Alert color="red" title="Could not confirm this appointment">
@@ -394,27 +402,35 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               View details
             </Button>
           )}
-          <Button variant="outline" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          {isReschedulable(appointment) && (
-            <Button
-              variant="outline"
-              leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
-              onClick={() => setRescheduling(true)}
-            >
-              Reschedule
-            </Button>
-          )}
-          <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
-            Cancel Appointment
-          </Button>
-          {!cancelable && (
+          {locked ? (
             <Text size="sm" c="dimmed">
-              {appointment.status === 'cancelled'
-                ? 'This appointment is cancelled.'
-                : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+              {`Appointments that ended more than ${EDIT_WINDOW_HOURS} hours ago can't be changed.`}
             </Text>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+              {isReschedulable(appointment) && (
+                <Button
+                  variant="outline"
+                  leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
+                  onClick={() => setRescheduling(true)}
+                >
+                  Reschedule
+                </Button>
+              )}
+              <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
+                Cancel Appointment
+              </Button>
+              {!cancelable && (
+                <Text size="sm" c="dimmed">
+                  {appointment.status === 'cancelled'
+                    ? 'This appointment is cancelled.'
+                    : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+                </Text>
+              )}
+            </>
           )}
         </Stack>
       )}

@@ -3,7 +3,6 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../aliases.mjs';
 
 /*
  * Default the runner's timezone. This package renders times in one zone and reads them in another
@@ -38,7 +37,7 @@ export default defineConfig({
     },
   ],
   resolve: {
-    alias: medplumAliases,
+    alias: [{ find: /^@medplum\/([\w-]+)$/, replacement: resolve(import.meta.dirname, '../$1/src') }],
   },
   test: {
     name: '@medplum/react-scheduling',
