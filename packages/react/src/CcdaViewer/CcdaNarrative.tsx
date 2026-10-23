@@ -4,7 +4,7 @@ import { Anchor, Text } from '@mantine/core';
 import type { JSX, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CcdaViewer.module.css';
-import { attr, childEl, childEls, isSafeHref, isSafeImageSrc, textOf } from './CcdaViewer.utils';
+import { attr, childEl, childEls, isSafeHref, isSafeImageSrc, nodeKey, textOf } from './CcdaViewer.utils';
 
 export interface CcdaNarrativeProps {
   /** The section `text` element. */
@@ -22,10 +22,10 @@ export function CcdaNarrative(props: CcdaNarrativeProps): JSX.Element {
 }
 
 function renderChildren(el: Element): ReactNode[] {
-  return Array.from(el.childNodes).map(renderNode);
+  return Array.from(el.childNodes).map((node) => renderNode(node));
 }
 
-function renderNode(node: ChildNode, key: number): ReactNode {
+function renderNode(node: ChildNode): ReactNode {
   if (node.nodeType === Node.TEXT_NODE) {
     return node.textContent;
   }
@@ -33,6 +33,7 @@ function renderNode(node: ChildNode, key: number): ReactNode {
     return null;
   }
   const el = node as Element;
+  const key = nodeKey(el);
   const children = renderChildren(el);
   const className = styleCodeClass(el);
   switch (el.localName) {
@@ -130,7 +131,7 @@ function findDescendant(el: Element | undefined, localName: string): Element | u
 function CcdaList(props: { readonly list: Element }): JSX.Element {
   const { list } = props;
   const caption = childEl(list, 'caption');
-  const items = childEls(list, 'item').map((item, i) => <li key={i}>{renderChildren(item)}</li>);
+  const items = childEls(list, 'item').map((item) => <li key={nodeKey(item)}>{renderChildren(item)}</li>);
   return (
     <>
       {caption && <b>{renderChildren(caption)}</b>}
@@ -186,17 +187,17 @@ function CcdaTable(props: { readonly table: Element }): JSX.Element {
   const duplicateCount = Array.from(rowKinds.values()).filter((kind) => kind === 'duplicate').length;
   const potentialCount = rowKinds.size - duplicateCount;
 
-  const renderRow = (row: Element, key: number): ReactNode => {
+  const renderRow = (row: Element): ReactNode => {
     const kind = rowKinds.get(row);
     if ((kind === 'duplicate' && !showDuplicates) || (kind === 'potential' && hidePotential)) {
       return null;
     }
     return (
-      <tr key={key} className={kind && classes[kind]}>
-        {Array.from(row.children).map((cell, i) => {
+      <tr key={nodeKey(row)} className={kind && classes[kind]}>
+        {Array.from(row.children).map((cell) => {
           const Cell = cell.localName === 'th' ? 'th' : 'td';
           return (
-            <Cell key={i} colSpan={numberAttr(cell, 'colspan')} rowSpan={numberAttr(cell, 'rowspan')}>
+            <Cell key={nodeKey(cell)} colSpan={numberAttr(cell, 'colspan')} rowSpan={numberAttr(cell, 'rowspan')}>
               {renderChildren(cell)}
             </Cell>
           );
@@ -229,11 +230,11 @@ function CcdaTable(props: { readonly table: Element }): JSX.Element {
       )}
       <table className={classes.table}>
         {caption && <caption>{renderChildren(caption)}</caption>}
-        {thead && <thead>{childEls(thead, 'tr').map(renderRow)}</thead>}
-        {bodies.map((body, i) => (
-          <tbody key={i}>{childEls(body, 'tr').map(renderRow)}</tbody>
+        {thead && <thead>{childEls(thead, 'tr').map((row) => renderRow(row))}</thead>}
+        {bodies.map((body) => (
+          <tbody key={nodeKey(body)}>{childEls(body, 'tr').map((row) => renderRow(row))}</tbody>
         ))}
-        {tfoot && <tfoot>{childEls(tfoot, 'tr').map(renderRow)}</tfoot>}
+        {tfoot && <tfoot>{childEls(tfoot, 'tr').map((row) => renderRow(row))}</tfoot>}
       </table>
     </div>
   );

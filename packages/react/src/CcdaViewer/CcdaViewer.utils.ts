@@ -22,6 +22,23 @@ export function childEls(el: Element | undefined, name: string): Element[] {
   return Array.from(el.children).filter((child) => child.localName === name);
 }
 
+const nodeKeys = new WeakMap<Node, number>();
+let nextNodeKey = 0;
+
+/**
+ * Returns a React key that stays the same for a DOM node across renders.
+ * @param node - The DOM node.
+ * @returns The node's key.
+ */
+export function nodeKey(node: Node): number {
+  let key = nodeKeys.get(node);
+  if (key === undefined) {
+    key = nextNodeKey++;
+    nodeKeys.set(node, key);
+  }
+  return key;
+}
+
 export function attr(el: Element | undefined, name: string): string | undefined {
   return el?.getAttribute(name) ?? undefined;
 }

@@ -49,6 +49,7 @@ import {
   formatCdaCode,
   formatCdaName,
   isSafeHref,
+  nodeKey,
   parseCcda,
   textOf,
 } from './CcdaViewer.utils';
@@ -345,8 +346,8 @@ function SectionBody(props: { readonly section: Element }): JSX.Element {
         </Text>
       )}
       {text && <CcdaNarrative element={text} />}
-      {nestedSections(section).map((nested, i) => (
-        <Box key={i} ml="md" mt="xs">
+      {nestedSections(section).map((nested) => (
+        <Box key={nodeKey(nested)} ml="md" mt="xs">
           <Text fw={600} size="sm">
             {textOf(childEl(nested, 'title'))}
           </Text>

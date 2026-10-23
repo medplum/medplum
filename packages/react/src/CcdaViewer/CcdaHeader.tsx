@@ -15,6 +15,7 @@ import {
   formatCdaName,
   formatCdaTelecom,
   formatCdaTime,
+  nodeKey,
   textOf,
 } from './CcdaViewer.utils';
 
@@ -27,8 +28,8 @@ export function CcdaHeader(props: CcdaHeaderProps): JSX.Element {
   const { document } = props;
   return (
     <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm">
-      {childEls(document, 'recordTarget').map((recordTarget, i) => (
-        <PatientCard key={i} patientRole={childEl(recordTarget, 'patientRole')} />
+      {childEls(document, 'recordTarget').map((recordTarget) => (
+        <PatientCard key={nodeKey(recordTarget)} patientRole={childEl(recordTarget, 'patientRole')} />
       ))}
       <DocumentCard document={document} />
     </SimpleGrid>
@@ -125,5 +126,5 @@ function HeaderRow(props: { readonly label: string; readonly children: ReactNode
 }
 
 function lines(values: string[]): ReactNode[] {
-  return values.filter(Boolean).map((value, i) => <div key={i}>{value}</div>);
+  return [...new Set(values.filter(Boolean))].map((value) => <div key={value}>{value}</div>);
 }
