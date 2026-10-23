@@ -25,7 +25,7 @@ import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
-import { SERVICE_FACILITY_ROLE_SYSTEM } from '../../constants';
+import { SCHEDULING_CONFIG_PROVIDER_SYSTEM, SERVICE_FACILITY_ROLE_SYSTEM } from '../../constants';
 import {
   getScheduleSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -83,6 +83,11 @@ const drSmith: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-smith',
   name: [{ prefix: ['Dr.'], given: ['Jane'], family: 'Smith' }],
+};
+// The same provider, as the workspace would have created them, so it keeps their status.
+const ownDrSmith: WithId<Practitioner> = {
+  ...drSmith,
+  identifier: [{ system: SCHEDULING_CONFIG_PROVIDER_SYSTEM, value: 'a1b2c3' }],
 };
 
 function makeSchedule(
@@ -379,8 +384,20 @@ describe('ActorPage', () => {
     expect(screen.getByRole('heading', { level: 2 }).parentElement).toHaveTextContent('Room 3Active');
   });
 
+  test("a provider the workspace didn't create keeps a read-only status, saying how to stop booking them", async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const providerSwitch = screen.getByRole('switch', { name: 'Provider status' });
+
+    expect(providerSwitch).toBeChecked();
+    expect(providerSwitch).toBeDisabled();
+    expect(providerSwitch).toHaveAccessibleDescription(
+      'Kept by the system this provider comes from. Switch their Schedule off to stop booking them.'
+    );
+    expect(screen.getByRole('switch', { name: 'Schedule status' })).toBeEnabled();
+  });
+
   test('switching a provider off switches its Schedule off and locks it, and both save in one bundle', async () => {
-    const { medplum, onSynced, schedules } = await setup(drSmith, [
+    const { medplum, onSynced, schedules } = await setup(ownDrSmith, [
       makeSchedule('Practitioner/dr-smith', [initialVisit]),
     ]);
     const scheduleSwitch = screen.getByRole('switch', { name: 'Schedule status' });
@@ -408,7 +425,7 @@ describe('ActorPage', () => {
   });
 
   test('switching a provider back on puts the Schedule back as stored, leaving nothing to save', async () => {
-    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    await setup(ownDrSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
     const providerSwitch = screen.getByRole('switch', { name: 'Provider status' });
 
     await userEvent.click(providerSwitch);
