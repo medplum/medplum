@@ -103,8 +103,8 @@ export const ProviderOnLeave = (): JSX.Element => (
 export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
 
 /**
- * Dr. Anika Patel offers Walk-in Clinic, and neither she nor the visit type sets a time zone. Her name is kept by
- * the system she comes from and is read-only; her status and time zone are edited here.
+ * Dr. Anika Patel offers Walk-in Clinic, and neither she nor the visit type sets a time zone. Her name and status are
+ * kept by the system she comes from and are read-only; her time zone is edited here.
  *
  * Pick a Time zone under General and the entry's custom hours are read in it at once. Save writes the time zone
  * to her `Practitioner` and nothing else.
