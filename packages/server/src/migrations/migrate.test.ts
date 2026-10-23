@@ -459,8 +459,27 @@ describe('Generator', () => {
           expect(schema).toContain(
             `CREATE INDEX "HumanName_projectId_${column}_idx_tsv" ON "HumanName" USING gin ("projectId", `
           );
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}UnaccentTrgm_idx" ON "HumanName" USING gin ("projectId", medplum_unaccent(${column}) gin_trgm_ops);`
+          );
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}Unaccent_idx_tsv" ON "HumanName" USING gin ("projectId", to_tsvector('simple'::regconfig, medplum_unaccent(${column})));`
+          );
         }
         expect(schema).not.toContain('"HumanName_projectId_resourceId_idx"');
+      });
+
+      test('Address accent-folds its string columns but not the use token', () => {
+        const schemaBuilder = new FileBuilder();
+        buildSchema(schemaBuilder);
+        const schema = schemaBuilder.toString();
+
+        for (const column of ['address', 'city', 'country', 'postalCode', 'state']) {
+          expect(schema).toContain(
+            `CREATE INDEX "Address_${column}Unaccent_idx_tsv" ON "Address" USING gin (to_tsvector('simple'::regconfig, medplum_unaccent(${column === 'postalCode' ? '"postalCode"' : column})));`
+          );
+        }
+        expect(schema).not.toContain('"Address_useUnaccent_idx_tsv"');
       });
     });
 

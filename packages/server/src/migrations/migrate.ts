@@ -642,8 +642,23 @@ function buildAddressTable(result: SchemaDefinition): void {
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
+      // `use` is a token param, so it is not accent-folded
+      ...['address', 'postalCode', 'city', 'country', 'state'].map((column): IndexDefinition => ({
+        columns: [{ expression: unaccentTsVectorExpression(column), name: column + 'Unaccent' }],
+        indexType: 'gin',
+        indexNameSuffix: 'idx_tsv',
+      })),
     ]
   );
+}
+
+/**
+ * Accent- and normalization-insensitive counterpart of {@link tsVectorExpression} with the `simple` configuration.
+ * @param column - The column to convert.
+ * @returns The SQL expression.
+ */
+function unaccentTsVectorExpression(column: string): string {
+  return `to_tsvector('simple'::regconfig, ${MedplumUnaccentFn.name}(${escapeMixedCaseIdentifier(column)}))`;
 }
 
 function buildContactPointTable(result: SchemaDefinition): void {
@@ -690,6 +705,17 @@ function buildHumanNameTable(result: SchemaDefinition): void {
         unique: false,
         indexNameSuffix: 'idx_tsv',
       },
+      ...['name', 'given', 'family'].flatMap((column): IndexDefinition[] => [
+        {
+          columns: [{ expression: `${MedplumUnaccentFn.name}(${column}) gin_trgm_ops`, name: column + 'UnaccentTrgm' }],
+          indexType: 'gin',
+        },
+        {
+          columns: [{ expression: unaccentTsVectorExpression(column), name: column + 'Unaccent' }],
+          indexType: 'gin',
+          indexNameSuffix: 'idx_tsv',
+        },
+      ]),
     ]
   );
 
