@@ -352,6 +352,10 @@ async function validateAccessPolicies(
     }
   }
 
+  if (request.membership?.accessPolicy) {
+    references.push(request.membership.accessPolicy);
+  }
+
   if (Array.isArray(request.membership?.access)) {
     for (const access of request.membership.access) {
       if (access.policy) {

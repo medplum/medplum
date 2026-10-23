@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { isUUID } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -12,6 +13,10 @@ import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 export const loginValidator = makeValidationMiddleware([
   body('email').isEmail().withMessage('Valid email address is required'),
+  body('projectId')
+    .optional({ values: 'falsy' })
+    .custom((value) => value === 'new' || (typeof value === 'string' && isUUID(value)))
+    .withMessage('Invalid projectId'),
   body('password')
     .isLength({ min: MIN_PASSWORD_LENGTH })
     .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)

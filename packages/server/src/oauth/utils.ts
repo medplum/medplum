@@ -10,6 +10,7 @@ import {
   getReferenceString,
   isJwt,
   isString,
+  isUUID,
   OperationOutcomeError,
   Operator,
   parseJWTPayload,
@@ -225,6 +226,9 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
 }
 
 export function validateLoginRequest(request: LoginRequest): void {
+  if (request.projectId && request.projectId !== 'new' && !isUUID(request.projectId)) {
+    throw new OperationOutcomeError(badRequest('Invalid projectId', 'projectId'));
+  }
   if (request.authMethod === 'external' || request.authMethod === 'exchange') {
     if (!request.externalId && !request.email) {
       throw new OperationOutcomeError(badRequest('Missing email or externalId', 'externalId'));

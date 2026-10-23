@@ -1333,6 +1333,21 @@ describe('Admin Invite', () => {
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not belong to this project');
+
+    const res2 = await request(app)
+      .post('/admin/projects/' + bobRegistration.project.id + '/invite')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Carol',
+        lastName: 'Brown',
+        email: carolEmail,
+        membership: { accessPolicy: createReference(accessPolicy) },
+        sendEmail: false,
+      });
+
+    expect(res2).toHaveStatus(400);
+    expect(normalizeErrorString(res2.body)).toContain('does not belong to this project');
   });
 
   test('Invite without access policy (backwards compatibility)', async () => {
