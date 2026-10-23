@@ -27,6 +27,8 @@ export type SearchParameterType = (typeof SearchParameterType)[keyof typeof Sear
 export interface SearchParameterDetails {
   readonly type: SearchParameterType;
   readonly elementDefinitions?: InternalSchemaElement[];
+  /** Element paths read by the expression, relative to the resource (e.g. "name.family"). */
+  readonly paths?: string[];
   readonly parsedExpression: FhirPathAtom;
   readonly array?: boolean;
   readonly referenceTargetTypes?: ResourceType[];
@@ -34,6 +36,7 @@ export interface SearchParameterDetails {
 
 interface SearchParameterDetailsBuilder {
   elementDefinitions: InternalSchemaElement[];
+  paths: Set<string>;
   propertyTypes: Set<string>;
   array: boolean;
 }
@@ -77,6 +80,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
 
   const builder: SearchParameterDetailsBuilder = {
     elementDefinitions: [],
+    paths: new Set(),
     propertyTypes: new Set(),
     array: false,
   };
@@ -103,7 +107,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
       builder.propertyTypes.clear();
       builder.propertyTypes.add('code');
     } else {
-      crawlSearchParameterDetails(builder, atomArray, resourceType, 1);
+      crawlSearchParameterDetails(builder, atomArray, resourceType, 1, '');
     }
 
     // To support US Core "us-core-condition-asserted-date" search parameter without
@@ -140,6 +144,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions,
+    paths: Array.from(builder.paths),
     parsedExpression,
     array: builder.array,
     referenceTargetTypes: getReferenceTargetTypes(searchParam, elementDefinitions),
@@ -152,16 +157,19 @@ function crawlSearchParameterDetails(
   details: SearchParameterDetailsBuilder,
   atoms: Atom[],
   baseType: string,
-  index: number
+  index: number,
+  path: string
 ): void {
   const currAtom = atoms[index];
 
   if (currAtom instanceof AsAtom) {
+    details.paths.add(path);
     details.propertyTypes.add(currAtom.right.toString());
     return;
   }
 
   if (currAtom instanceof FunctionAtom) {
+    details.paths.add(path);
     handleFunctionAtom(details, currAtom);
     return;
   }
@@ -171,6 +179,7 @@ function crawlSearchParameterDetails(
   if (!elementDefinition) {
     throw new Error(`Element definition not found for ${baseType} ${propertyName}`);
   }
+  const elementPath = path ? path + '.' + propertyName : propertyName;
 
   let hasArrayIndex = false;
   let nextIndex = index + 1;
@@ -189,11 +198,13 @@ function crawlSearchParameterDetails(
     // This is the penultimate atom in the expression
     // If the last atom is a type guard (i.e. an "as" expression or ofType() function), use that type
     if (nextAtom instanceof AsAtom) {
+      details.paths.add(elementPath);
       details.elementDefinitions.push(elementDefinition);
       details.propertyTypes.add(nextAtom.right.toString());
       return;
     }
     if (nextAtom instanceof FunctionAtom && nextAtom.name === 'ofType') {
+      details.paths.add(elementPath);
       details.elementDefinitions.push(elementDefinition);
       details.propertyTypes.add(nextAtom.args[0].toString());
       return;
@@ -203,6 +214,7 @@ function crawlSearchParameterDetails(
   if (nextIndex >= atoms.length) {
     // This is the final atom in the expression
     // So we can collect the ElementDefinition and property types
+    details.paths.add(elementPath);
     details.elementDefinitions.push(elementDefinition);
     for (const elementDefinitionType of elementDefinition.type ?? EMPTY) {
       details.propertyTypes.add(elementDefinitionType.code);
@@ -218,7 +230,7 @@ function crawlSearchParameterDetails(
     if (isBackboneElement(propertyType)) {
       propertyType = elementDefinition.type[0].code;
     }
-    crawlSearchParameterDetails(details, atoms, propertyType, nextIndex);
+    crawlSearchParameterDetails(details, atoms, propertyType, nextIndex, elementPath);
   }
 }
 
