@@ -11,7 +11,7 @@ import { getActorTypeLabel } from '../../actors';
 import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
 import { getTimezoneOptions, timezoneFilter } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
-import { hasEditableName, isOwnProvider } from './actorDraft';
+import { hasEditableName, isOwnedBySchedulingWorkspace } from './actorDraft';
 
 export interface ActorGeneralProps {
   /** The actor as the page would store it. */
@@ -37,7 +37,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
   const typeLabel = getActorTypeLabel(resource.resourceType);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
   const scheduleLocked = !value.active && !scheduleActive;
-  const statusLocked = resource.resourceType === 'Practitioner' && !isOwnProvider(resource);
+  const statusLocked = resource.resourceType === 'Practitioner' && !isOwnedBySchedulingWorkspace(resource);
 
   function update(change: Partial<ActorGeneralFields>): void {
     onChange({ ...value, ...change });

@@ -58,7 +58,7 @@ export function hasEditableName(resource: ActorResource): resource is Location |
  * @param practitioner - The provider.
  * @returns True when the workspace created the provider.
  */
-export function isOwnProvider(practitioner: Practitioner): boolean {
+export function isOwnedBySchedulingWorkspace(practitioner: Practitioner): boolean {
   return (practitioner.identifier ?? []).some((identifier) => identifier.system === SCHEDULING_CONFIG_PROVIDER_SYSTEM);
 }
 
