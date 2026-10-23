@@ -26,6 +26,23 @@ import { sendAsyncResponse } from './utils/asyncjobexecutor';
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
 /**
+ * Response headers that describe the connection or where the message ends.
+ * These belong to the server: a streaming bot only supplies a body of unknown length.
+ * If a bot could declare the end of its own response (i.e., "Content-Length: 0") and keep writing,
+ * those bytes would be read as the response to the next request on a connection reused by a reverse proxy.
+ */
+const SERVER_CONTROLLED_HEADERS = new Set([
+  'connection',
+  'content-length',
+  'keep-alive',
+  'proxy-connection',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+]);
+
+/**
  * Handles HTTP requests for the execute operation.
  * First reads the bot and makes sure it is valid and the user has access to it.
  * Then executes the bot.
@@ -79,9 +96,15 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
     responseStream = Object.assign(res, {
       startStreaming: (statusCode: number, headers: Record<string, string>): void => {
         if (!res.headersSent) {
+          // Only final status codes: a 1xx response is not the end of the HTTP exchange
+          if (!Number.isInteger(statusCode) || statusCode < 200 || statusCode > 599) {
+            throw new OperationOutcomeError(badRequest(`Invalid streaming status code: ${statusCode}`));
+          }
           res.status(statusCode);
           for (const [key, value] of Object.entries(headers)) {
-            res.setHeader(key, value);
+            if (!SERVER_CONTROLLED_HEADERS.has(key.toLowerCase())) {
+              res.setHeader(key, value);
+            }
           }
           res.flushHeaders();
         }
