@@ -399,6 +399,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
           value={fields.color}
           onChange={(color) => update({ color })}
           serviceReference={service && getReferenceString(service)}
+          serviceName={serviceName}
         />
         <Checkbox.Group
           label="Booking requirements"

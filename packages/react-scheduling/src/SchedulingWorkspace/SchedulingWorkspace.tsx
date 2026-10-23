@@ -23,7 +23,7 @@ import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFin
 import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
-import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
+import { fallbackColorIndex, getSchedulingColor, resolveSchedulingColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
@@ -253,9 +253,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       services.has(reference) || medplum.getCachedReference({ reference }) !== undefined;
     // The color the HealthcareService names, or else one picked by its reference, so it holds
     // whichever week is on show, for everyone, and as other service types come and go.
-    const serviceColor = (reference: string): keyof typeof theme.colors => {
+    const serviceColor = (reference: string): string => {
       const service = services.get(reference) ?? medplum.getCachedReference<HealthcareService>({ reference });
-      return resolveThemeColor(theme, getSchedulingColor(service), fallbackColorIndex(reference));
+      return resolveSchedulingColor(theme, getSchedulingColor(service), fallbackColorIndex(reference));
     };
     const actorsOnShow = new Set(
       activeCandidates

@@ -6,9 +6,10 @@ import * as MultiCalendarStories from './MultiCalendar.stories';
 # Viewing multiple Schedules in a single calendar UI
 
 Pass an array of objects as the `sources` prop. You may specify the name of a
-Mantine theme color to use for the appointments of a source as its `color`
-attribute; slots are drawn in gray, whichever source they come from. You may
-also specify this on the Schedule included in a source via a custom extension:
+Mantine theme color, or a hex code such as `#2f9e44`, to use for the appointments
+of a source as its `color` attribute; slots are drawn in gray, whichever source
+they come from. You may also specify this on the Schedule included in a source
+via a custom extension:
 
 ```
 {
@@ -24,8 +25,8 @@ also specify this on the Schedule included in a source via a custom extension:
 }
 ```
 
- If the color value is not valid under the current Mantine theme, it is
- ignored. If no color is passed, an arbitrary color will be assigned.
+ If the color value is neither a hex code nor valid under the current Mantine
+ theme, it is ignored. If no color is passed, an arbitrary color will be assigned.
 
 <Canvas of={MultiCalendarStories.Basic} />
 
