@@ -326,7 +326,7 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
  * Login fields that project admins may read.
  * Everything else, including codes, cookies, and refresh secrets, is hidden.
  */
-const projectAdminLoginFields = [
+const projectAdminLoginFields = new Set([
   'id',
   'meta',
   'client',
@@ -345,7 +345,7 @@ const projectAdminLoginFields = [
   'remoteAddress',
   'userAgent',
   'basedOn',
-];
+]);
 
 let loginHiddenFields: string[] | undefined;
 
@@ -356,7 +356,7 @@ let loginHiddenFields: string[] | undefined;
  */
 function getLoginHiddenFields(): string[] {
   loginHiddenFields ??= Object.keys(getDataType('Login').elements).filter(
-    (field) => !projectAdminLoginFields.includes(field)
+    (field) => !projectAdminLoginFields.has(field)
   );
   return loginHiddenFields;
 }
