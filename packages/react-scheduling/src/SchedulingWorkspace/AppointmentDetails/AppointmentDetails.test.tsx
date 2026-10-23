@@ -352,7 +352,7 @@ describe('AppointmentDetails', () => {
       participant: [{ status: 'accepted', actor: createReference(ElderJordanPatient) }],
     });
 
-    expect(await screen.findByText('MRN-0041')).toBeInTheDocument();
+    expect(await screen.findByText('100041')).toBeInTheDocument();
     expect(screen.getByText('MRN')).toBeInTheDocument();
   });
 
@@ -915,7 +915,7 @@ describe('AppointmentDetails editing', () => {
     await screen.findByText('Miles Cooper');
 
     await removePill('Miles Cooper');
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
     await clickSave();
 
     const stored = await medplum.readResource('Appointment', AUTHORIZED_APPOINTMENT.id);
@@ -974,7 +974,7 @@ describe('AppointmentDetails editing', () => {
     await medplum.createResource(withoutPatient);
     renderEditable(withoutPatient);
 
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
     await clickSave();
 
     const stored = await medplum.readResource('Appointment', withoutPatient.id);

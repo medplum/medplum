@@ -1159,7 +1159,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       await clickBook();
 
       // Reported to the instant that got booked: a host drawing it is drawing the visit itself.
@@ -1285,7 +1285,7 @@ describe('AppointmentProposalForm', () => {
 
       // The name is on both rows, so the birth date and the medical record
       // number under it are the only things separating them.
-      expect(await screen.findByText(patientDetail(ElderJordanPatient, 'MRN-0041'))).toBeInTheDocument();
+      expect(await screen.findByText(patientDetail(ElderJordanPatient, '100041'))).toBeInTheDocument();
       expect(screen.getByText(patientDetail(YoungerJordanPatient))).toBeInTheDocument();
       expect(screen.getAllByText('Jordan Reyes')).toHaveLength(2);
     });
@@ -1305,23 +1305,23 @@ describe('AppointmentProposalForm', () => {
       setup(medplum, { mrnSystem: MRN_SYSTEM });
       await typeInAutocomplete(field(/patient/i), 'Whitfield');
 
-      expect(await screen.findByText(patientDetail(UntypedMrnPatient, 'MRN-0099'))).toBeInTheDocument();
+      expect(await screen.findByText(patientDetail(UntypedMrnPatient, '100099'))).toBeInTheDocument();
 
       // Named that way, the number finds Sam too.
-      await typeInAutocomplete(field(/patient/i), 'MRN-0099');
-      expect(await screen.findByText(patientDetail(UntypedMrnPatient, 'MRN-0099'))).toBeInTheDocument();
+      await typeInAutocomplete(field(/patient/i), '100099');
+      expect(await screen.findByText(patientDetail(UntypedMrnPatient, '100099'))).toBeInTheDocument();
     });
 
     test('Finds a patient by medical record number, and only by that number', async () => {
       setup(medplum);
-      await typeInAutocomplete(field(/patient/i), 'MRN-0041');
+      await typeInAutocomplete(field(/patient/i), '100041');
 
-      expect(await screen.findByText(patientDetail(ElderJordanPatient, 'MRN-0041'))).toBeInTheDocument();
+      expect(await screen.findByText(patientDetail(ElderJordanPatient, '100041'))).toBeInTheDocument();
       expect(screen.queryByText(patientDetail(YoungerJordanPatient))).not.toBeInTheDocument();
 
       // Sam's identifier is the same shape, but without `mrnSystem` nothing says it
       // is a medical record number, so matching it would offer a stranger's number.
-      await typeInAutocomplete(field(/patient/i), 'MRN-0099');
+      await typeInAutocomplete(field(/patient/i), '100099');
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
       expect(screen.queryByText('Sam Whitfield')).not.toBeInTheDocument();
     });
@@ -1335,13 +1335,13 @@ describe('AppointmentProposalForm', () => {
         birthDate: '1970-08-09',
         identifier: [
           { type: { coding: [MRN_IDENTIFIER_TYPE] }, value: 'JOR' },
-          { system: MRN_SYSTEM, value: 'MRN-0100' },
+          { system: MRN_SYSTEM, value: '100100' },
         ],
       });
       setup(medplum, { mrnSystem: MRN_SYSTEM });
 
       // The row shows the typed number, but the project's own finds them too.
-      await typeInAutocomplete(field(/patient/i), 'MRN-0100');
+      await typeInAutocomplete(field(/patient/i), '100100');
       expect(await screen.findByText('Pat Quinn')).toBeInTheDocument();
 
       // All of Pat's other number, and the start of Jordan Reyes's name: the exact
@@ -1520,7 +1520,7 @@ describe('AppointmentProposalForm', () => {
     await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
     await openTimeFinder();
     await chooseFirstOfferedTime();
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
   }
 
   describe('Values a designated visit type cannot be booked without', () => {
@@ -1607,7 +1607,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       expect(bookButton()).toBeDisabled();
 
       await enterCode(/diagnosis code/i, DiagnosisCodes[0]);

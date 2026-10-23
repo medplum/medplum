@@ -481,7 +481,7 @@ export async function fillBooking(): Promise<void> {
   await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /**
@@ -496,7 +496,7 @@ export async function fillAuthorizedBooking(): Promise<void> {
   await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /** Confirms the booking. */

@@ -441,7 +441,7 @@ describe('SchedulingWorkspace booking', () => {
       const proposed = proposedTime();
       expect(markedTime()).toBe(TUESDAY_MORNING.toISOString());
 
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       await clickBook();
 
       // Drawn at the instant that got booked, not merely somewhere else.
