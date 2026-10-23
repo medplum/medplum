@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Coding, QuestionnaireResponseItem, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
+import { useMemo } from 'react';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
@@ -18,6 +19,10 @@ export interface CodingInputProps
 export function CodingInput(props: CodingInputProps): JSX.Element {
   const { defaultValue, value, onChange, withHelpText, response, ...rest } = props;
   const initialValue = response?.answer?.[0]?.valueCoding ?? defaultValue;
+  const controlledValue = useMemo(
+    () => (value === undefined ? undefined : value && codingToValueSetElement(value)),
+    [value]
+  );
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newValue = newValues[0];
@@ -29,7 +34,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
   return (
     <ValueSetAutocomplete
       defaultValue={initialValue ? codingToValueSetElement(initialValue) : undefined}
-      value={value === undefined ? undefined : value && codingToValueSetElement(value)}
+      value={controlledValue}
       maxValues={1}
       onChange={handleChange}
       withHelpText={withHelpText ?? true}

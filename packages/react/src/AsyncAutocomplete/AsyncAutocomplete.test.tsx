@@ -564,6 +564,28 @@ describe('AsyncAutocomplete', () => {
       expect(pills().queryByText('Cherry')).not.toBeInTheDocument();
     });
 
+    test('keeps the last selection when value changes to undefined', () => {
+      const props = { toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={[apple, banana]} />);
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={undefined} />);
+      expect(pills().getByText('Apple')).toBeInTheDocument();
+      expect(pills().getByText('Banana')).toBeInTheDocument();
+    });
+
+    test('warns once when switching between controlled and uncontrolled', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const props = { name: 'fruit', toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={[apple]} />);
+      expect(warn).not.toHaveBeenCalled();
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={undefined} />);
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={[apple]} />);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain('"fruit" switched from controlled to uncontrolled');
+      warn.mockRestore();
+    });
+
     test('reports edits through onChange without applying them', async () => {
       const onChange = vi.fn();
       render(

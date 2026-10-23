@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
+import { useMemo } from 'react';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
@@ -27,6 +28,10 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     valuePath: _valuePath,
     ...rest
   } = props;
+  const controlledValue = useMemo(
+    () => (value === undefined ? undefined : ((value && codeableConceptToValueSetElement(value)) ?? null)),
+    [value]
+  );
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     if (onChange) {
@@ -37,7 +42,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
   return (
     <ValueSetAutocomplete
       defaultValue={defaultValue && codeableConceptToValueSetElement(defaultValue)}
-      value={value === undefined ? undefined : ((value && codeableConceptToValueSetElement(value)) ?? null)}
+      value={controlledValue}
       onChange={handleChange}
       withHelpText={withHelpText ?? true}
       {...rest}

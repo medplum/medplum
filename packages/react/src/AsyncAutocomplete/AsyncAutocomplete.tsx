@@ -26,8 +26,8 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly defaultValue?: T | T[];
   /**
    * The selected items. Passing this (`null` or `[]` for none) makes the component controlled: user
-   * edits only call `onChange`. Switching between controlled and uncontrolled after mount is not supported.
-   * Don't pass it with `maxValues={0}`.
+   * edits only call `onChange`. Changing it to `undefined` makes the component uncontrolled, keeping the
+   * last selection, as a native `<input>` does. Don't pass it with `maxValues={0}`.
    */
   readonly value?: T | readonly T[] | null;
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
@@ -86,7 +86,15 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
   const controlledItems = useMemo(() => (value === undefined ? undefined : toItems(value)), [value]);
   const [uncontrolledItems, setUncontrolledItems] = useState(() => toItems(defaultValue));
+  const [prevControlledItems, setPrevControlledItems] = useState(controlledItems);
+  if (controlledItems !== prevControlledItems) {
+    setPrevControlledItems(controlledItems);
+    if (controlledItems === undefined) {
+      setUncontrolledItems(prevControlledItems ?? []);
+    }
+  }
   const items = controlledItems ?? uncontrolledItems;
+  useWarnOnModeSwitch(value !== undefined, name);
   const setItems = useCallback(
     (newItems: T[]): void => {
       if (controlledItems === undefined) {
@@ -396,6 +404,21 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       </Combobox.Dropdown>
     </Combobox>
   );
+}
+
+function useWarnOnModeSwitch(controlled: boolean, name: string | undefined): void {
+  const controlledRef = useRef(controlled);
+  const warnedRef = useRef(false);
+  useEffect(() => {
+    if (import.meta.env.NODE_ENV !== 'production' && controlled !== controlledRef.current && !warnedRef.current) {
+      warnedRef.current = true;
+      console.warn(
+        `AsyncAutocomplete${name ? ` "${name}"` : ''} switched from ${controlled ? 'uncontrolled to controlled' : 'controlled to uncontrolled'}` +
+          ' because `value` changed to or from undefined. Pass null or [] for an empty controlled value.'
+      );
+    }
+    controlledRef.current = controlled;
+  }, [controlled, name]);
 }
 
 function toItems<T>(value: T | readonly T[] | null | undefined): T[] {
