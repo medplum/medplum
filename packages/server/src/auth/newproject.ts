@@ -47,6 +47,12 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
+  if (login.project?.reference && login.project.reference !== 'Project/new') {
+    // The login was started for an existing project, so it cannot be used outside of that project
+    sendOutcome(res, badRequest('Invalid project'));
+    return;
+  }
+
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   if (config.requireVerifiedEmailForProjectCreation && !user.emailVerified) {

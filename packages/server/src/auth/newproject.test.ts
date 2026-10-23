@@ -455,6 +455,34 @@ describe('New project', () => {
     expect(res2).toHaveStatus(200);
   });
 
+  test('Login for an existing project', async () => {
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res1).toHaveStatus(200);
+
+    // Simulate a login that was started for an existing project
+    await getGlobalSystemRepo().patchResource('Login', res1.body.login, [
+      { op: 'add', path: '/project', value: { reference: `Project/${randomUUID()}` } },
+    ]);
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Hamilton Project',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body).toMatchObject(badRequest('Invalid project'));
+  });
+
   test('Register disabled', async () => {
     // Create the user while registration is still enabled
     const email = `alex${randomUUID()}@example.com`;
