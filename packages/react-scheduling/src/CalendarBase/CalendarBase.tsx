@@ -28,7 +28,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { getPatientParticipant } from '../actors';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
-import type { DateTimeRange } from '../types';
+import type { CalendarSelection, DateTimeRange } from '../types';
 import { AppointmentPatientName } from './AppointmentPatientName';
 import classes from './CalendarBase.module.css';
 import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
@@ -158,7 +158,7 @@ export interface CalendarBaseProps extends Omit<
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
-  onSelectInterval?: (interval: DateTimeRange) => void;
+  onSelectInterval?: (interval: CalendarSelection) => void;
   selection?: DateTimeRange;
   /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
   selectedId?: string;
@@ -378,7 +378,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           if (!eventInfo.jsEvent) {
             return;
           }
-          onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
+          onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end, allDay: eventInfo.allDay });
         }}
         eventContent={renderEventContent}
         dayHeaderContent={renderDayHeaderContent}

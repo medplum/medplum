@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { useEffect } from 'react';
 import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
+import { formatZonedDateTimeInput } from '../AppointmentFinder/AppointmentFinder.times';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
 import { installValueSetStub } from '../stories/mockValueSet';
@@ -49,6 +50,7 @@ import {
   openTimeFinder,
   patientDetail,
   setupBookingClient,
+  typedTimeField,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
@@ -95,6 +97,7 @@ const CLICK_TARGETS = {
   'tuesday morning': TUESDAY_MORNING,
   'tuesday afternoon': TUESDAY_AFTERNOON,
   thursday: THURSDAY_MORNING,
+  'thursday all day': new Date(2026, 7, 20),
 };
 
 type ClickTarget = keyof typeof CLICK_TARGETS;
@@ -109,7 +112,7 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
   MultiCalendar: (props: {
     sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean; label?: string }[];
-    onSelectInterval?: (interval: { start: Date; end: Date }) => void;
+    onSelectInterval?: (interval: { start: Date; end: Date; allDay?: boolean }) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
     onRangeChange?: (range: { start: Date; end: Date }) => void;
     selection?: { start: Date; end: Date };
@@ -128,7 +131,13 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
             // A new Date per click, as the real calendar reports them: handing back one
             // instance would make every same-day click look identical by reference and
             // hide whether the day is actually being compared.
-            onClick={() => props.onSelectInterval?.({ start: new Date(target), end: new Date(target) })}
+            onClick={() =>
+              props.onSelectInterval?.({
+                start: new Date(target),
+                end: new Date(target),
+                allDay: name.endsWith('all day'),
+              })
+            }
           >
             click {name}
           </button>
@@ -415,6 +424,32 @@ describe('SchedulingWorkspace booking', () => {
 
     expect(hasPill('Ultrasound Imaging')).toBe(true);
     expect(chosenTimeField()).toBeInTheDocument();
+  });
+
+  describe('Starting a typed time from the click', () => {
+    async function openTypedTime(target: ClickTarget): Promise<void> {
+      renderWithMedplum(<SchedulingWorkspace canBypassSchedulingRules />, medplum);
+      await clickCalendar(target);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+    }
+
+    test('Starts on the time clicked, and moves to the next one clicked', async () => {
+      await openTypedTime('tuesday morning');
+      expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(TUESDAY_MORNING, 'America/New_York'));
+      fireEvent.change(typedTimeField(), { target: { value: '2026-08-18T13:07' } });
+
+      await clickCalendar('tuesday afternoon');
+
+      expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(TUESDAY_AFTERNOON, 'America/New_York'));
+    });
+
+    test('Starts empty for a whole day picked in month view', async () => {
+      await openTypedTime('thursday all day');
+
+      expect(typedTimeField()).toHaveValue('');
+    });
   });
 
   describe('Marking the time being booked', () => {
