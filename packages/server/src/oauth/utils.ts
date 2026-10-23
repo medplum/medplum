@@ -44,7 +44,7 @@ import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '.
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
-import { getInactiveReason } from '../fhir/projectmembership';
+import { getInactiveReason, membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
@@ -500,8 +500,13 @@ export async function setLoginMembership(
     project.setting?.find((s) => s.name === 'googleAuthProfilePictures' && s.valueBoolean)
   ) {
     try {
-      const [resourceType, id] = parseReference(membership.profile);
-      await projectSystemRepo.patchResource(resourceType, id, [
+      const profile = await readMembershipReference(
+        projectSystemRepo,
+        membership,
+        membership.profile,
+        membershipProfileTypes
+      );
+      await projectSystemRepo.patchResource(profile.resourceType, profile.id, [
         { op: 'test', path: '/photo', value: undefined },
         { op: 'add', path: '/photo', value: [{ url: login.pictureUrl, contentType: 'image/jpeg' }] },
       ]);

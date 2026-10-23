@@ -2221,11 +2221,10 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy in different project
+      // Create an access policy without a project
       // This should trigger an error when the subscription is executed
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
-        meta: { project: repo.currentProject()?.id },
         resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
       });
 
@@ -2293,11 +2292,10 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy in different project
+      // Create an access policy without a project
       // This should trigger an error when the subscription is executed
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
-        meta: { project: repo.currentProject()?.id },
         resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
       });
 
@@ -2792,11 +2790,10 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        // Create an access policy in different project
+        // Create an access policy without a project
         // This should trigger an error when the subscription is executed
         const accessPolicy = await systemRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          meta: { project: repo.currentProject()?.id },
           resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
@@ -2863,7 +2860,6 @@ describe('Subscription Worker', () => {
         // An access policy that restricts Patient to a specific ID that will never match our patient.
         const accessPolicy = await systemRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          meta: { project: repo.currentProject()?.id },
           resource: [
             { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
             { resourceType: 'Subscription' },
