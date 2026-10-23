@@ -189,7 +189,8 @@ async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Pr
 
   const result = [];
   for (const login of logins) {
-    if (!login.membership || login.revoked) {
+    // A login that has not been granted yet is not a session
+    if (!login.membership || !login.granted || login.revoked) {
       continue;
     }
 

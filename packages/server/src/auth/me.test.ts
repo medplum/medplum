@@ -296,6 +296,46 @@ describe('Me', () => {
     expect(res4.body.security.memberships).toHaveLength(1);
   });
 
+  test('Logins in progress are not listed as sessions', async () => {
+    const email = `alex${randomUUID()}@example.com`;
+    const password = randomUUID();
+
+    const { login, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Sessions in /auth/me',
+        email,
+        password,
+      })
+    );
+
+    // Sign in again, but do not redeem the code yet
+    const res1 = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ email, password, scope: 'openid', codeChallenge: 'xyz', codeChallengeMethod: 'plain' });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.code).toBeDefined();
+
+    // The pending login is not listed
+    const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.security.sessions.map((s: any) => s.id)).toStrictEqual([login.id]);
+
+    // Redeem the code
+    const res4 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({ grant_type: 'authorization_code', code: res1.body.code, code_verifier: 'xyz' });
+    expect(res4).toHaveStatus(200);
+
+    // Now it is a session
+    const res5 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res5).toHaveStatus(200);
+    expect(res5.body.security.sessions.map((s: any) => s.id)).toContainExactly([login.id, res1.body.login]);
+  });
+
   test('Project features are returned in /auth/me', async () => {
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();
