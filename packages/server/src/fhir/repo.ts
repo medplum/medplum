@@ -1962,12 +1962,13 @@ export class Repository extends FhirRepository implements Disposable {
           );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
-            getLogger().warn('Invalid access policy criteria', {
+            getLogger().error('Invalid access policy criteria', {
               accessPolicy: accessPolicy.id,
               resourceType: policy.resourceType,
               criteria: policy.criteria,
             });
-            return; // Ignore invalid access policy criteria
+            // Fail closed: a criteria that cannot be applied must not leave the type unfiltered
+            throw new OperationOutcomeError(forbidden);
           }
 
           // Add subquery for access policy criteria.

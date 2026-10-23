@@ -2959,6 +2959,22 @@ describe('AccessPolicy', () => {
       ).resolves.toBeDefined();
     }));
 
+  test('Malformed criteria denies access instead of granting it', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+      // Bypasses write-time validation, as a policy stored before the check existed would
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', criteria: 'identifier=123' }],
+        },
+      });
+
+      await expect(repo2.readResource('Patient', patient.id)).rejects.toThrow();
+      await expect(repo2.search(parseSearchRequest('Patient'))).rejects.toThrow();
+    }));
+
   test('Wildcard policy with criteria', async () =>
     withTestContext(async () => {
       const compartment = 'Patient/' + randomUUID();
