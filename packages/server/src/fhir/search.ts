@@ -16,6 +16,7 @@ import {
   formatSearchQuery,
   getDataType,
   getSearchParameter,
+  getSearchParameterDetails,
   invalidSearchOperator,
   isChainedSearchFilter,
   isUUID,
@@ -24,6 +25,7 @@ import {
   parseFhirPath,
   parseFilterParameter,
   parseParameter,
+  projectAdminResourceTypes,
   SearchParameterType,
   serverError,
   splitN,
@@ -117,6 +119,7 @@ export async function searchImpl<T extends Resource>(
   options?: SearchOptions
 ): Promise<Bundle<WithId<T>>> {
   validateSearchResourceTypes(repo, searchRequest);
+  validateHiddenFieldSearch(repo, searchRequest);
   applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
@@ -150,6 +153,7 @@ export async function searchByReferenceImpl<T extends Resource>(
   referenceValues: string[]
 ): Promise<Record<string, WithId<T>[]>> {
   validateSearchResourceTypes(repo, searchRequest);
+  validateHiddenFieldSearch(repo, searchRequest);
 
   // Hold on to references to parts of the SelectQuery that need to be modified per reference value
   const referenceConditions: Condition[] = [];
@@ -257,6 +261,59 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
   for (const include of searchRequest.revInclude ?? EMPTY) {
     validateSearchResourceType(repo, include.resourceType as ResourceType);
   }
+}
+
+/**
+ * Rejects filters and sort rules on search parameters that read a field hidden by the access policy.
+ * Otherwise which resources match, or their order, would reveal the hidden value.
+ * @param repo - The user's repository.
+ * @param searchRequest - The search request.
+ */
+function validateHiddenFieldSearch(repo: Repository, searchRequest: SearchRequest): void {
+  const accessPolicy = repo.effectiveAccessPolicy();
+  if (!accessPolicy?.resource) {
+    return;
+  }
+  const codes = [
+    ...(searchRequest.filters ?? EMPTY).map((f) => f.code),
+    ...(searchRequest.sortRules ?? EMPTY).map((r) => r.code),
+  ];
+  for (const resourceType of searchRequest.types ?? [searchRequest.resourceType]) {
+    const hiddenFields = accessPolicy.resource
+      .filter(
+        (policy) =>
+          (policy.resourceType === resourceType ||
+            (policy.resourceType === '*' && !projectAdminResourceTypes.includes(resourceType))) &&
+          (!policy.interaction || policy.interaction.includes(AccessPolicyInteraction.SEARCH))
+      )
+      .flatMap((policy) => policy.hiddenFields ?? EMPTY);
+    if (hiddenFields.length === 0) {
+      continue;
+    }
+    for (const code of codes) {
+      const param = getSearchParameter(resourceType, code);
+      const paths = param ? getSearchParameterDetails(resourceType, param).paths : undefined;
+      if (paths?.some((path) => hiddenFields.some((field) => fieldPathsOverlap(path, field)))) {
+        throw new OperationOutcomeError(badRequest(`Cannot search on hidden field: ${code}`));
+      }
+    }
+  }
+}
+
+/**
+ * Returns true if one path contains the other, e.g. "name" and "name.family".
+ * A search path such as "value" also overlaps choice-type fields such as "valueQuantity".
+ * @param searchPath - Element path read by a search parameter.
+ * @param hiddenField - Hidden field from the access policy.
+ * @returns True if the paths overlap.
+ */
+function fieldPathsOverlap(searchPath: string, hiddenField: string): boolean {
+  const field = hiddenField.replace('[x]', '');
+  if (searchPath === field || searchPath.startsWith(field + '.')) {
+    return true;
+  }
+  const next = field.charAt(searchPath.length);
+  return field.startsWith(searchPath) && (next === '.' || (next >= 'A' && next <= 'Z'));
 }
 
 /**

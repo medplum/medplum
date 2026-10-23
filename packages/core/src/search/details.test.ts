@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { globalSchema, indexSearchParameterBundle } from '../types';
+import { getSearchParameter, globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { deriveIdentifierSearchParameter } from './derived';
 import { SearchParameterType, getSearchParameterDetails } from './details';
@@ -34,6 +34,17 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('Patient', individualPhoneticParam);
     expect(details).toBeDefined();
     expect(details.array).toStrictEqual(true);
+  });
+
+  test.each([
+    ['Patient', 'family', ['name.family']],
+    ['Patient', '_lastUpdated', ['meta.lastUpdated']],
+    ['Observation', 'patient', ['subject']],
+    ['Observation', 'value-quantity', ['value']],
+    ['Observation', 'combo-code', ['code', 'component.code']],
+  ])('Paths %s?%s', (resourceType, code, paths) => {
+    const param = getSearchParameter(resourceType, code) as SearchParameter;
+    expect(getSearchParameterDetails(resourceType, param).paths).toStrictEqual(paths);
   });
 
   test('Boolean param', () => {
