@@ -5,6 +5,7 @@ import {
   badRequest,
   createReference,
   EMPTY,
+  getDataType,
   getReferenceString,
   isNotFound,
   isResource,
@@ -322,6 +323,45 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
 }
 
 /**
+ * Login fields that project admins may read.
+ * Everything else, including codes, cookies, and refresh secrets, is hidden.
+ */
+const projectAdminLoginFields = [
+  'id',
+  'meta',
+  'client',
+  'profileType',
+  'project',
+  'user',
+  'membership',
+  'scope',
+  'authMethod',
+  'authTime',
+  'mfaVerified',
+  'expiresAt',
+  'granted',
+  'revoked',
+  'launch',
+  'remoteAddress',
+  'userAgent',
+  'basedOn',
+];
+
+let loginHiddenFields: string[] | undefined;
+
+/**
+ * Returns the Login fields hidden from project admins.
+ * Derived from the schema so that new Login fields are hidden by default.
+ * @returns The hidden Login fields.
+ */
+function getLoginHiddenFields(): string[] {
+  loginHiddenFields ??= Object.keys(getDataType('Login').elements).filter(
+    (field) => !projectAdminLoginFields.includes(field)
+  );
+  return loginHiddenFields;
+}
+
+/**
  * Updates the access policy to include project admin rules.
  * This includes ensuring no admin rights for non-admins and restricted access for admins.
  * @param project - The project.
@@ -384,6 +424,13 @@ function applyProjectAdminAccessPolicy(
       {
         resourceType: 'Cron',
         criteria: `Cron?_project=${resolveId(membership.project)}`,
+      },
+      {
+        resourceType: 'Login',
+        criteria: `Login?_project=${resolveId(membership.project)}`,
+        hiddenFields: getLoginHiddenFields(),
+        // No history: versions from before the Login joined the project match no policy, so nothing would be hidden
+        interaction: ['read', 'search'],
       },
       {
         resourceType: 'Package',
