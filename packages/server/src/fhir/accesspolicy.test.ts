@@ -1270,6 +1270,84 @@ describe('AccessPolicy', () => {
       expect(historyBundle.entry?.[0]?.resource?.name).toBeUndefined();
     }));
 
+  test('Hidden fields on patch', () =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides Patient name
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['name'],
+            },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
+      });
+
+      // Empty patch returns the resource as it would be read
+      const unmodified = await repo2.patchResource<Patient>('Patient', patient.id, { resourceType: 'Parameters' });
+      expect(unmodified.birthDate).toBe('1970-01-01');
+      expect(unmodified.name).toBeUndefined();
+
+      // Patch operations cannot observe hidden fields
+      try {
+        await repo2.patchResource('Patient', patient.id, [{ op: 'test', path: '/name/0/family', value: 'x' }]);
+        throw new Error('Should not be able to test hidden field');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toContain('Test failed');
+        expect(normalizeErrorString(err)).not.toContain('Smith');
+      }
+      await expect(
+        repo2.patchResource('Patient', patient.id, [{ op: 'copy', from: '/name/0/family', path: '/language' }])
+      ).rejects.toThrow();
+
+      // Hidden fields are preserved by a successful patch
+      const patched = await repo2.patchResource<Patient>('Patient', patient.id, [
+        { op: 'replace', path: '/birthDate', value: '1970-01-02' },
+      ]);
+      expect(patched.birthDate).toBe('1970-01-02');
+      expect(patched.name).toBeUndefined();
+      expect(await systemRepo.readResource<Patient>('Patient', patient.id)).toMatchObject({
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-02',
+      });
+    }));
+
+  test.each<[string, AccessPolicyResource[]]>([
+    ['no access', [{ resourceType: 'Observation' }]],
+    ['readonly access', [{ resourceType: 'Patient', readonly: true }]],
+    ['update without read access', [{ resourceType: 'Patient', interaction: ['update'] }]],
+  ])('Patch requires read and update access (%s)', (_, resource) =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resourceType: 'AccessPolicy', resource },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await expect(repo2.patchResource('Patient', patient.id, { resourceType: 'Parameters' })).rejects.toThrow(
+        'Forbidden'
+      );
+      await expect(
+        repo2.patchResource('Patient', patient.id, [{ op: 'test', path: '/name/0/family', value: 'x' }])
+      ).rejects.toThrow('Forbidden');
+    })
+  );
+
   test('Nested hidden fields on read', () =>
     withTestContext(async () => {
       const { repo: repo2, project } = await createTestProject({
