@@ -274,10 +274,6 @@ function validateHiddenFieldSearch(repo: Repository, searchRequest: SearchReques
   if (!accessPolicy?.resource) {
     return;
   }
-  const codes = [
-    ...(searchRequest.filters ?? EMPTY).map((f) => f.code),
-    ...(searchRequest.sortRules ?? EMPTY).map((r) => r.code),
-  ];
   for (const resourceType of searchRequest.types ?? [searchRequest.resourceType]) {
     const hiddenFields = accessPolicy.resource
       .filter(
@@ -290,7 +286,7 @@ function validateHiddenFieldSearch(repo: Repository, searchRequest: SearchReques
     if (hiddenFields.length === 0) {
       continue;
     }
-    for (const code of codes) {
+    for (const { code } of [...(searchRequest.filters ?? EMPTY), ...(searchRequest.sortRules ?? EMPTY)]) {
       const param = getSearchParameter(resourceType, code);
       const paths = param ? getSearchParameterDetails(resourceType, param).paths : undefined;
       if (paths?.some((path) => hiddenFields.some((field) => fieldPathsOverlap(path, field)))) {
@@ -309,9 +305,13 @@ function validateHiddenFieldSearch(repo: Repository, searchRequest: SearchReques
  */
 function fieldPathsOverlap(searchPath: string, hiddenField: string): boolean {
   const field = hiddenField.replace('[x]', '');
+  // The search reads the hidden field or something inside it: "name" hides "name" and "name.family"
   if (searchPath === field || searchPath.startsWith(field + '.')) {
     return true;
   }
+  // The search reads a parent of the hidden field: "name.family" hides "name".
+  // An uppercase letter after the search path marks a choice-type variant: "valueQuantity" hides "value".
+  // Any other character means a different field: "identifier" does not hide "id".
   const next = field.charAt(searchPath.length);
   return field.startsWith(searchPath) && (next === '.' || (next >= 'A' && next <= 'Z'));
 }
