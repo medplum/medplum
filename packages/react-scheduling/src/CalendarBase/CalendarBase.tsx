@@ -324,9 +324,9 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const revealMs = revealDate?.getTime();
   useEffect(() => {
     if (revealMs !== undefined) {
-      calendarRef.current?.getApi().gotoDate(revealMs);
+      controller.gotoDate(revealMs);
     }
-  }, [revealMs]);
+  }, [controller, revealMs]);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
