@@ -1626,15 +1626,13 @@ export class Repository extends FhirRepository implements Disposable {
           }
 
           // Check before evaluating the patch, which can disclose resource content (e.g. a failed "test" operation)
-          (resource.meta as Meta).compartment = txRepo.getCompartments(resource); // Update compartments with latest rules
-          const policy = txRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource);
-          if (!policy) {
+          resource.meta ??= {};
+          resource.meta.compartment = txRepo.getCompartments(resource); // Update compartments with latest rules
+          if (!txRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource)) {
             throw new OperationOutcomeError(forbidden);
           }
           // Hidden fields are restored from the existing resource on update
-          for (const field of policy.hiddenFields ?? EMPTY) {
-            removeField(resource, field);
-          }
+          txRepo.removeHiddenFields(resource, AccessPolicyInteraction.UPDATE, true);
 
           if (Array.isArray(patch)) {
             patchObject(resource, patch);
@@ -2410,14 +2408,20 @@ export class Repository extends FhirRepository implements Disposable {
    * Removes hidden fields from a resource as defined by the access policy.
    * This should be called for any "read" operation.
    * @param input - The input resource.
+   * @param interaction - The interaction whose access policy defines the hidden fields.
+   * @param extendedMode - Whether to keep internal meta fields. Defaults to the context's extended mode.
    * @returns The resource with hidden fields removed.
    */
-  removeHiddenFields<T extends Resource>(input: T): T {
-    const policy = satisfiedAccessPolicy(input, AccessPolicyInteraction.READ, this.context.accessPolicy);
+  removeHiddenFields<T extends Resource>(
+    input: T,
+    interaction: AccessPolicyInteraction = AccessPolicyInteraction.READ,
+    extendedMode = this.context.extendedMode
+  ): T {
+    const policy = satisfiedAccessPolicy(input, interaction, this.context.accessPolicy);
     for (const field of policy?.hiddenFields ?? EMPTY) {
       removeField(input, field);
     }
-    if (!this.context.extendedMode && input.meta) {
+    if (!extendedMode && input.meta) {
       const meta = input.meta;
       meta.author = undefined;
       meta.project = undefined;
