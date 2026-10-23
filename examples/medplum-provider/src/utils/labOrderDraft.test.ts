@@ -1,16 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { badRequest, createReference, getReferenceString } from '@medplum/core';
 import type {
+  Coverage,
   Organization,
   Practitioner,
   QuestionnaireResponse,
+  Reference,
   ServiceRequest,
   Specimen,
   Task,
 } from '@medplum/fhirtypes';
+import type { PartialLabOrderInputs } from '@medplum/health-gorilla-core';
+import { LabOrderValidationError } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { getLabOrderDraftDefaults } from './labOrderDraft';
+import type { LabOrderDraftDefaults } from './labOrderDraft';
+import { getLabOrderDraftDefaults, saveLabOrderDraft } from './labOrderDraft';
 
 describe('getLabOrderDraftDefaults', () => {
   let medplum: MockClient;
@@ -203,5 +210,179 @@ describe('getLabOrderDraftDefaults', () => {
       orderNotes: undefined,
       specimenCollectedDateTime: undefined,
     });
+  });
+});
+
+describe('saveLabOrderDraft', () => {
+  const cbc = { system: 'urn:uuid:f:lab', code: 'CBC', display: 'Complete Blood Count' };
+  const bmp = { system: 'urn:uuid:f:lab', code: 'BMP', display: 'Basic Metabolic' };
+  const tsh = { system: 'urn:uuid:f:lab', code: 'TSH', display: 'Thyroid Stimulating Hormone' };
+  let medplum: MockClient;
+  let inputs: PartialLabOrderInputs;
+
+  function aoe(fasting: boolean): QuestionnaireResponse {
+    return {
+      resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
+      item: [{ linkId: 'fasting', answer: [{ valueBoolean: fasting }] }],
+    };
+  }
+
+  beforeEach(async () => {
+    medplum = new MockClient();
+    const lab = await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      name: 'Test Lab',
+      identifier: [{ system: 'https://www.healthgorilla.com', value: 'f-lab' }],
+    });
+    inputs = {
+      patient: HomerSimpson,
+      requester: await medplum.createResource<Practitioner>({ resourceType: 'Practitioner' }),
+      performingLab: lab,
+      selectedTests: [cbc, bmp],
+      testMetadata: {
+        CBC: {
+          priority: 'stat',
+          notes: 'Run first',
+          aoeResponses: aoe(true),
+          // A required AOE answer that is still missing does not block saving a draft
+          aoeQuestionnaire: {
+            resourceType: 'Questionnaire',
+            status: 'active',
+            item: [{ linkId: 'volume', type: 'string', required: true }],
+          },
+        },
+        BMP: { aoeResponses: aoe(false) },
+      },
+      diagnoses: [{ coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Diabetes' }] }],
+      billingInformation: {},
+      orderNotes: 'Fasting',
+      specimenCollectedDateTime: new Date('2024-03-01T10:00:00.000Z'),
+    };
+  });
+
+  test('creates a draft that resumes with the saved values', async () => {
+    const saved = await saveLabOrderDraft(medplum, inputs);
+
+    expect(saved.status).toBe('draft');
+    const defaults = await getLabOrderDraftDefaults(medplum, saved);
+    expect(defaults.tests).toEqual([cbc, bmp]);
+    expect(defaults.testMetadata.CBC).toEqual({
+      priority: 'stat',
+      notes: 'Run first',
+      aoeResponses: expect.objectContaining({ item: aoe(true).item }),
+    });
+    expect(defaults.diagnoses).toEqual(inputs.diagnoses);
+    expect(defaults.billTo).toBeUndefined();
+    expect(defaults.orderNotes).toBe('Fasting');
+    expect(defaults.specimenCollectedDateTime).toEqual(inputs.specimenCollectedDateTime);
+  });
+
+  // Resumes the draft as the form does, so the client cache is warm, then saves it again
+  async function resaveDraft(
+    draft: ServiceRequest,
+    changes: PartialLabOrderInputs
+  ): Promise<{ saved: WithId<ServiceRequest>; defaults: LabOrderDraftDefaults }> {
+    await getLabOrderDraftDefaults(medplum, draft);
+    const saved = await saveLabOrderDraft(medplum, { ...inputs, ...changes }, draft);
+    return { saved, defaults: await getLabOrderDraftDefaults(medplum, saved) };
+  }
+
+  test('updates the draft in place, keeping the fields the form does not set', async () => {
+    const first = await saveLabOrderDraft(medplum, { ...inputs, billingInformation: { billTo: 'patient' } });
+    const otherExtension = { url: 'https://example.com/other', valueString: 'kept' };
+    const draft = await medplum.updateResource({
+      ...first,
+      encounter: { reference: 'Encounter/enc-1' },
+      extension: [...(first.extension ?? []), otherExtension],
+    });
+    const coverage = await medplum.createResource<Coverage>({
+      resourceType: 'Coverage',
+      status: 'active',
+      beneficiary: createReference(HomerSimpson),
+      payor: [{ display: 'Acme Insurance' }],
+    });
+
+    const { saved, defaults } = await resaveDraft(draft, {
+      testMetadata: { CBC: { priority: 'routine', aoeResponses: aoe(false) }, BMP: { aoeResponses: aoe(true) } },
+      billingInformation: { billTo: 'insurance', patientCoverage: [coverage] },
+      orderNotes: 'Not fasting',
+    });
+
+    expect(saved.id).toBe(draft.id);
+    expect(saved.insurance).toEqual([createReference(coverage)]);
+    // Fields the form does not edit are kept, and the form's own extensions are replaced
+    expect(saved.encounter).toEqual({ reference: 'Encounter/enc-1' });
+    expect(saved.extension).toEqual([otherExtension, { url: 'billTo', valueString: 'insurance' }]);
+    expect(defaults).toMatchObject({
+      tests: [cbc, bmp],
+      testMetadata: {
+        CBC: { priority: 'routine', aoeResponses: { item: aoe(false).item } },
+        BMP: { aoeResponses: { item: aoe(true).item } },
+      },
+      billTo: 'insurance',
+      orderNotes: 'Not fasting',
+    });
+  });
+
+  test('replaces the tests, AOE answers and specimen without leaving the old ones behind', async () => {
+    const draft = await saveLabOrderDraft(medplum, inputs);
+    const oldTests = await medplum.searchResources('ServiceRequest', { 'based-on': getReferenceString(draft) });
+    const oldReferences = [
+      ...oldTests.flatMap((test) => [createReference(test), test.supportingInfo?.[0]]),
+      draft.specimen?.[0],
+    ] as Reference[];
+    const collected = new Date('2024-03-02T10:00:00.000Z');
+
+    const { saved, defaults } = await resaveDraft(draft, {
+      selectedTests: [cbc, tsh],
+      testMetadata: { CBC: {}, TSH: { aoeResponses: aoe(true) } },
+      specimenCollectedDateTime: collected,
+    });
+
+    const tests = await medplum.searchResources('ServiceRequest', { 'based-on': getReferenceString(saved) });
+    expect(tests.map((test) => test.code?.coding?.[0]?.code).sort()).toEqual(['CBC', 'TSH']);
+    for (const reference of oldReferences) {
+      await expect(medplum.readReference(reference)).rejects.toThrow();
+    }
+    expect(defaults.testMetadata).toEqual({
+      CBC: { priority: 'routine', notes: undefined, aoeResponses: undefined },
+      TSH: { priority: 'routine', notes: undefined, aoeResponses: expect.objectContaining({ item: aoe(true).item }) },
+    });
+    expect(defaults.specimenCollectedDateTime).toEqual(collected);
+  });
+
+  test('clears the values removed from a resumed draft', async () => {
+    const draft = await saveLabOrderDraft(medplum, inputs);
+
+    const { saved, defaults } = await resaveDraft(draft, {
+      diagnoses: [],
+      orderNotes: undefined,
+      specimenCollectedDateTime: undefined,
+    });
+
+    expect(defaults).toMatchObject({ diagnoses: [], orderNotes: undefined, specimenCollectedDateTime: undefined });
+    expect(saved.specimen).toBeUndefined();
+    await expect(medplum.readReference(draft.specimen?.[0] as Reference)).rejects.toThrow();
+  });
+
+  test('throws when part of the save fails', async () => {
+    vi.spyOn(medplum, 'executeBatch').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'transaction-response',
+      entry: [
+        { response: { status: '201 Created' } },
+        { response: { status: '400 Bad Request', outcome: badRequest('Invalid specimen') } },
+      ],
+    });
+
+    await expect(saveLabOrderDraft(medplum, inputs)).rejects.toThrow('Invalid specimen');
+  });
+
+  test('requires a test to save a draft', async () => {
+    const promise = saveLabOrderDraft(medplum, { ...inputs, selectedTests: [] });
+
+    await expect(promise).rejects.toThrow(LabOrderValidationError);
+    await expect(promise).rejects.toMatchObject({ errors: { selectedTests: expect.anything() } });
   });
 });

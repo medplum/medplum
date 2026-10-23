@@ -2,8 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { Operator } from '@medplum/core';
-import type { ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type { Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { getGlobalSystemRepo } from './repo';
+
+/**
+ * Returns why a membership cannot be used, or undefined if it can.
+ * As with Patient.active, a missing `active` means active.
+ * @param project - The project.
+ * @param membership - The membership, if there is one. Without it, only the project is checked.
+ * @returns The reason the membership or project is inactive, or undefined if both are active.
+ */
+export function getInactiveReason(
+  project: Project,
+  membership?: ProjectMembership
+): 'Profile not active' | 'Project not active' | undefined {
+  if (membership?.active === false) {
+    return 'Profile not active';
+  }
+  if (project.active === false) {
+    return 'Project not active';
+  }
+  return undefined;
+}
 
 /**
  * @param projectId - The ID of the project to search in.

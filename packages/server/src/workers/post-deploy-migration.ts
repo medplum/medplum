@@ -22,6 +22,7 @@ import type {
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
+  completePostDeployMigration,
   enforceStrictMigrationVersionChecks,
   getPostDeployManifestEntry,
   getPostDeployMigration,
@@ -31,7 +32,7 @@ import {
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
-import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
+import { getAsyncJobTracking, getTrackingAsyncJobExecutor, normalizeJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -86,6 +87,7 @@ export async function isClusterCompatible(migrationNumber: number): Promise<bool
 }
 
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
+  job.data = normalizeJobTarget(job.data);
   const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
   const asyncJob = exec.getAsyncJob();
 
@@ -160,16 +162,20 @@ async function runDynamicMigration(
   const asyncJob = exec.getAsyncJob();
   const results: MigrationActionResult[] = [];
   try {
-    await withLongRunningDatabaseClient(async (client) => {
-      if (job.data.migrationActions.preDeploy.length) {
-        await executeMigrationActions(client, results, job.data.migrationActions.preDeploy);
-      }
-      if (job.data.migrationActions.postDeploy.length) {
-        await executeMigrationActions(client, results, job.data.migrationActions.postDeploy);
-      }
-    });
+    const shardId = job.data.target.shardId;
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        if (job.data.migrationActions.preDeploy.length) {
+          await executeMigrationActions(client, results, job.data.migrationActions.preDeploy);
+        }
+        if (job.data.migrationActions.postDeploy.length) {
+          await executeMigrationActions(client, results, job.data.migrationActions.postDeploy);
+        }
+      },
+      { shardId }
+    );
     const output = getAsyncJobOutputFromMigrationActionResults(results);
-    await exec.completeJob(output);
+    await completePostDeployMigration(exec, shardId, output);
   } catch (err: any) {
     const errorMsg = normalizeErrorString(err);
     globalLogger.error('Post-deploy migration threw an error', {
@@ -197,12 +203,13 @@ export async function runCustomMigration(
   const exec = await getTrackingAsyncJobExecutor(jobData.tracking);
   const asyncJob = exec.getAsyncJob();
 
-  if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+  const shardId = jobData.target.shardId;
+  if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER, shardId)))) {
     globalLogger.info('Skipping custom post-deploy migration since server is in firstBoot mode', {
       asyncJob: getReferenceString(asyncJob),
       version: `v${asyncJob.dataVersion}`,
     });
-    await exec.completeJob({
+    await completePostDeployMigration(exec, shardId, {
       resourceType: 'Parameters',
       parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
     });
@@ -211,11 +218,14 @@ export async function runCustomMigration(
 
   const results: MigrationActionResult[] = [];
   try {
-    await withLongRunningDatabaseClient(async (client) => {
-      await callback(client, results, job, jobData);
-    });
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        await callback(client, results, job, jobData);
+      },
+      { shardId }
+    );
     const output = getAsyncJobOutputFromMigrationActionResults(results);
-    await exec.completeJob(output);
+    await completePostDeployMigration(exec, shardId, output);
   } catch (err: any) {
     const errorMsg = normalizeErrorString(err);
     globalLogger.error('Post-deploy migration threw an error', {

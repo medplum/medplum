@@ -696,7 +696,7 @@ export class Repository extends FhirRepository implements Disposable {
     return resource;
   }
 
-  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+  async readReferences<T extends Resource>(references: readonly Reference<T>[]): Promise<(WithId<T> | Error)[]> {
     await this.recordFhirQuota(references.length * FhirQuotaCost.READ);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
@@ -1587,9 +1587,9 @@ export class Repository extends FhirRepository implements Disposable {
       }
 
       if (!this.context.skipBackgroundJobs) {
-        await addBackgroundJobs(resource, resource, {
-          project: await this.getProjectById(resource.meta?.project),
-          interaction: 'delete',
+        await this.postCommit(async () => {
+          const project = await this.getProjectById(resource.meta?.project);
+          await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
         });
       }
     } catch (err) {
@@ -2522,7 +2522,7 @@ export class Repository extends FhirRepository implements Disposable {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       subtype,
-      this.context.projects?.[0]?.id as string,
+      this.context.projects?.[0],
       this.context.author,
       this.context.remoteAddress,
       outcome,
@@ -2695,7 +2695,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param references - Array of FHIR references.
    * @returns Array of cache entries or undefined.
    */
-  private async getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+  private async getCacheEntries(references: readonly Reference[]): Promise<(CacheEntry | undefined)[]> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       return new Array(references.length);
@@ -3062,6 +3062,7 @@ function isRestorableToProject(resource: Resource, projectId: string): boolean {
 }
 
 const superAdminProjectFields = [
+  'active',
   'superAdmin',
   'features',
   'link',

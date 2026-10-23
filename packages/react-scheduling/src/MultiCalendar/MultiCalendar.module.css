@@ -68,6 +68,10 @@
     }
   }
 
+  :global(.dayGridMonth) :global(.appointment) .eventTime {
+    padding-top: 1px;
+  }
+
   /* In light mode, Mantine's named colors are tinted with their lightest shade and written in their
    * darkest, darkened further where that is hard to read on the tint. */
   :global([data-color-scheme='light']) {
@@ -177,6 +181,24 @@
       outline: 1px dashed
         color-mix(in oklab, var(--appointment-bar) calc(100% * var(--past-fade)), var(--fc-classic-background));
       outline-offset: -1px;
+    }
+  }
+
+  /* A draft, not yet saved, is hatched with its tint under a solid outline, so it can't be taken
+   * for a stored appointment of any status. Placed after the outlined statuses, which it overrides.
+   * Clicks pass through it to the time it covers. */
+  :global(.appointment.draft) {
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--appointment-tint) 0 6px,
+      var(--fc-classic-background) 6px 12px
+    );
+
+    &,
+    &:not(:focus-visible) {
+      outline: 2px solid var(--appointment-bar);
+      outline-offset: -2px;
     }
   }
 

@@ -25,7 +25,7 @@ import { shouldSearchParameterExist } from './presence';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
-import { Column, ColumnType, Condition, Negation } from './sql';
+import { ArraySubquery, Column, ColumnType, Condition, Conjunction, Negation } from './sql';
 
 type Interval<T extends number | Date> = {
   left?: T;
@@ -140,27 +140,28 @@ function buildRangeFromPeriod({ start, end }: Period): Interval<Date> {
 export function parseDateTimeToRange(dt: string, approximate?: boolean): Interval<Date> {
   let start = new Date(dt);
   let end = new Date(start); // Copy start time before modifying
-  const len = dt.length;
-  if (len <= 4) {
-    // Year precision
-    end.setUTCFullYear(end.getUTCFullYear() + 1);
-  } else if (len <= 7) {
-    // Month precision
-    end.setUTCMonth(end.getUTCMonth() + 1);
-  } else if (len <= 10) {
-    // Day precision
-    end.setUTCDate(end.getUTCDate() + 1);
-  } else if (len <= 20) {
-    // Second precision
-    end.setUTCSeconds(end.getUTCSeconds() + 1);
-  } else {
-    // Millisecond precision
+  const [datePart, timePart] = dt.split('T');
+  const time = timePart?.replace(/(Z|[+-]\d{2}:\d{2})$/, '');
+  if (!time) {
+    if (datePart.length <= 4) {
+      end.setUTCFullYear(end.getUTCFullYear() + 1);
+    } else if (datePart.length <= 7) {
+      end.setUTCMonth(end.getUTCMonth() + 1);
+    } else {
+      end.setUTCDate(end.getUTCDate() + 1);
+    }
+  } else if (time.includes('.')) {
     end.setUTCMilliseconds(end.getUTCMilliseconds() + 1);
+  } else if (time.length <= 5) {
+    end.setUTCMinutes(end.getUTCMinutes() + 1);
+  } else {
+    end.setUTCSeconds(end.getUTCSeconds() + 1);
   }
 
   if (approximate) {
+    // Recommended approximation is 10% of the gap between now and the date, in either direction
     const startTime = start.getTime();
-    const deltaMs = (Date.now() - startTime) * 0.1;
+    const deltaMs = Math.abs(Date.now() - startTime) * 0.1;
     start = new Date(startTime - deltaMs);
     end = new Date(end.getTime() + deltaMs);
   }
@@ -314,6 +315,35 @@ export function addRangeColumnsOrderBy(
   selectQuery.orderBy(new Column(undefined, impl.sortColumnName), sortRule.descending);
 }
 
+/**
+ * Builds a condition matching when the search range fully contains the target range.
+ * For array columns, at least one of the target ranges must be contained.
+ * See: https://hl7.org/fhir/R4/search.html#prefix
+ * @param column - The range column.
+ * @param array - True if the column is a multirange.
+ * @param range - The formatted search range.
+ * @param colType - The range column type.
+ * @returns The SQL condition.
+ */
+function buildRangeContainedBy(
+  column: Column,
+  array: boolean | undefined,
+  range: string,
+  colType: ColumnType
+): Expression {
+  if (!array) {
+    return new Condition(column, 'RANGE_CONTAINED_BY', range, colType);
+  }
+  // The overlap check is redundant but lets Postgres use the index before unnesting
+  return new Conjunction([
+    new Condition(column, 'RANGE_OVERLAPS', range, colType),
+    new ArraySubquery(
+      column,
+      new Condition(new Column(undefined, column.effectiveColumnName), 'RANGE_CONTAINED_BY', range, colType)
+    ),
+  ]);
+}
+
 export function buildRangeColumnsSearchFilter(
   resourceType: ResourceType,
   tableName: string,
@@ -340,13 +370,14 @@ export function buildRangeColumnsSearchFilter(
   }
   const column = new Column(tableName, impl.rangeColumnName);
   switch (filter.operator) {
-    case Operator.EXACT: // Alias needed for _filter search
     case Operator.APPROXIMATELY: // Approximate target range calculated above, match against it here
-    case Operator.EQUALS:
       return new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType);
+    case Operator.EXACT: // Alias needed for _filter search
+    case Operator.EQUALS:
+      return buildRangeContainedBy(column, impl.array, formatRange(range), colType);
     case Operator.NOT:
     case Operator.NOT_EQUALS:
-      return new Negation(new Condition(column, 'RANGE_OVERLAPS', formatRange(range), colType));
+      return new Negation(buildRangeContainedBy(column, impl.array, formatRange(range), colType));
     case Operator.LESS_THAN:
       return new Condition(
         column,

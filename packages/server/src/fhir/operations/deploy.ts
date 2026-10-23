@@ -11,7 +11,7 @@ import {
   OperationOutcomeError,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Attachment, Binary, Bot, OperationOutcome } from '@medplum/fhirtypes';
+import type { Attachment, Binary, Bot, OperationOutcome, Project } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabledForProject } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
@@ -23,6 +23,7 @@ import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import { findProjectMembership } from '../projectmembership';
 import type { Repository } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
@@ -90,7 +91,8 @@ export async function deployBot(
     throw new OperationOutcomeError(badRequest('Bot missing executable code'));
   }
 
-  if (!(await isBotEnabledForProject(bot.meta?.project as string))) {
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', bot.meta?.project as string);
+  if (!isBotEnabledForProject(project)) {
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
   }
 

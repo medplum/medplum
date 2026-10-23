@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import {
   withBookStub,
   withCancelStub,
+  withConfirmStub,
   withFindStub,
   withFixtures,
   withMockedDate,
@@ -67,6 +68,7 @@ export default {
   decorators: [
     withBookStub(),
     withCancelStub(),
+    withConfirmStub(),
     withRescheduleStub(),
     // Cancellation reasons, plus the code value sets for visit types that ask for codes.
     withValueSets({ ...CancellationReasonValueSets, ...AuthorizationValueSets }),
@@ -93,14 +95,14 @@ export default {
  * visit is this story's, raised from `onBooked`: the workspace reports what was booked
  * and leaves how to say so to whatever is hosting it.
  *
- * The grid marks the time being booked, and the mark follows the answers: picking a time
- * in the search moves it there, and searching another day takes it down. Hovering open
- * time marks nothing — a whole-column tint cannot say which time is under the pointer.
- * The calendar never moves itself to keep the mark in sight; page to a week the marked
- * time is on and it is there.
+ * The grid highlights the time clicked. Picking a time in the search draws the visit it
+ * would book as a draft, hatched and outlined, and searching another day takes it down.
+ * Hovering open time marks nothing — a whole-column tint cannot say which time is under
+ * the pointer. The calendar never moves itself to keep either in sight; page to a week
+ * they are on and they are there.
  *
- * Clicking a different day with the form part-filled re-opens it on the new day and
- * clears the answers; clicking again inside the day already open leaves them alone.
+ * Clicking another time with the form part-filled keeps the answers and moves the time
+ * search to the day clicked; a day the search already covers is left as it is.
  *
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
  * anything booked from the form — opens its details in the same pane the booking form
@@ -128,6 +130,10 @@ export default {
  * Blocked time opens in that pane too: click Exam Room A's "Blocked" block on Thursday to
  * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
  * "Delete" takes it off the calendar.
+ *
+ * The imaging visits on Monday, Tuesday and Wednesday record **Uro Associates - Main Clinic**
+ * as their site, so their details name it as the service facility. The telehealth visits
+ * record none, and their details leave the line out.
  *
  * Eliana Garcia's Tuesday telehealth visit with Dr. Brown is the second of three, weekly, and is
  * marked as recurring; page a week back or forward for the first and third.
@@ -210,7 +216,7 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  * The workspace as a host opens it on one site, such as the facility a user launched
  * scheduling from.
  *
- * The host passes a reference to the Location, and the Location filter starts on **Uro Associates
+ * The host passes a reference to the Location, and the Service facility filter starts on **Uro Associates
  * - Satellite**: only the calendars held there are listed, and the visit types on offer
  * are the ones the satellite holds. Click open time and the booking form starts on the
  * satellite too, which is the site the booked appointment records.
@@ -219,12 +225,14 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  *
  * @returns The story.
  */
-export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
+export const AtASite = (): JSX.Element => (
+  <Workspace defaultServiceFacility={{ reference: 'Location/satellite-clinic' }} />
+);
 AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
-  readonly defaultLocation?: Reference<Location>;
+  readonly defaultServiceFacility?: Reference<Location>;
 }
 
 /**
@@ -240,7 +248,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
-        defaultLocation={props.defaultLocation}
+        defaultServiceFacility={props.defaultServiceFacility}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={({ appointments }) => {

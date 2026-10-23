@@ -431,9 +431,9 @@ export const ThemeColors = (): JSX.Element => {
       color,
       slots: [],
       appointments: [
-        // Sunday has passed, so these are drawn faded, booked and pending side by side.
+        // Sunday and Monday morning have passed, so these are drawn faded.
         colorAppointment(color, row, 'booked', -1),
-        colorAppointment(color, row, 'pending', -1),
+        colorAppointment(color, row, 'pending', 0),
         colorAppointment(color, row, 'booked', 1),
         colorAppointment(color, row, 'pending', 2),
       ],

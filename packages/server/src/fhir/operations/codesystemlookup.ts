@@ -23,11 +23,12 @@ type CodeSystemLookupParameters = {
 
 export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
-  const repo = getAuthenticatedContext().repo;
+  const ctx = getAuthenticatedContext();
+  const repo = ctx.repo;
 
   let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
-    codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+    codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
     codeSystem = await findTerminologyResource(repo, 'CodeSystem', params.system, { version: params.version });
   } else if (params.coding?.system) {
@@ -48,7 +49,7 @@ export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('No coding specified')];
   }
 
-  const output = await lookupCoding(codeSystem, coding);
+  const output = await lookupCoding(repo.shardId, codeSystem, coding);
   return [allOk, buildOutputParameters(operation, output)];
 }
 
@@ -60,6 +61,7 @@ export type CodeSystemLookupOutput = {
 };
 
 export async function lookupCoding(
+  shardId: string,
   codeSystem: WithId<CodeSystem>,
   coding: Coding & { code: string }
 ): Promise<CodeSystemLookupOutput> {
@@ -96,7 +98,7 @@ export async function lookupCoding(
     .column(new Column(propertyTable, 'value'))
     .column(new Column(target, 'display', undefined, 'targetDisplay'));
 
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const result = await lookup.execute(db);
   if (!result.length) {
     throw new OperationOutcomeError(notFound);

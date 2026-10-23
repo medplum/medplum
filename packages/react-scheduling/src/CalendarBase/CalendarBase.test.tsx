@@ -207,17 +207,21 @@ describe('CalendarBase', () => {
       setup({ eventSources: [] });
       const today = String(new Date().getDate());
 
-      const header = document.querySelector('.todayNumber');
-      expect(header).toHaveTextContent(today);
-      const others = document.querySelectorAll('.otherDayHeaderInner');
-      expect(others.length).toBeGreaterThan(0);
-      others.forEach((inner) => expect(inner.querySelector('.todayNumber')).toBeNull());
+      const headers = document.querySelectorAll('[aria-current=date] .dayNumber');
+      expect(headers).toHaveLength(1);
+      expect(headers[0]).toHaveTextContent(today);
 
       await userEvent.click(screen.getByText('Month'));
-      const cell = document.querySelector('.todayCellNumber, .narrowTodayCellNumber');
-      expect(cell).toHaveTextContent(today);
-      expect(cell).toHaveClass('todayNumber');
-      expect(document.querySelectorAll('.todayNumber')).toHaveLength(1);
+      const cells = document.querySelectorAll('[aria-current=date] .dayCellTopInner');
+      expect(cells).toHaveLength(1);
+      expect(cells[0]).toHaveTextContent(today);
+
+      const weekdays = document.querySelectorAll('.todayWeekday');
+      expect(weekdays).toHaveLength(1);
+      expect(weekdays[0]).toHaveTextContent(new Date().toLocaleDateString('en-US', { weekday: 'short' }));
+
+      await userEvent.click(screen.getByLabelText('Next'));
+      expect(document.querySelectorAll('.todayWeekday')).toHaveLength(0);
     });
 
     test('hides slots in the month view', async () => {
@@ -254,7 +258,7 @@ describe('CalendarBase', () => {
   // Week view always lays out columns Sun..Sat regardless of which week is showing,
   // so day-of-week behavior can be asserted by position without depending on "today".
   const getWeekGridCells = (container: HTMLElement): Element[] =>
-    Array.from(container.querySelectorAll('[role="gridcell"][data-date]'));
+    Array.from(container.querySelectorAll('[role="cell"][data-date]'));
 
   describe('CalendarToolbar', () => {
     test('renders toolbar with navigation buttons', async () => {

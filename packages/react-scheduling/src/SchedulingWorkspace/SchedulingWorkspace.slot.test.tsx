@@ -216,6 +216,21 @@ describe('SchedulingWorkspace blocked time details', () => {
     expect(pane.getByText('Lunch')).toBeInTheDocument();
   });
 
+  test('blocked time an appointment past its edit window holds offers no reschedule or cancel', async () => {
+    const twoDaysAgo = (hours: number): string => new Date(Date.parse(TODAY_AT(hours)) - 48 * 3600_000).toISOString();
+    await medplum.updateResource<Appointment>({
+      ...APPOINTMENT,
+      start: twoDaysAgo(10),
+      end: twoDaysAgo(11),
+      slot: [createReference(BLOCKED_SLOT)],
+    });
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click(await screen.findByText('Blocked'));
+    const pane = within(slotDetails() as HTMLElement);
+    expect(await pane.findByText('This time is held by an appointment.')).toBeInTheDocument();
+  });
+
   test('blocked time a finished appointment holds offers no reschedule or cancel', async () => {
     await medplum.updateResource<Appointment>({
       ...APPOINTMENT,

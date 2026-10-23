@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   CalendarRef,
-  DateTimeFormatPartWithWeek,
-  DayCellInfo,
   DayHeaderInfo,
   EventApi,
   EventClickInfo,
@@ -41,24 +39,33 @@ export interface FhirEventSource {
   appointments: Appointment[];
   color?: string;
   className?: string;
+  /** False draws the source's events as not clickable, whatever click handlers the calendar has. */
+  interactive?: boolean;
+  /** Names each of the source's appointments in place of its patient. */
+  label?: string;
 }
 
-export type ExtendedEvent =
+export type ExtendedEvent = (
   | {
       type: 'appointment';
       appointment: Appointment;
       schedule?: WithId<Schedule>;
+      label?: string;
     }
   | {
       type: 'slot';
       slot: Slot;
       schedule?: WithId<Schedule>;
-    };
+    }
+) & {
+  interactive?: boolean;
+};
 
 function appointmentsToEvents(
   appointments: Appointment[],
   schedule: WithId<Schedule> | undefined,
-  extra?: Partial<EventInput>
+  extra?: Partial<EventInput>,
+  details?: { interactive?: boolean; label?: string }
 ): EventInput[] {
   return appointments
     .filter((appointment) => appointment.start && appointment.end)
@@ -68,10 +75,10 @@ function appointmentsToEvents(
 
       return {
         id: appointment.id,
-        title: name,
+        title: details?.label ?? name,
         start: appointment.start,
         end: appointment.end,
-        extendedProps: { type: 'appointment', appointment, schedule } satisfies ExtendedEvent,
+        extendedProps: { type: 'appointment', appointment, schedule, ...details } satisfies ExtendedEvent,
         className: `appointment ${appointment.status}`,
         ...extra,
       };
@@ -91,44 +98,28 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
   return (
     <>
       {info.timeText && <div className={info.timeClass}>{info.timeText}</div>}
-      <div className={info.titleClass}>
-        <AppointmentPatientName appointment={ext.appointment} />
-      </div>
+      <div className={info.titleClass}>{ext.label ?? <AppointmentPatientName appointment={ext.appointment} />}</div>
     </>
   );
 }
 
-function renderToday(textParts: DateTimeFormatPartWithWeek[], numberClassName: string): JSX.Element {
+function isTodaysWeekday(info: DayHeaderInfo): boolean {
+  const now = new Date();
   return (
-    <>
-      {textParts.map((part, i) => (
-        <span key={i} className={part.type === 'day' ? numberClassName : classes.todayText}>
+    !info.dayNumberText && info.dow === now.getDay() && now >= info.view.currentStart && now < info.view.currentEnd
+  );
+}
+
+function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
+  return (
+    <span className={cx(classes.dayHeaderText, isTodaysWeekday(info) && classes.todayWeekday)}>
+      {info.textParts.map((part, i) => (
+        <span key={i} className={part.type === 'day' ? classes.dayNumber : undefined}>
           {part.value}
         </span>
       ))}
-    </>
+    </span>
   );
-}
-
-function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element | string {
-  if (info.inPopover || !info.dayNumberText || !info.isToday) {
-    return info.text;
-  }
-  return renderToday(info.textParts, classes.todayNumber);
-}
-
-function renderDayCellTopContent(info: DayCellInfo): JSX.Element | string {
-  if (!info.isToday) {
-    return info.text;
-  }
-  return renderToday(
-    info.textParts,
-    cx(classes.todayNumber, info.isNarrow ? classes.narrowTodayCellNumber : classes.todayCellNumber)
-  );
-}
-
-function dayHeaderInnerClass(info: DayHeaderInfo): string {
-  return cx(classes.dayHeaderInner, !info.isToday && classes.otherDayHeaderInner);
 }
 
 function slotTitle(slot: Slot): string {
@@ -144,14 +135,15 @@ function slotTitle(slot: Slot): string {
 function slotsToEvents(
   slots: Slot[],
   schedule: WithId<Schedule> | undefined,
-  extra?: Partial<EventInput>
+  extra?: Partial<EventInput>,
+  interactive?: boolean
 ): EventInput[] {
   return slots.map((slot) => ({
     id: slot.id,
     start: slot.start,
     end: slot.end,
     title: slotTitle(slot),
-    extendedProps: { type: 'slot', slot, schedule } satisfies ExtendedEvent,
+    extendedProps: { type: 'slot', slot, schedule, interactive } satisfies ExtendedEvent,
     className: `slot ${slot.status}`,
     ...extra,
   }));
@@ -205,23 +197,23 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const eventSources = useMemo(
     () =>
       props.eventSources.map((fhirSource): EventSourceInput => {
-        const { schedule, slots, appointments, ...source } = fhirSource;
+        const { schedule, slots, appointments, interactive, label, ...source } = fhirSource;
         const filteredSlots = filterBookedSlots(slots, appointments);
 
         const appointmentExtra = {
-          interactive: Boolean(props.onSelectAppointment || props.onDoubleClickAppointment),
+          interactive: interactive ?? Boolean(props.onSelectAppointment || props.onDoubleClickAppointment),
         };
 
         const slotExtra = {
-          interactive: Boolean(props.onSelectSlot || props.onDoubleClickSlot),
+          interactive: interactive ?? Boolean(props.onSelectSlot || props.onDoubleClickSlot),
           display: viewType === 'dayGridMonth' ? 'none' : 'auto', // Hide slots in month view
         };
 
         return {
           ...source,
           events: [
-            ...appointmentsToEvents(appointments, schedule, appointmentExtra),
-            ...slotsToEvents(filteredSlots, schedule, slotExtra),
+            ...appointmentsToEvents(appointments, schedule, appointmentExtra, { interactive, label }),
+            ...slotsToEvents(filteredSlots, schedule, slotExtra, interactive),
           ],
         };
       }),
@@ -238,6 +230,10 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const rawEventClick = useCallback(
     (eventClickInfo: EventClickInfo) => {
       const ext = eventClickInfo.event.extendedProps as ExtendedEvent;
+      // FullCalendar's `interactive` only takes an event out of the tab order; it still reports clicks.
+      if (ext.interactive === false) {
+        return;
+      }
       if (ext.type === 'appointment') {
         onSelectAppointment?.(ext.appointment, ext.schedule);
       } else if (ext.type === 'slot') {
@@ -386,8 +382,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         }}
         eventContent={renderEventContent}
         dayHeaderContent={renderDayHeaderContent}
-        dayHeaderInnerClass={dayHeaderInnerClass}
-        dayCellTopContent={renderDayCellTopContent}
+        dayCellTopInnerClass={classes.dayCellTopInner}
         slotHeaderInnerClass={classes.slotHeaderInner}
         nowIndicatorLineClass={classes.nowIndicatorLine}
         nowIndicatorDotClass={classes.nowIndicatorDot}
@@ -400,7 +395,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         datesSet={(info) => onRangeChange?.({ start: info.start, end: info.end })}
         className={cx(classes.calendar, controller.view?.type)}
         eventDidMount={(info) => {
-          if (hasDoubleClickHandler) {
+          if (hasDoubleClickHandler && (info.event.extendedProps as ExtendedEvent).interactive !== false) {
             eventDataRef.current.set(info.el, info.event);
             info.el.addEventListener('dblclick', handleDblClick);
           }

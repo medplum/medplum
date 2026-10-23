@@ -15,7 +15,7 @@ import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/f
 import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Queue, Worker } from 'bullmq';
-import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { addBatchTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { uploadBinaryData } from '../fhir/binary';
@@ -33,6 +33,7 @@ import {
   isJobActive,
   moveToDelayedAndThrow,
   queueRegistry,
+  runJobInAuthenticatedContext,
   trackJobMetrics,
   updateAsyncJobOutput,
 } from './utils';
@@ -116,7 +117,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       queueName,
       trackJobMetrics('batch', (job) => {
         const { authState, requestId, traceId } = job.data;
-        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
+        return runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           return execBatchJob(job);
         });
       }),
@@ -134,14 +135,13 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       }
 
       // This fires only when the job could not be recovered by re-entrant resume (e.g. it stalled
-      // more than maxStalledCount times). Mark the AsyncJob failed if it is still in progress and
-      // clean up any durable checkpoint state.
+      // more than maxStalledCount times) or never reached execBatchJob (e.g. its auth state was
+      // revoked). Mark the AsyncJob failed if it is still in progress and clean up any durable
+      // checkpoint state.
 
       try {
         const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-        if (isJobActive(exec.getAsyncJob())) {
-          await exec.failJob(failedErr ?? undefined);
-        }
+        await exec.failJob(failedErr ?? undefined);
       } finally {
         const asyncJobId = job.data.tracking.asyncJobId;
         const logger = getBatchLogger(asyncJobId, job.id);

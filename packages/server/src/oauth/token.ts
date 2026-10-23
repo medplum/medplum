@@ -34,7 +34,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import { AUTH_CODE_EXPIRATION_MS } from '../constants';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { getInactiveReason } from '../fhir/projectmembership';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { getLogger } from '../logger';
@@ -158,6 +160,12 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   }
 
   const project = await systemRepo.readReference(membership.project);
+  const inactiveReason = getInactiveReason(project, membership);
+  if (inactiveReason) {
+    sendTokenError(res, 'access_denied', inactiveReason);
+    return;
+  }
+
   const scope = (req.body.scope || 'openid') as string;
 
   if (scope.includes('patient/')) {
@@ -250,6 +258,12 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const issuedAt = Date.parse(login.meta?.lastUpdated ?? '');
+  if (!Number.isFinite(issuedAt) || Date.now() - issuedAt >= AUTH_CODE_EXPIRATION_MS) {
+    sendTokenError(res, 'invalid_grant', 'Authorization code expired');
+    return;
+  }
+
   let client: ClientApplication | undefined;
   try {
     if (clientId) {
@@ -325,8 +339,10 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   if (login.membership) {
     const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-    if (membership.active === false) {
-      sendTokenError(res, 'access_denied', 'Profile not active');
+    const project = await systemRepo.readReference(membership.project);
+    const inactiveReason = getInactiveReason(project, membership);
+    if (inactiveReason) {
+      sendTokenError(res, 'access_denied', inactiveReason);
       return;
     }
   }

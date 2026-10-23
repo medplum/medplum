@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM } from '../../constants';
 import {
   withCancelStub,
+  withConfirmStub,
   withFindStub,
   withFixtures,
   withMockedDate,
@@ -54,6 +55,13 @@ const CancelledAppointment: WithId<Appointment> = {
       },
     ],
   },
+};
+
+/** Held through `$hold`, waiting to be confirmed. */
+const PendingAppointment: WithId<Appointment> = {
+  ...RiveraImagingAppointment,
+  id: 'appt-rivera-imaging-tue-pending',
+  status: 'pending',
 };
 
 /** Booked for a visit type asking for procedure and diagnosis codes and a medical necessity attestation. */
@@ -99,6 +107,7 @@ const STORY_FIXTURES = [
   ...RiveraImagingHeldSlots,
   RiveraImagingAppointment,
   CancelledAppointment,
+  PendingAppointment,
   ...AuthorizationFixtures,
   AuthorizedAppointment,
 ];
@@ -109,6 +118,7 @@ export default {
   decorators: [
     // Mock out the `$cancel` operation in our MockClient
     withCancelStub(),
+    withConfirmStub(),
     // Rescheduling searches with `$find` and writes with `$reschedule`, neither of
     // which MockClient answers either.
     withRescheduleStub(),
@@ -197,6 +207,24 @@ export const AuthorizationDetails = (): JSX.Element => {
 AuthorizationDetails.decorators = [withValueSets(AuthorizationValueSets)];
 
 /**
+ * A visit held but not yet confirmed. "Confirm" sends it through `$confirm`, which books
+ * it, so the badge turns to `booked` and the button goes.
+ *
+ * @returns The story.
+ */
+export const Pending = (): JSX.Element => {
+  const [appointment, setAppointment] = useState<WithId<Appointment>>(PendingAppointment);
+  return (
+    <Paper withBorder p="md" maw={320}>
+      <AppointmentDetails
+        appointment={appointment}
+        onConfirmed={(confirmation) => setAppointment(confirmation.appointments[0])}
+      />
+    </Paper>
+  );
+};
+
+/**
  * A visit synced with an external system, which links to it there.
  *
  * @returns The story.
@@ -204,6 +232,20 @@ AuthorizationDetails.decorators = [withValueSets(AuthorizationValueSets)];
 export const ExternalLink = (): JSX.Element => (
   <Paper withBorder p="md" maw={320}>
     <AppointmentDetails appointment={ExternalAppointment} />
+  </Paper>
+);
+
+/**
+ * A visit that ended more than 12 hours ago, which can no longer be changed. Only the link
+ * to it in the external system is left.
+ *
+ * @returns The story.
+ */
+export const PastEditWindow = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails
+      appointment={{ ...ExternalAppointment, start: '2020-05-01T14:00:00Z', end: '2020-05-01T15:00:00Z' }}
+    />
   </Paper>
 );
 

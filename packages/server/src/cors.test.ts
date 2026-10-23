@@ -46,6 +46,33 @@ describe('CORS', () => {
     );
   });
 
+  test('Reject prefix of appBaseUrl', () => {
+    getConfig().appBaseUrl = 'https://app.example.com/';
+    for (const origin of ['https://app.example.co', 'https://app.example.c', 'https://app.example.com:8']) {
+      const req = {
+        header: () => origin,
+        path: '/fhir/R4/Patient',
+      } as unknown as Request;
+      const callback = vi.fn();
+      corsOptions(req, callback);
+      expect(callback).toHaveBeenCalledWith(null, { origin: false });
+    }
+  });
+
+  test('Allow appBaseUrl with path', () => {
+    getConfig().appBaseUrl = 'https://app.example.com/some/path/';
+    const req = {
+      header: () => 'https://app.example.com',
+      path: '/fhir/R4/Patient',
+    } as unknown as Request;
+    const callback = vi.fn();
+    corsOptions(req, callback);
+    expect(callback).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({ credentials: true, origin: 'https://app.example.com' })
+    );
+  });
+
   test('Exposes RateLimit header on FHIR requests', () => {
     const req = {
       header: () => 'http://localhost:3000',

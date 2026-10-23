@@ -121,6 +121,8 @@ export interface MedplumSourceInfraConfig {
     };
   }[];
   containerRegistryCredentialsSecretArn?: ValueOrExternalSecret<string>;
+  /** Resolve each additional container image tag to its current digest at synth time, so tasks only change on deploy. */
+  pinAdditionalContainerImages?: ValueOrExternalSecret<boolean>;
   containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
@@ -286,6 +288,7 @@ export interface MedplumInfraConfig {
   hostedZoneName?: string;
   wafLogGroupName?: string;
   wafLogGroupCreate?: boolean;
+  blockedEmailDomains?: string;
   additionalContainers?: {
     name: string;
     image: string;
@@ -298,6 +301,8 @@ export interface MedplumInfraConfig {
     };
   }[];
   containerRegistryCredentialsSecretArn?: string;
+  /** Resolve each additional container image tag to its current digest at synth time, so tasks only change on deploy. */
+  pinAdditionalContainerImages?: boolean;
   containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;

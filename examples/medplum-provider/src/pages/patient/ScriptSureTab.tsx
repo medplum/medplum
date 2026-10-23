@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Loader, useComputedColorScheme } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router';
+import { getErrorMessage } from '../../components/insurance/utils';
 import { applyDarkmode } from '../../components/meds/applyDarkmode';
 import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 
@@ -15,6 +15,7 @@ export function ScriptSureTab(): JSX.Element {
   const { selectedOrganization } = useScriptSurePractice();
   const syncedRef = useRef(false);
   const iframeLoadedRef = useRef(false);
+  const [failed, setFailed] = useState(false);
 
   const checkAndNotify = (): void => {
     if (syncedRef.current && iframeLoadedRef.current) {
@@ -38,7 +39,10 @@ export function ScriptSureTab(): JSX.Element {
       iframeLoadedRef.current = true;
       checkAndNotify();
     },
-    onError: (err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }),
+    onError: (err) => {
+      setFailed(true);
+      showNotification({ color: 'red', title: 'Error', message: getErrorMessage(err), autoClose: false });
+    },
   });
 
   // The bot returns a UI-agnostic URL; the app appends `darkmode=on|off` once
@@ -56,7 +60,7 @@ export function ScriptSureTab(): JSX.Element {
 
   return (
     <Box style={{ flex: 1, minHeight: 0 }}>
-      {!renderedUrl && (
+      {!renderedUrl && !failed && (
         <Center mt="xl">
           <Loader />
         </Center>

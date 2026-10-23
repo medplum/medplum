@@ -35,6 +35,7 @@ import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup'
 import type { BatchJobData } from '../workers/batch';
 import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
+import { normalizeShardId, TODO_SHARD_ID } from './sharding';
 import { PostgresError } from './sql';
 
 /**
@@ -2089,6 +2090,7 @@ describe('Batch and Transaction processing', () => {
 
 describe('Transaction bundle SERIALIZABLE retry', () => {
   const app = express();
+  let shardId: string;
   let accessToken: string;
 
   beforeAll(async () => {
@@ -2098,6 +2100,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
       project: { features: ['transaction-bundles'] },
       withAccessToken: true,
     }));
+    shardId = normalizeShardId(TODO_SHARD_ID); // get via the project returned from createTestProject
   });
 
   afterEach(() => {
@@ -2113,7 +2116,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
     // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
     // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
     // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, shardId);
     const originalConnect = writerPool.connect.bind(writerPool);
 
     let serializableBegins = 0;

@@ -75,6 +75,23 @@ describe('Auth middleware', () => {
     expect(res).toHaveStatus(401);
   });
 
+  test('Inactive project', async () => {
+    const { project, client, accessToken } = await createTestProject({ withClient: true, withAccessToken: true });
+    const bearer = 'Bearer ' + accessToken;
+    const basic = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+    await withTestContext(() => systemRepo.updateResource({ ...project, active: false }));
+    for (const auth of [bearer, basic]) {
+      const res = await request(app).get('/fhir/R4/Patient').set('Authorization', auth);
+      expect(res).toHaveStatus(401);
+    }
+
+    // Existing tokens work again once the project is reactivated
+    await withTestContext(() => systemRepo.updateResource({ ...project, active: true }));
+    const res = await request(app).get('/fhir/R4/Patient').set('Authorization', bearer);
+    expect(res).toHaveStatus(200);
+  });
+
   test('No auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient');
     expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);

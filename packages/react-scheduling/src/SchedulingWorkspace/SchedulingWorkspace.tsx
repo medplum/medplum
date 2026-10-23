@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -20,6 +20,7 @@ import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBooking
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
+import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
@@ -76,6 +77,8 @@ export interface SchedulingWorkspaceProps {
   /** Called with the Slots written when time is blocked from the pane's Block tab. */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /** Called with what `$confirm` wrote, after a pending appointment is confirmed from its details. */
+  readonly onConfirmed?: (confirmation: AppointmentWrite) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
@@ -106,11 +109,11 @@ export interface SchedulingWorkspaceProps {
    */
   readonly appointmentExtensions?: readonly Extension[];
   /**
-   * The site the Location filter starts on, e.g. the facility the host launched
+   * The site the Service facility filter starts on, e.g. the facility the host launched
    * scheduling from. The user can still change or clear it. Read once on mount; key
    * the workspace to start it over on another site.
    */
-  readonly defaultLocation?: Reference<Location> | WithId<Location>;
+  readonly defaultServiceFacility?: Reference<Location> | WithId<Location>;
 }
 
 /**
@@ -130,15 +133,15 @@ export interface SchedulingWorkspaceProps {
  *   over the time on each calendar the user names, reported through `onBlocked`.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
- *   reschedule it.
+ *   reschedule it, or to confirm one still pending.
  * - Shows blocked time: clicking a Slot opens `SlotDetails` in that same pane, saying
  *   whose time it holds, when, and why, and offering to edit its time and comment or
  *   delete it.
- * - Highlights the time last chosen, wherever it was chosen: the click that opened the
- *   pane, then whatever the form's time search settles on, and nothing while the form
- *   holds no time. The calendar is never moved to reach it — a highlight off the week
- *   on screen is kept, and is drawn again on paging back to it.
- * - Can open on a site the host chooses: `defaultLocation` is where the Location filter,
+ * - Highlights the time clicked, and draws the visit the form would book as a draft
+ *   appointment beside it, from whenever the form holds a time until it drops it. The
+ *   calendar is never moved to reach either; one off the week on screen is drawn again
+ *   on paging back to it.
+ * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
  *
  * @param props - Component props
@@ -154,7 +157,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
-    defaultLocation,
+    defaultServiceFacility,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -168,9 +171,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
-  const initialFilters: CalendarFilterValues = defaultLocation ? { location: defaultLocation } : NO_FILTERS;
+  const initialFilters: CalendarFilterValues = defaultServiceFacility
+    ? { serviceFacility: defaultServiceFacility }
+    : NO_FILTERS;
   const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
-  const { service: selectedService, location: selectedLocation } = filters;
+  const { service: selectedService, serviceFacility: selectedServiceFacility } = filters;
 
   const [range, setRange] = useState<DateTimeRange>();
 
@@ -181,8 +186,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
 
-  // What the calendar highlights, one per pane tab: a hidden tab's form still reports its time
-  const [highlight, setHighlight] = useState<DateTimeRange>();
+  // The visit the booking form would book, drawn on the calendar apart from the click that
+  // opened it, so each has one writer.
+  const [proposal, setProposal] = useState<Appointment>();
+  // What the calendar highlights while blocking: the block form's time, which a click resets.
   const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
@@ -200,7 +207,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         const candidates = await searchScheduleCandidates(medplum, selectedService, {
           actorType,
           query: '',
-          location: selectedLocation,
+          location: selectedServiceFacility,
           signal: controller.signal,
           count: 250,
         });
@@ -224,7 +231,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       });
     return () => controller.abort();
-  }, [medplum, selectedService, selectedLocation]);
+  }, [medplum, selectedService, selectedServiceFacility]);
 
   const activeCandidates = useMemo(() => {
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
@@ -286,6 +293,22 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       slots: [],
       appointments: group,
     }));
+    // Hidden with the Appointment tab, as the selection follows the tab on show. A draft, and
+    // not clickable: there is nothing booked yet to open.
+    const drawnProposal = paneTab === 'appointment' ? proposal : undefined;
+    const proposalReference = extractServiceTypeReferences(drawnProposal?.serviceType)[0]?.reference;
+    const proposalSources = drawnProposal
+      ? [
+          {
+            color: proposalReference ? serviceColor(proposalReference) : 'gray',
+            slots: [],
+            appointments: [drawnProposal],
+            interactive: false,
+            draft: true,
+            label: 'Draft New Appointment',
+          } satisfies MultiCalendarSource,
+        ]
+      : [];
     const legend = groups
       .map(({ reference, group, color }): ServiceTypeLegendItem => ({
         id: reference ?? 'none',
@@ -297,11 +320,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return {
-      sources: [...calendarSources, ...serviceSources],
+      sources: [...calendarSources, ...serviceSources, ...proposalSources],
       serviceTypes: legend,
       servicesPending: groups.length < allGroups.length,
     };
-  }, [activeCandidates, slots, appointments, services, medplum, theme]);
+  }, [activeCandidates, slots, appointments, services, medplum, theme, paneTab, proposal]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -309,13 +332,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setSelectedAppointment(undefined);
     setSelectedSlotId(undefined);
     setBookingSelection(interval);
-    setHighlight(interval);
     setBlockHighlight(interval);
   }, []);
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
-    setHighlight(undefined);
+    setProposal(undefined);
     setBlockHighlight(undefined);
     setTimeFinderOpen(false);
   }, []);
@@ -431,14 +453,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
-      <div className={classes.sidebar}>
+      <Box className={classes.sidebar}>
         <CalendarsPanel
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
           filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
         />
-      </div>
+      </Box>
       <div className={classes.calendar}>
         {displayError !== undefined && (
           <Alert color="red" mb="xs">
@@ -453,7 +475,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
           onSelectSlot={selectSlot}
-          selection={blocking ? blockHighlight : highlight}
+          selection={blocking ? blockHighlight : bookingSelection}
           selectedId={openAppointment?.id ?? openSlot?.id}
         />
         <div className={classes.footer}>
@@ -476,6 +498,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             canBypassSchedulingRules={canBypassSchedulingRules}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
+            onConfirmed={props.onConfirmed}
             onRescheduled={props.onRescheduled}
             onToggleTimeFinder={setRescheduleFinderOpen}
             onUpdated={props.onUpdated}
@@ -504,14 +527,17 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             <CloseButton aria-label="Close booking form" onClick={closeBooking} />
           </Group>
           {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
-          <Tabs value={paneTab} onChange={(value) => setPaneTab(value as PaneTab)}>
+          <Tabs
+            value={paneTab}
+            onChange={(value) => setPaneTab(value as PaneTab)}
+            classNames={{ root: classes.paneTabs, panel: classes.paneTabPanel }}
+          >
             <Tabs.List mb="sm">
               <Tabs.Tab value="appointment">Appointment</Tabs.Tab>
               <Tabs.Tab value="block">Block</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="appointment">
               <AppointmentBookingForm
-                key={bookingSelection.start.toDateString()}
                 defaultStart={bookingSelection.start}
                 procedureBinding={procedureBinding}
                 diagnosisBinding={diagnosisBinding}
@@ -520,9 +546,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 appointmentExtensions={appointmentExtensions}
                 allowRecurring
                 onToggleTimeFinder={setTimeFinderOpen}
-                onChangeTime={setHighlight}
+                onChangeProposal={setProposal}
                 onBooked={finishBooking}
-                defaultLocation={selectedLocation}
+                defaultServiceFacility={selectedServiceFacility}
                 defaultService={selectedService}
               />
             </Tabs.Panel>

@@ -130,6 +130,11 @@ mfaRouter.post(
 
     const method = parseMfaMethod(req.body.method);
 
+    if (!getAllowedMfaMethods(await getLoginProject(login)).includes(method)) {
+      sendOutcome(res, badRequest('MFA method not allowed'));
+      return;
+    }
+
     if (method === 'email') {
       // Enroll in email-based MFA. No token to verify here; because email
       // becomes the user's only factor, sendLoginResult immediately emails a
