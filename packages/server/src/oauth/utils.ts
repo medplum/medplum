@@ -1437,6 +1437,7 @@ async function tryExternalAuthLogin(
     user: membership.user,
     profileType,
     authTime: new Date().toISOString(),
+    granted: true,
     scope: isString(claims.scope) ? claims.scope : undefined,
     nonce: isString(claims.nonce) ? claims.nonce : undefined,
     remoteAddress: req?.ip,
