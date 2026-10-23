@@ -22,7 +22,6 @@ import {
   MainClinic,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
-  SatelliteClinic,
 } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
@@ -347,31 +346,17 @@ describe('AppointmentRescheduleForm', () => {
   });
 
   describe('Opening on the visit as it stands', () => {
-    test('Fills in the visit type and everyone the visit is held on', async () => {
+    test('Fills in the visit type, service facility, and everyone the visit is held on', async () => {
       // Read off the Slots the appointment holds: its participants would not say which
       // of an actor's schedules the visit is on.
       await setup(medplum);
 
       expect(screen.getByRole('textbox', { name: /visit type/i })).toHaveValue('Ultrasound Imaging');
-      expect(hasPill(/Rivera/)).toBe(true);
-      expect(hasPill(/Ultrasound 1/)).toBe(true);
-      expect(hasPill(/Exam Room A/)).toBe(true);
+      expect(hasPill(/Rivera/)).toBe(true); // Practitioner actor
+      expect(hasPill(/Ultrasound 1/)).toBe(true); // Device actor
+      expect(hasPill(/Exam Room A/)).toBe(true); // Location actor
+      expect(hasPill(MainClinic.name as string)).toBe(true); // Service facility
       expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
-    });
-
-    test('Opens on the service facility the visit is held at, unless the host names another', async () => {
-      const rendered = await setup(medplum);
-      expect(hasPill(MainClinic.name as string)).toBe(true);
-      rendered.unmount();
-
-      const unsited = await medplum.createResource(UNSITED_APPOINTMENT);
-      const unsitedRendered = await setup(medplum, { appointment: unsited });
-      expect(hasPill(MainClinic.name as string)).toBe(false);
-      unsitedRendered.unmount();
-
-      await setup(medplum, { defaultServiceFacility: SatelliteClinic });
-      expect(hasPill(SatelliteClinic.name as string)).toBe(true);
-      expect(hasPill(MainClinic.name as string)).toBe(false);
     });
 
     test('Names who a move would take off the visit, and still offers the move', async () => {

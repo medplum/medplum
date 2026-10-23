@@ -35,6 +35,7 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'onSubmit'
   | 'mode'
   | 'defaultService'
+  | 'defaultServiceFacility'
   | 'defaultSelections'
   | 'defaultPatient'
   | 'ignoreAppointment'
@@ -84,8 +85,7 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * @returns The form.
  */
 export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps): JSX.Element {
-  const { appointment, onRescheduled, defaultStart, defaultServiceFacility, canBypassSchedulingRules, ...formProps } =
-    props;
+  const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
 
@@ -194,7 +194,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         {...formProps}
         mode="reschedule"
         canBypassSchedulingRules={canBypassSchedulingRules}
-        defaultServiceFacility={defaultServiceFacility ?? getAppointmentSite(appointment)}
+        defaultServiceFacility={getAppointmentSite(appointment)}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}
