@@ -349,7 +349,7 @@ describe('AppointmentDetails', () => {
       participant: [{ status: 'accepted', actor: createReference(ElderJordanPatient) }],
     });
 
-    expect(await screen.findByText('MRN-0041')).toBeInTheDocument();
+    expect(await screen.findByText('100041')).toBeInTheDocument();
     expect(screen.getByText('MRN')).toBeInTheDocument();
   });
 
