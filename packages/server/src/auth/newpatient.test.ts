@@ -87,6 +87,15 @@ describe('New patient', () => {
       });
     expect(res4).toHaveStatus(200);
 
+    // Try to use the login for a different project
+    // (This should fail)
+    const res4b = await request(app).post('/auth/newpatient').type('json').send({
+      login: res4.body.login,
+      projectId: randomUUID(),
+    });
+    expect(res4b).toHaveStatus(400);
+    expect(res4b.body).toMatchObject(badRequest('Invalid project'));
+
     const res5 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId: projectId,
