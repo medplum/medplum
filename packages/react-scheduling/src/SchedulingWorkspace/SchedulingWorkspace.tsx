@@ -13,7 +13,7 @@ import type { Appointment, Extension, HealthcareService, Location, Reference, Sl
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -25,7 +25,7 @@ import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentResc
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
-import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
+import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
@@ -183,8 +183,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
   const [selectedSlotId, setSelectedSlotId] = useState<string>();
-  // Where the calendar was last sent: the start of the appointment just booked.
-  const [revealDate, setRevealDate] = useState<Date>();
+
+  const calendarRef = useRef<CalendarHandle>(null);
 
   const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
 
@@ -379,7 +379,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       const [first] = booking.appointments;
       selectAppointment(first);
       if (first.start) {
-        setRevealDate(new Date(first.start));
+        calendarRef.current?.gotoDate(new Date(first.start));
       }
       return onBooked?.(booking);
     },
@@ -476,6 +476,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Alert>
         )}
         <MultiCalendar
+          ref={calendarRef}
           className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
@@ -485,7 +486,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectSlot={selectSlot}
           selection={blocking ? blockHighlight : bookingSelection}
           selectedId={openAppointment?.id ?? openSlot?.id}
-          revealDate={revealDate}
         />
         <div className={classes.footer}>
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />

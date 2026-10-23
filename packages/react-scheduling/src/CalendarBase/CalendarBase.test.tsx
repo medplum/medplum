@@ -4,9 +4,10 @@ import type { WithId } from '@medplum/core';
 import { createReference, sleep } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
+import { createRef } from 'react';
 import { describe, expect, test, vi } from 'vitest';
-import { renderWithMedplum, screen, userEvent } from '../test-utils/render';
-import type { CalendarBaseProps } from './CalendarBase';
+import { act, renderWithMedplum, screen, userEvent } from '../test-utils/render';
+import type { CalendarBaseProps, CalendarHandle } from './CalendarBase';
 import { CalendarBase } from './CalendarBase';
 
 describe('CalendarBase', () => {
@@ -679,13 +680,14 @@ describe('CalendarBase', () => {
     });
   });
 
-  describe('revealDate', () => {
-    test('pages to the week holding the time it is given', async () => {
+  describe('gotoDate', () => {
+    test('pages to the week holding the date it is given', async () => {
       const onRangeChange = vi.fn();
-      const { rerender } = setup({ eventSources: [], onRangeChange });
+      const ref = createRef<CalendarHandle>();
+      renderWithMedplum(<CalendarBase ref={ref} eventSources={[]} onRangeChange={onRangeChange} />, new MockClient());
       const threeWeeksOut = new Date(baseDate.getTime() + 21 * 24 * 60 * 60 * 1000);
 
-      rerender(<CalendarBase eventSources={[]} onRangeChange={onRangeChange} revealDate={threeWeeksOut} />);
+      act(() => ref.current?.gotoDate(threeWeeksOut));
 
       const range = onRangeChange.mock.lastCall?.[0];
       expect(range.start.getTime()).toBeLessThanOrEqual(threeWeeksOut.getTime());

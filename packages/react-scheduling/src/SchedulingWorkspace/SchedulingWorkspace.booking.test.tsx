@@ -4,10 +4,11 @@ import type { WithId } from '@medplum/core';
 import { getExtensionValue, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
-import type { JSX } from 'react';
-import { useEffect } from 'react';
+import type { JSX, Ref } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
+import type { CalendarHandle } from '../MultiCalendar/MultiCalendar';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
 import { installValueSetStub } from '../stories/mockValueSet';
@@ -107,19 +108,23 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
  * workspace either way.
  */
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
-  MultiCalendar: (props: {
-    sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean; label?: string }[];
-    onSelectInterval?: (interval: { start: Date; end: Date }) => void;
-    onSelectAppointment?: (appointment: Appointment) => void;
-    onRangeChange?: (range: { start: Date; end: Date }) => void;
-    selection?: { start: Date; end: Date };
-    selectedId?: string;
-    revealDate?: Date;
-  }): JSX.Element => {
+  MultiCalendar: forwardRef(function MultiCalendar(
+    props: {
+      sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean; label?: string }[];
+      onSelectInterval?: (interval: { start: Date; end: Date }) => void;
+      onSelectAppointment?: (appointment: Appointment) => void;
+      onRangeChange?: (range: { start: Date; end: Date }) => void;
+      selection?: { start: Date; end: Date };
+      selectedId?: string;
+    },
+    ref: Ref<CalendarHandle>
+  ): JSX.Element {
     // The real grid announces the week it opened on, and nothing is loaded onto the
     // calendar until it does. Announced once, as a grid that is never paged announces it.
     const { onRangeChange } = props;
     useEffect(() => onRangeChange?.(CALENDAR_WEEK), [onRangeChange]);
+    const [pagedTo, setPagedTo] = useState<Date>();
+    useImperativeHandle(ref, () => ({ gotoDate: setPagedTo }), []);
 
     return (
       <div>
@@ -147,7 +152,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
         <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
         <div data-testid="selected-id">{props.selectedId ?? 'none'}</div>
         {/* Stands in for the real grid paging to the day it is given. */}
-        <div data-testid="revealed-date">{props.revealDate?.toISOString() ?? 'none'}</div>
+        <div data-testid="paged-to">{pagedTo?.toISOString() ?? 'none'}</div>
         {/* Stands in for the events the real grid draws for appointments not yet booked. */}
         <div
           data-testid="proposed-time"
@@ -164,7 +169,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
         </div>
       </div>
     );
-  },
+  }),
 }));
 
 /**
@@ -365,7 +370,7 @@ describe('SchedulingWorkspace booking', () => {
     const [booked] = (onBooked.mock.calls[0][0] as AppointmentBooking).appointments;
     expect(within(detailsPane() as HTMLElement).getByText('Jordan Reyes')).toBeInTheDocument();
     expect(screen.getByTestId('selected-id')).toHaveTextContent(booked.id);
-    expect(screen.getByTestId('revealed-date')).toHaveTextContent(new Date(booked.start as string).toISOString());
+    expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(booked.start as string).toISOString());
   });
 
   test('Reports the booking it wrote to the host', async () => {
