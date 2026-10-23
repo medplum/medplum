@@ -498,6 +498,16 @@ describe('FHIR Routes', () => {
     expect(res).toHaveStatus(400);
   });
 
+  test('Patch resource invalid resource type', async () => {
+    const res = await request(app)
+      .patch(`/fhir/R4/Foo/${patientId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Parameters' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Unknown resource type');
+  });
+
   test('Patch resource invalid result', async () => {
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${patientId}`)

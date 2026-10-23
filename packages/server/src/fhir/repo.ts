@@ -663,6 +663,8 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(notFound);
     }
 
+    validateResourceType(resourceType);
+
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
@@ -1614,13 +1616,24 @@ export class Repository extends FhirRepository implements Disposable {
     try {
       return await this.ensureInTransaction(
         async (txRepo) => {
-          const resource = await txRepo.readResourceFromDatabase<T>(resourceType, id);
+          const resource = await txRepo.readResourceImpl<T>(resourceType, id);
 
           if (resource.resourceType !== resourceType) {
             throw new OperationOutcomeError(badRequest('Incorrect resource type'));
           }
           if (resource.id !== id) {
             throw new OperationOutcomeError(badRequest('Incorrect ID'));
+          }
+
+          // Check before evaluating the patch, which can disclose resource content (e.g. a failed "test" operation)
+          (resource.meta as Meta).compartment = txRepo.getCompartments(resource); // Update compartments with latest rules
+          const policy = txRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource);
+          if (!policy) {
+            throw new OperationOutcomeError(forbidden);
+          }
+          // Hidden fields are restored from the existing resource on update
+          for (const field of policy.hiddenFields ?? EMPTY) {
+            removeField(resource, field);
           }
 
           if (Array.isArray(patch)) {
@@ -1632,7 +1645,7 @@ export class Repository extends FhirRepository implements Disposable {
             );
             fhirpathPatchTypedValue(toTypedValue(resource), params.operation as FhirPathPatch[]);
           } else {
-            return resource; // No patch present, return unmodified
+            return txRepo.removeHiddenFields(resource); // No patch present, return unmodified
           }
 
           const result = await txRepo.updateResourceImpl(resource, false, options);
