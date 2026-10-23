@@ -469,6 +469,15 @@ export async function setLoginMembership(
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
+  // A login started for a specific project can only be completed with a membership in that project
+  if (
+    login.project?.reference &&
+    login.project.reference !== 'Project/new' &&
+    membership.project?.reference !== login.project.reference
+  ) {
+    throw new OperationOutcomeError(badRequest('Invalid profile'));
+  }
+
   // Get the project
   const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readReference<Project>(membership.project);

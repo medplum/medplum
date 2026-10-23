@@ -18,6 +18,7 @@ const password = randomUUID();
 let profile1: ProfileResource;
 let profile2: ProfileResource;
 let membership1: ProjectMembership;
+let membership2: ProjectMembership;
 
 describe('Profile', () => {
   const systemRepo = getGlobalSystemRepo();
@@ -49,6 +50,7 @@ describe('Profile', () => {
       });
 
       profile2 = registerResult2.profile;
+      membership2 = registerResult2.membership;
     });
   });
 
@@ -220,6 +222,42 @@ describe('Profile', () => {
     expect(res2).toHaveStatus(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Invalid profile');
+  });
+
+  test('Membership for different project', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeUndefined();
+
+    // Simulate a login that was started for the first project
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        project: membership1.project,
+      })
+    );
+
+    // Same user, but the membership is in a different project
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership2.id,
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.issue).toBeDefined();
+    expect(res2.body.issue[0].details.text).toBe('Invalid profile');
+
+    const res3 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership1.id,
+    });
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.code).toBeDefined();
   });
 
   test('Success', async () => {
