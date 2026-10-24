@@ -264,6 +264,12 @@ export interface Login {
    * The time at which the refresh secret was most recently rotated.
    */
   refreshSecretRotatedAt?: string;
+
+  /**
+   * The user-provided reason for this login. Required when the project has
+   * the loginReasonRequired setting enabled.
+   */
+  reason?: string;
 }
 
 /**
