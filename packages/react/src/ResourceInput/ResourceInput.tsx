@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import type { JSX, ReactNode } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { MultiResourceInput } from './MultiResourceInput';
 
@@ -10,6 +10,11 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
+  /**
+   * The selected value, as a resource or a reference to resolve. Passing this (`null` for none) makes
+   * the input controlled; see `AsyncAutocompleteProps.value`.
+   */
+  readonly value?: T | Reference<T> | null;
   readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
   readonly required?: boolean;
@@ -29,7 +34,13 @@ export interface ResourceInputProps<T extends Resource = Resource> {
  * @returns The ResourceInput component.
  */
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element | null {
-  const onChange = props.onChange;
+  const { onChange, value } = props;
+  const multiValue = useMemo(() => {
+    if (value === undefined) {
+      return undefined;
+    }
+    return value ? [value] : [];
+  }, [value]);
 
   const handleChange = useCallback(
     (newResources: T[]) => {
@@ -45,6 +56,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       resourceType={props.resourceType}
       name={props.name}
       defaultValue={props.defaultValue ? [props.defaultValue] : undefined}
+      value={multiValue}
       searchCriteria={props.searchCriteria}
       placeholder={props.placeholder}
       required={props.required}

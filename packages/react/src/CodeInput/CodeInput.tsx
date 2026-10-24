@@ -2,31 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useState } from 'react';
 import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
-export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
+export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'value' | 'onChange'> {
   readonly defaultValue?: string;
+  /** Passing this (`null` for none) makes the input controlled; see `AsyncAutocompleteProps.value`. */
+  readonly value?: string | null;
   readonly onChange: ((value: string | undefined) => void) | undefined;
 }
 
 export function CodeInput(props: CodeInputProps): JSX.Element {
-  const { defaultValue, onChange, withHelpText, ...rest } = props;
-  const [value, setValue] = useState(defaultValue);
+  const { defaultValue, value, onChange, withHelpText, ...rest } = props;
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
-    const newValue = newValues[0];
-    const newCode = valueSetElementToCode(newValue);
-    setValue(newCode);
     if (onChange) {
-      onChange(newCode);
+      onChange(valueSetElementToCode(newValues[0]));
     }
   }
 
   return (
     <ValueSetAutocomplete
-      defaultValue={codeToValueSetElement(value)}
+      defaultValue={codeToValueSetElement(defaultValue)}
+      value={value === undefined ? undefined : (codeToValueSetElement(value) ?? null)}
       onChange={handleChange}
       withHelpText={withHelpText ?? true}
       {...rest}
@@ -34,7 +32,7 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
   );
 }
 
-function codeToValueSetElement(code: string | undefined): ValueSetExpansionContains | undefined {
+function codeToValueSetElement(code: string | null | undefined): ValueSetExpansionContains | undefined {
   return code ? { code } : undefined;
 }
 

@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Coding } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { act, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { CodingInput } from './CodingInput';
 
@@ -57,5 +58,22 @@ describe('CodingInput', () => {
 
     // Despite an undefined binding value, the app still renders and functions
     expect(screen.getByText('Test Empty')).toBeDefined();
+  });
+
+  test('Follows controlled value', async () => {
+    const ui = (value: Coding | null): JSX.Element => (
+      <MedplumProvider medplum={medplum}>
+        <CodingInput path="" binding={binding} name="test" value={value} />
+      </MedplumProvider>
+    );
+    let rerender: (ui: JSX.Element) => void = () => undefined;
+    await act(async () => {
+      rerender = render(ui({ code: 'abc' })).rerender;
+    });
+    expect(screen.getByText('abc')).toBeInTheDocument();
+
+    await act(async () => rerender(ui(null)));
+    expect(screen.queryByText('abc')).not.toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 });

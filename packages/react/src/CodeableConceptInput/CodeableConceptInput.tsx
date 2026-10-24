@@ -2,21 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useState } from 'react';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps
   extends
-    Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
+    Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'value' | 'onChange' | 'disabled'>,
     ComplexTypeInputProps<CodeableConcept> {
+  /** Passing this (`null` for none) makes the input controlled; see `AsyncAutocompleteProps.value`. */
+  readonly value?: CodeableConcept | null;
   readonly onChange?: (value: CodeableConcept | undefined) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
   const {
     defaultValue,
+    value,
     onChange,
     withHelpText,
     // spread these unused props so they don't get passed to ValueSetAutocomplete in `rest`
@@ -25,19 +27,17 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     valuePath: _valuePath,
     ...rest
   } = props;
-  const [value, setValue] = useState(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
-    const newConcept = valueSetElementToCodeableConcept(newValues);
-    setValue(newConcept);
     if (onChange) {
-      onChange(newConcept);
+      onChange(valueSetElementToCodeableConcept(newValues));
     }
   }
 
   return (
     <ValueSetAutocomplete
-      defaultValue={value && codeableConceptToValueSetElement(value)}
+      defaultValue={defaultValue && codeableConceptToValueSetElement(defaultValue)}
+      value={value === undefined ? undefined : ((value && codeableConceptToValueSetElement(value)) ?? null)}
       onChange={handleChange}
       withHelpText={withHelpText ?? true}
       {...rest}
