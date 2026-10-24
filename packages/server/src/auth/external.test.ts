@@ -195,6 +195,42 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('Email address does not match domain');
   });
 
+  test.each([
+    `other@example.com,x@${domain}`,
+    `x@${domain},other@example.com,x@${domain}`,
+    `"x,other@example.com,y"@${domain}`,
+  ])('Email with comma is not a list of users: %s', async (claim) => {
+    // Build the external callback URL with the known domain
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain }),
+    });
+
+    // Mock the external identity provider
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(claim)));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Domain with comma is not a list of domains', async () => {
+    // Build the external callback URL with another domain in front of the known domain
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain: `example.com,${domain}` }),
+    });
+
+    // Mock the external identity provider
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(`other@example.com,${domain}`)));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Identity provider not found');
+  });
+
   test('DomainConfiguration success', async () => {
     // Build the external callback URL
     // There are two required parameters: code and state

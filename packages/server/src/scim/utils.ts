@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Operation, SearchRequest, WithId } from '@medplum/core';
-import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import {
+  badRequest,
+  escapeSearchValue,
+  forbidden,
+  getReferenceString,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
 import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config/loader';
@@ -48,7 +55,7 @@ export async function searchScimUsers(
       searchRequest.filters.push({
         code: 'user-name',
         operator: Operator.EQUALS,
-        value: match[1],
+        value: escapeSearchValue(match[1]),
       });
     }
   }
