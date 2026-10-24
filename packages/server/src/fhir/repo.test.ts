@@ -1938,8 +1938,9 @@ describe('FHIR Repo', () => {
 
   test('Conditional reference resolution', async () =>
     withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
       const practitionerIdentifier = randomUUID();
-      const practitioner = await systemRepo.createResource<Practitioner>({
+      const practitioner = await repo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
@@ -1947,7 +1948,7 @@ describe('FHIR Repo', () => {
         reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
       };
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
         meta: { account: conditionalReference },
         generalPractitioner: [conditionalReference],
@@ -1968,17 +1969,17 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource(patient)).rejects.toThrow(/did not match any resources/);
+      await expect(testProjectRepo.createResource(patient)).rejects.toThrow(/did not match any resources/);
     }));
 
   test('Conditional reference resolution multiple matches', async () =>
     withTestContext(async () => {
       const practitionerIdentifier = randomUUID();
-      await systemRepo.createResource<Practitioner>({
+      await testProjectRepo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
-      await systemRepo.createResource<Practitioner>({
+      await testProjectRepo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
@@ -1989,7 +1990,26 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource(patient)).rejects.toThrow();
+      await expect(testProjectRepo.createResource(patient)).rejects.toThrow(/matched multiple resources/);
+    }));
+
+  test('Conditional reference resolution requires a project', async () =>
+    withTestContext(async () => {
+      const practitionerIdentifier = randomUUID();
+      await testProjectRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+        generalPractitioner: [
+          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
+        ],
+      };
+      await expect(systemRepo.createResource(patient)).rejects.toThrow(/is not allowed/);
+      await expect(testProjectRepo.createResource(patient)).resolves.toBeDefined();
     }));
 
   test('Conditional reference replaced before validation', async () =>
@@ -1999,7 +2019,7 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         identifier: [{ value: mrn }],
       };
-      await systemRepo.createResource(patient);
+      await testProjectRepo.createResource(patient);
 
       const serviceRequest = {
         resourceType: 'ServiceRequest',
@@ -2031,7 +2051,9 @@ describe('FHIR Repo', () => {
           },
         ],
       } as unknown as ServiceRequest;
-      await expect(systemRepo.createResource(serviceRequest)).rejects.toThrow(/^Expected single .*?performerType\)$/);
+      await expect(testProjectRepo.createResource(serviceRequest)).rejects.toThrow(
+        /^Expected single .*?performerType\)$/
+      );
     }));
 
   test('Prevents setting Project compartments', async () =>

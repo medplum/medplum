@@ -207,6 +207,19 @@ describe('OAuth utils', () => {
     }
   });
 
+  test('Invalid projectId', async () => {
+    await expect(
+      tryLogin({
+        authMethod: 'password',
+        projectId: 'not-a-project-id',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+      })
+    ).rejects.toThrow('Invalid projectId');
+  });
+
   test('Login successfully', async () => {
     const login = await tryLogin({
       clientId: client.id,
