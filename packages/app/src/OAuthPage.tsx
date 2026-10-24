@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
+import { Alert, Title } from '@mantine/core';
 import type { CodeChallengeMethod } from '@medplum/core';
 import { locationUtils, normalizeErrorString } from '@medplum/core';
 import type { ClientApplicationSignInForm } from '@medplum/fhirtypes';
-import { Loading, Logo, SignInForm, useMedplum } from '@medplum/react';
+import { Document, Loading, Logo, SignInForm, useMedplum } from '@medplum/react';
+import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -21,6 +21,7 @@ export function OAuthPage(): JSX.Element | null {
   const login = params.get('login');
   const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     if (!clientId || !redirectUri) {
@@ -33,13 +34,7 @@ export function OAuthPage(): JSX.Element | null {
         );
         setClientInfo(info);
       } catch (err) {
-        showNotification({
-          id: 'clientinfofail',
-          title: 'Failed to retrieve client information.',
-          color: 'red',
-          message: normalizeErrorString(err),
-          withCloseButton: true,
-        });
+        setError(normalizeErrorString(err));
       } finally {
         setLoading(false);
       }
@@ -49,7 +44,7 @@ export function OAuthPage(): JSX.Element | null {
   }, [medplum, clientId, redirectUri]);
 
   if (!clientId || !redirectUri) {
-    return null;
+    return <InvalidRequest message="Missing or invalid client ID or redirect URI" />;
   }
 
   if (loading) {
@@ -57,7 +52,7 @@ export function OAuthPage(): JSX.Element | null {
   }
 
   if (!clientInfo) {
-    return null;
+    return <InvalidRequest message={error ?? 'Unknown client'} />;
   }
 
   function onCode(code: string): void {
@@ -94,6 +89,16 @@ export function OAuthPage(): JSX.Element | null {
       )}
       <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
     </SignInForm>
+  );
+}
+
+function InvalidRequest({ message }: { readonly message: string }): JSX.Element {
+  return (
+    <Document width={450}>
+      <Alert icon={<IconAlertCircle size={16} />} title="Invalid sign-in request" color="red">
+        {message}
+      </Alert>
+    </Document>
   );
 }
 

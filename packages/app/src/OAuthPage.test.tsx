@@ -42,6 +42,7 @@ describe('OAuthPage', () => {
   test('Missing clientId', async () => {
     await setup('/oauth');
     expect(screen.queryByTestId('submit')).toBeNull();
+    expect(screen.getByText('Invalid sign-in request')).toBeInTheDocument();
   });
 
   test('Success', async () => {
@@ -138,18 +139,20 @@ describe('OAuthPage', () => {
     await setup('/oauth?client_id=123');
     expect(medplum.get).not.toHaveBeenCalled();
     expect(screen.queryByLabelText('Email *')).toBeNull();
+    expect(screen.getByText('Missing or invalid client ID or redirect URI')).toBeInTheDocument();
   });
 
   test('Script redirect URI', async () => {
     await setup('/oauth?client_id=123&redirect_uri=javascript:alert(1)');
     expect(medplum.get).not.toHaveBeenCalled();
     expect(screen.queryByLabelText('Email *')).toBeNull();
+    expect(screen.getByText('Missing or invalid client ID or redirect URI')).toBeInTheDocument();
   });
 
   test('Client info failure', async () => {
     vi.spyOn(medplum, 'get').mockRejectedValue(new Error('Invalid redirect URI'));
     await setup('/oauth?client_id=123&redirect_uri=https://example.com/other');
-    await waitFor(() => expect(medplum.get).toHaveBeenCalled());
+    expect(await screen.findByText('Invalid redirect URI')).toBeInTheDocument();
     expect(screen.queryByLabelText('Email *')).toBeNull();
   });
 
