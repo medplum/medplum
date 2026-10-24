@@ -17,6 +17,7 @@ import type {
   Binary,
   Bot,
   ClientApplication,
+  Communication,
   Condition,
   Cron,
   Device,
@@ -2163,6 +2164,39 @@ describe('AccessPolicy', () => {
         expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
       }
     }));
+
+  test.each([
+    ['_project', true],
+    ['subject', false],
+  ])('Field rules on create with %s criteria', async (param, warned) => {
+    const value = param === '_project' ? testProject.id : 'Patient/' + randomUUID();
+    const repo = getRepository({
+      projects: [testProject],
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Communication',
+            criteria: `Communication?${param}=${value}`,
+            readonlyFields: ['priority'],
+          },
+        ],
+      },
+    });
+    const warnSpy = vi.spyOn(globalLogger, 'warn');
+    try {
+      await repo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+        subject: param === 'subject' ? { reference: value } : undefined,
+        priority: 'stat',
+      });
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Access policy field match after metadata');
+      expect(calls.length > 0).toBe(warned);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 
   test('Project admin cannot override synthetic access policy for admin types', () =>
     withTestContext(async () => {
