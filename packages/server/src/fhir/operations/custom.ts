@@ -12,7 +12,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bot, OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';
-import { getBotDefaultHeaders, getBotProjectMembership } from '../../bots/utils';
+import { getBotDefaultHeaders, getBotProjectMembership, isBinaryWithoutData } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { buildOutputParameters } from './utils/parameters';
@@ -97,6 +97,10 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
 
   if (isOperationOutcome(result)) {
     return [result];
+  }
+
+  if (isBinaryWithoutData(result.returnValue)) {
+    return [badRequest('Bot returned a Binary without data')];
   }
 
   if (!result.success) {
