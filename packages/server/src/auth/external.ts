@@ -22,7 +22,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
-import { getClientApplication, tryLogin } from '../oauth/utils';
+import { getClientApplication, isExternalEmailUnverified, tryLogin } from '../oauth/utils';
 import { safeFetch } from '../util/url';
 import { getDomainConfiguration } from './method';
 
@@ -98,6 +98,15 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
       return;
     }
     throw err;
+  }
+
+  if (identity.email && isExternalEmailUnverified(userInfo)) {
+    getLogger().warn('External identity provider reported unverified email', {
+      clientId: client?.id,
+      projectId: client?.meta?.project,
+      domain: domainConfig?.domain,
+      issuer: idp.issuer,
+    });
   }
 
   if (body.domain && !identity.email?.endsWith('@' + body.domain)) {
