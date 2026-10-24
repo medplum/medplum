@@ -22,6 +22,7 @@ import {
 } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
 import type {
+  Binary,
   Bot,
   Login,
   OperationOutcome,
@@ -433,6 +434,16 @@ export function getJsFileExtension(bot: Bot, code: string): string {
 }
 
 /**
+ * Returns true if the value is a Binary without inline data.
+ * Bots must return Binary content inline, because a Binary without data would be read from storage by its ID.
+ * @param value - The bot return value.
+ * @returns True if the value is a Binary without inline data.
+ */
+export function isBinaryWithoutData(value: unknown): boolean {
+  return isResource<Binary>(value, 'Binary') && !value.data;
+}
+
+/**
  * Sends the bot execution result to the client.
  * If the bot execution result is an OperationOutcome, then it is sent as an OperationOutcome response.
  * Otherwise, the return value is sent as the response body. If the return value is undefined, then the log result is sent as an OperationOutcome.
@@ -461,6 +472,11 @@ export async function sendBotResponse(
   }
 
   const outcome = result.success ? allOk : badRequest(result.logResult);
+
+  if (isBinaryWithoutData(responseBody)) {
+    sendOutcome(res, badRequest('Bot returned a Binary without data'));
+    return;
+  }
 
   if (isResource(responseBody)) {
     await sendFhirResponse(req, res, outcome, responseBody, { forceRawBinaryResponse: true });

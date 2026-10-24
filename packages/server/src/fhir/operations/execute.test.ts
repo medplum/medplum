@@ -647,6 +647,21 @@ describe('Execute', () => {
     expect(res.text).toStrictEqual('Hello, world!');
   });
 
+  test('Binary response without data', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.echoBot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        id: randomUUID(),
+        meta: { versionId: randomUUID() },
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual('Bot returned a Binary without data');
+  });
+
   test('runAsUser respects onBehalfOf', async () => {
     const { membership, profile } = await inviteUser({
       resourceType: 'Practitioner',
