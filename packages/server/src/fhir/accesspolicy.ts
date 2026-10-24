@@ -101,6 +101,26 @@ export async function getRepoForLogin(
 }
 
 /**
+ * Creates a repository that is limited to what a project may read: the project itself and the projects it links to.
+ *
+ * Use this instead of a `SystemRepository` to resolve references found in project content when there is
+ * no user to act as, such as in unauthenticated endpoints and background jobs.
+ * A `SystemRepository` can read every resource in every project, so it authorizes nothing.
+ * @param projectId - The ID of the project.
+ * @returns A repository scoped to the project.
+ */
+export async function getRepoForProject(projectId: string): Promise<Repository> {
+  const globalSystemRepo = getGlobalSystemRepo();
+  const project = await globalSystemRepo.readResource<Project>('Project', projectId);
+  return new Repository({
+    routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+    projects: await getAllowedProjects(project, globalSystemRepo),
+    author: { reference: 'system' },
+    extendedMode: true,
+  });
+}
+
+/**
  * Resolves a project and the projects it links to, which its members may read from.
  * @param project - The project whose links to resolve.
  * @param systemRepo - Optional system repository used to read projects

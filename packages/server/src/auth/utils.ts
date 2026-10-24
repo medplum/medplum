@@ -33,7 +33,6 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getInactiveReason } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
@@ -395,8 +394,6 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   }
 
   // User has multiple profiles, so the user needs to select
-  // Safe to rewrite attachments,
-  // because we know that these are all resources that the user has access to
   const memberships = await getMembershipsForLogin(login);
   const uniqueRefs = [...new Map(memberships.map((m) => [m.project.reference, m.project])).values()];
   const projects = await systemRepo.readReferences<Project>(uniqueRefs);
@@ -413,12 +410,10 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     profile: m.profile,
     identifier: m.identifier,
   }));
-  res.json(
-    await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-      login: login.id,
-      memberships: redactedMemberships,
-    })
-  );
+  res.json({
+    login: login.id,
+    memberships: redactedMemberships,
+  });
 }
 
 /**

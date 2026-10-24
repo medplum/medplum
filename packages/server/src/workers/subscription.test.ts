@@ -2434,6 +2434,53 @@ describe('Subscription Worker', () => {
       );
     }));
 
+  test('Do not presign attachments from a different project', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const binary = await botRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const documentRef = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              url: `Binary/${binary.id}`,
+            },
+          },
+        ],
+      });
+      expect(documentRef).toBeDefined();
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      await findAndExecSubscriptionJob(documentRef, 'create', subscription);
+
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining(`"url":"Binary/${binary.id}"`),
+        })
+      );
+    }));
+
   describe('WebSocket Subscriptions', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
