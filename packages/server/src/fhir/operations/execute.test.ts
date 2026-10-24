@@ -11,6 +11,7 @@ import {
   parseJWTPayload,
 } from '@medplum/core';
 import type {
+  AccessPolicy,
   AsyncJob,
   AuditEvent,
   Binary,
@@ -19,6 +20,7 @@ import type {
   ParametersParameter,
   Project,
   ProjectMembership,
+  Reference,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -29,9 +31,11 @@ import { registerNew } from '../../auth/register';
 import { clearBotAccessTokenCache } from '../../bots/utils';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
+import type { AuthState } from '../../oauth/middleware';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { getAccessPolicyForLogin } from '../accesspolicy';
 import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
@@ -981,6 +985,52 @@ describe('Execute', () => {
       const expectedProject = whichProject === 'own' ? project1 : project2;
       expect(authState?.project?.id).toBeDefined();
       expect(authState?.project?.id).toBe(expectedProject.id);
+    });
+
+    test('Linked bot without a membership in the linking project runs with its default access policy', async () => {
+      const initRes = await request(app)
+        .post('/fhir/R4/Bot/$init')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .type('json')
+        .send({ name: 'Linked default policy bot', runtimeVersion: 'vmcontext' });
+      expect(initRes).toHaveStatus(201);
+      const bot = initRes.body as WithId<Bot>;
+
+      const deployRes = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send({ code: botCodes[0][1] });
+      expect(deployRes).toHaveStatus(200);
+
+      const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
+      generateAccessTokenSpy.mockClear();
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken2)
+        .send('input');
+      expect(res).toHaveStatus(200);
+      expect(res.text).toStrictEqual('input');
+
+      expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
+      const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;
+      const authState = (await getLoginForAccessToken(undefined, generatedAccessToken))?.authState;
+      expect(authState?.project.id).toBe(project1.id);
+      expect(authState?.membership.profile.reference).toBe(getReferenceString(bot));
+
+      const systemRepo = await getProjectSystemRepo(project1);
+      const policy = await systemRepo.readReference<AccessPolicy>(
+        authState?.membership.accessPolicy as Reference<AccessPolicy>
+      );
+      expect(policy).toMatchObject({
+        name: 'Linked default policy bot Bot Access Policy',
+        resource: [{ resourceType: '*' }],
+      });
+
+      const effectivePolicy = await getAccessPolicyForLogin(authState as AuthState);
+      expect(effectivePolicy?.resource).toContainEqual({ resourceType: '*' });
     });
   });
 
