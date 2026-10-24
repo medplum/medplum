@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SearchRequest } from '@medplum/core';
 import {
+  badRequest,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   getReferenceString,
   getSearchParameters,
+  isString,
+  OperationOutcomeError,
   Operator,
   parseSearchRequest,
+  validationRegexes,
 } from '@medplum/core';
 import type { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
@@ -62,6 +66,11 @@ function parseSearchArgsWithReference(
 ): { searchRequest: SearchRequest; referenceFilter: Filter | undefined } {
   let referenceFilter: Filter | undefined = undefined;
   if (source) {
+    // Sanity check: nested resources (contained, Bundle entries) can have arbitrary ids
+    if (!isString(source.id) || !validationRegexes.id.test(source.id)) {
+      throw new OperationOutcomeError(badRequest('Invalid reference'));
+    }
+
     // _reference is a required field for reverse lookup searches
     // The GraphQL parser will validate that it is there.
     const reference = args['_reference'];
