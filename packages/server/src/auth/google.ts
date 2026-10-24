@@ -37,6 +37,7 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
 export const googleValidator = makeValidationMiddleware([
   body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
   body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
+  body('redirectUri').optional({ values: 'falsy' }).isString().withMessage('Invalid redirectUri'),
 ]);
 
 /**
@@ -145,6 +146,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,
     codeChallengeMethod: req.body.codeChallengeMethod,
+    redirectUri: req.body.redirectUri,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.createUser || projectId === 'new',
