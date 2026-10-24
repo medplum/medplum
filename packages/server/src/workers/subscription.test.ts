@@ -1638,6 +1638,58 @@ describe('Subscription Worker', () => {
       });
     }));
 
+  test('Do not execute Bot from unlinked Project', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        description: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        runAsUser: true,
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      // No Project.link to the Bot's Project
+      const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+      const subscriptionEvents: SearchRequest<AuditEvent> = {
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'entity',
+            operator: Operator.EQUALS,
+            value: getReferenceString(subscription),
+          },
+        ],
+      };
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      // Attempt to trigger the Subscription
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(
+        'Bot is not accessible from the Subscription project'
+      );
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(0);
+
+      // The Bot must not have run
+      await expect(repo.search(subscriptionEvents)).resolves.toMatchObject({ entry: [] });
+    }));
+
   test('Stop retries if Subscription status not active', () =>
     withTestContext(async () => {
       const subscription = await repo.createResource<Subscription>({

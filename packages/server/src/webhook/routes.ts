@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isOperationOutcome, singularize } from '@medplum/core';
-import type { Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { isOperationOutcome, resolveId, singularize } from '@medplum/core';
+import type { Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { executeBot } from '../bots/execute';
-import { sendBotResponse } from '../bots/utils';
+import { canProjectReadBot, sendBotResponse } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 
@@ -40,6 +40,13 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
 
   const systemRepo = await getProjectSystemRepo(runAs.project);
   const bot = await systemRepo.readReference<Bot>(runAs.profile as Reference<Bot>);
+
+  // The Bot must be readable from the ProjectMembership's project
+  const project = await systemRepo.readResource<Project>('Project', resolveId(runAs.project) as string);
+  if (!(await canProjectReadBot(project, bot))) {
+    res.status(403).send('Bot is not accessible from the ProjectMembership project');
+    return;
+  }
 
   // The Bot must have a publicWebhook flag set to true
   if (!bot.publicWebhook) {

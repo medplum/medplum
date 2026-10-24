@@ -35,10 +35,11 @@ import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
+import { getAllowedProjects } from '../fhir/accesspolicy';
 import { sendOutcome } from '../fhir/outcomes';
 import { findProjectMembership } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getPermittedProjectIds } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
@@ -159,6 +160,30 @@ export function normalizeBotExecutionResult(result: BotExecutionResult): BotExec
  */
 export function isBotEnabledForProject(project: Project): boolean {
   return !!project.features?.includes('bots');
+}
+
+/**
+ * Returns whether a project may run the given bot.
+ *
+ * A bot is code, not authority, so the bot may live in a linked project. The link is what makes
+ * that safe, and it must be checked wherever a bot is resolved on an unscoped system repo from a
+ * user-controlled id or reference string (Subscription endpoints, Cron targets, webhook
+ * memberships), which would otherwise reach a bot in any project at all.
+ * @param project - The project that names the bot.
+ * @param bot - The bot to run.
+ * @returns True if the bot's project is the given project or a link that exports Bot.
+ */
+export async function canProjectReadBot(project: WithId<Project>, bot: Bot): Promise<boolean> {
+  const botProjectId = bot.meta?.project;
+  if (!botProjectId) {
+    return false;
+  }
+  if (botProjectId === project.id) {
+    return true;
+  }
+
+  const permitted = getPermittedProjectIds(await getAllowedProjects(project), 'Bot');
+  return !permitted || permitted.includes(botProjectId);
 }
 
 /**

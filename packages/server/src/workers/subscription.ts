@@ -37,6 +37,7 @@ import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
+import { canProjectReadBot } from '../bots/utils';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
@@ -952,6 +953,14 @@ async function execBot(
   // lookup, but a field that can go stale and needs a migration, and linked-project Subscriptions would
   // need it too), or try every shard (simple, but one read per shard per job unless cached).
   const bot = await systemRepo.readReference<Bot>({ reference: url });
+
+  // A project-scoped Subscription may only target a Bot in its own project, or in a linked project that exports Bot
+  if (subscription.meta?.project) {
+    const subscriptionProject = await systemRepo.readResource<Project>('Project', subscription.meta.project);
+    if (!(await canProjectReadBot(subscriptionProject, bot))) {
+      throw new Error('Bot is not accessible from the Subscription project');
+    }
+  }
 
   // A project-scoped Subscription only fires for its own project, so the Bot runs there. A
   // server-scoped one has no project: a runAsUser Bot runs where the requester is a member (the
