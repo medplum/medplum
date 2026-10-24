@@ -86,6 +86,30 @@ describe('OAuth utils', () => {
     expect(res.body.logo.url).toBe(`Binary/${binary.id}`);
   });
 
+  test('Registered redirect URI', async () => {
+    const redirectUri = client.redirectUris?.[0] as string;
+    const res = await request(app).get(`/auth/clientinfo/${client.id}`).query({ redirect_uri: redirectUri });
+    expect(res).toHaveStatus(200);
+  });
+
+  test('Unregistered redirect URI', async () => {
+    const res = await request(app)
+      .get(`/auth/clientinfo/${client.id}`)
+      .query({ redirect_uri: 'https://example.com/other' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
+  });
+
+  test('medplum-cli redirect URI', async () => {
+    const ok = await request(app).get('/auth/clientinfo/medplum-cli').query({ redirect_uri: 'http://localhost:9615' });
+    expect(ok).toHaveStatus(200);
+
+    const bad = await request(app)
+      .get('/auth/clientinfo/medplum-cli')
+      .query({ redirect_uri: 'https://example.com/other' });
+    expect(bad).toHaveStatus(400);
+  });
+
   test('Invalid client', async () => {
     const res = await request(app).get(`/auth/clientinfo/INVALIDID`).type('json');
     expect(res).toHaveStatus(404);
