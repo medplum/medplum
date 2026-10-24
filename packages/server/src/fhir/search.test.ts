@@ -5242,6 +5242,24 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         expectSearchByReferenceResults(patients, observations, count, result);
       }));
 
+    test('Reference values with special characters', async () =>
+      withTestContext(async () => {
+        const patients = await createPatients(repo, 1);
+        const observations = await createObservations(repo, 2, { subject: patients[0] });
+        const patientRef = getReferenceString(patients[0]);
+        const otherRef = "Patient/o'brien";
+
+        const result = await repo.searchByReference<Observation>(
+          { resourceType: 'Observation', count: 10 },
+          'subject',
+          [otherRef, patientRef]
+        );
+
+        expect(Object.keys(result)).toStrictEqual([otherRef, patientRef]);
+        expect(result[otherRef]).toStrictEqual([]);
+        expect(result[patientRef].map((o) => o.id).sort()).toStrictEqual(observations.map((o) => o.id).sort());
+      }));
+
     test('Array reference column', async () =>
       withTestContext(async () => {
         const parentObservations = await createObservations(repo, 3, {});
