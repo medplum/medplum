@@ -867,14 +867,17 @@ export function buildSearchExpression(
   trackedResourceTypes?: TrackedResourceTypes
 ): Expression | undefined {
   const expressions: Expression[] = [];
-  for (const filter of searchRequest.filters ?? EMPTY) {
+  const filters = searchRequest.filters ?? EMPTY;
+  const fenceChainedSearch = shouldFenceChainedSearch(repo, resourceType, filters);
+  for (const filter of filters) {
     const expr = buildSearchFilterExpression(
       repo,
       selectQuery,
       resourceType,
       resourceType,
       filter,
-      trackedResourceTypes
+      trackedResourceTypes,
+      fenceChainedSearch
     );
     expressions.push(expr);
   }
@@ -888,6 +891,38 @@ export function buildSearchExpression(
 }
 
 /**
+ * Returns true if chained search subqueries should be wrapped in an optimization fence.
+ *
+ * By default, Postgres flattens the chained search `EXISTS()` into a semi-join, and may then drive the query
+ * from the chain side. When the chain fans out through a "hub" resource (e.g., an Organization referenced by
+ * millions of Encounters), the planner badly underestimates the chain rows and the query takes minutes.
+ *
+ * When the outer query also has a reference equality filter (e.g., `subject=Patient/123`), that filter is usually
+ * selective, so the fence forces the planner to drive from it and check the chain per row.
+ *
+ * This is opt-in per project via `Project.systemSetting[name="chainedSearchOptimizationFence"]`.
+ * @param repo - The repository.
+ * @param resourceType - The type of resources requested.
+ * @param filters - The search filters.
+ * @returns True if chained search subqueries should be fenced.
+ */
+function shouldFenceChainedSearch(repo: Repository, resourceType: ResourceType, filters: readonly Filter[]): boolean {
+  const enabled = repo
+    .currentProject()
+    ?.systemSetting?.find((s) => s.name === 'chainedSearchOptimizationFence')?.valueBoolean;
+  return (
+    enabled === true &&
+    filters.some(isChainedSearchFilter) &&
+    filters.some(
+      (f) =>
+        f.operator === Operator.EQUALS &&
+        !isChainedSearchFilter(f) &&
+        getSearchParameter(resourceType, f.code)?.type === 'reference'
+    )
+  );
+}
+
+/**
  * Builds a single search filter as "WHERE" clause to the query builder.
  * @param repo - The repository.
  * @param selectQuery - The select query builder.
@@ -895,6 +930,7 @@ export function buildSearchExpression(
  * @param table - The resource table.
  * @param filter - The search filter.
  * @param trackedResourceTypes - Resource types involved in the logical query.
+ * @param fenceChainedSearch - If true, chained search subqueries are wrapped in an optimization fence.
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
@@ -903,7 +939,8 @@ function buildSearchFilterExpression(
   resourceType: ResourceType,
   table: string,
   filter: Filter,
-  trackedResourceTypes?: TrackedResourceTypes
+  trackedResourceTypes?: TrackedResourceTypes,
+  fenceChainedSearch?: boolean
 ): Expression {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
@@ -915,7 +952,7 @@ function buildSearchFilterExpression(
 
   if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
-    return buildChainedSearch(repo, selectQuery, resourceType, chain, trackedResourceTypes);
+    return buildChainedSearch(repo, selectQuery, resourceType, chain, trackedResourceTypes, fenceChainedSearch);
   }
 
   const specialParamExpression = trySpecialSearchParameter(
@@ -1627,7 +1664,8 @@ function buildChainedSearch(
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter,
-  trackedResourceTypes?: TrackedResourceTypes
+  trackedResourceTypes?: TrackedResourceTypes,
+  fenceChainedSearch?: boolean
 ): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
@@ -1669,7 +1707,7 @@ function buildChainedSearch(
     }
   }
 
-  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes);
+  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes, fenceChainedSearch);
 }
 
 /**
@@ -1681,13 +1719,15 @@ function buildChainedSearch(
  * @param selectQuery - The select query builder.
  * @param param - The chained search parameter.
  * @param trackedResourceTypes - Resource types involved in the logical query.
+ * @param fenceChainedSearch - If true, the `EXISTS()` subquery is wrapped in an optimization fence.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
   selectQuery: SelectQuery,
   param: ChainedSearchParameter,
-  trackedResourceTypes?: TrackedResourceTypes
+  trackedResourceTypes?: TrackedResourceTypes,
+  fenceChainedSearch?: boolean
 ): Expression {
   let link = param.chain[0];
   validateSearchResourceType(repo, link.targetType as ResourceType);
@@ -1741,6 +1781,10 @@ function buildChainedSearchUsingReferenceTable(
         trackedResourceTypes
       )
     );
+  if (fenceChainedSearch) {
+    // OFFSET 0 is intentional: Postgres will not flatten an EXISTS() subquery with an offset
+    innerQuery.offset(0);
+  }
   return new SqlFunction('EXISTS', [innerQuery]);
 }
 
