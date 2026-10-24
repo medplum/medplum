@@ -5,6 +5,7 @@ import type {
   Bundle,
   CodeableConcept,
   Coding,
+  DetectedIssue,
   DeviceDeviceName,
   Observation,
   ObservationDefinition,
@@ -127,6 +128,17 @@ describe('Core Utils', () => {
   test('getReferenceString', () => {
     expect(getReferenceString({ resourceType: 'Patient', id: '123' })).toBe('Patient/123');
     expect(getReferenceString({ reference: 'Patient/123' })).toBe('Patient/123');
+  });
+
+  test('getReferenceString and createReference with a resource that has a reference element', () => {
+    const detectedIssue: DetectedIssue = {
+      resourceType: 'DetectedIssue',
+      id: 'abc',
+      status: 'final',
+      reference: 'https://example.com/x',
+    };
+    expect(getReferenceString(detectedIssue)).toBe('DetectedIssue/abc');
+    expect(createReference(detectedIssue)).toMatchObject({ reference: 'DetectedIssue/abc' });
   });
 
   test('resolveId', () => {
