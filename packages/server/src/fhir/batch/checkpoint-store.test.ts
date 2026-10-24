@@ -42,19 +42,6 @@ describe('BatchCheckpointStore', () => {
     await store.cleanup(0);
   });
 
-  test('State persisted before assignedIds keeps the IDs of its entry resources', async () => {
-    const store = new BatchCheckpointStore('legacy-state-test', logger);
-    const state = makeInitialState();
-    state.bundle.entry = [
-      { request: { method: 'GET', url: 'Patient' } },
-      { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient', id: '456' } },
-    ];
-    // JSON.stringify drops the undefined field, as in state written before it existed
-    await store.saveInitialState({ ...state, assignedIds: undefined } as unknown as BatchInitialState);
-    expect((await store.loadInitialState()).assignedIds).toStrictEqual({ 1: '456' });
-    await store.cleanup(0);
-  });
-
   test('Result chunks accumulate and merge by index', async () => {
     const store = new BatchCheckpointStore('chunks-test', logger);
     const chunk0: Record<number, BundleEntry> = {

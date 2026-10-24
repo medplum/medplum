@@ -118,7 +118,7 @@ export class BatchCheckpointStore {
     return {
       ...persisted,
       bundleInfo: { ...persisted.bundleInfo, resourceTypes: new Set(persisted.bundleInfo.resourceTypes) },
-      assignedIds: persisted.assignedIds ?? getLegacyAssignedIds(persisted.bundle),
+      assignedIds: persisted.assignedIds,
     };
   }
 
@@ -215,23 +215,7 @@ export class BatchCheckpointStore {
 /** The JSON-safe on-disk form of {@link BatchInitialState}. e.g. use array instead of set for resourceTypes. */
 interface PersistedInitialState extends Omit<BatchInitialState, 'bundleInfo' | 'assignedIds'> {
   bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes: ResourceType[] };
-  // PENDING{v5.3+} make assignedIds required and remove getLegacyAssignedIds
-  assignedIds?: BatchInitialState['assignedIds'];
-}
-
-/**
- * For state persisted before `assignedIds` was added, use the IDs already assigned to its entry resources.
- * @param bundle - The preprocessed bundle.
- * @returns The ID of every entry resource, keyed by entry index.
- */
-function getLegacyAssignedIds(bundle: Bundle): BatchInitialState['assignedIds'] {
-  const assignedIds: BatchInitialState['assignedIds'] = {};
-  bundle.entry?.forEach((entry, index) => {
-    if (entry.resource?.id) {
-      assignedIds[index] = entry.resource.id;
-    }
-  });
-  return assignedIds;
+  assignedIds: BatchInitialState['assignedIds'];
 }
 
 interface RunWithConcurrencyOptions {
