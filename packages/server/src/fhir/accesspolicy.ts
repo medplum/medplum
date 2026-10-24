@@ -65,7 +65,7 @@ export async function getRepoForLogin(
         realMembership,
         realMembership.profile,
         membershipProfileTypes,
-        true
+        { allowLinkedProjects: true }
       );
     } catch (err: unknown) {
       if (!(err instanceof OperationOutcomeError && isNotFound(err.outcome))) {

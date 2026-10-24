@@ -46,7 +46,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     membership,
     profileRef,
     membershipProfileTypes,
-    true
+    { allowLinkedProjects: true }
   );
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);

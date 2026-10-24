@@ -65,7 +65,7 @@ describe('readMembershipReference', () => {
           membership,
           createReference(resource),
           [...membershipProfileTypes, 'AccessPolicy'],
-          allowLinkedProjects
+          { allowLinkedProjects }
         );
 
       await expect(read(ownProfile)).resolves.toMatchObject({ id: ownProfile.id });
@@ -107,10 +107,14 @@ describe('readMembershipReference', () => {
       });
 
       await expect(
-        readMembershipReference(systemRepo, membership, createReference(bot), membershipProfileTypes, true)
+        readMembershipReference(systemRepo, membership, createReference(bot), membershipProfileTypes, {
+          allowLinkedProjects: true,
+        })
       ).resolves.toMatchObject({ id: bot.id });
       await expect(
-        readMembershipReference(systemRepo, membership, createReference(practitioner), membershipProfileTypes, true)
+        readMembershipReference(systemRepo, membership, createReference(practitioner), membershipProfileTypes, {
+          allowLinkedProjects: true,
+        })
       ).rejects.toThrow('Not found');
     }));
 });

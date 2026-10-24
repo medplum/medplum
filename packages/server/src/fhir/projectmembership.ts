@@ -82,7 +82,8 @@ export function findProjectMembership(
  * @param membership - The project membership that holds the reference.
  * @param reference - The reference to read.
  * @param allowedTypes - The resource types the reference may point to.
- * @param allowLinkedProjects - Whether the target may belong to a project linked from the membership's project.
+ * @param options - Optional read options.
+ * @param options.allowLinkedProjects - Whether the target may belong to a project linked from the membership's project.
  * @returns The referenced resource.
  */
 export async function readMembershipReference<T extends Resource>(
@@ -90,7 +91,7 @@ export async function readMembershipReference<T extends Resource>(
   membership: ProjectMembership,
   reference: Reference<T>,
   allowedTypes: readonly ResourceType[],
-  allowLinkedProjects = false
+  options?: { allowLinkedProjects?: boolean }
 ): Promise<WithId<T>> {
   let resourceType: string;
   try {
@@ -113,7 +114,7 @@ export async function readMembershipReference<T extends Resource>(
     return resource;
   }
 
-  if (allowLinkedProjects && resourceProjectId) {
+  if (options?.allowLinkedProjects && resourceProjectId) {
     const project = await systemRepo.readReference<Project>(membership.project);
     const linkedProjects = await systemRepo.readReferences<Project>(project.link?.map((link) => link.project) ?? []);
     const projects = [project, ...linkedProjects.filter((p): p is WithId<Project> => isResource(p))];
