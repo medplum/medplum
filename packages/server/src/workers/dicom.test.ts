@@ -9,6 +9,7 @@ import { Readable } from 'node:stream';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
+import { getTestProjectSystemRepo } from '../fhir/repository/test-utils';
 import { getLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
@@ -243,6 +244,42 @@ describe('DICOM Worker', () => {
     const updated = await repo.readResource<DicomInstance>('DicomInstance', instance.id);
     const binary = await repo.readReference<Binary>(getFirstPixelData(updated));
     expect(binary.contentType).toBe(expectedContentType);
+  });
+
+  test('execDicomJob skips instance without project', async () => {
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const { study, series, raw } = await createDicomInstance();
+    const instance = await withTestContext(() =>
+      getTestProjectSystemRepo().createResource<DicomInstance>({
+        resourceType: 'DicomInstance',
+        study,
+        series,
+        sopClassUid: '1.2.3',
+        sopInstanceUid: `instance-${Date.now()}-${Math.random()}`,
+        metadata: '{}',
+        raw,
+      })
+    );
+    expect(instance.meta?.project).toBeUndefined();
+
+    await execDicomJob(createJob(instance.id));
+
+    expect(info).toHaveBeenCalledWith('DICOM instance has no project', { id: instance.id });
+  });
+
+  test('execDicomJob skips raw Binary in another project', async () => {
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const otherRaw = await withTestContext(() =>
+      otherRepo.createResource<Binary>({ resourceType: 'Binary', contentType: 'application/dicom' })
+    );
+    const instance = await createDicomInstance({ raw: createReference(otherRaw) });
+
+    await execDicomJob(createJob(instance.id));
+
+    const updated = await repo.readResource<DicomInstance>('DicomInstance', instance.id);
+    expect(updated.pixelData).toBeUndefined();
+    expect(info).toHaveBeenCalledWith('DICOM instance raw Binary not found', { id: instance.id });
   });
 
   test('execDicomJob rethrows missing non-deleted instances', async () => {
