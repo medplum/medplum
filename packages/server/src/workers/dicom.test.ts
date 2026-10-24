@@ -245,6 +245,21 @@ describe('DICOM Worker', () => {
     expect(binary.contentType).toBe(expectedContentType);
   });
 
+  test('execDicomJob skips raw Binary in another project', async () => {
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const otherRaw = await withTestContext(() =>
+      otherRepo.createResource<Binary>({ resourceType: 'Binary', contentType: 'application/dicom' })
+    );
+    const instance = await createDicomInstance({ raw: createReference(otherRaw) });
+
+    await execDicomJob(createJob(instance.id));
+
+    const updated = await repo.readResource<DicomInstance>('DicomInstance', instance.id);
+    expect(updated.pixelData).toBeUndefined();
+    expect(info).toHaveBeenCalledWith('DICOM instance raw Binary not found', { id: instance.id });
+  });
+
   test('execDicomJob rethrows missing non-deleted instances', async () => {
     await expect(execDicomJob(createJob('00000000-0000-0000-0000-000000000000'))).rejects.toMatchObject({
       outcome: {
