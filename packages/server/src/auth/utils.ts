@@ -4,6 +4,7 @@ import type { ProfileResource, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
+  forbidden,
   getReferenceString,
   OperationOutcomeError,
   Operator,
@@ -25,6 +26,7 @@ import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants';
+import type { AuthenticatedRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getProjectAppName } from '../email/utils';
 import { sendOutcome } from '../fhir/outcomes';
@@ -42,6 +44,20 @@ const DEFAULT_APP_NAME = 'Medplum';
 
 /** Authenticator app issuer used for projects that have not been white-labeled. */
 const DEFAULT_MFA_ISSUER = 'medplum.com';
+
+/**
+ * Returns the User reference of the authenticated caller, for routes that manage the caller's own account.
+ * On-Behalf-Of is not allowed, because these routes must act on the caller's account, not the target's.
+ * @param ctx - The authenticated request context.
+ * @returns The caller's User reference.
+ */
+export function getCallerUserReference(ctx: AuthenticatedRequestContext): Reference<User> {
+  const { membership, onBehalfOfMembership } = ctx.authState;
+  if (onBehalfOfMembership || !membership.user?.reference?.startsWith('User/')) {
+    throw new OperationOutcomeError(forbidden);
+  }
+  return membership.user as Reference<User>;
+}
 
 /**
  * Returns the MFA methods that a project allows users to enroll in.
