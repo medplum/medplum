@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { AccessPolicy, ClientApplication, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
+import type { AccessPolicy, Bot, ClientApplication, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -72,7 +72,7 @@ describe('readMembershipReference', () => {
       await expect(read(otherProfile, true)).rejects.toThrow('Not found');
       await expect(read(linkedProfile)).rejects.toThrow('Not found');
       await expect(read(linkedProfile, true)).resolves.toMatchObject({ id: linkedProfile.id });
-      await expect(read(linkedPolicy, true)).resolves.toMatchObject({ id: linkedPolicy.id });
+      await expect(read(linkedPolicy, true)).rejects.toThrow('Not found');
       await expect(read(projectlessPolicy)).resolves.toMatchObject({ id: projectlessPolicy.id });
       await expect(read(projectlessClient, true)).rejects.toThrow('Not found');
     }));
@@ -82,6 +82,35 @@ describe('readMembershipReference', () => {
       const { project, membership } = await createTestProject({ withClient: true });
       await expect(
         readMembershipReference(systemRepo, membership, createReference(project), membershipProfileTypes)
+      ).rejects.toThrow('Not found');
+    }));
+
+  test('Respects exported resource types of linked projects', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { project: linkedProject } = await createTestProject({
+        project: { exportedResourceType: ['Bot'] },
+      });
+      const linkingProject = await systemRepo.updateResource({
+        ...project,
+        link: [{ project: createReference(linkedProject) }],
+      });
+      const membership = {
+        resourceType: 'ProjectMembership',
+        project: createReference(linkingProject),
+      } as ProjectMembership;
+
+      const bot = await systemRepo.createResource<Bot>({ resourceType: 'Bot', meta: { project: linkedProject.id } });
+      const practitioner = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        meta: { project: linkedProject.id },
+      });
+
+      await expect(
+        readMembershipReference(systemRepo, membership, createReference(bot), membershipProfileTypes, true)
+      ).resolves.toMatchObject({ id: bot.id });
+      await expect(
+        readMembershipReference(systemRepo, membership, createReference(practitioner), membershipProfileTypes, true)
       ).rejects.toThrow('Not found');
     }));
 });

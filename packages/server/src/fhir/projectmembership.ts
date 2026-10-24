@@ -1,10 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, notFound, OperationOutcomeError, Operator, parseReference, resolveId } from '@medplum/core';
+import {
+  badRequest,
+  isResource,
+  notFound,
+  OperationOutcomeError,
+  Operator,
+  parseReference,
+  resolveId,
+} from '@medplum/core';
 import type { Project, ProjectMembership, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { SystemRepository } from './repo';
-import { getGlobalSystemRepo } from './repo';
+import { getGlobalSystemRepo, getPermittedProjectIds } from './repo';
 
 export const membershipProfileTypes: readonly ResourceType[] = [
   'Bot',
@@ -107,7 +115,9 @@ export async function readMembershipReference<T extends Resource>(
 
   if (allowLinkedProjects && resourceProjectId) {
     const project = await systemRepo.readReference<Project>(membership.project);
-    if (project.link?.some((link) => resolveId(link.project) === resourceProjectId)) {
+    const linkedProjects = await systemRepo.readReferences<Project>(project.link?.map((link) => link.project) ?? []);
+    const projects = [project, ...linkedProjects.filter((p): p is WithId<Project> => isResource(p))];
+    if (getPermittedProjectIds(projects, resource.resourceType)?.includes(resourceProjectId)) {
       return resource;
     }
   }
