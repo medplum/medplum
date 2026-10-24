@@ -127,6 +127,13 @@ describe('OAuthPage', () => {
     expect(screen.getByLabelText('Email *')).toBeInTheDocument();
   });
 
+  test('Encodes client ID', async () => {
+    await setup('/oauth?client_id=a%2Fb&redirect_uri=https://example.com/callback');
+    expect(medplum.get).toHaveBeenCalledWith(
+      '/auth/clientinfo/a%2Fb?redirect_uri=https%3A%2F%2Fexample.com%2Fcallback'
+    );
+  });
+
   test('Missing redirect URI', async () => {
     await setup('/oauth?client_id=123');
     expect(medplum.get).not.toHaveBeenCalled();

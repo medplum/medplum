@@ -29,7 +29,7 @@ export function OAuthPage(): JSX.Element | null {
     async function fetchProjectInfo(): Promise<void> {
       try {
         const info: ClientApplicationSignInForm = await medplum.get(
-          `/auth/clientinfo/${clientId}?redirect_uri=${encodeURIComponent(redirectUri as string)}`
+          `/auth/clientinfo/${encodeURIComponent(clientId as string)}?redirect_uri=${encodeURIComponent(redirectUri as string)}`
         );
         setClientInfo(info);
       } catch (err) {
