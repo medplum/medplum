@@ -48,6 +48,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
       launchId: req.body.launch,
       codeChallenge: req.body.codeChallenge,
       codeChallengeMethod: req.body.codeChallengeMethod,
+      redirectUri: req.body.redirectUri,
       email: req.body.email,
       password: req.body.password,
       remember: req.body.remember,
