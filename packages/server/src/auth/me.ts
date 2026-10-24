@@ -15,6 +15,7 @@ import Bowser from 'bowser';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { isMfaRequired } from './utils';
@@ -40,7 +41,13 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const { authState, systemRepo } = getAuthenticatedContext();
   const { project, membership } = authState;
   const profileRef = membership.profile as Reference<ProfileResource>;
-  const profile = await systemRepo.readReference<ProfileResource>(profileRef);
+  const profile = await readMembershipReference<ProfileResource>(
+    systemRepo,
+    membership,
+    profileRef,
+    membershipProfileTypes,
+    { allowLinkedProjects: true }
+  );
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
   let user: WithId<User> | undefined = undefined;
@@ -123,7 +130,9 @@ export async function getUserConfiguration(
   let result: UserConfiguration;
 
   if (membership.userConfiguration) {
-    result = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+    result = await readMembershipReference<UserConfiguration>(systemRepo, membership, membership.userConfiguration, [
+      'UserConfiguration',
+    ]);
   } else {
     result = { resourceType: 'UserConfiguration' };
   }

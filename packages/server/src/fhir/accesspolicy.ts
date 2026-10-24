@@ -27,6 +27,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { membershipProfileTypes, readMembershipReference } from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
@@ -59,8 +60,12 @@ export async function getRepoForLogin(
     try {
       // project system repo since not all ProfileResource types are global
       const realProjectSystemRepo = await getProjectSystemRepo(realProject);
-      profile = await realProjectSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(
-        realMembership.profile
+      profile = await readMembershipReference<ProfileResource | Bot | ClientApplication>(
+        realProjectSystemRepo,
+        realMembership,
+        realMembership.profile,
+        membershipProfileTypes,
+        { allowLinkedProjects: true }
       );
     } catch (err: unknown) {
       if (!(err instanceof OperationOutcomeError && isNotFound(err.outcome))) {
@@ -213,6 +218,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   for (const entry of access) {
     const replaced = await buildAccessPolicyResources(
       systemRepo,
+      membership,
       entry,
       membership.profile as Reference<ProfileResource>,
       accessPolicyMap
@@ -251,6 +257,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
 /**
  * Reads an access policy and replaces all variables.
  * @param systemRepo - The system repository.
+ * @param membership - The project membership that references the access policy.
  * @param access - The access policy and parameters.
  * @param profile - The user profile.
  * @param accessPolicyMap - Map of already-fetched access policies to avoid redundant lookups.
@@ -258,6 +265,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
  */
 async function buildAccessPolicyResources(
   systemRepo: SystemRepository,
+  membership: ProjectMembership,
   access: ProjectMembershipAccess,
   profile: Reference<ProfileResource>,
   accessPolicyMap: Map<string, AccessPolicy>
@@ -271,7 +279,7 @@ async function buildAccessPolicyResources(
   let original = accessPolicyMap.get(policyReferenceString);
   if (!original) {
     try {
-      original = await systemRepo.readReference(accessPolicyReference);
+      original = await readMembershipReference(systemRepo, membership, accessPolicyReference, ['AccessPolicy']);
       accessPolicyMap.set(policyReferenceString, original);
     } catch {
       // Intentionally catch and rethrow with a generic error message for security

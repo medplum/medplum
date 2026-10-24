@@ -641,6 +641,21 @@ describe('AccessPolicy', () => {
       await expect(repo1.readResource('Patient', patient2.id)).rejects.toThrow('Not found');
     }));
 
+  test('Access policy in another project', () =>
+    withTestContext(async () => {
+      const { accessPolicy } = await createTestProject({
+        withClient: true,
+        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+      });
+      await expect(
+        createTestProject({
+          withClient: true,
+          withRepo: true,
+          membership: { accessPolicy: createReference(accessPolicy) },
+        })
+      ).rejects.toThrow('Invalid access policy configuration');
+    }));
+
   test('Multiple entries per resource type', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({

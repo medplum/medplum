@@ -197,6 +197,26 @@ describe('Me', () => {
     expect(res.body.error).toBeUndefined();
   });
 
+  test('Profile in another project', async () => {
+    const { membership, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const { client } = await withTestContext(() => createTestProject({ withClient: true }));
+
+    const systemRepo = await getProjectSystemRepo(membership.project);
+    await withTestContext(() => systemRepo.updateResource({ ...membership, profile: createReference(client) }));
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(404);
+    expect(res.text).not.toContain(client.secret);
+  });
+
   test('AccessPolicy.basedOn', async () => {
     const { accessToken, accessPolicy } = await withTestContext(() =>
       createTestProject({
