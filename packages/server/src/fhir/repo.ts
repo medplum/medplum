@@ -1061,10 +1061,6 @@ export class Repository extends FhirRepository implements Disposable {
     }
     resultMeta.compartment = this.getCompartments(result);
 
-    if (!existing) {
-      this.logPostMetadataFieldMatch(updated, result);
-    }
-
     // Validate resource after all modifications and touchups above are done
     await validateRepositoryResource(this, result);
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
@@ -1093,6 +1089,10 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.isNotModified(existing, result)) {
       this.removeHiddenFields(existing);
       return existing;
+    }
+
+    if (!existing) {
+      this.logPostMetadataFieldMatch(updated, result);
     }
 
     if (!this.isResourceWriteable(existing, result, interaction)) {
