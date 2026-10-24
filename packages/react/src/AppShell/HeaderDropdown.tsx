@@ -3,7 +3,7 @@
 import type { MantineColorScheme } from '@mantine/core';
 import { Box, Divider, Flex, Menu, SegmentedControl, Text, useMantineColorScheme } from '@mantine/core';
 import type { LoginState, ProfileResource } from '@medplum/core';
-import { formatHumanName, getReferenceString, locationUtils } from '@medplum/core';
+import { formatHumanName, getReferenceString, locationUtils, tryGetJwtExpiration } from '@medplum/core';
 import { useMedplumContext } from '@medplum/react-hooks';
 import type { TablerIcon } from '@tabler/icons-react';
 import {
@@ -57,6 +57,18 @@ function isSameLogin(a: LoginState, b: LoginState | undefined): boolean {
   return a.project.reference === b.project.reference && a.profile.reference === b.profile.reference;
 }
 
+/**
+ * Returns true if the login's refresh token is a JWT whose expiration has passed.
+ * An expired access token alone is recoverable via refresh, but an expired refresh token is not.
+ * Tokens that are not JWTs or have no `exp` claim are assumed to still be valid.
+ * @param login - The stored login.
+ * @returns True if the login can no longer be recovered.
+ */
+function isLoginExpired(login: LoginState): boolean {
+  const expiration = tryGetJwtExpiration(login.refreshToken);
+  return expiration !== undefined && expiration < Date.now();
+}
+
 function getLoginKey(login: LoginState): string {
   return `${login.project.reference}-${login.profile.reference}`;
 }
@@ -71,7 +83,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const { medplum, profile, navigate } = context;
   const activeLogin = medplum.getActiveLogin();
   const logins = medplum.getLogins();
-  const recentLogins = logins.filter((login) => !isSameLogin(login, activeLogin));
+  const recentLogins = logins.filter((login) => !isSameLogin(login, activeLogin) && !isLoginExpired(login));
   const project = medplum.getProject();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [layoutVersion] = useState(

@@ -206,6 +206,53 @@ describe('Header', () => {
     expect(screen.getByText('Sign out')).toBeInTheDocument();
   });
 
+  test('Hides logins with expired refresh tokens', async () => {
+    const makeJwt = (exp: number): string => {
+      const encode = (obj: object): string => btoa(JSON.stringify(obj)).replaceAll('=', '');
+      return `${encode({ alg: 'none' })}.${encode({ exp })}.sig`;
+    };
+    const now = Math.floor(Date.now() / 1000);
+
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: 'abc',
+        refreshToken: 'xyz',
+        profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+        project: { reference: 'Project/456', display: 'My Project' },
+      })
+    );
+    window.localStorage.setItem(
+      'logins',
+      JSON.stringify([
+        {
+          accessToken: 'abc',
+          refreshToken: 'xyz',
+          profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+          project: { reference: 'Project/456', display: 'My Project' },
+        },
+        {
+          accessToken: 'expired-access',
+          refreshToken: makeJwt(now - 60),
+          profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+          project: { reference: 'Project/expired', display: 'Expired Project' },
+        },
+        {
+          accessToken: 'valid-access',
+          refreshToken: makeJwt(now + 3600),
+          profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+          project: { reference: 'Project/valid', display: 'Valid Project' },
+        },
+      ])
+    );
+
+    await setup();
+    await openMenu();
+
+    expect(screen.getByText('Valid Project')).toBeInTheDocument();
+    expect(screen.queryByText('Expired Project')).not.toBeInTheDocument();
+  });
+
   test('Switch to another project', async () => {
     await setup();
     await openMenu();
