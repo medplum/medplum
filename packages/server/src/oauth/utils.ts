@@ -62,7 +62,7 @@ import {
   UserAuthenticationEvent,
 } from '../util/auditevent';
 import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
-import { getStandardClientById } from './clients';
+import { getClientRedirectUri, getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
 import type { AuthenticationResult, AuthState } from './middleware';
@@ -84,6 +84,7 @@ export interface LoginRequest {
   readonly launchId?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: CodeChallengeMethod;
+  readonly redirectUri?: string;
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
@@ -158,6 +159,13 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
       if (!client.allowedOrigin.includes(request.origin)) {
         throw new OperationOutcomeError(badRequest('Invalid origin'));
       }
+    }
+    if (request.redirectUri && !getClientRedirectUri(client, request.redirectUri)) {
+      getLogger().warn('Login redirect URI is not registered for client', {
+        clientId: client.id,
+        authMethod: request.authMethod,
+        redirectUri: request.redirectUri,
+      });
     }
   }
 

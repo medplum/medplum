@@ -145,6 +145,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,
     codeChallengeMethod: req.body.codeChallengeMethod,
+    redirectUri: req.body.redirectUri,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.createUser || projectId === 'new',
