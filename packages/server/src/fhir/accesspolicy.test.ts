@@ -2195,8 +2195,13 @@ describe('AccessPolicy', () => {
       expect(member.project.reference).toBe(getReferenceString(project));
 
       // Updates still work, with project restored by readonlyFields
-      const updated = await repo2.updateResource<ProjectMembership>({ ...member, admin: true });
+      const updated = await repo2.updateResource<ProjectMembership>({
+        ...member,
+        admin: true,
+        project: createReference(otherProject),
+      });
       expect(updated.admin).toBe(true);
+      expect(updated.project.reference).toBe(getReferenceString(project));
 
       await expect(
         repo2.createResource<User>({
@@ -2212,6 +2217,8 @@ describe('AccessPolicy', () => {
         lastName: 'Project',
       });
       expect(serverUser.project).toBeUndefined();
+      // Defense in depth: meta.project of a ProjectMembership comes from its project element,
+      // so this create is also outside the admin's _project criteria
       await expect(
         repo2.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',
