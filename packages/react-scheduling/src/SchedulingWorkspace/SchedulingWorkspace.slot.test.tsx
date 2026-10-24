@@ -40,6 +40,8 @@ const APPOINTMENT: WithId<Appointment> = {
 let medplum: MockClient;
 
 beforeEach(async () => {
+  // At the visit, so a run late in the day does not find it closed to changes.
+  vi.setSystemTime(new Date(APPOINTMENT.start as string));
   medplum = new MockClient();
   for (const resource of [...SchedulingFixtures, BLOCKED_SLOT, APPOINTMENT]) {
     await medplum.createResource(resource);
