@@ -176,12 +176,11 @@ describe('AppointmentActorSelect', () => {
     expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 
-  test('Asks for a provider, but leaves rooms optional', async () => {
+  test('Leaves a provider optional unless the host requires one', async () => {
     const medplum = await setupClient();
     await setup(medplum);
-    expect(screen.queryByText(/Optional\. Leave empty/)).not.toBeInTheDocument();
     // Mantine marks a required field on its label, not on the input inside it.
-    expect(screen.getByText('*')).toBeInTheDocument();
+    expect(screen.queryByText('*')).not.toBeInTheDocument();
   });
 
   test('Searches nothing until a service is chosen', async () => {
