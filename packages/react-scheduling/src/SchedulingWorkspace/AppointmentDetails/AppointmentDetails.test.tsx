@@ -352,7 +352,7 @@ describe('AppointmentDetails', () => {
       participant: [{ status: 'accepted', actor: createReference(ElderJordanPatient) }],
     });
 
-    expect(await screen.findByText('MRN-0041')).toBeInTheDocument();
+    expect(await screen.findByText('100041')).toBeInTheDocument();
     expect(screen.getByText('MRN')).toBeInTheDocument();
   });
 
@@ -767,6 +767,18 @@ describe('AppointmentDetails editing', () => {
     expect(saveButton()).toBeDisabled();
   });
 
+  test('asks for a patient when the one on file cannot be read', async () => {
+    renderEditable({
+      ...BOOKED_APPOINTMENT,
+      participant: BOOKED_APPOINTMENT.participant.map((p) =>
+        p.actor?.reference?.startsWith('Patient/') ? { ...p, actor: { reference: 'Patient/deleted' } } : p
+      ),
+    });
+
+    // Waiting on a patient who will never load would hide the field for good.
+    expect(await screen.findByRole('searchbox', { name: /patient/i })).toBeInTheDocument();
+  });
+
   test('asks for no codes a visit type never asked for', async () => {
     renderEditable(BOOKED_APPOINTMENT);
     await screen.findByText('Miles Cooper');
@@ -903,7 +915,7 @@ describe('AppointmentDetails editing', () => {
     await screen.findByText('Miles Cooper');
 
     await removePill('Miles Cooper');
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
     await clickSave();
 
     const stored = await medplum.readResource('Appointment', AUTHORIZED_APPOINTMENT.id);
@@ -962,7 +974,7 @@ describe('AppointmentDetails editing', () => {
     await medplum.createResource(withoutPatient);
     renderEditable(withoutPatient);
 
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
     await clickSave();
 
     const stored = await medplum.readResource('Appointment', withoutPatient.id);
