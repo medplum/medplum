@@ -8,7 +8,7 @@ import type { ServerConfig } from './config/utils';
 import { r4ProjectId } from './constants';
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
-import { getAllShardsExceptGlobal, GLOBAL_SHARD_ID } from './fhir/sharding';
+import { buildProjectShard, getAllShardsExceptGlobal, GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
@@ -49,7 +49,9 @@ export async function seedDatabase(config: ServerConfig): Promise<void> {
   //   first failure as initDatabase does. Seed log lines would need a shardId to stay readable.
   for (const shardConfig of getAllShardsExceptGlobal()) {
     const shardSystemRepo = getShardSystemRepo(shardConfig.id, undefined, { skipBackgroundJobs: true });
-    if (!(await shardSystemRepo.searchOne({ resourceType: 'StructureDefinition' }))) {
+    if (await shardSystemRepo.searchOne({ resourceType: 'StructureDefinition' })) {
+      globalLogger.info('Already seeded', { shardId: shardConfig.id });
+    } else {
       await seedBaseDefinitions(shardSystemRepo);
     }
   }
@@ -58,7 +60,12 @@ export async function seedDatabase(config: ServerConfig): Promise<void> {
 async function createR4Project(systemRepo: SystemRepository): Promise<WithId<Project>> {
   let r4Project = await systemRepo.searchOne<Project>(parseSearchRequest(`Project?_id=${r4ProjectId}`));
   r4Project ??= await systemRepo.createResource<Project>(
-    { resourceType: 'Project', id: r4ProjectId, name: 'FHIR R4' },
+    {
+      resourceType: 'Project',
+      id: r4ProjectId,
+      name: 'FHIR R4',
+      shard: buildProjectShard(systemRepo.shardId),
+    },
     { assignedId: true }
   );
   return r4Project;
@@ -86,6 +93,7 @@ async function createSuperAdmin(systemRepo: SystemRepository, config: ServerConf
         owner: createReference(superAdminUser),
         superAdmin: true,
         strictMode: true,
+        shard: buildProjectShard(txRepo.shardId),
       });
 
       if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {

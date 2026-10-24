@@ -38,7 +38,7 @@ import './test-matchers';
 // files, so modules that import `node-fetch`, `../constants`, or `pg` statically would bind to the wrong
 // instances before test files register their mocks.
 import type { Repository } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import { buildProjectShard, getDefaultShardId, PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 // Dynamically imported below. A static import would load `fhir/repo` → `database` → `pg`
 // while setupFiles run, before per-test-file `vi.mock('pg')` is registered.
@@ -87,6 +87,7 @@ vi.mock('./app', async (importOriginal) => {
 });
 
 export interface TestProjectOptions {
+  shardId?: string;
   project?: Partial<Project>;
   client?: Partial<ClientApplication>;
   accessPolicy?: Partial<AccessPolicy>;
@@ -116,7 +117,8 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
 ): Promise<TestProjectResult<T>> {
   const { getRepoForLogin } = await import('./fhir/accesspolicy');
   const { getShardSystemRepo } = await import('./fhir/repo');
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an optional input parameter
+  const shardId = options?.shardId ?? getDefaultShardId();
+  const systemRepo = getShardSystemRepo(shardId);
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
@@ -132,6 +134,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       },
     ],
     superAdmin: options?.superAdmin,
+    shard: buildProjectShard(shardId),
     ...options?.project,
   });
 

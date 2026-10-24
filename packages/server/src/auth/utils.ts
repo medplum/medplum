@@ -11,7 +11,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import type {
-  ContactPoint,
+  ExtractResource,
   Login,
   OperationOutcome,
   Project,
@@ -270,43 +270,31 @@ export async function verifyEmailMfaCode(login: Login, token: string | undefined
   return new Date(login.emailMfa.expiresAt).getTime() >= Date.now() && bcrypt.compare(token, login.emailMfa.codeHash);
 }
 
-export async function createProfile(
+export async function createProfile<T extends ProfileResource['resourceType']>(
   systemRepo: SystemRepository,
-  project: Project,
-  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
+  project: { id: string },
+  resourceType: T,
   firstName: string,
   lastName: string,
   email: string | undefined
-): Promise<WithId<ProfileResource>> {
+): Promise<WithId<ExtractResource<T>>> {
   const logger = getLogger();
   logger.info('Creating profile', { resourceType, firstName, lastName });
-  let telecom: ContactPoint[] | undefined = undefined;
-  if (email) {
-    telecom = [{ system: 'email', use: 'work', value: email }];
-  }
-
   const result = await systemRepo.createResource({
     resourceType,
-    meta: {
-      project: project.id,
-    },
-    name: [
-      {
-        given: [firstName],
-        family: lastName,
-      },
-    ],
-    telecom,
+    meta: { project: project.id },
+    name: [{ given: [firstName], family: lastName }],
+    telecom: email ? [{ system: 'email', use: 'work', value: email }] : undefined,
   } as ProfileResource);
   logger.info('Created profile', { id: result.id });
-  return result;
+  return result as WithId<ExtractResource<T>>;
 }
 
 export async function createProjectMembership(
   systemRepo: SystemRepository,
-  user: User,
-  project: Project,
-  profile: ProfileResource,
+  user: WithId<User>,
+  project: WithId<Project>,
+  profile: WithId<ProfileResource>,
   details?: Partial<ProjectMembership>
 ): Promise<WithId<ProjectMembership>> {
   const logger = getLogger();

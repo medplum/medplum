@@ -30,7 +30,7 @@ import type { AuthState } from '../oauth/middleware';
 import { membershipProfileTypes, readMembershipReference } from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
-import { PLACEHOLDER_SHARD_ID } from './sharding';
+import { getNormalizedProjectShardId } from './sharding';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -81,10 +81,12 @@ export async function getRepoForLogin(
     project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
+  const shardId = getNormalizedProjectShardId(project);
+
   const allowedProjects = await getAllowedProjects(project, globalSystemRepo);
 
   return new Repository({
-    routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+    routing: { kind: 'project-shard', shardId },
     projects: allowedProjects,
     author: profile ? createReference(profile) : realMembership.profile,
     remoteAddress: remoteAddress ?? login.remoteAddress,
@@ -384,13 +386,13 @@ function applyProjectAdminAccessPolicy(
         resourceType: 'Project',
         criteria: `Project?_id=${resolveId(membership.project)}`,
         readonlyFields: ['active', 'features', 'link', 'systemSetting'],
-        hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
+        hiddenFields: ['superAdmin', 'systemSecret', 'strictMode', 'shard'],
         interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
       },
       {
         // Project admins have read-only access to linked projects, and cannot see sensitive fields
         resourceType: 'Project',
-        hiddenFields: ['superAdmin', 'setting', 'systemSetting', 'secret', 'systemSecret', 'strictMode'],
+        hiddenFields: ['superAdmin', 'setting', 'systemSetting', 'secret', 'systemSecret', 'strictMode', 'shard'],
         interaction: ['read', 'vread', 'history', 'search'], // Read-only access to linked projects
       },
       {

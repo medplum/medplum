@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { getStatus, OperationOutcomeError } from '@medplum/core';
+import { getStatus, OperationOutcomeError, protectedResourceTypes } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Mock } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
@@ -11,8 +11,10 @@ import {
   getAllShards,
   getAllShardsExceptGlobal,
   getDefaultShardId,
+  getNormalizedProjectShardId,
   getShardConfig,
   GLOBAL_SHARD_ID,
+  globalShardResourceTypes,
   isConfiguredShardId,
   isShardingEnabled,
   normalizeShardId,
@@ -42,6 +44,13 @@ describe('normalizeShardId', () => {
 
   test('Passes through a real shard ID', () => {
     expect(normalizeShardId(PROJECT_SHARD_ID)).toStrictEqual(PROJECT_SHARD_ID);
+  });
+});
+
+describe('globalShardResourceTypes', () => {
+  // Protected types are always system-owned, and system-owned resources must live on the global shard
+  test.each(protectedResourceTypes)('Includes protected type %s', (resourceType) => {
+    expect(globalShardResourceTypes).toContain(resourceType);
   });
 });
 
@@ -186,6 +195,12 @@ describe('Without shards configured', () => {
     expect(Array.from(getAllShards(), (shard) => shard.id)).toStrictEqual([GLOBAL_SHARD_ID]);
     expect(Array.from(getAllShardsExceptGlobal(), (shard) => shard.id)).toStrictEqual([]);
   });
+
+  test('getNormalizedProjectShardId routes to the global shard even when Project.shard names another shard', () => {
+    expect(getNormalizedProjectShardId({ resourceType: 'Project', shard: [{ id: TEST_SHARD_ID }] })).toStrictEqual(
+      GLOBAL_SHARD_ID
+    );
+  });
 });
 
 describe('With shards configured', () => {
@@ -195,6 +210,12 @@ describe('With shards configured', () => {
 
   test('Sharding is enabled', () => {
     expect(isShardingEnabled()).toBe(true);
+  });
+
+  test('getNormalizedProjectShardId routes to the shard named by Project.shard', () => {
+    expect(getNormalizedProjectShardId({ resourceType: 'Project', shard: [{ id: TEST_SHARD_ID }] })).toStrictEqual(
+      TEST_SHARD_ID
+    );
   });
 
   describe('getDefaultShardId', () => {

@@ -153,12 +153,14 @@ import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './sear
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
 import {
+  getNormalizedProjectShardId,
+  getProjectShardId,
   getResourceTypeShardId,
   GLOBAL_SHARD_ID,
+  isShardingEnabled,
   normalizeShardId,
   resolveShardId,
   shardRoutingError,
-  TODO_SHARD_ID,
 } from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
@@ -1038,6 +1040,10 @@ export class Repository extends FhirRepository implements Disposable {
       deepClone(this.restoreReadonlyFields(validatedResource, existing))
     );
     updated = await replaceConditionalReferences(this, updated);
+
+    if (create && updated.resourceType === 'Project' && isShardingEnabled() && !getProjectShardId(updated)) {
+      throw new OperationOutcomeError(badRequest('Project must specify a shard', 'Project.shard'));
+    }
 
     const resultMeta: Meta = {
       ...updated.meta,
@@ -3012,20 +3018,26 @@ export function getShardSystemRepo(
 
 /**
  * Returns a SystemRepository for the specified project's shard.
- *
- * Note: resolves to getShardSystemRepo(TODO_SHARD_ID) until realproject-shard
- * routing is implemented.
- *
- * @param _projectId - The project's ID, reference, or resource.
+ * @param projectInput - The project's ID, reference, or resource.
  * @returns A SystemRepository for the project's shard.
  */
 export async function getProjectSystemRepo(
-  _projectId: string | Reference<Project> | WithId<Project>
+  projectInput: string | Reference<Project> | WithId<Project>
 ): Promise<SystemRepository> {
-  // Eventually, this will resolve the project's shard and return
-  // a SystemRepository for that shard.
-  // But for now, all projects are on the global shard.
-  return getShardSystemRepo(TODO_SHARD_ID);
+  if (!isShardingEnabled()) {
+    return getShardSystemRepo(GLOBAL_SHARD_ID);
+  }
+
+  let project: Project;
+  if (typeof projectInput === 'string') {
+    project = await getGlobalSystemRepo().readResource<Project>('Project', projectInput);
+  } else if (isResource(projectInput)) {
+    project = projectInput;
+  } else {
+    project = await getGlobalSystemRepo().readReference<Project>(projectInput);
+  }
+
+  return getShardSystemRepo(getNormalizedProjectShardId(project));
 }
 
 const patchOperationDefinition: OperationDefinition = {
