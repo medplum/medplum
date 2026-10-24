@@ -177,28 +177,32 @@ export async function searchByReferenceImpl<T extends Resource>(
       referenceConditions.push(expr);
       builder.whereExpr(expr);
 
-      const column = new Column(undefined, `'${referenceValues[0]}'`, true, 'ref');
+      // IMPORTANT: The "ref" column is the INDEX of the reference value in `referenceValues`,
+      // not the reference value itself. It is a raw SQL column, so it must only ever contain
+      // the integer loop counter set below. Rows are mapped back via `referenceValues[row.ref]`.
+      // The placeholder here, the loop counter, and the row mapping must stay in sync.
+      const column = new Column(undefined, '0', true, 'ref');
       referenceColumns.push(column);
       builder.column(column);
     },
   });
 
   const unionAllBuilder = new UnionAllBuilder();
-  for (const refValue of referenceValues) {
+  for (let i = 0; i < referenceValues.length; i++) {
     // Update each condition with the current reference value
     for (const cond of referenceConditions) {
-      cond.parameter = refValue;
+      cond.parameter = referenceValues[i];
     }
-    // Update each column with the current reference value literal
+    // Update each "ref" column with the INDEX of the current reference value (see IMPORTANT note above)
     for (const column of referenceColumns) {
-      column.actualColumnName = `'${refValue}'`;
+      column.actualColumnName = i.toString();
     }
     unionAllBuilder.add(searchQuery);
   }
 
   const rows: {
     content: string;
-    ref: string;
+    ref: number;
   }[] = await repo.executeSql(
     unionAllBuilder,
     repoAccess.sqlRead(trackedResourceTypes, { source: 'search.searchByReference' })
@@ -211,7 +215,8 @@ export async function searchByReferenceImpl<T extends Resource>(
   for (const row of rows) {
     const resource = JSON.parse(row.content) as WithId<T>;
     removeResourceFields(resource, repo, searchRequest);
-    results[row.ref].push(resource);
+    // "ref" is the index into `referenceValues` assigned in the loop above
+    results[referenceValues[row.ref]].push(resource);
   }
 
   return results;
