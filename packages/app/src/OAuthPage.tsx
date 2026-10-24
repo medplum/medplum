@@ -17,18 +17,20 @@ export function OAuthPage(): JSX.Element | null {
   const medplum = useMedplum();
   const scope = params.get('scope') || 'openid';
   const clientId = params.get('client_id');
+  const redirectUri = getRedirectUri(params);
   const login = params.get('login');
-  const hasClientInfo = !!clientId && clientId !== 'medplum-cli';
   const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
-  const [loading, setLoading] = useState(hasClientInfo);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasClientInfo) {
+    if (!clientId || !redirectUri) {
       return;
     }
     async function fetchProjectInfo(): Promise<void> {
       try {
-        const info: ClientApplicationSignInForm = await medplum.get(`/auth/clientinfo/${clientId}`);
+        const info: ClientApplicationSignInForm = await medplum.get(
+          `/auth/clientinfo/${clientId}?redirect_uri=${encodeURIComponent(redirectUri as string)}`
+        );
         setClientInfo(info);
       } catch (err) {
         showNotification({
@@ -44,9 +46,9 @@ export function OAuthPage(): JSX.Element | null {
     }
 
     fetchProjectInfo().catch(console.error);
-  }, [medplum, clientId, hasClientInfo]);
+  }, [medplum, clientId, redirectUri]);
 
-  if (!clientId) {
+  if (!clientId || !redirectUri) {
     return null;
   }
 
@@ -54,8 +56,12 @@ export function OAuthPage(): JSX.Element | null {
     return <Loading />;
   }
 
+  if (!clientInfo) {
+    return null;
+  }
+
   function onCode(code: string): void {
-    const redirectUrl = new URL(params.get('redirect_uri') as string);
+    const redirectUrl = new URL(redirectUri as string);
     for (const key of ['scope', 'state', 'nonce']) {
       if (params.has(key)) {
         redirectUrl.searchParams.set(key, params.get(key) as string);
@@ -72,7 +78,7 @@ export function OAuthPage(): JSX.Element | null {
       onRegister={() => navigate('/register')?.catch(console.error)}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
-      redirectUri={params.get('redirect_uri') || undefined}
+      redirectUri={redirectUri}
       scope={scope}
       nonce={params.get('nonce') || undefined}
       launch={params.get('launch') || undefined}
@@ -89,4 +95,14 @@ export function OAuthPage(): JSX.Element | null {
       <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
     </SignInForm>
   );
+}
+
+const blockedProtocols = ['javascript:', 'data:', 'vbscript:'];
+
+function getRedirectUri(params: URLSearchParams): string | undefined {
+  const redirectUri = params.get('redirect_uri');
+  if (!redirectUri || !URL.canParse(redirectUri) || blockedProtocols.includes(new URL(redirectUri).protocol)) {
+    return undefined;
+  }
+  return redirectUri;
 }
