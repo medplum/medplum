@@ -256,6 +256,27 @@ describe('External auth', () => {
     expect(res.body.sub).toBe(client.id);
   });
 
+  test('Global provider rejects an identity-less token for a client bound to a subject', async () => {
+    const { project } = await createTestProject({
+      withClient: true,
+      membership: { externalId: 'system:serviceaccount:prod:' + randomUUID() },
+      client: {
+        identityProvider: {
+          issuer: 'https://external-auth.example.com',
+          userInfoUrl: 'https://external-auth.example.com/oauth2/userinfo',
+        },
+      },
+    });
+    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+
+    const jwt = createFakeJwt({ iss: 'https://external-auth.example.com', nonce: randomUUID() });
+    const res = await request(app)
+      .get(`/projects/${project.id}/oauth2/userinfo`)
+      .set('Authorization', 'Bearer ' + jwt);
+
+    expect(res).toHaveStatus(401);
+  });
+
   test('Rejects ambiguous project clients for an external issuer', async () => {
     const { project } = await createTestProject({
       withClient: true,
@@ -502,6 +523,42 @@ describe('External auth', () => {
         expect(accepted).toHaveStatus(200);
       }
     );
+  });
+
+  test('Client membership externalId binds the token subject', async () => {
+    const keyPair = await generateKeyPair('ES256');
+    const publicJwk = await exportJWK(keyPair.publicKey);
+    const boundSub = 'system:serviceaccount:prod:' + randomUUID();
+    const { project } = await createTestProject({
+      withClient: true,
+      membership: { externalId: boundSub },
+      client: {
+        identityProvider: {
+          issuer: 'https://external-auth.example.com',
+          jwksUrl: 'https://external-auth.example.com/.well-known/bound-jwks.json',
+        },
+      },
+    });
+    await withExternalAuthProviders(undefined, async () => {
+      fetchMock.mockImplementation(() => mockFetchJson({ keys: [publicJwk] }));
+
+      const createJwt = (sub?: string): Promise<string> => {
+        const jwt = new SignJWT({ nonce: randomUUID() })
+          .setProtectedHeader({ alg: 'ES256' })
+          .setIssuer('https://external-auth.example.com')
+          .setIssuedAt()
+          .setExpirationTime('2h');
+        return (sub ? jwt.setSubject(sub) : jwt).sign(keyPair.privateKey);
+      };
+      const getUserInfo = async (sub?: string): Promise<request.Response> =>
+        request(app)
+          .get(`/projects/${project.id}/oauth2/userinfo`)
+          .set('Authorization', 'Bearer ' + (await createJwt(sub)));
+
+      expect(await getUserInfo(boundSub)).toHaveStatus(200);
+      expect(await getUserInfo('system:serviceaccount:prod:other')).toHaveStatus(401);
+      expect(await getUserInfo()).toHaveStatus(401);
+    });
   });
 
   test('Sub claim with caching', async () => {

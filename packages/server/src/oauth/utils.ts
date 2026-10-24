@@ -1365,6 +1365,9 @@ async function tryExternalAuthLogin(
   let membership: WithId<ProjectMembership> | undefined;
   if (client) {
     membership = await getClientApplicationMembership(systemRepo, client, projectId);
+    if (!isClientSubjectAllowed(membership, claims)) {
+      return undefined;
+    }
   } else if (isString(profileString)) {
     // Path A: fhirUser claim present - look up profile, then find membership
     // Profile string can be either a reference or a search string
@@ -1404,6 +1407,9 @@ async function tryExternalAuthLogin(
     }
     client = await getExternalBearerClient(projectId, claims.iss);
     membership = client ? await getClientApplicationMembership(systemRepo, client, projectId) : undefined;
+    if (!isClientSubjectAllowed(membership, claims)) {
+      return undefined;
+    }
   } else {
     // Path B: sub claim fallback - look up ProjectMembership by externalId
     // Fetch at most 2 to detect duplicates efficiently; if 2+ exist, the externalId is ambiguous
@@ -1466,6 +1472,22 @@ async function tryExternalAuthLogin(
   );
 
   return { login, project, membership };
+}
+
+/**
+ * A client membership that names an externalId admits only tokens whose `sub` equals it, so a
+ * workload-identity issuer can be trusted for one principal rather than for everything it signs.
+ * A membership without an externalId keeps the issuer-only behavior.
+ * @param membership - The client application membership, if found.
+ * @param claims - The verified external token claims.
+ * @returns True if the token subject is allowed for the membership.
+ */
+function isClientSubjectAllowed(membership: WithId<ProjectMembership> | undefined, claims: JWTPayload): boolean {
+  if (!membership?.externalId || membership.externalId === claims.sub) {
+    return true;
+  }
+  getLogger().warn('External token subject does not match client membership externalId', { sub: claims.sub });
+  return false;
 }
 
 /**
