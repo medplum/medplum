@@ -18,12 +18,13 @@ import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import * as redisModule from '../redis';
 import { getCacheRedis } from '../redis';
-import { initTestAuth } from '../test.setup';
+import { createTestProject } from '../test.setup';
 
 const app = express();
 let config: ServerConfig;
 let server: Server;
 let accessToken: string;
+let projectId: string;
 let bot: Bot;
 let agent: Agent;
 let device: Device;
@@ -35,7 +36,9 @@ describe('Agent WebSockets', () => {
     config.heartbeatMilliseconds = 5000;
 
     server = await initApp(app, config);
-    accessToken = await initTestAuth({ membership: { admin: true } });
+    const testProject = await createTestProject({ membership: { admin: true }, withAccessToken: true });
+    accessToken = testProject.accessToken;
+    projectId = testProject.project.id;
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8512, resolve);
@@ -43,7 +46,7 @@ describe('Agent WebSockets', () => {
 
     // Create a test bot
     const res1 = await request(server)
-      .post('/admin/projects/projectId/bot')
+      .post(`/admin/projects/${projectId}/bot`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
@@ -641,7 +644,7 @@ describe('Agent WebSockets', () => {
     beforeAll(async () => {
       // Create a test bot
       const res1 = await request(server)
-        .post('/admin/projects/projectId/bot')
+        .post(`/admin/projects/${projectId}/bot`)
         .set('Content-Type', ContentType.FHIR_JSON)
         .set('Authorization', 'Bearer ' + accessToken)
         .send({
