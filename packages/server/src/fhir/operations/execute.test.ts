@@ -13,6 +13,7 @@ import {
 import type {
   AsyncJob,
   AuditEvent,
+  Binary,
   Bot,
   Parameters,
   ParametersParameter,
@@ -439,6 +440,41 @@ describe('Execute', () => {
       .send({});
     expect(res3).toHaveStatus(400);
     expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
+  });
+
+  test('VM context bot code must be in the bot project', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext' });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as Bot;
+
+    const { project: otherProject } = await createTestProject();
+    const systemRepo = await getProjectSystemRepo(otherProject);
+    const code = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.JAVASCRIPT,
+        meta: { project: otherProject.id },
+      })
+    );
+
+    const res2 = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ ...bot, executableCode: { contentType: ContentType.JAVASCRIPT, url: `Binary/${code.id}` } });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({});
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue[0].details.text).toStrictEqual('Executable code is not in the bot project');
   });
 
   test('VM context bot success', async () => {
