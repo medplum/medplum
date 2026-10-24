@@ -17,7 +17,7 @@ import { loadTestConfig } from '../config/loader';
 import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
-import { withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
 import { clearMfaEmailCode, getEnrolledMfaMethods, sendMfaEmailCode } from './utils';
@@ -148,6 +148,25 @@ describe('MFA', () => {
   beforeEach(() => {
     mockSESv2Client.reset();
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+  });
+
+  test.each([
+    ['GET', '/auth/mfa/status', {}],
+    ['POST', '/auth/mfa/enroll', {}],
+    ['POST', '/auth/mfa/send-email-challenge', {}],
+    ['POST', '/auth/mfa/disable', {}],
+    ['POST', '/auth/changepassword', { oldPassword: 'old-password', newPassword: 'new-password-123' }],
+    ['POST', '/auth/revoke', { loginId: randomUUID() }],
+  ])('%s %s requires a user login', async (method, url, body) => {
+    const { client, project } = await withTestContext(() =>
+      createTestProject({ withClient: true, membership: { admin: true } })
+    );
+    const { profile } = await withTestContext(() => addTestUser(project));
+    const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+    const req = method === 'GET' ? request(app).get(url) : request(app).post(url).type('json').send(body);
+    const res = await req.set('Authorization', basicAuth).set('X-Medplum-On-Behalf-Of', getReferenceString(profile));
+    expect(res).toHaveStatus(403);
   });
 
   test('Enroll end-to-end', async () => {
