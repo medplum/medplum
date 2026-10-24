@@ -588,7 +588,10 @@ describe('Expand', () => {
       url,
     };
 
-    const { project: p2, accessToken: a2 } = await createTestProject({ withAccessToken: true });
+    const { project: p2, accessToken: a2 } = await createTestProject({
+      withAccessToken: true,
+      project: { exportedResourceType: ['CodeSystem'] },
+    });
     const cs2 = await request(app)
       .post(`/fhir/R4/CodeSystem`)
       .set('Authorization', 'Bearer ' + a2)
@@ -596,7 +599,10 @@ describe('Expand', () => {
       .send({ ...codeSystem, concept: [{ code: '1', display: 'Incorrect coding' }] });
     expect(cs2).toHaveStatus(201);
 
-    const { project: p1, accessToken: a1 } = await createTestProject({ withAccessToken: true });
+    const { project: p1, accessToken: a1 } = await createTestProject({
+      withAccessToken: true,
+      project: { exportedResourceType: ['CodeSystem'] },
+    });
     const cs1 = await request(app)
       .post(`/fhir/R4/CodeSystem`)
       .set('Authorization', 'Bearer ' + a1)
@@ -604,7 +610,10 @@ describe('Expand', () => {
       .send({ ...codeSystem, concept: [{ code: '1', display: 'Correct coding' }] });
     expect(cs1).toHaveStatus(201);
 
-    const { project: p3, accessToken: a3 } = await createTestProject({ withAccessToken: true });
+    const { project: p3, accessToken: a3 } = await createTestProject({
+      withAccessToken: true,
+      project: { exportedResourceType: ['CodeSystem'] },
+    });
     const cs3 = await request(app)
       .post(`/fhir/R4/CodeSystem`)
       .set('Authorization', 'Bearer ' + a3)
@@ -651,6 +660,7 @@ describe('Expand', () => {
 
     const { accessToken: linkedAccessToken, project: linkedProject } = await createTestProject({
       withAccessToken: true,
+      project: { exportedResourceType: ['ValueSet'] },
     });
     const linkedRes = await request(app)
       .post(`/fhir/R4/ValueSet`)
