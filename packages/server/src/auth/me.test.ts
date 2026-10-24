@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, resolveId } from '@medplum/core';
-import type { UserConfiguration } from '@medplum/fhirtypes';
+import { ContentType, createReference, resolveId } from '@medplum/core';
+import type { Binary, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -431,5 +431,33 @@ describe('Me', () => {
     );
     const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res3.body.security.mfaRequired).toBe(true);
+  });
+
+  test('Only signs attachments that the user can read', async () => {
+    const { repo, client, accessToken } = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      withAccessToken: true,
+    });
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const { binary, otherBinary } = await withTestContext(async () => {
+      const binary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      const otherBinary = await otherRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+      await repo.updateResource({
+        ...client,
+        signInForm: { logo: { url: `Binary/${binary.id}` } },
+        extension: [{ url: `Binary/${otherBinary.id}`, valueBoolean: true }],
+      });
+      return { binary, otherBinary };
+    });
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.profile.signInForm.logo.url).toContain(`/storage/${binary.id}/`);
+    expect(res.body.profile.signInForm.logo.url).toContain('Signature=');
+    expect(res.body.profile.extension[0].url).toBe(`Binary/${otherBinary.id}`);
   });
 });

@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource } from '@medplum/core';
-import { getReferenceString } from '@medplum/core';
-import type { Login, ProjectMembership } from '@medplum/fhirtypes';
+import { ContentType, getReferenceString } from '@medplum/core';
+import type { Binary, Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 const app = express();
@@ -308,5 +308,32 @@ describe('Profile', () => {
     expect(updatedMembership).toBeDefined();
     expect(updatedMembership.identifier).toBeDefined();
     expect(updatedMembership.identifier[0].value).toBe('Label-1');
+  });
+
+  test('Memberships in the login response do not sign attachments', async () => {
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const binary = await withTestContext(async () => {
+      const binary = await otherRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      await systemRepo.updateResource({
+        ...membership1,
+        identifier: [
+          {
+            system: 'https://medplum.com/identifier/label',
+            value: 'Label-1',
+            extension: [{ url: `Binary/${binary.id}`, valueBoolean: true }],
+          },
+        ],
+      });
+      return binary;
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+    expect(res).toHaveStatus(200);
+    const updatedMembership = res.body.memberships.find((p: any) => p.id === membership1.id);
+    expect(updatedMembership.identifier[0].extension[0].url).toBe(`Binary/${binary.id}`);
   });
 });

@@ -38,7 +38,7 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState, systemRepo } = getAuthenticatedContext();
+  const { authState, repo, systemRepo } = getAuthenticatedContext();
   const { project, membership } = authState;
   const profileRef = membership.profile as Reference<ProfileResource>;
   const profile = await readMembershipReference<ProfileResource>(
@@ -119,7 +119,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     security,
   };
 
-  res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
+  res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result));
 }
 
 export async function getUserConfiguration(

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { singularize } from '@medplum/core';
 import type { Request, RequestHandler, Response } from 'express';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getRepoForProject } from '../fhir/accesspolicy';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getClientApplication } from '../oauth/utils';
 
@@ -19,7 +19,12 @@ import { getClientApplication } from '../oauth/utils';
  */
 export const clientInfoHandler: RequestHandler = async (req: Request, res: Response) => {
   const clientId = singularize(req.params.clientId) ?? '';
-  const systemRepo = getGlobalSystemRepo();
   const client = await getClientApplication(clientId);
-  res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, client.signInForm ?? {}));
+  let signInForm = client.signInForm ?? {};
+  if (client.meta?.project) {
+    // `signInForm` is user-supplied, so only sign attachments that the client's own project can read
+    using repo = await getRepoForProject(client.meta.project);
+    signInForm = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, signInForm);
+  }
+  res.status(200).json(signInForm);
 };

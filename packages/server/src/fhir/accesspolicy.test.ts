@@ -45,7 +45,7 @@ import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { buildAccessPolicy, getRepoForLogin, reconcileDefaultAccessPolicy } from './accesspolicy';
+import { buildAccessPolicy, getRepoForLogin, getRepoForProject, reconcileDefaultAccessPolicy } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
@@ -3273,6 +3273,28 @@ describe('AccessPolicy', () => {
 
       const membershipsB = await repoB.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
       expect(membershipsB).toHaveLength(1);
+    }));
+
+  test('getRepoForProject is limited to the project and its linked projects', () =>
+    withTestContext(async () => {
+      const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
+      const { repo: otherRepo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({
+        project: { link: [{ project: createReference(linkedProject) }] },
+        withRepo: true,
+      });
+      const binary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+      const linkedBinary = await linkedRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+      });
+      const otherBinary = await otherRepo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+
+      const projectRepo = await getRepoForProject(project.id);
+      expect(projectRepo.isSuperAdmin()).toBe(false);
+      await expect(projectRepo.readResource('Binary', binary.id)).resolves.toMatchObject({ id: binary.id });
+      await expect(projectRepo.readResource('Binary', linkedBinary.id)).resolves.toMatchObject({ id: linkedBinary.id });
+      await expect(projectRepo.readResource('Binary', otherBinary.id)).rejects.toThrow('Not found');
     }));
 
   describe('Patient scoped access token', () => {

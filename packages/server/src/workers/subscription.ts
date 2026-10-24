@@ -41,7 +41,7 @@ import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInRequestContext, tryGetRequestContext } from '../context';
-import { buildAccessPolicy } from '../fhir/accesspolicy';
+import { buildAccessPolicy, getRepoForProject } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
 import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
@@ -678,8 +678,12 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
     const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
     // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
-    // They would get if they did a search
-    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, versionedResource);
+    // They would get if they did a search, so only sign the attachments that the resource's own project can read
+    rewrittenResource = versionedResource;
+    if (versionedResource.meta?.project) {
+      using projectRepo = await getRepoForProject(versionedResource.meta.project);
+      rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, projectRepo, versionedResource);
+    }
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;

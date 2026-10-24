@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ClientApplication } from '@medplum/fhirtypes';
+import { ContentType } from '@medplum/core';
+import type { Binary, ClientApplication } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { createTestClient } from '../test.setup';
+import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 
 const app = express();
 let client: ClientApplication;
@@ -49,6 +50,40 @@ describe('OAuth utils', () => {
     const res = await request(app).get(`/auth/clientinfo/${clientWithoutSignInForm.id}`).type('json');
     expect(res).toHaveStatus(200);
     expect(res.body).toStrictEqual({});
+  });
+
+  test('Signs logo in the same project', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    const { binary, clientWithLogo } = await withTestContext(async () => {
+      const binary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      const clientWithLogo = await repo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        signInForm: { logo: { url: `Binary/${binary.id}` } },
+      });
+      return { binary, clientWithLogo };
+    });
+
+    const res = await request(app).get(`/auth/clientinfo/${clientWithLogo.id}`).type('json');
+    expect(res).toHaveStatus(200);
+    expect(res.body.logo.url).toContain(`/storage/${binary.id}/`);
+    expect(res.body.logo.url).toContain('Signature=');
+  });
+
+  test('Does not sign logo in another project', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const { binary, clientWithLogo } = await withTestContext(async () => {
+      const binary = await otherRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      const clientWithLogo = await repo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        signInForm: { logo: { url: `Binary/${binary.id}` } },
+      });
+      return { binary, clientWithLogo };
+    });
+
+    const res = await request(app).get(`/auth/clientinfo/${clientWithLogo.id}`).type('json');
+    expect(res).toHaveStatus(200);
+    expect(res.body.logo.url).toBe(`Binary/${binary.id}`);
   });
 
   test('Invalid client', async () => {
