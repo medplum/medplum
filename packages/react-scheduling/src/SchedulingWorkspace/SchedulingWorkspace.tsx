@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { Alert, Box, CloseButton, Group, Stack, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -38,7 +38,7 @@ import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
-import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
+import { getCalendarTimezones, groupAppointmentsByService, matchesCalendarFilters } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
@@ -113,7 +113,7 @@ export interface SchedulingWorkspaceProps {
    * scheduling from. The user can still change or clear it. Read once on mount; key
    * the workspace to start it over on another site.
    */
-  readonly defaultServiceFacility?: Reference<Location> | WithId<Location>;
+  readonly defaultServiceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
 }
 
 /**
@@ -143,6 +143,11 @@ export interface SchedulingWorkspaceProps {
  *   appointment beside it, from whenever the form holds a time until it drops it. The
  *   calendar is never moved to reach either; one off the week on screen is drawn again
  *   on paging back to it.
+ * - Filters what is booked: the Service facility and Visit Type filters narrow the appointments
+ *   drawn to the ones recording that site and naming that service type. Every calendar stays
+ *   listed. Slots record neither, so under either filter only the drawn appointments' Slots,
+ *   such as their buffers, are shown. An open appointment the filters hide, such as one just
+ *   booked for another site or service type, stays open with a notice saying so.
  * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
  *
@@ -172,7 +177,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
-  // because the candidate search below is keyed on them.
+  // because they narrow the appointments drawn, and start the booking form.
   const initialFilters: CalendarFilterValues = defaultServiceFacility
     ? { serviceFacility: defaultServiceFacility }
     : NO_FILTERS;
@@ -205,13 +210,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setCandidatesLoading(true);
     Promise.all(
       BOOKABLE_ACTOR_TYPES.map(async (actorType) => {
-        // We search for a large number of schedule candidates here because we
-        // do client-side filtering based on locations in the list. Follow up:
-        // https://github.com/medplum/medplum/issues/10618
-        const candidates = await searchScheduleCandidates(medplum, selectedService, {
+        // A large count, as every calendar is listed rather than a page of them.
+        const candidates = await searchScheduleCandidates(medplum, undefined, {
           actorType,
           query: '',
-          location: selectedServiceFacility,
           signal: controller.signal,
           count: 250,
         });
@@ -235,7 +237,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       });
     return () => controller.abort();
-  }, [medplum, selectedService, selectedServiceFacility]);
+  }, [medplum]);
 
   const activeCandidates = useMemo(() => {
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
@@ -252,7 +254,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
   const services = useAppointmentServices(appointments);
 
-  const { sources, serviceTypes, servicesPending } = useMemo(() => {
+  const { sources, serviceTypes, servicesPending, shownSlots } = useMemo(() => {
     const isSettled = (reference: string): boolean =>
       services.has(reference) || medplum.getCachedReference({ reference }) !== undefined;
     // The color the HealthcareService names, or else one picked by its reference, so it holds
@@ -266,10 +268,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
         .filter(isDefined)
     );
-    const visibleAppointments = (appointments ?? []).filter((appointment) =>
+    const appointmentsOnShow = (appointments ?? []).filter((appointment) =>
       appointment.participant.some(
         (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
       )
+    );
+    const visibleAppointments = appointmentsOnShow.filter((appointment) =>
+      matchesCalendarFilters(appointment, filters)
     );
     const allGroups = Array.from(groupAppointmentsByService(visibleAppointments));
     // Held back until the service is read, or has failed to be, rather than drawn in one color
@@ -280,8 +285,17 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
     // its own appointments. A held-back appointment's Slots stay, so its time isn't shown as free.
+    // Slots record neither a site nor a service type, so under a filter only the ones the
+    // appointments drawn hold are shown.
+    const visibleSlots = new Set(
+      visibleAppointments.flatMap((appointment) => (appointment.slot ?? []).map(getReferenceString))
+    );
+    const shownSlots =
+      filters.service || filters.serviceFacility
+        ? (slots ?? []).filter((slot) => visibleSlots.has(getReferenceString(slot)))
+        : (slots ?? []);
     const openSlots = filterBookedSlots(
-      slots ?? [],
+      shownSlots,
       groups.flatMap(({ group }) => group)
     );
     const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
@@ -327,8 +341,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       sources: [...calendarSources, ...serviceSources, ...proposalSources],
       serviceTypes: legend,
       servicesPending: groups.length < allGroups.length,
+      shownSlots,
     };
-  }, [activeCandidates, slots, appointments, services, medplum, theme, paneTab, proposal]);
+  }, [activeCandidates, slots, appointments, filters, services, medplum, theme, paneTab, proposal]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -346,8 +361,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setTimeFinderOpen(false);
   }, []);
 
-  // Hides are kept across a service change rather than pruned: a calendar hidden under
-  // one service type stays hidden if another offers it again.
   const toggleCandidate = useCallback((actorType: BookableActorType, id: string): void => {
     setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
   }, []);
@@ -423,19 +436,19 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     }
     const loaded = appointments?.find((a) => a.id === selectedAppointment.id);
     // One that left the calendar some other way, by paging or by hiding its calendars,
-    // closes with it.
+    // closes with it. One the filters hide stays open, saying so, as a booking can be.
     const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
     return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
   }, [appointments, selectedAppointment]);
 
   const openSlot = useMemo((): WithId<Slot> | undefined => {
     if (selectedSlotId) {
-      return (slots ?? []).find((s) => s.id === selectedSlotId);
+      return shownSlots.find((s) => s.id === selectedSlotId);
     }
     return undefined;
-  }, [slots, selectedSlotId]);
-  // A Slot that leaves the calendar, by paging, hiding its calendar, or deletion, closes for good
-  // rather than reopening when it is loaded again.
+  }, [shownSlots, selectedSlotId]);
+  // A Slot that leaves the calendar, by paging, hiding its calendar, a filter, or deletion, closes
+  // for good rather than reopening when it is loaded again.
   if (selectedSlotId && slots && !openSlot) {
     setSelectedSlotId(undefined);
   }
@@ -500,23 +513,28 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
           aria-label="Appointment details"
         >
-          <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>Appointment details</Title>
-            <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
-          </Group>
-          <AppointmentDetails
-            appointment={openAppointment}
-            canBypassSchedulingRules={canBypassSchedulingRules}
-            cancellationReasonValueSet={appointmentCancellationReasonValueSet}
-            onCancelled={props.onCancelled}
-            onConfirmed={props.onConfirmed}
-            onRescheduled={props.onRescheduled}
-            onToggleTimeFinder={setRescheduleFinderOpen}
-            onUpdated={props.onUpdated}
-            procedureBinding={procedureBinding}
-            diagnosisBinding={diagnosisBinding}
-            mrnSystem={mrnSystem}
-          />
+          <Stack gap="sm">
+            <Group justify="space-between" wrap="nowrap">
+              <Title order={4}>Appointment details</Title>
+              <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
+            </Group>
+            {!matchesCalendarFilters(openAppointment, filters) && (
+              <Alert color="blue">The calendar filters hide this appointment.</Alert>
+            )}
+            <AppointmentDetails
+              appointment={openAppointment}
+              canBypassSchedulingRules={canBypassSchedulingRules}
+              cancellationReasonValueSet={appointmentCancellationReasonValueSet}
+              onCancelled={props.onCancelled}
+              onConfirmed={props.onConfirmed}
+              onRescheduled={props.onRescheduled}
+              onToggleTimeFinder={setRescheduleFinderOpen}
+              onUpdated={props.onUpdated}
+              procedureBinding={procedureBinding}
+              diagnosisBinding={diagnosisBinding}
+              mrnSystem={mrnSystem}
+            />
+          </Stack>
         </section>
       )}
       {showSlot && (

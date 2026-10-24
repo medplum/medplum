@@ -7,6 +7,7 @@ import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { formatZonedDateTimeInput } from '../AppointmentFinder/AppointmentFinder.times';
 import { DrRiveraPractitioner, DrRiveraSchedule, SchedulingFixtures } from '../stories/scheduling';
+import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 import { formatWhen } from './SchedulingWorkspace.utils';
@@ -94,6 +95,16 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
     await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
     await userEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    await screen.findByText('Blocked');
+    expect(slotDetails()).not.toBeInTheDocument();
+
+    // A filter hides the Slots no drawn appointment holds, so it closes too.
+    await userEvent.click(screen.getByText('Blocked'));
+    await userEvent.click(screen.getByPlaceholderText('All visit types'));
+    await userEvent.click(await within(await screen.findByRole('listbox')).findByText('Telehealth Consult'));
+    await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
+    expect(slotDetails()).not.toBeInTheDocument();
+    await userEvent.click(pillRemoveButton('Telehealth Consult'));
     await screen.findByText('Blocked');
     expect(slotDetails()).not.toBeInTheDocument();
 

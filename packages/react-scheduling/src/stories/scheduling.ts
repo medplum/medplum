@@ -1531,6 +1531,7 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
   slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(ElderJordanPatient) },

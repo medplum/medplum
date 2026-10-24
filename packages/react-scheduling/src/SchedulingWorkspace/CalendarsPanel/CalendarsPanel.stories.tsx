@@ -10,7 +10,7 @@ import { CalendarFilters } from '../CalendarFilters';
 import type { CalendarsPanelItem } from './CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel';
 
-// Nothing in these stories narrows the lists below, so a choice goes nowhere.
+// Nothing in these stories draws appointments, so a choice goes nowhere.
 const IGNORE_FILTER_CHOICE = (): void => undefined;
 
 export default {
@@ -68,7 +68,7 @@ export const Basic = (): JSX.Element => {
  * server, so neither is limited to what a first page happened to hold. Clicking a field
  * without typing offers a first page anyway, which is what a small clinic sees.
  *
- * Narrowing the calendars to what was picked is the host's job, and there is no host
+ * Narrowing the appointments to what was picked is the host's job, and there is no host
  * here, so a choice goes nowhere. The fields couple themselves either way — a newly
  * chosen site drops a chosen visit type it does not hold.
  *
@@ -89,9 +89,9 @@ export const WithFilters = (): JSX.Element => {
 };
 WithFilters.decorators = [withFixtures(SchedulingFixtures)];
 
-// While a filter changes, the candidates for every section are re-fetched together —
-// `candidatesLoading` reflects that single fetch. The filter fields keep their own
-// spinners, inside themselves, so a filter is answerable while the lists are still coming.
+// The candidates for every section are fetched together — `candidatesLoading` reflects that
+// single fetch. The filter fields keep their own spinners, inside themselves, so a filter is
+// answerable while the lists are still coming.
 export const CandidatesLoading = (): JSX.Element => {
   return (
     <div style={{ width: 300 }}>
@@ -101,8 +101,8 @@ export const CandidatesLoading = (): JSX.Element => {
 };
 CandidatesLoading.decorators = [withFixtures(SchedulingFixtures)];
 
-// A chosen site or visit type can narrow the candidates down to nothing for an actor type —
-// each empty section shows dim placeholder text in place of its (now empty) list.
+// An actor type can have no candidates — each empty section shows dim placeholder text in
+// place of its list.
 export const NoCandidates = (): JSX.Element => {
   return (
     <div style={{ width: 300 }}>
