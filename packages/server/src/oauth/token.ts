@@ -51,6 +51,7 @@ import {
   getClientApplicationMembership,
   getExternalUserInfo,
   hashCode,
+  isExternalEmailUnverified,
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
@@ -588,6 +589,14 @@ export async function exchangeExternalAuthToken(
   const userInfo = await tryGetExternalUserInfo(res, idp, subjectToken);
   if (!userInfo) {
     return;
+  }
+
+  if (!idp.useSubject && isExternalEmailUnverified(userInfo)) {
+    getLogger().warn('External identity provider reported unverified email', {
+      clientId,
+      projectId,
+      userInfoMode: idp.userInfoMode,
+    });
   }
 
   const { email, externalId } = getExternalAuthLoginIdentity(idp, userInfo);

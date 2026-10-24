@@ -1002,7 +1002,19 @@ function normalizeExternalUserInfo(body: Record<string, unknown>, idp?: Identity
   return {
     ...user,
     sub: user.localId,
+    email_verified: user.emailVerified,
   };
+}
+
+/**
+ * Returns true if the external identity provider reports the user's email address as unverified.
+ * The `email_verified` claim is optional, so a missing claim is not treated as unverified.
+ * @param userInfo - The user info or ID token claims from the external identity provider.
+ * @returns True if the email address is reported as unverified.
+ */
+export function isExternalEmailUnverified(userInfo: Record<string, unknown>): boolean {
+  // Some identity providers send the claim as a string
+  return userInfo.email_verified === false || userInfo.email_verified === 'false';
 }
 
 async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
