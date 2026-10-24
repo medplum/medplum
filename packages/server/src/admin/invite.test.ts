@@ -2195,6 +2195,44 @@ describe('Admin Invite', () => {
     expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
   });
 
+  test('Email with comma does not match a user outside the allowed domains', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
+
+    const bobEmail = `bob${randomUUID()}@other.example.com`;
+    const { user: bob } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: bobEmail,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + restricted.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `"x,${bobEmail},y"@allowed.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(200);
+    expect(res.body.user.reference).not.toBe(getReferenceString(bob));
+  });
+
   test('Invite by externalId is unaffected by allowed domain restrictions', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({

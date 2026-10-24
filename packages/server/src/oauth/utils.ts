@@ -5,6 +5,7 @@ import {
   badRequest,
   ContentType,
   createReference,
+  escapeSearchValue,
   forbidden,
   getDateProperty,
   getReferenceString,
@@ -737,7 +738,7 @@ export async function getUserByExternalId(
       {
         code: 'external-id',
         operator: Operator.EXACT,
-        value: externalId,
+        value: escapeSearchValue(externalId),
       },
       {
         code: 'project',
@@ -757,7 +758,7 @@ export async function getUserByExternalId(
       {
         code: 'external-id',
         operator: Operator.EXACT,
-        value: externalId,
+        value: escapeSearchValue(externalId),
       },
       {
         code: 'project',
@@ -800,7 +801,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
       {
         code: 'email',
         operator: Operator.EXACT,
-        value: email.toLowerCase(),
+        value: escapeSearchValue(email.toLowerCase()),
       },
       {
         code: 'project',
@@ -826,7 +827,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<WithI
       {
         code: 'email',
         operator: Operator.EXACT,
-        value: email.toLowerCase(),
+        value: escapeSearchValue(email.toLowerCase()),
       },
       {
         code: 'project',
@@ -1412,7 +1413,7 @@ async function tryExternalAuthLogin(
         {
           code: 'external-id',
           operator: Operator.EXACT,
-          value: claims.sub,
+          value: escapeSearchValue(claims.sub),
         },
       ],
       count: 2,
@@ -1485,7 +1486,7 @@ async function getExternalBearerClient(
     resourceType: 'ClientApplication',
     filters: [
       { code: '_project', operator: Operator.EQUALS, value: projectId },
-      { code: 'identity-provider-issuer', operator: Operator.EXACT, value: issuer },
+      { code: 'identity-provider-issuer', operator: Operator.EXACT, value: escapeSearchValue(issuer) },
     ],
     count: 2,
   });

@@ -7,6 +7,7 @@ import { indexStructureDefinitionBundle } from '../typeschema/types';
 import type { SearchRequest } from './search';
 import {
   Operator,
+  escapeSearchValue,
   formatSearchQuery,
   isChainedSearchFilter,
   parseSearchRequest,
@@ -577,5 +578,16 @@ describe('Search Utils', () => {
     ['name', false],
   ])('isChainedSearchFilter(%s)', (code, expected) => {
     expect(isChainedSearchFilter({ code, operator: Operator.EQUALS, value: 'x' })).toBe(expected);
+  });
+
+  test('Escape search value', () => {
+    expect(escapeSearchValue('')).toStrictEqual('');
+    expect(escapeSearchValue('x')).toStrictEqual('x');
+    expect(escapeSearchValue('x,y')).toStrictEqual('x\\,y');
+    expect(escapeSearchValue('x\\y')).toStrictEqual('x\\\\y');
+    expect(escapeSearchValue('x\\,y')).toStrictEqual('x\\\\\\,y');
+    for (const value of ['', 'x', 'x,y', ',', 'x,,y', 'x\\', 'x\\,y', '\\\\,']) {
+      expect(splitSearchOnComma(escapeSearchValue(value))).toStrictEqual([value]);
+    }
   });
 });
