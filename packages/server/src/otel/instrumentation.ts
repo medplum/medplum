@@ -28,6 +28,11 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import type { ClientRequest, IncomingMessage, ServerResponse } from 'node:http';
+import { register } from 'node:module';
+
+// Register the OpenTelemetry ESM instrumentation hook before the app entry
+// loads any instrumented module. Replaces the deprecated --experimental-loader flag.
+register('@opentelemetry/instrumentation/hook.mjs', import.meta.url);
 
 // This file includes OpenTelemetry instrumentation.
 // Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
