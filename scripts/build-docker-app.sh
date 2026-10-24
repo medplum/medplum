@@ -58,6 +58,18 @@ fi
 if [[ "$IS_RELEASE" == "true" ]]; then
   APP_TAGS="$APP_TAGS --tag $APP_DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $APP_DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
 fi
-pushd packages/app
-docker buildx build $ATTESTATIONS $PLATFORMS $APP_TAGS --push .
-popd
+# A release that is already published from the same inputs only gets its tags (re)applied
+LABELS=""
+if [[ "$IS_RELEASE" == "true" ]]; then
+  source "$(dirname "${BASH_SOURCE[0]}")/docker-release-utils.sh"
+  CONTENT_HASH=$(input_hash packages/app/Dockerfile packages/app/docker-entrypoint.sh packages/app/medplum-app.tar.gz)
+  LABELS="--label $CONTENT_HASH_LABEL=$CONTENT_HASH --label org.opencontainers.image.revision=$GITHUB_SHA"
+fi
+
+if [[ "$IS_RELEASE" == "true" ]] && is_published "$APP_DOCKERHUB_REPOSITORY:$FULL_VERSION" "$CONTENT_HASH"; then
+  docker buildx imagetools create $APP_TAGS "$APP_DOCKERHUB_REPOSITORY@$PUBLISHED_DIGEST"
+else
+  pushd packages/app
+  docker buildx build $ATTESTATIONS $PLATFORMS $APP_TAGS $LABELS --push .
+  popd
+fi
