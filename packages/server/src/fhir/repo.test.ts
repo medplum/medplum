@@ -308,6 +308,68 @@ describe('FHIR Repo', () => {
     );
   });
 
+  describe('readResource with requireInteraction', () => {
+    test('Checks the interaction outside extended mode', async () => {
+      const patient = await withTestContext(() => testProjectRepo.createResource<Patient>({ resourceType: 'Patient' }));
+      const repo = testProjectRepo.withOverrideConfig({ extendedMode: false });
+
+      const result = await repo.readResource<Patient>('Patient', patient.id, {
+        requireInteraction: AccessPolicyInteraction.UPDATE,
+      });
+      expect(result.id).toStrictEqual(patient.id);
+      expect(result.meta?.project).toBeUndefined();
+
+      const readOnlyRepo = new Repository({
+        ...repo.getConfig(),
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Patient', readonly: true }] },
+      });
+      await expect(readOnlyRepo.readResource<Patient>('Patient', patient.id)).resolves.toBeDefined();
+      await expect(
+        readOnlyRepo.readResource<Patient>('Patient', patient.id, {
+          requireInteraction: AccessPolicyInteraction.UPDATE,
+        })
+      ).rejects.toThrow(new OperationOutcomeError(forbidden));
+    });
+
+    test('Denies update of a linked project resource', async () => {
+      const patient = await withTestContext(() => testProjectRepo.createResource<Patient>({ resourceType: 'Patient' }));
+      const { repo: linkedRepo } = await createTestProject({
+        withRepo: true,
+        extendedMode: false,
+        project: { link: [{ project: createReference(testProject) }] },
+      });
+
+      await expect(linkedRepo.readResource<Patient>('Patient', patient.id)).resolves.toBeDefined();
+      await expect(
+        linkedRepo.readResource<Patient>('Patient', patient.id, { requireInteraction: AccessPolicyInteraction.UPDATE })
+      ).rejects.toThrow(new OperationOutcomeError(forbidden));
+    });
+
+    test('canPerformInteraction rejects a resource with meta removed', async () => {
+      const patient = await withTestContext(() => testProjectRepo.createResource<Patient>({ resourceType: 'Patient' }));
+      const repo = testProjectRepo.withOverrideConfig({ extendedMode: false });
+      const stripped = await repo.readResource<Patient>('Patient', patient.id);
+
+      expect(() => repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, stripped)).toThrow(
+        'canPerformInteraction called on a resource with meta removed'
+      );
+
+      // Outside tests, it logs and denies instead of throwing
+      vi.stubEnv('NODE_ENV', 'production');
+      const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+      try {
+        expect(repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, stripped)).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('canPerformInteraction called on a resource with meta removed'),
+          expect.objectContaining({ resource: getReferenceString(patient) })
+        );
+      } finally {
+        errorSpy.mockRestore();
+        vi.unstubAllEnvs();
+      }
+    });
+  });
+
   test('Read AuditEvent after update', async () => {
     const projectId = testProject.id;
     const resource = await systemRepo.createResource({ resourceType: 'Patient', meta: { project: projectId } });
