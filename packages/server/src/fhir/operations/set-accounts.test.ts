@@ -605,4 +605,99 @@ describe('Patient Set Accounts Operation', () => {
     expect(diagnosticReport.subject).toStrictEqual(patientRef);
     expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef]));
   });
+
+  test('Respects access policy of the user when propagating', async () => {
+    const { accessToken, project, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      accessPolicy: {
+        resource: [
+          { resourceType: 'Patient' },
+          { resourceType: 'Observation', readonly: true },
+          { resourceType: 'DiagnosticReport', hiddenFields: ['conclusion'] },
+        ],
+      },
+    });
+    const systemRepo = repo.getSystemRepo();
+    const meta = { project: project.id };
+    const orgRef = createReference(organization1);
+
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient', meta });
+    const observation = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta,
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+    const diagnosticReport = await systemRepo.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      meta,
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+      conclusion: 'hidden from the user',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: orgRef },
+          { name: 'propagate', valueBoolean: true },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
+
+    // Read-only resources are not updated
+    const unchangedObservation = await systemRepo.readResource<Observation>('Observation', observation.id);
+    expect(unchangedObservation.meta?.versionId).toStrictEqual(observation.meta?.versionId);
+    expect(unchangedObservation.meta?.accounts).toBeUndefined();
+
+    // Hidden fields of updated resources are preserved
+    const updatedReport = await systemRepo.readResource<DiagnosticReport>('DiagnosticReport', diagnosticReport.id);
+    expect(updatedReport.meta?.accounts).toStrictEqual([orgRef]);
+    expect(updatedReport.conclusion).toStrictEqual('hidden from the user');
+  });
+
+  test('Does not propagate to resources in linked Projects', async () => {
+    const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      project: { link: [{ project: createReference(linkedProject) }] },
+      membership: { admin: true },
+    });
+
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const linkedObservation = await linkedRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+    expect(linkedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+    await expect(repo.readResource('Observation', linkedObservation.id)).resolves.toBeDefined();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: createReference(organization1) },
+          { name: 'propagate', valueBoolean: true },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
+
+    const unchangedObservation = await linkedRepo.readResource<Observation>('Observation', linkedObservation.id);
+    expect(unchangedObservation.meta?.versionId).toStrictEqual(linkedObservation.meta?.versionId);
+    expect(unchangedObservation.meta?.accounts).toBeUndefined();
+  });
 });
