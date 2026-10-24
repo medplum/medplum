@@ -406,9 +406,8 @@ jobs:
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        # Fork PRs don't get secrets, and empty username/password fail template validation, so omit credentials entirely
+        credentials: ${{ secrets.DOCKERHUB_USERNAME && fromJSON(format('{{"username":{0},"password":{1}}}', toJSON(secrets.DOCKERHUB_USERNAME), toJSON(secrets.DOCKERHUB_TOKEN))) || null }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -422,9 +421,8 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        # Fork PRs don't get secrets, and empty username/password fail template validation, so omit credentials entirely
+        credentials: ${{ secrets.DOCKERHUB_USERNAME && fromJSON(format('{{"username":{0},"password":{1}}}', toJSON(secrets.DOCKERHUB_USERNAME), toJSON(secrets.DOCKERHUB_TOKEN))) || null }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
@@ -578,9 +576,8 @@ jobs:
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        # Fork PRs don't get secrets, and empty username/password fail template validation, so omit credentials entirely
+        credentials: ${{ secrets.DOCKERHUB_USERNAME && fromJSON(format('{{"username":{0},"password":{1}}}', toJSON(secrets.DOCKERHUB_USERNAME), toJSON(secrets.DOCKERHUB_TOKEN))) || null }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -594,9 +591,8 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
-        credentials:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        # Fork PRs don't get secrets, and empty username/password fail template validation, so omit credentials entirely
+        credentials: ${{ secrets.DOCKERHUB_USERNAME && fromJSON(format('{{"username":{0},"password":{1}}}', toJSON(secrets.DOCKERHUB_USERNAME), toJSON(secrets.DOCKERHUB_TOKEN))) || null }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"

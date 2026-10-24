@@ -10,6 +10,7 @@ import type { UserEvent } from './test-utils/render';
 import { act, render, screen, userEvent, waitFor } from './test-utils/render';
 
 const medplum = new MockClient();
+const clientInfoUrl = '/auth/clientinfo/123?redirect_uri=https%3A%2F%2Fexample.com%2Fcallback';
 
 describe('OAuthPage', () => {
   async function setup(url: string): Promise<UserEvent> {
@@ -33,9 +34,15 @@ describe('OAuthPage', () => {
     });
   });
 
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(medplum, 'get').mockResolvedValue({});
+  });
+
   test('Missing clientId', async () => {
     await setup('/oauth');
     expect(screen.queryByTestId('submit')).toBeNull();
+    expect(screen.getByText('Invalid sign-in request')).toBeInTheDocument();
   });
 
   test('Success', async () => {
@@ -62,7 +69,7 @@ describe('OAuthPage', () => {
   });
 
   test('Forgot password', async () => {
-    const user = await setup('/oauth?client_id=123');
+    const user = await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback');
 
     await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
 
@@ -72,7 +79,7 @@ describe('OAuthPage', () => {
   });
 
   test('Register', async () => {
-    const user = await setup('/oauth?client_id=123');
+    const user = await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback');
 
     await user.click(screen.getByText('Register'));
   });
@@ -84,8 +91,8 @@ describe('OAuthPage', () => {
     };
     vi.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
 
-    await setup('/oauth?client_id=123');
-    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
+    await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback');
+    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith(clientInfoUrl));
     expect(screen.getByText('Test Client')).toBeInTheDocument();
     const logo = screen.getByAltText('Welcome Logo');
     expect(logo).toBeInTheDocument();
@@ -96,8 +103,8 @@ describe('OAuthPage', () => {
     const mockClientInfo = {};
     vi.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
 
-    await setup('/oauth?client_id=123');
-    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
+    await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback');
+    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith(clientInfoUrl));
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
     expect(screen.getByText('Medplum Logo')).toBeInTheDocument();
   });
@@ -108,20 +115,45 @@ describe('OAuthPage', () => {
     };
     vi.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
 
-    await setup('/oauth?client_id=123');
-    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
+    await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback');
+    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith(clientInfoUrl));
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
     const logo = screen.getByAltText('Welcome Logo');
     expect(logo).toBeInTheDocument();
   });
 
-  test('Do not fetch client info when client_id is medplum-cli', async () => {
-    vi.spyOn(medplum, 'get').mockReset();
-    const mockGet = vi.spyOn(medplum, 'get');
-    await setup('/oauth?client_id=medplum-cli');
-    expect(mockGet).not.toHaveBeenCalled();
-    // The sign in form must still render, even though there is no client info to wait for
+  test('Fetch client info for medplum-cli', async () => {
+    await setup('/oauth?client_id=medplum-cli&redirect_uri=http://localhost:9615');
+    expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/medplum-cli?redirect_uri=http%3A%2F%2Flocalhost%3A9615');
     expect(screen.getByLabelText('Email *')).toBeInTheDocument();
+  });
+
+  test('Encodes client ID', async () => {
+    await setup('/oauth?client_id=a%2Fb&redirect_uri=https://example.com/callback');
+    expect(medplum.get).toHaveBeenCalledWith(
+      '/auth/clientinfo/a%2Fb?redirect_uri=https%3A%2F%2Fexample.com%2Fcallback'
+    );
+  });
+
+  test('Missing redirect URI', async () => {
+    await setup('/oauth?client_id=123');
+    expect(medplum.get).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Email *')).toBeNull();
+    expect(screen.getByText('Missing or invalid client ID or redirect URI')).toBeInTheDocument();
+  });
+
+  test('Script redirect URI', async () => {
+    await setup('/oauth?client_id=123&redirect_uri=javascript:alert(1)');
+    expect(medplum.get).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Email *')).toBeNull();
+    expect(screen.getByText('Missing or invalid client ID or redirect URI')).toBeInTheDocument();
+  });
+
+  test('Client info failure', async () => {
+    vi.spyOn(medplum, 'get').mockRejectedValue(new Error('Invalid redirect URI'));
+    await setup('/oauth?client_id=123&redirect_uri=https://example.com/other');
+    expect(await screen.findByText('Invalid redirect URI')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Email *')).toBeNull();
   });
 
   async function signIn(user: UserEvent): Promise<void> {
