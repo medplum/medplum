@@ -173,6 +173,21 @@ describe('Login', () => {
     expect(res.body.code).toBeDefined();
   });
 
+  test.each(['https://example.com/', 'https://example.com/other'])(
+    'Success with redirect URI %s',
+    async (redirectUri) => {
+      const res = await request(app).post('/auth/login').type('json').send({
+        clientId: corsClient.id,
+        email,
+        password,
+        scope: 'openid',
+        redirectUri,
+      });
+      expect(res).toHaveStatus(200);
+      expect(res.body.code).toBeDefined();
+    }
+  );
+
   test('Success default client', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,
