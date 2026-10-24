@@ -16,6 +16,12 @@ export interface SearchFieldEditorProps {
   readonly onCancel: () => void;
 }
 
+/**
+ * Modal for choosing which columns a search table shows.
+ * @deprecated Use `SearchColumnEditor`, the popover that replaced this modal in the `SearchControl` toolbar.
+ * @param props - The field editor props.
+ * @returns The field editor modal, or null when not visible.
+ */
 export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | null {
   const wasDropdownOpen = useRef(false);
   const [state, setState] = useState({

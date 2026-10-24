@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
-import { getDefaultFields, RESOURCE_TYPE_CREATION_PATHS } from './HomePage.utils';
+import { getDefaultFields, getResourceTypeDefaultFields, RESOURCE_TYPE_CREATION_PATHS } from './HomePage.utils';
 import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
 
 vi.mock('@mantine/notifications', async (importOriginal) => ({
@@ -361,6 +361,12 @@ describe('HomePage', () => {
     expect(getDefaultFields('Subscription')).toEqual(['id', '_lastUpdated', 'criteria']);
     expect(getDefaultFields('User')).toEqual(['id', '_lastUpdated', 'email']);
     expect(getDefaultFields('ValueSet')).toEqual(['id', '_lastUpdated', 'name', 'title', 'status']);
+  });
+
+  test('Resource type default fields ignore the saved search', () => {
+    window.localStorage.setItem('Patient-defaultSearch', JSON.stringify({ resourceType: 'Patient', fields: ['name'] }));
+    expect(getDefaultFields('Patient')).toEqual(['name']);
+    expect(getResourceTypeDefaultFields('Patient')).toEqual(['id', '_lastUpdated', 'name', 'birthDate', 'gender']);
   });
 
   test('Left click on row', async () => {
