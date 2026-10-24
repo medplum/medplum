@@ -8,9 +8,10 @@ import { CandidBillingOrganizations } from './CandidBillingOrganizations';
 import { CandidBillingPractitioners } from './CandidBillingPractitioners';
 import { CandidDirectoryPayers } from './CandidDirectoryPayers';
 import { CandidImportedPayers } from './CandidImportedPayers';
+import { EligibilityServiceTypeSettings } from './EligibilityServiceTypeSettings';
 
 /** The tabs of the billing settings. */
-export type BillingSettingsTab = 'Organizations' | 'Practitioners' | 'Payers' | 'Directory';
+export type BillingSettingsTab = 'Organizations' | 'Practitioners' | 'Payers' | 'Directory' | 'Eligibility';
 
 /**
  * The tabs with the URL path each lives at, relative to the billing settings root. The Payers tab lists
@@ -22,6 +23,7 @@ const TABS: { label: string; value: BillingSettingsTab; path: string }[] = [
   { label: 'Billing Practitioners', value: 'Practitioners', path: 'Practitioners' },
   { label: 'Enrolled Payers', value: 'Payers', path: 'Payers/Organization' },
   { label: 'Payer Directory', value: 'Directory', path: 'Directory' },
+  { label: 'Eligibility', value: 'Eligibility', path: 'Eligibility' },
 ];
 
 /**
@@ -58,7 +60,8 @@ function parseBillingSettingsPath(path: string | undefined): BillingSettingsLoca
   if (tab.value === 'Payers' && rest[0]?.toLowerCase() === 'organization') {
     rest.shift();
   }
-  return { tab: tab.value, resourceId: tab.value === 'Directory' ? undefined : rest[0] };
+  const hasResources = tab.value !== 'Directory' && tab.value !== 'Eligibility';
+  return { tab: tab.value, resourceId: hasResources ? rest[0] : undefined };
 }
 
 /**
@@ -118,6 +121,9 @@ export function CandidBillingSettings(props: CandidBillingSettingsProps): JSX.El
       </Tabs.Panel>
       <Tabs.Panel value="Directory" pt="md">
         <CandidDirectoryPayers directory={directory} />
+      </Tabs.Panel>
+      <Tabs.Panel value="Eligibility" pt="md">
+        <EligibilityServiceTypeSettings />
       </Tabs.Panel>
     </Tabs>
   );
