@@ -165,6 +165,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
         clientId: client.id,
         authMethod: request.authMethod,
         redirectUri: request.redirectUri,
+        partialMatch: !!getClientRedirectUri(client, request.redirectUri, true),
       });
     }
   }
