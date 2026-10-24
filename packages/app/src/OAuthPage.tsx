@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
+import { Alert, Title } from '@mantine/core';
 import type { CodeChallengeMethod } from '@medplum/core';
 import { locationUtils, normalizeErrorString } from '@medplum/core';
 import type { ClientApplicationSignInForm } from '@medplum/fhirtypes';
-import { Loading, Logo, SignInForm, useMedplum } from '@medplum/react';
+import { Document, Loading, Logo, SignInForm, useMedplum } from '@medplum/react';
+import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -17,45 +17,46 @@ export function OAuthPage(): JSX.Element | null {
   const medplum = useMedplum();
   const scope = params.get('scope') || 'openid';
   const clientId = params.get('client_id');
+  const redirectUri = getRedirectUri(params);
   const login = params.get('login');
-  const hasClientInfo = !!clientId && clientId !== 'medplum-cli';
   const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
-  const [loading, setLoading] = useState(hasClientInfo);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!hasClientInfo) {
+    if (!clientId || !redirectUri) {
       return;
     }
     async function fetchProjectInfo(): Promise<void> {
       try {
-        const info: ClientApplicationSignInForm = await medplum.get(`/auth/clientinfo/${clientId}`);
+        const info: ClientApplicationSignInForm = await medplum.get(
+          `/auth/clientinfo/${encodeURIComponent(clientId as string)}?redirect_uri=${encodeURIComponent(redirectUri as string)}`
+        );
         setClientInfo(info);
       } catch (err) {
-        showNotification({
-          id: 'clientinfofail',
-          title: 'Failed to retrieve client information.',
-          color: 'red',
-          message: normalizeErrorString(err),
-          withCloseButton: true,
-        });
+        setError(normalizeErrorString(err));
       } finally {
         setLoading(false);
       }
     }
 
     fetchProjectInfo().catch(console.error);
-  }, [medplum, clientId, hasClientInfo]);
+  }, [medplum, clientId, redirectUri]);
 
-  if (!clientId) {
-    return null;
+  if (!clientId || !redirectUri) {
+    return <InvalidRequest message="Missing or invalid client ID or redirect URI" />;
   }
 
   if (loading) {
     return <Loading />;
   }
 
+  if (!clientInfo) {
+    return <InvalidRequest message={error ?? 'Unknown client'} />;
+  }
+
   function onCode(code: string): void {
-    const redirectUrl = new URL(params.get('redirect_uri') as string);
+    const redirectUrl = new URL(redirectUri as string);
     for (const key of ['scope', 'state', 'nonce']) {
       if (params.has(key)) {
         redirectUrl.searchParams.set(key, params.get(key) as string);
@@ -72,7 +73,7 @@ export function OAuthPage(): JSX.Element | null {
       onRegister={() => navigate('/register')?.catch(console.error)}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
-      redirectUri={params.get('redirect_uri') || undefined}
+      redirectUri={redirectUri}
       scope={scope}
       nonce={params.get('nonce') || undefined}
       launch={params.get('launch') || undefined}
@@ -89,4 +90,24 @@ export function OAuthPage(): JSX.Element | null {
       <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
     </SignInForm>
   );
+}
+
+function InvalidRequest({ message }: { readonly message: string }): JSX.Element {
+  return (
+    <Document width={450}>
+      <Alert icon={<IconAlertCircle size={16} />} title="Invalid sign-in request" color="red">
+        {message}
+      </Alert>
+    </Document>
+  );
+}
+
+const blockedProtocols = ['javascript:', 'data:', 'vbscript:'];
+
+function getRedirectUri(params: URLSearchParams): string | undefined {
+  const redirectUri = params.get('redirect_uri');
+  if (!redirectUri || !URL.canParse(redirectUri) || blockedProtocols.includes(new URL(redirectUri).protocol)) {
+    return undefined;
+  }
+  return redirectUri;
 }
