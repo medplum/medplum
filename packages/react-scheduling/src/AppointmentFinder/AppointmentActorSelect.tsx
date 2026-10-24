@@ -133,5 +133,5 @@ function toOption(candidate: ScheduleCandidate): AsyncAutocompleteOption<Schedul
  * @returns The row.
  */
 function CandidateItem(props: Readonly<AsyncAutocompleteOption<ScheduleCandidate>>): JSX.Element {
-  return <AppointmentOptionRow label={props.label} detail={props.resource.schedule.comment} />;
+  return <AppointmentOptionRow label={props.label} detail={props.resource.schedule.comment} active={props.active} />;
 }

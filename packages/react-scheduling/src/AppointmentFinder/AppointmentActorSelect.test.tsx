@@ -142,6 +142,12 @@ describe('AppointmentActorSelect', () => {
 
     await typeInAutocomplete(input, 'riv');
     await clickAutocompleteOption('Dr. Maya Rivera');
+    // The pick is marked in the list, and Dr. Okafor, not picked, is not.
+    await typeInAutocomplete(input, 'dr');
+    const checked = screen.getAllByLabelText('Selected').map((check) => check.closest('[role="option"]')?.textContent);
+    expect(checked).toStrictEqual([expect.stringContaining('Dr. Maya Rivera')]);
+    expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument();
+
     await typeInAutocomplete(input, 'oka');
     await clickAutocompleteOption('Dr. Tunde Okafor');
 
