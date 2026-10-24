@@ -1,0 +1,65 @@
+# GKE cloud-native ingress: GCE ingress class, Google-managed certificate,
+# Cloud Armor policy and Cloud CDN via BackendConfig, HTTPS redirect via
+# FrontendConfig. This is exactly what earlier charts rendered from
+# global.cloudProvider=gcp — now supplied as values so the chart stays
+# cloud-neutral. Object names match the 5.x hardcoded ones on purpose:
+# a `helm upgrade` adopts the existing objects in place.
+#
+#   helm upgrade medplum medplum/medplum -n medplum \
+#     -f my-values.yaml -f examples/gke-cloud-native.values.yaml
+#
+# Set ingress.host and the static-ip name; keep the rest unless your
+# Cloud Armor policy / SSL policy have different names.
+
+ingress:
+  enabled: true
+  className: gce
+  host: api.medplum.example.com # <-- your API hostname
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: medplum-external-ip # <-- your reserved global IP
+    networking.gke.io/managed-certificates: medplum
+    networking.gke.io/v1beta1.FrontendConfig: medplum
+
+service:
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "medplum-backendconfig"}'
+
+extraObjects:
+  - apiVersion: cloud.google.com/v1
+    kind: BackendConfig
+    metadata:
+      name: medplum-backendconfig
+    spec:
+      securityPolicy:
+        name: ingress-security-policy # <-- your Cloud Armor policy
+      cdn:
+        enabled: true
+        cachePolicy:
+          includeHost: true
+      healthCheck:
+        checkIntervalSec: 30
+        timeoutSec: 10
+        healthyThreshold: 1
+        unhealthyThreshold: 3
+        type: HTTP
+        requestPath: /healthcheck
+      logging:
+        enable: true
+        sampleRate: 0.5
+  - apiVersion: networking.gke.io/v1beta1
+    kind: FrontendConfig
+    metadata:
+      name: medplum
+    spec:
+      sslPolicy: medplum-ssl-policy # <-- your SSL policy
+      redirectToHttps:
+        enabled: true
+        responseCodeName: MOVED_PERMANENTLY_DEFAULT
+  - apiVersion: networking.gke.io/v1
+    kind: ManagedCertificate
+    metadata:
+      name: medplum
+    spec:
+      domains:
+        - '{{ .Values.ingress.host }}' # extraObjects are rendered through tpl
