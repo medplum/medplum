@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Operation, WithId } from '@medplum/core';
-import { allOk, badRequest, EMPTY, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
+  getReferenceString,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
 import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -105,12 +112,19 @@ export async function setPassword(
     { resourceTypes: ['User', 'UserSecurityRequest'], source: 'setPassword' }
   );
 
-  const activeSessions = await repo.search<Login>({
-    resourceType: 'Login',
-    filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
-  });
-  for (const entry of activeSessions.entry ?? EMPTY) {
-    const login = entry.resource as Login;
-    await repo.updateResource({ ...login, revoked: true });
-  }
+  // Revoke every session of the user, not just the first page.
+  // Ascending _lastUpdated uses cursor pagination; a revoked Login moves to the end and is skipped.
+  await repo.processAllResources<Login>(
+    {
+      resourceType: 'Login',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
+      sortRules: [{ code: '_lastUpdated' }],
+      count: DEFAULT_MAX_SEARCH_COUNT,
+    },
+    async (login) => {
+      if (!login.revoked) {
+        await repo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/revoked', value: true }]);
+      }
+    }
+  );
 }

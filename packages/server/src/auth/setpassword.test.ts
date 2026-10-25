@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { badRequest, createReference } from '@medplum/core';
+import { badRequest, createReference, Operator } from '@medplum/core';
 import type { Login, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -259,6 +259,35 @@ describe('Set Password', () => {
       .send({ id: invite.id, secret: invite.secret, password: 'other-new-password' });
     expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Already used'));
+  });
+
+  test('Setting a password revokes all logins', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    // More than one page of the default search count
+    for (let i = 0; i < 25; i++) {
+      await tryLogin({ authMethod: 'password', scope: 'openid', email, password: 'password!@#', nonce: randomUUID() });
+    }
+
+    await withTestContext(() => setPassword(getGlobalSystemRepo(), user, 'my-new-password'));
+
+    const logins = await getGlobalSystemRepo().searchResources<Login>({
+      resourceType: 'Login',
+      count: 100,
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
+    });
+    expect(logins.length).toBeGreaterThan(25);
+    expect(logins.every((login) => login.revoked)).toBe(true);
   });
 
   test('Expired UserSecurityRequest', async () => {
