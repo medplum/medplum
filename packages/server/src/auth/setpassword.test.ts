@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { badRequest, createReference } from '@medplum/core';
+import { badRequest, createReference, Operator } from '@medplum/core';
 import type { Login, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -16,11 +16,12 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
+import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { setPassword } from './setpassword';
+import { revokeUserLogins, setPassword } from './setpassword';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -259,6 +260,56 @@ describe('Set Password', () => {
       .send({ id: invite.id, secret: invite.secret, password: 'other-new-password' });
     expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Already used'));
+  });
+
+  test('Setting a password revokes all logins', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+    const systemRepo = getGlobalSystemRepo();
+    const searchLogins = (): Promise<Login[]> =>
+      systemRepo.searchResources<Login>({
+        resourceType: 'Login',
+        count: 100,
+        filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
+      });
+
+    // More than one page of the default search count
+    for (let i = 0; i < 25; i++) {
+      await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        user: createReference(user),
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+      });
+    }
+
+    await withTestContext(() => setPassword(systemRepo, user, 'my-new-password'));
+    const before = await searchLogins();
+    expect(before.every((login) => login.revoked)).toBe(true);
+
+    // Several pages at the minimum page size for cursor pagination
+    for (let i = 0; i < 45; i++) {
+      await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        user: createReference(user),
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+      });
+    }
+
+    await withTestContext(() => revokeUserLogins(systemRepo, user, minCursorBasedSearchPageSize));
+    const logins = await searchLogins();
+    expect(logins).toHaveLength(before.length + 45);
+    expect(logins.every((login) => login.revoked)).toBe(true);
   });
 
   test('Expired UserSecurityRequest', async () => {
