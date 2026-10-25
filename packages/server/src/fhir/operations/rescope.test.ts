@@ -384,6 +384,14 @@ describe('User/$rescope', () => {
     const updated = res.body as User;
     expect(updated.project?.reference).toStrictEqual(`Project/${otherProject.id}`);
     expect(updated.meta?.project).toStrictEqual(otherProject.id);
+
+    // Links issued under the previous project are retired
+    const securityRequests = await systemRepo.searchResources<UserSecurityRequest>({
+      resourceType: 'UserSecurityRequest',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: `User/${user.id}` }],
+    });
+    expect(securityRequests.length).toBeGreaterThan(0);
+    expect(securityRequests.every((r) => r.used)).toBe(true);
   });
 
   test('Project admin cannot rescope User in a linked project', async () => {

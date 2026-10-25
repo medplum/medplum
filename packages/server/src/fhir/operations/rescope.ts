@@ -167,6 +167,9 @@ async function rescopeUserToProject(
         );
       }
 
+      // Open links were issued under the previous owner, and remain readable there
+      await retireAllSecurityRequests(txRepo, rereadUser);
+
       return txRepo.updateResource({
         ...rereadUser,
         meta: { ...rereadUser.meta, project: targetProject.id },
@@ -174,7 +177,7 @@ async function rescopeUserToProject(
       });
     },
     {
-      resourceTypes: ['Project', 'ProjectMembership', 'User'],
+      resourceTypes: ['Project', 'ProjectMembership', 'User', 'UserSecurityRequest'],
       source: 'rescopeUserToProject',
       serializable: true, // if a new project membership is added for this user, we want this tx to fail
     }
