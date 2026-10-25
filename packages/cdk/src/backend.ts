@@ -101,6 +101,19 @@ export class BackEnd extends Construct {
     // Bot Lambda Role
     this.botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        BotLambdaPolicies: new iam.PolicyDocument({
+          statements: [
+            // CloudWatch Logs: Create the function log group and stream, and put events
+            // https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs.html
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              resources: [`arn:aws:logs:${region}:${accountNumber}:log-group:/aws/lambda/*`],
+            }),
+          ],
+        }),
+      },
     });
 
     // RDS

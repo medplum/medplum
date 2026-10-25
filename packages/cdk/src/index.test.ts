@@ -801,4 +801,35 @@ describe('Infra', () => {
       0
     );
   });
+
+  // Regression test for https://github.com/medplum/medplum/issues/6303:
+  // The bot Lambda execution role had no CloudWatch Logs permissions, so bot
+  // Lambdas never created log streams in CloudWatch.
+  test('Bot Lambda role can write CloudWatch Logs', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumBotLambdaLogsStack',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::IAM::Role', {
+      AssumeRolePolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([Match.objectLike({ Principal: { Service: 'lambda.amazonaws.com' } })]),
+      }),
+      Policies: Match.arrayWith([
+        Match.objectLike({
+          PolicyDocument: Match.objectLike({
+            Statement: Match.arrayWith([
+              Match.objectLike({
+                Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+                Effect: 'Allow',
+                Resource: 'arn:aws:logs:us-east-1:647991932601:log-group:/aws/lambda/*',
+              }),
+            ]),
+          }),
+        }),
+      ]),
+    });
+  });
 });
