@@ -208,6 +208,47 @@ describe('FHIR Repo', () => {
       }));
   });
 
+  test('processAllResources uses cursor pagination', async () => {
+    const family = randomUUID();
+    const filters = [{ code: 'family', operator: Operator.EXACT, value: family }];
+    await withTestContext(async () => {
+      for (let i = 0; i < 30; i++) {
+        await testProjectRepo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+      }
+
+      // Each walk updates every Patient once, which moves it to the end of the _lastUpdated order
+      const walks = [
+        { sortRules: [{ code: '_lastUpdated' }], birthDate: '2000-01-01' },
+        { sortRules: undefined, birthDate: '2001-01-01' },
+      ];
+      for (const { sortRules, birthDate } of walks) {
+        const visited = new Set<string>();
+        await testProjectRepo.processAllResources<Patient>(
+          { resourceType: 'Patient', filters, sortRules, count: 5 },
+          async (patient) => {
+            visited.add(patient.id);
+            if (patient.birthDate !== birthDate) {
+              await testProjectRepo.updateResource<Patient>({ ...patient, birthDate });
+            }
+          }
+        );
+        expect(visited.size).toBe(30);
+      }
+    });
+
+    // A sort that cannot use cursor pagination logs a warning
+    const warnSpy = vi.spyOn(globalLogger, 'warn');
+    try {
+      await testProjectRepo.processAllResources<Patient>(
+        { resourceType: 'Patient', filters, sortRules: [{ code: '_lastUpdated', descending: true }] },
+        async () => undefined
+      );
+      expect(warnSpy).toHaveBeenCalledWith('processAllResources is using offset pagination', expect.anything());
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   test('getSearchProjectIds', () => {
     expect(testProjectRepo.getSearchProjectIds('Patient')).toStrictEqual([testProject.id]);
     expect(new Repository({ ...testProjectRepo.getConfig(), superAdmin: true }).getSearchProjectIds('Patient')).toBe(

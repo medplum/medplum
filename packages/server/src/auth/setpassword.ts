@@ -17,7 +17,6 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SuperAdminRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { consumeSecurityRequest, isSecurityRequestExpired, retirePasswordSecurityRequests } from './securityrequest';
@@ -123,7 +122,7 @@ export async function setPassword(
  * Revokes every Login of the user, walking all pages of the search.
  * @param repo - The system repository to use.
  * @param user - The user whose Logins should be revoked.
- * @param pageSize - The search page size, at least the minimum page size for cursor pagination.
+ * @param pageSize - The search page size.
  */
 export async function revokeUserLogins(
   repo: SuperAdminRepository,
@@ -137,8 +136,7 @@ export async function revokeUserLogins(
       resourceType: 'Login',
       filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
       sortRules: [{ code: '_lastUpdated' }],
-      // Smaller pages fall back to offset paging, which skips Logins that move to the end when revoked
-      count: Math.max(pageSize, minCursorBasedSearchPageSize),
+      count: pageSize,
     },
     async (login) => {
       if (!login.revoked) {

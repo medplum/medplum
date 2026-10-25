@@ -149,7 +149,7 @@ import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import { buildSearchExpression, minCursorBasedSearchPageSize, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
 import {
@@ -1826,13 +1826,24 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
+  /**
+   * Calls `process` for every resource that matches the search, following the "next" links.
+   *
+   * A search without sort rules is sorted by ascending `_lastUpdated`, with the page size raised to
+   * the minimum for cursor pagination. Cursor pagination is not limited by the maximum search offset,
+   * and it does not skip resources when `process` updates them. A search with other sort rules, or
+   * with an offset, uses offset pagination and logs a warning.
+   * @param initialSearchRequest - The search request.
+   * @param process - Called for each matching resource.
+   * @param options - Optional processing options.
+   */
   async processAllResources<T extends Resource>(
     initialSearchRequest: SearchRequest<T>,
     process: (resource: WithId<T>) => Promise<void>,
     options?: ProcessAllResourcesOptions
   ): Promise<void> {
     this.assertUsable();
-    let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
+    let searchRequest: SearchRequest<T> | undefined = withCursorPagination(initialSearchRequest);
     while (searchRequest) {
       const bundle: Bundle<T> = await this.search<T>(searchRequest);
       if (!bundle.entry?.length) {
@@ -3134,4 +3145,30 @@ function replaceSuperAdminProjectFields(project: Project, existing: Project | un
     }
   }
   return result;
+}
+
+/**
+ * Returns the search request set up for cursor pagination where possible.
+ * A search without sort rules is sorted by ascending `_lastUpdated`. When sorted that way, the page
+ * size is raised to the minimum for cursor pagination. Other sorts, or an offset, use offset
+ * pagination and log a warning.
+ * @param searchRequest - The search request.
+ * @returns The search request to use.
+ */
+function withCursorPagination<T extends Resource>(searchRequest: SearchRequest<T>): SearchRequest<T> {
+  const sortRules = searchRequest.sortRules?.length ? searchRequest.sortRules : [{ code: '_lastUpdated' }];
+  const cursorSort = sortRules.length === 1 && sortRules[0].code === '_lastUpdated' && !sortRules[0].descending;
+  if (!cursorSort || searchRequest.offset) {
+    // Offset pagination is limited by the maximum search offset, and skips resources that the callback updates
+    getLogger().warn('processAllResources is using offset pagination', {
+      resourceType: searchRequest.resourceType,
+      sortRules,
+      offset: searchRequest.offset,
+    });
+    return { ...searchRequest, sortRules };
+  }
+  if (searchRequest.count === undefined) {
+    return { ...searchRequest, sortRules };
+  }
+  return { ...searchRequest, sortRules, count: Math.max(searchRequest.count, minCursorBasedSearchPageSize) };
 }
