@@ -16,6 +16,7 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
+import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
@@ -292,9 +293,10 @@ describe('Set Password', () => {
     }
 
     await withTestContext(() => setPassword(systemRepo, user, 'my-new-password'));
-    expect((await searchLogins()).every((login) => login.revoked)).toBe(true);
+    const before = await searchLogins();
+    expect(before.every((login) => login.revoked)).toBe(true);
 
-    // Several pages at the minimum cursor page size
+    // Several pages at the minimum page size for cursor pagination
     for (let i = 0; i < 45; i++) {
       await systemRepo.createResource<Login>({
         resourceType: 'Login',
@@ -304,9 +306,9 @@ describe('Set Password', () => {
       });
     }
 
-    await withTestContext(() => revokeUserLogins(systemRepo, user, 20));
+    await withTestContext(() => revokeUserLogins(systemRepo, user, minCursorBasedSearchPageSize));
     const logins = await searchLogins();
-    expect(logins.length).toBeGreaterThan(70);
+    expect(logins).toHaveLength(before.length + 45);
     expect(logins.every((login) => login.revoked)).toBe(true);
   });
 
