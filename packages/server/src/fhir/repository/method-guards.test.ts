@@ -86,6 +86,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'isResourceWriteable',
   'isCacheOnly',
   'restoreReadonlyFields',
+  'logPostMetadataFieldMatch',
   'logEvent',
   'getCacheEntry',
   'getCacheEntries',

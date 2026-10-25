@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
@@ -230,6 +231,28 @@ describe('OAuth utils', () => {
       nonce: 'nonce',
     });
     expect(login).toBeDefined();
+  });
+
+  test.each([
+    ['https://example.com/', false],
+    ['https://example.com/other', true],
+  ])('Login with redirect URI %s', async (redirectUri, warned) => {
+    const warnSpy = vi.spyOn(globalLogger, 'warn');
+    try {
+      await tryLogin({
+        clientId: client.id,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        redirectUri,
+      });
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Login redirect URI is not registered for client');
+      expect(calls.length > 0).toBe(warned);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('External auth without email or externalId', () => {

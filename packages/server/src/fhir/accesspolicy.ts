@@ -20,6 +20,7 @@ import type {
   AccessPolicyResource,
   Bot,
   ClientApplication,
+  Expression,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
@@ -350,6 +351,19 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
 }
 
 /**
+ * Returns a write constraint that requires a new resource's `project` element, if present, to be the admin's own Project.
+ * Updates are covered by `readonlyFields`, which restores `project` from the previous version.
+ * @param membership - The project admin's membership.
+ * @returns The write constraint expression.
+ */
+function ownProjectWriteConstraint(membership: ProjectMembership): Expression {
+  return {
+    language: 'text/fhirpath',
+    expression: `%before.exists() or project.empty() or project.reference = 'Project/${resolveId(membership.project)}'`,
+  };
+}
+
+/**
  * Updates the access policy to include project admin rules.
  * This includes ensuring no admin rights for non-admins and restricted access for admins.
  * @param project - The project.
@@ -397,6 +411,7 @@ function applyProjectAdminAccessPolicy(
         resourceType: 'ProjectMembership',
         criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
         readonlyFields: ['project', 'user'],
+        writeConstraint: [ownProjectWriteConstraint(membership)],
       },
       {
         resourceType: 'UserSecurityRequest',
@@ -408,6 +423,7 @@ function applyProjectAdminAccessPolicy(
         criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+        writeConstraint: [ownProjectWriteConstraint(membership)],
       },
       {
         resourceType: 'Cron',

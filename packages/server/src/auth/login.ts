@@ -22,6 +22,7 @@ export const loginValidator = makeValidationMiddleware([
     .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
     .isByteLength({ max: MAX_PASSWORD_LENGTH })
     .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
+  body('redirectUri').optional({ values: 'falsy' }).isString().withMessage('Invalid redirectUri'),
 ]);
 
 export async function loginHandler(req: Request, res: Response): Promise<void> {
@@ -48,6 +49,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
       launchId: req.body.launch,
       codeChallenge: req.body.codeChallenge,
       codeChallengeMethod: req.body.codeChallengeMethod,
+      redirectUri: req.body.redirectUri,
       email: req.body.email,
       password: req.body.password,
       remember: req.body.remember,
