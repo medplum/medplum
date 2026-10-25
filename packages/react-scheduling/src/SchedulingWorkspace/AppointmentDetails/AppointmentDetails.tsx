@@ -85,7 +85,7 @@ export interface AppointmentDetailsProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
-  /** Called with the appointment as written, after the patient or the visit type's codes are saved. */
+  /** Called with the appointment as written, after the visit type's codes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
 
@@ -334,8 +334,8 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   return (
     <Stack gap="sm" className={classes.details}>
       <AppointmentStatusBadge status={appointment.status} />
-      {!editing && patientLine}
-      {!editing && <Detail label="MRN" value={mrn} />}
+      {patientLine}
+      <Detail label="MRN" value={mrn} />
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
       <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
@@ -352,7 +352,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           appointment={appointment}
           procedureBinding={procedureBinding}
           diagnosisBinding={diagnosisBinding}
-          mrnSystem={mrnSystem}
           onUpdated={(updated) => {
             setEditing(false);
             return onUpdated?.(updated);

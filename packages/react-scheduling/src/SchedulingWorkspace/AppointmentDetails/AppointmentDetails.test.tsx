@@ -43,14 +43,11 @@ import {
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../../test-utils/asyncAutocomplete';
 import {
   addRow,
-  choosePatient,
   codePill,
   confirmMedicalNecessity,
   enterCode,
-  field,
   hasPill,
   medicalNecessityBox,
-  patientDetail,
 } from '../../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor } from '../../test-utils/render';
 import { AppointmentDetails } from './AppointmentDetails';
@@ -749,21 +746,20 @@ describe('AppointmentDetails editing', () => {
     await settleAutocomplete();
   }
 
-  test('asks for the patient, filled with the one on file', async () => {
+  test('shows the patient on file as read-only when editing', async () => {
     renderEditable(BOOKED_APPOINTMENT);
 
-    await screen.findByText('Miles Cooper');
-    expect(hasPill('Miles Cooper')).toBe(true);
+    expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Search patients by name')).not.toBeInTheDocument();
   });
 
-  test('asks for a patient on an appointment without one', async () => {
+  test('does not offer patient selection when the appointment has none', async () => {
     renderEditable({
       ...BOOKED_APPOINTMENT,
       participant: BOOKED_APPOINTMENT.participant.filter((p) => !p.actor?.reference?.startsWith('Patient/')),
     });
 
-    expect(field(/patient/i)).toBeInTheDocument();
-    expect(screen.getByText('Select a patient.')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Search patients by name')).not.toBeInTheDocument();
     expect(saveButton()).toBeDisabled();
   });
 
@@ -897,24 +893,17 @@ describe('AppointmentDetails editing', () => {
     expect(stored.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
   });
 
-  test('saves a different patient in place of the one on file', async () => {
+  test('preserves the patient and other participants when editing codes', async () => {
     await medplum.createResource(AUTHORIZED_APPOINTMENT);
     renderEditable(AUTHORIZED_APPOINTMENT);
-    await screen.findByText('Miles Cooper');
+    await screen.findByRole('searchbox', { name: /procedure code/i });
 
-    await removePill('Miles Cooper');
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    expect(screen.queryByPlaceholderText('Search patients by name')).not.toBeInTheDocument();
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
     await clickSave();
 
     const stored = await medplum.readResource('Appointment', AUTHORIZED_APPOINTMENT.id);
-    expect(stored.participant).toEqual([
-      {
-        actor: { reference: `Patient/${ElderJordanPatient.id}`, display: 'Jordan Reyes' },
-        required: 'required',
-        status: 'needs-action',
-      },
-      ...AUTHORIZED_APPOINTMENT.participant.slice(1),
-    ]);
+    expect(stored.participant).toEqual(AUTHORIZED_APPOINTMENT.participant);
   });
 
   test('confirms medical necessity on a visit on file without it, replacing the attestation rather than adding one', async () => {
@@ -953,27 +942,22 @@ describe('AppointmentDetails editing', () => {
     expect(screen.getByText('Confirm medical necessity.')).toBeInTheDocument();
   });
 
-  test('adds a patient to an appointment that had none', async () => {
+  test('does not assign a patient to an existing appointment while editing requirements', async () => {
     const withoutPatient: WithId<Appointment> = {
-      ...BOOKED_APPOINTMENT,
-      id: 'appt-no-patient',
-      participant: BOOKED_APPOINTMENT.participant.filter((p) => !p.actor?.reference?.startsWith('Patient/')),
+      ...AUTHORIZED_APPOINTMENT,
+      id: 'appt-infusion-no-patient',
+      participant: AUTHORIZED_APPOINTMENT.participant.filter((p) => !p.actor?.reference?.startsWith('Patient/')),
     };
     await medplum.createResource(withoutPatient);
     renderEditable(withoutPatient);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
 
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    expect(screen.queryByPlaceholderText('Search patients by name')).not.toBeInTheDocument();
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
     await clickSave();
 
     const stored = await medplum.readResource('Appointment', withoutPatient.id);
-    expect(stored.participant).toEqual([
-      ...withoutPatient.participant,
-      {
-        actor: { reference: `Patient/${ElderJordanPatient.id}`, display: 'Jordan Reyes' },
-        required: 'required',
-        status: 'needs-action',
-      },
-    ]);
+    expect(stored.participant).toEqual(withoutPatient.participant);
   });
 
   test('writes only what the visit type asks for', async () => {
