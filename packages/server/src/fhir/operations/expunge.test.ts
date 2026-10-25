@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, LOINC } from '@medplum/core';
-import type { AuditEvent, Binary, Observation, Patient } from '@medplum/fhirtypes';
+import type { AuditEvent, Binary, DocumentReference, Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -321,6 +321,46 @@ describe('Expunge', () => {
 
     expect(await getTestProjectSystemRepo().readResource('Binary', binary.id)).toBeDefined();
   });
+
+  test('Project expunge leaves Binaries of other projects named in attachments', async () => {
+    const { project, repo } = await createTestProject({ withRepo: true });
+    const other = await createTestProject({ withRepo: true });
+    const otherBinary = await other.repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+    await repo.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [{ attachment: { url: 'Binary/' + otherBinary.id } }],
+    });
+
+    await new Expunger(getTestProjectSystemRepo(), project.id, { project: true }).expunge();
+
+    expect(await other.repo.readResource('Binary', otherBinary.id)).toBeDefined();
+  });
+
+  test('Compartment expunge only expunges attachment Binaries in the same project', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const other = await createTestProject({ withRepo: true });
+      const pool = getDatabasePool(DatabaseMode.WRITER, repo.shardId);
+
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const binary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+      const otherBinary = await other.repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+      });
+      await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        subject: createReference(patient),
+        content: [{ attachment: { url: 'Binary/' + binary.id } }, { attachment: { url: 'Binary/' + otherBinary.id } }],
+      });
+
+      await new Expunger(getTestProjectSystemRepo(), patient.id).expunge();
+
+      await expectExpungeTombstone(pool, 'Binary', binary.id);
+      expect(await other.repo.readResource('Binary', otherBinary.id)).toBeDefined();
+    }));
 
   test('Expunger expunges AuditEvent and leaves a history tombstone', async () => {
     const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });

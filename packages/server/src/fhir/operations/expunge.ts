@@ -141,15 +141,42 @@ export class Expunger {
     } while (ids.length === batchSize);
   }
 
+  /**
+   * Expunges Binaries referenced by attachment URLs, limited to the Project of the referencing resource.
+   * @param projectId - The Project of the resources that reference the Binaries.
+   * @param binaryIds - The referenced Binary IDs.
+   */
+  private async expungeReferencedBinaries(projectId: string, binaryIds: Set<string>): Promise<void> {
+    if (binaryIds.size === 0) {
+      return;
+    }
+    const rows = await this.repo.sqlRead<{ id: string }>(
+      new SelectQuery('Binary')
+        .column('id')
+        .where('id', 'IN', Array.from(binaryIds))
+        .where('projectId', '=', projectId),
+      'Binary',
+      { mode: DatabaseMode.WRITER }
+    );
+    if (rows.length > 0) {
+      await this.repo.expungeResources(
+        'Binary',
+        rows.map((r) => r.id)
+      );
+    }
+  }
+
   private async expungeMatching(resourceType: ResourceType, filters: Filter[]): Promise<void> {
     const repo = this.repo;
+    // Extended mode so that search results include meta.project
+    const searchRepo = repo.withOverrideConfig({ extendedMode: true });
     // NOTE(ThatOneBro 23/01/2025): Attempted to convert this to using `repo.processAllResources`,
     // But it doesn't quite fit the pattern since the "next" links are not usable
     // As the expunge process is destructive and the "cursor" essentially is always at the beginning of the table
     // We delete the next N resources over and over and use the "next" link as a signal if there are more resources to delete
     let hasNext = true;
     while (hasNext) {
-      const bundle = await repo.search({
+      const bundle = await searchRepo.search({
         resourceType,
         count: this.maxResultsPerPage,
         filters,
@@ -160,17 +187,27 @@ export class Expunger {
       }
 
       const resourcesToExpunge: string[] = [];
-      const binaryIds = new Set<string>();
+      const binaryIdsByProject = new Map<string, Set<string>>();
 
       for (const entry of bundle.entry) {
-        if (entry.resource?.id) {
-          resourcesToExpunge.push(entry.resource.id);
-          buildBinaryIds(entry.resource, binaryIds);
+        const resource = entry.resource;
+        if (resource?.id) {
+          resourcesToExpunge.push(resource.id);
+          // Project expunges delete all of the Project's Binaries by projectId instead
+          const projectId = resource.meta?.project;
+          if (!this.project && projectId) {
+            let binaryIds = binaryIdsByProject.get(projectId);
+            if (!binaryIds) {
+              binaryIds = new Set<string>();
+              binaryIdsByProject.set(projectId, binaryIds);
+            }
+            buildBinaryIds(resource, binaryIds);
+          }
         }
       }
       await repo.expungeResources(resourceType, resourcesToExpunge);
-      if (binaryIds.size > 0) {
-        await repo.expungeResources('Binary', Array.from(binaryIds));
+      for (const [projectId, binaryIds] of binaryIdsByProject) {
+        await this.expungeReferencedBinaries(projectId, binaryIds);
       }
 
       const linkNext = bundle.link?.find((b) => b.relation === 'next');
