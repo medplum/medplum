@@ -2198,6 +2198,71 @@ describe('AccessPolicy', () => {
     }
   });
 
+  test('Project admin creates User and ProjectMembership in own project', () =>
+    withTestContext(async () => {
+      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const otherProject = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Other' });
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: createReference(project),
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin: true,
+      });
+      const repo2 = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership, project, userConfig: {} as UserConfiguration },
+        true
+      );
+
+      const user = await repo2.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Own',
+        lastName: 'User',
+        project: createReference(project),
+      });
+      const member = await repo2.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(user),
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+      expect(member.project.reference).toBe(getReferenceString(project));
+
+      // Updates still work, with project restored by readonlyFields
+      const updated = await repo2.updateResource<ProjectMembership>({
+        ...member,
+        admin: true,
+        project: createReference(otherProject),
+      });
+      expect(updated.admin).toBe(true);
+      expect(updated.project.reference).toBe(getReferenceString(project));
+
+      await expect(
+        repo2.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Other',
+          lastName: 'User',
+          project: createReference(otherProject),
+        })
+      ).rejects.toThrow('Forbidden');
+      const serverUser = await repo2.createResource<User>({
+        resourceType: 'User',
+        firstName: 'No',
+        lastName: 'Project',
+      });
+      expect(serverUser.project).toBeUndefined();
+      // Defense in depth: meta.project of a ProjectMembership comes from its project element,
+      // so this create is also outside the admin's _project criteria
+      await expect(
+        repo2.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(otherProject),
+          user: createReference(user),
+          profile: { reference: 'Practitioner/' + randomUUID() },
+        })
+      ).rejects.toThrow('Forbidden');
+    }));
+
   test('Project admin cannot override synthetic access policy for admin types', () =>
     withTestContext(async () => {
       const { project, login, membership } = await createTestProject({
