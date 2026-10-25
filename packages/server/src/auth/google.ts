@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { getLogger } from '../logger';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -74,6 +75,11 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
     if (projects.length === 1) {
       projectId = projects[0].id;
+    } else {
+      getLogger().warn('Google client ID matches multiple projects', {
+        googleClientId,
+        projectIds: projects.map((p) => p.id),
+      });
     }
   }
 
