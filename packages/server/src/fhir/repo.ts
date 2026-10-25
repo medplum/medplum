@@ -1091,6 +1091,10 @@ export class Repository extends FhirRepository implements Disposable {
       return existing;
     }
 
+    if (!existing) {
+      this.logPostMetadataFieldMatch(updated, result);
+    }
+
     if (!this.isResourceWriteable(existing, result, interaction)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
@@ -2432,6 +2436,31 @@ export class Repository extends FhirRepository implements Disposable {
       meta.deleted = undefined;
     }
     return input;
+  }
+
+  /**
+   * Diagnostic logging for access policy entry selection on create.
+   * Logs the fields listed by the entry that matches the resource with server metadata assigned,
+   * when those fields are present in the resource.
+   * @param updated - The resource before server metadata is assigned.
+   * @param result - The resource with server metadata assigned.
+   */
+  private logPostMetadataFieldMatch(updated: Resource, result: Resource): void {
+    const policy = satisfiedAccessPolicy(result, AccessPolicyInteraction.CREATE, this.context.accessPolicy);
+    const fields = [...(policy?.readonlyFields ?? []), ...(policy?.hiddenFields ?? [])];
+    const present = fields.filter((field) => {
+      const copy = deepClone(updated);
+      removeField(copy, field);
+      return !deepEquals(copy, updated);
+    });
+    if (present.length > 0) {
+      getLogger().warn('Access policy field match after metadata', {
+        resourceType: result.resourceType,
+        projectId: result.meta?.project,
+        criteria: policy?.criteria,
+        fields: present,
+      });
+    }
   }
 
   /**
