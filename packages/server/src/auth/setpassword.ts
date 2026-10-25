@@ -71,6 +71,9 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
  * It is consumed after the password has been validated and hashed, so a password that fails
  * validation does not burn the user's link, but before the password is applied, so the request
  * cannot be redeemed twice.
+ *
+ * Sessions are revoked after the password is saved, outside that transaction. If revocation fails
+ * partway, a retry or the next password change revokes the remaining sessions.
  * @param repo - The system repository to use.
  * @param user - The user whose password is being set.
  * @param password - The new plaintext password.
@@ -112,14 +115,28 @@ export async function setPassword(
     { resourceTypes: ['User', 'UserSecurityRequest'], source: 'setPassword' }
   );
 
-  // Revoke every session of the user, not just the first page.
-  // Ascending _lastUpdated uses cursor pagination; a revoked Login moves to the end and is skipped.
+  await revokeUserLogins(repo, user);
+}
+
+/**
+ * Revokes every Login of the user, walking all pages of the search.
+ * @param repo - The system repository to use.
+ * @param user - The user whose Logins should be revoked.
+ * @param pageSize - The search page size.
+ */
+export async function revokeUserLogins(
+  repo: SuperAdminRepository,
+  user: WithId<User>,
+  pageSize = DEFAULT_MAX_SEARCH_COUNT
+): Promise<void> {
+  // Ascending _lastUpdated uses cursor pagination. A revoked Login is revisited once after the
+  // cursor and skipped by the revoked check.
   await repo.processAllResources<Login>(
     {
       resourceType: 'Login',
       filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
       sortRules: [{ code: '_lastUpdated' }],
-      count: DEFAULT_MAX_SEARCH_COUNT,
+      count: pageSize,
     },
     async (login) => {
       if (!login.revoked) {

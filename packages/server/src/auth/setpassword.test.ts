@@ -20,7 +20,7 @@ import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { setPassword } from './setpassword';
+import { revokeUserLogins, setPassword } from './setpassword';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -273,20 +273,40 @@ describe('Set Password', () => {
         scope: 'openid profile email',
       })
     );
+    const systemRepo = getGlobalSystemRepo();
+    const searchLogins = (): Promise<Login[]> =>
+      systemRepo.searchResources<Login>({
+        resourceType: 'Login',
+        count: 100,
+        filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
+      });
 
     // More than one page of the default search count
     for (let i = 0; i < 25; i++) {
-      await tryLogin({ authMethod: 'password', scope: 'openid', email, password: 'password!@#', nonce: randomUUID() });
+      await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        user: createReference(user),
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+      });
     }
 
-    await withTestContext(() => setPassword(getGlobalSystemRepo(), user, 'my-new-password'));
+    await withTestContext(() => setPassword(systemRepo, user, 'my-new-password'));
+    expect((await searchLogins()).every((login) => login.revoked)).toBe(true);
 
-    const logins = await getGlobalSystemRepo().searchResources<Login>({
-      resourceType: 'Login',
-      count: 100,
-      filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
-    });
-    expect(logins.length).toBeGreaterThan(25);
+    // Several pages at the minimum cursor page size
+    for (let i = 0; i < 45; i++) {
+      await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        user: createReference(user),
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+      });
+    }
+
+    await withTestContext(() => revokeUserLogins(systemRepo, user, 20));
+    const logins = await searchLogins();
+    expect(logins.length).toBeGreaterThan(70);
     expect(logins.every((login) => login.revoked)).toBe(true);
   });
 
