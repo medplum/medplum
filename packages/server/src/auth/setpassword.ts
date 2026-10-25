@@ -12,7 +12,7 @@ import type { SuperAdminRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { consumeSecurityRequest, isSecurityRequestExpired } from './securityrequest';
+import { consumeSecurityRequest, isSecurityRequestExpired, retirePasswordSecurityRequests } from './securityrequest';
 import { bcryptHashPassword } from './utils';
 
 export const setPasswordValidator = makeValidationMiddleware([
@@ -96,6 +96,8 @@ export async function setPassword(
       if (securityRequest) {
         await consumeSecurityRequest(txRepo.getSystemRepo(), securityRequest);
       }
+      // Links issued before this change must not be able to replace the new password
+      await retirePasswordSecurityRequests(txRepo.getSystemRepo(), user);
       // Patch so that only these fields are written, leaving the rest of the User as
       // stored rather than reverting it to this snapshot.
       await txRepo.patchResource<User>('User', user.id, patch);

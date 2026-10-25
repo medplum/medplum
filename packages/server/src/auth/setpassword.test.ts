@@ -20,6 +20,7 @@ import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
+import { setPassword } from './setpassword';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -175,6 +176,89 @@ describe('Set Password', () => {
       scope: 'openid',
     });
     expect(res4).toHaveStatus(200);
+  });
+
+  test('Setting a password retires earlier links', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const createRequest = (type: UserSecurityRequest['type']): Promise<UserSecurityRequest> =>
+      withTestContext(() =>
+        systemRepo.createResource<UserSecurityRequest>({
+          resourceType: 'UserSecurityRequest',
+          meta: { project: project.id },
+          type,
+          user: createReference(user),
+          secret: generateSecret(16),
+        })
+      );
+    const invite = await createRequest('invite');
+    const verifyEmail = await createRequest('verify-email');
+    const reset = await createRequest('reset');
+
+    const res1 = await request(app)
+      .post('/auth/setpassword')
+      .type('json')
+      .send({ id: reset.id, secret: reset.secret, password: 'my-new-password' });
+    expect(res1).toHaveStatus(200);
+
+    const res2 = await request(app)
+      .post('/auth/setpassword')
+      .type('json')
+      .send({ id: invite.id, secret: invite.secret, password: 'other-new-password' });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body).toMatchObject(badRequest('Already used'));
+
+    const stillOpen = await getGlobalSystemRepo().readResource<UserSecurityRequest>(
+      'UserSecurityRequest',
+      verifyEmail.id as string
+    );
+    expect(stillOpen.used).toBeFalsy();
+  });
+
+  test('Setting a password without a link retires earlier links', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const invite = await withTestContext(() =>
+      systemRepo.createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: { project: project.id },
+        type: 'invite',
+        user: createReference(user),
+        secret: generateSecret(16),
+      })
+    );
+
+    // As in /auth/changepassword and /admin/projects/setpassword
+    await withTestContext(() => setPassword(getGlobalSystemRepo(), user, 'my-new-password'));
+
+    const res = await request(app)
+      .post('/auth/setpassword')
+      .type('json')
+      .send({ id: invite.id, secret: invite.secret, password: 'other-new-password' });
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Already used'));
   });
 
   test('Expired UserSecurityRequest', async () => {
