@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference, Operator } from '@medplum/core';
-import type { Parameters, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { Parameters, Project, ProjectMembership, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -112,6 +112,33 @@ describe('User/$rescope', () => {
     const reread = await systemRepo.readResource<User>('User', user.id);
     expect(reread.project).toBeUndefined();
     expect(reread.meta?.project).toBeUndefined();
+  });
+
+  test('Rescope to server retires open links', async () => {
+    const user = await invitedUser('project');
+    const systemRepo = getGlobalSystemRepo();
+    const searchRequests = (): Promise<UserSecurityRequest[]> =>
+      systemRepo.searchResources<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
+      });
+    const before = await searchRequests();
+    expect(before.length).toBeGreaterThan(0);
+    expect(before.every((r) => !r.used)).toBe(true);
+
+    const res = await request(app)
+      .post(`/fhir/R4/User/${user.id}/$rescope`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'scope', valueCode: 'server' }],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+
+    const after = await searchRequests();
+    expect(after.every((r) => r.used)).toBe(true);
   });
 
   test('Project admin cannot promote User to project scope', async () => {
@@ -357,6 +384,14 @@ describe('User/$rescope', () => {
     const updated = res.body as User;
     expect(updated.project?.reference).toStrictEqual(`Project/${otherProject.id}`);
     expect(updated.meta?.project).toStrictEqual(otherProject.id);
+
+    // Links issued under the previous project are retired
+    const securityRequests = await systemRepo.searchResources<UserSecurityRequest>({
+      resourceType: 'UserSecurityRequest',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: `User/${user.id}` }],
+    });
+    expect(securityRequests.length).toBeGreaterThan(0);
+    expect(securityRequests.every((r) => r.used)).toBe(true);
   });
 
   test('Project admin cannot rescope User in a linked project', async () => {

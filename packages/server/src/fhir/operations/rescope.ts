@@ -15,6 +15,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import assert from 'node:assert';
+import { retireAllSecurityRequests } from '../../auth/securityrequest';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
@@ -166,6 +167,9 @@ async function rescopeUserToProject(
         );
       }
 
+      // Open links were issued under the previous owner, and remain readable there
+      await retireAllSecurityRequests(txRepo, rereadUser);
+
       return txRepo.updateResource({
         ...rereadUser,
         meta: { ...rereadUser.meta, project: targetProject.id },
@@ -173,7 +177,7 @@ async function rescopeUserToProject(
       });
     },
     {
-      resourceTypes: ['Project', 'ProjectMembership', 'User'],
+      resourceTypes: ['Project', 'ProjectMembership', 'User', 'UserSecurityRequest'],
       source: 'rescopeUserToProject',
       serializable: true, // if a new project membership is added for this user, we want this tx to fail
     }
@@ -198,11 +202,14 @@ async function rescopeUserToServer(ctx: AuthenticatedRequestContext, user: WithI
         throw new OperationOutcomeError(badRequest('User is already server-scoped'));
       }
 
+      // Open links were issued while the User belonged to the Project, and remain readable there
+      await retireAllSecurityRequests(txRepo, rereadUser);
+
       delete rereadUser.project;
       delete rereadUser.meta?.project;
 
       return txRepo.updateResource(rereadUser);
     },
-    { resourceTypes: ['User'], source: 'rescopeUserToServer' }
+    { resourceTypes: ['User', 'UserSecurityRequest'], source: 'rescopeUserToServer' }
   );
 }
