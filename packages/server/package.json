@@ -52,7 +52,7 @@
     "@medplum/core": "5.2.9",
     "@medplum/definitions": "5.2.9",
     "@medplum/fhir-router": "5.2.9",
-    "@modelcontextprotocol/sdk": "1.32.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@opentelemetry/api": "1.10.0",
     "@opentelemetry/core": "3.0.0",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.300.0",
