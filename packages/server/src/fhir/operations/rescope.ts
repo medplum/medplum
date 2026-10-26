@@ -6,6 +6,7 @@ import {
   allOk,
   badRequest,
   createReference,
+  escapeSearchValue,
   forbidden,
   getReferenceString,
   OperationOutcomeError,
@@ -15,6 +16,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import assert from 'node:assert';
+import { retireAllSecurityRequests } from '../../auth/securityrequest';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
@@ -166,6 +168,9 @@ async function rescopeUserToProject(
         );
       }
 
+      // Open links were issued under the previous owner, and remain readable there
+      await retireAllSecurityRequests(txRepo, rereadUser);
+
       return txRepo.updateResource({
         ...rereadUser,
         meta: { ...rereadUser.meta, project: targetProject.id },
@@ -173,7 +178,7 @@ async function rescopeUserToProject(
       });
     },
     {
-      resourceTypes: ['Project', 'ProjectMembership', 'User'],
+      resourceTypes: ['Project', 'ProjectMembership', 'User', 'UserSecurityRequest'],
       source: 'rescopeUserToProject',
       serializable: true, // if a new project membership is added for this user, we want this tx to fail
     }
@@ -183,7 +188,7 @@ async function rescopeUserToProject(
 /**
  * Demote a User to server scope. Allowed for super admins, or for project admins
  * who administer the project the User currently belongs to. Rejects if the User
- * is already server-scoped.
+ * is already server-scoped, or if a server-scoped User with the same email exists.
  * @param ctx - The authenticated request context for the caller.
  * @param user - The User being rescoped.
  * @returns The updated User with project scope removed.
@@ -198,11 +203,33 @@ async function rescopeUserToServer(ctx: AuthenticatedRequestContext, user: WithI
         throw new OperationOutcomeError(badRequest('User is already server-scoped'));
       }
 
+      // Server-scoped Users are looked up by email alone, so the email must not already be in use
+      if (rereadUser.email) {
+        const existing = await txRepo.searchResources<User>({
+          resourceType: 'User',
+          count: 1,
+          filters: [
+            { code: 'email', operator: Operator.EXACT, value: escapeSearchValue(rereadUser.email.toLowerCase()) },
+            { code: 'project', operator: Operator.MISSING, value: 'true' },
+          ],
+        });
+        if (existing.length > 0) {
+          throw new OperationOutcomeError(badRequest('A server-scoped User with this email already exists'));
+        }
+      }
+
+      // Open links were issued while the User belonged to the Project, and remain readable there
+      await retireAllSecurityRequests(txRepo, rereadUser);
+
       delete rereadUser.project;
       delete rereadUser.meta?.project;
 
       return txRepo.updateResource(rereadUser);
     },
-    { resourceTypes: ['User'], source: 'rescopeUserToServer' }
+    {
+      resourceTypes: ['User', 'UserSecurityRequest'],
+      source: 'rescopeUserToServer',
+      serializable: true, // if a server-scoped User with this email is created concurrently, we want this tx to fail
+    }
   );
 }
