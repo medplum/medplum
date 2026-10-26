@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, OperationOutcomeError, badRequest, getReferenceString, sleep } from '@medplum/core';
+import {
+  ContentType,
+  OperationOutcomeError,
+  badRequest,
+  createReference,
+  getReferenceString,
+  sleep,
+} from '@medplum/core';
 import type {
   Binary,
   Bundle,
@@ -12,6 +19,7 @@ import type {
   Patient,
   Project,
   ProjectMembership,
+  Resource,
   Subscription,
   SubscriptionStatus,
 } from '@medplum/fhirtypes';
@@ -754,23 +762,36 @@ describe('WebSocket Subscription', () => {
       ]);
     }));
 
-  test.each<[string, Parameters<typeof addTestUser>[1]]>([
-    ['access policy', { accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Subscription' }] } }],
-    ['token scope', { scope: 'openid user/Subscription.cruds' }],
-    ['token scope criteria', { scope: 'openid user/Patient.rs?gender=male user/Subscription.cruds' }],
-  ])('Does not notify a subscriber whose %s does not permit reading the resource', (_, userOptions) =>
+  test.each<[string, Parameters<typeof addTestUser>[1], 'Patient' | 'Binary']>([
+    [
+      'access policy',
+      { accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Subscription' }] } },
+      'Patient',
+    ],
+    ['token scope', { scope: 'openid user/Subscription.cruds' }, 'Patient'],
+    ['token scope criteria', { scope: 'openid user/Patient.rs?gender=male user/Subscription.cruds' }, 'Patient'],
+    ['Binary security context', { scope: 'openid user/Binary.rs user/Subscription.cruds' }, 'Binary'],
+  ])('Does not notify a subscriber whose %s does not permit reading the resource', (_, userOptions, resourceType) =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Not'], family: 'Readable' }],
         gender: 'female',
       });
+      const resource: WithId<Resource> =
+        resourceType === 'Binary'
+          ? await repo.createResource<Binary>({
+              resourceType: 'Binary',
+              contentType: ContentType.TEXT,
+              securityContext: createReference(patient),
+            })
+          : patient;
 
       const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         status: 'active',
-        criteria: 'Patient',
+        criteria: resourceType,
         channel: { type: 'websocket' },
       });
 
@@ -785,7 +806,7 @@ describe('WebSocket Subscription', () => {
       // Baseline: the restricted user cannot read the resource over HTTP
       const restrictedUser = await addTestUser(project, userOptions);
       const restrictedRead = await request(server)
-        .get(`/fhir/R4/Patient/${patient.id}`)
+        .get(`/fhir/R4/${resourceType}/${resource.id}`)
         .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
       expect([403, 404]).toContain(restrictedRead.status);
 
@@ -825,11 +846,11 @@ describe('WebSocket Subscription', () => {
           .exec(() =>
             publish(
               WEBSOCKET_SUB_PUBLISH_CHANNEL,
-              JSON.stringify({ resource: patient, events: [[subscription.id, { includeResource: true }]] })
+              JSON.stringify({ resource, events: [[subscription.id, { includeResource: true }]] })
             )
           )
           .expectJson((msg: Bundle) => {
-            expect((msg.entry?.[1] as BundleEntry<Patient> | undefined)?.resource?.id).toStrictEqual(patient.id);
+            expect(msg.entry?.[1]?.resource?.id).toStrictEqual(resource.id);
           })
           .exec(() => {
             permittedNotified = true;
