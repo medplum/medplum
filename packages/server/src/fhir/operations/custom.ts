@@ -35,7 +35,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
       resourceType: 'OperationDefinition',
       filters: [{ code: 'code', operator: Operator.EXACT, value: operationCode }],
     },
-    'custom operation'
+    'Find custom OperationDefinition by code'
   );
   if (!operation) {
     // No operation definition found

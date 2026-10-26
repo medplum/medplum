@@ -97,7 +97,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     }
   }
   if (destination.startsWith('Device?')) {
-    return searchUnique<Device>(repo, parseSearchRequest(destination), 'Agent/$push destination');
+    return searchUnique<Device>(repo, parseSearchRequest(destination), 'Agent push Device destination');
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };

@@ -154,7 +154,7 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
     const bot = await searchUnique<Bot>(
       ctx.repo,
       { resourceType: 'Bot', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
-      'Bot/$execute identifier'
+      'Execute Bot by identifier'
     );
 
     if (!bot) {
