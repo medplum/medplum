@@ -1275,6 +1275,12 @@
             "type" : [{
               "code" : "uri"
             }],
+            "constraint" : [{
+              "key" : "clapp-2",
+              "severity" : "error",
+              "human" : "Launch URI must not use the javascript:, data:, or vbscript: scheme",
+              "expression" : "$this.lower().matches('^[\\u0000-\\u0020]*(javascript|data|vbscript):').not()"
+            }],
             "base": {
               "path" : "ClientApplication.launchUri",
               "min" : 0,

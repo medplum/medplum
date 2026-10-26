@@ -128,4 +128,49 @@ describe('ClientApplication/:id/$smart-launch', () => {
       .send();
     expect(res).toHaveStatus(400);
   });
+
+  test.each([
+    'javascript:alert(document.domain)//',
+    'JaVaScRiPt:alert(document.domain)//',
+    '\u0001javascript:alert(document.domain)//',
+    'data:text/html,<script>alert(1)</script>',
+    'vbscript:msgbox(1)',
+  ])('Rejects script launchUri %j', async (launchUri) => {
+    await expect(repo.updateResource({ ...client, launchUri })).rejects.toThrow(/Constraint clapp-2 not met/);
+
+    // Projects without strict mode only log constraint failures, so the operation must still refuse to redirect
+    const nonStrictRepo = new Repository({ ...repo.getConfig(), strictMode: false });
+    const unsafeClient = await nonStrictRepo.updateResource({ ...client, launchUri });
+
+    const res = await request(app)
+      .get(`/fhir/R4/ClientApplication/${unsafeClient.id}/$smart-launch`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res).toHaveStatus(400);
+    expect(res.headers['location']).toBeUndefined();
+  });
+
+  test('Saves but does not launch non-http launchUri', async () => {
+    const launchUri = 'com.example.app:/launch';
+    const nativeClient = await repo.updateResource({ ...client, launchUri });
+    expect(nativeClient.launchUri).toBe(launchUri);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ClientApplication/${nativeClient.id}/$smart-launch`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res).toHaveStatus(400);
+  });
+
+  test('Allows http launchUri with uppercase scheme', async () => {
+    const launchUri = 'HTTP://localhost:3000/launch';
+    client = await repo.updateResource({ ...client, launchUri });
+
+    const res = await request(app)
+      .get(`/fhir/R4/ClientApplication/${client.id}/$smart-launch`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res).toHaveStatus(302);
+    expect(res.headers['location'].startsWith('http://localhost:3000/launch?')).toBe(true);
+  });
 });
