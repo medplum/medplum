@@ -16,7 +16,7 @@ import {
   Timeline,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatDate, formatHumanName } from '@medplum/core';
+import { formatDate, formatHumanName, resolveId } from '@medplum/core';
 import type {
   CarePlan,
   DiagnosticReport,
@@ -45,7 +45,7 @@ interface LabOrderDetailsProps {
    * multi-day culture result that's been resent with additional findings - and without this,
    * there was no way to view anything but the single latest report.
    */
-  selectedReportId?: string;
+  selectedReport?: Reference<DiagnosticReport>;
 }
 
 interface ProgressStep {
@@ -58,7 +58,7 @@ interface ProgressStep {
 }
 
 export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
-  const { order, onChange, onResume, selectedReportId } = props;
+  const { order, onChange, onResume, selectedReport } = props;
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
@@ -91,7 +91,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   // Fetch every DiagnosticReport for this order - an order can have more than one (e.g. a
   // multi-day culture result resent with additional findings), and the caller may want to show
-  // a specific one via selectedReportId rather than always the most recently updated.
+  // a specific one via selectedReport rather than always the most recently updated.
   useEffect(() => {
     const fetchReports = async (): Promise<void> => {
       const reports = await medplum.searchResources('DiagnosticReport', {
@@ -106,6 +106,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   // Prefer the explicitly selected report, if one was given and it belongs to this order;
   // otherwise fall back to the most recently updated report.
+  const selectedReportId = resolveId(selectedReport);
   const primaryReport =
     (selectedReportId && diagnosticReports.find((report) => report.id === selectedReportId)) ||
     (diagnosticReports.length > 0 ? diagnosticReports[0] : undefined);
