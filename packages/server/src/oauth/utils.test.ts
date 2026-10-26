@@ -609,7 +609,7 @@ describe('OAuth utils', () => {
         await getAuthTokens(user, login, createReference(patient));
         expect(warnSpy).toHaveBeenCalledWith('SMART scopes with partial permissions', {
           clientId: undefined,
-          projectId: undefined,
+          projectId: project.id,
           scopes: ['user/Patient.c'],
         });
       } finally {

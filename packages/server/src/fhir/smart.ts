@@ -193,7 +193,9 @@ export function getPartialPermissionScopes(scope: string | undefined): string[] 
 
   const result: string[] = [];
   for (const [key, letters] of permissions) {
-    const combined = [...'cruds'].filter((letter) => letters.has(letter)).join('');
+    // Wildcard scopes also apply to each concrete resource type of the same permission type
+    const wildcard = permissions.get(key.split('/')[0] + '/*');
+    const combined = [...'cruds'].filter((letter) => letters.has(letter) || wildcard?.has(letter)).join('');
     if (combined !== 'rs' && combined !== 'cruds') {
       result.push(`${key}.${combined}`);
     }

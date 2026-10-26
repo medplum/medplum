@@ -95,6 +95,8 @@ describe('SMART on FHIR', () => {
     ['user/Patient.c openid', ['user/Patient.c']],
     ['patient/Observation.write', ['patient/Observation.cud']],
     ['patient/Observation.c patient/Observation.rs', ['patient/Observation.crs']],
+    ['user/*.* user/Patient.c', []],
+    ['user/*.c user/Patient.rs', ['user/*.c', 'user/Patient.crs']],
   ])('Partial permission scopes for %s', (scope, expected) => {
     expect(getPartialPermissionScopes(scope)).toStrictEqual(expected);
   });

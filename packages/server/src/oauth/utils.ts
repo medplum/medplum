@@ -743,9 +743,12 @@ export async function getAuthTokens(
 
   const partialPermissionScopes = getPartialPermissionScopes(login.scope);
   if (partialPermissionScopes.length > 0) {
+    // Client credentials logins have a membership but no project
+    const projectReference =
+      login.project ?? (await getGlobalSystemRepo().readReference<ProjectMembership>(login.membership)).project;
     getLogger().warn('SMART scopes with partial permissions', {
       clientId,
-      projectId: resolveId(login.project),
+      projectId: resolveId(projectReference),
       scopes: partialPermissionScopes,
     });
   }
