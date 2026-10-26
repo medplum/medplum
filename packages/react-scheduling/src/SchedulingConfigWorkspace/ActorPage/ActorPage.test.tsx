@@ -43,6 +43,8 @@ import { ActorPage } from './ActorPage';
 
 const downtown: WithId<Location> = { resourceType: 'Location', id: 'downtown', name: 'Downtown Clinic' };
 const northside: WithId<Location> = { resourceType: 'Location', id: 'northside', name: 'Northside' };
+// Not live yet: booking leaves it out, but it can still be set up here.
+const eastside: WithId<Location> = { resourceType: 'Location', id: 'eastside', name: 'Eastside', status: 'inactive' };
 const room3: WithId<Location> = {
   resourceType: 'Location',
   id: 'room-3',
@@ -1019,6 +1021,15 @@ describe('ActorPage', () => {
         expect(sent.location?.reference).toBe('Location/northside');
       });
 
+      test('offers a service facility that is inactive because it is not live yet', async () => {
+        const { partOf: _partOf, ...unplaced } = room3;
+        await setup(unplaced, [], [eastside]);
+
+        await pick('Service facility', 'Eastside');
+
+        expect(saveBar()).not.toBeNull();
+      });
+
       test('moving a room to another service facility keeps what it offers', async () => {
         const atNorthside = { ...room3, partOf: { reference: 'Location/northside', display: 'Northside' } };
         await setup(atNorthside, [makeSchedule('Location/room-3', [cystoscopy])], [], cystoscopy.id);
@@ -1413,6 +1424,14 @@ describe('ActorPage', () => {
       expect(sentRoles(medplum)?.map((item) => item.resource)).toMatchObject([
         { location: [{ reference: 'Location/northside' }] },
       ]);
+    });
+
+    test('offers a service facility that is inactive because it is not live yet', async () => {
+      await setup(drSmith, [], [eastside, role('own', [downtown], { own: true })]);
+
+      await add('Eastside');
+
+      expect(await findChips(['Downtown Clinic', 'Eastside'])).toBeInTheDocument();
     });
 
     test('picking a linked service facility changes nothing', async () => {

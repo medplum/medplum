@@ -67,9 +67,9 @@ one, which is listed once it is saved. Providers can't be created here.
   is the exception, and its status is edited like a room's. Where a provider works is edited as their service
   facilities (below). A device's name is read-only too, once it is created. A room's name is edited, and so is a
   room's or device's service facility (`Location.partOf`, or `Device.location`), picked from the same Locations
-  booking filters by. The time zone (the `timezone` extension) is the one hours are read in for any visit type
-  that sets none of its own. A provider, room, or device without one is warned that it is recommended, without
-  blocking Save.
+  booking filters by, and from inactive ones too (below). The time zone (the `timezone` extension) is the one
+  hours are read in for any visit type that sets none of its own. A provider, room, or device without one is warned
+  that it is recommended, without blocking Save.
 - **Visit types offered:** what its Schedule offers, by name. Each visit type offered is an entry showing its
   duration in effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and
   hours for it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with
@@ -104,6 +104,10 @@ was off. Removing one takes it off that role, or turns the role off when it was 
 as one a sync wrote, still places the provider for booking but is never changed, so a service facility it links
 is shown locked above the field's input, marked **Linked by another system**, and can't be removed. When there is
 one, the provider is already limited to it, so neither save asks.
+
+The service facility pickers here also offer an inactive service facility (`Location.status` `inactive`), which
+booking leaves out because it isn't live yet, so a visit type, provider, room, or device can be set up at one before
+it goes live.
 
 A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
 facility. A new room or device starts active, unless switched off before Create, and is created with a Schedule

@@ -220,7 +220,7 @@ interface ServiceFacilityFieldProps {
 }
 
 /**
- * Picks one of the service facilities booking's site filter offers.
+ * Picks one of the service facilities booking's site filter offers, or one inactive because it isn't live yet.
  * @param props - What to show when blank, the Location referenced, and a change handler.
  * @returns The field.
  */

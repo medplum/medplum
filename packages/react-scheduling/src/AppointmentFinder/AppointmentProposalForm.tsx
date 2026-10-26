@@ -27,7 +27,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
-import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { useChanged } from '../hooks/useChanged';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
@@ -657,7 +657,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           name="serviceFacility"
           label="Service facility"
           placeholder="Any service facility"
-          searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
+          searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
           defaultValue={defaultServiceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
           onChange={chooseServiceFacility}
           clearable={false}
