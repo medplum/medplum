@@ -31,7 +31,7 @@ export async function searchUnique<T extends Resource>(
 
   const projectId = repo.currentProject()?.id;
   const search = searchRequest.resourceType + formatSearchQuery(searchRequest);
-  const matchIds = matches.map((m) => m.id).sort();
+  const matchIds = matches.map((m) => m.id).sort((a, b) => a.localeCompare(b));
   multipleMatchesLogThrottle.maybeLog([projectId, source, search, ...matchIds].join('|'), (suppressed) => {
     getLogger().warn('Search matched multiple resources', {
       source,

@@ -48,7 +48,7 @@ describe('searchUnique', () => {
           source: 'test',
           search: 'Patient?family=' + family,
           projectId: repo.currentProject()?.id,
-          matchIds: [patient1.id, patient2.id].sort(),
+          matchIds: [patient1.id, patient2.id].sort((a, b) => a.localeCompare(b)),
           returnedId: result?.id,
           suppressed: 0,
         })
