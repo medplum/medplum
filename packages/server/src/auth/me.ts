@@ -18,7 +18,7 @@ import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { isMfaRequired } from './utils';
+import { hasSmartResourceScopes, isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
@@ -55,6 +55,10 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+  }
+
+  // Account security details are only for logins that can manage the account (see getCallerUserReference)
+  if (user && !hasSmartResourceScopes(authState.login)) {
     const sessions = await getSessions(systemRepo, user);
     const memberships = await systemRepo.searchResources<ProjectMembership>({
       resourceType: 'ProjectMembership',
