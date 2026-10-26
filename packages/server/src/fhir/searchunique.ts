@@ -24,18 +24,19 @@ export async function searchUnique<T extends Resource>(
   searchRequest: SearchRequest<T>,
   source: string
 ): Promise<WithId<T> | undefined> {
-  const matches = await repo.searchResources<T>({ ...searchRequest, count: 2 });
+  const effectiveRequest = { ...searchRequest, count: 2 };
+  const matches = await repo.searchResources<T>(effectiveRequest);
   if (matches.length <= 1) {
     return matches[0];
   }
 
   const projectId = repo.currentProject()?.id;
-  const search = searchRequest.resourceType + formatSearchQuery(searchRequest);
+  const effectiveSearch = effectiveRequest.resourceType + formatSearchQuery(effectiveRequest);
   const matchIds = matches.map((m) => m.id).sort((a, b) => a.localeCompare(b));
-  multipleMatchesLogThrottle.maybeLog([projectId, source, search, ...matchIds].join('|'), (suppressed) => {
+  multipleMatchesLogThrottle.maybeLog([projectId, source, effectiveSearch, ...matchIds].join('|'), (suppressed) => {
     getLogger().warn('Search matched multiple resources', {
       source,
-      search,
+      search: effectiveSearch,
       projectId,
       matchIds,
       returnedId: matches[0].id,

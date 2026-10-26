@@ -40,13 +40,13 @@ describe('searchUnique', () => {
 
       const result = await searchUnique(repo, search, 'test');
       expect([patient1.id, patient2.id]).toContain(result?.id);
-      await searchUnique(repo, search, 'test');
+      await searchUnique(repo, { ...search, count: 10 }, 'test');
       expect(warnSpy).toHaveBeenCalledTimes(1);
       expect(warnSpy).toHaveBeenCalledWith(
         'Search matched multiple resources',
         expect.objectContaining({
           source: 'test',
-          search: 'Patient?family=' + family,
+          search: 'Patient?_count=2&family=' + family,
           projectId: repo.currentProject()?.id,
           matchIds: [patient1.id, patient2.id].sort((a, b) => a.localeCompare(b)),
           returnedId: result?.id,
