@@ -596,6 +596,7 @@ describe('OAuth utils', () => {
           authMethod: 'password',
           user: createReference(user),
           membership: createReference(membership),
+          project: createReference(project),
           scope: 'openid user/Patient.c',
           granted: true,
           authTime: new Date().toISOString(),

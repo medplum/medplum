@@ -178,6 +178,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     authMethod: 'client',
     user: createReference(client),
     client: createReference(client),
+    project: createReference(project),
     membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
