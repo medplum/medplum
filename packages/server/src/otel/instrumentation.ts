@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-bullmq';
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { Span } from '@opentelemetry/api';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
@@ -107,9 +106,6 @@ export function initOpenTelemetry(): void {
       ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
     }),
     new DataloaderInstrumentation(),
-    new BullMQInstrumentation({
-      requireParentSpanForPublish: true,
-    }),
   ];
 
   sdk = new NodeSDK({

@@ -29,7 +29,6 @@
     "test:seed": "vitest run --config vite.seed.config.ts --testTimeout=400000"
   },
   "dependencies": {
-    "@appsignal/opentelemetry-instrumentation-bullmq": "0.9.0",
     "@aws-sdk/client-comprehendmedical": "3.1156.0",
     "@aws-sdk/client-guardduty": "3.1156.0",
     "@aws-sdk/client-lambda": "3.1156.0",
