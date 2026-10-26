@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AsyncJob } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config/loader';
@@ -96,6 +98,31 @@ describe('AsyncJobExecutor', () => {
 
     expect(callback).not.toHaveBeenCalled();
   });
+
+  test.each(['completeJob', 'failJob'] as const)('%s keeps the requester as an account of the AsyncJob', (method) =>
+    withTestContext(async () => {
+      const { client, repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        extendedMode: false,
+        accessPolicy: {
+          compartment: { reference: 'Organization/' + randomUUID() },
+          resource: [{ resourceType: 'AsyncJob', criteria: 'AsyncJob?_compartment=%profile' }],
+        },
+      });
+      const exec = new AsyncJobExecutor(repo);
+      const { id } = await exec.init('http://example.com/async');
+
+      const output: Parameters = { resourceType: 'Parameters', parameter: [{ name: 'result', valueString: 'test' }] };
+      const finishedJob = await (method === 'completeJob' ? exec.completeJob(output) : exec.failJob(undefined, output));
+
+      expect(finishedJob.meta?.accounts).toStrictEqual([
+        repo.effectiveAccessPolicy()?.compartment,
+        { reference: getReferenceString(client) },
+      ]);
+      await expect(repo.readResource('AsyncJob', id)).resolves.toMatchObject({ status: finishedJob.status, output });
+    })
+  );
 
   test('getContentLocation', () =>
     withTestContext(async () => {

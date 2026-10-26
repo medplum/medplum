@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
+import { getProjectSystemRepo } from './repo';
 
 const app = express();
 
@@ -167,4 +168,35 @@ describe('Job status', () => {
         ],
       });
     }));
+
+  test('Updating a job keeps its server-assigned accounts', async () => {
+    const { project } = await createTestProject();
+    const systemRepo = await getProjectSystemRepo(project);
+    const job = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'completed',
+      request: 'http://example.com/?code=abc123',
+      requestTime: new Date().toISOString(),
+      output: { resourceType: 'Parameters', parameter: [{ name: 'responseBody', valueString: 'abc123' }] },
+      meta: { project: project.id },
+    });
+    const member = await addTestUser(project);
+
+    const updateRes = await request(app)
+      .put(`/fhir/R4/AsyncJob/${job.id}`)
+      .set('Authorization', 'Bearer ' + member.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...job, meta: { accounts: [createReference(member.profile)] } });
+    expect(updateRes).toHaveStatus(200);
+
+    const res = await request(app)
+      .get(`/fhir/R4/job/${job.id}/status`)
+      .set('Authorization', 'Bearer ' + member.accessToken);
+    expect(res).toHaveStatus(200);
+    expect(res.body).toMatchObject({ status: 'completed', request: 'http://example.com/' });
+    expect(res.body.output).toBeUndefined();
+    const storedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.id);
+    expect(storedJob).toMatchObject({ request: job.request, output: job.output });
+    expect(storedJob.meta?.accounts).toBeUndefined();
+  });
 });

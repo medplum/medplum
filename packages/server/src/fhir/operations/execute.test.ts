@@ -31,7 +31,7 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { addTestUser, createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
@@ -1131,6 +1131,101 @@ describe('Execute', () => {
           ]),
         }),
       });
+    });
+
+    test('Output is only returned to the requester and project admins', async () => {
+      const requester = await addTestUser(project1, {
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Bot', readonly: true }, { resourceType: 'AsyncJob' }],
+        },
+      });
+      const otherMember = await addTestUser(project1, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'AsyncJob' }] },
+      });
+
+      const res = await request(app)
+        .get(`/fhir/R4/Bot/${bots.echoBot.id}/$execute?code=abc123`)
+        .set('Authorization', 'Bearer ' + requester.accessToken)
+        .set('Prefer', 'respond-async');
+      expect(res).toHaveStatus(202);
+
+      const job = await waitForAsyncJob(res.headers['content-location'], app, requester.accessToken);
+      const completedJob = {
+        status: 'completed',
+        request: expect.stringMatching(/\$execute\?code=abc123$/),
+        output: {
+          resourceType: 'Parameters',
+          parameter: [{ name: 'responseBody', valueString: JSON.stringify({ code: 'abc123' }) }],
+        },
+      };
+      expect(job).toMatchObject(completedJob);
+
+      const paths = [
+        new URL(res.headers['content-location']).pathname,
+        `/fhir/R4/AsyncJob/${job.id}`,
+        `/fhir/R4/AsyncJob/${job.id}/_history`,
+        `/fhir/R4/AsyncJob/${job.id}/_history/${job.meta?.versionId}`,
+        `/fhir/R4/AsyncJob?_id=${job.id}`,
+      ];
+      for (const path of paths) {
+        for (const accessToken of [requester.accessToken, accessToken1]) {
+          const allowedRes = await request(app)
+            .get(path)
+            .set('Authorization', 'Bearer ' + accessToken);
+          expect(allowedRes).toHaveStatus(200);
+          expect(allowedRes.body.entry?.[0]?.resource ?? allowedRes.body).toMatchObject(completedJob);
+        }
+
+        const otherRes = await request(app)
+          .get(path)
+          .set('Authorization', 'Bearer ' + otherMember.accessToken);
+        expect(otherRes).toHaveStatus(200);
+        expect(otherRes.text).toContain('"status":"completed"');
+        expect(otherRes.text).not.toContain('abc123');
+      }
+
+      const graphqlRes = await request(app)
+        .post('/fhir/R4/$graphql')
+        .set('Authorization', 'Bearer ' + otherMember.accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({ query: `{ AsyncJob(id: "${job.id}") { status request output { parameter { valueString } } } }` });
+      expect(graphqlRes).toHaveStatus(200);
+      expect(graphqlRes.body.data.AsyncJob.status).toStrictEqual('completed');
+      expect(graphqlRes.text).not.toContain('abc123');
+
+      // Patches cannot reference the output
+      const patchRes = await request(app)
+        .patch(`/fhir/R4/AsyncJob/${job.id}`)
+        .set('Authorization', 'Bearer ' + otherMember.accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'copy', from: '/output/parameter/0/valueString', path: '/minServerVersion' }]);
+      expect(patchRes).toHaveStatus(400);
+
+      // Updates keep the output and the accounts of the job
+      const updateRes = await request(app)
+        .put(`/fhir/R4/AsyncJob/${job.id}`)
+        .set('Authorization', 'Bearer ' + otherMember.accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'AsyncJob',
+          id: job.id,
+          meta: { accounts: [createReference(otherMember.profile)] },
+          status: 'completed',
+          request: 'https://example.com/',
+          requestTime: job.requestTime,
+          output: { resourceType: 'Parameters', parameter: [{ name: 'responseBody', valueString: 'updated' }] },
+        });
+      expect(updateRes).toHaveStatus(200);
+      expect(updateRes.text).not.toContain('abc123');
+      const otherReadRes = await request(app)
+        .get(`/fhir/R4/AsyncJob/${job.id}`)
+        .set('Authorization', 'Bearer ' + otherMember.accessToken);
+      expect(otherReadRes).toHaveStatus(200);
+      expect(otherReadRes.body.output).toBeUndefined();
+      await expect(waitForAsyncJob(res.headers['content-location'], app, requester.accessToken)).resolves.toMatchObject(
+        completedJob
+      );
     });
   });
 

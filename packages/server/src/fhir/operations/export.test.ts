@@ -203,6 +203,46 @@ describe('Export', () => {
       .get(`/fhir/R4/Binary/${binaryId}/$presigned-url`)
       .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
     expect(restrictedPresignRes).toHaveStatus(403);
+
+    // Another member who can read AsyncJob and Binary can see the job, but not its output files
+    const asyncJobId = statusPath.split('/').at(-1) as string;
+    const otherMember = await addTestUser(testProject.project);
+    const otherJobRes = await request(app)
+      .get(`/fhir/R4/AsyncJob/${asyncJobId}`)
+      .set('Authorization', 'Bearer ' + otherMember.accessToken);
+    expect(otherJobRes).toHaveStatus(200);
+    expect(otherJobRes.body.status).toStrictEqual('completed');
+    expect(otherJobRes.body.output).toBeUndefined();
+
+    const otherStatusRes = await request(app)
+      .get(statusPath)
+      .set('Authorization', 'Bearer ' + otherMember.accessToken);
+    expect(otherStatusRes).toHaveStatus(403);
+
+    const otherBinaryReadRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}`)
+      .set('Authorization', 'Bearer ' + otherMember.accessToken);
+    expect(otherBinaryReadRes).toHaveStatus(404);
+
+    const otherPresignRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}/$presigned-url`)
+      .set('Authorization', 'Bearer ' + otherMember.accessToken);
+    expect(otherPresignRes).toHaveStatus(404);
+
+    // A project admin can download the export of another member
+    const projectAdmin = await addTestUser(testProject.project);
+    await systemRepo.updateResource({ ...projectAdmin.membership, admin: true });
+    const adminStatusRes = await request(app)
+      .get(statusPath)
+      .set('Authorization', 'Bearer ' + projectAdmin.accessToken);
+    expect(adminStatusRes).toHaveStatus(200);
+    expect((adminStatusRes.body.output as BulkDataExportOutput[]).map((o) => o.type)).toStrictEqual(
+      output.map((o) => o.type)
+    );
+    const adminBinaryReadRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}`)
+      .set('Authorization', 'Bearer ' + projectAdmin.accessToken);
+    expect(adminBinaryReadRes).toHaveStatus(200);
   });
 
   test('System Export Accepted with GET', async () => {

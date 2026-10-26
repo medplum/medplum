@@ -18,7 +18,8 @@ export class AsyncJobExecutor {
   readonly repo: Repository;
   private resource: WithId<AsyncJob> | undefined;
   constructor(repo: Repository, resource?: WithId<AsyncJob>) {
-    this.repo = repo.clone();
+    // Extended mode keeps `meta.accounts` (the job's requester) through `completeJob` / `failJob`
+    this.repo = repo.clone({ extendedMode: true });
     this.resource = resource;
   }
 

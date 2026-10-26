@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
+  AccessPolicy,
+  AsyncJob,
   OperationOutcome,
   OperationOutcomeIssue,
   Patient,
@@ -584,5 +587,44 @@ describe('On Behalf Of', () => {
       expect(patient3.meta?.account?.reference).toStrictEqual(account);
       expect(patient3.meta?.accounts?.length).toStrictEqual(1);
       expect(patient3.meta?.accounts?.[0]?.reference).toStrictEqual(account);
+    }));
+
+  test('AsyncJob output is for the user the client acted on behalf of', () =>
+    withTestContext(async () => {
+      const { client, project } = await createTestProject({ withClient: true, membership: { admin: true } });
+      const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+      const accessPolicy: AccessPolicy = { resourceType: 'AccessPolicy', resource: [{ resourceType: 'AsyncJob' }] };
+      const user1 = await addTestUser(project, { accessPolicy });
+      const user2 = await addTestUser(project, { accessPolicy });
+
+      const createRes = await request(app)
+        .post('/fhir/R4/AsyncJob')
+        .set('Authorization', basicAuth)
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(user1.profile))
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'AsyncJob',
+          status: 'completed',
+          request: 'https://example.com/',
+          requestTime: new Date().toISOString(),
+          output: { resourceType: 'Parameters', parameter: [{ name: 'responseBody', valueString: 'user1' }] },
+        });
+      expect(createRes).toHaveStatus(201);
+
+      const readAs = async (headers: Record<string, string>): Promise<AsyncJob> => {
+        const res = await request(app).get(`/fhir/R4/AsyncJob/${createRes.body.id}`).set(headers);
+        expect(res).toHaveStatus(200);
+        return res.body;
+      };
+      const onBehalfOf = (profile: WithId<ProfileResource>): Record<string, string> => ({
+        Authorization: basicAuth,
+        'X-Medplum-On-Behalf-Of': getReferenceString(profile),
+      });
+      expect((await readAs(onBehalfOf(user1.profile))).output).toBeDefined();
+      expect((await readAs({ Authorization: 'Bearer ' + user1.accessToken })).output).toBeDefined();
+      expect((await readAs(onBehalfOf(user2.profile))).output).toBeUndefined();
+      expect((await readAs({ Authorization: 'Bearer ' + user2.accessToken })).output).toBeUndefined();
+      // The admin client itself is a project admin
+      expect((await readAs({ Authorization: basicAuth })).output).toBeDefined();
     }));
 });

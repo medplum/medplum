@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Parameters, ParametersParameter, Project, Resource } from '@medplum/fhirtypes';
+import type {
+  AsyncJob,
+  Binary,
+  Parameters,
+  ParametersParameter,
+  Project,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
@@ -52,10 +60,18 @@ export class BulkExporter {
     // $export is a read operation, but it creates an AsyncJob to track itself. That write must
     // not require the caller to have write access -- a read-only scope (e.g. system/*.read) is
     // sufficient -- so create it with the system repo. Replicate the scoping the caller's own
-    // repo would have applied: their project (so they can read it back) and their access-policy
+    // repo would have applied: their project (so they can read it back), their access-policy
     // compartment as the account (so a policy that filters AsyncJob by _compartment still
-    // matches it -- the poll in job.ts / bulkdata.ts reads through the caller's repo).
+    // matches it -- the poll in job.ts / bulkdata.ts reads through the caller's repo), and
+    // themselves as the requester (so they, and not other project members, can read the output).
+    const accounts: Reference[] = [];
     const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
+    if (accountCompartment) {
+      accounts.push(accountCompartment);
+    }
+    if (!this.repo.isSuperAdmin()) {
+      accounts.push(this.repo.getAsyncJobRequester());
+    }
     this.resource = await this.repo.getSystemRepo().createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'active',
@@ -63,7 +79,7 @@ export class BulkExporter {
       requestTime: new Date().toISOString(),
       meta: {
         project: this.repo.currentProject()?.id,
-        accounts: accountCompartment ? [accountCompartment] : undefined,
+        accounts: accounts.length > 0 ? accounts : undefined,
       },
     });
     return this.resource;

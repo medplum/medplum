@@ -4,6 +4,7 @@ import {
   badRequest,
   ContentType,
   flatMapFilter,
+  forbidden,
   isNotFound,
   notFound,
   OperationOutcomeError,
@@ -52,6 +53,10 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
     return;
   } else if (bulkDataExport.status !== 'completed') {
     res.status(202).end();
+    return;
+  } else if (bulkDataExport.resourceType === 'AsyncJob' && !bulkDataExport.output) {
+    // The output is withheld from readers other than the requester and project admins
+    res.status(403).json(forbidden);
     return;
   }
 

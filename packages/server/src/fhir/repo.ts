@@ -52,6 +52,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AsyncJob,
   AuditEvent,
   AuditEventEntityDetail,
   Binary,
@@ -693,6 +694,14 @@ export class Repository extends FhirRepository implements Disposable {
       if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
       }
+      if (resource.securityContext.reference?.startsWith('AsyncJob/')) {
+        // A Binary bound to an AsyncJob (e.g. a bulk export file) is part of the output of the job
+        const asyncJob = await this.readResourceImpl<AsyncJob>('AsyncJob', resolveId(resource.securityContext) ?? '');
+        if (!this.canReadAsyncJobOutput(asyncJob)) {
+          throw new OperationOutcomeError(notFound);
+        }
+        return resource;
+      }
       await this.readReference(resource.securityContext);
     }
     return resource;
@@ -1056,7 +1065,7 @@ export class Repository extends FhirRepository implements Disposable {
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
-      resultMeta.accounts = accounts;
+      resultMeta.accounts = accounts.length > 0 ? accounts : undefined;
     }
     resultMeta.compartment = this.getCompartments(result);
 
@@ -2229,6 +2238,15 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Returns the requester recorded on the AsyncJobs created with this repository.
+   * With On-Behalf-Of, the request runs with that user's access, so that user is the requester.
+   * @returns The requester reference.
+   */
+  getAsyncJobRequester(): Reference {
+    return this.context.onBehalfOf ?? this.context.author;
+  }
+
+  /**
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
@@ -2252,6 +2270,19 @@ export class Repository extends FhirRepository implements Disposable {
       // The writer's access policy is only applied at resource creation: simply editing a
       // resource does NOT pull it into the user's account.
       accounts.add(this.context.accessPolicy.compartment.reference);
+    }
+
+    if (updated.resourceType === 'AsyncJob') {
+      // The requester is recorded as an account (see `canReadAsyncJobOutput`).
+      // AsyncJob accounts are assigned by the server, and kept on update.
+      if (existing) {
+        for (const account of extractAccountReferences(existing.meta) ?? EMPTY) {
+          accounts.add(account.reference as string);
+        }
+      } else if (!this.isSuperAdmin()) {
+        accounts.add(this.getAsyncJobRequester().reference as string);
+      }
+      return Array.from(accounts, (reference) => ({ reference }));
     }
 
     if (updated.resourceType === 'Patient') {
@@ -2468,6 +2499,12 @@ export class Repository extends FhirRepository implements Disposable {
     for (const field of policy?.hiddenFields ?? EMPTY) {
       removeField(input, field);
     }
+    if (input.resourceType === 'AsyncJob' && !this.canReadAsyncJobOutput(input)) {
+      // Like the response to a synchronous request, the output and the query string of an
+      // asynchronous request only go to the requester
+      input.output = undefined;
+      input.request = input.request?.split('?')[0];
+    }
     if (!extendedMode && input.meta) {
       const meta = input.meta;
       meta.author = undefined;
@@ -2478,6 +2515,24 @@ export class Repository extends FhirRepository implements Disposable {
       meta.deleted = undefined;
     }
     return input;
+  }
+
+  /**
+   * Determines if the current user can read the output of an AsyncJob.
+   * The output was produced with the access of the requester, so it is only available to the requester
+   * (recorded as an account of the job, see `getAccounts`) and to admins of the job's project.
+   * @param asyncJob - The AsyncJob, including `meta.project` and `meta.accounts`.
+   * @returns True if the current user can read the output of the AsyncJob.
+   */
+  private canReadAsyncJobOutput(asyncJob: AsyncJob): boolean {
+    if (this.isSuperAdmin()) {
+      return true;
+    }
+    if (this.isProjectAdmin() && asyncJob.meta?.project === this.currentProject()?.id) {
+      return true;
+    }
+    const requester = this.getAsyncJobRequester().reference;
+    return !!asyncJob.meta?.accounts?.some((account) => account.reference === requester);
   }
 
   /**
@@ -2519,15 +2574,19 @@ export class Repository extends FhirRepository implements Disposable {
       original ? AccessPolicyInteraction.UPDATE : AccessPolicyInteraction.CREATE,
       this.context.accessPolicy
     );
-    if (!policy?.readonlyFields && !policy?.hiddenFields) {
-      return input;
-    }
     const fieldsToRestore = [];
-    if (policy.readonlyFields) {
+    if (policy?.readonlyFields) {
       fieldsToRestore.push(...policy.readonlyFields);
     }
-    if (policy.hiddenFields) {
+    if (policy?.hiddenFields) {
       fieldsToRestore.push(...policy.hiddenFields);
+    }
+    if (original?.resourceType === 'AsyncJob' && !this.canReadAsyncJobOutput(original)) {
+      // Fields removed by `removeHiddenFields` cannot be replaced either
+      fieldsToRestore.push('request', 'output');
+    }
+    if (fieldsToRestore.length === 0) {
+      return input;
     }
     for (const field of fieldsToRestore) {
       removeField(input, field);
