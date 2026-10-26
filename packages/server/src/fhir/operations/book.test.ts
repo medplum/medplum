@@ -8,7 +8,9 @@ import {
   MEDPLUM_VERSION,
   parseSearchRequest,
   SchedulingBookedByOperationURI,
+  SchedulingParametersURI,
   SchedulingSlotCapacityURI,
+  TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -18,6 +20,7 @@ import type {
   CodeableConcept,
   Extension,
   HealthcareService,
+  Organization,
   Patient,
   Practitioner,
   Resource,
@@ -2630,6 +2633,8 @@ describe('scheduling flow integration test', () => {
     // @see https://www.medplum.com/docs/access/access-policies#patient-access
     const minimalPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
+      // Like the default patient policy, put what the patient creates in their account
+      compartment: { reference: '%patient' },
       resource: [
         {
           resourceType: 'Practitioner',
@@ -2763,6 +2768,132 @@ describe('scheduling flow integration test', () => {
     // explicit check against a possible problem: creating the Slot does not
     // set `meta.author` to the creating Patient, which could leak PHI.
     expect(otherPatientResponse.body.entry[0].resource.meta).not.toHaveProperty('author');
+
+    // Extended mode returns `meta.author` and `meta.account(s)` to any caller, and MedplumClient
+    // sends it by default.
+    const otherPatientExtendedResponse = await request
+      .get('/fhir/R4/Slot')
+      .query({ schedule: getReferenceString(schedule) })
+      .set('Authorization', `Bearer ${otherPatient.accessToken}`)
+      .set('X-Medplum', 'extended')
+      .send();
+
+    expect(otherPatientExtendedResponse).toHaveStatus(200);
+    expect(otherPatientExtendedResponse.body.entry).toHaveLength(1);
+    const extendedMeta = otherPatientExtendedResponse.body.entry[0].resource.meta;
+    expect(extendedMeta).toHaveProperty('author', { reference: 'system' });
+    expect(extendedMeta).not.toHaveProperty('onBehalfOf');
+    expect(extendedMeta).not.toHaveProperty('account');
+    expect(extendedMeta).not.toHaveProperty('accounts');
+  });
+
+  test('booking a slot as staff with a tenant access policy', async () => {
+    const tenant = await systemRepo.createResource<Organization>({
+      resourceType: 'Organization',
+      meta: { project: project.project.id },
+      name: 'Tenant',
+    });
+    const tenantCompartment = `_compartment=${getReferenceString(tenant)}`;
+
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Phoenix' }],
+    });
+
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      serviceType: toServiceTypeCodeableConcepts(service),
+      extension: [
+        {
+          url: SchedulingParametersURI,
+          extension: [
+            { url: 'service', valueReference: createReference(service) },
+            {
+              url: 'availability',
+              extension: [
+                {
+                  url: 'availableTime',
+                  extension: [
+                    { url: 'daysOfWeek', valueCode: 'wed' },
+                    { url: 'availableStartTime', valueTime: '09:00:00' },
+                    { url: 'availableEndTime', valueTime: '17:00:00' },
+                  ],
+                },
+              ],
+            },
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+          ],
+        },
+      ],
+    });
+
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: project.project.id },
+    });
+
+    // The documented tenant pattern: what the user creates goes in the tenant's account,
+    // and their rules only match resources in it.
+    const { accessToken, profile } = await addTestUser(project.project, {
+      resourceType: 'Practitioner',
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        compartment: createReference(tenant),
+        resource: [
+          { resourceType: 'Practitioner', interaction: ['read'] },
+          { resourceType: 'HealthcareService', interaction: ['read'] },
+          { resourceType: 'Schedule', interaction: ['read'] },
+          { resourceType: 'Slot', criteria: `Slot?${tenantCompartment}`, interaction: ['create', 'search'] },
+          { resourceType: 'Appointment', criteria: `Appointment?${tenantCompartment}`, interaction: ['create'] },
+        ],
+      },
+    });
+
+    const start = '2026-01-28T16:00:00Z'; // 09:00 America/Phoenix (UTC-7)
+    const end = '2026-01-28T17:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              start,
+              end,
+              status: 'proposed',
+              serviceType: toServiceTypeCodeableConcepts(service),
+              participant: [
+                { actor: createReference(patient), status: 'accepted' },
+                { actor: createReference(practitioner), status: 'accepted' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  status: 'busy',
+                  serviceType: [officeVisitConcept],
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(201);
+    const slots = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isSlot);
+    expect(slots).toHaveLength(1);
+    const slot = await systemRepo.readResource<Slot>('Slot', slots[0].id as string);
+    expect(slot.meta?.accounts).toStrictEqual([{ reference: getReferenceString(tenant) }]);
+    expect(slot.meta?.author?.reference).toBe(getReferenceString(profile));
   });
 
   test('booking a slot as a patient who cannot read Schedule.actor', async () => {

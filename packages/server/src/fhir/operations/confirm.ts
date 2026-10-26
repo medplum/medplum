@@ -7,7 +7,7 @@ import { getAuthenticatedContext } from '../../context';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
-import { assertAllLoaded } from './utils/scheduling';
+import { assertAllLoaded, getSlotWriterRepo } from './utils/scheduling';
 
 const confirmOperation = makeOperationDefinition(
   { scope: 'instance', resource: 'Appointment' },
@@ -81,9 +81,10 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
       }
 
       // Mark `busy-tentative` slots as `busy`
+      const slotRepo = getSlotWriterRepo(txRepo);
       const updatedSlots = await Promise.all(
         slots.map(async (slot) =>
-          slot.status === 'busy-tentative' ? txRepo.updateResource<Slot>({ ...slot, status: 'busy' }) : slot
+          slot.status === 'busy-tentative' ? slotRepo.updateResource<Slot>({ ...slot, status: 'busy' }) : slot
         )
       );
 

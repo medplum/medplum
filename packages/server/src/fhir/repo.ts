@@ -440,7 +440,15 @@ export class Repository extends FhirRepository implements Disposable {
     return systemRepo;
   }
 
-  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
+  /**
+   * Creates a repository with the same context and connection set as the current repository,
+   * with the given context fields overridden. Stays within the current transaction, if any.
+   * @param config - The context fields to override.
+   * @returns A repository with the overridden context.
+   */
+  withOverrideConfig(
+    config: Partial<Pick<RepositoryContext, 'extendedMode' | 'author' | 'onBehalfOf' | 'accessPolicy'>>
+  ): Repository {
     this.assertUsable();
     let repo: Repository;
     if (this.connections.hasConnection()) {
