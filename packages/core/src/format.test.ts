@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Observation } from '@medplum/fhirtypes';
+import type { Observation, Quantity } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
   formatAddress,
@@ -20,7 +20,6 @@ import {
   formatTime,
   formatTiming,
   formatWallTime,
-  getHealthGorillaObservationUnit,
   getPreservedValuePrecision,
   typedValueToString,
 } from './format';
@@ -447,31 +446,6 @@ test('Format Observation value', () => {
   expect(formatObservationValue({} as Observation)).toBe('');
   expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' } as Observation)).toBe('foo');
   expect(
-    formatObservationValue({
-      resourceType: 'Observation',
-      valueString: '&lt;OBX.5.1&gt;&gt;=32&lt;/OBX.5.1&gt;&lt;OBX.5.1&gt;R&lt;/OBX.5.1&gt;',
-    } as Observation)
-  ).toBe('>=32 (Resistant)');
-  expect(
-    formatObservationValue({
-      resourceType: 'Observation',
-      valueString: '<OBX.5.1><1</OBX.5.1><OBX.5.1>S</OBX.5.1>',
-    } as Observation)
-  ).toBe('<1 (Susceptible)');
-  expect(
-    formatObservationValue({
-      resourceType: 'Observation',
-      valueString: '<OBX.5.1>4</OBX.5.1><OBX.5.1>I</OBX.5.1>',
-    } as Observation)
-  ).toBe('4 (Intermediate)');
-  expect(
-    // Unrecognized second value: falls back to joining both, same as before.
-    formatObservationValue({
-      resourceType: 'Observation',
-      valueString: '<OBX.5.1>4</OBX.5.1><OBX.5.1>Q</OBX.5.1>',
-    } as Observation)
-  ).toBe('4 / Q');
-  expect(
     formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } } as Observation)
   ).toBe('foo');
   expect(
@@ -528,24 +502,6 @@ test('Format Observation value', () => {
   ).toBe('36.7 C / Oral');
 });
 
-test('getHealthGorillaObservationUnit', () => {
-  expect(getHealthGorillaObservationUnit({ resourceType: 'Observation' } as Observation)).toBeUndefined();
-  expect(
-    getHealthGorillaObservationUnit({
-      resourceType: 'Observation',
-      extension: [{ url: 'https://example.com/other-extension', valueString: 'ignored' }],
-    } as Observation)
-  ).toBeUndefined();
-  expect(
-    getHealthGorillaObservationUnit({
-      resourceType: 'Observation',
-      extension: [
-        { url: 'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit', valueString: 'titer' },
-      ],
-    } as Observation)
-  ).toBe('titer');
-});
-
 test('getPreservedValuePrecision', () => {
   expect(getPreservedValuePrecision(undefined)).toBeUndefined();
   expect(getPreservedValuePrecision({})).toBeUndefined();
@@ -575,6 +531,19 @@ test('getPreservedValuePrecision', () => {
       },
     })
   ).toBe(0);
+});
+
+test('getPreservedValuePrecision ignores malformed valueInteger', () => {
+  const withPrecision = (valueInteger: unknown): Quantity => ({
+    value: 1.3,
+    // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON; and
+    // valueInteger is deliberately malformed here to exercise the bounds check.
+    _value: { extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger }] },
+  });
+  expect(getPreservedValuePrecision(withPrecision(-1))).toBeUndefined();
+  expect(getPreservedValuePrecision(withPrecision(101))).toBeUndefined();
+  expect(getPreservedValuePrecision(withPrecision(2.5))).toBeUndefined();
+  expect(getPreservedValuePrecision(withPrecision('2'))).toBeUndefined();
 });
 
 test('formatObservationValue preserves original decimal precision when present', () => {
