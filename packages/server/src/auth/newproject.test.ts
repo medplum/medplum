@@ -529,15 +529,18 @@ describe('New project', () => {
     getConfig().newProjectRegistrationEnabled = false;
 
     // New users can still register
-    const res1 = await request(app).post('/auth/newuser').type('json').send({
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
-      email: `alex${randomUUID()}@example.com`,
-      password: 'password!@#',
-      recaptchaToken: 'xyz',
-      codeChallenge: 'xyz',
-      codeChallengeMethod: 'plain',
-    });
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
     expect(res1).toHaveStatus(200);
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
