@@ -95,11 +95,13 @@ export function getReferenceString(input: Reference | Resource): string | undefi
 export function getReferenceString(
   input: Reference | Resource | (Reference & { reference: string }) | WithId<Resource>
 ): string | undefined {
-  if (isReference(input)) {
-    return input.reference;
-  }
+  // Check for a resource first: some resources (e.g. DetectedIssue) have their own
+  // top-level `reference` element, which would otherwise be mistaken for a Reference.
   if (isResourceWithId(input)) {
     return `${(input as Resource).resourceType}/${input.id}`;
+  }
+  if (isReference(input)) {
+    return input.reference;
   }
   return undefined;
 }
