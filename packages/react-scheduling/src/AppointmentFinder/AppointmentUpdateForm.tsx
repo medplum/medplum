@@ -45,7 +45,7 @@ export interface AppointmentUpdateFormProps extends Omit<
  * whatever its visit type asks for, saved together.
  *
  * The two halves are written the way each is written on its own. A new time goes through
- * `Appointment/[id]/$reschedule` (or, typed, through {@link writeElevatedReschedule}), and
+ * `Appointment/[id]/$reschedule` (or, typed, through CRUD writes of the new Slots), and
  * goes first, since it is the write most likely to be refused. The details are then put
  * onto the appointment that write returned, which holds the new Slots and version.
  *
