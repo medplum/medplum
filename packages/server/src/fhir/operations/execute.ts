@@ -21,6 +21,7 @@ import {
   sendBotResponse,
 } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
+import { searchUnique } from '../searchunique';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
@@ -150,10 +151,11 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    const bot = await ctx.repo.searchOne<Bot>({
-      resourceType: 'Bot',
-      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
-    });
+    const bot = await searchUnique<Bot>(
+      ctx.repo,
+      { resourceType: 'Bot', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
+      'Bot/$execute identifier'
+    );
 
     if (!bot) {
       throw new OperationOutcomeError(notFound);

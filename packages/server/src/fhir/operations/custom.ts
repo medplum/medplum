@@ -15,6 +15,7 @@ import { executeBot } from '../../bots/execute';
 import { getBotDefaultHeaders, getBotProjectMembership, isBinaryWithoutData } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
+import { searchUnique } from '../searchunique';
 import { buildOutputParameters } from './utils/parameters';
 
 export async function tryCustomOperation(req: FhirRequest, repo: Repository): Promise<FhirResponse | undefined> {
@@ -28,16 +29,14 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
 
   // Search for the OperationDefinition resource
   const operationCode = operationPart.substring(1); // Remove the '$' prefix
-  const operation = await repo.searchOne<OperationDefinition>({
-    resourceType: 'OperationDefinition',
-    filters: [
-      {
-        code: 'code',
-        operator: Operator.EXACT,
-        value: operationCode,
-      },
-    ],
-  });
+  const operation = await searchUnique<OperationDefinition>(
+    repo,
+    {
+      resourceType: 'OperationDefinition',
+      filters: [{ code: 'code', operator: Operator.EXACT, value: operationCode }],
+    },
+    'custom operation'
+  );
   if (!operation) {
     // No operation definition found
     return undefined;
