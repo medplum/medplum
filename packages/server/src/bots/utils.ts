@@ -45,7 +45,10 @@ import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
+import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
+
+const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
  * Returns the bot's project membership.
@@ -65,7 +68,19 @@ export async function getBotProjectMembership(
   }
   // Otherwise, use the bot's project membership
   const project = bot.meta?.project as string;
-  return (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
+  const membership = await findProjectMembership(project, createReference(bot));
+  if (membership) {
+    return membership;
+  }
+  missingMembershipLogThrottle.maybeLog(bot.id, (suppressed) => {
+    getLogger().warn('Bot executed without ProjectMembership', {
+      botId: bot.id,
+      botProject: project,
+      runAsMembership: ctx.membership.id,
+      suppressed,
+    });
+  });
+  return ctx.membership;
 }
 
 /**
