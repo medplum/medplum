@@ -111,21 +111,21 @@ export default {
  * called off for; a reason has to be searched for and picked before it can be confirmed,
  * and "Back" leaves without touching the visit. Confirming runs it through
  * `Appointment/:id/$cancel`: the pane lands back on the details, now describing a
- * cancelled appointment, showing the reason and with no button left on it, and the event
+ * cancelled appointment, showing the reason and with no cancellation left on it, and the event
  * beside it is drawn as cancelled without a reload, because the cancellation announces
  * what it wrote the way booking does.
  *
  * Thursday's infusion on Dr. Chen's calendar (select **Providers → Dr. Wei Chen**) is booked
  * for a visit type asking for procedure codes, diagnosis codes, and a medical necessity
- * attestation, so its details offer all three for editing beside the patient. Booking
+ * attestation, so its update form offers all three for editing beside the patient. Booking
  * **Infusion Therapy** from the form asks for the same three.
  *
- * The same drawer offers to move the visit. "Reschedule" swaps the details for the form
- * that finds it another time, opened on the visit type and the actors it is held on —
- * for Tuesday's imaging visit, Dr. Rivera, Ultrasound 1 and Exam Room A. Swap the room
- * and find a time and its own hour is offered again, since the search is told to ignore
- * the visit being moved. Move it and the drawer goes back to the details, with the event
- * redrawn at its new time behind them.
+ * The same drawer offers to change the visit. "Edit or Reschedule Appointment" swaps the
+ * details for the form that finds it another time, opened on the visit type and the actors
+ * it is held on — for Tuesday's imaging visit, Dr. Rivera, Ultrasound 1 and Exam Room A —
+ * and on its patient. Swap the room and find a time and its own hour is offered again,
+ * since the search is told to ignore the visit being moved. Save it and the drawer goes
+ * back to the details, with the event redrawn at its new time behind them.
  *
  * Blocked time opens in that pane too: click Exam Room A's "Blocked" block on Thursday to
  * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
@@ -177,7 +177,7 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * The workspace when the host lets a user enter a time of their own.
  *
  * Everything in `Basic` still works: a time picked from the search is booked through
- * `$book`, which checks it. What this adds is a **Date & time** and a **Minutes** field
+ * `$book`, which checks it. What this adds is a **Date & Time** and a **Minutes** field
  * above the times on offer, for placing a visit the rules would refuse. The read-only
  * time on the left stays where it is; both ways of answering land in it.
  *

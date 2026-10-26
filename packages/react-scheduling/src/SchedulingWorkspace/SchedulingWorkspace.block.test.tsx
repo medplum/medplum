@@ -64,10 +64,22 @@ async function dragCalendar(): Promise<void> {
   });
 }
 
-async function chooseTab(name: string): Promise<void> {
+/**
+ * Switches the pane between booking and blocking, from the tabs in its header.
+ * @param name - The tab to switch to.
+ */
+async function chooseMode(name: 'Book Appointment' | 'Block Time'): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('tab', { name }));
+    fireEvent.click(within(pane() as HTMLElement).getByRole('tab', { name }));
   });
+}
+
+/**
+ * The block form's submit button.
+ * @returns The button.
+ */
+function blockButton(): HTMLElement {
+  return screen.getByRole('button', { name: 'Block time' });
 }
 
 function pane(): HTMLElement | null {
@@ -98,8 +110,11 @@ describe('SchedulingWorkspace blocking', () => {
     renderWithMedplum(<SchedulingWorkspace onBlocked={onBlocked} />, medplum);
 
     await dragCalendar();
-    await chooseTab('Block');
-    expect(within(pane() as HTMLElement).getByRole('heading', { name: 'Block time' })).toBeInTheDocument();
+    await chooseMode('Block Time');
+    expect(within(pane() as HTMLElement).getByRole('tab', { name: 'Block Time' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
     expect(screen.getByLabelText(/^Start/)).toHaveValue('2026-08-18T12:00');
     expect(screen.getByLabelText(/^End/)).toHaveValue('2026-08-18T13:00');
 
@@ -108,7 +123,7 @@ describe('SchedulingWorkspace blocking', () => {
       fireEvent.change(screen.getByLabelText(/^Comment/), { target: { value: 'Lunch' } });
     });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+      fireEvent.click(blockButton());
     });
 
     const bundle = vi.mocked(medplum.executeBatch).mock.calls[0][0] as Bundle<Slot>;
@@ -133,25 +148,28 @@ describe('SchedulingWorkspace blocking', () => {
     await dragCalendar();
     await chooseImagingService();
 
-    await chooseTab('Block');
+    await chooseMode('Block Time');
     await act(async () => {
       fireEvent.change(screen.getByLabelText(/^End/), { target: { value: '2026-08-18T15:00' } });
     });
     expect(markedTime()).toBe(`${TUESDAY_NOON.start.toISOString()}/${new Date(2026, 7, 18, 15).toISOString()}`);
 
     // The booking form's highlight is still the time clicked, and its visit type survives.
-    await chooseTab('Appointment');
+    await chooseMode('Book Appointment');
     expect(markedTime()).toBe(`${TUESDAY_NOON.start.toISOString()}/${TUESDAY_NOON.end.toISOString()}`);
     expect(within(pane() as HTMLElement).getByText('Ultrasound Imaging')).toBeInTheDocument();
 
     // A new click puts the block's times back to the time clicked, keeping the calendars
-    // named, and stays on the Block tab.
-    await chooseTab('Block');
+    // named, and stays on Block time.
+    await chooseMode('Block Time');
     await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
     await dragCalendar();
-    expect(screen.getByRole('tab', { name: 'Block' })).toHaveAttribute('aria-selected', 'true');
+    expect(within(pane() as HTMLElement).getByRole('tab', { name: 'Block Time' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
     expect(screen.getByLabelText(/^End/)).toHaveValue('2026-08-18T13:00');
     expect(markedTime()).toBe(`${TUESDAY_NOON.start.toISOString()}/${TUESDAY_NOON.end.toISOString()}`);
-    expect(screen.getByRole('button', { name: 'Block time' })).toBeEnabled();
+    expect(blockButton()).toBeEnabled();
   });
 });

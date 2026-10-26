@@ -211,7 +211,7 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(await screen.findByText('Blocked'));
     const pane = within(slotDetails() as HTMLElement);
     expect(
-      await pane.findByText('This time is held by an appointment. Reschedule or cancel the appointment to change it.')
+      await pane.findByText('This time is held by an appointment. Edit or cancel the appointment to change it.')
     ).toBeInTheDocument();
     expect(pane.getByRole('button', { name: 'Edit' })).toBeDisabled();
     expect(pane.getByRole('button', { name: 'Delete' })).toBeDisabled();

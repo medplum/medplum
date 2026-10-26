@@ -49,6 +49,7 @@ import {
   MONDAY_MORNING,
   openTimeFinder,
   patientDetail,
+  reopenTimeFinder,
   setupBookingClient,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
@@ -116,6 +117,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
       onRangeChange?: (range: { start: Date; end: Date }) => void;
       selection?: { start: Date; end: Date };
       selectedId?: string;
+      toolbarEnd?: JSX.Element;
     },
     ref: Ref<CalendarHandle>
   ): JSX.Element {
@@ -128,6 +130,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
 
     return (
       <div>
+        {props.toolbarEnd}
         {Object.entries(CLICK_TARGETS).map(([name, target]) => (
           <button
             key={name}
@@ -182,8 +185,23 @@ async function clickCalendar(target: ClickTarget = 'tuesday morning'): Promise<v
   });
 }
 
+/**
+ * Switches the pane between booking and blocking, from the tabs in its header.
+ * @param name - The tab to switch to.
+ */
+async function switchPaneMode(name: 'Book Appointment' | 'Block Time'): Promise<void> {
+  const pane = screen.getByRole('region', { name: 'Book appointment' });
+  await act(async () => {
+    fireEvent.click(within(pane).getByRole('tab', { name }));
+  });
+}
+
+/**
+ * The booking pane, by its booking tab.
+ * @returns The tab, or null while the pane is closed.
+ */
 function bookingPaneHeading(): HTMLElement | null {
-  return screen.queryByRole('heading', { name: /book appointment/i });
+  return screen.queryByRole('tab', { name: 'Book Appointment' });
 }
 
 /**
@@ -278,7 +296,7 @@ describe('SchedulingWorkspace booking', () => {
       await settleAutocomplete();
       // The visit is on several calendars, so the stand-in grid draws it once per calendar.
       fireEvent.click(screen.getAllByRole('button', { name: `click appointment ${appointment.id}` })[0]);
-      fireEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Edit or Reschedule Appointment' }));
       await settleAutocomplete();
       await openTimeFinder();
       expect(screen.queryByText('Or enter a time') !== null).toBe(canBypassSchedulingRules);
@@ -298,6 +316,18 @@ describe('SchedulingWorkspace booking', () => {
     expect(bookingPaneHeading()).toBeInTheDocument();
     // Scoped to the pane, since the sidebar filter wears the same label.
     expect(field(/visit type/i)).toBeInTheDocument();
+  });
+
+  test('Opens the booking form from the toolbar, on the next half hour', async () => {
+    vi.setSystemTime(new Date('2026-08-17T09:10:00'));
+    setup();
+    await settleAutocomplete();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
+    });
+
+    expect(bookingPaneHeading()).toHaveAttribute('aria-selected', 'true');
+    expect(markedTime()).toBe(new Date('2026-08-17T09:30:00').toISOString());
   });
 
   test('Starts on the site the workspace was opened on', async () => {
@@ -472,6 +502,7 @@ describe('SchedulingWorkspace booking', () => {
       await openTimeFinder();
       await chooseSecondOfferedTime();
       expect(proposedTime()).not.toBe('none');
+      await reopenTimeFinder();
 
       // Searching another day drops the time, and a proposal left on the old one would
       // be pointing at a time nobody has chosen.
@@ -480,7 +511,7 @@ describe('SchedulingWorkspace booking', () => {
       expect(proposedTime()).toBe('none');
     });
 
-    test('Hides the proposal on the Block tab, and draws it again on coming back', async () => {
+    test('Hides the proposal on Block time, and draws it again on coming back', async () => {
       setup();
       await clickCalendar('tuesday morning');
       await chooseImagingService();
@@ -490,11 +521,11 @@ describe('SchedulingWorkspace booking', () => {
       const proposed = proposedTime();
       expect(screen.getByTestId('proposed-time')).toHaveAttribute('data-label', 'Draft New Appointment');
 
-      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      await switchPaneMode('Block Time');
       expect(proposedTime()).toBe('none');
 
-      // The form stays mounted behind the Block tab, so its time is still there to draw.
-      fireEvent.click(screen.getByRole('tab', { name: 'Appointment' }));
+      // The form stays mounted behind Block time, so its time is still there to draw.
+      await switchPaneMode('Book Appointment');
       expect(proposedTime()).toBe(proposed);
     });
 
@@ -611,12 +642,14 @@ describe('SchedulingWorkspace booking', () => {
     });
 
     function saveButton(): HTMLElement {
-      return within(detailsPane() as HTMLElement).getByRole('button', { name: 'Save Changes' });
+      return within(detailsPane() as HTMLElement).getByRole('button', { name: 'Update Appointment' });
     }
 
     async function clickEdit(): Promise<void> {
       await act(async () => {
-        fireEvent.click(within(detailsPane() as HTMLElement).getByRole('button', { name: 'Edit' }));
+        fireEvent.click(
+          within(detailsPane() as HTMLElement).getByRole('button', { name: 'Edit or Reschedule Appointment' })
+        );
       });
       await settleAutocomplete();
     }
@@ -642,7 +675,7 @@ describe('SchedulingWorkspace booking', () => {
       expect(onUpdated).toHaveBeenCalledTimes(1);
       const [updated] = onUpdated.mock.calls[0] as [WithId<Appointment>];
       expect(updated.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }, { coding: [DiagnosisCodes[1]] }]);
-      expect(within(detailsPane() as HTMLElement).queryByRole('button', { name: 'Save Changes' })).toBeNull();
+      expect(within(detailsPane() as HTMLElement).queryByRole('button', { name: 'Update Appointment' })).toBeNull();
 
       // An edit only against the written appointment: against the one first opened, removing this code changes nothing.
       await clickEdit();

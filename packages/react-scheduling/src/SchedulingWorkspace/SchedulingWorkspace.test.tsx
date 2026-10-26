@@ -152,7 +152,7 @@ describe('SchedulingWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));
     expect(providerRow).toBeVisible();
     expect(providerRow).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByRole('button', { name: 'Show calendars' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Hide calendars' })).toHaveAttribute('aria-expanded', 'true');
   });
 
   test('shows the empty state for sections with no schedules', async () => {

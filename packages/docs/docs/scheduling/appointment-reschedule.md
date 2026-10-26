@@ -93,8 +93,8 @@ Everything else is left exactly as it was — `serviceType`, `reasonCode`, `comm
 
 Three things deserve specific mention:
 
-- **`status` is not an input.** The appointment lifecycle belongs to [`$hold`](/docs/scheduling/appointment-hold), [`$confirm`](/docs/scheduling/appointment-confirm), and [`$cancel`](/docs/scheduling/appointment-cancel), each of which validates its own transition. `$reschedule` changes *when and where* an appointment happens, never *whether* it happens. A `booked` appointment stays booked; a `pending` one stays pending and keeps holding its new time with `busy-tentative` Slots.
-- **`serviceType` is not an input.** What a visit *is* does not change during a move. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The stored `serviceType` is therefore read and never written, which also means the codes booked with the appointment survive the move untouched.
+- **`status` is not an input.** The appointment lifecycle belongs to [`$hold`](/docs/scheduling/appointment-hold), [`$confirm`](/docs/scheduling/appointment-confirm), and [`$cancel`](/docs/scheduling/appointment-cancel), each of which validates its own transition. `$reschedule` changes _when and where_ an appointment happens, never _whether_ it happens. A `booked` appointment stays booked; a `pending` one stays pending and keeps holding its new time with `busy-tentative` Slots.
+- **`serviceType` is not an input.** What a visit _is_ does not change during a move. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The stored `serviceType` is therefore read and never written, which also means the codes booked with the appointment survive the move untouched.
 - **`participant` is reconciled, not submitted.** The actors of the Schedules being moved away from are swapped for the actors of the Schedules in the request. Everyone else — the patient, related persons, secondary practitioners — is preserved untouched, and an actor that appears on both the old and new Schedules keeps its existing entry along with any `status` it had already responded with.
 
 ### Slots are derived, not submitted
@@ -116,10 +116,10 @@ Unlike [`$book`](/docs/scheduling/appointment-book) and [`$hold`](/docs/scheduli
 
 `$reschedule` writes more than `$book` does, so a caller who can book may not be able to reschedule. Beyond the read access `$book` requires on `Practitioner`, `HealthcareService`, and `Schedule`, the caller's [access policy](/docs/access/access-policies) must grant:
 
-| Resource      | Interactions                              | Why                                             |
-| ------------- | ----------------------------------------- | ----------------------------------------------- |
-| `Slot`        | `create`, `read`, `search`, **`delete`**  | The Slots held by the appointment are deleted   |
-| `Appointment` | `read`, **`update`**                      | The existing Appointment is updated in place    |
+| Resource      | Interactions                             | Why                                           |
+| ------------- | ---------------------------------------- | --------------------------------------------- |
+| `Slot`        | `create`, `read`, `search`, **`delete`** | The Slots held by the appointment are deleted |
+| `Appointment` | `read`, **`update`**                     | The existing Appointment is updated in place  |
 
 Without `delete` on `Slot`, the operation fails with `403 Forbidden`.
 
@@ -238,7 +238,7 @@ One naming more than one is rejected for the mirror-image reason — there is no
 
 The [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides an `AppointmentRescheduleForm` component that drives this whole flow. Given an Appointment, it reads back the visit type it is on file for and the Schedules its Slots are held on, shows the visit type fixed and the actors as editable selections, searches with `$find` — passing `ignore-appointment` so the visit does not block its own move — and posts `$reschedule` for the time chosen. It announces the Appointment, the released Slots and the new ones, so a calendar rendered beside it refreshes without the host fetching anything.
 
-The `AppointmentDetails` view mounts it behind a **Reschedule** button, which is how the `SchedulingWorkspace` offers rescheduling from the calendar.
+The `AppointmentDetails` view offers rescheduling through `AppointmentUpdateForm`, behind a single **Edit or Reschedule Appointment** button, which is how the `SchedulingWorkspace` offers it from the calendar. That form asks for the time and actors as `AppointmentRescheduleForm` does, and for the patient and the visit type's codes below them. A new time is written through `$reschedule` first; any other change is then written as a plain update to the Appointment that `$reschedule` returned.
 
 ## Related
 

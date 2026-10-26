@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
-import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
+import { extractServiceTypeReferences, isDefined, normalizeErrorString } from '@medplum/core';
+import type { Appointment } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
-import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
+import { getOpeningDay, rescheduleAppointment } from './rescheduleAppointment';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
-import { getProposedSchedules, writeElevatedReschedule } from './writeElevatedReschedule';
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
@@ -34,6 +33,8 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'diagnosisBinding'
   | 'appointmentExtensions'
   | 'allowRecurring'
+  | 'onUpdate'
+  | 'fixedTime'
 > {
   /** The appointment being moved. */
   readonly appointment: WithId<Appointment>;
@@ -80,56 +81,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
 
   const reschedule = useCallback(
     async (proposal: Appointment, options: BookOptions): Promise<void> => {
-      const schedules = getProposedSchedules(proposal);
-
-      // Always present, whether the time came from `$find` or was typed.
-      if (!proposal.start) {
-        throw new Error('The chosen time does not say when it is');
-      }
-      if (schedules.length === 0) {
-        throw new Error('The chosen time does not say which schedules to hold it on');
-      }
-
-      let result: AppointmentReschedule;
-      if (options.manual) {
-        // Written through CRUD methods, which announce their own changes.
-        result = await writeElevatedReschedule(medplum, appointment, proposal);
-      } else {
-        // Read before the request: the operation deletes these, and the appointment comes
-        // back pointing at the times it took instead.
-        const releasedSlotIds = (appointment.slot ?? []).map(resolveId).filter(isDefined);
-        result = readAppointmentWrite(
-          await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-            medplum.fhirUrl('Appointment', appointment.id, '$reschedule'),
-            {
-              resourceType: 'Parameters',
-              parameter: [
-                { name: 'start', valueDateTime: proposal.start },
-                ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
-              ],
-            } satisfies Parameters
-          ),
-          '$reschedule'
-        );
-
-        // `$reschedule` is a custom operation, so the client cannot tell what it changed: the
-        // old slots were deleted, new ones created, and `appointment.slot` repointed.
-        for (const moved of result.appointments) {
-          medplum.notifyResourceModified({
-            resourceType: 'Appointment',
-            operation: 'update',
-            id: moved.id,
-            resource: moved,
-          });
-        }
-        for (const id of releasedSlotIds) {
-          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id });
-        }
-        for (const slot of result.slots) {
-          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
-        }
-      }
-
+      const result = await rescheduleAppointment(medplum, appointment, proposal, options);
       try {
         await onRescheduled(result);
       } catch (error) {
@@ -188,19 +140,4 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       />
     </>
   );
-}
-
-/**
- * The day the time search opens on: the day the visit is on now.
- *
- * Floored at today, since a visit can only be moved forwards — opening the calendar on
- * the month a missed visit used to be in would point away from everything on offer.
- *
- * @param appointment - The appointment being moved.
- * @returns The day to open on.
- */
-function getOpeningDay(appointment: Appointment): Date {
-  const now = new Date();
-  const start = appointment.start ? new Date(appointment.start) : undefined;
-  return start && start > now ? start : now;
 }

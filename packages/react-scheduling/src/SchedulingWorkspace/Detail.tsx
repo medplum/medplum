@@ -23,7 +23,10 @@ export function Detail(props: DetailProps): JSX.Element | null {
       <Text size="xs" c="dimmed">
         {props.label}
       </Text>
-      <Text size="sm">{props.value}</Text>
+      {/* A div, so the value can be a block of its own, such as a badge. */}
+      <Text size="sm" component="div">
+        {props.value}
+      </Text>
     </Stack>
   );
 }

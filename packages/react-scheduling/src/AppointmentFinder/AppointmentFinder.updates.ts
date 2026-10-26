@@ -3,18 +3,22 @@
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   deepEquals,
+  getAppointmentSite,
   getExtension,
   getExtensionValue,
+  isResource,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SchedulingMedicalNecessityURI,
+  SchedulingSiteURI,
   ServiceTypeReferenceURI,
+  toAppointmentSiteReference,
 } from '@medplum/core';
-import type { Appointment, AppointmentParticipant, Patient, Reference } from '@medplum/fhirtypes';
-import type { BookingRequirementValues } from '../../AppointmentFinder/AppointmentFinder.requirements';
-import { getPatientParticipant } from '../../actors';
-import { partitionServiceTypes } from '../../serviceTypes';
+import type { Appointment, AppointmentParticipant, Location, Patient, Reference } from '@medplum/fhirtypes';
+import { getPatientParticipant } from '../actors';
+import { partitionServiceTypes } from '../serviceTypes';
+import type { BookingRequirementValues } from './AppointmentFinder.requirements';
 
 /**
  * Reads back what the booking form recorded for the visit type's requirements.
@@ -100,4 +104,27 @@ export function buildAppointmentUpdate(
     ];
   }
   return updated;
+}
+
+/**
+ * Puts the site the visit is held at onto the appointment, in place of the one it had.
+ * @param appointment - The appointment being edited.
+ * @param site - The site, as picked or as a reference.
+ * @returns The appointment to write.
+ */
+export function withAppointmentSite(
+  appointment: WithId<Appointment>,
+  site: WithId<Location> | Reference<Location>
+): WithId<Appointment> {
+  const entry: Reference<Location> = isResource(site)
+    ? toAppointmentSiteReference(site)
+    : { ...site, extension: [{ url: SchedulingSiteURI, valueBoolean: true }] };
+  const previous = getAppointmentSite(appointment);
+  return {
+    ...appointment,
+    supportingInformation: [
+      ...(appointment.supportingInformation ?? []).filter((reference) => reference !== previous),
+      entry,
+    ],
+  };
 }

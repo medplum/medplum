@@ -82,6 +82,7 @@ import {
   openRoleField,
   openTimeFinder,
   patientDetail,
+  reopenTimeFinder,
   searchField,
   setupBookingClient,
   shiftChooseDay,
@@ -795,6 +796,7 @@ describe('AppointmentProposalForm', () => {
       await openFinder();
       await chooseFirstOfferedTime();
       expect(chosenTimeField()).not.toBeNull();
+      await reopenTimeFinder();
 
       await dragDays('17', '21');
 
@@ -920,12 +922,9 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       await chooseFirstOfferedTime();
 
-      await act(async () => {
-        fireEvent.click(finderButton());
-      });
-      await settleAutocomplete();
-
+      // Picking a time is what the search was open for, so it closes.
       expect(finderButton()).toHaveTextContent('Change time');
+      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
       expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
     });
 
@@ -935,6 +934,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await reopenTimeFinder();
 
       await chooseDay('18');
 
@@ -959,6 +959,7 @@ describe('AppointmentProposalForm', () => {
       // `$book` would accept it: that time genuinely was Dr. Rivera's.
       expect(chosenTimeField()).not.toBeInTheDocument();
 
+      await openTimeFinder();
       const label = await chooseFirstOfferedTime();
 
       const chosen = chosenTimeField() as HTMLInputElement;
@@ -995,6 +996,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await reopenTimeFinder();
       onToggleTimeFinder.mockClear();
 
       await chooseActor(/room/i, 'exam', 'Exam Room A');
@@ -1179,6 +1181,7 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       await chooseFirstOfferedTime();
       expect(onChangeProposal).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(String) }));
+      await reopenTimeFinder();
 
       await chooseDay('18');
 
@@ -1428,6 +1431,7 @@ describe('AppointmentProposalForm', () => {
       await clickBook();
       expect(bookButton()).toBeDisabled();
 
+      await reopenTimeFinder();
       await chooseSecondOfferedTime();
 
       expect(bookButton()).toBeEnabled();

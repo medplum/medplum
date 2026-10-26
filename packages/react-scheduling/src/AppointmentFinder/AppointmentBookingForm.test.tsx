@@ -232,7 +232,7 @@ describe('AppointmentBookingForm', () => {
   }
 
   function typeTime(dateTime: string, minutes: string): void {
-    fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: dateTime } });
+    fireEvent.change(screen.getByLabelText('Date & Time'), { target: { value: dateTime } });
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: minutes } });
   }
 

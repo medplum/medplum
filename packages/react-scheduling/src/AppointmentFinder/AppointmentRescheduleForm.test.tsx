@@ -82,6 +82,14 @@ async function setup(
   return rendered;
 }
 
+/**
+ * The field a time is typed into, apart from the read-only one showing the time on file.
+ * @returns The field.
+ */
+function typedTimeField(): HTMLElement {
+  return screen.getAllByLabelText('Date & Time').find((input) => !input.hasAttribute('readonly')) as HTMLElement;
+}
+
 /** Confirms the move. */
 async function clickReschedule(): Promise<void> {
   await act(async () => {
@@ -151,7 +159,7 @@ describe('AppointmentRescheduleForm', () => {
 
     async function enterTime(): Promise<void> {
       await openTimeFinder();
-      fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T14:07' } });
+      fireEvent.change(typedTimeField(), { target: { value: '2026-08-18T14:07' } });
       await settleAutocomplete();
     }
 
@@ -209,7 +217,7 @@ describe('AppointmentRescheduleForm', () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await openTimeFinder();
       // 11:00 in New York is 15:00Z, where the appointment is now.
-      expect(screen.getByLabelText('Date & time')).toHaveValue('2026-08-18T11:00');
+      expect(typedTimeField()).toHaveValue('2026-08-18T11:00');
       expect(screen.getByLabelText('Minutes')).toHaveValue('30');
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
@@ -257,9 +265,7 @@ describe('AppointmentRescheduleForm', () => {
       await settleAutocomplete();
       await removePill(/Exam Room A/);
       await chooseActor(/room/i, 'Exam Room B', 'Exam Room B');
-      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
-        '2026-08-18T14:07'
-      );
+      expect(typedTimeField()).toHaveValue('2026-08-18T14:07');
       expect(screen.getByLabelText('Minutes')).toHaveValue('45');
       await clickReschedule();
       const result = onRescheduled.mock.calls[0][0];
@@ -309,7 +315,8 @@ describe('AppointmentRescheduleForm', () => {
         />
       );
       await settleAutocomplete();
-      expect(chosenTimeField()).toBeNull();
+      // Back to the time on file, which is all the field shows until another is chosen.
+      expect(chosenTimeField()?.value).not.toContain('2:07');
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
@@ -322,9 +329,7 @@ describe('AppointmentRescheduleForm', () => {
       await clickReschedule();
       expect(screen.getByText('Write denied')).toBeInTheDocument();
       expect(screen.getByLabelText('Minutes')).toHaveValue('30');
-      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
-        '2026-08-18T14:07'
-      );
+      expect(typedTimeField()).toHaveValue('2026-08-18T14:07');
       expect(onRescheduled).not.toHaveBeenCalled();
       expect(events.some((event) => event.resourceType === 'Appointment')).toBe(false);
     });

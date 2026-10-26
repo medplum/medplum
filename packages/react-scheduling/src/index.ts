@@ -17,6 +17,7 @@ export * from './AppointmentFinder/AppointmentProposalForm';
 export * from './AppointmentFinder/AppointmentRescheduleForm';
 export * from './AppointmentFinder/AppointmentServiceSelect';
 export * from './AppointmentFinder/AppointmentSlotGroupCard';
+export * from './AppointmentFinder/AppointmentUpdateForm';
 export * from './Calendar/Calendar';
 export * from './MultiCalendar/MultiCalendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';

@@ -5,6 +5,7 @@ import { useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import cx from 'clsx';
+import type { ReactNode } from 'react';
 import { forwardRef, useMemo } from 'react';
 import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
 import type { CalendarHandle, ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
@@ -44,6 +45,10 @@ export interface MultiCalendarProps {
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
+  /** Placed at the start of the toolbar, before the navigation buttons. */
+  toolbarStart?: ReactNode;
+  /** Placed at the end of the toolbar, after the view toggle. */
+  toolbarEnd?: ReactNode;
 }
 
 /**

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { ActionIcon, Alert, Box, Tabs, Tooltip, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -11,6 +11,7 @@ import {
 } from '@medplum/core';
 import type { Appointment, Extension, HealthcareService, Location, Reference, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
+import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -37,6 +38,7 @@ import { CalendarLegend } from './CalendarLegend';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
+import { PaneHeader } from './PaneHeader';
 import classes from './SchedulingWorkspace.module.css';
 import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
@@ -74,7 +76,7 @@ export interface SchedulingWorkspaceProps {
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
-  /** Called with the Slots written when time is blocked from the pane's Block tab. */
+  /** Called with the Slots written when time is blocked from the pane's Block time mode. */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /** Called with what `$confirm` wrote, after a pending appointment is confirmed from its details. */
@@ -131,7 +133,7 @@ export interface SchedulingWorkspaceProps {
  *   What was written is reported through `onBooked`, for a host that wants to say so.
  *   The new appointment then opens in the pane, selected on the calendar, which pages
  *   to its day.
- * - Blocks time from the calendar: the same pane has a Block tab, writing a `busy` Slot
+ * - Blocks time from the calendar: the same pane switches to Block time from its heading, writing a `busy` Slot
  *   over the time on each calendar the user names, reported through `onBlocked`.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
@@ -196,6 +198,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What the calendar highlights while blocking: the block form's time, which a click resets.
   const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
+  const [calendarsOpen, setCalendarsOpen] = useState(true);
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per bookable actor type.
@@ -297,7 +300,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       slots: [],
       appointments: group,
     }));
-    // Hidden with the Appointment tab, as the selection follows the tab on show. A draft, and
+    // Hidden with the booking form, as the selection follows the form on show. A draft, and
     // not clickable: there is nothing booked yet to open.
     const drawnProposal = paneTab === 'appointment' ? proposal : undefined;
     const proposalReference = extractServiceTypeReferences(drawnProposal?.serviceType)[0]?.reference;
@@ -338,6 +341,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setBookingSelection(interval);
     setBlockHighlight(interval);
   }, []);
+
+  // Opens the booking form on the next half hour, for a visit not picked from the calendar.
+  const startBookingNow = useCallback((): void => {
+    const start = new Date();
+    start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
+    setPaneTab('appointment');
+    startBooking({ start, end: new Date(start.getTime() + 30 * 60 * 1000) });
+  }, [startBooking]);
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
@@ -463,7 +474,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
-      <Box className={classes.sidebar}>
+      {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
+      <Box className={classes.sidebar} display={calendarsOpen ? undefined : 'none'}>
         <CalendarsPanel
           items={panelItems}
           candidatesLoading={candidatesLoading}
@@ -482,6 +494,37 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
+          toolbarEnd={
+            <Tooltip label="Book appointment" position="bottom" openDelay={500}>
+              <ActionIcon
+                variant="filled"
+                color="blue"
+                size={32}
+                radius="xl"
+                aria-label="New appointment"
+                onClick={startBookingNow}
+              >
+                <IconPlus size={16} />
+              </ActionIcon>
+            </Tooltip>
+          }
+          toolbarStart={
+            <Tooltip label={calendarsOpen ? 'Hide calendars' : 'Show calendars'} position="bottom" openDelay={500}>
+              <ActionIcon
+                className={classes.iconButton}
+                variant="transparent"
+                color="gray"
+                size={32}
+                radius="xl"
+                aria-label={calendarsOpen ? 'Hide calendars' : 'Show calendars'}
+                aria-expanded={calendarsOpen}
+                data-expanded={calendarsOpen || undefined}
+                onClick={() => setCalendarsOpen(!calendarsOpen)}
+              >
+                <IconFilter2Search size={16} />
+              </ActionIcon>
+            </Tooltip>
+          }
           loading={resourcesLoading || servicesPending}
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
@@ -495,59 +538,54 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         </div>
       </div>
       {openAppointment && (
-        <section
-          key={openAppointment.id}
-          className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
-          aria-label="Appointment details"
-        >
-          <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>Appointment details</Title>
-            <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
-          </Group>
-          <AppointmentDetails
-            appointment={openAppointment}
-            canBypassSchedulingRules={canBypassSchedulingRules}
-            cancellationReasonValueSet={appointmentCancellationReasonValueSet}
-            onCancelled={props.onCancelled}
-            onConfirmed={props.onConfirmed}
-            onRescheduled={props.onRescheduled}
-            onToggleTimeFinder={setRescheduleFinderOpen}
-            onUpdated={props.onUpdated}
-            procedureBinding={procedureBinding}
-            diagnosisBinding={diagnosisBinding}
-            mrnSystem={mrnSystem}
-          />
-        </section>
+        <div className={classes.paneSlot}>
+          <section
+            key={openAppointment.id}
+            className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
+            aria-label="Appointment details"
+          >
+            <AppointmentDetails
+              onClose={closeAppointment}
+              appointment={openAppointment}
+              canBypassSchedulingRules={canBypassSchedulingRules}
+              cancellationReasonValueSet={appointmentCancellationReasonValueSet}
+              onCancelled={props.onCancelled}
+              onConfirmed={props.onConfirmed}
+              onRescheduled={props.onRescheduled}
+              onToggleTimeFinder={setRescheduleFinderOpen}
+              onUpdated={props.onUpdated}
+              procedureBinding={procedureBinding}
+              diagnosisBinding={diagnosisBinding}
+              mrnSystem={mrnSystem}
+            />
+          </section>
+        </div>
       )}
       {showSlot && (
-        <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
-          <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>Blocked time</Title>
-            <CloseButton aria-label="Close blocked time details" onClick={() => setSelectedSlotId(undefined)} />
-          </Group>
-          <SlotDetails slot={openSlot} />
-        </section>
+        <div className={classes.paneSlot}>
+          <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
+            <PaneHeader
+              title="Blocked Time"
+              closeLabel="Close blocked time details"
+              onClose={() => setSelectedSlotId(undefined)}
+            />
+            <SlotDetails slot={openSlot} />
+          </section>
+        </div>
       )}
       {showBooking && (
-        <section
-          className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
-          aria-label="Book appointment"
-        >
-          <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>{blocking ? 'Block time' : 'Book appointment'}</Title>
-            <CloseButton aria-label="Close booking form" onClick={closeBooking} />
-          </Group>
-          {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
-          <Tabs
-            value={paneTab}
-            onChange={(value) => setPaneTab(value as PaneTab)}
-            classNames={{ root: classes.paneTabs, panel: classes.paneTabPanel }}
+        <div className={classes.paneSlot}>
+          <section
+            className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
+            aria-label="Book appointment"
           >
-            <Tabs.List mb="sm">
-              <Tabs.Tab value="appointment">Appointment</Tabs.Tab>
-              <Tabs.Tab value="block">Block</Tabs.Tab>
-            </Tabs.List>
-            <Tabs.Panel value="appointment">
+            <PaneHeader
+              title={<PaneModeTabs value={paneTab} onChange={setPaneTab} />}
+              closeLabel="Close booking form"
+              onClose={closeBooking}
+            />
+            {/* Both forms stay mounted, so switching between them loses nothing typed into either. */}
+            <div className={classes.paneBody} hidden={blocking}>
               <AppointmentBookingForm
                 defaultStart={bookingSelection.start}
                 procedureBinding={procedureBinding}
@@ -562,19 +600,54 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 defaultServiceFacility={selectedServiceFacility}
                 defaultService={selectedService}
               />
-            </Tabs.Panel>
-            <Tabs.Panel value="block">
+            </div>
+            <div className={classes.paneBody} hidden={!blocking}>
               <BlockTimeForm
                 candidatesByActorType={candidatesByActorType}
                 defaultRange={bookingSelection}
                 onChangeTime={setBlockHighlight}
                 onBlocked={finishBlock}
               />
-            </Tabs.Panel>
-          </Tabs>
-        </section>
+            </div>
+          </section>
+        </div>
       )}
     </div>
+  );
+}
+
+const PANE_TAB_LABELS: Record<PaneTab, string> = {
+  appointment: 'Book Appointment',
+  block: 'Block Time',
+};
+
+interface PaneModeTabsProps {
+  readonly value: PaneTab;
+  readonly onChange: (value: PaneTab) => void;
+}
+
+/**
+ * The booking pane's heading: pill tabs switching between booking and blocking time.
+ * @param props - The React props.
+ * @returns The tabs.
+ */
+function PaneModeTabs(props: PaneModeTabsProps): JSX.Element {
+  const { value, onChange } = props;
+  return (
+    <Tabs
+      value={value}
+      onChange={(next) => next && onChange(next as PaneTab)}
+      variant="unstyled"
+      className={classes.pillTabs}
+    >
+      <Tabs.List>
+        {(Object.keys(PANE_TAB_LABELS) as PaneTab[]).map((tab) => (
+          <Tabs.Tab key={tab} value={tab}>
+            {PANE_TAB_LABELS[tab]}
+          </Tabs.Tab>
+        ))}
+      </Tabs.List>
+    </Tabs>
   );
 }
 

@@ -79,8 +79,7 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
             {holder && (
               <Text size="sm">
                 This time is held by an appointment.
-                {(isReschedulable(holder) || isCancelable(holder)) &&
-                  ' Reschedule or cancel the appointment to change it.'}
+                {(isReschedulable(holder) || isCancelable(holder)) && ' Edit or cancel the appointment to change it.'}
               </Text>
             )}
             {holderOutcome && !isOk(holderOutcome) && (

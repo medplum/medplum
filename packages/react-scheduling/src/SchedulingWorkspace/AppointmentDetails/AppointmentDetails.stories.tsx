@@ -143,13 +143,15 @@ export default {
  *   "Back" returns to the details without cancelling anything, and without keeping the
  *   reason that was chosen.
  *
- * - Rescheduling: swaps this view for the form that moves the visit, opened on the
- *   visit type and the actors it is held on now — Dr. Rivera, Ultrasound 1 and Exam
- *   Room A, read back off the Slots it holds. Change any of the actors, or none of
- *   them, find a time, and `$reschedule` moves the visit to it. The search ignores this
- *   appointment's own Slots, so the hour it already occupies is offered again: that
- *   is what makes "same time, different room" findable. The visit type is shown but
- *   not editable — a move never changes what a visit is.
+ * - Updating: "Edit or Reschedule Appointment" swaps this view for the form that changes
+ *   the visit, opened on the visit type and the actors it is held on now — Dr. Rivera,
+ *   Ultrasound 1 and Exam Room A, read back off the Slots it holds — and on its patient.
+ *   Change any of the actors, or none of them, find a time, and `$reschedule` moves the
+ *   visit to it. The search ignores this appointment's own Slots, so the hour it already
+ *   occupies is offered again: that is what makes "same time, different room" findable.
+ *   The visit type is shown but not editable — a move never changes what a visit is.
+ *   Change only the patient and "Update Appointment" saves it without moving anything.
+ *   "Back" returns to the details without saving.
  *
  *   The times lie beside that form rather than under it, so this panel widens while the
  *   search is open — `onToggleTimeFinder` is what tells a host when to make the room.
@@ -167,6 +169,7 @@ export const Basic = (): JSX.Element => {
         appointment={appointment}
         onCancelled={setAppointment}
         onRescheduled={(reschedule) => setAppointment(reschedule.appointments[0])}
+        onUpdated={setAppointment}
         onToggleTimeFinder={setSearching}
       />
     </Paper>
@@ -174,8 +177,27 @@ export const Basic = (): JSX.Element => {
 };
 
 /**
+ * A visit the patient has arrived for. `$cancel` and `$reschedule` both refuse it, so there is
+ * no "Cancel Appointment", and the update form shows its time without offering to move it: only
+ * the patient can change.
+ *
+ * @returns The story.
+ */
+export const Arrived = (): JSX.Element => {
+  const [appointment, setAppointment] = useState<WithId<Appointment>>({
+    ...RiveraImagingAppointment,
+    status: 'arrived',
+  });
+  return (
+    <Paper withBorder p="md" maw={460}>
+      <AppointmentDetails appointment={appointment} onUpdated={setAppointment} />
+    </Paper>
+  );
+};
+
+/**
  * A visit that has already been called off: `$cancel` would refuse it, so there is no
- * button and it says as much.
+ * "Cancel Appointment" button.
  *
  * @returns The story.
  */
@@ -187,7 +209,8 @@ export const Cancelled = (): JSX.Element => (
 
 /**
  * A visit whose visit type asked for procedure codes, diagnosis codes, and a medical
- * necessity attestation when it was booked. All three are editable here beside the patient.
+ * necessity attestation when it was booked. All three are editable in the update form
+ * beside the patient, and saving only them writes the appointment without moving it.
  *
  * @returns The story.
  */
@@ -225,7 +248,7 @@ export const Pending = (): JSX.Element => {
 };
 
 /**
- * A visit synced with an external system, which links to it there.
+ * A visit synced with an external system, which links to it there with "View details".
  *
  * @returns The story.
  */

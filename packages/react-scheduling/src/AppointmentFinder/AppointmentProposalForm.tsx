@@ -1,10 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, Loader, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Divider,
+  Group,
+  Input,
+  Loader,
+  NumberInput,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
+  getAppointmentSite,
   getDisplayString,
   getReferenceString,
   getSchedulingRequirements,
@@ -25,7 +38,7 @@ import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
-import { getActorType, getActorTypeLabel } from '../actors';
+import { getActorType, getActorTypeLabel, getPatientParticipant } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { useChanged } from '../hooks/useChanged';
@@ -60,6 +73,7 @@ import {
   parseZonedDateTimeInput,
   startOfDay,
 } from './AppointmentFinder.times';
+import { isEdited, readRequirementValues } from './AppointmentFinder.updates';
 import { AppointmentPatientInput } from './AppointmentPatientInput';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -101,8 +115,29 @@ const OCCURRENCE_OPTIONS = [
  * The visit type goes the same way: in `reschedule` mode a `defaultService` is shown
  * rather than asked for, since the operation is measured against it but will not change
  * it. Without one it is still asked, because the search cannot run without a visit type.
+ *
+ * `update` changes a visit already on file in one go: the time and actors as `reschedule`
+ * asks for them, and below them the patient and the visit type's codes, opened on what
+ * `ignoreAppointment` holds. Either half can be saved without the other, and the two are
+ * handed to `onUpdate` for the host to write the way each is written.
  */
-export type AppointmentProposalMode = 'book' | 'reschedule';
+export type AppointmentProposalMode = 'book' | 'reschedule' | 'update';
+
+/** What an `update` hands `onUpdate`. */
+export interface AppointmentProposalUpdate {
+  /** The new time, searched or typed, or undefined when the time and actors are kept. */
+  readonly proposal: Appointment | undefined;
+  /** True when the time was typed (& unvalidated) rather than chosen from the search. */
+  readonly manual: boolean;
+  /** Whether the patient or any value the visit type asks for differs from the appointment. */
+  readonly detailsChanged: boolean;
+  readonly patient: Reference<Patient>;
+  readonly values: BookingRequirementValues;
+  /** What the visit type requires. A value it does not ask for is not to be written. */
+  readonly requirements: ReadonlySet<SchedulingRequirement>;
+  /** The site the visit is to be held at, when it differs from the one on file. */
+  readonly site: Reference<Location> | WithId<Location> | undefined;
+}
 
 export interface AppointmentProposalFormProps {
   /** What the proposal is for. Defaults to booking a new visit. */
@@ -176,9 +211,21 @@ export interface AppointmentProposalFormProps {
    * changes; rejecting shows the reason as the write's refusal, every answer kept.
    *
    * In `book` mode the proposal carries the patient and the visit type's required
-   * codes; in `reschedule` mode it is the time as `$find` offered it, untouched.
+   * codes; in `reschedule` mode it is the time as `$find` offered it, untouched. Not
+   * called in `update` mode, which calls `onUpdate` instead.
    */
-  readonly onSubmit: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
+  readonly onSubmit?: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
+  /** Writes what an `update` changed. Resolves and rejects as `onSubmit` does. */
+  readonly onUpdate?: (update: AppointmentProposalUpdate) => void | Promise<void>;
+  /**
+   * In `update` mode, shows the time without offering to move it, for an appointment
+   * `$reschedule` would refuse. Only the details can change.
+   */
+  readonly fixedTime?: boolean;
+  /** Renders a Back button under the submit button, for a host showing this in place of another view. */
+  readonly onBack?: () => void;
+  /** Names the Back button after where it goes. Defaults to "Back". */
+  readonly backLabel?: string;
   /** Extensions to put on every appointment this form books. */
   readonly appointmentExtensions?: readonly Extension[];
   /**
@@ -230,13 +277,24 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
     onSubmit,
+    onUpdate,
+    fixedTime: fixedTimeProp,
+    onBack,
+    backLabel = 'Back',
     canBypassSchedulingRules,
     appointmentExtensions,
     allowRecurring,
   } = props;
 
+  // An update opens on the site the visit is held at, which it can then move.
+  // Read once, as the field's default is.
+  const [openingSite] = useState(
+    () =>
+      defaultServiceFacility ??
+      (mode === 'update' && ignoreAppointment ? getAppointmentSite(ignoreAppointment) : undefined)
+  );
   const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
-    defaultServiceFacility
+    openingSite
   );
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
   const [selections, setSelections] = useState<ActorSelections>(defaultSelections ?? {});
@@ -247,8 +305,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // clear their pills. Counters, so a field is never remounted out from under a pick.
   const [actorFieldsKey, setActorFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
-  const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
-  const [requirementValues, setRequirementValues] = useState<BookingRequirementValues>(EMPTY_REQUIREMENT_VALUES);
+  const [patient, setPatient] = useState<WithId<Patient> | Reference<Patient> | undefined>(() =>
+    mode === 'update' && ignoreAppointment
+      ? (getPatientParticipant(ignoreAppointment)?.actor as Reference<Patient> | undefined)
+      : defaultPatient
+  );
+  const [requirementValues, setRequirementValues] = useState<BookingRequirementValues>(() =>
+    mode === 'update' && ignoreAppointment ? readRequirementValues(ignoreAppointment) : EMPTY_REQUIREMENT_VALUES
+  );
   const [writing, setWriting] = useState(false);
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
@@ -265,13 +329,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
-  // Only a booking writes the patient and the visit type's codes, so only a booking
-  // asks for them: `$reschedule` takes a time and the schedules to hold it on.
-  const takesDetails = mode === 'book';
+  // `$reschedule` takes a time and the schedules to hold it on, so a move alone asks for
+  // nothing else. A booking and an update also write the patient and the visit type's codes.
+  const takesDetails = mode !== 'reschedule';
+  // Both of the modes that change an appointment already on file start from where it is.
+  const moves = mode !== 'book';
+  const fixedTime = mode === 'update' && !!fixedTimeProp;
 
   // `$find` refuses a series search that ignores an appointment. Derived, so a count picked
   // before the field went away stops applying with it.
-  const offersRecurring = allowRecurring && takesDetails && !ignoreAppointment;
+  const offersRecurring = allowRecurring && mode === 'book' && !ignoreAppointment;
   const effectiveOccurrenceCount = offersRecurring ? occurrenceCount : 1;
 
   // A move is measured against the visit type but never writes it: changing it would leave
@@ -279,11 +346,21 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // booked keyed to a type it no longer has — a new booking, not a move. Shown rather than
   // asked, unless the appointment records no visit type at all: there is nothing to
   // contradict then, and the search needs one before it can run.
-  const fixedService = mode === 'reschedule' && defaultService !== undefined;
+  const fixedService = moves && defaultService !== undefined;
 
   // Each field is asked for on its own, by a visit type whose eligibility names it.
   const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
   const detailsOutstanding = takesDetails && (!patient || !hasRequiredValues(requirementValues, requirements));
+  const patientReference = patient && toPatientReference(patient);
+  const siteChanged =
+    mode === 'update' &&
+    !!serviceFacility &&
+    getReferenceString(serviceFacility) !== (openingSite && getReferenceString(openingSite));
+  const detailsChanged =
+    siteChanged ||
+    (mode === 'update' &&
+      !!ignoreAppointment &&
+      isEdited(ignoreAppointment, patientReference, requirementValues, requirements));
 
   // The button above says the search is blocked; this says which rows blocked it.
   const actorErrors = useMemo(() => {
@@ -312,6 +389,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   );
   // What the visit is held on now, so a move that keeps it can be told apart. The schedules
   // the form opens on can leave out ones that are no longer eligible, which a move drops.
+  const [openingSelectionKey] = useState(manualScheduleKey);
   const [openingScheduleKey] = useState(() =>
     ignoreAppointmentSchedules ? toScheduleKey(ignoreAppointmentSchedules) : manualScheduleKey
   );
@@ -387,8 +465,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     }
   }, [daySearch.selectedDayRange.start]);
 
-  const chosenActors = getAppointmentActors(chosen, actorResources);
-
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
   const reported = useRef(false);
@@ -416,6 +492,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const chooseResources = useCallback(
     (next: ActorSelections): void => {
       setSelections(next);
+      setWritten(false);
       // A chosen time is a proposal carrying the Slots it was found for. Booked after
       // a resource changes it would hold whoever is named inside the proposal, and
       // `$book` cannot catch that: the proposal is internally consistent.
@@ -425,7 +502,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       // proposed against these schedules, and a field still holding it would read as
       // a time that is going to be booked. A move keeps both, since changing who holds
       // it is often all a move is; it is proposed again against the new schedules below.
-      if (mode === 'reschedule') {
+      if (moves) {
         setManualChoice(undefined);
         setConflicts([]);
       } else {
@@ -433,7 +510,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       }
       resetDaySearch();
     },
-    [mode, clearManualTime, resetDaySearch]
+    [moves, clearManualTime, resetDaySearch]
   );
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
@@ -445,6 +522,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   function chooseServiceFacility(next: WithId<Location> | undefined): void {
     setServiceFacility(next);
+    setWritten(false);
     clearResources();
     // A fixed visit type is not the site's to drop: the appointment is on file for it
     // whatever site is being searched, and a site that cannot hold it simply offers no
@@ -474,6 +552,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setChosen(next);
     setConflicts([]);
     setWritten(false);
+    // The pick is what the search was open for. "Change time" opens it again on the same days.
+    setFinding(false);
   }
 
   const configuredDurationMinutes = useMemo(
@@ -484,10 +564,28 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
-  const effectiveDurationMinutes =
-    manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
+  const effectiveDurationMinutes = manualDurationMinutes ?? (moves ? storedDurationMinutes : configuredDurationMinutes);
   // A move starts from where the visit is now, so only what changes needs typing.
-  const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
+  const storedStart = moves && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
+  const storedStartTime = moves && ignoreAppointment?.start ? Date.parse(ignoreAppointment.start) : undefined;
+
+  // An update that only changes who the visit is held on keeps its time: proposed on the
+  // schedules now chosen, for `$reschedule` to check they are free then, as a found time is.
+  // Against what the fields opened on, not what the visit is held on: an actor that cannot be
+  // offered back is dropped by a move, which the form warns of, but is no change of its own.
+  const actorsChanged = mode === 'update' && !fixedTime && manualScheduleKey !== openingSelectionKey;
+  const keptTimeProposal = useMemo(
+    () =>
+      actorsChanged && !selectionError && service && storedStartTime !== undefined && storedDurationMinutes
+        ? buildElevatedBooking({
+            service,
+            schedules: manualCandidates.map((candidate) => candidate.schedule),
+            start: new Date(storedStartTime),
+            durationMinutes: storedDurationMinutes,
+          })
+        : undefined,
+    [actorsChanged, selectionError, service, storedStartTime, storedDurationMinutes, manualCandidates]
+  );
   const effectiveDateTime = manualDateTime ?? (storedStart ? formatZonedDateTimeInput(storedStart, timezone) : '');
 
   // Proposes the time and length on screen, typed or prefilled, against whichever schedules
@@ -608,16 +706,43 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setWritten(false);
   }
 
+  // A move shows where the visit is now until a new time is chosen, so it reads as a change.
+  const shownTime = chosen ?? keptTimeProposal ?? (moves ? ignoreAppointment : undefined);
+  const shownActors = getAppointmentActors(shownTime, actorResources).filter(
+    (actor) => getActorType(actor) !== 'Patient'
+  );
+  const submitProposal = chosen ?? keptTimeProposal;
+
+  // An update saves whichever half changed, unless the actors changed into something that
+  // cannot be held; the others need a time to write.
+  const submittable =
+    mode === 'update' ? (!!submitProposal || detailsChanged) && (!actorsChanged || !!submitProposal) : !!chosen;
+
   async function handleSubmit(): Promise<void> {
-    if (!chosen || detailsOutstanding) {
+    if (!submittable || detailsOutstanding) {
       return;
     }
 
     setWriting(true);
     setWriteError(undefined);
     try {
-      if (takesDetails) {
-        if (!patient) {
+      if (mode === 'update') {
+        if (!patientReference) {
+          throw new Error('No patient specified for the appointment');
+        }
+        await onUpdate?.({
+          proposal: submitProposal,
+          manual,
+          detailsChanged,
+          patient: patientReference,
+          values: requirementValues,
+          requirements,
+          site: siteChanged ? serviceFacility : undefined,
+        });
+      } else if (!chosen) {
+        return;
+      } else if (takesDetails) {
+        if (!patient || !isResource(patient)) {
           throw new Error('No patient specified for booking');
         }
         // The site stamped on the booking carries its name, so a pre-filled reference is
@@ -633,11 +758,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           requirements,
           extensions: appointmentExtensions,
         });
-        await onSubmit(booking, { manual });
+        await onSubmit?.(booking, { manual });
       } else {
         // A reschedule updates a subset of fields, and does not collect all
         // the other fields that an original booking requires.
-        await onSubmit(chosen, { manual });
+        await onSubmit?.(chosen, { manual });
       }
       setWritten(true);
     } catch (error) {
@@ -652,98 +777,105 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   return (
     <div className={classes.layout}>
       <Stack className={classes.form} gap="sm">
-        <ResourceInput<WithId<Location>>
-          resourceType="Location"
-          name="serviceFacility"
-          label="Service facility"
-          placeholder="Any service facility"
-          searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
-          defaultValue={defaultServiceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
-          onChange={chooseServiceFacility}
-          clearable={false}
-        />
-
-        {fixedService && service ? (
-          <TextInput
-            label="Visit type"
-            readOnly
-            disabled
-            value={getDisplayString(service)}
-            // Mantine puts the description above the input by default.
-            inputWrapperOrder={['label', 'input', 'description']}
-            description="Changing the visit type needs a new booking."
-          />
+        {fixedTime ? (
+          <FixedTime appointment={ignoreAppointment} service={service} timezone={timezone} />
         ) : (
-          <AppointmentServiceSelect
-            key={serviceFieldKey}
-            serviceFacility={serviceFacility}
-            // From state, not the prop: `defaultService` on a remount would put back
-            // the visit type the remount was clearing.
-            defaultValue={service}
-            onChange={chooseService}
-            required
-          />
-        )}
-
-        <AppointmentActorSelections
-          key={`actors-${actorFieldsKey}`}
-          value={selections}
-          service={service}
-          serviceFacility={serviceFacility}
-          disabled={!service}
-          errors={actorErrors}
-          onChange={chooseResources}
-        />
-
-        {offersRecurring && (
-          <Select
-            label="Repeat"
-            data={OCCURRENCE_OPTIONS}
-            allowDeselect={false}
-            value={occurrenceCount.toString()}
-            onChange={(value) => setOccurrenceCount(Number(value ?? 1))}
-          />
-        )}
-
-        <ChosenTime
-          appointment={chosen}
-          timezone={timezone}
-          actors={chosenActors}
-          searching={searching}
-          blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
-          onToggleFinder={toggleFinder}
-        />
-
-        {searching && (
-          <Stack gap={4}>
-            <CalendarDateInput
-              availableDates={NO_MARKED_DATES}
-              allowUnavailableDates
-              earliestDate={new Date()}
-              month={month}
-              range={daySearch.selectedDayRange}
-              onChangeMonth={setMonth}
-              onClick={daySearch.chooseDayRange}
-              onSelectRange={daySearch.chooseDayRange}
-              monthLabel={
-                <MonthPickerButton
-                  label={formatMonth(month ?? new Date())}
-                  date={month ?? new Date()}
-                  minDate={new Date()}
-                  onChange={setMonth}
-                />
-              }
+          <>
+            <ResourceInput<WithId<Location>>
+              resourceType="Location"
+              name="serviceFacility"
+              label="Service facility"
+              placeholder="Any service facility"
+              searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
+              defaultValue={openingSite as WithId<Location> | Reference<WithId<Location>> | undefined}
+              onChange={chooseServiceFacility}
+              clearable={false}
             />
-            {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
-          </Stack>
+
+            {fixedService && service ? (
+              <TextInput
+                label="Visit type"
+                readOnly
+                disabled
+                value={getDisplayString(service)}
+                // Mantine puts the description above the input by default.
+                inputWrapperOrder={['label', 'input', 'description']}
+                description="Changing the visit type needs a new booking."
+              />
+            ) : (
+              <AppointmentServiceSelect
+                key={serviceFieldKey}
+                serviceFacility={serviceFacility}
+                // From state, not the prop: `defaultService` on a remount would put back
+                // the visit type the remount was clearing.
+                defaultValue={service}
+                onChange={chooseService}
+                required
+              />
+            )}
+
+            <AppointmentActorSelections
+              key={`actors-${actorFieldsKey}`}
+              value={selections}
+              service={service}
+              serviceFacility={serviceFacility}
+              disabled={!service}
+              errors={actorErrors}
+              onChange={chooseResources}
+            />
+
+            <ChosenTime
+              appointment={shownTime}
+              timezone={timezone}
+              actors={shownActors}
+              searching={searching}
+              blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
+              onToggleFinder={toggleFinder}
+            />
+
+            {searching && (
+              <Stack gap={4}>
+                <CalendarDateInput
+                  availableDates={NO_MARKED_DATES}
+                  allowUnavailableDates
+                  earliestDate={new Date()}
+                  month={month}
+                  range={daySearch.selectedDayRange}
+                  onChangeMonth={setMonth}
+                  onClick={daySearch.chooseDayRange}
+                  onSelectRange={daySearch.chooseDayRange}
+                  monthLabel={
+                    <MonthPickerButton
+                      label={formatMonth(month ?? new Date())}
+                      date={month ?? new Date()}
+                      minDate={new Date()}
+                      onChange={setMonth}
+                    />
+                  }
+                />
+                {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
+              </Stack>
+            )}
+
+            {offersRecurring && (
+              <Select
+                label="Repeat"
+                data={OCCURRENCE_OPTIONS}
+                allowDeselect={false}
+                value={occurrenceCount.toString()}
+                onChange={(value) => setOccurrenceCount(Number(value ?? 1))}
+              />
+            )}
+          </>
         )}
 
         {takesDetails && (
           <AppointmentPatientInput
-            defaultValue={defaultPatient}
+            defaultValue={mode === 'update' ? patientReference : defaultPatient}
             mrnSystem={mrnSystem}
             required
             onChange={choosePatient}
+            error={mode === 'update' && !patient ? 'Select a patient.' : undefined}
           />
         )}
 
@@ -756,16 +888,28 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
             onChange={chooseRequirementValues}
+            showValidation={mode === 'update'}
           />
         )}
 
+        <Divider />
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
-        <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
+        <Button
+          fullWidth
+          disabled={!submittable || written || detailsOutstanding}
+          loading={writing}
+          onClick={handleSubmit}
+        >
           {getSubmitLabel(mode, effectiveOccurrenceCount)}
         </Button>
+        {onBack && (
+          <Button fullWidth variant="default" disabled={writing} onClick={onBack}>
+            {backLabel}
+          </Button>
+        )}
       </Stack>
 
-      {searching && (
+      {searching && !fixedTime && (
         <Stack ref={resultsRef} className={classes.results} gap="lg">
           {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
@@ -845,37 +989,49 @@ interface ChosenTimeProps {
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
   const { appointment, timezone, actors, searching, blockedBy, onToggleFinder } = props;
 
-  return (
-    <>
-      {appointment?.start && (
-        <TextInput
-          label="Date & time"
-          readOnly
-          value={formatZonedDateTime(new Date(appointment.start), timezone)}
-          // Mantine puts the description above the input by default.
-          inputWrapperOrder={['label', 'input', 'description']}
-          description={
-            <>
-              <ChosenTimeCommitment appointment={appointment} actors={actors} />
-              <LaterOccurrences appointment={appointment} timezone={timezone} />
-            </>
-          }
-        />
-      )}
+  const finder = (
+    <Stack gap={4}>
+      <Button
+        // Closing is the quieter of the two: it leaves the time as it is.
+        variant={searching ? 'default' : 'outline'}
+        fullWidth
+        leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
+        disabled={!!blockedBy}
+        onClick={onToggleFinder}
+      >
+        {getFinderLabel(searching, !!appointment)}
+      </Button>
+      {blockedBy && <BlockerMessage blocker={blockedBy} />}
+    </Stack>
+  );
 
+  if (!appointment?.start) {
+    // The field's label stands over the button until there is a time to put under it.
+    return (
       <Stack gap={4}>
-        <Button
-          variant="outline"
-          fullWidth
-          leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
-          disabled={!!blockedBy}
-          onClick={onToggleFinder}
-        >
-          {getFinderLabel(searching, !!appointment)}
-        </Button>
-        {blockedBy && <BlockerMessage blocker={blockedBy} />}
+        <Input.Label required>Date & Time</Input.Label>
+        {finder}
       </Stack>
-    </>
+    );
+  }
+
+  return (
+    <Stack gap={8}>
+      <TextInput
+        label="Date & Time"
+        withAsterisk
+        readOnly
+        value={formatZonedDateTime(new Date(appointment.start), timezone)}
+        // Under the label, where Mantine puts it, so the button sits right below the time.
+        description={
+          <>
+            <ChosenTimeCommitment appointment={appointment} actors={actors} />
+            <LaterOccurrences appointment={appointment} timezone={timezone} />
+          </>
+        }
+      />
+      {finder}
+    </Stack>
   );
 }
 
@@ -939,7 +1095,7 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
       </Text>
       <Group align="flex-start" gap="xs" wrap="nowrap">
         <TextInput
-          label="Date & time"
+          label="Date & Time"
           type={getNativeInputType('datetime-local')}
           flex={1}
           value={dateTime}
@@ -1045,6 +1201,9 @@ function getSubmitLabel(mode: AppointmentProposalMode, occurrenceCount: number):
   if (mode === 'reschedule') {
     return 'Reschedule appointment';
   }
+  if (mode === 'update') {
+    return 'Update Appointment';
+  }
   return occurrenceCount > 1 ? `Book ${occurrenceCount} appointments` : 'Book appointment';
 }
 
@@ -1059,6 +1218,47 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
     return 'Close time finder';
   }
   return chosen ? 'Change time' : 'Find a time';
+}
+
+interface FixedTimeProps {
+  readonly appointment: Appointment | undefined;
+  readonly service: WithId<HealthcareService> | undefined;
+  /** IANA timezone the visit is held in. */
+  readonly timezone: string | undefined;
+}
+
+/**
+ * The visit type and time of an appointment that can no longer be moved, shown in place of
+ * the fields that would move it.
+ *
+ * @param props - The React props.
+ * @returns The read-only fields.
+ */
+function FixedTime(props: FixedTimeProps): JSX.Element {
+  const { appointment, service, timezone } = props;
+  return (
+    <>
+      {service && <TextInput label="Visit type" readOnly disabled value={getDisplayString(service)} />}
+      <TextInput
+        label="Date & Time"
+        readOnly
+        disabled
+        value={appointment?.start ? formatZonedDateTime(new Date(appointment.start), timezone) : ''}
+        // Mantine puts the description above the input by default.
+        inputWrapperOrder={['label', 'input', 'description']}
+        description={`The time can't be changed once an appointment is ${appointment?.status}.`}
+      />
+    </>
+  );
+}
+
+/**
+ * The patient a field holds, as the appointment refers to them.
+ * @param patient - The patient, as picked or as the appointment had them.
+ * @returns A reference to them.
+ */
+function toPatientReference(patient: WithId<Patient> | Reference<Patient>): Reference<Patient> {
+  return isResource(patient) ? createReference(patient) : patient;
 }
 
 interface BuildBookingOptions {
