@@ -143,6 +143,8 @@ export interface SchedulingWorkspaceProps {
  *   appointment beside it, from whenever the form holds a time until it drops it. The
  *   calendar is never moved to reach either; one off the week on screen is drawn again
  *   on paging back to it.
+ * - Keeps an open appointment open until it is closed, even once paging, filtering, or hiding its
+ *   calendars takes it off the calendar, with a notice saying when hidden calendars are why.
  * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
  *
@@ -252,7 +254,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
   const services = useAppointmentServices(appointments);
 
-  const { sources, serviceTypes, servicesPending } = useMemo(() => {
+  const { sources, serviceTypes, servicesPending, isOnShownCalendar } = useMemo(() => {
     const isSettled = (reference: string): boolean =>
       services.has(reference) || medplum.getCachedReference({ reference }) !== undefined;
     // The color the HealthcareService names, or else one picked by its reference, so it holds
@@ -266,11 +268,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
         .filter(isDefined)
     );
-    const visibleAppointments = (appointments ?? []).filter((appointment) =>
+    const isOnShownCalendar = (appointment: Appointment): boolean =>
       appointment.participant.some(
         (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
-      )
-    );
+      );
+    const visibleAppointments = (appointments ?? []).filter(isOnShownCalendar);
     const allGroups = Array.from(groupAppointmentsByService(visibleAppointments));
     // Held back until the service is read, or has failed to be, rather than drawn in one color
     // and then repainted in the one it names.
@@ -327,6 +329,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       sources: [...calendarSources, ...serviceSources, ...proposalSources],
       serviceTypes: legend,
       servicesPending: groups.length < allGroups.length,
+      isOnShownCalendar,
     };
   }, [activeCandidates, slots, appointments, services, medplum, theme, paneTab, proposal]);
 
@@ -417,16 +420,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     }
   });
 
-  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
-    if (!selectedAppointment) {
-      return undefined;
-    }
-    const loaded = appointments?.find((a) => a.id === selectedAppointment.id);
-    // One that left the calendar some other way, by paging or by hiding its calendars,
-    // closes with it.
-    const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
-    return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
-  }, [appointments, selectedAppointment]);
+  // Kept open until closed, even off the calendar, so paging or filtering to find it a new time
+  // doesn't lose it. Each copy the calendar loads replaces the one held, so it leaves as last seen.
+  const loadedAppointment = selectedAppointment && appointments?.find((a) => a.id === selectedAppointment.id);
+  if (loadedAppointment && loadedAppointment !== selectedAppointment) {
+    setSelectedAppointment(loadedAppointment);
+  }
+  const openAppointment = loadedAppointment ?? selectedAppointment;
+
+  // Only hidden calendars get a notice: a status the calendar doesn't load, such as cancelled, or a
+  // time in another week, already says why it isn't drawn.
+  let hiddenNotice: string | undefined;
+  const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
+  if (openAppointment && statuses.includes(openAppointment.status) && !isOnShownCalendar(openAppointment)) {
+    hiddenNotice = "None of this appointment's calendars are shown.";
+  }
 
   const openSlot = useMemo((): WithId<Slot> | undefined => {
     if (selectedSlotId) {
@@ -504,6 +512,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             <Title order={4}>Appointment details</Title>
             <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
           </Group>
+          {hiddenNotice && (
+            <Alert color="blue" mb="sm">
+              {hiddenNotice}
+            </Alert>
+          )}
           <AppointmentDetails
             appointment={openAppointment}
             canBypassSchedulingRules={canBypassSchedulingRules}

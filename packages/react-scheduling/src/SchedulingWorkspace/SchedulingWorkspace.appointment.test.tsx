@@ -115,7 +115,7 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(details()).not.toBeInTheDocument();
   });
 
-  test('clicking an appointment opens its details, until its calendar is hidden', async () => {
+  test('clicking an appointment opens its details, which stay open once it leaves the calendar', async () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await clickAppointment();
@@ -125,9 +125,30 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(open.getByText('booked')).toBeInTheDocument();
     expect(open.getByText('Ultrasound Imaging')).toBeInTheDocument();
 
-    // The visit is on Dr. Rivera's calendar alone, so hiding it takes the details with it.
-    await userEvent.click(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
-    await waitFor(() => expect(details()).not.toBeInTheDocument());
+    const isDrawn = (): boolean =>
+      [...document.querySelectorAll('.appointment')].some((event) => event.textContent?.includes('Miles Cooper'));
+    const hiddenNotice = "None of this appointment's calendars are shown.";
+
+    // The visit is on Dr. Rivera's calendar alone.
+    const riveraRow = screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
+    await userEvent.click(riveraRow);
+    await waitFor(() => expect(isDrawn()).toBe(false));
+    expect(open.getByText(hiddenNotice)).toBeInTheDocument();
+
+    // Someone else checks the patient in, which the calendar loads on showing the calendar again.
+    const stored = await medplum.repo.readResource<Appointment>('Appointment', APPOINTMENT.id);
+    await medplum.repo.updateResource<Appointment>({ ...stored, status: 'arrived' });
+    medplum.invalidateAll();
+    await userEvent.click(riveraRow);
+    await waitFor(() => expect(open.getByText('arrived')).toBeInTheDocument());
+    expect(open.queryByText(hiddenNotice)).not.toBeInTheDocument();
+
+    // Another week is plain from the visit's time, so needs no notice. The pane keeps the copy the
+    // calendar last loaded.
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(isDrawn()).toBe(false));
+    expect(open.getByText('arrived')).toBeInTheDocument();
+    expect(open.queryByText(hiddenNotice)).not.toBeInTheDocument();
   });
 
   test('closing the details leaves the appointment on the calendar', async () => {
