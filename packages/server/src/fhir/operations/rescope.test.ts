@@ -114,6 +114,21 @@ describe('User/$rescope', () => {
     expect(reread.meta?.project).toBeUndefined();
   });
 
+  test('Project admin rescopes User in their project to server without extended mode', async () => {
+    const user = await invitedUser('project');
+
+    const res = await request(app)
+      .post(`/fhir/R4/User/${user.id}/$rescope`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'scope', valueCode: 'server' }],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+    expect((res.body as User).project).toBeUndefined();
+  });
+
   test('Rescope to server retires open links', async () => {
     const user = await invitedUser('project');
     const systemRepo = getGlobalSystemRepo();
