@@ -171,6 +171,36 @@ export function parseSmartScopeString(scope: string): SmartScope | undefined {
   };
 }
 
+/**
+ * Returns the SMART scopes whose combined permissions, per permission type and resource type, are
+ * neither read-only (`rs`) nor full access (`cruds`).
+ * @param scope - The OAuth scope string.
+ * @returns The partial permission scopes, such as `patient/Observation.cs`.
+ */
+export function getPartialPermissionScopes(scope: string | undefined): string[] {
+  const permissions = new Map<string, Set<string>>();
+  for (const smartScope of parseSmartScopes(scope)) {
+    const key = `${smartScope.permissionType}/${smartScope.resourceType}`;
+    let letters = permissions.get(key);
+    if (!letters) {
+      letters = new Set<string>();
+      permissions.set(key, letters);
+    }
+    for (const letter of smartScope.scope) {
+      letters.add(letter);
+    }
+  }
+
+  const result: string[] = [];
+  for (const [key, letters] of permissions) {
+    const combined = [...'cruds'].filter((letter) => letters.has(letter)).join('');
+    if (combined !== 'rs' && combined !== 'cruds') {
+      result.push(`${key}.${combined}`);
+    }
+  }
+  return result;
+}
+
 function normalizeV2ScopeString(str: string): string {
   switch (str) {
     case '*':
