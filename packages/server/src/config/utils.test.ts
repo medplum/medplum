@@ -74,6 +74,17 @@ describe('utils', () => {
     expect(config).toEqual({ rateLimitsEnabled: false });
   });
 
+  test.each(['database', 'readonlyDatabase', 'shards.shard-1.database', 'shards.shard-1.readonlyDatabase'])(
+    'setValue parses %s IAM authentication as a boolean',
+    (path) => {
+      const config = {};
+      setValue(config, path + '.iamAuth', 'true');
+      expect(config).toHaveProperty(path + '.iamAuth', true);
+      setValue(config, path + '.iamAuth', 'false');
+      expect(config).toHaveProperty(path + '.iamAuth', false);
+    }
+  );
+
   test('setValue parses requireVerifiedEmailForProjectCreation as boolean', () => {
     const config = {};
     setValue(config, 'requireVerifiedEmailForProjectCreation', 'false');

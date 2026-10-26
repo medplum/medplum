@@ -349,6 +349,10 @@ export interface MedplumDatabaseConfig {
   dbname?: string;
   username?: string;
   password?: string;
+  /** Use AWS RDS IAM authentication instead of password authentication. Requires TLS. Default is false. */
+  iamAuth?: boolean;
+  /** AWS region for IAM authentication. Defaults to the server's awsRegion. */
+  awsRegion?: string;
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;

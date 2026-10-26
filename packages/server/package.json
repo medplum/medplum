@@ -40,6 +40,7 @@
     "@aws-sdk/client-textract": "3.1152.0",
     "@aws-sdk/cloudfront-signer": "3.1149.0",
     "@aws-sdk/lib-storage": "3.1152.0",
+    "@aws-sdk/rds-signer": "3.1152.0",
     "@aws-sdk/s3-request-presigner": "3.1152.0",
     "@aws-sdk/types": "3.974.6",
     "@azure/identity": "4.14.0",

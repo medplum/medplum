@@ -176,6 +176,18 @@ The database connection details as a JSON object. Only available when using JSON
 
 **Default:** None
 
+### database.iamAuth
+
+Use AWS IAM authentication for PostgreSQL connections. Requires TLS. See [Database IAM Authentication](#database-iam-authentication) for deployment prerequisites and examples.
+
+**Default:** `false`
+
+### database.awsRegion
+
+AWS region used to sign database IAM authentication tokens.
+
+**Default:** The top-level [`awsRegion`](#awsregion).
+
 ### database.ssl.ca
 
 Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla. This can be used with `DatabaseSecrets`.
@@ -212,6 +224,18 @@ The AWS Secret ID containing database connection details (created automatically 
 Optional database connection details to a read-only database that will be used for certain readonly search & GQL operations.
 
 **Default:** None
+
+### readonlyDatabase.iamAuth
+
+Use AWS IAM authentication for reader connections. Configured independently of `database.iamAuth`. See [Database IAM Authentication](#database-iam-authentication).
+
+**Default:** `false`
+
+### readonlyDatabase.awsRegion
+
+AWS region used to sign reader IAM authentication tokens.
+
+**Default:** The top-level [`awsRegion`](#awsregion).
 
 ### readonlyDatabase.ssl.ca
 
@@ -883,6 +907,68 @@ Example config with `external secrets`:
 ```
 
 Any parameter specified in the `external secrets` format will automatically be fetched at deployment time, right before the `CloudFormation` stack is created. This both keeps your secrets safe and also reduces the amount of manual maintenance you must perform on your Medplum configuration over the lifetime of your application.
+
+### Database IAM Authentication
+
+Set `database.iamAuth` to `true` to connect to Aurora PostgreSQL or RDS for PostgreSQL with AWS IAM authentication. The default is `false`. The same settings are available under `readonlyDatabase` and each shard's `database` and `readonlyDatabase`.
+
+```json
+{
+  "awsRegion": "us-east-1",
+  "database": {
+    "host": "my-cluster.cluster-example.us-east-1.rds.amazonaws.com",
+    "port": 5432,
+    "dbname": "medplum",
+    "username": "medplum_iam",
+    "iamAuth": true,
+    "ssl": {
+      "ca": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+      "rejectUnauthorized": true
+    }
+  }
+}
+```
+
+Replace the certificate placeholder with the PEM contents of the appropriate [Amazon RDS CA bundle](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html). IAM mode requires TLS and preserves your other `ssl` options. Keep certificate verification enabled.
+
+IAM mode requires an explicit `host` (or proxy endpoint) and `username`. It uses port `5432` when `port` is omitted, regardless of `PGPORT`. Set `database.awsRegion` to override the top-level `awsRegion` for a database in another region. The username is case-sensitive. Use the AWS database endpoint, not a custom DNS alias.
+
+Medplum uses the AWS SDK default credential provider chain, including ECS task roles, EC2 instance roles, and web identity credentials. It generates a token when each new physical connection authenticates. Tokens expire after 15 minutes; established connections remain valid. You do not need to store or refresh a token in the config. `password`, if present, is ignored when `iamAuth` is `true`. A token generation failure fails the connection without falling back to that password.
+
+For a direct Aurora connection:
+
+1. [Enable IAM database authentication](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.IAMDBAuth.Enabling.html) on the cluster.
+2. Create a PostgreSQL login and [grant it `rds_iam`](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.IAMDBAuth.DBAccounts.html):
+
+   ```sql
+   CREATE USER medplum_iam;
+   GRANT rds_iam TO medplum_iam;
+   ```
+
+   Also grant the SQL privileges needed for Medplum and, for the writer, schema migrations. `rds_iam` only changes authentication; it does not grant access to tables or schemas. Granting `rds_iam` to an existing PostgreSQL user makes IAM authentication take precedence over password authentication.
+
+3. Grant the server's AWS runtime role `rds-db:connect` for that database user. For Aurora, use the **cluster resource ID**, not the cluster name or cluster ARN:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": "rds-db:connect",
+         "Resource": "arn:aws:rds-db:us-east-1:123456789012:dbuser:cluster-RESOURCEID/medplum_iam"
+       }
+     ]
+   }
+   ```
+
+   Replace the region, account ID, resource ID, and username. See [IAM policies for database access](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.IAMDBAuth.IAMPolicy.html). RDS PostgreSQL instances use the instance resource ID instead.
+
+These are deployment prerequisites. Setting `iamAuth` in Medplum does not change the cluster, database roles, IAM policies, or CDK resources.
+
+For environment configuration, use `MEDPLUM_DATABASE_IAM_AUTH=true` and, if needed, `MEDPLUM_DATABASE_AWS_REGION`. Reader settings use `MEDPLUM_READONLY_DATABASE_IAM_AUTH` and `MEDPLUM_READONLY_DATABASE_AWS_REGION`. With AWS Parameter Store, use `database.iamAuth`, `database.awsRegion`, and the corresponding reader or shard keys. These values can override settings loaded from `DatabaseSecrets` and `ReaderDatabaseSecrets`, so existing secrets do not need to contain a token.
+
+For RDS Proxy, enable IAM client authentication on the proxy and grant the runtime role access to the **proxy resource ID** (`prx-...`). Medplum signs tokens for the configured proxy endpoint when `databaseProxyEndpoint` or `readonlyDatabaseProxyEndpoint` is set. Otherwise, it signs for `host`, which can itself be a proxy endpoint. Configure the proxy's database authentication separately: [RDS Proxy IAM setup](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/rds-proxy-iam-setup.html). A proxy that uses Secrets Manager passwords to access PostgreSQL still needs a password-authenticated database user.
 
 ### Database SSL Configuration
 

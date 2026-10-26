@@ -44,6 +44,32 @@ describe('Config', () => {
     mockSecretsManagerClient.restore();
   });
 
+  test('IAM settings override database secrets and preserve boolean values', async () => {
+    mockSecretsManagerClient.on(GetSecretValueCommand).resolves({
+      SecretString: JSON.stringify({ host: 'cluster', username: 'medplum', password: 'password', iamAuth: true }),
+    });
+    mockSSMClient.on(GetParametersByPathCommand).resolves({
+      Parameters: [
+        { Name: 'baseUrl', Value: 'https://www.example.com/' },
+        { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
+        { Name: 'ReaderDatabaseSecrets', Value: 'ReaderDatabaseSecretsArn' },
+        { Name: 'database.iamAuth', Value: 'true' },
+        { Name: 'database.awsRegion', Value: 'eu-west-1' },
+        { Name: 'readonlyDatabase.iamAuth', Value: 'false' },
+      ],
+    });
+
+    const config = await loadConfig('aws:test');
+    expect(config.database).toMatchObject({
+      host: 'cluster',
+      username: 'medplum',
+      password: 'password',
+      iamAuth: true,
+      awsRegion: 'eu-west-1',
+    });
+    expect(config.readonlyDatabase?.iamAuth).toBe(false);
+  });
+
   test('Load AWS config', async () => {
     const config = await loadConfig('aws:test');
     expect(config).toBeDefined();

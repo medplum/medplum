@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Signer } from '@aws-sdk/rds-signer';
 import { sleep } from '@medplum/core';
 import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import * as semver from 'semver';
-import type { MedplumDatabaseConfig } from './config/types';
+import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config/types';
 import type { ServerConfig } from './config/utils';
 import { getAllShardsExceptGlobal, GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
@@ -57,12 +58,18 @@ export const locks = {
 };
 
 export async function initDatabase(serverConfig: ServerConfig): Promise<void> {
-  globalPools.pool = initPool(GLOBAL_SHARD_ID, serverConfig.database, serverConfig.databaseProxyEndpoint);
+  globalPools.pool = initPool(
+    GLOBAL_SHARD_ID,
+    serverConfig.database,
+    serverConfig.databaseProxyEndpoint,
+    serverConfig.awsRegion
+  );
   if (serverConfig.readonlyDatabase) {
     globalPools.readonlyPool = initPool(
       GLOBAL_SHARD_ID,
       serverConfig.readonlyDatabase,
-      serverConfig.readonlyDatabaseProxyEndpoint
+      serverConfig.readonlyDatabaseProxyEndpoint,
+      serverConfig.awsRegion
     );
   }
 
@@ -72,9 +79,10 @@ export async function initDatabase(serverConfig: ServerConfig): Promise<void> {
   }
 
   for (const shardConfig of getAllShardsExceptGlobal()) {
-    const shardPool = initPool(shardConfig.id, shardConfig.database, undefined);
+    const shardPool = initPool(shardConfig.id, shardConfig.database, undefined, serverConfig.awsRegion);
     const readonlyShardPool =
-      shardConfig.readonlyDatabase && initPool(shardConfig.id, shardConfig.readonlyDatabase, undefined);
+      shardConfig.readonlyDatabase &&
+      initPool(shardConfig.id, shardConfig.readonlyDatabase, undefined, serverConfig.awsRegion);
 
     shardPools[shardConfig.id] = {
       pool: shardPool,
@@ -106,10 +114,11 @@ export async function initDatabase(serverConfig: ServerConfig): Promise<void> {
 function initPoolConfig(
   config: MedplumDatabaseConfig,
   proxyEndpoint: string | undefined,
+  awsRegion: string,
   applicationName = 'medplum-server'
 ): PoolConfig {
-  const poolConfig = {
-    host: config.host,
+  const poolConfig: PoolConfig = {
+    host: proxyEndpoint || config.host,
     port: config.port,
     database: config.dbname,
     user: config.username,
@@ -126,18 +135,39 @@ function initPoolConfig(
       : `-c statement_timeout=${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT} -c default_transaction_isolation=${DEFAULT_TRANSACTION_ISOLATION} -c idle_in_transaction_session_timeout=${DEFAULT_IDLE_IN_TRANSACTION_SESSION_TIMEOUT}`,
   };
 
-  if (proxyEndpoint) {
-    poolConfig.host = proxyEndpoint;
-    // require SSL when using a proxy endpoint
-    poolConfig.ssl = typeof poolConfig.ssl === 'object' ? poolConfig.ssl : {};
-    poolConfig.ssl.require = true;
+  if (proxyEndpoint || config.iamAuth) {
+    // Both RDS Proxy and IAM authentication require TLS. Do not mutate the source config.
+    const ssl: MedplumDatabaseSslConfig = { ...config.ssl, require: true };
+    poolConfig.ssl = ssl;
+  }
+
+  if (config.iamAuth) {
+    if (!poolConfig.host || !config.username) {
+      throw new Error('Database IAM authentication requires an explicit host and username');
+    }
+    // Set the pool port too, so PGPORT cannot make the connection and token disagree.
+    poolConfig.port = config.port ?? 5432;
+    const signer = new Signer({
+      hostname: poolConfig.host,
+      port: poolConfig.port,
+      username: config.username,
+      region: config.awsRegion ?? awsRegion,
+    });
+    // Tokens expire after 15 minutes. Generate one for each new physical connection,
+    // using the SDK's default credential provider chain (including credential refresh).
+    poolConfig.password = () => signer.getAuthToken();
   }
 
   return poolConfig;
 }
 
-function initPool(shardId: string, config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Pool {
-  const pool = new Pool(initPoolConfig(config, proxyEndpoint));
+function initPool(
+  shardId: string,
+  config: MedplumDatabaseConfig,
+  proxyEndpoint: string | undefined,
+  awsRegion: string
+): Pool {
+  const pool = new Pool(initPoolConfig(config, proxyEndpoint, awsRegion));
   setConnectionShardId(pool, shardId);
   // 'connect' fires once per new client, before it is handed out by either connect() or query()
   pool.on('connect', (client) => setConnectionShardId(client, shardId));

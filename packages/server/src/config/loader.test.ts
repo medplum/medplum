@@ -94,6 +94,20 @@ describe('Config', () => {
     });
   });
 
+  test.each(['true', 'false'])('Load database IAM env config: %s', async (value) => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATABASE_IAM_AUTH', value);
+    setEnv('MEDPLUM_DATABASE_AWS_REGION', 'eu-west-1');
+    setEnv('MEDPLUM_READONLY_DATABASE_IAM_AUTH', value);
+    setEnv('MEDPLUM_READONLY_DATABASE_AWS_REGION', 'us-west-2');
+
+    const config = await loadConfig('env');
+    expect(config.database.iamAuth).toBe(value === 'true');
+    expect(config.database.awsRegion).toBe('eu-west-1');
+    expect(config.readonlyDatabase?.iamAuth).toBe(value === 'true');
+    expect(config.readonlyDatabase?.awsRegion).toBe('us-west-2');
+  });
+
   test('Load readonly database env config', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_READONLY_DATABASE_HOST', 'readonly.example.com');
