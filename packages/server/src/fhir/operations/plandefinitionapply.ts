@@ -7,6 +7,7 @@ import {
   capitalize,
   concatUrls,
   createReference,
+  deepClone,
   EMPTY,
   evalFhirPathTyped,
   getElementDefinition,
@@ -246,7 +247,7 @@ async function createActivityDefinitionTask(
 
   switch (activityDefinition.kind) {
     case 'ServiceRequest': {
-      const serviceRequest: ServiceRequest = {
+      const serviceRequest: ServiceRequest = deepClone({
         resourceType: 'ServiceRequest',
         status: 'draft',
         intent: activityDefinition.intent as ServiceRequest['intent'],
@@ -255,7 +256,7 @@ async function createActivityDefinitionTask(
         encounter: encounter,
         code: activityDefinition.code,
         extension: activityDefinition.extension,
-      };
+      });
 
       applyDynamicValues(serviceRequest as unknown as Record<string, unknown>, 'ServiceRequest', activityDefinition, {
         '%practitioner': toTypedValue(practitioner),
@@ -266,17 +267,27 @@ async function createActivityDefinitionTask(
 
       const persisted = await repo.createResource(serviceRequest);
 
-      return createTask(repo, planDefinition, requester, subject, action, encounter, owner, performerType, [
-        {
-          type: {
-            text: 'ServiceRequest',
+      return createTask(
+        repo,
+        planDefinition,
+        persisted.requester ?? requester,
+        subject,
+        action,
+        encounter,
+        owner,
+        performerType,
+        [
+          {
+            type: {
+              text: 'ServiceRequest',
+            },
+            valueReference: {
+              display: action.title,
+              reference: getReferenceString(persisted),
+            },
           },
-          valueReference: {
-            display: action.title,
-            reference: getReferenceString(persisted),
-          },
-        },
-      ]);
+        ]
+      );
     }
 
     default:
@@ -300,7 +311,7 @@ async function createActivityDefinitionTask(
 async function createTask(
   repo: Repository,
   planDefinition: PlanDefinition,
-  requester: Reference<ProfileResource | Bot | ClientApplication>,
+  requester: Reference<ProfileResource | Bot | ClientApplication> | NonNullable<ServiceRequest['requester']>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>,
@@ -337,7 +348,7 @@ async function createTask(
   };
 }
 
-function applyDynamicValues(
+export function applyDynamicValues(
   target: Record<string, unknown>,
   resourceType: string,
   activityDefinition: ActivityDefinition,
@@ -402,7 +413,7 @@ function setValueAtPath(
   const writeKey = finalSegmentKey.includes('[x]')
     ? finalSegmentKey.replace('[x]', capitalize(values[0].type))
     : finalSegmentKey;
-  currentNode[writeKey] = finalElement.isArray ? values.map((v) => v.value) : values[0].value;
+  currentNode[writeKey] = deepClone(finalElement.isArray ? values.map((v) => v.value) : values[0].value);
 }
 
 /**
