@@ -90,14 +90,23 @@ describe('SchedulingWorkspace blocked time details', () => {
     expect(slotDetails()).toBeInTheDocument();
     expect(appointmentDetails()).not.toBeInTheDocument();
 
-    // Paging away closes it, and paging back does not open it again.
+    // It stays open once off the calendar. Another week needs no notice, as its time says why.
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
+    expect(within(slotDetails() as HTMLElement).queryByRole('alert')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Previous' }));
     await screen.findByText('Blocked');
-    expect(slotDetails()).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Blocked'));
+    const riveraRow = screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
+    await userEvent.click(riveraRow);
+    await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
+    expect(
+      within(slotDetails() as HTMLElement).getByText("This blocked time's calendar isn't shown.")
+    ).toBeInTheDocument();
+    await userEvent.click(riveraRow);
+    await screen.findByText('Blocked');
+    expect(within(slotDetails() as HTMLElement).queryByRole('alert')).not.toBeInTheDocument();
+
     await userEvent.click(screen.getByRole('button', { name: 'Close blocked time details' }));
     await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
     expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');

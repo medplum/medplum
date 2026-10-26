@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { Alert, Anchor, Box, CloseButton, Group, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -13,7 +13,7 @@ import type { Appointment, Extension, HealthcareService, Location, Reference, Sl
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -132,7 +132,9 @@ export interface SchedulingWorkspaceProps {
  *   The new appointment then opens in the pane, selected on the calendar, which pages
  *   to its day.
  * - Blocks time from the calendar: the same pane has a Block tab, writing a `busy` Slot
- *   over the time on each calendar the user names, reported through `onBlocked`.
+ *   over the time on each calendar the user names, reported through `onBlocked`. The new
+ *   blocked time then opens in the pane, on a calendar shown where it can, with the other
+ *   calendars it blocks listed beside it, and the calendar pages to its day.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it, or to confirm one still pending.
@@ -143,8 +145,9 @@ export interface SchedulingWorkspaceProps {
  *   appointment beside it, from whenever the form holds a time until it drops it. The
  *   calendar is never moved to reach either; one off the week on screen is drawn again
  *   on paging back to it.
- * - Keeps an open appointment open until it is closed, even once paging, filtering, or hiding its
- *   calendars takes it off the calendar, with a notice saying when hidden calendars are why.
+ * - Keeps an open appointment or blocked time open until it is closed, even once paging,
+ *   filtering, or hiding its calendars takes it off the calendar, with a notice saying when hidden
+ *   calendars are why.
  * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
  *
@@ -186,7 +189,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
-  const [selectedSlotId, setSelectedSlotId] = useState<string>();
+  const [selectedSlot, setSelectedSlot] = useState<WithId<Slot>>();
+  // The Slots of a block just written, one per calendar, listed beside whichever is open.
+  const [newBlockSlots, setNewBlockSlots] = useState<readonly WithId<Slot>[]>();
 
   const calendarRef = useRef<CalendarHandle>(null);
 
@@ -337,7 +342,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const startBooking = useCallback((interval: DateTimeRange): void => {
     setSelectedAppointment(undefined);
-    setSelectedSlotId(undefined);
+    setSelectedSlot(undefined);
+    setNewBlockSlots(undefined);
     setBookingSelection(interval);
     setBlockHighlight(interval);
   }, []);
@@ -355,12 +361,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
   }, []);
 
+  // Opens what was blocked and pages to it, so it isn't lost when not drawn: a Slot on a calendar
+  // shown where there is one, with the others listed beside it.
   const finishBlock = useCallback(
     (slots: WithId<Slot>[]): void | Promise<void> => {
       closeBooking();
+      const shown = new Set(schedules.map(getReferenceString));
+      const opened = slots.find((slot) => shown.has(slot.schedule.reference ?? '')) ?? slots[0];
+      setSelectedSlot(opened);
+      setNewBlockSlots(slots);
+      if (opened?.start) {
+        calendarRef.current?.gotoDate(new Date(opened.start));
+      }
       return onBlocked?.(slots);
     },
-    [closeBooking, onBlocked]
+    [closeBooking, onBlocked, schedules]
   );
 
   const selectAppointment = useCallback(
@@ -370,7 +385,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           setRescheduleFinderOpen(false);
         }
         closeBooking();
-        setSelectedSlotId(undefined);
+        setSelectedSlot(undefined);
+        setNewBlockSlots(undefined);
         setSelectedAppointment(appointment);
       }
     },
@@ -398,14 +414,36 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const selectSlot = useCallback(
     (slot: Slot): void => {
-      if (slot.id) {
+      if (isResourceWithId(slot)) {
         closeBooking();
         closeAppointment();
-        setSelectedSlotId(slot.id);
+        setSelectedSlot(slot);
+        setNewBlockSlots(undefined);
       }
     },
     [closeBooking, closeAppointment]
   );
+
+  const closeSlot = useCallback((): void => {
+    setSelectedSlot(undefined);
+    setNewBlockSlots(undefined);
+  }, []);
+
+  // Held apart from the calendar's, like the open appointment, so it closes on being deleted
+  // rather than on leaving the calendar.
+  useResourceModified('Slot', (event) => {
+    if (event.operation === 'delete') {
+      setNewBlockSlots((prev) => prev?.filter((slot) => slot.id !== event.id));
+    }
+    if (!selectedSlot || event.id !== selectedSlot.id) {
+      return;
+    }
+    if (event.operation === 'delete') {
+      setSelectedSlot(undefined);
+    } else if (event.resource) {
+      setSelectedSlot(event.resource);
+    }
+  });
 
   // The open appointment is held apart from the calendar's, so that a visit cancelled from
   // its pane stays open, showing it cancelled, once the calendar stops loading it.
@@ -436,17 +474,28 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     hiddenNotice = "None of this appointment's calendars are shown.";
   }
 
-  const openSlot = useMemo((): WithId<Slot> | undefined => {
-    if (selectedSlotId) {
-      return (slots ?? []).find((s) => s.id === selectedSlotId);
-    }
-    return undefined;
-  }, [slots, selectedSlotId]);
-  // A Slot that leaves the calendar, by paging, hiding its calendar, or deletion, closes for good
-  // rather than reopening when it is loaded again.
-  if (selectedSlotId && slots && !openSlot) {
-    setSelectedSlotId(undefined);
+  // Kept open until closed, as the open appointment is.
+  const loadedSlot = selectedSlot && slots?.find((s) => s.id === selectedSlot.id);
+  if (loadedSlot && loadedSlot !== selectedSlot) {
+    setSelectedSlot(loadedSlot);
   }
+  const openSlot = loadedSlot ?? selectedSlot;
+
+  // One in another week gets no notice: its time already says why.
+  let slotNotice: string | undefined;
+  if (openSlot && !schedules.some((schedule) => getReferenceString(schedule) === openSlot.schedule.reference)) {
+    slotNotice = "This blocked time's calendar isn't shown.";
+  }
+  const otherBlockSlots =
+    openSlot && newBlockSlots?.some((slot) => slot.id === openSlot.id)
+      ? newBlockSlots.filter((slot) => slot.id !== openSlot.id)
+      : [];
+  const getCalendarName = (slot: Slot): string => {
+    const candidate = BOOKABLE_ACTOR_TYPES.flatMap((actorType) => candidatesByActorType[actorType]).find(
+      (c) => getReferenceString(c.schedule) === slot.schedule.reference
+    );
+    return candidate ? getCandidateDisplay(candidate) : (slot.schedule.display ?? slot.schedule.reference ?? '');
+  };
 
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => ({
     id: candidate.schedule.id,
@@ -536,8 +585,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
           <Group justify="space-between" wrap="nowrap" mb="sm">
             <Title order={4}>Blocked time</Title>
-            <CloseButton aria-label="Close blocked time details" onClick={() => setSelectedSlotId(undefined)} />
+            <CloseButton aria-label="Close blocked time details" onClick={closeSlot} />
           </Group>
+          {slotNotice && (
+            <Alert color="blue" mb="sm">
+              {slotNotice}
+            </Alert>
+          )}
+          {otherBlockSlots.length > 0 && (
+            <Text size="sm" mb="sm">
+              Also blocked:{' '}
+              {otherBlockSlots.map((slot, index) => (
+                <Fragment key={slot.id}>
+                  {index > 0 && ', '}
+                  <Anchor component="button" type="button" size="sm" onClick={() => setSelectedSlot(slot)}>
+                    {getCalendarName(slot)}
+                  </Anchor>
+                </Fragment>
+              ))}
+            </Text>
+          )}
           <SlotDetails slot={openSlot} />
         </section>
       )}
