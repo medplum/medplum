@@ -77,6 +77,8 @@ export interface MedplumServerConfig {
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
   registerEnabled?: boolean;
+  /** When `false`, new users can still register but cannot create new projects. Default is `true`. */
+  newProjectRegistrationEnabled?: boolean;
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
