@@ -222,6 +222,7 @@ const booleanKeys = new Set([
   'logRequests',
   'logAuditEvents',
   'mcpEnabled',
+  'newProjectRegistrationEnabled',
   'registerEnabled',
   'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
