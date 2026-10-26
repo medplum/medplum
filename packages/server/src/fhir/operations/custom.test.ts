@@ -345,6 +345,60 @@ describe('Custom operation', () => {
     });
   });
 
+  test('Binary without data is not returned', async () => {
+    const botRes = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Bot', name: 'Binary Custom Operation Bot', runtimeVersion: 'vmcontext' });
+    expect(botRes).toHaveStatus(201);
+    const bot = botRes.body as WithId<Bot>;
+
+    const deployRes = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function () {
+            return { resourceType: 'Binary', contentType: 'text/plain', id: 'x', meta: { versionId: 'y' } };
+          };
+          `,
+      });
+    expect(deployRes).toHaveStatus(200);
+
+    const operationRes = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'my-binary-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'my-binary-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [{ use: 'out', name: 'return', type: 'Binary', min: 1, max: '1' }],
+      });
+    expect(operationRes).toHaveStatus(201);
+
+    const result = await request(app)
+      .post('/fhir/R4/$my-binary-operation')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(result).toHaveStatus(400);
+    expect(result.body.issue[0].details.text).toStrictEqual('Bot returned a Binary without data');
+  });
+
   test('Error value returned all the way to the client', async () => {
     const res1 = await request(app)
       .post('/fhir/R4/Bot')

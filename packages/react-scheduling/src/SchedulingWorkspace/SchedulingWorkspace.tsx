@@ -13,7 +13,7 @@ import type { Appointment, Extension, HealthcareService, Location, Reference, Sl
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -25,7 +25,7 @@ import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentResc
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
-import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
+import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
@@ -129,6 +129,8 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ *   The new appointment then opens in the pane, selected on the calendar, which pages
+ *   to its day.
  * - Blocks time from the calendar: the same pane has a Block tab, writing a `busy` Slot
  *   over the time on each calendar the user names, reported through `onBlocked`.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
@@ -183,6 +185,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
   const [selectedSlotId, setSelectedSlotId] = useState<string>();
+
+  const calendarRef = useRef<CalendarHandle>(null);
 
   const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
 
@@ -348,14 +352,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
   }, []);
 
-  const finishBooking = useCallback(
-    (booking: AppointmentBooking): void | Promise<void> => {
-      closeBooking();
-      return onBooked?.(booking);
-    },
-    [closeBooking, onBooked]
-  );
-
   const finishBlock = useCallback(
     (slots: WithId<Slot>[]): void | Promise<void> => {
       closeBooking();
@@ -376,6 +372,20 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       }
     },
     [closeBooking, selectedAppointment?.id]
+  );
+
+  // Opens what was booked, the first visit of a recurring series, and brings it on screen,
+  // so it isn't lost on the calendar or in a week off screen.
+  const finishBooking = useCallback(
+    (booking: AppointmentBooking): void | Promise<void> => {
+      const [first] = booking.appointments;
+      selectAppointment(first);
+      if (first.start) {
+        calendarRef.current?.gotoDate(new Date(first.start));
+      }
+      return onBooked?.(booking);
+    },
+    [selectAppointment, onBooked]
   );
 
   const closeAppointment = useCallback((): void => {
@@ -468,6 +478,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Alert>
         )}
         <MultiCalendar
+          ref={calendarRef}
           className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}

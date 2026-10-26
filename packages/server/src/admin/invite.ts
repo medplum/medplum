@@ -6,6 +6,7 @@ import {
   badRequest,
   conflict,
   createReference,
+  escapeSearchValue,
   getReferenceString,
   isCreated,
   isNotFound,
@@ -132,7 +133,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
         resourceType: 'ProjectMembership',
         filters: [
-          { code: 'user:User.email', operator: Operator.EXACT, value: email },
+          { code: 'user:User.email', operator: Operator.EXACT, value: escapeSearchValue(email) },
           { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
           projectFilter,
         ],
@@ -149,7 +150,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
         {
           code: 'email',
           operator: Operator.EXACT,
-          value: email,
+          value: escapeSearchValue(email),
         },
         userResource.project
           ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
@@ -274,7 +275,7 @@ async function upsertProfileResource(
         {
           code: 'email',
           operator: Operator.EQUALS,
-          value: email,
+          value: escapeSearchValue(email),
         },
       ];
 
@@ -350,6 +351,10 @@ async function validateAccessPolicies(
         references.push(access.policy);
       }
     }
+  }
+
+  if (request.membership?.accessPolicy) {
+    references.push(request.membership.accessPolicy);
   }
 
   if (Array.isArray(request.membership?.access)) {

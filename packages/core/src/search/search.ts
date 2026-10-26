@@ -630,6 +630,20 @@ export function splitSearchOnComma(input: string): string[] {
   return result;
 }
 
+/**
+ * Escapes a literal string for use as a single FHIR search value.
+ * Backslash-escapes commas and backslashes, so that the value is not split into multiple "or" values.
+ * This is the inverse of `splitSearchOnComma`.
+ *
+ * See: https://hl7.org/fhir/r4/search.html#escaping
+ *
+ * @param input - The literal string to search for.
+ * @returns The escaped FHIR search value.
+ */
+export function escapeSearchValue(input: string): string {
+  return input.replaceAll(/[\\,]/g, '\\$&');
+}
+
 function invalidSearchModifier(modifier: string, searchParameterCodeOrId: string): OperationOutcome {
   return badRequest(`Invalid modifier :${modifier} for ${searchParameterCodeOrId}`);
 }

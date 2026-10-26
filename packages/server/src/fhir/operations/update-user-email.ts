@@ -17,6 +17,7 @@ import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
+import { membershipProfileTypes, readMembershipReference } from '../projectmembership';
 import type { Repository } from '../repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
@@ -131,7 +132,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         });
 
         if (membership) {
-          const profile = await txRepo.readReference(membership.profile);
+          const profile = await readMembershipReference(txRepo, membership, membership.profile, membershipProfileTypes);
           if (profileTypesWithTelecom.includes(profile.resourceType)) {
             await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, params.email);
           }

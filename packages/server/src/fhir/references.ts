@@ -136,6 +136,10 @@ async function resolveReplacementReference(
     return undefined;
   }
 
+  if (!repo.currentProject()) {
+    throw new OperationOutcomeError(badRequest(`Conditional reference '${reference.reference}' is not allowed`, path));
+  }
+
   const searchCriteria = parseSearchRequest(reference.reference);
   searchCriteria.sortRules = undefined;
   searchCriteria.count = 2;

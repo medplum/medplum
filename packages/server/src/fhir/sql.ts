@@ -584,6 +584,9 @@ export class SqlBuilder {
   }
 
   appendIdentifier(str: string): this {
+    if (str.includes('"')) {
+      throw new Error('Invalid identifier: ' + str);
+    }
     this.sql.push('"', str, '"');
     return this;
   }

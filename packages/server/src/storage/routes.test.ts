@@ -5,6 +5,7 @@ import type { Binary } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
+import { request as httpRequest } from 'http';
 import type { AddressInfo } from 'net';
 import { Readable } from 'stream';
 import request from 'supertest';
@@ -139,6 +140,36 @@ describe('Storage Routes', () => {
     expect(res).toHaveStatus(401);
   });
 
+  describe('Request path must match the signed URL', () => {
+    let other: Binary;
+
+    beforeAll(async () => {
+      other = await withTestContext(() =>
+        systemRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT })
+      );
+      await getBinaryStorage().writeBinary(other, 'other.txt', ContentType.TEXT, Readable.from('other content'));
+    });
+
+    test.each([
+      ['GET', (signed: string) => `/storage/${other.id}/..\\${signed}`],
+      ['PUT', (signed: string) => `/storage/${other.id}/..\\${signed}`],
+      ['GET', (signed: string) => `/storage/${other.id}/%2e%2e\\${signed}`],
+      ['GET', (signed: string) => `/api/storage/${other.id}/..\\..\\..\\storage\\${signed}`],
+    ])('%s %#', async (method, buildPath) => {
+      const port = (server.address() as AddressInfo).port;
+      const url = new URL(await getBinaryStorage().getPresignedUrl(binary, { upload: method === 'PUT' }));
+      const path = buildPath(`${binary.id}\\${binary.meta?.versionId}`) + url.search;
+
+      // Supertest would normalize the path before sending it
+      const status = await new Promise((resolve, reject) => {
+        httpRequest({ host: '127.0.0.1', port, method, path }, (res) => resolve(res.resume().statusCode))
+          .on('error', reject)
+          .end();
+      });
+      expect(status).toBe(401);
+    });
+  });
+
   describe('Project query param', () => {
     let projectId: string;
     let projectBinary: Binary;
@@ -182,6 +213,15 @@ describe('Storage Routes', () => {
       const url = await getBinaryStorage().getPresignedUrl(projectBinary);
       const res = await request(server).get(toPath(url));
       expect(res).toHaveStatus(200);
+    });
+
+    test('GET with Project of another project fails', async () => {
+      const url = await getBinaryStorage().getPresignedUrl({
+        ...projectBinary,
+        meta: { ...projectBinary.meta, project: randomUUID() },
+      });
+      const res = await request(server).get(toPath(url));
+      expect(res).toHaveStatus(401);
     });
 
     test('GET tampered Project fails signature', async () => {

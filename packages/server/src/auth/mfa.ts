@@ -20,6 +20,7 @@ import {
   buildTotpEnrollment,
   clearMfaEmailCode,
   getAllowedMfaMethods,
+  getCallerUserReference,
   getEnrolledMfaMethods,
   getLoginProject,
   isMfaRequired,
@@ -88,7 +89,7 @@ export async function verifyConnectedFactor(user: User, login: Login, token: str
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
   const allowedMethods = getAllowedMfaMethods(ctx.project);
 
   // The TOTP QR code can always be shown, whether for initial enrollment or for
@@ -175,7 +176,7 @@ mfaRouter.post(
 mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Response) => {
   const systemRepo = getGlobalSystemRepo();
   const ctx = getAuthenticatedContext();
-  const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await systemRepo.readReference<User>(getCallerUserReference(ctx));
 
   const method = parseMfaMethod(req.body.method);
 
@@ -291,7 +292,7 @@ mfaRouter.post(
  */
 mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
 
   const emailEnrolled = getEnrolledMfaMethods(user).includes('email');
   const emailAllowed = getAllowedMfaMethods(ctx.project).includes('email');
@@ -310,7 +311,7 @@ mfaRouter.post(
   [body('token').optional().isString(), body('method').optional().isString()],
   async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+    const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
 
     if (!user.mfaEnrolled) {
       sendOutcome(res, badRequest('User not enrolled in MFA'));
