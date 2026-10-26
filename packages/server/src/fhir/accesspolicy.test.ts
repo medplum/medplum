@@ -1475,7 +1475,9 @@ describe('AccessPolicy', () => {
 
       await systemRepo.deleteResource('Patient', patient.id);
       expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', patient.id)).toBe(false);
-      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', randomUUID())).toBe(false);
+      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', randomUUID())).toBe(
+        false
+      );
     }));
 
   test('Hidden fields on possible missing values', () =>
