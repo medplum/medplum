@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   badRequest,
   createReference,
   deepClone,
@@ -168,6 +169,12 @@ async function sendSubscriptionEventNotifications(
         if (!repo) {
           globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
           deadSubscriptionIds.push(subscriptionId);
+          continue;
+        }
+        // The worker checks a single membership's stored access policy; each bound token, which may carry
+        // narrower SMART scopes, must itself be able to read the resource.
+        if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+          globalLogger.debug('[WS] Subscriber cannot read resource, skipping notification', { subscriptionId });
           continue;
         }
         // removeHiddenFields mutates its input, and one published resource is shared by every
