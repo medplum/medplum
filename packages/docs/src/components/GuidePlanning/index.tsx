@@ -18,7 +18,7 @@ Local source, if cloned: ${sourcePath}
 
 Follow medplum-link/packages/docs/static/ai/planning.md
 (or https://www.medplum.com/ai/planning.md), including its Medplum rules.
-Set up my app's project instructions as described there, preserving existing rules.
+Ask before creating or changing my app's project instruction files.
 
 Read my existing requirements and decisions, then ask me about consequential
 missing requirements; do not invent answers. Save and summarize the decisions

@@ -4,12 +4,11 @@ Use these instructions to plan a Medplum application or a substantial feature, t
 
 Keep the work proportional to the change. A single feature may only need an update to one decision record. Routine fixes do not need a new application plan or a full interview.
 
-## 0. Connect the project instructions on first use
+## 0. Read the project instructions on first use
 
 - Identify the application's repository and the Medplum reference clone. If only the Medplum clone is open and the application location is unclear, ask where to save the application's files before writing them. Adjust the paths below to the actual clone location.
 - Read the application's existing project instructions and `medplum-link/packages/docs/static/ai/medplum-rules.md`, or https://www.medplum.com/ai/medplum-rules.md with web access. If the source is inaccessible, say so instead of claiming the rules have been loaded.
-- Add a short Medplum section to the instruction file the current tool loads, such as `AGENTS.md`, `CLAUDE.md`, or an existing editor rule file. It should explicitly require reading and following the rules file before Medplum planning or implementation, using a working local path or the public URL. Preserve existing instructions; if this is already configured, verify the reference instead of adding another copy. If no instruction file exists, use the current tool's supported project instruction file.
-- Report which instruction file you updated and where it points. Verify that you can read the referenced rules now. If you cannot edit the app's files, show the proposed addition and explain that setup remains incomplete. Loading these rules in this session does not verify that future sessions will find them; ask the user to check in a fresh session.
+- If the project's instructions already reference the Medplum rules, verify the reference instead of adding another copy. Read the rules for this task without changing project instructions. Offer persistent setup after saving the plan, as described in section 3, so the user can review a snippet with the actual file paths.
 
 ## 1. Understand the application
 
@@ -36,7 +35,9 @@ Update existing planning files where they serve this purpose. For a new applicat
 
 At the top of each decision record, include the guide's source path and public URL, the date consulted, and the source revision when available. For a clone linked as `medplum-link`, obtain the revision with `git -C medplum-link rev-parse HEAD` and note any local changes to the guide. For web-only access, record the URL and date; do not invent a version. Preserve this reference until the decisions have been reviewed against a newer guide.
 
-Update the Medplum section of the application's project instructions with the actual location of the saved plan and decision records, requiring the relevant files to be read before implementation. Reference only files or directories that exist; do not copy the full plan or guides into the instruction file.
+Offer to connect the rules and saved decisions to the instruction file the current tool loads, such as `AGENTS.md`, `CLAUDE.md`, or an existing editor rule file. Show the proposed filename and exact addition, then ask for permission before creating or changing that file. An explicit approval already given for the same change is sufficient. The short Medplum section should require reading the rules and relevant saved decisions before implementation, using working local paths or the public rules URL. Reference only files or directories that exist; do not copy the full plan or guides into the instruction file.
+
+If approved, preserve existing instructions, apply only the agreed changes, and verify that the references can be read. Report the changes and suggest checking them in a fresh session. If the user declines, is unavailable, or the files cannot be edited, leave project instructions unchanged and continue planning. Include the rule and decision paths in the handoff for future tasks; do not claim persistent setup is complete.
 
 Summarize the proposed plan for the user, clearly separating confirmed decisions from proposals and open questions. Do not mark an agent-generated recommendation as confirmed without supporting user input.
 

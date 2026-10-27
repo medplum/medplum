@@ -44,16 +44,17 @@ Help me plan [describe your application or feature] on Medplum.
 
 Read and follow medplum-link/packages/docs/static/ai/planning.md
 (or https://www.medplum.com/ai/planning.md), including its Medplum rules.
-Set up this app's project instructions as described there, preserving existing rules.
+Ask before creating or changing this app's project instruction files.
 Start with my existing requirements, code, and decisions, then select the relevant
 decision guides. Ask about consequential missing requirements; do not invent answers.
 Save and summarize the decisions in my app's repo before implementation.
 ```
 
-The agent should read the rules, connect them to your `AGENTS.md`, `CLAUDE.md`, or
-equivalent project instructions, and begin asking about your application. Review the
-instruction changes it makes. The [setup details](#5-encode-your-conventions-in-a-rule-file)
-show how to check that future sessions can find the rules and saved decisions.
+The agent should read the rules and begin asking about your application. After saving
+the plan, it can propose a small addition to your `AGENTS.md`, `CLAUDE.md`, or equivalent
+project instructions for future sessions. It should show you the proposed changes and
+ask permission before applying them. You can decline and still use the planning workflow.
+See the [setup details](#5-encode-your-conventions-in-a-rule-file) for an example.
 
 Without a clone, use the [planning instructions](pathname:///ai/planning.md) through an agent
 with web access. For one workflow, use the **Plan with this guide** prompt on its
@@ -274,9 +275,10 @@ server (synthetic data, no BAA required) or a token against a live server; see
 
 ## 5. Encode Your Conventions in a Rule File
 
-The [starting prompt](#plan-your-application) asks the agent to connect the Medplum rules
-to the project instructions your coding tool loads. For manual setup, merge a short section
-like this into your application's `AGENTS.md`, `CLAUDE.md`, or equivalent rule file,
+The [starting prompt](#plan-your-application) lets the agent propose connecting the Medplum
+rules and saved decisions to the project instructions your coding tool loads. It asks for
+your permission before creating or editing those files. For manual setup, merge a short
+section like this into your application's `AGENTS.md`, `CLAUDE.md`, or equivalent rule file,
 adjusting the clone path:
 
 ```markdown
