@@ -47,6 +47,7 @@ export type FhirRequestConfig = {
   graphqlBatchedSearchSize?: number;
   graphqlMaxDepth?: number;
   graphqlMaxSearches?: number;
+  readonlyBatchOnReader?: boolean;
   searchOnReader?: boolean;
   transactions?: boolean;
 };

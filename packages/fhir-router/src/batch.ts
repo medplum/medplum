@@ -24,6 +24,7 @@ import type {
 import type { IncomingHttpHeaders } from 'node:http';
 import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
 import type { FhirRepository } from './repo';
+import { RepositoryMode } from './repo';
 import type { HttpMethod, RouteResult } from './urlrouter';
 
 const maxUpdates = 50;
@@ -41,6 +42,8 @@ export interface BundlePreprocessInfo {
   requiresStrongTransaction: boolean;
   updates: number;
   resourceTypes: Set<ResourceType>;
+  /** True if every entry is a read, search, or history interaction. */
+  readOnly: boolean;
 }
 
 /**
@@ -75,6 +78,16 @@ export interface BatchInitialState {
    */
   preprocessResults: Record<number, BundleEntry>;
 }
+
+const readOnlyInteractions = new Set<RestInteraction>([
+  'read',
+  'vread',
+  'search-system',
+  'search-type',
+  'history-system',
+  'history-type',
+  'history-instance',
+]);
 
 /**
  * Processes a FHIR batch request.
@@ -197,6 +210,9 @@ export class BatchProcessor {
     const bundleInfo = this.bundleInfo as BundlePreprocessInfo;
 
     if (!this.isTransaction()) {
+      if (bundleInfo.readOnly && this.req.config?.readonlyBatchOnReader) {
+        this.repo.setMode(RepositoryMode.READER);
+      }
       const result = await this.processEntriesAndBuild();
       this.dispatchPostEvent();
       return result;
@@ -279,6 +295,7 @@ export class BatchProcessor {
         resourceTypes: this.bundleInfo.resourceTypes,
         requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
         updates: this.bundleInfo.updates,
+        readOnly: this.bundleInfo.readOnly,
       },
       resolvedIdentities: this.resolvedIdentities,
       assignedIds: this.assignedIds,
@@ -424,6 +441,7 @@ export class BatchProcessor {
     const resourceTypes = new Set<ResourceType>();
     let requiresStrongTransaction = false;
     let updates = 0;
+    let readOnly = true;
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
@@ -476,6 +494,9 @@ export class BatchProcessor {
         // Conditional delete requires strong (serializable) transaction
         requiresStrongTransaction = true;
       }
+      if (!readOnlyInteractions.has(interaction)) {
+        readOnly = false;
+      }
       bucketedEntries[interaction].push(i);
     }
 
@@ -488,6 +509,7 @@ export class BatchProcessor {
       requiresStrongTransaction,
       updates,
       resourceTypes,
+      readOnly,
     };
   }
 
