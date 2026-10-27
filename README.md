@@ -14,11 +14,20 @@ Medplum is a developer platform that enables flexible and rapid development of h
 
 ## Docs
 
+- [Build an application with an AI agent](#build-an-application-with-an-ai-agent)
 - [Contributing](#contributing)
   - [Ground Rules](#ground-rules)
   - [Codebase](#codebase)
     - [Technologies](#technologies)
     - [Folder Structure](#folder-structure)
+
+## Build an Application with an AI Agent
+
+Start with [Plan your application](https://www.medplum.com/docs/building-with-ai-coding-assistants#plan-your-application)
+for setup instructions and a prompt to paste into your coding agent. Open your application's
+folder and give the agent access to this clone as a reference. The
+[planning instructions](packages/docs/static/ai/planning.md) guide the agent through connecting
+Medplum's rules to your project, working through decision guides, and saving decisions for later development.
 
 ## Contributing
 

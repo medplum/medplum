@@ -9,6 +9,8 @@ Use these guides to make application design, workflow, and rollout decisions bef
 
 Use the guides and technical docs together: the guide explains which approach fits your situation and what it requires; the linked technical docs provide configuration, APIs, and implementation examples.
 
+**[Plan your application with AI](/docs/building-with-ai-coding-assistants#plan-your-application):** Give your AI agent the guides, work through the questions together, and save the decisions in your application's repo for future development. Each guide includes a copyable planning prompt.
+
 ## Application Design
 
 Define the identity, tenancy, and access rules shared across your workflows.

@@ -44,8 +44,9 @@ Welcome to Medplum! Your new project "${ctx.projectName}" is ready to go.
 Here are a few things to help you get started:
 
 - Sign in to your project: ${ctx.appBaseUrl}signin
+- Plan your application with AI: https://www.medplum.com/docs/building-with-ai-coding-assistants
+    Work through our decision guides with your AI agent and save the design decisions in your repo before building.
 - Read the docs: https://www.medplum.com/docs
-    - Agentic Coding Guide: https://www.medplum.com/docs/building-with-ai-coding-assistants
     - Contribute: https://github.com/medplum/medplum#contributing
 - Invite your teammates from the Admin panel: ${ctx.appBaseUrl}admin/users
 

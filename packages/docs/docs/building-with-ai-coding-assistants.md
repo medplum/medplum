@@ -1,11 +1,13 @@
 ---
-sidebar_label: AI Coding Assistants
-title: Building on Medplum with AI Coding Assistants
+sidebar_label: AI Coding Agents
+title: Building on Medplum with AI Coding Agents
 tags: [ai, agentic-engineering, best-practices, mcp]
 keywords: [vibe coding, agentic engineering, llm, agent, mcp, skills, cursor, claude, copilot]
 ---
 
-# Building on Medplum with AI Coding Assistants
+import MedplumRules from '@site/src/components/MedplumRules';
+
+# Building on Medplum with AI Coding Agents
 
 Agentic engineering (a.k.a. "vibe coding") means using an LLM or agent – Cursor, Claude,
 Copilot, and others – to build features on Medplum. The biggest lever for quality is
@@ -24,19 +26,51 @@ not a finished answer. Apply extra scrutiny to anything that affects security or
 exposure, especially access policies, ProjectMembership scopes, and PHI handling.
 :::
 
+## Start here: plan your application {/* #plan-your-application */}
+
+Cloning Medplum gives your agent reference material. Use this first prompt to connect
+that material to your project and start a planning conversation:
+
+1. Open your application's folder in your coding agent. If you are starting from scratch,
+   use an empty application folder or the [Hello World starter](/docs/tutorials/medplum-hello-world).
+   Your application's instructions and decisions belong there; the Medplum clone is a reference.
+2. Give the agent access to your Medplum clone. The prompt assumes it is linked as
+   `medplum-link`, as described in [section 1](#1-give-your-ai-tools-access-to-medplum).
+   Otherwise, replace `medplum-link` with the clone's actual path.
+3. Copy this prompt and replace the application description:
+
+```text
+Help me plan [describe your application or feature] on Medplum.
+
+Read and follow medplum-link/packages/docs/static/ai/planning.md
+(or https://www.medplum.com/ai/planning.md), including its Medplum rules.
+Set up this app's project instructions as described there, preserving existing rules.
+Start with my existing requirements, code, and decisions, then select the relevant
+decision guides. Ask about consequential missing requirements; do not invent answers.
+Save and summarize the decisions in my app's repo before implementation.
+```
+
+The agent should read the rules, connect them to your `AGENTS.md`, `CLAUDE.md`, or
+equivalent project instructions, and begin asking about your application. Review the
+instruction changes it makes. The [setup details](#5-encode-your-conventions-in-a-rule-file)
+show how to check that future sessions can find the rules and saved decisions.
+
+Without a clone, use the [planning instructions](pathname:///ai/planning.md) through an agent
+with web access. For one workflow, use the **Plan with this guide** prompt on its
+[decision guide](/docs/decision-guides); it uses the same setup and planning procedure.
+
 ## Our Recommendations
 
 1. Give your AI tools access to Medplum: clone the repo and link it in (preferred), give
    the agent docs and GitHub search, or connect the MCP server.
-2. Plan and prompt with Medplum as the source of truth: have the model read the docs and
-   code and propose patterns before it writes anything.
+2. Plan with Medplum's decision guides: have the agent interview you about your requirements,
+   explain the tradeoffs, and save the decisions in your application's repo before implementation.
 3. Keep conversations short and re-anchor on the docs: context decays over long sessions,
    so scope one task per thread and re-check work at checkpoints.
 4. Verify and validate the output: check generated code against the type system and tests,
    review sensitive code by hand, and use Medplum's server-side validation where you can.
 5. Encode your conventions in a rule file: a `CLAUDE.md`, Cursor rules, or `AGENTS.md`-style
-   file keeps the agent pointed at Medplum's docs without being told each time, and the
-   conventions survive compaction.
+   file makes Medplum conventions and your saved decisions available to later tasks.
 
 ## 1. Give Your AI Tools Access to Medplum
 
@@ -49,14 +83,25 @@ snippets, real implementations, and trade-off guidance instead of guessing.
 Agnostic to your LLM and editor:
 
 1. Clone the repo: [https://github.com/medplum/medplum](https://github.com/medplum/medplum)
-2. From your repo's top level, symlink your local copy:
+2. From your repo's top level, symlink your local copy (macOS or Linux):
 
    ```bash
    ln -s /absolute/path/to/medplum medplum-link
    ```
 
-3. Prompt away, telling the model it can read `medplum-link/` (includes `packages/`,
-   example apps, and `packages/docs`).
+   Alternatively, give your agent the clone's actual path and adjust the prompts on this page.
+   Keep machine-specific symlinks out of version control; provide the checkout separately in
+   new development or automated environments.
+
+3. Tell the model it can read `medplum-link/`. The clone includes the technical docs,
+   reusable components, and example apps. The planning workflow uses:
+   - `medplum-link/packages/docs/docs/decision-guides/`: questions and design tradeoffs.
+   - `medplum-link/packages/docs/static/ai/planning.md`: instructions for planning and implementation.
+   - `medplum-link/packages/docs/static/ai/medplum-rules.md`: reusable rules, shown in
+     [section 5](#5-encode-your-conventions-in-a-rule-file).
+
+You can read these files without installing or running the Medplum monorepo.
+Confirm that your agent can read them before starting.
 
 ### Option 2: Search Docs and GitHub
 
@@ -70,25 +115,96 @@ Medplum offers an MCP server for structured access to docs and data. See
 [Direct Data Access](#direct-data-access-advanced) below, where the setup link and
 data-access caveats live.
 
-## 2. Plan and Prompt with Medplum as the Source of Truth
+## 2. Plan with Medplum's Decision Guides {/* #2-plan-and-prompt-with-medplum-as-the-source-of-truth */}
 
-Lead with a planning prompt before implementation: have the model read the relevant docs
-and code, summarize the recommended pattern and trade-offs, and only then write code.
+Use the [Decision Guides](/docs/decision-guides) to work through application design before
+writing features. Each guide connects discovery questions to Medplum patterns and technical
+docs. Your agent should ask you about missing requirements, explain the tradeoffs, and
+save the answers for later coding tasks.
 
-> Design patterns: I want a task-assignment service for a 50-state practice, where
-> patients are seen by practitioners licensed in their resident state and clinical ops
-> handles issues that don't need a licensed practitioner. Read the Medplum docs and
-> explain the common design patterns I can use.
+Use the [starting prompt](#plan-your-application) to begin. The examples below show what
+the agent saves and how to use it in later development.
 
-> Example implementations: I want video conferencing for virtual appointments plus
-> patient photo and video uploads at intake. Find example implementations in the Medplum
-> codebase I can reuse, and explain how they're deployed.
+### Keep the answers in your repo
 
-When possible, have the agent adapt the closest existing implementation rather than
-generate from scratch; [Medplum Provider](/docs/provider) is a good starting reference
-point for most clinical workflows. You can also capture instructions like these in a rule
-file so you don't restate them in every prompt; see
-[section 5](#5-encode-your-conventions-in-a-rule-file).
+The agent saves a short application plan and decisions organized by guide section in
+your repo, reusing existing planning files. For a focused feature, a single decision record
+may be enough. The [planning instructions](pathname:///ai/planning.md) define the file layout
+and how to distinguish agreed choices, recommendations awaiting a decision, and unanswered
+questions. Keeping these alongside code lets later tasks use them without relying on chat history.
+
+<details>
+<summary>Example: saved charting decisions</summary>
+
+After a charting discussion, part of `docs/decisions/charting.md` might look like this.
+These are illustrative answers, not defaults for every application:
+
+```markdown
+# Charting decisions
+
+Source: https://www.medplum.com/docs/decision-guides/charting
+Local source: medplum-link/packages/docs/docs/decision-guides/charting.md
+Source revision: [commit from git -C medplum-link rev-parse HEAD]
+Consulted: [date]
+
+## 2.1 What visit types do you provide, and what does each entail?
+
+Status: confirmed
+Decision: The first release supports an initial visit and a follow-up visit.
+Reason: Clinical operations confirmed these are the launch workflows.
+Implementation: Define a Visit Template for each visit type.
+
+## 2.3 How will form responses be parsed into queryable data?
+
+Status: proposed
+Proposal: Use SDC extraction for the initial visit's structured form.
+Reason: The described mappings appear straightforward; scoring or external lookups would change this choice.
+Pending: Confirm the form's processing requirements with the application owner before implementing extraction.
+
+## 2.4 What are the signing requirements?
+
+Status: open
+Question: Does this practice require a co-signature for any visit type?
+Blocks: Finalizing the signing workflow and its acceptance tests.
+
+## 2.5 Who owns and edits Visit Templates?
+
+Status: confirmed
+Decision: Clinical operations specifies changes; engineering implements them.
+Reason: Clinical operations expects infrequent template changes in the first release.
+Implementation: Keep templates under code review; a custom template editor is out of scope.
+```
+
+A later request to add a template editor changes the saved ownership decision. The agent
+should identify any remaining questions, such as who can publish template changes, and
+update the record alongside the implementation.
+
+</details>
+
+When choosing implementations, have the agent inspect Medplum's reusable components and
+examples. [Medplum Provider](/docs/provider) is a useful reference for clinical workflows;
+you can also build a custom app with the [React components](/docs/api/react).
+
+### Implement from the saved decisions
+
+For the next coding task, give your agent a specific feature and the saved context.
+For example, after agreeing on your charting plan:
+
+```text
+Implement [the next charting feature]. Read my project instructions, application
+plan if present, and docs/decisions/charting.md. Follow the implementation steps in
+medplum-link/packages/docs/static/ai/planning.md (or https://www.medplum.com/ai/planning.md)
+and the relevant technical docs. Ask about missing requirements; do not invent answers.
+Check the result against the saved decisions and agreed acceptance criteria.
+```
+
+Add pointers to these files in the [project rules](#5-encode-your-conventions-in-a-rule-file)
+your tool loads so future tasks can find them without relying on chat history.
+
+For an organization's automated coding system, provide the same Markdown instructions,
+relevant guides and technical docs at a pinned revision, and saved decisions to each job.
+Route blocking questions back to the application owner. This workflow does not depend on
+a particular editor or a single ongoing chat.
 
 ## 3. Keep Conversations Short and Re-Anchor on the Docs
 
@@ -107,13 +223,15 @@ Practical habits that keep the agent grounded:
   resource, tell it to check that resource against the docs before moving on. Periodic
   re-grounding catches drift before it compounds.
 - Plan, then execute in a clean thread. Use a planning conversation to settle on the
-  pattern (section 2), then open a new conversation to implement it with just the files
-  that matter in context.
+  pattern (section 2), then open a new conversation with the application plan, relevant
+  decision records, and technical docs. Ask the agent to implement against those decisions
+  and check the result against the acceptance criteria.
 - Watch for drift. If the agent stops citing real Medplum snippets and starts producing
   plausible-but-generic FHIR, that's your signal to reset.
 
-A rule file is the durable fix: because it is re-read on every turn, these conventions and
-source-of-truth pointers survive compaction instead of being summarized away. See
+Keep a pointer to the saved decisions in your project's rule file, and make sure new tasks
+load the relevant records. Instruction-loading behavior varies by tool; explicitly reload
+the relevant docs and decisions after compaction. See
 [section 5](#5-encode-your-conventions-in-a-rule-file).
 
 ## 4. Verify and Validate the Output
@@ -156,53 +274,37 @@ server (synthetic data, no BAA required) or a token against a live server; see
 
 ## 5. Encode Your Conventions in a Rule File
 
-A rule or instructions file — `CLAUDE.md` for Claude Code, `.cursorrules` for Cursor, or an
-`AGENTS.md`-style file — is re-read on every turn. That does two things: it saves you from
-restating "read the Medplum docs" in every prompt, and it keeps these conventions alive
-through compaction in long sessions. The most valuable part is the documentation block;
-pointing the agent at Medplum's docs as the source of truth is what makes it reach for them
-on its own.
-
-The example below is the rule file we offer as a starting point. Keep the one
-documentation-access bullet that matches how you set things up in
-[section 1](#1-give-your-ai-tools-access-to-medplum), drop the conventions that don't apply
-to you, and add your own.
+The [starting prompt](#plan-your-application) asks the agent to connect the Medplum rules
+to the project instructions your coding tool loads. For manual setup, merge a short section
+like this into your application's `AGENTS.md`, `CLAUDE.md`, or equivalent rule file,
+adjusting the clone path:
 
 ```markdown
-# Agent Rules for Medplum
+## Medplum
 
-## Documentation is the source of truth
-<!-- Keep the ONE bullet matching your setup; delete the other two and this comment. -->
-
-- Medplum docs are at `medplum-link/packages/docs/docs/` — `[slug]` → that path + `.md`. Read with the file tools.
-- Resolve `[slug]`s with your own Medplum docs skill: invoke `<YOUR_SKILL_NAME>` with the bracketed slug/topic as the query.
-- Resolve `[slug]`s using your Medplum MCP server.
-
-Read the relevant doc once before building in an area — prefer real Medplum patterns over generic
-FHIR. Don't re-read docs you've already read this session, EXCEPT: if the conversation has been
-compacted/summarized (or you can no longer see the doc's actual text), re-read the relevant doc
-before writing code — the rules below are reminders, not a substitute for the doc.
-
-## Core
-
-FHIR R4 only; type with `@medplum/fhirtypes`; reuse `@medplum/core` helpers; don't invent fields,
-search params, or operations.
-
-## Common Mistakes
-
-- Messaging: thread header carries no payload; `recipient` = ALL participants incl. the sender/creator.  [communications/messaging-data-model]
-- Scheduling: availability is implicit — create `Slot`s only for booked/blocked time, never for open availability.  [scheduling/defining-availability]
-- Bundles: entries that cross-reference need `type: transaction` + `urn:uuid` fullUrls (or `reorderBundle()`), not batch.  [fhir-datastore/fhir-batch-requests]
-- Idempotent writes: conditional create/update keyed on `identifier` (`createResourceIfNoneExist`), never search-then-create.  [fhir-datastore/working-with-fhir]
-- Files: `createMedia`/`createBinary`/`createAttachment` → `Binary/{id}` url + securityContext; never base64 in `Attachment.data`.  [fhir-datastore/binary-data]
-- Access: patient-compartment access comes from a resource's OWN compartment references (e.g. `subject`); it does NOT propagate through links like `Communication.partOf`. Enforce via `AccessPolicy` + `ProjectMembership` (`%patient`/`%org` variables), never app-layer filtering.  [access/access-policies]
-- Licensing: use `PractitionerRole` per service line, with jurisdictions in `PractitionerRole.location` (multiple states may share a role). Scheduling does not enforce licensure; validate eligibility in the app's controlled booking path. Enforce data access with `AccessPolicy`.  [scheduling/state-by-state-licensure]
-- Subscriptions: scope `criteria` tightly; create/update-only firing and `%previous`/`%current` transition criteria exist as Medplum extensions.  [subscriptions/subscription-extensions]
-- Form extraction: SDC `templateExtract` or a Bot — one strategy per form.  [questionnaires/parsing-questionnaire-responses]
-- Codes: agents routinely hallucinate SNOMED/LOINC/ICD-10 codes; don't invent them or pull them from the internet (unreliable). When unsure, use a clearly-marked placeholder and flag it for human verification rather than shipping a made-up code.  [terminology/common-terminologies]
-
-Before finishing: re-check your code against the list above; verify with `tsc` and tests.
+Before planning or implementing Medplum features, read and follow
+`medplum-link/packages/docs/static/ai/medplum-rules.md`.
+If the clone is unavailable, use https://www.medplum.com/ai/medplum-rules.md.
 ```
+
+This explicitly tells the agent to open the file; a standalone `medplum-rules.md` is not
+automatically discovered. Keep your existing project instructions. As plans and decisions
+are saved, add their actual paths here and tell the agent to read the relevant ones before
+implementation.
+
+Check your tool's instruction-loading behavior: see [Codex's AGENTS.md guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
+or [Claude Code's project instructions](https://code.claude.com/docs/en/memory). After setup,
+start a fresh session and ask the agent to read the project's Medplum rules and identify
+the saved planning files, if present. Check the paths and its file reads. If references are
+not followed reliably, include the rules below directly in the loaded project instructions.
+
+The example below is rendered directly from the reusable [medplum-rules.md](pathname:///ai/medplum-rules.md)
+file, also available at `medplum-link/packages/docs/static/ai/medplum-rules.md` in the clone.
+For agents using web access, the public URL is `https://www.medplum.com/ai/medplum-rules.md`.
+The rules prefer the local clone and fall back to the public docs. Keep the full guides and
+planning procedure in their source files so the agent can read them when needed.
+
+<MedplumRules />
 
 ## Direct Data Access (Advanced)
 
