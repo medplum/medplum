@@ -51,6 +51,8 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly maxValues?: number;
   readonly optionsDropdownMaxHeight?: number;
   readonly minInputLength?: number; // minimum number of input characters required before executing loadOptions
+  /** Shows a loader in place of the clear button, as while a search runs. */
+  readonly loading?: boolean;
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
@@ -81,6 +83,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     maxValues,
     optionsDropdownMaxHeight = 320,
     minInputLength = 0,
+    loading,
     ...rest
   } = props;
   const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
@@ -349,7 +352,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           error={error}
           className={props.className}
           leftSection={leftSection}
-          rightSection={abortController ? <Loader size={16} /> : clearButton}
+          rightSection={loading || abortController ? <Loader size={16} /> : clearButton}
           required={required}
           withAsterisk={withAsterisk}
           disabled={disabled}

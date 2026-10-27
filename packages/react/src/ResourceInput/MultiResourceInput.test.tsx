@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
 import { HomerSimpson, MargeSimpson, MockClient } from '@medplum/mock';
@@ -231,6 +232,31 @@ describe('MultiResourceInput', () => {
         </MedplumProvider>
       );
       expect(await pills().findByText('Homer Simpson')).toBeInTheDocument();
+    });
+
+    test('is disabled while references are read', async () => {
+      const client = new MockClient();
+      let resolveRead: () => void = () => undefined;
+      vi.spyOn(client, 'readReference').mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRead = () => resolve(HomerSimpson as WithId<Patient>);
+        }) as ReturnType<MockClient['readReference']>
+      );
+      render(
+        <MedplumProvider medplum={client}>
+          <MultiResourceInput<Patient>
+            resourceType="Patient"
+            name="foo"
+            placeholder="Test"
+            value={[createReference(HomerSimpson)]}
+          />
+        </MedplumProvider>
+      );
+      expect(screen.queryByPlaceholderText('Test')).not.toBeInTheDocument();
+
+      await act(async () => resolveRead());
+      expect(pills().getByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
     });
 
     test('leaves out references that cannot be read', async () => {

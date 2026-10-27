@@ -166,7 +166,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
   const ItemComponent = props.itemComponent ?? DefaultResourceItemComponent;
   const onChange = props.onChange;
   const controlled = props.value !== undefined;
-  const valueResources = useControlledResources(props.value);
+  const { resources: valueResources, pending } = useControlledResources(props.value);
 
   // Capture initial defaultValue at mount — treated as uncontrolled (initial-only).
   // The Mantine MultiSelect component does not reliably handle changes to defaultValue after mount.
@@ -239,7 +239,8 @@ export function MultiResourceInput<T extends Resource = Resource>(
 
   return (
     <AsyncAutocomplete<T>
-      disabled={props.disabled}
+      disabled={props.disabled || pending}
+      loading={pending}
       name={props.name}
       label={props.label}
       error={props.error}
@@ -262,9 +263,12 @@ export function MultiResourceInput<T extends Resource = Resource>(
  * Resolves a controlled `value` to resources, reading references the client hasn't cached. While a
  * read is pending, the last fully resolved selection is shown.
  * @param value - The controlled value, or undefined when uncontrolled.
- * @returns The resources to show, or undefined when uncontrolled.
+ * @returns The resources to show (undefined when uncontrolled), and whether a read is pending. An edit
+ * made while pending would drop the references still being read.
  */
-function useControlledResources<T extends Resource>(value: readonly (T | Reference<T>)[] | undefined): T[] | undefined {
+function useControlledResources<T extends Resource>(
+  value: readonly (T | Reference<T>)[] | undefined
+): { resources: T[] | undefined; pending: boolean } {
   const medplum = useMedplum();
   // The last read, for the uncached references it covered. null marks a reference that could not be read.
   const [read, setRead] = useState<{ key: string; results: Map<string, T | null> }>();
@@ -323,5 +327,5 @@ function useControlledResources<T extends Resource>(value: readonly (T | Referen
     setLastResolved(resolved);
   }
 
-  return pendingKey ? lastResolved : resolved;
+  return { resources: pendingKey ? lastResolved : resolved, pending: !!pendingKey };
 }
