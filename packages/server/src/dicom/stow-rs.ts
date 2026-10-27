@@ -42,8 +42,8 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
   const ctx = getAuthenticatedContext();
   const repo = ctx.repo;
 
-  /** One entry per instance, resolving once its bytes are stored and its metadata parsed. */
-  const parsedInstances: Promise<[Binary, DcmjsDicomDict]>[] = [];
+  /** One entry per instance: its reserved id, stored file and metadata, resolving once all are ready. */
+  const parsedInstances: Promise<[string, Binary, DcmjsDicomDict]>[] = [];
 
   async function parseDicomMetadata(stream: PassThrough): Promise<DcmjsDicomDict> {
     const listener = new DicomMetadataListener({
@@ -56,7 +56,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     return cleanDicomJsonDict({ ...result.meta, ...result.dict });
   }
 
-  async function processInstance([binary, dict]: [Binary, DcmjsDicomDict]): Promise<DicomInstance> {
+  async function processInstance([id, binary, dict]: [string, Binary, DcmjsDicomDict]): Promise<DicomInstance> {
     const naturalized = DicomMetaDictionary.naturalizeDataset(dict) as Record<string, unknown>;
 
     const studyResult = await repo.conditionalCreate<DicomStudy>(dcmjsStudyToMedplumStudy(naturalized), {
@@ -88,6 +88,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     const instanceResult = await repo.conditionalCreate<DicomInstance>(
       {
         resourceType: 'DicomInstance',
+        id,
         study: createReference(studyResult.resource),
         series: createReference(seriesResult.resource),
         raw: createReference(binary),
@@ -105,7 +106,8 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       {
         resourceType: 'DicomInstance',
         filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: naturalized.SOPInstanceUID as string }],
-      }
+      },
+      { assignedId: true }
     );
     return instanceResult.resource;
   }
@@ -190,12 +192,18 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     const uploadStream = new PassThrough();
     const parseStream = new PassThrough();
 
+    // The instance id is reserved up front so the stored file can reference the instance it will
+    // belong to. That instance is created later in `processInstance`, so reference checks are off
+    // for this write.
+    const instanceId = repo.generateId();
+
     // Overlapping parts cannot share a repository, since creating the Binary opens a transaction.
     // A clone is safe here, unlike in `processInstance`: each part inserts its own new row.
-    const binaryRepo = repo.clone();
+    const binaryRepo = repo.clone({ checkReferencesOnWrite: false });
     const uploadPromise = uploadBinaryData(binaryRepo, uploadStream, {
       contentType: 'application/dicom',
       filename: 'instance.dcm',
+      securityContext: `DicomInstance/${instanceId}`,
     }).finally(() => binaryRepo[Symbol.dispose]());
 
     const parsePromise = parseDicomMetadata(parseStream);
@@ -217,7 +225,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       parseStream.destroy(err);
     });
 
-    parsedInstances.push(Promise.all([uploadPromise, parsePromise]));
+    parsedInstances.push(Promise.all([instanceId, uploadPromise, parsePromise]));
   });
 
   dicomwebMultipartParser.on('error', handleError);
