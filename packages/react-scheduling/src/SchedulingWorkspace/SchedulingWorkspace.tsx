@@ -88,7 +88,7 @@ export interface SchedulingWorkspaceProps {
   /** Called with what `$confirm` wrote, after a pending appointment is confirmed from its details. */
   readonly onConfirmed?: (confirmation: AppointmentWrite) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
-  /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
+  /** Called with the appointment as written, after its visit type's codes are edited. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /**
    * Overrides the value set the appointment detail view offers cancellation reasons
