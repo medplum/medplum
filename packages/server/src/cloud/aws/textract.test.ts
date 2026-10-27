@@ -57,14 +57,12 @@ describe('AWS Textract', () => {
     mockComprehendClient.restore();
   });
 
-  async function getOutputBinary(accessToken: string, inputMediaId?: string): Promise<Binary> {
+  async function getOutputBinary(accessToken: string): Promise<Binary> {
     const searchRes = await request(app)
-      .get('/fhir/R4/Media?_count=10')
+      .get('/fhir/R4/Media?_sort=-_lastUpdated&_count=1')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(searchRes).toHaveStatus(200);
-    const output = (searchRes.body.entry as { resource: Media }[])
-      .map((e) => e.resource)
-      .find((m) => m.id !== inputMediaId) as Media;
+    const output = searchRes.body.entry[0].resource as Media;
     // content.url is a presigned storage URL of the form /storage/<id>/<versionId>
     const binaryId = new URL(output.content.url as string).pathname.split('/').filter(Boolean)[1];
     const binaryRes = await request(app)
@@ -117,7 +115,7 @@ describe('AWS Textract', () => {
     expect(res3).toHaveStatus(200);
     expect(res3.body.Blocks).toBeDefined();
 
-    const output = await getOutputBinary(accessToken, res2.body.id);
+    const output = await getOutputBinary(accessToken);
     expect(output.securityContext?.reference).toStrictEqual(patientRef);
   });
 
