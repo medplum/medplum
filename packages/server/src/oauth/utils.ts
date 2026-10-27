@@ -743,9 +743,17 @@ export async function getAuthTokens(
 
   const partialPermissionScopes = getPartialPermissionScopes(login.scope);
   if (partialPermissionScopes.length > 0) {
+    let projectId = resolveId(login.project);
+    if (!projectId) {
+      // A logging lookup must not prevent token issuance.
+      const membership = await getGlobalSystemRepo()
+        .readReference(login.membership)
+        .catch(() => undefined);
+      projectId = resolveId(membership?.project);
+    }
     getLogger().warn('SMART scopes with partial permissions', {
       clientId,
-      projectId: resolveId(login.project),
+      projectId,
       scopes: partialPermissionScopes,
     });
   }

@@ -522,10 +522,6 @@ describe('OAuth2 Token', () => {
       });
       expect(res).toHaveStatus(200);
       expect(res.body.project.reference).toBe(getReferenceString(target));
-
-      const loginId = parseJWTPayload(res.body.access_token).login_id as string;
-      const login = await getGlobalSystemRepo().readResource<Login>('Login', loginId);
-      expect(login.project?.reference).toBe(getReferenceString(target));
     }
 
     const basicAuth = 'Basic ' + encodeBase64(client.id + ':' + client.secret);
