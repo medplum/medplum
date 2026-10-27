@@ -606,10 +606,12 @@ describe('On Behalf Of', () => {
           resourceType: 'AsyncJob',
           status: 'completed',
           request: 'https://example.com/',
+          requester: createReference(user2.profile),
           requestTime: new Date().toISOString(),
           output: { resourceType: 'Parameters', parameter: [{ name: 'responseBody', valueString: 'user1' }] },
         });
       expect(createRes).toHaveStatus(201);
+      expect(createRes.body.requester.reference).toStrictEqual(getReferenceString(user1.profile));
 
       const readAs = async (headers: Record<string, string>): Promise<AsyncJob> => {
         const res = await request(app).get(`/fhir/R4/AsyncJob/${createRes.body.id}`).set(headers);

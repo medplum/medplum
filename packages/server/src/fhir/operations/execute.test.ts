@@ -1202,7 +1202,7 @@ describe('Execute', () => {
         .send([{ op: 'copy', from: '/output/parameter/0/valueString', path: '/minServerVersion' }]);
       expect(patchRes).toHaveStatus(400);
 
-      // Updates keep the output and the accounts of the job
+      // Updates keep the output and the requester of the job
       const updateRes = await request(app)
         .put(`/fhir/R4/AsyncJob/${job.id}`)
         .set('Authorization', 'Bearer ' + otherMember.accessToken)
@@ -1210,7 +1210,7 @@ describe('Execute', () => {
         .send({
           resourceType: 'AsyncJob',
           id: job.id,
-          meta: { accounts: [createReference(otherMember.profile)] },
+          requester: createReference(otherMember.profile),
           status: 'completed',
           request: 'https://example.com/',
           requestTime: job.requestTime,

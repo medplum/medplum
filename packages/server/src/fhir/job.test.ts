@@ -169,7 +169,7 @@ describe('Job status', () => {
       });
     }));
 
-  test('Updating a job keeps its server-assigned accounts', async () => {
+  test('Updating a job keeps its requester', async () => {
     const { project } = await createTestProject();
     const systemRepo = await getProjectSystemRepo(project);
     const job = await systemRepo.createResource<AsyncJob>({
@@ -186,7 +186,7 @@ describe('Job status', () => {
       .put(`/fhir/R4/AsyncJob/${job.id}`)
       .set('Authorization', 'Bearer ' + member.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ ...job, meta: { accounts: [createReference(member.profile)] } });
+      .send({ ...job, requester: createReference(member.profile) });
     expect(updateRes).toHaveStatus(200);
 
     const res = await request(app)
@@ -197,6 +197,6 @@ describe('Job status', () => {
     expect(res.body.output).toBeUndefined();
     const storedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.id);
     expect(storedJob).toMatchObject({ request: job.request, output: job.output });
-    expect(storedJob.meta?.accounts).toBeUndefined();
+    expect(storedJob.requester).toBeUndefined();
   });
 });

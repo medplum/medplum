@@ -63485,6 +63485,10 @@
           "description": "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
           "$ref": "#/definitions/uri"
         },
+        "requester": {
+          "description": "The user or client application that started the job. Assigned by the server when the job is created.",
+          "$ref": "#/definitions/Reference"
+        },
         "output": {
           "description": "Outputs resulting from the async job.",
           "$ref": "#/definitions/Parameters"

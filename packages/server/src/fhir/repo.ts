@@ -1046,6 +1046,10 @@ export class Repository extends FhirRepository implements Disposable {
       deepClone(this.restoreReadonlyFields(validatedResource, existing))
     );
     updated = await replaceConditionalReferences(this, updated);
+    if (updated.resourceType === 'AsyncJob' && !this.isSuperAdmin()) {
+      // Server-assigned, since the requester can read the output (see `canReadAsyncJobOutput`)
+      updated.requester = existing ? (existing as AsyncJob).requester : this.getAsyncJobRequester();
+    }
 
     const resultMeta: Meta = {
       ...updated.meta,
@@ -1065,7 +1069,7 @@ export class Repository extends FhirRepository implements Disposable {
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
-      resultMeta.accounts = accounts.length > 0 ? accounts : undefined;
+      resultMeta.accounts = accounts;
     }
     resultMeta.compartment = this.getCompartments(result);
 
@@ -2242,8 +2246,8 @@ export class Repository extends FhirRepository implements Disposable {
    * With On-Behalf-Of, the request runs with that user's access, so that user is the requester.
    * @returns The requester reference.
    */
-  getAsyncJobRequester(): Reference {
-    return this.context.onBehalfOf ?? this.context.author;
+  getAsyncJobRequester(): NonNullable<AsyncJob['requester']> {
+    return (this.context.onBehalfOf ?? this.context.author) as NonNullable<AsyncJob['requester']>;
   }
 
   /**
@@ -2270,19 +2274,6 @@ export class Repository extends FhirRepository implements Disposable {
       // The writer's access policy is only applied at resource creation: simply editing a
       // resource does NOT pull it into the user's account.
       accounts.add(this.context.accessPolicy.compartment.reference);
-    }
-
-    if (updated.resourceType === 'AsyncJob') {
-      // The requester is recorded as an account (see `canReadAsyncJobOutput`).
-      // AsyncJob accounts are assigned by the server, and kept on update.
-      if (existing) {
-        for (const account of extractAccountReferences(existing.meta) ?? EMPTY) {
-          accounts.add(account.reference as string);
-        }
-      } else if (!this.isSuperAdmin()) {
-        accounts.add(this.getAsyncJobRequester().reference as string);
-      }
-      return Array.from(accounts, (reference) => ({ reference }));
     }
 
     if (updated.resourceType === 'Patient') {
@@ -2520,8 +2511,8 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Determines if the current user can read the output of an AsyncJob.
    * The output was produced with the access of the requester, so it is only available to the requester
-   * (recorded as an account of the job, see `getAccounts`) and to admins of the job's project.
-   * @param asyncJob - The AsyncJob, including `meta.project` and `meta.accounts`.
+   * and to admins of the job's project.
+   * @param asyncJob - The AsyncJob, including `meta.project`.
    * @returns True if the current user can read the output of the AsyncJob.
    */
   private canReadAsyncJobOutput(asyncJob: AsyncJob): boolean {
@@ -2531,8 +2522,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.isProjectAdmin() && asyncJob.meta?.project === this.currentProject()?.id) {
       return true;
     }
-    const requester = this.getAsyncJobRequester().reference;
-    return !!asyncJob.meta?.accounts?.some((account) => account.reference === requester);
+    const requester = asyncJob.requester?.reference;
+    return !!requester && requester === this.getAsyncJobRequester().reference;
   }
 
   /**
