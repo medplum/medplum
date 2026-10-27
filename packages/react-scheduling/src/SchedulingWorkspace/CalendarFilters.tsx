@@ -3,12 +3,12 @@
 import { Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
-import { ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { AppointmentServiceSelect } from '../AppointmentFinder/AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { ServiceFacilityInput } from '../ServiceFacilityInput';
 
 /**
  * The chosen filter values, used to constrain visible Schedules and Appointments.
@@ -83,15 +83,12 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
 
   return (
     <Stack gap="xs">
-      <ResourceInput<WithId<Location>>
-        resourceType="Location"
-        name="serviceFacility"
+      <ServiceFacilityInput
         label="Service Facility"
         placeholder="All service facilities"
         searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
-        defaultValue={serviceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
+        defaultValue={serviceFacility}
         onChange={selectServiceFacility}
-        clearable={false}
       />
       <AppointmentServiceSelect
         key={serviceFieldKey}
