@@ -3,15 +3,26 @@
 import type { WithId } from '@medplum/core';
 import { EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Binary, Project } from '@medplum/fhirtypes';
+import { isIP } from 'node:net';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { applyFromDisplayName, getFromAddress, getProjectAppName, getProjectSmtpConfig } from './utils';
+import {
+  applyFromDisplayName,
+  getFromAddress,
+  getProjectAppName,
+  getProjectSmtpConfig,
+  resolveProjectSmtpHost,
+} from './utils';
+
+const PROJECT_SMTP_TIMEOUT_MS = 20_000;
+const PROJECT_SMTP_SOCKET_TIMEOUT_MS = 120_000;
 
 /**
  * Sends an email using the AWS SES service.
@@ -104,7 +115,7 @@ async function sendEmailViaSmtp(
   options: Mail.Options,
   projectId?: string
 ): Promise<void> {
-  const transport = createTransport({
+  const transportOptions: SMTPTransport.Options = {
     host: smtpConfig.host,
     port: smtpConfig.port,
     secure: smtpConfig.secure,
@@ -112,7 +123,18 @@ async function sendEmailViaSmtp(
       user: smtpConfig.username,
       pass: smtpConfig.password,
     },
-  });
+  };
+  if (projectId) {
+    transportOptions.host = await resolveProjectSmtpHost(projectId, smtpConfig.host);
+    if (!isIP(smtpConfig.host)) {
+      // Keep SNI and certificate checks on the configured hostname
+      transportOptions.tls = { servername: smtpConfig.host };
+    }
+    transportOptions.connectionTimeout = PROJECT_SMTP_TIMEOUT_MS;
+    transportOptions.greetingTimeout = PROJECT_SMTP_TIMEOUT_MS;
+    transportOptions.socketTimeout = PROJECT_SMTP_SOCKET_TIMEOUT_MS;
+  }
+  const transport = createTransport(transportOptions);
   try {
     await transport.sendMail(options);
   } catch (err) {

@@ -6,8 +6,9 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import { simpleParser } from 'mailparser';
+import dns from 'node:dns';
 import request from 'supertest';
-import { vi } from 'vitest';
+import { onTestFinished, vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { initTestAuth } from '../test.setup';
@@ -293,6 +294,10 @@ describe('Email API Routes', () => {
   });
 
   test('Send email via project SMTP', async () => {
+    const lookupSpy = vi
+      .spyOn(dns.promises, 'lookup')
+      .mockResolvedValue([{ address: '93.184.215.14', family: 4 }] as never);
+    onTestFinished(() => lookupSpy.mockRestore());
     mockCreateTransport.mockClear();
     mockSendMail.mockClear();
 
@@ -320,7 +325,7 @@ describe('Email API Routes', () => {
     expect(res).toHaveStatus(200);
 
     expect(mockCreateTransport).toHaveBeenCalledWith(
-      expect.objectContaining({ host: 'smtp.project.example.com', port: 587, secure: false })
+      expect.objectContaining({ host: '93.184.215.14', port: 587, secure: false })
     );
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].from).toBe('support@project.example.com');

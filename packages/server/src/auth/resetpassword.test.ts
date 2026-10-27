@@ -8,8 +8,9 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
+import dns from 'node:dns';
 import request from 'supertest';
-import { vi } from 'vitest';
+import { onTestFinished, vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -188,6 +189,10 @@ describe('Reset Password', () => {
   });
 
   test('Project-scoped user uses project SMTP', async () => {
+    const lookupSpy = vi
+      .spyOn(dns.promises, 'lookup')
+      .mockResolvedValue([{ address: '93.184.215.14', family: 4 }] as never);
+    onTestFinished(() => lookupSpy.mockRestore());
     const email = `project-smtp-${randomUUID()}@example.com`;
     mockCreateTransport.mockClear();
     mockSendMail.mockClear();
@@ -223,9 +228,7 @@ describe('Reset Password', () => {
     });
     expect(res).toHaveStatus(200);
 
-    expect(mockCreateTransport).toHaveBeenCalledWith(
-      expect.objectContaining({ host: 'smtp.project.example.com', port: 587 })
-    );
+    expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ host: '93.184.215.14', port: 587 }));
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].from).toBe('support@project.example.com');
     expect(mockSESv2Client.send.callCount).toBe(0);

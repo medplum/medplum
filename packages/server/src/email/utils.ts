@@ -3,11 +3,13 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, badRequest } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
+import dns from 'node:dns';
 import type { Address, SendMailOptions } from 'nodemailer';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import { getLogger } from '../logger';
+import { isUnsafeIpAddress } from '../util/url';
 
 export interface ProjectSmtpConfig extends MedplumSmtpConfig {
   fromAddress: string;
@@ -60,6 +62,24 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
     fromAddress,
     approvedSenderEmails: secrets?.find((s) => s.name === 'smtpApprovedSenders')?.valueString,
   };
+}
+
+/**
+ * Resolves the project SMTP host to the address the transport connects to.
+ * @param projectId - The project ID, for logging.
+ * @param host - The configured SMTP host.
+ * @returns The address to connect to.
+ */
+export async function resolveProjectSmtpHost(projectId: string, host: string): Promise<string> {
+  if (getConfig().allowUnsafeOutbound) {
+    return host;
+  }
+  const addresses = await dns.promises.lookup(host, { all: true }).catch(() => []);
+  if (addresses.length === 0 || addresses.some(({ address }) => isUnsafeIpAddress(address))) {
+    getLogger().warn('Project SMTP is misconfigured', { projectId, invalid: 'smtpHost' });
+    throw new OperationOutcomeError(badRequest('Project SMTP configuration is incomplete or invalid'));
+  }
+  return addresses[0].address;
 }
 
 /**
