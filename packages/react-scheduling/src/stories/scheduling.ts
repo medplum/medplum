@@ -1151,7 +1151,7 @@ function buildPatient(id: string, given: string, family: string, birthDate: stri
 /** Typed as a medical record number, which is how it is read without configuration. */
 export const ElderJordanPatient = buildPatient('jordan-elder', 'Jordan', 'Reyes', '1961-04-02', {
   type: { coding: [{ system: HL7_V2_0203, code: 'MR' }] },
-  value: 'MRN-0041',
+  value: '100041',
 });
 
 /** Same name, different person, and no medical record number on file. */
@@ -1160,7 +1160,7 @@ export const YoungerJordanPatient = buildPatient('jordan-younger', 'Jordan', 'Re
 /** Identified only by the system that issued it, which is what `mrnSystem` names. */
 export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield', '1978-06-14', {
   system: MRN_SYSTEM,
-  value: 'MRN-0099',
+  value: '100099',
 });
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
