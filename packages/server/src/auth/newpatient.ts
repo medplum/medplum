@@ -33,6 +33,12 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
 
   const { projectId } = req.body;
 
+  if (login.project?.reference && login.project.reference !== 'Project/' + projectId) {
+    // The login was started for a different project, so it cannot be used outside of that project
+    sendOutcome(res, badRequest('Invalid project'));
+    return;
+  }
+
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   if (!user.project) {
     sendOutcome(res, badRequest('User must be scoped to the project'));

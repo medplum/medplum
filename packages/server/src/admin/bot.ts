@@ -18,7 +18,8 @@ export async function createBotHandler(req: Request, res: Response): Promise<voi
   if (!ctx.project.superAdmin && projectId !== ctx.project.id) {
     throw new OperationOutcomeError(forbidden);
   }
-  const project = await ctx.repo.readResource<Project>('Project', projectId);
+  const project =
+    projectId === ctx.project.id ? ctx.project : await ctx.repo.readResource<Project>('Project', projectId);
   const bot = await createBot(ctx.repo, project, req.body);
   res.status(201).json(bot);
 }

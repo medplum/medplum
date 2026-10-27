@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, WithId } from '@medplum/core';
-import { allOk, badRequest, concatUrls, createReference, Operator, resolveId } from '@medplum/core';
+import { allOk, badRequest, concatUrls, createReference, escapeSearchValue, Operator, resolveId } from '@medplum/core';
 import type { Project, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -35,7 +35,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     {
       code: 'email',
       operator: Operator.EXACT,
-      value: email, // Set the email value for exact matching
+      value: escapeSearchValue(email), // Set the email value for exact matching
     },
   ];
 

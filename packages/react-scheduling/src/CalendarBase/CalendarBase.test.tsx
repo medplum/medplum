@@ -4,9 +4,10 @@ import type { WithId } from '@medplum/core';
 import { createReference, sleep } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
+import { createRef } from 'react';
 import { describe, expect, test, vi } from 'vitest';
-import { renderWithMedplum, screen, userEvent } from '../test-utils/render';
-import type { CalendarBaseProps } from './CalendarBase';
+import { act, renderWithMedplum, screen, userEvent } from '../test-utils/render';
+import type { CalendarBaseProps, CalendarHandle } from './CalendarBase';
 import { CalendarBase } from './CalendarBase';
 
 describe('CalendarBase', () => {
@@ -676,6 +677,21 @@ describe('CalendarBase', () => {
       // A `selection` prop should be respected on its own — the host isn't required
       // to also wire up click-to-select just to get a highlight rendered.
       expect(highlightedDays(container)).toEqual([3]);
+    });
+  });
+
+  describe('gotoDate', () => {
+    test('pages to the week holding the date it is given', async () => {
+      const onRangeChange = vi.fn();
+      const ref = createRef<CalendarHandle>();
+      renderWithMedplum(<CalendarBase ref={ref} eventSources={[]} onRangeChange={onRangeChange} />, new MockClient());
+      const threeWeeksOut = new Date(baseDate.getTime() + 21 * 24 * 60 * 60 * 1000);
+
+      act(() => ref.current?.gotoDate(threeWeeksOut));
+
+      const range = onRangeChange.mock.lastCall?.[0];
+      expect(range.start.getTime()).toBeLessThanOrEqual(threeWeeksOut.getTime());
+      expect(range.end.getTime()).toBeGreaterThan(threeWeeksOut.getTime());
     });
   });
 });

@@ -13,6 +13,7 @@ import {
 import type {
   AsyncJob,
   AuditEvent,
+  Binary,
   Bot,
   Parameters,
   ParametersParameter,
@@ -136,9 +137,34 @@ exports.handler = async function (medplum, event) {
 };
 `,
   ],
+  [
+    `
+export async function handler(medplum, event) {
+  const { input, responseStream } = event;
+  responseStream.startStreaming(input.statusCode, input.headers);
+  responseStream.write('data: Hello\\n\\n');
+  responseStream.end();
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  const { input, responseStream } = event;
+  responseStream.startStreaming(input.statusCode, input.headers);
+  responseStream.write('data: Hello\\n\\n');
+  responseStream.end();
+};
+`,
+  ],
 ] as [string, string][];
 
-type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot' | 'streamingBot' | 'streamingErrorBot';
+type BotName =
+  | 'echoBot'
+  | 'systemEchoBot'
+  | 'booleanBot'
+  | 'binaryBot'
+  | 'streamingBot'
+  | 'streamingErrorBot'
+  | 'streamingHeadersBot';
 const botDefinitions: { name: BotName; system: boolean; code: [string, string]; streaming?: boolean }[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
   { name: 'echoBot', system: false, code: botCodes[0] },
@@ -146,6 +172,7 @@ const botDefinitions: { name: BotName; system: boolean; code: [string, string]; 
   { name: 'binaryBot', system: false, code: botCodes[2] },
   { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
   { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
+  { name: 'streamingHeadersBot', system: false, code: botCodes[5], streaming: true },
 ];
 
 describe('Execute', () => {
@@ -415,6 +442,41 @@ describe('Execute', () => {
     expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
   });
 
+  test('VM context bot code must be in the bot project', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext' });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as Bot;
+
+    const { project: otherProject } = await createTestProject();
+    const systemRepo = await getProjectSystemRepo(otherProject);
+    const code = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.JAVASCRIPT,
+        meta: { project: otherProject.id },
+      })
+    );
+
+    const res2 = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ ...bot, executableCode: { contentType: ContentType.JAVASCRIPT, url: `Binary/${code.id}` } });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({});
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue[0].details.text).toStrictEqual('Executable code is not in the bot project');
+  });
+
   test('VM context bot success', async () => {
     // Create a bot with empty code
     const res1 = await request(app)
@@ -583,6 +645,21 @@ describe('Execute', () => {
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('Hello, world!');
+  });
+
+  test('Binary response without data', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.echoBot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        id: randomUUID(),
+        meta: { versionId: randomUUID() },
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual('Bot returned a Binary without data');
   });
 
   test('runAsUser respects onBehalfOf', async () => {
@@ -905,6 +982,50 @@ describe('Execute', () => {
       expect(authState?.project?.id).toBeDefined();
       expect(authState?.project?.id).toBe(expectedProject.id);
     });
+
+    describe('bot with a membership in the project that owns it', () => {
+      const ownMemberships = {} as Record<BotName, WithId<ProjectMembership>>;
+
+      beforeAll(async () => {
+        // This is what the admin route and Bot/$init create
+        const systemRepo = await getProjectSystemRepo(project1);
+        for (const botName of ['echoBot', 'booleanBot'] as const) {
+          ownMemberships[botName] = await systemRepo.createResource<ProjectMembership>({
+            resourceType: 'ProjectMembership',
+            project: createReference(project1),
+            user: createReference(bots[botName]),
+            profile: createReference(bots[botName]),
+          });
+        }
+      });
+
+      test.each<[BotName, 'own' | 'linking', boolean]>([
+        ['echoBot', 'own', true],
+        ['echoBot', 'linking', false], // Has a membership in the linking project too
+        ['booleanBot', 'own', true],
+        ['booleanBot', 'linking', false], // Falls back to the caller's membership
+      ])('Bot %s called from %s project', async (botName, whichProject, expectOwnMembership) => {
+        clearBotAccessTokenCache();
+        const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
+        generateAccessTokenSpy.mockClear();
+
+        const accessTokens = { own: accessToken1, linking: accessToken2 };
+
+        const res = await request(app)
+          .post(`/fhir/R4/Bot/${bots[botName].id}/$execute`)
+          .set('Content-Type', ContentType.TEXT)
+          .set('Authorization', 'Bearer ' + accessTokens[whichProject])
+          .send('input: true');
+        expect(res).toHaveStatus(200);
+
+        expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
+        const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;
+        const authState = (await getLoginForAccessToken(undefined, generatedAccessToken))?.authState;
+
+        expect(authState?.project?.id).toBe(expectOwnMembership ? project1.id : project2.id);
+        expect(authState?.membership?.id === ownMemberships[botName].id).toBe(expectOwnMembership);
+      });
+    });
   });
 
   describe('Prefer: respond-async', () => {
@@ -1055,6 +1176,38 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken1)
         .send('input');
+      expect(res).toHaveStatus(400);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+    });
+
+    test.each([{ 'Content-Length': '0' }, { 'content-length': '0' }, { 'Transfer-Encoding': 'identity' }])(
+      'Streaming bot cannot set message framing header %j',
+      async (framingHeaders) => {
+        const res = await request(app)
+          .post(`/fhir/R4/Bot/${bots.streamingHeadersBot.id}/$execute`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Accept', 'text/event-stream')
+          .set('Authorization', 'Bearer ' + accessToken1)
+          .send({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/event-stream', 'X-Test': 'test', ...framingHeaders },
+          });
+        expect(res).toHaveStatus(200);
+        expect(res.headers['content-type']).toBe('text/event-stream');
+        expect(res.headers['x-test']).toBe('test');
+        expect(res.headers['content-length']).toBeUndefined();
+        expect(res.headers['transfer-encoding']).toBe('chunked');
+        expect(res.text).toBe('data: Hello\n\n');
+      }
+    );
+
+    test.each([100, 101, 103, 600, '200'])('Streaming bot cannot set status code %j', async (statusCode) => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingHeadersBot.id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send({ statusCode, headers: { 'Content-Type': 'text/event-stream' } });
       expect(res).toHaveStatus(400);
       expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     });

@@ -17,7 +17,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
+import { ActionIcon, Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -25,7 +25,7 @@ import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { getPatientParticipant } from '../actors';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
@@ -152,7 +152,15 @@ function slotsToEvents(
 export interface CalendarBaseProps extends Omit<
   React.ComponentProps<typeof FullCalendar>,
   // disallow specifying some FullCalendar props that we rely on
-  'controller' | 'headerToolbar' | 'datesSet' | 'eventDidMount' | 'businessHours' | 'plugins' | 'eventClick' | 'loading'
+  | 'controller'
+  | 'headerToolbar'
+  | 'datesSet'
+  | 'eventDidMount'
+  | 'businessHours'
+  | 'plugins'
+  | 'eventClick'
+  | 'loading'
+  | 'ref'
 > {
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
@@ -170,14 +178,22 @@ export interface CalendarBaseProps extends Omit<
   loading?: boolean;
 }
 
+/** Imperative handle on a calendar. */
+export interface CalendarHandle {
+  /** Pages the calendar to the day holding `date`, such as that of an appointment just booked. */
+  readonly gotoDate: (date: Date) => void;
+}
+
 // Some common calendar features:
 // - basic styling & calendar headers components
 // - event double click handlers
 // - availability overlay input in format of `HealthcareService.availableTime`
-export function CalendarBase(props: CalendarBaseProps): JSX.Element {
+export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(function CalendarBase(props, ref) {
   const colorScheme = useComputedColorScheme();
   const controller = useCalendarController();
   const viewType = controller.view?.type;
+
+  useImperativeHandle(ref, () => ({ gotoDate: (date) => controller.gotoDate(date) }), [controller]);
 
   const {
     onRangeChange,
@@ -318,17 +334,31 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
-          <Button.Group>
-            <Button variant="default" size="xs" aria-label="Previous" onClick={() => controller.prev()}>
-              <IconChevronLeft size={12} />
-            </Button>
-            <Button variant="default" size="xs" onClick={() => controller.today()}>
-              Today
-            </Button>
-            <Button variant="default" size="xs" aria-label="Next" onClick={() => controller.next()}>
-              <IconChevronRight size={12} />
-            </Button>
-          </Button.Group>
+          <Button variant="default" size="sm" fw={400} onClick={() => controller.today()}>
+            Today
+          </Button>
+          <Group gap="xs">
+            <ActionIcon
+              variant="default"
+              size="input-sm"
+              radius="xl"
+              c="dimmed"
+              aria-label="Previous"
+              onClick={() => controller.prev()}
+            >
+              <IconChevronLeft size={16} />
+            </ActionIcon>
+            <ActionIcon
+              variant="default"
+              size="input-sm"
+              radius="xl"
+              c="dimmed"
+              aria-label="Next"
+              onClick={() => controller.next()}
+            >
+              <IconChevronRight size={16} />
+            </ActionIcon>
+          </Group>
           <Group>
             <MonthPickerButton
               size="compact-md"
@@ -424,4 +454,4 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
       />
     </div>
   );
-}
+});

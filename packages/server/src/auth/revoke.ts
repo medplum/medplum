@@ -9,6 +9,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { revokeLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { getCallerUserReference } from './utils';
 
 export const revokeValidator = makeValidationMiddleware([
   body('loginId').isUUID().withMessage('Login ID is required.'),
@@ -16,12 +17,13 @@ export const revokeValidator = makeValidationMiddleware([
 
 export async function revokeHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
+  const userRef = getCallerUserReference(ctx);
 
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.loginId);
 
   // Make sure the login belongs to the current user
-  if (login.user?.reference !== ctx.membership.user?.reference) {
+  if (login.user?.reference !== userRef.reference) {
     sendOutcome(res, notFound);
     return;
   }

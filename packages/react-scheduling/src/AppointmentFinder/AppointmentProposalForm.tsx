@@ -5,6 +5,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
+  getAppointmentSite,
   getDisplayString,
   getReferenceString,
   getSchedulingRequirements,
@@ -23,11 +24,11 @@ import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
-import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { useChanged } from '../hooks/useChanged';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
@@ -176,7 +177,7 @@ export interface AppointmentProposalFormProps {
    * changes; rejecting shows the reason as the write's refusal, every answer kept.
    *
    * In `book` mode the proposal carries the patient and the visit type's required
-   * codes; in `reschedule` mode it is the time as `$find` offered it, untouched.
+   * codes; in `reschedule` mode it is the time as `$find` offered it, plus a newly chosen site.
    */
   readonly onSubmit: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
   /** Extensions to put on every appointment this form books. */
@@ -375,6 +376,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // The first window is back and nothing is holding the search up, so what it found —
   // even if that is nothing — is what is on screen.
   const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
+
+  // The times scroll apart from the form, so days picked from the form's calendar or the
+  // host's would otherwise land wherever "Show more days" left the column. Keyed on the
+  // picked start's identity, which every pick replaces, even of the same day, and paging
+  // further does not. Before paint, so the new days never flash at the old position.
+  const resultsRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (resultsRef.current) {
+      resultsRef.current.scrollTop = 0;
+    }
+  }, [daySearch.selectedDayRange.start]);
 
   const chosenActors = getAppointmentActors(chosen, actorResources);
 
@@ -597,6 +609,27 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setWritten(false);
   }
 
+  /**
+   * Tags a reschedule proposal with a newly chosen service facility.
+   *
+   * Returns the proposal unchanged when the chosen facility is the one the appointment is
+   * already at.
+   *
+   * @param proposal - An unsaved Appointment proposal.
+   * @returns The proposal, with the new site among its `supportingInformation`.
+   */
+  async function withChangedSite(proposal: Appointment): Promise<Appointment> {
+    const onFile = ignoreAppointment && getAppointmentSite(ignoreAppointment);
+    if (!serviceFacility || getReferenceString(serviceFacility) === onFile?.reference) {
+      return proposal;
+    }
+    const site = isResource(serviceFacility) ? serviceFacility : await medplum.readReference(serviceFacility);
+    return {
+      ...proposal,
+      supportingInformation: [...(proposal.supportingInformation ?? []), toAppointmentSiteReference(site)],
+    };
+  }
+
   async function handleSubmit(): Promise<void> {
     if (!chosen || detailsOutstanding) {
       return;
@@ -626,7 +659,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       } else {
         // A reschedule updates a subset of fields, and does not collect all
         // the other fields that an original booking requires.
-        await onSubmit(chosen, { manual });
+        await onSubmit(await withChangedSite(chosen), { manual });
       }
       setWritten(true);
     } catch (error) {
@@ -646,7 +679,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           name="serviceFacility"
           label="Service facility"
           placeholder="Any service facility"
-          searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
+          searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
           defaultValue={defaultServiceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
           onChange={chooseServiceFacility}
           clearable={false}
@@ -755,7 +788,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       </Stack>
 
       {searching && (
-        <Stack className={classes.results} gap="lg">
+        <Stack ref={resultsRef} className={classes.results} gap="lg">
           {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
               dateTime={effectiveDateTime}

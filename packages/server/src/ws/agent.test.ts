@@ -1,6 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import {
+  allOk,
+  ContentType,
+  createReference,
+  getReferenceString,
+  Hl7Message,
+  MEDPLUM_VERSION,
+  sleep,
+} from '@medplum/core';
 import type { Agent, Bot, Device } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -18,7 +27,7 @@ import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import * as redisModule from '../redis';
 import { getCacheRedis } from '../redis';
-import { createTestProject } from '../test.setup';
+import { createTestProject, initTestAuth } from '../test.setup';
 
 const app = express();
 let config: ServerConfig;
@@ -600,6 +609,88 @@ describe('Agent WebSockets', () => {
       })
       .close()
       .expectClosed();
+  });
+
+  describe('Linked projects', () => {
+    let sharedAccessToken: string;
+    let sharedAgent: WithId<Agent>;
+    let linkingAccessToken: string;
+
+    beforeAll(async () => {
+      const shared = await createTestProject({ withAccessToken: true });
+      sharedAccessToken = shared.accessToken;
+      linkingAccessToken = await initTestAuth({
+        project: { link: [{ project: createReference(shared.project) }] },
+      });
+
+      const res1 = await request(server)
+        .post('/fhir/R4/Agent')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + sharedAccessToken)
+        .send({
+          resourceType: 'Agent',
+          name: 'Shared Agent',
+          status: 'active',
+          channel: [
+            {
+              name: 'test',
+              endpoint: { reference: 'Endpoint/123' },
+              targetReference: { reference: 'Bot/' + randomUUID() },
+            },
+          ],
+        } satisfies Agent);
+      expect(res1).toHaveStatus(201);
+      sharedAgent = res1.body as WithId<Agent>;
+
+      // The agent of the linked project is readable
+      const res2 = await request(server)
+        .get(`/fhir/R4/Agent/${sharedAgent.id}`)
+        .set('Authorization', 'Bearer ' + linkingAccessToken);
+      expect(res2).toHaveStatus(200);
+    });
+
+    test('Agent connection is limited to agents in own project', async () => {
+      await request(server)
+        .ws('/ws/agent')
+        .sendJson({ type: 'agent:connect:request', accessToken: linkingAccessToken, agentId: sharedAgent.id })
+        .expectJson({ type: 'agent:error', body: 'Forbidden' })
+        .sendJson({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })
+        .close()
+        .expectClosed();
+
+      await sleep(100);
+      expect(await getCacheRedis().get(`medplum:agent:${sharedAgent.id}:info`)).toBeNull();
+    });
+
+    test('Rejected connection does not update agent status', async () => {
+      await request(server)
+        .ws('/ws/agent')
+        .sendJson({ type: 'agent:connect:request', accessToken: 'invalid', agentId: sharedAgent.id })
+        .expectJson((msg) => msg.type === 'agent:error')
+        .close()
+        .expectClosed();
+
+      await sleep(100);
+      expect(await getCacheRedis().get(`medplum:agent:${sharedAgent.id}:info`)).toBeNull();
+    });
+
+    test('Transmit is limited to agents in own project', async () => {
+      await request(server)
+        .ws('/ws/agent')
+        .sendJson({ type: 'agent:connect:request', accessToken: sharedAccessToken, agentId: sharedAgent.id })
+        .expectJson({ type: 'agent:connect:response' })
+        .sendJson({
+          type: 'agent:transmit:request',
+          accessToken: linkingAccessToken,
+          channel: 'test',
+          remote: '0.0.0.0:57000',
+          contentType: ContentType.HL7_V2,
+          body: 'MSH|...',
+        })
+        .expectJson({ type: 'agent:error', body: 'Forbidden' })
+        .close()
+        .expectClosed();
+    });
   });
 
   test('Unknown message type', async () => {

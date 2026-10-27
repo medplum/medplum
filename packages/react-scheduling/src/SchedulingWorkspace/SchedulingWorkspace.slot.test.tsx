@@ -7,6 +7,7 @@ import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { formatZonedDateTimeInput } from '../AppointmentFinder/AppointmentFinder.times';
 import { DrRiveraPractitioner, DrRiveraSchedule, SchedulingFixtures } from '../stories/scheduling';
+import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 import { formatWhen } from './SchedulingWorkspace.utils';
@@ -40,11 +41,15 @@ const APPOINTMENT: WithId<Appointment> = {
 let medplum: MockClient;
 
 beforeEach(async () => {
+  // At the visit, so a run late in the day does not find it closed to changes.
+  vi.setSystemTime(new Date(APPOINTMENT.start as string));
   medplum = new MockClient();
   for (const resource of [...SchedulingFixtures, BLOCKED_SLOT, APPOINTMENT]) {
     await medplum.createResource(resource);
   }
 });
+
+const FILTERED_NOTICE = 'The calendar filters hide this blocked time.';
 
 function slotDetails(): HTMLElement | null {
   return screen.queryByRole('region', { name: 'Blocked time details' });
@@ -88,14 +93,33 @@ describe('SchedulingWorkspace blocked time details', () => {
     expect(slotDetails()).toBeInTheDocument();
     expect(appointmentDetails()).not.toBeInTheDocument();
 
-    // Paging away closes it, and paging back does not open it again.
+    // It stays open once off the calendar. Another week needs no notice, as its time says why.
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
+    expect(within(slotDetails() as HTMLElement).queryByRole('alert')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Previous' }));
     await screen.findByText('Blocked');
-    expect(slotDetails()).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Blocked'));
+    const riveraRow = screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
+    await userEvent.click(riveraRow);
+    await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
+    expect(
+      within(slotDetails() as HTMLElement).getByText("This blocked time's calendar isn't shown.")
+    ).toBeInTheDocument();
+    await userEvent.click(riveraRow);
+    await screen.findByText('Blocked');
+    expect(within(slotDetails() as HTMLElement).queryByRole('alert')).not.toBeInTheDocument();
+
+    // A filter hides Slots no drawn appointment holds, even on a calendar it leaves listed.
+    await userEvent.click(screen.getByPlaceholderText('All service facilities'));
+    await userEvent.click(await within(await screen.findByRole('listbox')).findByText('Uro Associates - Main Clinic'));
+    await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
+    expect(within(slotDetails() as HTMLElement).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true })).toBeInTheDocument();
+    await userEvent.click(pillRemoveButton('Uro Associates - Main Clinic'));
+    await screen.findByText('Blocked');
+    expect(within(slotDetails() as HTMLElement).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
+
     await userEvent.click(screen.getByRole('button', { name: 'Close blocked time details' }));
     await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
     expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');

@@ -70,6 +70,9 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   const systemRepo = await getProjectSystemRepo(runAs.project);
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl });
+  if (binary.meta?.project !== bot.meta?.project) {
+    return { success: false, logResult: 'Executable code is not in the bot project' };
+  }
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
   const botConsole = new MockConsole();

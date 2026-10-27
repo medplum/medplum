@@ -748,26 +748,47 @@ export type MailDestination = string | MailAddress | string[] | MailAddress[];
 /**
  * Email attachment definition.
  * Compatible with nodemailer Mail.Options.
+ * Other nodemailer attachment options are ignored by the Medplum server.
  */
 export interface MailAttachment {
-  /** String, Buffer or a Stream contents for the attachment */
+  /** String contents for the attachment */
   readonly content?: string;
-  /** path to a file or an URL (data uris are allowed as well) if you want to stream the file instead of including it (better for larger attachments) */
+  /** A `Binary/{id}` reference, an HTTPS URL, or a data URI, if you want to stream the file instead of including it (better for larger attachments). Local file paths are not allowed. */
   readonly path?: string;
   /** filename to be reported as the name of the attached file, use of unicode is allowed. If you do not want to use a filename, set this value as false, otherwise a filename is generated automatically */
   readonly filename?: string | false;
   /** optional content type for the attachment, if not set will be derived from the filename property */
   readonly contentType?: string;
+  /** optional content disposition type for the attachment, defaults to 'attachment' */
+  readonly contentDisposition?: string;
+  /** optional content id for using inline images in HTML message source */
+  readonly cid?: string;
+  /** If set and content is string, then encodes the content to a Buffer using the specified encoding. Example values: 'base64', 'hex', 'binary' etc. */
+  readonly encoding?: string;
+}
+
+/**
+ * Email calendar event definition.
+ * Compatible with nodemailer Mail.IcalAttachment.
+ */
+export interface MailIcalEvent {
+  /** Method of the calendar event, for example 'REQUEST' or 'CANCEL' */
+  readonly method?: string;
+  /** Filename of the calendar event attachment */
+  readonly filename?: string;
+  /** iCalendar contents of the event */
+  readonly content: string;
 }
 
 /**
  * Email message definition.
  * Compatible with nodemailer Mail.Options.
+ * Other nodemailer message options are ignored by the Medplum server.
  */
 export interface MailOptions {
-  /** The e-mail address of the sender. All e-mail addresses can be plain `sender@server.com` or formatted `Sender Name <sender@server.com>` */
+  /** The e-mail address of the sender. All e-mail addresses can be plain `sender@server.com` or formatted `Sender Name <sender@server.com>`. Must be an approved sender, otherwise the default sender address is used. */
   readonly from?: string | MailAddress;
-  /** An e-mail address that will appear on the Sender: field */
+  /** Ignored by the Medplum server. The Sender: field is set to the from address. */
   readonly sender?: string | MailAddress;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the To: field */
   readonly to?: MailDestination;
@@ -785,6 +806,8 @@ export interface MailOptions {
   readonly html?: string;
   /** An array of attachment objects */
   readonly attachments?: MailAttachment[];
+  /** iCalendar event to use as an alternative, for example an appointment invitation */
+  readonly icalEvent?: string | MailIcalEvent;
 }
 
 interface SchemaGraphQLResponse {
@@ -3026,6 +3049,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * });
    * ```
    *
+   * Only the options in {@link MailOptions} are supported; other nodemailer options are ignored.
    * See the {@link https://nodemailer.com/extras/mailcomposer/ | nodemailer MailComposer options} for full details.
    * @category Media
    * @param email - The MailComposer options.

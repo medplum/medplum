@@ -7,12 +7,14 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
+  isSmartScopeSubset,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -207,6 +209,19 @@ describe('OAuth utils', () => {
     }
   });
 
+  test('Invalid projectId', async () => {
+    await expect(
+      tryLogin({
+        authMethod: 'password',
+        projectId: 'not-a-project-id',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+      })
+    ).rejects.toThrow('Invalid projectId');
+  });
+
   test('Login successfully', async () => {
     const login = await tryLogin({
       clientId: client.id,
@@ -217,6 +232,28 @@ describe('OAuth utils', () => {
       nonce: 'nonce',
     });
     expect(login).toBeDefined();
+  });
+
+  test.each([
+    ['https://example.com/', false],
+    ['https://example.com/other', true],
+  ])('Login with redirect URI %s', async (redirectUri, warned) => {
+    const warnSpy = vi.spyOn(globalLogger, 'warn');
+    try {
+      await tryLogin({
+        clientId: client.id,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        redirectUri,
+      });
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Login redirect URI is not registered for client');
+      expect(calls.length > 0).toBe(warned);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('External auth without email or externalId', () => {
@@ -743,5 +780,22 @@ describe('OAuth utils', () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
     expect(client.id).toStrictEqual('medplum-cli');
+  });
+});
+
+describe('isSmartScopeSubset', () => {
+  test.each([
+    ['system/*.rs', 'user/Patient.rs', false, true],
+    ['system/*.rs', 'patient/*.rs', true, true],
+    ['user/*.rs', 'patient/Observation.r', true, true],
+    ['system/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'system/Patient.rs', true, false],
+    ['patient/*.rs', 'user/Patient.rs', true, false],
+    ['user/Patient.rs', 'patient/Patient.cruds', true, false],
+    ['user/Patient.rs', 'user/Patient.', false, false],
+    ['user/*.rs', 'user/*.', false, false],
+  ])('%s covers %s (patient context: %s) -> %s', (existing, requested, hasPatientContext, expected) => {
+    expect(isSmartScopeSubset(existing, requested, hasPatientContext)).toBe(expected);
   });
 });

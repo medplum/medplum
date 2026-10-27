@@ -69,6 +69,18 @@ describe('CalendarFilters', () => {
       expect(screen.queryByText('Exam Room A Bed 1')).not.toBeInTheDocument();
     });
 
+    test('leaves out a site that is inactive because it is not live yet', async () => {
+      await medplum.createResource({ resourceType: 'Location', name: 'Uro Associates - North', status: 'inactive' });
+      setup();
+
+      await openAutocomplete(serviceFacilityField());
+
+      // Neither clinic records a status, and both are still offered.
+      expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+      expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      expect(screen.queryByText('Uro Associates - North')).not.toBeInTheDocument();
+    });
+
     test('searching narrows the sites to what was typed, without listing every one', async () => {
       const searchResources = vi.spyOn(medplum, 'searchResources');
       setup();

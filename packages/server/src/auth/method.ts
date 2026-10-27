@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest, escapeSearchValue } from '@medplum/core';
 import type { DomainConfiguration } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -77,7 +77,7 @@ export async function getDomainConfiguration(domain: string): Promise<DomainConf
       {
         code: 'domain',
         operator: Operator.EQUALS,
-        value: domain.toLowerCase(),
+        value: escapeSearchValue(domain.toLowerCase()),
       },
     ],
   });

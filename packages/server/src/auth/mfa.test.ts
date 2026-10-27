@@ -12,12 +12,13 @@ import type { ParsedMail } from 'mailparser';
 import { simpleParser } from 'mailparser';
 import { authenticator } from 'otplib';
 import request from 'supertest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
-import { withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
 import { clearMfaEmailCode, getEnrolledMfaMethods, sendMfaEmailCode } from './utils';
@@ -148,6 +149,137 @@ describe('MFA', () => {
   beforeEach(() => {
     mockSESv2Client.reset();
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+  });
+
+  test.each([
+    ['GET', '/auth/mfa/status', {}],
+    ['POST', '/auth/mfa/enroll', {}],
+    ['POST', '/auth/mfa/send-email-challenge', {}],
+    ['POST', '/auth/mfa/disable', {}],
+    ['POST', '/auth/changepassword', { oldPassword: 'old-password', newPassword: 'new-password-123' }],
+    ['POST', '/auth/revoke', { loginId: randomUUID() }],
+  ])('%s %s requires a user login', async (method, url, body) => {
+    const { client, project } = await withTestContext(() =>
+      createTestProject({ withClient: true, membership: { admin: true } })
+    );
+    const { profile } = await withTestContext(() => addTestUser(project));
+    const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+    const req = method === 'GET' ? request(app).get(url) : request(app).post(url).type('json').send(body);
+    const res = await req.set('Authorization', basicAuth).set('X-Medplum-On-Behalf-Of', getReferenceString(profile));
+    expect(res).toHaveStatus(403);
+  });
+
+  test('Login with SMART resource scopes cannot read status', async () => {
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Smart',
+        lastName: 'Scoped',
+        projectName: 'Smart Scoped Project',
+        email: `smart${randomUUID()}@example.com`,
+        password: 'password!@#',
+        scope: 'openid user/Observation.rs',
+      })
+    );
+
+    const res = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(403);
+    expect(res.body.enrollUri).toBeUndefined();
+  });
+
+  test('Login without SMART resource scopes can read status', async () => {
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Smart',
+        lastName: 'Unscoped',
+        projectName: 'Smart Unscoped Project',
+        email: `smart${randomUUID()}@example.com`,
+        password: 'password!@#',
+        scope: 'openid profile email fhirUser launch/patient offline_access',
+      })
+    );
+
+    const res = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.enrollUri).toBeDefined();
+  });
+
+  test('SMART app login cannot read MFA status', async () => {
+    const email = `smart${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // User enrolls in TOTP from their own session
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Smart',
+        lastName: 'Scoped',
+        projectName: 'Smart Project',
+        email,
+        password,
+      })
+    );
+    const secret = await enrollTotpMfa(accessToken);
+
+    // The user is also a member of a project with a SMART app
+    const { project: smartAppProject, client } = await withTestContext(() => createTestProject({ withClient: true }));
+    await withTestContext(() =>
+      inviteUser({
+        project: smartAppProject,
+        email,
+        resourceType: 'Practitioner',
+        firstName: 'Smart',
+        lastName: 'Scoped',
+        sendEmail: false,
+      })
+    );
+
+    // User signs in to the SMART app with a narrow resource scope
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid user/Observation.rs',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.mfaRequired).toBe(true);
+
+    const res2 = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: res1.body.login, token: authenticator.generate(secret) });
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.code).toBeDefined();
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      client_id: client.id,
+      code: res2.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res3).toHaveStatus(200);
+    const scopedToken = res3.body.access_token as string;
+
+    // The scoped token works for the granted FHIR resources
+    const res4 = await request(app).get('/fhir/R4/Observation').set('Authorization', `Bearer ${scopedToken}`);
+    expect(res4).toHaveStatus(200);
+
+    // The scoped token cannot read MFA status
+    const res5 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${scopedToken}`);
+    expect(res5).toHaveStatus(403);
+    expect(res5.body.enrollUri).toBeUndefined();
+
+    // The scoped token does not see account security details
+    const res6 = await request(app).get('/auth/me').set('Authorization', `Bearer ${scopedToken}`);
+    expect(res6).toHaveStatus(200);
+    expect(res6.body.profile).toBeDefined();
+    expect(res6.body.security).toBeUndefined();
+
+    // The user's own session can still read MFA status
+    const res7 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(res7).toHaveStatus(200);
+    expect(res7.body.enrolled).toBe(true);
   });
 
   test('Enroll end-to-end', async () => {

@@ -63,6 +63,7 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
     const binary = await repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'application/pdf',
+      securityContext: claim.patient,
     });
 
     // Write PDF to binary storage

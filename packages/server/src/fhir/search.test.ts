@@ -5242,6 +5242,24 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         expectSearchByReferenceResults(patients, observations, count, result);
       }));
 
+    test('Reference values with special characters', async () =>
+      withTestContext(async () => {
+        const patients = await createPatients(repo, 1);
+        const observations = await createObservations(repo, 2, { subject: patients[0] });
+        const patientRef = getReferenceString(patients[0]);
+        const otherRef = "Patient/o'brien";
+
+        const result = await repo.searchByReference<Observation>(
+          { resourceType: 'Observation', count: 10 },
+          'subject',
+          [otherRef, patientRef]
+        );
+
+        expect(Object.keys(result)).toStrictEqual([otherRef, patientRef]);
+        expect(result[otherRef]).toStrictEqual([]);
+        expect(result[patientRef].map((o) => o.id).sort()).toStrictEqual(observations.map((o) => o.id).sort());
+      }));
+
     test('Array reference column', async () =>
       withTestContext(async () => {
         const parentObservations = await createObservations(repo, 3, {});
@@ -5726,8 +5744,19 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 2$/), expect.anything());
       querySpy.mockClear();
 
+      // resourceOnly searches skip the extra "next page" row
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 1$/), expect.anything());
+      querySpy.mockClear();
+
       config.fhirSearchMinLimit = 39;
       await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
+      querySpy.mockClear();
+
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
       expect(querySpy).toHaveBeenCalledTimes(1);
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
     });

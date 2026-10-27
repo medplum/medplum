@@ -5,11 +5,13 @@ import {
   badRequest,
   ContentType,
   createReference,
+  escapeSearchValue,
   forbidden,
   getDateProperty,
   getReferenceString,
   isJwt,
   isString,
+  isUUID,
   OperationOutcomeError,
   Operator,
   parseJWTPayload,
@@ -44,12 +46,12 @@ import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '.
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
-import { getInactiveReason } from '../fhir/projectmembership';
+import { getInactiveReason, membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
-import { parseSmartScopes } from '../fhir/smart';
+import { parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import {
@@ -60,7 +62,7 @@ import {
   UserAuthenticationEvent,
 } from '../util/auditevent';
 import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
-import { getStandardClientById } from './clients';
+import { getClientRedirectUri, getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
 import type { AuthenticationResult, AuthState } from './middleware';
@@ -82,6 +84,7 @@ export interface LoginRequest {
   readonly launchId?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: CodeChallengeMethod;
+  readonly redirectUri?: string;
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
@@ -157,6 +160,14 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
         throw new OperationOutcomeError(badRequest('Invalid origin'));
       }
     }
+    if (request.redirectUri && !getClientRedirectUri(client, request.redirectUri)) {
+      getLogger().warn('Login redirect URI is not registered for client', {
+        clientId: client.id,
+        authMethod: request.authMethod,
+        redirectUri: request.redirectUri,
+        partialMatch: !!getClientRedirectUri(client, request.redirectUri, true),
+      });
+    }
   }
 
   validatePkce(request, client);
@@ -225,6 +236,9 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
 }
 
 export function validateLoginRequest(request: LoginRequest): void {
+  if (request.projectId && request.projectId !== 'new' && !isUUID(request.projectId)) {
+    throw new OperationOutcomeError(badRequest('Invalid projectId', 'projectId'));
+  }
   if (request.authMethod === 'external' || request.authMethod === 'exchange') {
     if (!request.externalId && !request.email) {
       throw new OperationOutcomeError(badRequest('Missing email or externalId', 'externalId'));
@@ -469,6 +483,16 @@ export async function setLoginMembership(
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
+  // A login that was started for a specific project (i.e., via that project's client or identity provider)
+  // can only be completed with a membership in that project
+  if (
+    login.project?.reference &&
+    login.project.reference !== 'Project/new' &&
+    membership.project?.reference !== login.project.reference
+  ) {
+    throw new OperationOutcomeError(badRequest('Invalid profile'));
+  }
+
   // Get the project
   const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readReference<Project>(membership.project);
@@ -490,8 +514,13 @@ export async function setLoginMembership(
     project.setting?.find((s) => s.name === 'googleAuthProfilePictures' && s.valueBoolean)
   ) {
     try {
-      const [resourceType, id] = parseReference(membership.profile);
-      await projectSystemRepo.patchResource(resourceType, id, [
+      const profile = await readMembershipReference(
+        projectSystemRepo,
+        membership,
+        membership.profile,
+        membershipProfileTypes
+      );
+      await projectSystemRepo.patchResource(profile.resourceType, profile.id, [
         { op: 'test', path: '/photo', value: undefined },
         { op: 'add', path: '/photo', value: [{ url: login.pictureUrl, contentType: 'image/jpeg' }] },
       ]);
@@ -569,13 +598,17 @@ function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean 
   return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
-function matchesScope(existing: SmartScope, candidate: SmartScope): boolean {
-  // Ensure types match
-  if (candidate.permissionType !== existing.permissionType || candidate.resourceType !== existing.resourceType) {
+function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientContext = false): boolean {
+  if (!matchesPermissionType(existing.permissionType, candidate.permissionType, hasPatientContext)) {
     return false;
   }
-  // Scopes granted must be a subset
+  // An existing wildcard resource type covers any resource type
+  if (existing.resourceType !== '*' && candidate.resourceType !== existing.resourceType) {
+    return false;
+  }
+  // Scopes granted must be a non-empty subset; an empty permission is not narrower than any other
   if (
+    !candidate.scope ||
     candidate.scope.length > existing.scope.length ||
     candidate.scope.split('').some((s) => !existing.scope.includes(s))
   ) {
@@ -585,6 +618,67 @@ function matchesScope(existing: SmartScope, candidate: SmartScope): boolean {
     return false;
   }
   return true;
+}
+
+/**
+ * Returns true if the candidate permission type is the same as or narrower than the existing one.
+ * `system/` narrows to `user/`, and either narrows to `patient/` when there is a patient context to scope it to.
+ * @param existing - The permission type already granted.
+ * @param candidate - The permission type being requested.
+ * @param hasPatientContext - True if a patient context is available to scope `patient/` access.
+ * @returns True if the candidate permission type is covered by the existing one.
+ */
+function matchesPermissionType(
+  existing: SmartScope['permissionType'],
+  candidate: SmartScope['permissionType'],
+  hasPatientContext: boolean
+): boolean {
+  if (candidate === existing) {
+    return true;
+  }
+  if (candidate === 'user') {
+    return existing === 'system';
+  }
+  return candidate === 'patient' && hasPatientContext;
+}
+
+/**
+ * Returns true if the requested scope grants no more SMART resource access than the existing scope.
+ * A scope without SMART scopes is unrestricted, so a restricted existing scope requires at least one requested SMART scope.
+ * @param existingScope - The scope already granted.
+ * @param requestedScope - The scope being requested.
+ * @param hasPatientContext - True if the requested scope will have a patient context, allowing `patient/` scopes.
+ * @returns True if every requested SMART scope is covered by an existing SMART scope.
+ */
+export function isSmartScopeSubset(
+  existingScope: string | undefined,
+  requestedScope: string,
+  hasPatientContext = false
+): boolean {
+  const existingScopes = parseSmartScopes(existingScope);
+  if (existingScopes.length === 0) {
+    return true;
+  }
+  const requestedScopes = parseSmartScopes(requestedScope);
+  return (
+    requestedScopes.length > 0 &&
+    requestedScopes.every((candidate) =>
+      existingScopes.some((existing) => matchesScope(existing, candidate, hasPatientContext))
+    )
+  );
+}
+
+/**
+ * Returns true if every non-SMART term in the requested scope, other than `openid`, is in the existing scope.
+ * @param existingScope - The scope already granted.
+ * @param requestedScope - The scope being requested.
+ * @returns True if the requested scope adds no non-SMART terms.
+ */
+export function isNonSmartScopeSubset(existingScope: string | undefined, requestedScope: string): boolean {
+  const existingTerms = existingScope?.split(' ') ?? [];
+  return requestedScope
+    .split(' ')
+    .every((term) => !term || term === 'openid' || parseSmartScopeString(term) || existingTerms.includes(term));
 }
 
 /**
@@ -608,6 +702,15 @@ export async function setLoginScope(systemRepo: SystemRepository, login: Login, 
 
   const existingScopes = parseSmartScopes(login.scope);
   const submittedScopes = parseSmartScopes(scope);
+
+  // A scope without SMART scopes is unrestricted, so a restricted login cannot drop all of them
+  if (existingScopes.length > 0 && submittedScopes.length === 0) {
+    throw new OperationOutcomeError(badRequest('Invalid scope'));
+  }
+
+  if (!isNonSmartScopeSubset(login.scope, scope)) {
+    throw new OperationOutcomeError(badRequest('Invalid scope'));
+  }
 
   // If user requests any scope that is not in existing scope, then reject
   for (const candidate of submittedScopes) {
@@ -718,7 +821,7 @@ export async function getUserByExternalId(
       {
         code: 'external-id',
         operator: Operator.EXACT,
-        value: externalId,
+        value: escapeSearchValue(externalId),
       },
       {
         code: 'project',
@@ -738,7 +841,7 @@ export async function getUserByExternalId(
       {
         code: 'external-id',
         operator: Operator.EXACT,
-        value: externalId,
+        value: escapeSearchValue(externalId),
       },
       {
         code: 'project',
@@ -781,7 +884,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
       {
         code: 'email',
         operator: Operator.EXACT,
-        value: email.toLowerCase(),
+        value: escapeSearchValue(email.toLowerCase()),
       },
       {
         code: 'project',
@@ -807,7 +910,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<WithI
       {
         code: 'email',
         operator: Operator.EXACT,
-        value: email.toLowerCase(),
+        value: escapeSearchValue(email.toLowerCase()),
       },
       {
         code: 'project',
@@ -982,7 +1085,19 @@ function normalizeExternalUserInfo(body: Record<string, unknown>, idp?: Identity
   return {
     ...user,
     sub: user.localId,
+    email_verified: user.emailVerified,
   };
+}
+
+/**
+ * Returns true if the external identity provider reports the user's email address as unverified.
+ * The `email_verified` claim is optional, so a missing claim is not treated as unverified.
+ * @param userInfo - The user info or ID token claims from the external identity provider.
+ * @returns True if the email address is reported as unverified.
+ */
+export function isExternalEmailUnverified(userInfo: Record<string, unknown>): boolean {
+  // Some identity providers send the claim as a string
+  return userInfo.email_verified === false || userInfo.email_verified === 'false';
 }
 
 async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
@@ -1393,7 +1508,7 @@ async function tryExternalAuthLogin(
         {
           code: 'external-id',
           operator: Operator.EXACT,
-          value: claims.sub,
+          value: escapeSearchValue(claims.sub),
         },
       ],
       count: 2,
@@ -1427,6 +1542,7 @@ async function tryExternalAuthLogin(
     user: membership.user,
     profileType,
     authTime: new Date().toISOString(),
+    granted: true,
     scope: isString(claims.scope) ? claims.scope : undefined,
     nonce: isString(claims.nonce) ? claims.nonce : undefined,
     remoteAddress: req?.ip,
@@ -1465,7 +1581,7 @@ async function getExternalBearerClient(
     resourceType: 'ClientApplication',
     filters: [
       { code: '_project', operator: Operator.EQUALS, value: projectId },
-      { code: 'identity-provider-issuer', operator: Operator.EXACT, value: issuer },
+      { code: 'identity-provider-issuer', operator: Operator.EXACT, value: escapeSearchValue(issuer) },
     ],
     count: 2,
   });

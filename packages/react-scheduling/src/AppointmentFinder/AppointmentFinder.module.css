@@ -24,6 +24,7 @@
   max-width: 420px;
   max-height: 100%;
   overflow-y: auto;
+  padding-bottom: var(--mantine-spacing-sm);
 }
 
 /* Only present while the time search is open, which is what widens the panel. */

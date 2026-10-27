@@ -348,6 +348,29 @@ describe('External auth', () => {
     expect(res2).toHaveStatus(200);
   });
 
+  test('Login is listed as a session', async () => {
+    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+
+    // Use a fresh user, so that only this login is in the list
+    const { profile } = await inviteUser({
+      project: testProject,
+      resourceType: 'Practitioner',
+      firstName: 'Session',
+      lastName: 'User',
+    });
+
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      fhirUser: getReferenceString(profile),
+    });
+    const res = await request(app)
+      .get(`/auth/me`)
+      .set('Authorization', 'Bearer ' + jwt);
+    expect(res).toHaveStatus(200);
+    expect(res.body.security.sessions).toHaveLength(1);
+    expect(res.body.security.sessions[0].authMethod).toStrictEqual('external');
+  });
+
   test('Success by search string', async () => {
     fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
 
