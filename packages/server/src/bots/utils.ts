@@ -45,12 +45,15 @@ import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
+import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
+
+const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
  * Returns the bot's project membership.
  * If the bot is configured to run as the user, then use the current user's membership.
- * Otherwise, use the bot's project membership
+ * Otherwise, use the bot's project membership in the current project
  * @param ctx - The authenticated request context.
  * @param bot - The bot resource.
  * @returns The project membership for the bot.
@@ -63,9 +66,22 @@ export async function getBotProjectMembership(
     // If the bot is configured to run as the user, then use the current user's membership
     return ctx.membership;
   }
-  // Otherwise, use the bot's project membership
-  const project = bot.meta?.project as string;
-  return (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
+  // Otherwise, use the bot's project membership in the current project
+  const project = ctx.project.id;
+  const membership = await findProjectMembership(project, createReference(bot));
+  if (membership) {
+    return membership;
+  }
+  missingMembershipLogThrottle.maybeLog(`${project}/${bot.id}`, (suppressed) => {
+    getLogger().warn('Bot executed without ProjectMembership', {
+      botId: bot.id,
+      botProject: bot.meta?.project,
+      runAsProject: project,
+      runAsMembership: ctx.membership.id,
+      suppressed,
+    });
+  });
+  return ctx.membership;
 }
 
 /**

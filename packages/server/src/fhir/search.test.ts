@@ -5744,8 +5744,19 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 2$/), expect.anything());
       querySpy.mockClear();
 
+      // resourceOnly searches skip the extra "next page" row
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 1$/), expect.anything());
+      querySpy.mockClear();
+
       config.fhirSearchMinLimit = 39;
       await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
+      querySpy.mockClear();
+
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
       expect(querySpy).toHaveBeenCalledTimes(1);
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
     });

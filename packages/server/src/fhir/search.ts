@@ -32,7 +32,7 @@ import {
   toPeriod,
   validateResourceType,
 } from '@medplum/core';
-import type { IncludeOptions } from '@medplum/fhir-router';
+import type { IncludeOptions, SearchOptions as RouterSearchOptions } from '@medplum/fhir-router';
 import { getExtraEntries } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
@@ -109,7 +109,7 @@ interface ChainedSearchParameter {
   filter: Filter;
 }
 
-export interface SearchOptions extends Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
+export interface SearchOptions extends RouterSearchOptions, Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
 
 export async function searchImpl<T extends Resource>(
   repo: Repository,
@@ -124,12 +124,16 @@ export async function searchImpl<T extends Resource>(
   let nextResource: T | undefined;
   if (searchRequest.count > 0) {
     const trackedResourceTypes = new Set<ResourceType>();
-    const builder = getSelectQueryForSearch(repo, searchRequest, { ...options, trackedResourceTypes });
+    const builder = getSelectQueryForSearch(repo, searchRequest, {
+      ...options,
+      trackedResourceTypes,
+      limitModifier: options?.resourceOnly ? 0 : 1,
+    });
     ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder, trackedResourceTypes));
   }
 
   let total = undefined;
-  if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
+  if (!options?.resourceOnly && (searchRequest.total === 'accurate' || searchRequest.total === 'estimate')) {
     const countResult = await getCount(repo, searchRequest, { rowCount });
     total = countResult.accurate ?? countResult.estimate;
   }
@@ -139,7 +143,7 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
-    link: getSearchLinks(searchRequest, entry, nextResource),
+    link: options?.resourceOnly ? undefined : getSearchLinks(searchRequest, entry, nextResource),
   };
 }
 

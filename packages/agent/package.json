@@ -29,7 +29,7 @@
     "@medplum/core": "5.2.9",
     "@medplum/hl7": "5.2.9",
     "dcmjs": "0.52.2",
-    "dcmjs-dimse": "0.3.3",
+    "dcmjs-dimse": "0.3.4",
     "iconv-lite": "0.7.3",
     "semver": "7.8.5",
     "winston": "3.19.0",
