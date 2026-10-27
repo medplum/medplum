@@ -48,12 +48,7 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
     async (input: string, signal: AbortSignal): Promise<WithId<Patient>[]> => {
       const mrn = input.trim();
       const [byIdentifier, byName] = await Promise.all([
-        mrn
-          ? medplum
-              .searchResources('Patient', { identifier: mrn, ...IDENTIFIER_SEARCH_CRITERIA }, { signal })
-              // Losing the number search still leaves the name search to answer.
-              .catch(() => [])
-          : [],
+        mrn ? medplum.searchResources('Patient', { identifier: mrn, ...IDENTIFIER_SEARCH_CRITERIA }, { signal }) : [],
         medplum.searchResources('Patient', { name: input, ...NAME_SEARCH_CRITERIA }, { signal }),
       ]);
 
