@@ -453,8 +453,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // Held apart from the calendar's, like the open appointment, so it closes on being deleted
   // rather than on leaving the calendar.
   useResourceModified('Slot', (event) => {
+    const updated = event.resource;
     if (event.operation === 'delete') {
       setNewBlockSlots((prev) => prev?.filter((slot) => slot.id !== event.id));
+    } else if (updated) {
+      setNewBlockSlots((prev) => prev?.map((slot) => (slot.id === event.id ? updated : slot)));
     }
     if (!selectedSlot || event.id !== selectedSlot.id) {
       return;
