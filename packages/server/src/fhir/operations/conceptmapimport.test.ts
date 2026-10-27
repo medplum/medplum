@@ -216,7 +216,6 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -292,7 +291,6 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -331,7 +329,6 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + linkedAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -363,7 +360,6 @@ describe('ConceptMap/$import', () => {
       .post(`/fhir/R4/ConceptMap/$import`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -413,7 +409,6 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -447,7 +442,6 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -542,7 +536,6 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${map.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({

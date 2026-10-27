@@ -312,7 +312,6 @@ describe('CodeSystem $import', () => {
     const code = 'ZZ' + randomUUID();
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/${baseCodeSystem.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -343,7 +342,6 @@ describe('CodeSystem $import', () => {
     const code = 'ZZ' + randomUUID();
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/${baseCodeSystem.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -368,7 +366,6 @@ describe('CodeSystem $import', () => {
     const code = 'ZZ' + randomUUID();
     const res = await request(app)
       .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -395,7 +392,6 @@ describe('CodeSystem $import', () => {
     const code = 'ZZ' + randomUUID();
     const res = await request(app)
       .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$import`)
-      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({

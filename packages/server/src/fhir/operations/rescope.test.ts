@@ -57,7 +57,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -80,7 +79,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
@@ -98,7 +96,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
@@ -177,7 +174,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -196,7 +192,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
@@ -226,7 +221,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + restrictedSuperToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
@@ -243,7 +237,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -290,7 +283,6 @@ describe('User/$rescope', () => {
         .post(`/fhir/R4/User/${nonAdminUserId}/$rescope`)
         .set('Authorization', 'Bearer ' + nonAdminToken)
         .set('Content-Type', ContentType.FHIR_JSON)
-        .set('X-Medplum', 'extended')
         .send({
           resourceType: 'Parameters',
           parameter: [{ name: 'scope', valueCode: 'server' }],
@@ -303,7 +295,6 @@ describe('User/$rescope', () => {
         .post(`/fhir/R4/User/${nonAdminUserId}/$rescope`)
         .set('Authorization', 'Bearer ' + nonAdminToken)
         .set('Content-Type', ContentType.FHIR_JSON)
-        .set('X-Medplum', 'extended')
         .send({
           resourceType: 'Parameters',
           parameter: [
@@ -323,7 +314,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'project' }],
@@ -339,7 +329,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'elsewhere' }],
@@ -355,7 +344,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
@@ -371,7 +359,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -401,7 +388,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -443,7 +429,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + mainAdminToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
@@ -468,7 +453,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -487,7 +471,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -508,7 +491,6 @@ describe('User/$rescope', () => {
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [

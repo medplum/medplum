@@ -101,10 +101,9 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
   let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
-    codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
-    if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, codeSystem)) {
-      return [forbidden];
-    }
+    codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id, {
+      requireInteraction: AccessPolicyInteraction.UPDATE,
+    });
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.system, {
       ownProjectOnly: !isSuperAdmin,
