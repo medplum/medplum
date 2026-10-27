@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   createReference,
   encodeBase64,
   getReferenceString,
@@ -1449,6 +1450,34 @@ describe('AccessPolicy', () => {
       expect(readResource.name?.[0]).toBeDefined();
       expect(readResource.name?.[0].given).toStrictEqual(['Alice']);
       expect(readResource.name?.[0].family).toBeUndefined();
+    }));
+
+  test('canPerformInteractionById checks fields hidden from reads', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+        gender: 'female',
+      });
+
+      const repo2 = getRepository({
+        projects: [testProject],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?gender=female', hiddenFields: ['gender'] }],
+        },
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id);
+      expect(readResource.gender).toBeUndefined();
+      expect(readResource.meta?.project).toBeUndefined();
+      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', patient.id)).toBe(true);
+
+      await systemRepo.deleteResource('Patient', patient.id);
+      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', patient.id)).toBe(false);
+      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', randomUUID())).toBe(
+        false
+      );
     }));
 
   test('Hidden fields on possible missing values', () =>

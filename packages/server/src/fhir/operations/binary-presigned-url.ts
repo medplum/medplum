@@ -29,9 +29,8 @@ export async function binaryPresignedUrlHandler(req: FhirRequest): Promise<FhirR
   const id = req.params.id;
   const params = parseInputParameters<PresignedUrlParams>(operation, req);
 
-  // Extended mode keeps meta.project, which canPerformInteraction needs for the write check
-  const resource = await repo.withOverrideConfig({ extendedMode: true }).readResource<Binary>('Binary', id);
-  if (params.upload && !repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource)) {
+  const resource = await repo.readResource<Binary>('Binary', id);
+  if (params.upload && !(await repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Binary', id))) {
     throw new OperationOutcomeError(forbidden);
   }
 
