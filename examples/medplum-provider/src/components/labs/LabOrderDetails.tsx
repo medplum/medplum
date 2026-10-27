@@ -16,7 +16,7 @@ import {
   Timeline,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatDate, formatHumanName, resolveId } from '@medplum/core';
+import { formatDate, formatHumanName } from '@medplum/core';
 import type {
   CarePlan,
   DiagnosticReport,
@@ -62,6 +62,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
+  const selectedReportResource = useResource(selectedReport);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [labOrderRequisitionDocs, setLabOrderRequisitionDocs] = useState<DocumentReference[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
@@ -89,27 +90,31 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     }
   }, [medplum, order.id, onChange]);
 
-  // Fetch every DiagnosticReport for this order - an order can have more than one (e.g. a
-  // multi-day culture result resent with additional findings), and the caller may want to show
-  // a specific one via selectedReport rather than always the most recently updated.
+  // An order can have more than one DiagnosticReport (e.g. a multi-day culture result resent
+  // with additional findings). When the caller didn't pass a specific selectedReport, fetch just
+  // the most recently updated one to show by default.
   useEffect(() => {
+    if (selectedReport) {
+      return;
+    }
+
     const fetchReports = async (): Promise<void> => {
       const reports = await medplum.searchResources('DiagnosticReport', {
         'based-on': `ServiceRequest/${order.id}`,
         _sort: '-_lastUpdated',
+        _count: '1',
       });
       setDiagnosticReports(reports);
     };
 
     fetchReports().catch(showErrorNotification);
-  }, [medplum, order.id]);
+  }, [medplum, order.id, selectedReport]);
 
-  // Prefer the explicitly selected report, if one was given and it belongs to this order;
-  // otherwise fall back to the most recently updated report.
-  const selectedReportId = resolveId(selectedReport);
-  const primaryReport =
-    (selectedReportId && diagnosticReports.find((report) => report.id === selectedReportId)) ||
-    (diagnosticReports.length > 0 ? diagnosticReports[0] : undefined);
+  // When the caller passed a selectedReport, always show that exact resource - resolved directly
+  // by reference, never substituted with a different report. Otherwise fall back to the most
+  // recently updated report.
+  const latestReport = diagnosticReports.length > 0 ? diagnosticReports[0] : undefined;
+  const primaryReport = selectedReport ? selectedReportResource : latestReport;
 
   // Progress tracker logic
   const getProgressSteps = useMemo((): ProgressStep[] => {
