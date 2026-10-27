@@ -14,6 +14,7 @@ import {
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
+  isSmartScopeSubset,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -779,5 +780,22 @@ describe('OAuth utils', () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
     expect(client.id).toStrictEqual('medplum-cli');
+  });
+});
+
+describe('isSmartScopeSubset', () => {
+  test.each([
+    ['system/*.rs', 'user/Patient.rs', false, true],
+    ['system/*.rs', 'patient/*.rs', true, true],
+    ['user/*.rs', 'patient/Observation.r', true, true],
+    ['system/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'system/Patient.rs', true, false],
+    ['patient/*.rs', 'user/Patient.rs', true, false],
+    ['user/Patient.rs', 'patient/Patient.cruds', true, false],
+    ['user/Patient.rs', 'user/Patient.', false, false],
+    ['user/*.rs', 'user/*.', false, false],
+  ])('%s covers %s (patient context: %s) -> %s', (existing, requested, hasPatientContext, expected) => {
+    expect(isSmartScopeSubset(existing, requested, hasPatientContext)).toBe(expected);
   });
 });

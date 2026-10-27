@@ -293,6 +293,23 @@ describe('SMART on FHIR', () => {
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.READ, 'Patient')).toBe(false);
     });
 
+    test('Scope with no permissions grants no access', () => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient' }, { resourceType: '*' }],
+      };
+
+      const authState: AuthState = {
+        login: { ...login, scope: 'user/Patient. user/*.' },
+        membership,
+        project,
+        userConfig: { resourceType: 'UserConfiguration' },
+      };
+
+      const result = applySmartScopes(startAccessPolicy, authState);
+      expect(result.resource).toStrictEqual([]);
+    });
+
     test('Intersect with wildcard access policy', () => {
       const startAccessPolicy: PopulatedAccessPolicy = {
         resourceType: 'AccessPolicy',
