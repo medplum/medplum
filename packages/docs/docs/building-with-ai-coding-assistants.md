@@ -26,7 +26,7 @@ not a finished answer. Apply extra scrutiny to anything that affects security or
 exposure, especially access policies, ProjectMembership scopes, and PHI handling.
 :::
 
-## Start here: plan your application {/* #plan-your-application */}
+## Start Here: Plan Your Application {/* #plan-your-application */}
 
 Cloning Medplum gives your agent reference material. Use this first prompt to connect
 that material to your project and start a planning conversation:
@@ -125,7 +125,7 @@ save the answers for later coding tasks.
 Use the [starting prompt](#plan-your-application) to begin. The examples below show what
 the agent saves and how to use it in later development.
 
-### Keep the answers in your repo
+### Keep the Answers in Your Repo
 
 The agent saves a short application plan and decisions organized by guide section in
 your repo, reusing existing planning files. For a focused feature, a single decision record
@@ -134,7 +134,7 @@ and how to distinguish agreed choices, recommendations awaiting a decision, and 
 questions. Keeping these alongside code lets later tasks use them without relying on chat history.
 
 <details>
-<summary>Example: saved charting decisions</summary>
+<summary>Example: Saved Charting Decisions</summary>
 
 After a charting discussion, part of `docs/decisions/charting.md` might look like this.
 These are illustrative answers, not defaults for every application:
@@ -185,7 +185,7 @@ When choosing implementations, have the agent inspect Medplum's reusable compone
 examples. [Medplum Provider](/docs/provider) is a useful reference for clinical workflows;
 you can also build a custom app with the [React components](/docs/api/react).
 
-### Implement from the saved decisions
+### Implement from the Saved Decisions
 
 For the next coding task, give your agent a specific feature and the saved context.
 For example, after agreeing on your charting plan:
