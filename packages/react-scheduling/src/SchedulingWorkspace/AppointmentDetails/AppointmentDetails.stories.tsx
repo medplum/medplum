@@ -187,7 +187,7 @@ export const Cancelled = (): JSX.Element => (
 
 /**
  * A visit whose visit type asked for procedure codes, diagnosis codes, and a medical
- * necessity attestation when it was booked. All three are editable here beside the patient.
+ * necessity attestation when it was booked. All three are editable here.
  *
  * @returns The story.
  */
