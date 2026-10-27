@@ -793,6 +793,8 @@ describe('isSmartScopeSubset', () => {
     ['user/*.rs', 'system/Patient.rs', true, false],
     ['patient/*.rs', 'user/Patient.rs', true, false],
     ['user/Patient.rs', 'patient/Patient.cruds', true, false],
+    ['user/Patient.rs', 'user/Patient.', false, false],
+    ['user/*.rs', 'user/*.', false, false],
   ])('%s covers %s (patient context: %s) -> %s', (existing, requested, hasPatientContext, expected) => {
     expect(isSmartScopeSubset(existing, requested, hasPatientContext)).toBe(expected);
   });

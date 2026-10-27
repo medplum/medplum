@@ -260,6 +260,10 @@ function mergeAccessPolicyWithScope(
   scope: SmartScope,
   context?: Reference<Patient>
 ): AccessPolicyResource | undefined {
+  if (!scope.scope) {
+    // A scope with no permissions grants no access
+    return undefined;
+  }
   const result = deepClone(policy);
   if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
     result.criteria = result.criteria.replace('*', scope.resourceType);

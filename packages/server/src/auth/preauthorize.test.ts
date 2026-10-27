@@ -183,6 +183,7 @@ describe('Pre-authorize', () => {
     test.each([
       ['additional resource type', 'openid user/Patient.rs user/Observation.rs'],
       ['additional permissions', 'openid user/Patient.cruds'],
+      ['empty permissions', 'openid user/Patient.'],
       ['no SMART scopes (unrestricted)', 'openid'],
       ['non-SMART scope not held by caller', 'openid user/Patient.rs fhircast/Patient-open.write'],
     ])('Rejects scope broader than caller scope: %s', async (_desc, scope) => {

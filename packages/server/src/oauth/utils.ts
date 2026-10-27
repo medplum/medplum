@@ -606,8 +606,9 @@ function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientCon
   if (existing.resourceType !== '*' && candidate.resourceType !== existing.resourceType) {
     return false;
   }
-  // Scopes granted must be a subset
+  // Scopes granted must be a non-empty subset; an empty permission is not narrower than any other
   if (
+    !candidate.scope ||
     candidate.scope.length > existing.scope.length ||
     candidate.scope.split('').some((s) => !existing.scope.includes(s))
   ) {
