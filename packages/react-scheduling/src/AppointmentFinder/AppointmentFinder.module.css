@@ -32,14 +32,33 @@
   flex: 1 1 380px;
   min-width: 0;
   max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+}
+
+.monthPicker p {
+  margin: 0;
+}
+
+.monthPicker table {
+  margin-top: var(--mantine-spacing-xs);
+}
+
+.resultsList {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  margin-top: calc(var(--mantine-spacing-sm) * -1);
+  padding-top: var(--mantine-spacing-sm);
+  padding-bottom: var(--mantine-spacing-lg);
 }
 
 /* Both columns are stacks, so everything in them is a flex item, and a clamped column
    squeezes its items to fit before it agrees to scroll — enough to press a button flat.
    They keep their own heights and the column scrolls instead. */
 .form > *,
-.results > * {
+.resultsList > * {
   flex-shrink: 0;
 }
 
@@ -55,4 +74,30 @@
 .requiredLabel::after {
   content: ' *';
   color: var(--mantine-color-error);
+}
+
+.justPicked {
+  animation: justPicked 0.8s linear;
+}
+
+@keyframes justPicked {
+  0%,
+  50% {
+    border-color: var(--mantine-primary-color-filled);
+    box-shadow: 0 0 16px 2px color-mix(in srgb, var(--mantine-primary-color-filled) 25%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .justPicked {
+    animation: none;
+  }
+}
+
+.addButton {
+  align-self: flex-start;
+}
+
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
 }

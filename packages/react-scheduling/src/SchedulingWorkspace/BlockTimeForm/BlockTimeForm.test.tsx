@@ -28,7 +28,7 @@ function toCandidate(schedule: ScheduleCandidate['schedule']): ScheduleCandidate
 }
 
 function blockButton(): HTMLElement {
-  return screen.getByRole('button', { name: 'Block time' });
+  return screen.getByRole('button', { name: /^Block Time( on \d+ Calendars?)?$/ });
 }
 
 async function type(label: string, value: string): Promise<void> {
@@ -79,14 +79,17 @@ describe('BlockTimeForm', () => {
     expect(screen.getByLabelText(/^Start/)).toHaveValue('2026-08-18T12:00');
     expect(screen.getByLabelText(/^End/)).toHaveValue('2026-08-18T13:00');
     expect(blockButton()).toBeDisabled();
+    expect(blockButton()).toHaveTextContent(/^Block Time$/);
     expect(onChangeTime).not.toHaveBeenCalled();
 
     await type('End', '2026-08-18T14:30');
     expect(onChangeTime).toHaveBeenLastCalledWith({ start: RANGE.start, end: new Date(2026, 7, 18, 14, 30) });
 
     await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
+    expect(blockButton()).toHaveTextContent('Block Time on 1 Calendar');
     await chooseActor(/Room/, 'exam', 'Exam Room A');
     await type('Comment', 'Staff meeting');
+    expect(blockButton()).toHaveTextContent('Block Time on 2 Calendars');
     expect(blockButton()).toBeEnabled();
 
     await clickBlock();

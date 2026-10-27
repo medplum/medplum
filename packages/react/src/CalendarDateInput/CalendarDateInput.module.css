@@ -1,3 +1,11 @@
+.root {
+  max-width: 350px;
+}
+
+.root :global(.mantine-ActionIcon-root):disabled {
+  background-color: transparent;
+}
+
 .table {
   width: 100%;
   min-width: 260px;

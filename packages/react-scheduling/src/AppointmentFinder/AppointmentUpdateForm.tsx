@@ -56,7 +56,6 @@ export function AppointmentUpdateForm(props: AppointmentUpdateFormProps): JSX.El
   const { appointment, onRescheduled, onUpdated, onSaved, defaultStart, fixedTime, ...formProps } = props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
-  // A move whose details then failed to save, so a retry puts only the details.
   const moved = useRef<{ proposal: Appointment; appointment: WithId<Appointment> }>(undefined);
 
   const update = useCallback(
@@ -102,21 +101,15 @@ export function AppointmentUpdateForm(props: AppointmentUpdateFormProps): JSX.El
     [appointment, medplum, onRescheduled, onUpdated, onSaved]
   );
 
-  // A host handing over the moved appointment mid-save sets the defaults reading again.
-  // The form already has its defaults, and unmounting it would drop the answers on screen.
   const [loaded, setLoaded] = useState(false);
   if (!defaults.loading && !loaded) {
     setLoaded(true);
   }
 
   if (!loaded && defaults.loading) {
-    // The form takes its defaults at mount and never again, so it is not mounted until
-    // there are defaults to take.
     return <Loader size="sm" />;
   }
 
-  // Either leaves the time where it is: `$reschedule` reads the same references, and
-  // would refuse a move. The details can still be saved.
   const hasService = extractServiceTypeReferences(appointment.serviceType).length > 0;
   const readError = hasService ? defaults.error : undefined;
   const droppedNames = listAll.format(
@@ -125,12 +118,17 @@ export function AppointmentUpdateForm(props: AppointmentUpdateFormProps): JSX.El
 
   return (
     <>
-      {!hasService && (
+      {fixedTime && (
+        <Alert color="yellow" mb="sm">
+          {`The time can't be changed once an appointment is ${appointment.status}.`}
+        </Alert>
+      )}
+      {!fixedTime && !hasService && (
         <Alert color="yellow" mb="sm">
           This appointment does not have a visit type, and so its time cannot be changed.
         </Alert>
       )}
-      {readError !== undefined && (
+      {!fixedTime && readError !== undefined && (
         <Alert
           color="red"
           mb="sm"

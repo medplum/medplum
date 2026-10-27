@@ -72,8 +72,6 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
   return (
     <>
       <Stack gap="xs" w={300} className={className}>
-        {/* As tall as the header of the pane across the calendar, and as far from its rule,
-            so the two rules line up. */}
         <Text fz="lg" fw={800} h={32} lh="32px">
           Filter Calendars
         </Text>

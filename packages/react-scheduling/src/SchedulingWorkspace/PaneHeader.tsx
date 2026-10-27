@@ -37,7 +37,7 @@ export function PaneHeader(props: PaneHeaderProps): JSX.Element {
           <IconX size={16} />
         </ActionIcon>
       </Group>
-      <Divider className={classes.divider} />
+      <Divider />
     </>
   );
 }

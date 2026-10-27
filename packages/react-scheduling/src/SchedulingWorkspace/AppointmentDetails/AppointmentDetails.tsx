@@ -269,8 +269,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     }
   }, [appointment.id, medplum, onConfirmed]);
 
-  // With a host's panel to title, the header follows the view; without one, only the update
-  // form names itself, since nothing else says the view underneath changed.
   const header = (title: string): JSX.Element =>
     onClose ? (
       <PaneHeader title={title} closeLabel="Close appointment details" onClose={onClose} />
@@ -286,7 +284,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
 
   const cancelable = isCancelable(appointment);
   const locked = isPastEditWindow(appointment);
-  // A cancelled visit is done with: nothing on it is offered for change.
   const editable = !locked && appointment.status !== 'cancelled';
   const confirmable = !locked && appointment.status === 'pending';
   const { visitType, procedures } = partitionServiceTypes(appointment);
@@ -297,7 +294,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const { primary, providers, rooms, devices, others } = partitionActors(appointment);
   const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
 
-  // Everything on file for the visit, which the cancellation page shows under its form too.
   const detailsList = (
     <>
       <Detail label="Status" value={<AppointmentStatusBadge status={appointment.status} />} />
@@ -358,9 +354,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           appointment={appointment}
           fixedTime={!isReschedulable(appointment)}
           onToggleTimeFinder={onToggleTimeFinder}
-          // Back to the details once a save goes through, which are read off the
-          // appointment the host hands over: the one just written, once whatever is
-          // watching the appointment has caught up.
           onRescheduled={onRescheduled}
           onUpdated={onUpdated}
           onSaved={stopUpdating}
@@ -422,7 +415,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               Edit or Reschedule Appointment
             </Button>
           )}
-          {/* Not offered at all where `$cancel` would refuse it. */}
           {cancelable && (
             <Button
               variant="outline"

@@ -1,4 +1,3 @@
-/* A bordered circle, as SearchControl draws its icon buttons. */
 .close {
   border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   transition: border-color 150ms ease;
@@ -10,9 +9,4 @@
 
 .close svg {
   color: var(--mantine-color-dimmed);
-}
-
-/* Runs edge to edge, past whatever padding the pane has. */
-.divider {
-  margin-inline-start: calc(var(--pane-padding-start, 0px) * -1);
 }

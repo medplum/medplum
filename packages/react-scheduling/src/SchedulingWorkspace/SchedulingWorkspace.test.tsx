@@ -146,13 +146,33 @@ describe('SchedulingWorkspace', () => {
     const providerRow = calendarRow('Dr. Maya Rivera');
     await userEvent.click(providerRow);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Hide calendars' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Hide Calendar Filters' }));
     expect(providerRow).not.toBeVisible();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Show Calendar Filters' }));
     expect(providerRow).toBeVisible();
     expect(providerRow).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('button', { name: 'Hide calendars' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Hide Calendar Filters' })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('marks the filter button while any calendar is filtered out', async () => {
+    const medplum = await setupClient();
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+    await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+
+    const dot = (): Element | null =>
+      screen
+        .getByRole('button', { name: 'Hide Calendar Filters' })
+        .closest('.mantine-Indicator-root')
+        ?.querySelector('.mantine-Indicator-indicator') ?? null;
+    expect(dot()).toBeNull();
+
+    const providerRow = calendarRow('Dr. Maya Rivera');
+    await userEvent.click(providerRow);
+    expect(dot()).not.toBeNull();
+
+    await userEvent.click(providerRow);
+    expect(dot()).toBeNull();
   });
 
   test('shows the empty state for sections with no schedules', async () => {

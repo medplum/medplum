@@ -6,6 +6,7 @@
   gap: var(--mantine-spacing-md);
   height: 100%;
   width: 100%;
+  overflow-x: clip;
 }
 
 .sidebar {
@@ -42,10 +43,6 @@
   margin-left: auto;
 }
 
-/*
- * Holds the pane's place beside the calendar at its narrow width, so the calendar keeps its
- * size when the pane widens.
- */
 .paneSlot {
   position: relative;
   flex-shrink: 0;
@@ -68,47 +65,71 @@
   background-color: var(--mantine-color-body);
 }
 
-/* Widened, it slides out over the calendar like a drawer, without an overlay, as tall as the
-   workspace is rendered. */
 .paneWide {
   inset: 0 0 0 auto;
-  width: calc(760px + var(--mantine-spacing-md));
+  --results-width: calc(350px + var(--mantine-spacing-lg) + var(--mantine-spacing-md) + 1px);
+  width: calc(var(--mantine-spacing-md) + 320px + var(--mantine-spacing-lg) + var(--results-width));
   max-width: 100vw;
-  /* Only on the side it grows towards, so nothing in it moves but sideways. */
   --pane-padding-start: var(--mantine-spacing-md);
   padding-inline-start: var(--pane-padding-start);
+  padding-inline-end: calc(var(--results-width) + var(--mantine-spacing-lg));
   box-shadow: var(--mantine-shadow-xl);
-  animation: paneSlideIn 200ms ease;
+  animation: paneSlideIn 100ms ease;
+}
+
+.paneClosing {
+  animation: paneSlideOut 100ms ease forwards;
+}
+
+.paneWide [data-time-results] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--results-width);
+  max-height: none;
+  border-inline-start: 1px solid var(--mantine-color-default-border);
+  padding-inline: var(--mantine-spacing-lg) var(--mantine-spacing-md);
 }
 
 @keyframes paneSlideIn {
   from {
-    transform: translateX(40px);
-    opacity: 0;
+    transform: translateX(calc(100% - 320px - var(--pane-padding-start)));
+  }
+}
+
+@keyframes paneSlideOut {
+  to {
+    transform: translateX(calc(100% - 320px - var(--pane-padding-start)));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .paneWide {
+  .paneWide,
+  .paneClosing {
     animation: none;
   }
 }
 
-/* Passes the pane's height down to the form, so the form and the times beside it each
-   scroll on their own instead of the pane scrolling them together. */
+.pane [data-time-form] {
+  margin-top: calc(var(--mantine-spacing-sm) * -1);
+  padding-top: var(--mantine-spacing-sm);
+}
+
 .paneBody {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  margin-top: calc(var(--mantine-spacing-sm) * -1);
+  padding-top: var(--mantine-spacing-sm);
 }
 
 .paneBody[hidden] {
   display: none;
 }
 
-/* Pill tabs, as ListWithDetailPane draws its header tabs. */
 .pillTabs :global(.mantine-Tabs-list) {
   display: flex;
   gap: 2px;
@@ -138,7 +159,6 @@
   color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
 }
 
-/* A bordered circle, as SearchControl draws its icon buttons, darker while what it opens is open. */
 .iconButton {
   border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   transition: border-color 150ms ease;

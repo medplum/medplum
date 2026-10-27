@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Group, Input, Stack, Text } from '@mantine/core';
+import { ActionIcon, Box, Group, Input, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
-import { IconPlus, IconX } from '@tabler/icons-react';
+import { IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel, isActorTypeRequired } from '../actors';
+import { AddRowButton } from './AddRowButton';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import type { ActorRequirement, ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { createActorRequirement } from './AppointmentFinder.schedules';
@@ -144,16 +145,11 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
       ))}
 
       {canAddAnother && (
-        <Button
-          variant="subtle"
-          size="compact-sm"
-          leftSection={<IconPlus size={14} stroke={1.8} />}
+        <AddRowButton
+          label={`Add another ${lowercaseLabel}`}
           disabled={disabled}
-          style={{ alignSelf: 'flex-start' }}
           onClick={() => change([...rows, createActorRequirement()])}
-        >
-          Add another {lowercaseLabel}
-        </Button>
+        />
       )}
 
       {error && (

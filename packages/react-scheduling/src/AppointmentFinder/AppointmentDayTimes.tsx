@@ -33,7 +33,9 @@ export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Elemen
 
   return (
     <Stack gap="xs">
-      <Title order={4}>{formatDayHeading(date)}</Title>
+      <Title order={4} fz="md" fw={800}>
+        {formatDayHeading(date)}
+      </Title>
       {groups.length === 0 && <Text c="dimmed">No times are offered on this day.</Text>}
       {groups.map((group) => (
         <AppointmentSlotGroupCard

@@ -923,7 +923,7 @@ describe('AppointmentProposalForm', () => {
       await chooseFirstOfferedTime();
 
       // Picking a time is what the search was open for, so it closes.
-      expect(finderButton()).toHaveTextContent('Change time');
+      expect(finderButton()).toHaveTextContent('Change Time');
       expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
       expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
     });
@@ -1002,7 +1002,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/room/i, 'exam', 'Exam Room A');
 
       // Closing here would take back the panel width the host just widened, mid-task.
-      expect(finderButton()).toHaveTextContent('Close time finder');
+      expect(finderButton()).toHaveTextContent('Close Time Selection');
       expect(onToggleTimeFinder).not.toHaveBeenCalled();
       const [group] = await screen.findAllByTestId(/^slot-group-/);
       expect(within(group).getByText('Dr. Maya Rivera')).toBeInTheDocument();
@@ -1105,7 +1105,7 @@ describe('AppointmentProposalForm', () => {
       await removePill('Ultrasound Imaging');
 
       expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
-      expect(screen.queryByRole('button', { name: /close time finder/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /close time selection/i })).not.toBeInTheDocument();
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
     });
 
@@ -1145,7 +1145,7 @@ describe('AppointmentProposalForm', () => {
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(true);
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /close time finder/i }));
+        fireEvent.click(screen.getByRole('button', { name: /close time selection/i }));
       });
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
     });

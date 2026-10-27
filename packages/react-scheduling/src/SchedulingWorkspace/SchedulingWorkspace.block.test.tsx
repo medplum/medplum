@@ -79,7 +79,7 @@ async function chooseMode(name: 'Book Appointment' | 'Block Time'): Promise<void
  * @returns The button.
  */
 function blockButton(): HTMLElement {
-  return screen.getByRole('button', { name: 'Block time' });
+  return screen.getByRole('button', { name: /^Block Time( on \d+ Calendars?)?$/ });
 }
 
 function pane(): HTMLElement | null {

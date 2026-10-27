@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Alert, Box, Tabs, Tooltip, useMantineTheme } from '@mantine/core';
+import { ActionIcon, Alert, Box, Indicator, Tabs, Tooltip, useMantineTheme } from '@mantine/core';
+import { useReducedMotion } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -13,7 +14,7 @@ import type { Appointment, Extension, HealthcareService, Location, Reference, Sl
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { AnimationEvent, JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
@@ -342,7 +343,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setBlockHighlight(interval);
   }, []);
 
-  // Opens the booking form on the next half hour, for a visit not picked from the calendar.
   const startBookingNow = useCallback((): void => {
     const start = new Date();
     start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
@@ -468,9 +468,19 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // The pane beside the calendar shows one thing at a time. Opening any of them already
   // closes the others, so this only decides which wins if they ever hold something together.
+  const filterCount =
+    (filters.serviceFacility ? 1 : 0) +
+    (filters.service ? 1 : 0) +
+    BOOKABLE_ACTOR_TYPES.reduce((count, actorType) => count + deselectedIds[actorType].size, 0);
+  const filtering = filterCount > 0;
+  const filterTooltip =
+    (calendarsOpen ? 'Hide Calendar Filters' : 'Show Calendar Filters') +
+    (filtering ? ` · ${filterCount} Applied` : '');
   const showSlot = openSlot !== undefined && openAppointment === undefined;
   const showBooking = bookingSelection !== undefined && openAppointment === undefined && openSlot === undefined;
   const blocking = showBooking && paneTab === 'block';
+  const detailsDrawer = useDrawerPhase(rescheduleFinderOpen, openAppointment?.id);
+  const bookingDrawer = useDrawerPhase(timeFinderOpen && !blocking, showBooking ? 'booking' : undefined);
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
@@ -509,20 +519,22 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             </Tooltip>
           }
           toolbarStart={
-            <Tooltip label={calendarsOpen ? 'Hide calendars' : 'Show calendars'} position="bottom" openDelay={500}>
-              <ActionIcon
-                className={classes.iconButton}
-                variant="transparent"
-                color="gray"
-                size={32}
-                radius="xl"
-                aria-label={calendarsOpen ? 'Hide calendars' : 'Show calendars'}
-                aria-expanded={calendarsOpen}
-                data-expanded={calendarsOpen || undefined}
-                onClick={() => setCalendarsOpen(!calendarsOpen)}
-              >
-                <IconFilter2Search size={16} />
-              </ActionIcon>
+            <Tooltip label={filterTooltip} position="bottom" openDelay={500}>
+              <Indicator disabled={!filtering} color="blue" size={8} offset={5}>
+                <ActionIcon
+                  className={classes.iconButton}
+                  variant="transparent"
+                  color="gray"
+                  size={32}
+                  radius="xl"
+                  aria-label={calendarsOpen ? 'Hide Calendar Filters' : 'Show Calendar Filters'}
+                  aria-expanded={calendarsOpen}
+                  data-expanded={calendarsOpen || undefined}
+                  onClick={() => setCalendarsOpen(!calendarsOpen)}
+                >
+                  <IconFilter2Search size={16} />
+                </ActionIcon>
+              </Indicator>
             </Tooltip>
           }
           loading={resourcesLoading || servicesPending}
@@ -541,7 +553,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         <div className={classes.paneSlot}>
           <section
             key={openAppointment.id}
-            className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
+            className={cx(classes.pane, {
+              [classes.paneWide]: detailsDrawer.phase !== undefined,
+              [classes.paneClosing]: detailsDrawer.phase === 'closing',
+            })}
+            onAnimationEnd={detailsDrawer.onAnimationEnd}
             aria-label="Appointment details"
           >
             <AppointmentDetails
@@ -576,7 +592,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       {showBooking && (
         <div className={classes.paneSlot}>
           <section
-            className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
+            className={cx(classes.pane, {
+              [classes.paneWide]: bookingDrawer.phase !== undefined,
+              [classes.paneClosing]: bookingDrawer.phase === 'closing',
+            })}
+            onAnimationEnd={bookingDrawer.onAnimationEnd}
             aria-label="Book appointment"
           >
             <PaneHeader
@@ -584,7 +604,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
               closeLabel="Close booking form"
               onClose={closeBooking}
             />
-            {/* Both forms stay mounted, so switching between them loses nothing typed into either. */}
             <div className={classes.paneBody} hidden={blocking}>
               <AppointmentBookingForm
                 defaultStart={bookingSelection.start}
@@ -649,6 +668,49 @@ function PaneModeTabs(props: PaneModeTabsProps): JSX.Element {
       </Tabs.List>
     </Tabs>
   );
+}
+
+interface DrawerPhase {
+  /** `open` while the time search is, `closing` while the pane slides back, undefined after. */
+  readonly phase: 'open' | 'closing' | undefined;
+  /** Ends the slide back, for the pane's `onAnimationEnd`. */
+  readonly onAnimationEnd: (event: AnimationEvent<HTMLElement>) => void;
+}
+
+/**
+ * Keeps a pane wide while it slides back after its time search closes, as a Drawer does
+ * while it leaves.
+ * @param open - Whether the time search is open.
+ * @param paneKey - Identifies the pane on show, undefined while none is.
+ * @returns The phase, and the handler that ends the slide back once it has run.
+ */
+function useDrawerPhase(open: boolean, paneKey: string | undefined): DrawerPhase {
+  const reduceMotion = useReducedMotion();
+  const [closing, setClosing] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  const [lastPaneKey, setLastPaneKey] = useState(paneKey);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setClosing(!open && !reduceMotion);
+  }
+  if (paneKey !== lastPaneKey) {
+    setLastPaneKey(paneKey);
+    setClosing(false);
+  }
+  let phase: DrawerPhase['phase'];
+  if (open) {
+    phase = 'open';
+  } else if (closing) {
+    phase = 'closing';
+  }
+  return {
+    phase,
+    onAnimationEnd: (event) => {
+      if (event.target === event.currentTarget) {
+        setClosing(false);
+      }
+    },
+  };
 }
 
 /**

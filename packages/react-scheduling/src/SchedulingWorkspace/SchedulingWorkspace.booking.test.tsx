@@ -43,6 +43,7 @@ import {
   field,
   fillAuthorizedBooking,
   fillBooking,
+  finderButton,
   hasPill,
   lastFindParams,
   lastFindStart,
@@ -353,6 +354,29 @@ describe('SchedulingWorkspace booking', () => {
     const start = lastFindStart(get);
     expect(start).toBeDefined();
     expect(new Date(start as string).getDate()).toBe(TUESDAY_MORNING.getDate());
+  });
+
+  test('Slides the pane back narrow when the time search closes, and reopens narrow after closing mid-search', async () => {
+    setup();
+    await clickCalendar();
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+
+    const pane = screen.getByRole('region', { name: 'Book appointment' });
+    expect(pane).toHaveClass('paneWide');
+
+    await act(async () => {
+      fireEvent.click(finderButton());
+    });
+    expect(pane).toHaveClass('paneClosing');
+    fireEvent(pane, new Event('webkitAnimationEnd', { bubbles: true }));
+    expect(pane).not.toHaveClass('paneWide');
+
+    await openTimeFinder();
+    fireEvent.click(screen.getByRole('button', { name: 'Close booking form' }));
+    await clickCalendar();
+    expect(screen.getByRole('region', { name: 'Book appointment' })).not.toHaveClass('paneWide');
   });
 
   test('Searches for a weekly series of the length asked for', async () => {

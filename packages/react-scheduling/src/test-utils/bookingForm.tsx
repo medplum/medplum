@@ -437,7 +437,7 @@ export function lastFindEnd(get: MockInstance<MedplumClient['get']>): string | u
  * @returns The button.
  */
 export function finderButton(): HTMLElement {
-  return screen.getByRole('button', { name: /find a time|change time|close time finder/i });
+  return screen.getByRole('button', { name: /find a time|change time|close time selection/i });
 }
 
 /**

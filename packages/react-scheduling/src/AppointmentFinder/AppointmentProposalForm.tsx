@@ -12,6 +12,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Title,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
@@ -286,8 +287,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     allowRecurring,
   } = props;
 
-  // An update opens on the site the visit is held at, which it can then move.
-  // Read once, as the field's default is.
   const [openingSite] = useState(
     () =>
       defaultServiceFacility ??
@@ -321,6 +320,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
+  const [pickCount, setPickCount] = useState(0);
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
@@ -329,10 +329,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
-  // `$reschedule` takes a time and the schedules to hold it on, so a move alone asks for
-  // nothing else. A booking and an update also write the patient and the visit type's codes.
   const takesDetails = mode !== 'reschedule';
-  // Both of the modes that change an appointment already on file start from where it is.
   const moves = mode !== 'book';
   const fixedTime = mode === 'update' && !!fixedTimeProp;
 
@@ -552,8 +549,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setChosen(next);
     setConflicts([]);
     setWritten(false);
-    // The pick is what the search was open for. "Change time" opens it again on the same days.
     setFinding(false);
+    setPickCount((count) => count + 1);
   }
 
   const configuredDurationMinutes = useMemo(
@@ -569,10 +566,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const storedStart = moves && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
   const storedStartTime = moves && ignoreAppointment?.start ? Date.parse(ignoreAppointment.start) : undefined;
 
-  // An update that only changes who the visit is held on keeps its time: proposed on the
-  // schedules now chosen, for `$reschedule` to check they are free then, as a found time is.
-  // Against what the fields opened on, not what the visit is held on: an actor that cannot be
-  // offered back is dropped by a move, which the form warns of, but is no change of its own.
   const actorsChanged = mode === 'update' && !fixedTime && manualScheduleKey !== openingSelectionKey;
   const keptTimeProposal = useMemo(
     () =>
@@ -706,15 +699,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setWritten(false);
   }
 
-  // A move shows where the visit is now until a new time is chosen, so it reads as a change.
   const shownTime = chosen ?? keptTimeProposal ?? (moves ? ignoreAppointment : undefined);
   const shownActors = getAppointmentActors(shownTime, actorResources).filter(
     (actor) => getActorType(actor) !== 'Patient'
   );
   const submitProposal = chosen ?? keptTimeProposal;
 
-  // An update saves whichever half changed, unless the actors changed into something that
-  // cannot be held; the others need a time to write.
   const submittable =
     mode === 'update' ? (!!submitProposal || detailsChanged) && (!actorsChanged || !!submitProposal) : !!chosen;
 
@@ -776,7 +766,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   return (
     <div className={classes.layout}>
-      <Stack className={classes.form} gap="sm">
+      <Stack className={classes.form} gap="sm" data-time-form>
         {fixedTime ? (
           <FixedTime appointment={ignoreAppointment} service={service} timezone={timezone} />
         ) : (
@@ -831,31 +821,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               searching={searching}
               blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
               onToggleFinder={toggleFinder}
+              pickCount={pickCount}
             />
-
-            {searching && (
-              <Stack gap={4}>
-                <CalendarDateInput
-                  availableDates={NO_MARKED_DATES}
-                  allowUnavailableDates
-                  earliestDate={new Date()}
-                  month={month}
-                  range={daySearch.selectedDayRange}
-                  onChangeMonth={setMonth}
-                  onClick={daySearch.chooseDayRange}
-                  onSelectRange={daySearch.chooseDayRange}
-                  monthLabel={
-                    <MonthPickerButton
-                      label={formatMonth(month ?? new Date())}
-                      date={month ?? new Date()}
-                      minDate={new Date()}
-                      onChange={setMonth}
-                    />
-                  }
-                />
-                {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
-              </Stack>
-            )}
 
             {offersRecurring && (
               <Select
@@ -910,56 +877,94 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       </Stack>
 
       {searching && !fixedTime && (
-        <Stack ref={resultsRef} className={classes.results} gap="lg">
-          {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
-            <ManualTime
-              dateTime={effectiveDateTime}
-              durationMinutes={effectiveDurationMinutes}
-              timezone={timezone}
-              conflicts={conflicts}
-              onChange={enterManualTime}
-            />
-          )}
-          {daySearch.loadingFirstDays && <Loader size="sm" />}
-          {daySearch.findRequestError && <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>}
-          {!daySearch.loadingFirstDays &&
-            daySearch.hasTimes &&
-            daySearch.timeResultsByDay.map((day) => (
-              <AppointmentDayTimes
-                key={day.key}
-                date={day.date}
-                groups={day.groups}
-                timezone={timezone}
-                selected={chosen}
-                onSelectAppointment={chooseTime}
+        <div className={classes.results} data-time-results>
+          <Group h={32} wrap="nowrap">
+            <Title order={4}>Select a time</Title>
+          </Group>
+          <Divider />
+          <Stack ref={resultsRef} className={classes.resultsList} gap="xl" data-time-list>
+            <Stack gap={0} className={classes.monthPicker}>
+              <CalendarDateInput
+                availableDates={NO_MARKED_DATES}
+                allowUnavailableDates
+                earliestDate={new Date()}
+                month={month}
+                range={daySearch.selectedDayRange}
+                onChangeMonth={setMonth}
+                onClick={daySearch.chooseDayRange}
+                onSelectRange={daySearch.chooseDayRange}
+                monthLabel={
+                  <MonthPickerButton
+                    label={
+                      <Text component="span" fz="md" fw={800}>
+                        {formatMonth(month ?? new Date())}
+                      </Text>
+                    }
+                    date={month ?? new Date()}
+                    minDate={new Date()}
+                    onChange={setMonth}
+                  />
+                }
               />
-            ))}
-          {settled && (
-            <>
-              {!daySearch.hasTimes && (
-                <Text c="dimmed" ta="center">
-                  {daySearch.hasMoreCombinations
-                    ? 'No times yet for the options searched so far.'
-                    : 'No times are available for this selection.'}
-                </Text>
+              {daySearch.windowError && (
+                <Alert color="yellow" mt={4}>
+                  {daySearch.windowError}
+                </Alert>
               )}
-              {daySearch.hasMoreCombinations && (
-                <Stack gap={4}>
-                  <Text size="xs" c="dimmed" ta="center">
-                    {getSearchedOptionsHint(daySearch.searchedCombinationCount, daySearch.totalCombinationCount)}
+              <Divider mt="sm" />
+            </Stack>
+            {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
+              <ManualTime
+                dateTime={effectiveDateTime}
+                durationMinutes={effectiveDurationMinutes}
+                timezone={timezone}
+                conflicts={conflicts}
+                onChange={enterManualTime}
+              />
+            )}
+            {daySearch.loadingFirstDays && <Loader size="sm" />}
+            {daySearch.findRequestError && (
+              <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>
+            )}
+            {!daySearch.loadingFirstDays &&
+              daySearch.hasTimes &&
+              daySearch.timeResultsByDay.map((day) => (
+                <AppointmentDayTimes
+                  key={day.key}
+                  date={day.date}
+                  groups={day.groups}
+                  timezone={timezone}
+                  selected={chosen}
+                  onSelectAppointment={chooseTime}
+                />
+              ))}
+            {settled && (
+              <>
+                {!daySearch.hasTimes && (
+                  <Text c="dimmed" ta="center">
+                    {daySearch.hasMoreCombinations
+                      ? 'No times yet for the options searched so far.'
+                      : 'No times are available for this selection.'}
                   </Text>
-                  <Button variant="subtle" onClick={daySearch.searchMoreCombinations}>
-                    Search more options
-                  </Button>
-                </Stack>
-              )}
-              {/* No signal for how far ahead there's anything to find, so this has no end state. */}
-              <Button variant="subtle" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
-                Show more days
-              </Button>
-            </>
-          )}
-        </Stack>
+                )}
+                {daySearch.hasMoreCombinations && (
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed" ta="center">
+                      {getSearchedOptionsHint(daySearch.searchedCombinationCount, daySearch.totalCombinationCount)}
+                    </Text>
+                    <Button variant="subtle" onClick={daySearch.searchMoreCombinations}>
+                      Search more options
+                    </Button>
+                  </Stack>
+                )}
+                {/* No signal for how far ahead there's anything to find, so this has no end state. */}
+                <Button variant="outline" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
+                  Show more days
+                </Button>
+              </>
+            )}
+          </Stack>
+        </div>
       )}
     </div>
   );
@@ -975,6 +980,8 @@ interface ChosenTimeProps {
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: SelectionBlocker | undefined;
   readonly onToggleFinder: () => void;
+  /** How many times have been picked from the search; each new one flashes the field. */
+  readonly pickCount: number;
 }
 
 /**
@@ -987,12 +994,11 @@ interface ChosenTimeProps {
  * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder } = props;
+  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder, pickCount } = props;
 
   const finder = (
     <Stack gap={4}>
       <Button
-        // Closing is the quieter of the two: it leaves the time as it is.
         variant={searching ? 'default' : 'outline'}
         fullWidth
         leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
@@ -1006,7 +1012,6 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
   );
 
   if (!appointment?.start) {
-    // The field's label stands over the button until there is a time to put under it.
     return (
       <Stack gap={4}>
         <Input.Label required>Date & Time</Input.Label>
@@ -1018,11 +1023,12 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
   return (
     <Stack gap={8}>
       <TextInput
+        key={pickCount}
+        classNames={pickCount > 0 ? { input: classes.justPicked } : undefined}
         label="Date & Time"
         withAsterisk
         readOnly
         value={formatZonedDateTime(new Date(appointment.start), timezone)}
-        // Under the label, where Mantine puts it, so the button sits right below the time.
         description={
           <>
             <ChosenTimeCommitment appointment={appointment} actors={actors} />
@@ -1215,9 +1221,9 @@ function getSubmitLabel(mode: AppointmentProposalMode, occurrenceCount: number):
  */
 function getFinderLabel(searching: boolean, chosen: boolean): string {
   if (searching) {
-    return 'Close time finder';
+    return 'Close Time Selection';
   }
-  return chosen ? 'Change time' : 'Find a time';
+  return chosen ? 'Change Time' : 'Find a time';
 }
 
 interface FixedTimeProps {
@@ -1244,9 +1250,6 @@ function FixedTime(props: FixedTimeProps): JSX.Element {
         readOnly
         disabled
         value={appointment?.start ? formatZonedDateTime(new Date(appointment.start), timezone) : ''}
-        // Mantine puts the description above the input by default.
-        inputWrapperOrder={['label', 'input', 'description']}
-        description={`The time can't be changed once an appointment is ${appointment?.status}.`}
       />
     </>
   );
