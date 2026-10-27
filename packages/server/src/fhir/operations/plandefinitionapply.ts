@@ -420,6 +420,8 @@ function setValueAtPath(
  * Resolves a canonical URL to a definition resource.
  * Several versions of a definition can share a url, so the most recently updated `active` one is preferred,
  * falling back to the most recently updated definition of any status.
+ * Resource types are checked in order (ActivityDefinition, PlanDefinition, Questionnaire), and versions are only
+ * compared within the first type that has a match.
  * @param repo - The repository.
  * @param canonical - The canonical URL from the action's `definitionCanonical`.
  * @returns The matching definition, if any.
@@ -432,11 +434,15 @@ async function readCanonical<T extends Questionnaire | ActivityDefinition | Plan
     return undefined;
   }
 
-  const definitions = await repo.searchResources<T>({
-    resourceType: 'ActivityDefinition',
-    types: ['ActivityDefinition', 'PlanDefinition', 'Questionnaire'],
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: canonical }],
-    sortRules: [{ code: '_lastUpdated', descending: true }],
-  });
-  return definitions.find((definition) => definition.status === 'active') ?? definitions[0];
+  for (const resourceType of ['ActivityDefinition', 'PlanDefinition', 'Questionnaire'] as const) {
+    const definitions = await repo.searchResources<T>({
+      resourceType,
+      filters: [{ code: 'url', operator: Operator.EQUALS, value: canonical }],
+      sortRules: [{ code: '_lastUpdated', descending: true }],
+    });
+    if (definitions.length > 0) {
+      return definitions.find((definition) => definition.status === 'active') ?? definitions[0];
+    }
+  }
+  return undefined;
 }
