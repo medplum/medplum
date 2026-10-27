@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
 import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import type { JSX } from 'react';
+import { getErrorMessage } from '../../components/insurance/utils';
 import classes from './EPrescribingPage.module.css';
 
 export function DoseSpotNotificationsPage(): JSX.Element {
@@ -23,7 +23,8 @@ export function DoseSpotNotificationsPage(): JSX.Element {
         title: 'Successfully connected to DoseSpot',
         message: '',
       }),
-    onError: (err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }),
+    onError: (err) =>
+      showNotification({ color: 'red', title: 'Error', message: getErrorMessage(err), autoClose: false }),
   });
 
   return (

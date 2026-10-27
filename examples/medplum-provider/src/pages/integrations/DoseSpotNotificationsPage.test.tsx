@@ -139,4 +139,27 @@ describe('DoseSpotNotificationsPage', () => {
 
     expect(await screen.findByText('DoseSpot connection failed')).toBeInTheDocument();
   });
+
+  test('Shows the unwrapped bot error when the hook reports an error', async () => {
+    await setup();
+
+    await act(async () => {
+      // A bot that throws returns its runtime payload as a JSON string in the error message.
+      capturedOptions().onError?.(
+        new Error(
+          JSON.stringify({
+            errorType: 'Error',
+            errorMessage: 'DoseSpot: Clinician is not authorized to access this clinic',
+            trace: [
+              'Error: DoseSpot: Clinician is not authorized to access this clinic',
+              '    at DoseSpotClient.request (/var/task/user.cjs:1887:13)',
+            ],
+          })
+        )
+      );
+    });
+
+    expect(await screen.findByText('DoseSpot: Clinician is not authorized to access this clinic')).toBeInTheDocument();
+    expect(screen.queryByText(/trace/)).not.toBeInTheDocument();
+  });
 });

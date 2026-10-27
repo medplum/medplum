@@ -92,6 +92,38 @@ describe('DoseSpotTab', () => {
     });
   });
 
+  test('Shows the unwrapped bot error in a notification', async () => {
+    let capturedOptions: any = {};
+
+    vi.mocked(useDoseSpotIFrame).mockImplementation((options) => {
+      capturedOptions = options;
+      return undefined;
+    });
+
+    setup(`/Patient/${HomerSimpson.id}/dosespot`);
+
+    await act(async () => {
+      // A bot that throws returns its runtime payload as a JSON string in the error message.
+      capturedOptions.onError?.(
+        new Error(
+          JSON.stringify({
+            errorType: 'Error',
+            errorMessage: 'DoseSpot: Clinician is not authorized to access this clinic',
+            trace: [
+              'Error: DoseSpot: Clinician is not authorized to access this clinic',
+              '    at DoseSpotClient.request (/var/task/user.cjs:1887:13)',
+            ],
+          })
+        )
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('DoseSpot: Clinician is not authorized to access this clinic')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/trace/)).not.toBeInTheDocument();
+  });
+
   test('Calls onError callback and shows error notification', async () => {
     let capturedOptions: any = {};
 

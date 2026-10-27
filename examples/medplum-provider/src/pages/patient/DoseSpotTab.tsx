@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
 import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import type { JSX } from 'react';
 import { useRef } from 'react';
 import { useParams } from 'react-router';
+import { getErrorMessage } from '../../components/insurance/utils';
 
 export function DoseSpotTab(): JSX.Element {
   const { patientId } = useParams();
@@ -41,7 +41,8 @@ export function DoseSpotTab(): JSX.Element {
       iframeLoadedRef.current = true;
       checkAndNotify();
     },
-    onError: (err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }),
+    onError: (err) =>
+      showNotification({ color: 'red', title: 'Error', message: getErrorMessage(err), autoClose: false }),
   });
 
   return (
