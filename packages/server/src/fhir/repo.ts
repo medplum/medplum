@@ -103,6 +103,7 @@ import {
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
+import { LogThrottle } from '../util/logthrottle';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -694,14 +695,6 @@ export class Repository extends FhirRepository implements Disposable {
       if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
       }
-      if (resource.securityContext.reference?.startsWith('AsyncJob/')) {
-        // A Binary bound to an AsyncJob (e.g. a bulk export file) is part of the output of the job
-        const asyncJob = await this.readResourceImpl<AsyncJob>('AsyncJob', resolveId(resource.securityContext) ?? '');
-        if (!this.canReadAsyncJobOutput(asyncJob)) {
-          throw new OperationOutcomeError(notFound);
-        }
-        return resource;
-      }
       await this.readReference(resource.securityContext);
     }
     return resource;
@@ -1047,7 +1040,7 @@ export class Repository extends FhirRepository implements Disposable {
     );
     updated = await replaceConditionalReferences(this, updated);
     if (updated.resourceType === 'AsyncJob' && !this.isSuperAdmin()) {
-      // Server-assigned, since the requester can read the output (see `canReadAsyncJobOutput`)
+      // Server-assigned, like `meta.author`
       updated.requester = existing ? (existing as AsyncJob).requester : this.getAsyncJobRequester();
     }
 
@@ -2490,11 +2483,8 @@ export class Repository extends FhirRepository implements Disposable {
     for (const field of policy?.hiddenFields ?? EMPTY) {
       removeField(input, field);
     }
-    if (input.resourceType === 'AsyncJob' && !this.canReadAsyncJobOutput(input)) {
-      // Like the response to a synchronous request, the output and the query string of an
-      // asynchronous request only go to the requester
-      input.output = undefined;
-      input.request = input.request?.split('?')[0];
+    if (input.resourceType === 'AsyncJob') {
+      this.logAsyncJobOutputRead(input);
     }
     if (!extendedMode && input.meta) {
       const meta = input.meta;
@@ -2509,21 +2499,30 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Determines if the current user can read the output of an AsyncJob.
-   * The output was produced with the access of the requester, so it is only available to the requester
-   * and to admins of the job's project.
+   * Diagnostic logging for reads of AsyncJob output by users other than the requester and project admins.
    * @param asyncJob - The AsyncJob, including `meta.project`.
-   * @returns True if the current user can read the output of the AsyncJob.
    */
-  private canReadAsyncJobOutput(asyncJob: AsyncJob): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
+  private logAsyncJobOutputRead(asyncJob: AsyncJob): void {
+    if (!asyncJob.output || this.isSuperAdmin()) {
+      return;
     }
-    if (this.isProjectAdmin() && asyncJob.meta?.project === this.currentProject()?.id) {
-      return true;
+    const projectId = asyncJob.meta?.project;
+    if (this.isProjectAdmin() && projectId === this.currentProject()?.id) {
+      return;
     }
-    const requester = asyncJob.requester?.reference;
-    return !!requester && requester === this.getAsyncJobRequester().reference;
+    const reader = this.getAsyncJobRequester().reference;
+    if (asyncJob.requester?.reference === reader) {
+      return;
+    }
+    asyncJobOutputReadLogThrottle.maybeLog([projectId, asyncJob.id, reader].join('|'), (suppressed) => {
+      getLogger().warn('AsyncJob output read by another user', {
+        asyncJobId: asyncJob.id,
+        projectId,
+        requester: asyncJob.requester?.reference,
+        reader,
+        suppressed,
+      });
+    });
   }
 
   /**
@@ -2565,19 +2564,15 @@ export class Repository extends FhirRepository implements Disposable {
       original ? AccessPolicyInteraction.UPDATE : AccessPolicyInteraction.CREATE,
       this.context.accessPolicy
     );
+    if (!policy?.readonlyFields && !policy?.hiddenFields) {
+      return input;
+    }
     const fieldsToRestore = [];
-    if (policy?.readonlyFields) {
+    if (policy.readonlyFields) {
       fieldsToRestore.push(...policy.readonlyFields);
     }
-    if (policy?.hiddenFields) {
+    if (policy.hiddenFields) {
       fieldsToRestore.push(...policy.hiddenFields);
-    }
-    if (original?.resourceType === 'AsyncJob' && !this.canReadAsyncJobOutput(original)) {
-      // Fields removed by `removeHiddenFields` cannot be replaced either
-      fieldsToRestore.push('request', 'output');
-    }
-    if (fieldsToRestore.length === 0) {
-      return input;
     }
     for (const field of fieldsToRestore) {
       removeField(input, field);
@@ -3148,6 +3143,8 @@ export async function getProjectSystemRepo(
   // But for now, all projects are on the global shard.
   return getShardSystemRepo(TODO_SHARD_ID);
 }
+
+const asyncJobOutputReadLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 const patchOperationDefinition: OperationDefinition = {
   resourceType: 'OperationDefinition',

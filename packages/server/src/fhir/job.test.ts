@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference } from '@medplum/core';
-import type { AsyncJob } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, Logger } from '@medplum/core';
+import type { AsyncJob, Binary } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -175,9 +175,8 @@ describe('Job status', () => {
     const job = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'completed',
-      request: 'http://example.com/?code=abc123',
+      request: 'http://example.com/',
       requestTime: new Date().toISOString(),
-      output: { resourceType: 'Parameters', parameter: [{ name: 'responseBody', valueString: 'abc123' }] },
       meta: { project: project.id },
     });
     const member = await addTestUser(project);
@@ -188,15 +187,65 @@ describe('Job status', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ ...job, requester: createReference(member.profile) });
     expect(updateRes).toHaveStatus(200);
+    expect(updateRes.body.requester).toBeUndefined();
+  });
 
-    const res = await request(app)
-      .get(`/fhir/R4/job/${job.id}/status`)
-      .set('Authorization', 'Bearer ' + member.accessToken);
-    expect(res).toHaveStatus(200);
-    expect(res.body).toMatchObject({ status: 'completed', request: 'http://example.com/' });
-    expect(res.body.output).toBeUndefined();
-    const storedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.id);
-    expect(storedJob).toMatchObject({ request: job.request, output: job.output });
-    expect(storedJob.requester).toBeUndefined();
+  test('Reads of job output by other members are logged', async () => {
+    const { project } = await createTestProject();
+    const requester = await addTestUser(project);
+    const otherMember = await addTestUser(project);
+    const binaryReader = await addTestUser(project);
+
+    const createRes = await request(app)
+      .post('/fhir/R4/AsyncJob')
+      .set('Authorization', 'Bearer ' + requester.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: 'http://example.com/',
+        requestTime: new Date().toISOString(),
+        output: { resourceType: 'Parameters', parameter: [{ name: 'result', valueString: 'test' }] },
+      });
+    expect(createRes).toHaveStatus(201);
+    const job = createRes.body as AsyncJob;
+    expect(job.requester?.reference).toStrictEqual(getReferenceString(requester.profile));
+    const binary = await (
+      await getProjectSystemRepo(project)
+    ).createResource<Binary>({
+      resourceType: 'Binary',
+      contentType: ContentType.TEXT,
+      securityContext: createReference(job),
+      meta: { project: project.id },
+    });
+
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      for (const [member, path] of [
+        [requester, `/fhir/R4/AsyncJob/${job.id}`],
+        [otherMember, `/fhir/R4/AsyncJob/${job.id}`],
+        [otherMember, `/fhir/R4/job/${job.id}/status`],
+        [binaryReader, `/fhir/R4/Binary/${binary.id}`],
+      ] as const) {
+        const res = await request(app)
+          .get(path)
+          .set('Authorization', 'Bearer ' + member.accessToken)
+          .set('Accept', ContentType.FHIR_JSON);
+        expect(res).toHaveStatus(200);
+      }
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob output read by another user');
+      expect(calls.map(([, data]) => data)).toStrictEqual(
+        [otherMember, binaryReader].map((member) => ({
+          asyncJobId: job.id,
+          projectId: project.id,
+          requester: getReferenceString(requester.profile),
+          reader: getReferenceString(member.profile),
+          suppressed: 0,
+        }))
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

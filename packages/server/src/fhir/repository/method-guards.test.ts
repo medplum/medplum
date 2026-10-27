@@ -87,7 +87,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'canWriteAccount',
   'isResourceWriteable',
   'isCacheOnly',
-  'canReadAsyncJobOutput',
+  'logAsyncJobOutputRead',
   'restoreReadonlyFields',
   'logPostMetadataFieldMatch',
   'logEvent',

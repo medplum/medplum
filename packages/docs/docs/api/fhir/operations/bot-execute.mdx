@@ -300,8 +300,6 @@ The status endpoint returns an `AsyncJob` resource with the following key fields
 
 - **`requester`**: The user or client application that started the execution
 
-Like the response of a synchronous execution, `output` and the query string of `request` are only returned to the `requester`, and to project admins. Other project members with access to `AsyncJob` can see the job and its status, but not its input or output.
-
 ### Example Response
 
 When the bot execution completes successfully:

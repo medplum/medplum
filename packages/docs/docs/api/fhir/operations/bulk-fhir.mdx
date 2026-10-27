@@ -44,8 +44,6 @@ Your AccessPolicy should include an entry like this:
 }
 ```
 
-The results of an export, and its output files, are only available to the user or client application that started the export, and to project admins. Other project members with access to `AsyncJob` can see the status of the job, but not its output.
-
 ## Group Export
 
 To specify which patients need to be included in the export, construct a [Group](/docs/api/fhir/resources/group) resource and add specific patients as `Group.member.entity.`
