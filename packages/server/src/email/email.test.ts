@@ -8,9 +8,7 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
-import dns from 'node:dns';
 import { Readable } from 'stream';
-import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
@@ -363,21 +361,13 @@ describe('Email', () => {
       { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
     ];
 
-    let lookupSpy: MockInstance;
-
-    function toLookupResult(addresses: string[]): never {
-      return addresses.map((address) => ({ address, family: 4 })) as never;
-    }
-
     beforeEach(() => {
       mockSendMail.mockReset();
       mockSendMail.mockResolvedValue({ messageId: '123' });
       mockCreateTransport.mockClear();
-      lookupSpy = vi.spyOn(dns.promises, 'lookup').mockResolvedValue(toLookupResult(['93.184.215.14']));
     });
 
     afterEach(() => {
-      lookupSpy.mockRestore();
       getConfig().allowProjectSmtp = undefined;
       getConfig().allowUnsafeOutbound = undefined;
       getConfig().smtp = undefined;
@@ -390,11 +380,11 @@ describe('Email', () => {
       expect(mockCreateTransport).toHaveBeenCalledTimes(1);
       expect(mockCreateTransport).toHaveBeenCalledWith(
         expect.objectContaining({
-          host: '93.184.215.14',
-          tls: { servername: 'smtp.project.example.com' },
+          host: 'smtp.project.example.com',
           port: 587,
           secure: false,
           auth: { user: 'projectuser', pass: 'projectpass' },
+          getSocket: expect.any(Function),
           connectionTimeout: 20_000,
           greetingTimeout: 20_000,
         })
@@ -403,36 +393,12 @@ describe('Email', () => {
       expect(mockSESv2Client.send.callCount).toBe(0);
     });
 
-    test.each([[['10.20.30.40']], [['93.184.215.14', '10.20.30.40']], [[]]])(
-      'Project SMTP host must resolve to a usable address: %j',
-      async (addresses) => {
-        lookupSpy.mockResolvedValue(toLookupResult(addresses));
-        const project = makeProject(baseSecrets);
-
-        await expect(
-          sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
-        ).rejects.toThrow('Project SMTP configuration is incomplete or invalid');
-        expect(mockCreateTransport).not.toHaveBeenCalled();
-      }
-    );
-
-    test('Project SMTP host lookup failure is a configuration error', async () => {
-      lookupSpy.mockRejectedValue(Object.assign(new Error('not found'), { code: 'ENOTFOUND' }));
-      const project = makeProject(baseSecrets);
-
-      await expect(
-        sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
-      ).rejects.toThrow('Project SMTP configuration is incomplete or invalid');
-      expect(mockCreateTransport).not.toHaveBeenCalled();
-    });
-
-    test('allowUnsafeOutbound skips project SMTP host resolution', async () => {
+    test('allowUnsafeOutbound uses the default project SMTP socket', async () => {
       getConfig().allowUnsafeOutbound = true;
       const project = makeProject(baseSecrets);
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
 
-      expect(lookupSpy).not.toHaveBeenCalled();
-      expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ host: 'smtp.project.example.com' }));
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.not.objectContaining({ getSocket: expect.anything() }));
     });
 
     test('Infers secure for port 465', async () => {

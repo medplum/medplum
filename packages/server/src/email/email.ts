@@ -3,7 +3,6 @@
 import type { WithId } from '@medplum/core';
 import { EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Binary, Project } from '@medplum/fhirtypes';
-import { isIP } from 'node:net';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
@@ -18,11 +17,10 @@ import {
   getFromAddress,
   getProjectAppName,
   getProjectSmtpConfig,
-  resolveProjectSmtpHost,
+  getProjectSmtpSocket,
+  PROJECT_SMTP_SOCKET_TIMEOUT_MS,
+  PROJECT_SMTP_TIMEOUT_MS,
 } from './utils';
-
-const PROJECT_SMTP_TIMEOUT_MS = 20_000;
-const PROJECT_SMTP_SOCKET_TIMEOUT_MS = 120_000;
 
 /**
  * Sends an email using the AWS SES service.
@@ -125,10 +123,8 @@ async function sendEmailViaSmtp(
     },
   };
   if (projectId) {
-    transportOptions.host = await resolveProjectSmtpHost(projectId, smtpConfig.host);
-    if (!isIP(smtpConfig.host)) {
-      // Keep SNI and certificate checks on the configured hostname
-      transportOptions.tls = { servername: smtpConfig.host };
+    if (!getConfig().allowUnsafeOutbound) {
+      transportOptions.getSocket = getProjectSmtpSocket(projectId);
     }
     transportOptions.connectionTimeout = PROJECT_SMTP_TIMEOUT_MS;
     transportOptions.greetingTimeout = PROJECT_SMTP_TIMEOUT_MS;
