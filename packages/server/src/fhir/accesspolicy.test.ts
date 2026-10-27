@@ -1451,6 +1451,52 @@ describe('AccessPolicy', () => {
       expect(readResource.name?.[0].family).toBeUndefined();
     }));
 
+  test.each<[string, string[], string, boolean]>([
+    ['Patient', ['name.family'], 'family=Smith', false],
+    ['Patient', ['name.family'], 'name=Smith', false],
+    ['Patient', ['name.family'], '_sort=-family', false],
+    ['Patient', ['name.family'], 'given=Alice', true],
+    ['Patient', ['name'], 'family=Smith', false],
+    ['Patient', ['meta'], '_lastUpdated=gt2020-01-01', false],
+    ['Observation', ['subject'], 'patient=Patient/123', false],
+    ['Observation', ['valueQuantity'], 'value-quantity=gt1', false],
+    ['Observation', ['valueQuantity'], 'code=abc', true],
+  ])('Search on hidden fields %s %j %s', (resourceType, hiddenFields, query, allowed) =>
+    withTestContext(async () => {
+      const repo2 = getRepository({
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType, hiddenFields }] },
+      });
+      const search = repo2.search(parseSearchRequest(resourceType + '?' + query));
+      if (allowed) {
+        await expect(search).resolves.toBeDefined();
+      } else {
+        await expect(search).rejects.toThrow('Cannot search on hidden field');
+      }
+    })
+  );
+
+  test('Access policy criteria may use hidden fields', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: randomUUID() }],
+      });
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              criteria: 'Patient?family=' + patient.name?.[0].family,
+              hiddenFields: ['name.family'],
+            },
+          ],
+        },
+      });
+      const results = await repo2.searchResources<Patient>({ resourceType: 'Patient' });
+      expect(results.map((p) => p.id)).toStrictEqual([patient.id]);
+    }));
+
   test('Hidden fields on possible missing values', () =>
     withTestContext(async () => {
       // Create an Observation with a valueQuantity
