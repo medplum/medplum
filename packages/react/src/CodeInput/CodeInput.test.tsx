@@ -3,6 +3,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
+import { useState } from 'react';
 import { act, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { CodeInput } from './CodeInput';
 
@@ -84,5 +85,17 @@ describe('CodeInput', () => {
 
     await act(async () => rerender(ui(null)));
     expect(screen.queryByText('xyz')).not.toBeInTheDocument();
+  });
+
+  test('Controlled value keeps the display of a picked code', async () => {
+    function Parent(): JSX.Element {
+      const [value, setValue] = useState<string | null>(null);
+      return <CodeInput {...defaultProps} value={value} onChange={(code) => setValue(code ?? null)} />;
+    }
+    await setup(<Parent />);
+
+    await selectAutocompleteOption(screen.getByRole('searchbox'), 'Test', 'Test Display');
+
+    expect(screen.getByText('Test Display')).toBeInTheDocument();
   });
 });
