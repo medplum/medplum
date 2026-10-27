@@ -9,7 +9,15 @@ import {
   isResourceWithId,
   normalizeErrorString,
 } from '@medplum/core';
-import type { Appointment, Extension, HealthcareService, Location, Reference, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Extension,
+  HealthcareService,
+  Location,
+  Reference,
+  Resource,
+  Slot,
+} from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -483,8 +491,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   });
 
   // Kept open until closed, even off the calendar, so paging or filtering to find it a new time
-  // doesn't lose it. Each copy the calendar loads replaces the one held, so it leaves as last seen.
-  const loadedAppointment = selectedAppointment && appointments?.find((a) => a.id === selectedAppointment.id);
+  // doesn't lose it. Each copy the calendar loads replaces the one held, so it leaves as last seen,
+  // unless it is older: a search sent before an edit can land after it.
+  const loadedAppointment =
+    selectedAppointment &&
+    appointments?.find((a) => a.id === selectedAppointment.id && !isOlder(a, selectedAppointment));
   if (loadedAppointment && loadedAppointment !== selectedAppointment) {
     setSelectedAppointment(loadedAppointment);
   }
@@ -504,10 +515,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Kept open until closed, as the open appointment is.
   const loadedSlot = selectedSlot && slots?.find((s) => s.id === selectedSlot.id);
-  if (loadedSlot && loadedSlot !== selectedSlot) {
-    setSelectedSlot(loadedSlot);
+  const currentSlot = loadedSlot && !isOlder(loadedSlot, selectedSlot) ? loadedSlot : undefined;
+  if (currentSlot && currentSlot !== selectedSlot) {
+    setSelectedSlot(currentSlot);
   }
-  const openSlot = loadedSlot ?? selectedSlot;
+  const openSlot = currentSlot ?? selectedSlot;
 
   // The calendar loads only the Slots on calendars shown, so one loaded and not drawn is hidden by
   // the filters. One in another week isn't loaded, and its time already says why.
@@ -736,6 +748,13 @@ function useAppointmentServices(
   }, [medplum, referencesKey]);
 
   return services;
+}
+
+// Whether `resource` was last updated before `than`. Either without a time is taken as current.
+function isOlder(resource: Resource, than: Resource): boolean {
+  const updated = resource.meta?.lastUpdated;
+  const thanUpdated = than.meta?.lastUpdated;
+  return !!updated && !!thanUpdated && new Date(updated).getTime() < new Date(thanUpdated).getTime();
 }
 
 function toggleId(ids: ReadonlySet<string>, id: string): Set<string> {
