@@ -6,6 +6,7 @@ import os from 'node:os';
 import type { WebSocket as IncomingWebSocket, RawData } from 'ws';
 import WebSocket from 'ws';
 import { getConfig } from '../config/loader';
+import { hasSmartResourceScopes } from '../auth/utils';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
@@ -143,6 +144,12 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
     const { project } = authResult.authState;
     if (!hasProjectFeature(project.features, 'ai-realtime')) {
       sendError('OpenAI realtime transcription is not enabled for this project');
+      closeClient(1008);
+      return;
+    }
+
+    if (hasSmartResourceScopes(authResult.authState.login)) {
+      sendError('Forbidden');
       closeClient(1008);
       return;
     }

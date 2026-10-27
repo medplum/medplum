@@ -8,7 +8,7 @@ import { WebSocketServer } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
-import { initTestAuth } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 describe('AI realtime websocket', () => {
   let app: express.Express;
@@ -58,6 +58,27 @@ describe('AI realtime websocket', () => {
       })
       .close()
       .expectClosed();
+  });
+
+  test('Rejects SMART app login', async () => {
+    const { project } = await createTestProject({
+      project: {
+        features: ['ai-realtime'] as any,
+        secret: [{ name: 'OPENAI_API_KEY', valueString: 'sk-test-key' }],
+      },
+    });
+    const { accessToken } = await withTestContext(() =>
+      addTestUser(project, { scope: 'openid user/Observation.rs' })
+    );
+
+    await request(server)
+      .ws('/ws/ai-realtime')
+      .sendText(JSON.stringify({ type: 'ai-realtime:connect', accessToken }))
+      .expectJson((actual) => {
+        expect(actual.type).toBe('ai-realtime:error');
+        expect(actual.body).toBe('Forbidden');
+      })
+      .expectClosed(1008);
   });
 
   test('Proxies messages after connect', async () => {
