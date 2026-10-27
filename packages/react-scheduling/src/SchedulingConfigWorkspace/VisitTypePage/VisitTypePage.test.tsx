@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { colorsTuple, DEFAULT_THEME, MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   badRequest,
@@ -161,6 +162,26 @@ describe('VisitTypePage', () => {
     expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 45 });
   });
 
+  test("a stored color the calendar can't draw is shown in the color the calendar draws instead, which Custom starts from", async () => {
+    const stored: HealthcareService = initialVisit;
+    await setup({
+      ...stored,
+      extension: [...(stored.extension ?? []), { url: SchedulingColorURI, valueString: '#228b22ff' }],
+    });
+    const swatchFill = (name: string): string | undefined =>
+      screen
+        .getByRole('radio', { name })
+        .querySelector<HTMLElement>('.mantine-ColorSwatch-colorOverlay')
+        ?.style.getPropertyValue('background-color');
+    expect(screen.getByRole('radio', { name: '#228b22ff' })).toBeChecked();
+    expect(swatchFill('#228b22ff')).toMatch(/^var\(--mantine-color-[a-z]+-7\)$/);
+    expect(swatchFill('#228b22ff')).toBe(swatchFill('Automatic'));
+
+    const automatic = swatchFill('Automatic')?.match(/^var\(--mantine-color-([a-z]+)-7\)$/)?.[1] as string;
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    expect(screen.getByRole('textbox', { name: 'Custom color' })).toHaveValue(DEFAULT_THEME.colors[automatic][7]);
+  });
+
   test('a stored color outside the palette is shown as chosen, and Automatic takes it off', async () => {
     const stored: HealthcareService = initialVisit;
     const { onSynced } = await setup({
@@ -175,6 +196,78 @@ describe('VisitTypePage', () => {
     await waitFor(() => expect(onSynced).toHaveBeenCalled());
     expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBeUndefined();
     expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 60 });
+  });
+
+  test('Custom starts from the color shown, previews it, and stores the hex code typed', async () => {
+    const { onSynced } = await setup();
+    expect(screen.queryByRole('textbox', { name: 'Custom color' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Appointment preview/ })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'grape' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    const input = screen.getByRole('textbox', { name: 'Custom color' });
+    expect(input).toHaveValue(DEFAULT_THEME.colors.grape[7]);
+    const previews = [
+      screen.getByRole('img', { name: 'Appointment preview, light mode' }),
+      screen.getByRole('img', { name: 'Appointment preview, dark mode' }),
+    ];
+    const previewColors = (): string[] => previews.map((p) => p.style.getPropertyValue('--fc-event-color'));
+    expect(previews[0]).toHaveTextContent('Initial Visit');
+    expect(previewColors()).toEqual([DEFAULT_THEME.colors.grape[7], DEFAULT_THEME.colors.grape[7]]);
+    // Still grape's own shade, so drawn as grape is.
+    expect(previews[0].querySelector('.appointment')).toHaveClass('color-grape');
+
+    // Typing passes through partial codes; the whole one is stored.
+    await userEvent.clear(input);
+    await userEvent.type(input, '#228b22');
+    expect(input).toHaveValue('#228b22');
+    expect(previewColors()).toEqual(['#228b22', '#228b22']);
+    expect(screen.getByRole('radio', { name: 'Custom' })).toBeChecked();
+
+    // An unfinished code is dropped when the input is left, even one that reads as a shorter code.
+    await userEvent.clear(input);
+    await userEvent.type(input, '#e859');
+    await userEvent.tab();
+    expect(input).toHaveValue('#228b22');
+
+    // Spaces pasted around a code are dropped, and its # may be left off.
+    await userEvent.clear(input);
+    await userEvent.type(input, ' e8590c ');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBe('#e8590c');
+  });
+
+  test('a stored hex code is shown as Custom', async () => {
+    const stored: HealthcareService = initialVisit;
+    await setup({
+      ...stored,
+      extension: [...(stored.extension ?? []), { url: SchedulingColorURI, valueString: '#228b22' }],
+    });
+    expect(screen.getByRole('radio', { name: 'Custom' })).toBeChecked();
+    expect(screen.getByRole('textbox', { name: 'Custom color' })).toHaveValue('#228b22');
+    expect(screen.queryByRole('radio', { name: '#228b22' })).not.toBeInTheDocument();
+  });
+
+  test('Custom starts from a theme shade written in another form as hex, or from black if it cannot be read', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    const stored = await medplum.createResource(initialVisit);
+    const theme = { colors: { grape: colorsTuple('rgb(174, 62, 201)'), violet: colorsTuple('oklch(0.5 0.2 290)') } };
+    renderWithMedplum(
+      <MantineProvider theme={theme}>
+        <VisitTypePage service={stored} onSynced={vi.fn()} onDiscardNew={vi.fn()} />
+      </MantineProvider>,
+      medplum
+    );
+
+    await userEvent.click(screen.getByRole('radio', { name: 'grape' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    expect(screen.getByRole('textbox', { name: 'Custom color' })).toHaveValue('#ae3ec9');
+
+    await userEvent.click(screen.getByRole('radio', { name: 'violet' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    expect(screen.getByRole('textbox', { name: 'Custom color' })).toHaveValue('#000000');
   });
 
   test('turning Active off stores active false, and the badge beside the name follows the switch', async () => {

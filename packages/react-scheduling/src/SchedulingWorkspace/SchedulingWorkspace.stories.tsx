@@ -28,6 +28,7 @@ import {
   PROCEDURE_VALUE_SET,
   SchedulingFixtures,
   TelehealthService,
+  UltrasoundImagingService,
 } from '../stories/scheduling';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
@@ -47,15 +48,24 @@ const ELSEWHERE_FIXTURES = [
   ...AppointmentPatientFixtures,
 ];
 
+/** The colors visit types name for themselves: one from the theme's palette, one a custom hex code. */
+const SERVICE_COLORS: Record<string, string> = {
+  [TelehealthService.id]: 'grape',
+  [UltrasoundImagingService.id]: '#228b22',
+};
+
 /**
- * The same clinic, moved onto whatever clock the reader is on, with Telehealth Consult naming the
- * color it is drawn in.
+ * The same clinic, moved onto whatever clock the reader is on, with the visit types in
+ * `SERVICE_COLORS` naming the colors they are drawn in.
  */
 const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES).map((resource) =>
-  resource.resourceType === 'HealthcareService' && resource.id === TelehealthService.id
+  resource.resourceType === 'HealthcareService' && resource.id && SERVICE_COLORS[resource.id]
     ? {
         ...resource,
-        extension: [...(resource.extension ?? []), { url: SchedulingColorURI, valueString: 'grape' }],
+        extension: [
+          ...(resource.extension ?? []),
+          { url: SchedulingColorURI, valueString: SERVICE_COLORS[resource.id] },
+        ],
       }
     : resource
 );
@@ -138,8 +148,9 @@ export default {
  * Eliana Garcia's Tuesday telehealth visit with Dr. Brown is the second of three, weekly, and is
  * marked as recurring; page a week back or forward for the first and third.
  *
- * Appointments are colored by visit type. Telehealth Consult names its color, grape, on its
- * HealthcareService; the others are given one picked from their reference.
+ * Appointments are colored by visit type. Telehealth Consult names its color on its
+ * HealthcareService from the palette, grape, and Ultrasound Imaging names a custom hex code, a
+ * forest green; the others are given one picked from their reference.
  *
  * Monday morning's visits ended before the pinned "now" (12:05 that day), so they are drawn
  * faded: an imaging visit that was seen, and a telehealth visit the patient missed.

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { DEFAULT_THEME } from '@mantine/core';
+import { colorsTuple, DEFAULT_THEME, MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
@@ -390,6 +390,43 @@ describe('MultiCalendar', () => {
       ];
       renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
       expect(getEventColor(/John Doe/)).toBe(DEFAULT_THEME.colors.teal[7]);
+    });
+
+    test('draws a hex code named on the source or its schedule, but not a malformed one, and one a palette color is drawn in as that color', () => {
+      const schedule: WithId<Schedule> = {
+        ...DrAliceSmithSchedule,
+        extension: [{ url: SchedulingColorURI, valueString: '#2f9e44' }],
+      };
+      const sources: MultiCalendarSource[] = [
+        { appointments: [createAppointment('a1', 'John Doe')], slots: [], color: '#e8590c' },
+        { schedule, appointments: [createAppointment('a2', 'Jane Roe')], slots: [] },
+        { appointments: [createAppointment('a3', 'Sam Poe')], slots: [], color: '#zz0000' },
+        // grape's shade, as a custom color picked from it starts out.
+        { appointments: [createAppointment('a4', 'Ann Low')], slots: [], color: '#AE3EC9' },
+      ];
+      renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
+      expect(getEventColor(/John Doe/)).toBe('#e8590c');
+      expect(screen.getByText(/John Doe/).closest('.event')).toHaveClass('hex-color');
+      expect(getEventColor(/Jane Roe/)).toBe('#2f9e44');
+      // The third source, so the palette's third color.
+      expect(getEventColor(/Sam Poe/)).toBe(DEFAULT_THEME.colors.pink[7]);
+      expect(screen.getByText(/Sam Poe/).closest('.event')).not.toHaveClass('hex-color');
+      expect(screen.getByText(/Ann Low/).closest('.event')).toHaveClass('color-grape');
+      expect(screen.getByText(/Ann Low/).closest('.event')).not.toHaveClass('hex-color');
+    });
+
+    test("draws a palette color's hex as that color when the theme writes its shade in another form", () => {
+      const theme = { colors: { grape: colorsTuple('rgb(174, 62, 201)') } };
+      const sources: MultiCalendarSource[] = [
+        { appointments: [createAppointment('a1', 'John Doe')], slots: [], color: '#ae3ec9' },
+      ];
+      renderWithMedplum(
+        <MantineProvider theme={theme}>
+          <MultiCalendar sources={sources} />
+        </MantineProvider>,
+        medplum
+      );
+      expect(screen.getByText(/John Doe/).closest('.event')).toHaveClass('color-grape');
     });
 
     test('falls back to a default palette color when the given color is not a valid theme color', () => {
