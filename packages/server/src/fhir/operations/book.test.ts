@@ -2889,7 +2889,10 @@ describe('scheduling flow integration test', () => {
       });
 
     expect(response).toHaveStatus(201);
-    const slots = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isSlot);
+    const slots = ((response.body as Bundle).entry ?? [])
+      .map((entry) => entry.resource)
+      .filter(isDefined)
+      .filter(isSlot);
     expect(slots).toHaveLength(1);
     const slot = await systemRepo.readResource<Slot>('Slot', slots[0].id as string);
     expect(slot.meta?.accounts).toStrictEqual([{ reference: getReferenceString(tenant) }]);
