@@ -1679,5 +1679,18 @@ describe('PlanDefinition apply', () => {
       await updateQuestionnaire(version1, 'draft');
       expect(await applyAndGetTaskFocus(url)).toStrictEqual(getReferenceString(version1));
     });
+
+    test('Prefers ActivityDefinition over a Questionnaire with the same url', async () => {
+      const url = 'http://example.com/ActivityDefinition/versioned-' + randomUUID();
+      const activityDefinition = await request(app)
+        .post(`/fhir/R4/ActivityDefinition`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'ActivityDefinition', url, status: 'active', kind: 'ServiceRequest', intent: 'order' });
+      expect(activityDefinition).toHaveStatus(201);
+      await createQuestionnaire(url, '1', 'active');
+
+      expect(await applyAndGetTaskFocus(url)).toMatch(/^ServiceRequest\//);
+    });
   });
 });
