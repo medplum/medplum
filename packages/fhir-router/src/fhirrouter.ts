@@ -141,12 +141,21 @@ function setSearchRepositoryMode(
   if (options?.batch) {
     return;
   }
-  if (
-    req.config?.searchOnReader ||
-    (req.config?.chainedSearchOnReader && searchRequest.filters?.some(isChainedSearchFilter))
-  ) {
+  if (searchUsesReader(req.config, searchRequest)) {
     repo.setMode(RepositoryMode.READER);
   }
+}
+
+/**
+ * Returns true if the project settings route the search to a reader database.
+ * @param config - The request config.
+ * @param searchRequest - The parsed search request.
+ * @returns True if the search should use a reader.
+ */
+export function searchUsesReader(config: FhirRequestConfig | undefined, searchRequest: SearchRequest): boolean {
+  return Boolean(
+    config?.searchOnReader || (config?.chainedSearchOnReader && searchRequest.filters?.some(isChainedSearchFilter))
+  );
 }
 
 // Create resource

@@ -34,7 +34,7 @@ import { BatchProcessor, buildBatchResponseBundle, processBatch } from './batch'
 import type { FhirRequest } from './fhirrouter';
 import { FhirRouter } from './fhirrouter';
 import type { FhirRepository } from './repo';
-import { MemoryRepository } from './repo';
+import { MemoryRepository, RepositoryMode } from './repo';
 
 const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();
@@ -1311,6 +1311,54 @@ describe('Batch', () => {
     } finally {
       spy.mockRestore();
       router.removeEventListener('batch', listener as (e: any) => void);
+    }
+  });
+
+  test('Read-only batch with a reader search uses the reader for every entry', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const readerReq: FhirRequest = { ...req, config: { transactions: true, chainedSearchOnReader: true } };
+    const read = { request: { method: 'GET', url: 'Patient/' + patient.id } } as BundleEntry;
+    const search = { request: { method: 'GET', url: 'Patient?name=alice' } } as BundleEntry;
+    const chainedSearch = { request: { method: 'GET', url: 'Observation?subject:Patient.name=alice' } } as BundleEntry;
+    const setMode = vi.spyOn(repo, 'setMode');
+    try {
+      // The chained search pins the read and the plain search to the reader too
+      await processBatch(readerReq, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [read, search, chainedSearch],
+      });
+      expect(setMode.mock.calls).toStrictEqual([
+        [RepositoryMode.READER],
+        [RepositoryMode.READER],
+        [RepositoryMode.READER],
+      ]);
+
+      // Without a chained search, nothing qualifies
+      setMode.mockClear();
+      await processBatch(readerReq, repo, router, { resourceType: 'Bundle', type: 'batch', entry: [read, search] });
+      expect(setMode).not.toHaveBeenCalled();
+
+      // A write anywhere in the batch keeps it on the writer
+      setMode.mockClear();
+      await processBatch(readerReq, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [chainedSearch, { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } }],
+      });
+      expect(setMode).not.toHaveBeenCalled();
+
+      // A transaction pins a writer connection, so even a read-only one stays there
+      setMode.mockClear();
+      const transaction = await processBatch(readerReq, repo, router, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [chainedSearch],
+      });
+      expect(transaction.type).toStrictEqual('transaction-response');
+      expect(setMode).not.toHaveBeenCalled();
+    } finally {
+      setMode.mockRestore();
     }
   });
 

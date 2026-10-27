@@ -23,11 +23,23 @@ import type {
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
+import { searchUsesReader } from './fhirrouter';
 import type { FhirRepository } from './repo';
+import { RepositoryMode } from './repo';
 import type { HttpMethod, RouteResult } from './urlrouter';
 
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
+
+const readOnlyInteractions = new Set<RestInteraction>([
+  'search-system',
+  'search-type',
+  'read',
+  'vread',
+  'history-system',
+  'history-type',
+  'history-instance',
+]);
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 
@@ -41,6 +53,11 @@ export interface BundlePreprocessInfo {
   requiresStrongTransaction: boolean;
   updates: number;
   resourceTypes: Set<ResourceType>;
+  /**
+   * True if the bundle makes no writes and at least one of its searches would use a reader, in which
+   * case every entry uses the reader so the response reflects a single database.
+   */
+  useReader?: boolean;
 }
 
 /**
@@ -279,6 +296,7 @@ export class BatchProcessor {
         resourceTypes: this.bundleInfo.resourceTypes,
         requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
         updates: this.bundleInfo.updates,
+        useReader: this.bundleInfo.useReader,
       },
       resolvedIdentities: this.resolvedIdentities,
       assignedIds: this.assignedIds,
@@ -424,6 +442,7 @@ export class BatchProcessor {
     const resourceTypes = new Set<ResourceType>();
     let requiresStrongTransaction = false;
     let updates = 0;
+    let readOnly = true;
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
@@ -461,6 +480,9 @@ export class BatchProcessor {
       if (entryResourceType) {
         resourceTypes.add(entryResourceType);
       }
+      if (!readOnlyInteractions.has(interaction)) {
+        readOnly = false;
+      }
       if (interaction === 'create' && entry.request?.ifNoneExist) {
         // Conditional create requires strong (serializable) transaction to
         // guarantee uniqueness of created resource
@@ -483,11 +505,19 @@ export class BatchProcessor {
     for (const bucket of Object.values(bucketedEntries)) {
       ordering.push(...bucket);
     }
+    // A transaction pins a writer connection, so only a plain batch can move to a reader
+    const useReader =
+      readOnly &&
+      !this.isTransaction() &&
+      [...bucketedEntries['search-system'], ...bucketedEntries['search-type']].some((i) =>
+        this.searchUsesReader(entries[i])
+      );
     return {
       ordering,
       requiresStrongTransaction,
       updates,
       resourceTypes,
+      useReader,
     };
   }
 
@@ -552,6 +582,17 @@ export class BatchProcessor {
       default:
         // Ignore read-only and complex operations
         return undefined;
+    }
+  }
+
+  private searchUsesReader(entry: BundleEntry): boolean {
+    const route = this.getRouteForEntry(entry);
+    const resourceType = (route?.params?.resourceType ?? 'MultipleTypes') as ResourceType;
+    try {
+      return searchUsesReader(this.req.config, parseSearchRequest(resourceType, route?.query));
+    } catch {
+      // An unparseable search fails when its entry is processed
+      return false;
     }
   }
 
@@ -730,6 +771,10 @@ export class BatchProcessor {
     const request = this.parseBatchRequest(entry, route);
     // Creates use the ID assigned to this entry during preprocessing
     const assignedId = entry.resource?.id !== undefined && entry.resource.id === this.assignedIds[entryIndex];
+    if (this.bundleInfo?.useReader) {
+      // Set per entry rather than once, since a resumed re-entrant batch runs on a fresh repository
+      this.repo.setMode(RepositoryMode.READER);
+    }
     const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true, assignedId });
 
     if (!isOk(outcome) && this.isTransaction()) {
