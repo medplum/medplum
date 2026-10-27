@@ -67,9 +67,7 @@ describe('AI realtime websocket', () => {
         secret: [{ name: 'OPENAI_API_KEY', valueString: 'sk-test-key' }],
       },
     });
-    const { accessToken } = await withTestContext(() =>
-      addTestUser(project, { scope: 'openid user/Observation.rs' })
-    );
+    const { accessToken } = await withTestContext(() => addTestUser(project, { scope: 'openid user/Observation.rs' }));
 
     await request(server)
       .ws('/ws/ai-realtime')
