@@ -219,6 +219,20 @@ describe('MultiResourceInput', () => {
       expect(pills().queryByText('Marge Simpson')).not.toBeInTheDocument();
     });
 
+    test('resolves references when the client cache is off', async () => {
+      render(
+        <MedplumProvider medplum={new MockClient({ cacheTime: 0 })}>
+          <MultiResourceInput<Patient>
+            resourceType="Patient"
+            name="foo"
+            placeholder="Test"
+            value={[createReference(HomerSimpson)]}
+          />
+        </MedplumProvider>
+      );
+      expect(await pills().findByText('Homer Simpson')).toBeInTheDocument();
+    });
+
     test('leaves out references that cannot be read', async () => {
       renderControlled([createReference(HomerSimpson), { reference: 'Patient/does-not-exist' }]);
       expect(await pills().findByText('Homer Simpson')).toBeInTheDocument();

@@ -166,7 +166,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
   const ItemComponent = props.itemComponent ?? DefaultResourceItemComponent;
   const onChange = props.onChange;
   const controlled = props.value !== undefined;
-  const { resources: valueResources, remember } = useControlledResources(props.value);
+  const valueResources = useControlledResources(props.value);
 
   // Capture initial defaultValue at mount — treated as uncontrolled (initial-only).
   // The Mantine MultiSelect component does not reliably handle changes to defaultValue after mount.
@@ -224,14 +224,11 @@ export function MultiResourceInput<T extends Resource = Resource>(
 
   const handleChange = useCallback(
     (newResources: T[]) => {
-      if (controlled) {
-        remember(newResources);
-      }
       if (onChange) {
         onChange(newResources);
       }
     },
-    [controlled, remember, onChange]
+    [onChange]
   );
 
   if (defaultResources === undefined) {
@@ -262,70 +259,63 @@ export function MultiResourceInput<T extends Resource = Resource>(
 }
 
 /**
- * Resolves a controlled `value` to resources. Resources the user picks are remembered by reference
- * string, so a pick the parent stores as a reference comes back without a refetch. While a reference
- * is being read, the last fully resolved selection is shown.
+ * Resolves a controlled `value` to resources, reading references the client hasn't cached. While a
+ * read is pending, the last fully resolved selection is shown.
  * @param value - The controlled value, or undefined when uncontrolled.
- * @returns The resources to show, and `remember` for resources the user picked.
+ * @returns The resources to show, or undefined when uncontrolled.
  */
-function useControlledResources<T extends Resource>(
-  value: readonly (T | Reference<T>)[] | undefined
-): { resources: T[] | undefined; remember: (resources: T[]) => void } {
+function useControlledResources<T extends Resource>(value: readonly (T | Reference<T>)[] | undefined): T[] | undefined {
   const medplum = useMedplum();
-  // null marks a reference that could not be read
-  const [known, setKnown] = useState<Record<string, T | null>>({});
-
-  const remember = useCallback((resources: T[]) => {
-    setKnown((prev) => {
-      let next = prev;
-      for (const resource of resources) {
-        const key = getReferenceString(resource);
-        if (key && prev[key] !== resource) {
-          next = next === prev ? { ...prev } : next;
-          next[key] = resource;
-        }
-      }
-      return next;
-    });
-  }, []);
+  // The last read, for the uncached references it covered. null marks a reference that could not be read.
+  const [read, setRead] = useState<{ key: string; results: Map<string, T | null> }>();
 
   const { resolved, pendingKey } = useMemo(() => {
     if (!value) {
       return { resolved: undefined, pendingKey: '' };
     }
+    const uncached = new Set<string>();
+    for (const item of value) {
+      if (!isResource<T>(item) && isReference<T>(item) && !medplum.getCachedReference(item)) {
+        uncached.add(item.reference);
+      }
+    }
+    const key = uncached.size > 0 ? JSON.stringify([...uncached]) : '';
+    const results = read?.key === key ? read.results : undefined;
+
     const resolved: T[] = [];
-    const pending = new Set<string>();
     for (const item of value) {
       if (isResource<T>(item)) {
         resolved.push(item);
       } else if (isReference<T>(item)) {
-        const resource = item.reference in known ? known[item.reference] : medplum.getCachedReference(item);
+        const resource = medplum.getCachedReference(item) ?? results?.get(item.reference);
         if (resource) {
           resolved.push(resource);
-        } else if (resource === undefined) {
-          pending.add(item.reference);
         }
       }
     }
-    return { resolved, pendingKey: pending.size > 0 ? JSON.stringify([...pending]) : '' };
-  }, [medplum, value, known]);
+    return { resolved, pendingKey: key && !results ? key : '' };
+  }, [medplum, value, read]);
 
   useEffect(() => {
     if (!pendingKey) {
-      return;
+      return undefined;
     }
+    let cancelled = false;
     const references: string[] = JSON.parse(pendingKey);
     Promise.allSettled(references.map((reference) => medplum.readReference<T>({ reference })))
-      .then((results) => {
-        setKnown((prev) => {
-          const next = { ...prev };
-          results.forEach((result, i) => {
-            next[references[i]] = result.status === 'fulfilled' ? result.value : null;
+      .then((settled) => {
+        if (!cancelled) {
+          const results = new Map<string, T | null>();
+          settled.forEach((result, i) => {
+            results.set(references[i], result.status === 'fulfilled' ? result.value : null);
           });
-          return next;
-        });
+          setRead({ key: pendingKey, results });
+        }
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [medplum, pendingKey]);
 
   const [lastResolved, setLastResolved] = useState(resolved);
@@ -333,5 +323,5 @@ function useControlledResources<T extends Resource>(
     setLastResolved(resolved);
   }
 
-  return { resources: pendingKey ? lastResolved : resolved, remember };
+  return pendingKey ? lastResolved : resolved;
 }
