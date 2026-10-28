@@ -29,12 +29,17 @@ exposure, especially access policies, ProjectMembership scopes, and PHI handling
 ## Start Here: Plan Your Application {/* #plan-your-application */}
 
 Cloning Medplum gives your agent reference material. Use this first prompt to connect
-that material to your project and start a planning conversation:
+that material to your project and start a planning conversation.
+
+You can extend an existing application, customize [Medplum Provider](/docs/provider#building-a-custom-ehr),
+or build a custom application using Medplum's SDKs and components, for example with the
+[Hello World starter](/docs/tutorials/medplum-hello-world). If undecided, your agent can help
+you choose a starting point during planning.
 
 1. Open your application's folder if you have one. Otherwise, you can start planning
-   directly in the Medplum clone before choosing an application folder. Choose a folder
-   before saving application files; an empty folder or the [Hello World starter](/docs/tutorials/medplum-hello-world)
-   works. Your application's instructions and decisions belong there; the Medplum clone is a reference.
+   directly in the Medplum clone before choosing a starting point or application folder.
+   Choose a folder before saving application files. Your application's instructions and
+   decisions belong there; the Medplum clone is a reference.
 2. Give the agent access to your Medplum clone. The prompt assumes it is linked as
    `medplum-link`, as described in [section 1](#1-give-your-ai-tools-access-to-medplum).
    Otherwise, replace `medplum-link` with the clone's actual path.
