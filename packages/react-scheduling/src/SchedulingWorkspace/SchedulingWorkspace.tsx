@@ -382,10 +382,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   }, []);
 
   const startBookingNow = useCallback((): void => {
+    const durationMinutes = 30;
     const start = new Date();
     start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
+    const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
     setPaneTab('appointment');
-    startBooking({ start, end: new Date(start.getTime() + 30 * 60 * 1000) });
+    startBooking({ start, end });
     calendarRef.current?.gotoDate(start);
   }, [startBooking]);
 
