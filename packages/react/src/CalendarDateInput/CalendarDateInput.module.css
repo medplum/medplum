@@ -1,3 +1,8 @@
+/* Mantine fills a disabled ActionIcon, which a subtle one has no fill to fall back from. */
+.monthButton:disabled {
+  background-color: transparent;
+}
+
 .table {
   width: 100%;
   min-width: 260px;
