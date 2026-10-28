@@ -15,8 +15,9 @@ import {
   ThemeIcon,
   Timeline,
 } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { formatDate, formatHumanName } from '@medplum/core';
+import { formatDate, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type {
   CarePlan,
   DiagnosticReport,
@@ -34,7 +35,6 @@ import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
 import classes from './LabOrderDetails.module.css';
 import { LabReportContent } from './LabReportContent';
-import { showErrorNotification } from './notifications';
 
 export interface LabOrderDetailsProps {
   order: ServiceRequest;
@@ -81,7 +81,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       ]);
       onChange?.(updated);
     } catch (err) {
-      showErrorNotification(err);
+      showNotification({ color: 'red', message: normalizeErrorString(err) });
     }
   }, [medplum, order.id, onChange]);
 
@@ -102,7 +102,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       setDiagnosticReports(reports);
     };
 
-    fetchReports().catch(showErrorNotification);
+    fetchReports().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, order.id, selectedReport]);
 
   // When the caller passed a selectedReport, always show that exact resource - resolved directly

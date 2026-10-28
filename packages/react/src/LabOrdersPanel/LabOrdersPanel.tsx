@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Flex, Stack, Text, Tooltip } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { Filter, SearchRequest, WithId } from '@medplum/core';
-import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, normalizeErrorString, Operator } from '@medplum/core';
 import type { DiagnosticReport, Patient, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
@@ -14,7 +15,6 @@ import { LabDetailPane } from './LabDetailPane';
 import { LabListItem } from './LabListItem';
 import { LabResultListItem } from './LabResultListItem';
 import { LabSelectEmpty } from './LabSelectEmpty';
-import { showErrorNotification } from './notifications';
 
 export type LabTab = 'open' | 'completed' | 'revoked';
 export type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
@@ -106,14 +106,14 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
       setItems(results);
       setTotal(results.bundle?.total ?? results.length);
     } catch (error) {
-      showErrorNotification(error);
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     } finally {
       setLoading(false);
     }
   }, [medplum, patientReference, resourceType, search, activeTab]);
 
   useEffect(() => {
-    fetchData().catch(showErrorNotification);
+    fetchData().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [fetchData]);
 
   // Resolve the selected item from the loaded list, falling back to a read.
@@ -130,7 +130,7 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
       }
       setSelected(await medplum.readResource(resourceType, selectedId));
     };
-    resolveSelected().catch(showErrorNotification);
+    resolveSelected().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [selectedId, items, resourceType, medplum]);
 
   const tabs = useMemo<ListWithDetailPaneTab[]>(
@@ -150,7 +150,7 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
     setOrderModal(undefined);
     fetchData()
       .then(() => onNew?.())
-      .catch(showErrorNotification);
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [fetchData, onNew]);
 
   const headerActions = renderOrderModal && (
@@ -198,7 +198,9 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
         renderDetail={(item) => (
           <LabDetailPane
             item={item}
-            onOrderChange={() => fetchData().catch(showErrorNotification)}
+            onOrderChange={() =>
+              fetchData().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }))
+            }
             onResumeOrder={renderOrderModal ? setOrderModal : undefined}
           />
         )}

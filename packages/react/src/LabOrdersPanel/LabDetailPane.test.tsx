@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerServiceRequest, MockClient } from '@medplum/mock';
@@ -10,9 +11,8 @@ import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { LabDetailPane } from './LabDetailPane';
-import { showErrorNotification } from './notifications';
 
-vi.mock('./notifications', () => ({ showErrorNotification: vi.fn() }));
+vi.mock('@mantine/notifications');
 
 vi.mock('./LabOrderDetails', () => ({
   LabOrderDetails: (props: {
@@ -70,7 +70,7 @@ test('shows an error notification and falls back to result details when the orde
   vi.spyOn(medplum, 'readReference').mockRejectedValueOnce(new Error('Not found'));
   setup({ item: report });
   expect(await screen.findByText('Result details: 123')).toBeInTheDocument();
-  expect(showErrorNotification).toHaveBeenCalledWith(new Error('Not found'));
+  expect(showNotification).toHaveBeenCalledWith({ color: 'red', message: 'Not found' });
 });
 
 test('passes a Reference to the selected report, and updates it when switching reports under the same order', async () => {
