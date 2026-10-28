@@ -26,4 +26,4 @@ The log will show an output denoting the set level - that is embedded within the
 
 To set the logLevel back to the default, remove the `logLevel` key from the `agent.properties` file and restart the Windows Service.
 
-For more detailed configuration options, see the [Configuration](./configuration) page.
+For more detailed configuration options, see the [Configuration](/docs/agent/configuration) page.

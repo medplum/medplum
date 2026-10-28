@@ -88,7 +88,7 @@ MEDPLUM_BASE_URL=https://api.example.com/
 
 After we've installed dependencies, we can write your Bot in any typescript file under the `src/` directory.
 
-As mentioned in [Bot Basics](./bot-basics), a bot is any TypeScript file that contains a `handler` function with the following signature:
+As mentioned in [Bot Basics](/docs/bots/bot-basics), a bot is any TypeScript file that contains a `handler` function with the following signature:
 
 ```ts
 import { MedplumClient, BotEvent } from '@medplum/core';
@@ -97,7 +97,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 ```
 
-See the [Bot Basics tutorial](./bot-basics#editing-a-bot) for more details about the arguments to `handler`.
+See the [Bot Basics tutorial](/docs/bots/bot-basics#editing-a-bot) for more details about the arguments to `handler`.
 
 The starter repository contains an example Bot in the `examples` directory called `hello-patient.ts`. You can copy this example file to get started on your own bots:
 
@@ -106,7 +106,7 @@ cd src
 cp examples/hello-patient.ts my-first-bot.ts
 ```
 
-You'll see that this creates a simple bot that logs the patient's name to the console. For more details on how this code works, check out the [Bot Basics](./bot-basics/#editing-a-bot) tutorial.
+You'll see that this creates a simple bot that logs the patient's name to the console. For more details on how this code works, check out the [Bot Basics](/docs/bots/bot-basics#editing-a-bot) tutorial.
 
 ```ts
 // src/my-first-bot.ts
@@ -190,7 +190,7 @@ After creating the bot, you should go to `medplum.config.json` and you should se
 | Parameter | Description                                                                                                                                                                                                                                          |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`    | Name of the bot used in the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) (below). **Note**: This name can be whatever your want. It does not have to match the filename of the bot code, nor anything in the Medplum App |
-| `id`      | The Bot Resource `id`. Can be found by navigating to [app.medplum.com/Bot](https://app.medplum.com/Bot) and clicking on the entry for the corresponding Bot. See the [Bot Basics tutorial](./bot-basics#bot_id) for more information                 |
+| `id`      | The Bot Resource `id`. Can be found by navigating to [app.medplum.com/Bot](https://app.medplum.com/Bot) and clicking on the entry for the corresponding Bot. See the [Bot Basics tutorial](/docs/bots/bot-basics#bot_id) for more information                 |
 | `source`  | This is the location of the typescript source file for your bot. **Note**: Currently, Medplum only supports single-file Bots.                                                                                                                        |
 | `dist`    | This is the location of the transpiled javascript file for your bot. For most setups, this will be in your `dist` directory of your package.                                                                                                         |
 

@@ -14,7 +14,7 @@ Are you interested in a non-AWS environment? Please [contact us](mailto:hello@me
 
 :::
 
-For more details on self hosting on AWS, see [Install on AWS](./install-on-aws).
+For more details on self hosting on AWS, see [Install on AWS](/docs/self-hosting/install-on-aws).
 
 The following diagram roughly represents the AWS architecture:
 

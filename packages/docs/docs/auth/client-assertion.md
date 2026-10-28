@@ -8,7 +8,7 @@ import TabItem from '@theme/TabItem';
 
 # Client Assertion (JWT Bearer)
 
-Client Assertion is an alternative to the [Client Credentials](./client-credentials) flow that authenticates the client using a **signed JWT** instead of a shared client secret. The client signs the JWT with a private key; Medplum verifies it against the public keys published at the client's JWKS URI.
+Client Assertion is an alternative to the [Client Credentials](/docs/auth/client-credentials) flow that authenticates the client using a **signed JWT** instead of a shared client secret. The client signs the JWT with a private key; Medplum verifies it against the public keys published at the client's JWKS URI.
 
 This approach is specified in [RFC 7523 — JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants](https://datatracker.ietf.org/doc/html/rfc7523) and is a cornerstone of the [SMART on FHIR Backend Services](https://hl7.org/fhir/smart-app-launch/backend-services.html) specification.
 
@@ -242,5 +242,5 @@ The `access_token` can then be used in subsequent API requests as a `Bearer` tok
 - [RFC 7523 — JWT Profile for OAuth 2.0 Client Authentication](https://datatracker.ietf.org/doc/html/rfc7523)
 - [RFC 7517 — JSON Web Key (JWK)](https://datatracker.ietf.org/doc/html/rfc7517)
 - [SMART on FHIR Backend Services](https://hl7.org/fhir/smart-app-launch/backend-services.html)
-- [Client Credentials Flow](./client-credentials)
-- [Mutual TLS (mTLS)](./mtls)
+- [Client Credentials Flow](/docs/auth/client-credentials)
+- [Mutual TLS (mTLS)](/docs/auth/mtls)

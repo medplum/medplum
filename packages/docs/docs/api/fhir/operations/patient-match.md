@@ -234,5 +234,5 @@ Here First Name + Last Name + DOB + Phone match after U.S. phone normalization, 
 ## Related Documentation
 
 - [HL7 FHIR Patient $match operation](https://hl7.org/fhir/R4/patient-operation-match.html)
-- [Patient $everything](./patient-everything)
-- [Patient $summary](./patient-summary)
+- [Patient $everything](/docs/api/fhir/operations/patient-everything)
+- [Patient $summary](/docs/api/fhir/operations/patient-summary)

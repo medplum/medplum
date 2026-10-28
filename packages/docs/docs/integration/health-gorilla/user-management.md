@@ -48,7 +48,7 @@ curl -X POST "https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://ww
 ```
 
 :::info[Multiple Locations]
-If you are operating a Management Services Organization (MSO) or a practice with multiple locations, the sync process involves additional steps for mapping lab account numbers to specific practice locations. See the [Multiple Locations](./multiple-locations) guide for more details.
+If you are operating a Management Services Organization (MSO) or a practice with multiple locations, the sync process involves additional steps for mapping lab account numbers to specific practice locations. See the [Multiple Locations](/docs/integration/health-gorilla/multiple-locations) guide for more details.
 :::
 
 ### Name Matching and Validation

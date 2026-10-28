@@ -42,7 +42,7 @@ While FHIR is quite powerful, it can have a bit of a learning curve. This page c
 
 A core data object in FHIR is called a [**Resource**](https://www.hl7.org/fhir/resource.html). You can think of Resources as **objects** in object oriented languages.
 
-The FHIR standard defines over 150 [**Resource Types**](./api/fhir/resources) that model a broad range of healthcare-specific concepts. These include **concrete entities** ([`Patient`][patient], [`Medication`][medication], [`Device`][device]) as well as **abstract concepts** ([`Procedure`][procedure], [`CarePlan`][careplan], [`Encounter`][encounter]).
+The FHIR standard defines over 150 [**Resource Types**](/docs/api/fhir/resources) that model a broad range of healthcare-specific concepts. These include **concrete entities** ([`Patient`][patient], [`Medication`][medication], [`Device`][device]) as well as **abstract concepts** ([`Procedure`][procedure], [`CarePlan`][careplan], [`Encounter`][encounter]).
 
 Each field in a resource is called an [**Element**](https://hl7.org/fhir/R4/element.html), each of which can be a **primitive type** (e.g. `string`, `number`, `date`) or a **complex type** (e.g. [`HumanName`](/docs/api/fhir/datatypes/humanname)).
 
@@ -300,11 +300,11 @@ ValueSets are a collection of codes that are used to represent a concept. They a
 
 ## Listening for changes: Subscriptions
 
-**FHIR has a built-in [Subscription](./api/fhir/resources/subscription) resource** that is used to define a push-based subscription to resources in the system, analogous to web-hooks. A `Subscription` has two primary elements:
+**FHIR has a built-in [Subscription](/docs/api/fhir/resources/subscription) resource** that is used to define a push-based subscription to resources in the system, analogous to web-hooks. A `Subscription` has two primary elements:
 
 - **criteria**: This is a string expression that defines _which_ resources to listen to, specified in [FHIRPath](https://hl7.org/fhirpath/) format. This subscription is invoked whenever a resource that matches the criteria is created or updated.
 - **channel**: this describes the kind of action that the `Subscription` will take when it sees a matching resource. Currently, the possible values are `rest-hook`, `websocket`, `email`, and `message`.
 
-In Medplum, a powerful feature is to **use a [Medplum Bot](./bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](./bots/bot-for-questionnaire-response) for more information.
+In Medplum, a powerful feature is to **use a [Medplum Bot](/docs/bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](/docs/bots/bot-for-questionnaire-response) for more information.
 
 <br/>

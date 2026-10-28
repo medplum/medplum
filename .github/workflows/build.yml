@@ -774,6 +774,8 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - name: Check docs links
+        run: node --test packages/docs/scripts/check-relative-links.test.mjs
       - name: Build Project
         run: ./scripts/build-docs.sh
         env:

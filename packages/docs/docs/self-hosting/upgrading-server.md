@@ -13,7 +13,7 @@ You cannot skip minor versions when upgrading. Attempting to jump ahead (e.g., f
 :::
 
 **Prerequisites:**
-- Review the [versioning policy](../compliance/versions) if you're unfamiliar with Medplum's semantic versioning
+- Review the [versioning policy](/docs/compliance/versions) if you're unfamiliar with Medplum's semantic versioning
 - Ensure you have access to [monitor migration progress](#monitoring-migration-progress)
 
 ## Step-by-Step Upgrade Process

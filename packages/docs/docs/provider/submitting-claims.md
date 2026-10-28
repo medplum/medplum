@@ -17,7 +17,7 @@ Medplum Provider can submit professional claims directly to [Candid Health](http
 :::info[Prerequisites]
 The Candid Health integration is an enterprise feature. Please [contact the Medplum team](mailto:hello@medplum.com) to have it enabled in your project. Once enabled, the `billing` feature on your [Project](/docs/access/projects#settings) turns on the **Billing Settings** page in Medplum Provider.
 
-You should also be familiar with [Visits](./visits) and [Care Templates](./visits#setting-up-care-templates-via-medplum-app), since Charge Items on a Visit are what populate the claim.
+You should also be familiar with [Visits](/docs/provider/visits) and [Care Templates](/docs/provider/visits#setting-up-care-templates-via-medplum-app), since Charge Items on a Visit are what populate the claim.
 :::
 
 ## Overview
@@ -41,7 +41,7 @@ Open **Settings → Billing Settings** (`/Settings/Billing`) in Medplum Provider
 
 ## Patient Coverage
 
-Before a claim can be submitted, the patient needs an insurance [Coverage](/docs/api/fhir/resources/coverage) that points to one of your enrolled payers and carries the member (subscriber) ID. Add coverage from the patient's profile in Medplum Provider, or import it with the rest of your [patient data](./getting-started#importing-data).
+Before a claim can be submitted, the patient needs an insurance [Coverage](/docs/api/fhir/resources/coverage) that points to one of your enrolled payers and carries the member (subscriber) ID. Add coverage from the patient's profile in Medplum Provider, or import it with the rest of your [patient data](/docs/provider/getting-started#importing-data).
 
 You can also run an eligibility check against the coverage from the patient's Coverage page. See [Eligibility Check](/docs/integration/candid/eligibility-check) for what the check returns.
 
@@ -59,4 +59,4 @@ After submission, the "Details & Billing" tab replaces the submit button with a 
 - [Candid Health Integration](/docs/integration/candid): claim submission, eligibility, and payer directory operations
 - [Candid Health API Documentation](https://docs.joincandidhealth.com/introduction/overview): Candid's own reference for encounters, claim statuses, and the payer portal
 - [RCM & Billing Decision Guide](/docs/decision-guides/rcm-billing)
-- [Visits](./visits)
+- [Visits](/docs/provider/visits)

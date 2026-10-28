@@ -6,7 +6,7 @@ sidebar_position: 3
 
 This guide describes the `sync-resources-from-health-gorilla` bot, which fetches resources from Health Gorilla over a date range and synchronizes them into your Medplum project.
 
-For the FHIR data model and how results are represented after they arrive, see [Receiving Results](./receiving-results). For the primary real-time delivery path, see [How results arrive in Medplum](./receiving-results#how-results-arrive-in-medplum) on that page.
+For the FHIR data model and how results are represented after they arrive, see [Receiving Results](/docs/integration/health-gorilla/receiving-results). For the primary real-time delivery path, see [How results arrive in Medplum](/docs/integration/health-gorilla/receiving-results#how-results-arrive-in-medplum) on that page.
 
 ## When to use this bot
 
@@ -17,7 +17,7 @@ Under normal operation, lab results are pushed from Health Gorilla to Medplum th
 - You are validating that Medplum matches Health Gorilla for a given time window
 - You need to sync `Patient` records that were created in Health Gorilla but not yet in Medplum
 
-Both bots use the same underlying sync logic (`syncResourceBundleFromHealthGorilla`), so resources created or updated by either path follow the same matching rules described in [Resolving orders with results](./receiving-results#resolving-orders-with-results).
+Both bots use the same underlying sync logic (`syncResourceBundleFromHealthGorilla`), so resources created or updated by either path follow the same matching rules described in [Resolving orders with results](/docs/integration/health-gorilla/receiving-results#resolving-orders-with-results).
 
 ## Supported resource types
 
@@ -115,5 +115,5 @@ When syncing `DiagnosticReport` resources, related `ServiceRequest` resources ma
 
 ## Related reading
 
-- [Receiving Results](./receiving-results) — FHIR result model, PDFs, and order matching
+- [Receiving Results](/docs/integration/health-gorilla/receiving-results) — FHIR result model, PDFs, and order matching
 - [Health Gorilla overview](/docs/integration/health-gorilla) — migration phases and prerequisites

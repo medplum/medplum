@@ -17,7 +17,7 @@ Follow these instructions to get the complete Medplum stack running directly on 
 1. **[Git](https://git-scm.com/)**
 2. **[Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)** (version 22+ required)
 3. **[Docker](https://docs.docker.com/engine/install/)**
-4. [Clone the Medplum repo](./local-dev-setup#clone-the-repo)
+4. [Clone the Medplum repo](/docs/contributing/local-dev-setup#clone-the-repo)
 
 ## Install
 

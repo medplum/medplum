@@ -11,8 +11,8 @@ You can use the Medplum app to configure or view resources required for applicat
 ## Getting Started
 
 1. [Register](https://app.medplum.com/register) a new account and project
-2. [Learn](./app/app-introduction) about the App interface
-3. [Invite](./app/invite) another user to your project
+2. [Learn](/docs/app/app-introduction) about the App interface
+3. [Invite](/docs/app/invite) another user to your project
 4. [Import a patient](/docs/tutorials/importing-sample-data)
 
 ## Reference

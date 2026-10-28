@@ -8,7 +8,7 @@ The `$ccda-export` operation generates a Consolidated Clinical Document Architec
 
 This operation produces a complete or time-windowed patient history in a format that can be consumed by EHRs, health information exchanges (HIEs), and patient portals-enabling seamless care coordination across organizational boundaries.
 
-Internally, `$ccda-export` builds an IPS-style patient summary ([`$summary`](./patient-summary)), then converts that FHIR Composition bundle to C-CDA XML via `@medplum/ccda`.
+Internally, `$ccda-export` builds an IPS-style patient summary ([`$summary`](/docs/api/fhir/operations/patient-summary)), then converts that FHIR Composition bundle to C-CDA XML via `@medplum/ccda`.
 
 ## Use Cases
 
@@ -36,7 +36,7 @@ curl 'https://api.medplum.com/fhir/R4/Patient/<PATIENT_ID>/$ccda-export' \
 
 ## Input Parameters
 
-`$ccda-export` accepts the same clinical filtering and authorship parameters as [`$summary`](./patient-summary), plus a C-CDA-specific `type` parameter that selects the document-level template.
+`$ccda-export` accepts the same clinical filtering and authorship parameters as [`$summary`](/docs/api/fhir/operations/patient-summary), plus a C-CDA-specific `type` parameter that selects the document-level template.
 
 | Parameter | Cardinality | Type | Description |
 |-----------|-------------|------|-------------|
@@ -89,15 +89,15 @@ Returns C-CDA XML (`application/cda+xml`) as a raw Binary response.
 
 ## Behavior
 
-1. **Data collection**: Uses [`$summary`](./patient-summary) (which gathers patient data via [`$everything`](./patient-everything)) to build an IPS Composition bundle
+1. **Data collection**: Uses [`$summary`](/docs/api/fhir/operations/patient-summary) (which gathers patient data via [`$everything`](/docs/api/fhir/operations/patient-everything)) to build an IPS Composition bundle
 2. **Document template**: Applies CCD or Referral Note document-level template IDs and LOINC document type codes based on `type`
 3. **XML serialization**: Converts the FHIR bundle to C-CDA with `@medplum/ccda`, then returns the XML
 
 ## Related
 
 - [C-CDA Integration Guide](/docs/integration/c-cda) - Detailed guide on working with C-CDA documents
-- [Patient $summary](./patient-summary) - IPS summary used as the FHIR source for export
-- [Patient $everything](./patient-everything) - Export all patient data in FHIR format
+- [Patient $summary](/docs/api/fhir/operations/patient-summary) - IPS summary used as the FHIR source for export
+- [Patient $everything](/docs/api/fhir/operations/patient-everything) - Export all patient data in FHIR format
 - [ONC Certification](/docs/compliance/onc) - Compliance requirements for patient data export
 - [FHIR Patient Resource](https://hl7.org/fhir/R4/patient.html) - FHIR specification for Patient
 - [HL7 C-CDA Specification](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=492) - Official C-CDA implementation guide

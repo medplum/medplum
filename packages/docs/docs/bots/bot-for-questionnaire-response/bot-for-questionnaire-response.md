@@ -91,7 +91,7 @@ Let’s take a look at the resource that is created:
 
 ### 4. Write the Bot
 
-Next, we'll write a Bot that creates a [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) based on the user's response. To learn how to set up a new Bot, see the [Bot Basics tutorial](./bot-basics)
+Next, we'll write a Bot that creates a [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) based on the user's response. To learn how to set up a new Bot, see the [Bot Basics tutorial](/docs/bots/bot-basics)
 
 To parse out the answers in the '[QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse), we'll use the [`getQuestionnaireAnswers`](/docs/sdk/core.getquestionnaireanswers) utility function. This function returns a map from the question's `linkId` to the response.
 

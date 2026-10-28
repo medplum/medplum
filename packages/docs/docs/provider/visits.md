@@ -15,7 +15,7 @@ Visit management is at the heart of clinical documentation and patient care deli
 <br/>
 
 :::info[Prerequisites]
-Before following the guide below, make sure you have [data in your project](./getting-started#importing-data) (patients, practitioners, etc.) and that you are [signed in](/docs/provider#registering--signing-in) to Medplum Provider.
+Before following the guide below, make sure you have [data in your project](/docs/provider/getting-started#importing-data) (patients, practitioners, etc.) and that you are [signed in](/docs/provider#registering--signing-in) to Medplum Provider.
 :::
 
 ## Understanding Visits
@@ -23,11 +23,11 @@ Before following the guide below, make sure you have [data in your project](./ge
 While "Visit" isn't a defined FHIR resource, we've combined the Appointment and Encounter resources into this single, simplified concept to improve the provider experience. Each Visit also automatically generates related FHIR resources:
 
 1. **Clinical Documentation**
-   - A [ClinicalImpression](../api/fhir/resources/clinicalimpression) resource represents the Visit's (i.e. Encounter's) chart note
+   - A [ClinicalImpression](/docs/api/fhir/resources/clinicalimpression) resource represents the Visit's (i.e. Encounter's) chart note
 2. **Care Management**
-   - Care Templates ([PlanDefinition](../api/fhir/resources/plandefinition) resources) generate Tasks containing Questionnaires or ActivityDefinitions (which in turn can generate ServiceRequests, etc.)
+   - Care Templates ([PlanDefinition](/docs/api/fhir/resources/plandefinition) resources) generate Tasks containing Questionnaires or ActivityDefinitions (which in turn can generate ServiceRequests, etc.)
 3. **Billing Integration**
-   - To simplify and automate billing, [ChargeItems](../api/fhir/resources/chargeitem) and [Claims](../api/fhir/resources/claim) are created automatically based on the Encounter, ActivityDefinitions, and ChargeItemDefinitions
+   - To simplify and automate billing, [ChargeItems](/docs/api/fhir/resources/chargeitem) and [Claims](/docs/api/fhir/resources/claim) are created automatically based on the Encounter, ActivityDefinitions, and ChargeItemDefinitions
 
 ## Documenting Visits
 
@@ -58,14 +58,14 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
 4. **Billing for Your Visit**
    - On the “Details & Billing” tab, you will also see the individual Charge Items related to the Visit which will need to be configured as part of your Care Template ahead of time (see [“Setting Up Care Templates”](#setting-up-care-templates-via-medplum-app) )
    - Once billing details are finalized, you can export a claim as a CMS 1500 form to submit for billing.
-   - Alternatively, Medplum offers integrations for both Stedi and Candid Health which allow claims to be sent directly to these services which forward to payors. See [Submitting Claims to Candid Health](./submitting-claims) for a walkthrough
+   - Alternatively, Medplum offers integrations for both Stedi and Candid Health which allow claims to be sent directly to these services which forward to payors. See [Submitting Claims to Candid Health](/docs/provider/submitting-claims) for a walkthrough
      - To learn more about these integrations, please [contact our sales team](mailto:hello@medplum.com)
 
 ---
 
 ## Setting Up Care Templates (via Medplum App)
 
-Because Care Templates are built from definitional resources like [PlanDefinitions](../api/fhir/resources/plandefinition), [Questionnaires](../api/fhir/resources/questionnaire), and [ActivityDefinitions](../api/fhir/resources/activitydefinition), you can customize care experiences directly in the Medplum App without any code changes.
+Because Care Templates are built from definitional resources like [PlanDefinitions](/docs/api/fhir/resources/plandefinition), [Questionnaires](/docs/api/fhir/resources/questionnaire), and [ActivityDefinitions](/docs/api/fhir/resources/activitydefinition), you can customize care experiences directly in the Medplum App without any code changes.
 
 Before setting up your Care Templates, it’s important to understand the separate but connected resources they incorporate. In the Medplum App, Care Templates are represented by the PlanDefinition FHIR resource which can include other, linked resources:
 

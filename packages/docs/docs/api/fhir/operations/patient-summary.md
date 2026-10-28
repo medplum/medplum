@@ -185,5 +185,5 @@ The operation collects and organizes the following resource types:
 ## Related Documentation
 
 - [International Patient Summary IG](https://hl7.org/fhir/uv/ips/)
-- [Patient $everything](./patient-everything)
+- [Patient $everything](/docs/api/fhir/operations/patient-everything)
 - [Composition Resource](https://www.hl7.org/fhir/composition.html)

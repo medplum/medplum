@@ -213,8 +213,8 @@ This "Install from Scratch" guide is designed to help you understand how the dif
 
 For production, we now have much better options that you should consider:
 
-- For a single-server deployment: Use our [Install on Ubuntu](./install-on-ubuntu) guide which uses our official APT repository. This automates the NGINX and SSL certificate setup for you.
-- For cloud deployments: Use our [Install on AWS](./install-on-aws) guide with AWS CDK, which is our recommended solution for scalable, production-ready environments.
+- For a single-server deployment: Use our [Install on Ubuntu](/docs/self-hosting/install-on-ubuntu) guide which uses our official APT repository. This automates the NGINX and SSL certificate setup for you.
+- For cloud deployments: Use our [Install on AWS](/docs/self-hosting/install-on-aws) guide with AWS CDK, which is our recommended solution for scalable, production-ready environments.
 
 :::
 

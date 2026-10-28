@@ -5,7 +5,7 @@ description: Configure supervising prescribers after DoseSpot enrollment so pres
 
 # Supervising Prescribers
 
-Some prescribing workflows require a clinician—such as a nurse practitioner or physician assistant—to prescribe on behalf of a supervising clinician. After both clinicians are [enrolled in DoseSpot](./enroll-user), you can configure that relationship without enrolling either clinician again.
+Some prescribing workflows require a clinician—such as a nurse practitioner or physician assistant—to prescribe on behalf of a supervising clinician. After both clinicians are [enrolled in DoseSpot](/docs/integration/dosespot/enroll-user), you can configure that relationship without enrolling either clinician again.
 
 For example, when a newly enrolled nurse practitioner needs to prescribe under a medical director, assign the nurse practitioner as the supervisee and the medical director as the supervisor. If the medical director changes, remove the existing relationship and assign the replacement.
 

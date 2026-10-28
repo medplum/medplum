@@ -10,7 +10,7 @@ import adminUsersPage from './admin-users-page.png'
 
 <img alt="Admin Users Page" src={adminUsersPage} style={{maxWidth: "75%"}}/>
 
-1. Open the Medplum app in your browser: https://app.medplum.com/. If you don't have an account yet, see the [Register](../tutorials/register) page.
+1. Open the Medplum app in your browser: https://app.medplum.com/. If you don't have an account yet, see the [Register](/docs/tutorials/register) page.
 2. Navigate to the [Project Admin](https://app.medplum.com/admin/project) page at [https://app.medplum.com/admin/project](https://app.medplum.com/admin/project).
 3. Click on the "Users" tab.
 4. Click on the "Invite new user" link at the bottom of the screen.

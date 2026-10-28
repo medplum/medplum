@@ -12,7 +12,7 @@ can make an important impact on the project: you don't need to be a professional
 - **Four hours** to author a case study showcasing how you've used Medplum
 
 This section provides instructions on how to get started contributing to the Medplum project.
-If you're looking to _use_ Medplum, check out the [App](./app) or [API](./api) docs instead.
+If you're looking to _use_ Medplum, check out the [App](/docs/app) or [API](/docs/api) docs instead.
 
 ## Join our online community
 
@@ -73,7 +73,7 @@ just reopen it once it's linked, or open the issue first if one doesn't exist ye
 a pull request directly by adding the `vouched` label to it; labeled pull requests aren't closed automatically.
 Medplum team members and established community contributors aren't subject to this requirement.
 
-**Ready to get started writing code?** First things first, you need to [clone the Medplum repository](./contributing/local-dev-setup).
+**Ready to get started writing code?** First things first, you need to [clone the Medplum repository](/docs/contributing/local-dev-setup).
 
 :::note[Legal Note]
 

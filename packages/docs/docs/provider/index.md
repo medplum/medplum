@@ -50,42 +50,42 @@ Occasionally, you may need to use the Medplum App for administrative and other t
 
 The following sections outline the primary functionality of the Medplum Provider app.
 
-#### [Adding Practitioners & Data](./provider/getting-started)
+#### [Adding Practitioners & Data](/docs/provider/getting-started)
 
-- [Adding Practitioners (via Medplum App)](./provider/getting-started#adding-practitioners)
-- [Importing Data (via Medplum App)](./provider/getting-started#importing-data)
+- [Adding Practitioners (via Medplum App)](/docs/provider/getting-started#adding-practitioners)
+- [Importing Data (via Medplum App)](/docs/provider/getting-started#importing-data)
 
-#### [Patient Profile](./provider/patient-profile)
+#### [Patient Profile](/docs/provider/patient-profile)
 
-- [Registering Patients](./provider/patient-profile#registering-patients)
-- [Editing Patient Demographics](./provider/patient-profile#editing-patient-demographics)
-- [Updating the Patient Summary Sidebar](./provider/patient-profile#updating-the-patient-summary-sidebar)
+- [Registering Patients](/docs/provider/patient-profile#registering-patients)
+- [Editing Patient Demographics](/docs/provider/patient-profile#editing-patient-demographics)
+- [Updating the Patient Summary Sidebar](/docs/provider/patient-profile#updating-the-patient-summary-sidebar)
 
-#### [Schedule](./provider/schedule#scheduling-a-visit)
+#### [Schedule](/docs/provider/schedule#scheduling-a-visit)
 
-- [Scheduling a Visit](./provider/schedule#scheduling-a-visit)
-- [Setting Provider Availability](./provider/schedule#setting-provider-availability)
+- [Scheduling a Visit](/docs/provider/schedule#scheduling-a-visit)
+- [Setting Provider Availability](/docs/provider/schedule#setting-provider-availability)
 
-#### [Visits](./provider/visits)
+#### [Visits](/docs/provider/visits)
 
-- [Understanding Visits](./provider/visits#understanding-visits)
-- [Documenting Visits](./provider/visits#documenting-visits)
-- [Setting Up Care Templates (via Medplum App)](./provider/visits#setting-up-care-templates-via-medplum-app)
+- [Understanding Visits](/docs/provider/visits#understanding-visits)
+- [Documenting Visits](/docs/provider/visits#documenting-visits)
+- [Setting Up Care Templates (via Medplum App)](/docs/provider/visits#setting-up-care-templates-via-medplum-app)
 
-#### [Tasks](./provider/tasks)
+#### [Tasks](/docs/provider/tasks)
 
-- [Creating a Task](./provider/tasks#creating-a-task)
-- [Updating a Task](./provider/tasks#updating-a-task)
-- [Deleting a Task](./provider/tasks#deleting-a-task)
-- [Adding a Task Note](./provider/tasks#adding-a-task-note)
-- [Filtering Tasks](./provider/tasks#filtering-tasks)
+- [Creating a Task](/docs/provider/tasks#creating-a-task)
+- [Updating a Task](/docs/provider/tasks#updating-a-task)
+- [Deleting a Task](/docs/provider/tasks#deleting-a-task)
+- [Adding a Task Note](/docs/provider/tasks#adding-a-task-note)
+- [Filtering Tasks](/docs/provider/tasks#filtering-tasks)
 
-#### [Spaces](./provider/spaces)
+#### [Spaces](/docs/provider/spaces)
 
-- [How Spaces Works](./provider/spaces#how-spaces-works)
-- [Prerequisites](./provider/spaces#prerequisites)
-- [The Agent Loop](./provider/spaces#the-agent-loop)
-- [Customizing System Prompts](./provider/spaces#customizing-system-prompts)
+- [How Spaces Works](/docs/provider/spaces#how-spaces-works)
+- [Prerequisites](/docs/provider/spaces#prerequisites)
+- [The Agent Loop](/docs/provider/spaces#the-agent-loop)
+- [Customizing System Prompts](/docs/provider/spaces#customizing-system-prompts)
 
 #### Documentation Coming Soon:
 

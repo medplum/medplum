@@ -5,7 +5,7 @@ toc_max_heading_level: 2
 
 # Bot Basics
 
-Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](../sdk) , which itself can invoke FHIR operations.
+Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](/docs/sdk) , which itself can invoke FHIR operations.
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
@@ -241,7 +241,7 @@ To ensure the Subscription is running, change "Status" to `Active`
 
 ![Activate Subscription](/img/app/bots/subscription_active.png)
 
-Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](../search/basic-search) for a primer.
+Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](/docs/search/basic-search) for a primer.
 
 For this example, we will trigger the Subscription after a change to _any_ `Patient` resource.
 
@@ -290,7 +290,7 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 
 ## Software Development Lifecycle
 
-Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
+Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](/docs/bots/bots-in-production)
 
 ## Medplum Lambda Bots Size Limits
 
