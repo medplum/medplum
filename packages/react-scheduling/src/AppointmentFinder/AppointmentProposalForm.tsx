@@ -378,7 +378,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // even if that is nothing — is what is on screen.
   const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
 
-  // The times scroll apart from the form, so days picked from the form's calendar or the
+  // The times scroll apart from the form, so days picked from the calendar above them or the
   // host's would otherwise land wherever "Show more days" left the column. Keyed on the
   // picked start's identity, which every pick replaces, even of the same day, and paging
   // further does not. Before paint, so the new days never flash at the old position.
@@ -734,30 +734,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onToggleFinder={toggleFinder}
         />
 
-        {searching && (
-          <Stack gap={4}>
-            <CalendarDateInput
-              availableDates={NO_MARKED_DATES}
-              allowUnavailableDates
-              earliestDate={new Date()}
-              month={month}
-              range={daySearch.selectedDayRange}
-              onChangeMonth={setMonth}
-              onClick={daySearch.chooseDayRange}
-              onSelectRange={daySearch.chooseDayRange}
-              monthLabel={
-                <MonthPickerButton
-                  label={formatMonth(month ?? new Date())}
-                  date={month ?? new Date()}
-                  minDate={new Date()}
-                  onChange={setMonth}
-                />
-              }
-            />
-            {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
-          </Stack>
-        )}
-
         {takesDetails && (
           <AppointmentPatientInput
             defaultValue={defaultPatient}
@@ -787,6 +763,27 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
       {searching && (
         <Stack ref={resultsRef} className={classes.results} gap="lg">
+          <Stack gap={4}>
+            <CalendarDateInput
+              availableDates={NO_MARKED_DATES}
+              allowUnavailableDates
+              earliestDate={new Date()}
+              month={month}
+              range={daySearch.selectedDayRange}
+              onChangeMonth={setMonth}
+              onClick={daySearch.chooseDayRange}
+              onSelectRange={daySearch.chooseDayRange}
+              monthLabel={
+                <MonthPickerButton
+                  label={formatMonth(month ?? new Date())}
+                  date={month ?? new Date()}
+                  minDate={new Date()}
+                  onChange={setMonth}
+                />
+              }
+            />
+            {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
+          </Stack>
           {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
               dateTime={effectiveDateTime}
