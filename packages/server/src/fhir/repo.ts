@@ -85,6 +85,7 @@ import {
 } from '../pubsub';
 import { getBinaryStorageKey } from '../storage/base';
 import { deleteBinaryStorageObjects, getBinaryStorage } from '../storage/loader';
+import { checkFileMetadata } from '../storage/utils';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -1104,8 +1105,9 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(forbidden);
     }
 
+    const binaryData = this.extractBinaryData(result);
     await this.handleStorage(result, create);
-    await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
+    await this.postCommit(async () => this.handleBinaryUpdate(existing, result, binaryData));
     if (!this.context.skipBackgroundJobs) {
       await this.postCommit(async () => {
         const project = await this.getProjectById(projectId);
@@ -1119,50 +1121,49 @@ export class Repository extends FhirRepository implements Disposable {
 
   /**
    * Handles a Binary resource update.
-   * If the resource has embedded base-64 data, writes the data to the binary storage.
+   * If the resource had embedded base-64 data, writes the data to the binary storage.
    * Otherwise if the resource already exists, copies the existing binary to the new resource.
    * @param existing - Existing binary if it exists.
-   * @param resource - The resource to write to the database.
+   * @param resource - The resource written to the database.
+   * @param data - The decoded embedded data, if any.
    */
-  private async handleBinaryUpdate<T extends Resource>(existing: T | undefined, resource: T): Promise<void> {
+  private async handleBinaryUpdate<T extends Resource>(
+    existing: T | undefined,
+    resource: T,
+    data: Buffer | undefined
+  ): Promise<void> {
     if (resource.resourceType !== 'Binary') {
       return;
     }
 
-    if (resource.data) {
-      await this.handleBinaryData(resource);
+    if (data) {
+      await getBinaryStorage().writeBinary(resource, undefined, resource.contentType, Readable.from([data]));
     } else if (existing) {
       await getBinaryStorage().copyBinary(existing as Binary, resource);
     }
   }
 
   /**
-   * Handles a Binary resource with embedded base-64 data.
-   * Writes the data to the binary storage and removes the data field from the resource.
+   * Removes embedded base-64 data from a Binary resource, so that the content lives only in binary storage
+   * and never in the database, history, or cache that background jobs read back.
+   * Validates the content here, because errors in post-commit callbacks do not fail the request.
    * @param resource - The resource to write to the database.
+   * @returns The decoded data, if the resource is a Binary with embedded data.
    */
-  private async handleBinaryData(resource: Binary): Promise<void> {
-    // Parse result.data as a base64 string
-    const buffer = Buffer.from(resource.data as string, 'base64');
+  private extractBinaryData(resource: Resource): Buffer | undefined {
+    if (resource.resourceType !== 'Binary' || !resource.data) {
+      return undefined;
+    }
 
-    // base64 data should be limited in size
+    const buffer = Buffer.from(resource.data, 'base64');
     const maxBase64Bytes = getConfig().base64BinaryMaxBytes;
     if (maxBase64Bytes && buffer.length > maxBase64Bytes) {
       throw new OperationOutcomeError(badRequest(`base64Binary exceeds ${maxBase64Bytes} bytes`));
     }
-    // Convert buffer to a Readable stream
-    const stream = new Readable({
-      read() {
-        this.push(buffer);
-        this.push(null); // Signifies the end of the stream (EOF)
-      },
-    });
+    checkFileMetadata(undefined, resource.contentType);
 
-    // Write the stream to the binary storage
-    await getBinaryStorage().writeBinary(resource, undefined, resource.contentType, stream);
-
-    // Remove the data field from the resource
     resource.data = undefined;
+    return buffer;
   }
 
   /**

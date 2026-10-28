@@ -237,6 +237,46 @@ describe('Binary', () => {
     // Verify that the file matches the expected contents
     const content = await streamToString(stream);
     expect(content).toStrictEqual('Hello World!');
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/Binary/${binary.id}/_history`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.entry).toHaveLength(1);
+    expect(res2.body.entry[0].resource.data).toBeUndefined();
+  });
+
+  test('Create binary from JSON with data', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Binary', contentType: ContentType.TEXT, data: 'SGVsbG8gV29ybGQh' });
+    expect(res).toHaveStatus(201);
+    expect(res.body.data).toBeUndefined();
+
+    const binary = res.body as Binary;
+
+    // Background jobs, such as subscriptions, read the stored version
+    const res2 = await request(app)
+      .get(`/fhir/R4/Binary/${binary.id}/_history`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.entry).toHaveLength(1);
+    expect(res2.body.entry[0].resource.data).toBeUndefined();
+
+    const res3 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', ContentType.FHIR_JSON);
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.data).toBeUndefined();
+
+    const res4 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4).toHaveStatus(200);
+    expect(res4.text).toStrictEqual('Hello World!');
   });
 
   test('Update JSON', async () => {
@@ -342,6 +382,14 @@ describe('Binary', () => {
       .send('Hello world');
     expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
+
+    const res3 = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Binary', contentType: 'application/x-msdownload', data: 'SGVsbG8gV29ybGQh' });
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
   });
 });
 

@@ -193,6 +193,33 @@ describe('Subscription Worker', () => {
       await findAndExecSubscriptionJob(patient, 'delete');
     }));
 
+  test('Binary notification does not include embedded data', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Binary',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        data: 'SGVsbG8gV29ybGQh',
+      });
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(binary, 'create');
+
+      expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST' }));
+      const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as Binary;
+      expect(body.id).toStrictEqual(binary.id);
+      expect(body.contentType).toStrictEqual(ContentType.TEXT);
+      expect(body.data).toBeUndefined();
+    }));
+
   test('Does not send subscriptions when disabled', () =>
     withTestContext(async () => {
       await repo.createResource<Subscription>({
