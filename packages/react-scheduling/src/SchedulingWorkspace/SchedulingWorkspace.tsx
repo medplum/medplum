@@ -600,7 +600,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
               <ActionIcon
                 variant="default"
-                size="input-sm"
+                size={32}
                 radius="xl"
                 aria-label={calendarsLabel}
                 aria-expanded={calendarsOpen}
@@ -613,7 +613,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           }
           toolbarEnd={
             <Tooltip label="New appointment" position="bottom" openDelay={500}>
-              <ActionIcon size="input-sm" radius="xl" aria-label="New appointment" onClick={startBookingNow}>
+              <ActionIcon size={32} radius="xl" aria-label="New appointment" onClick={startBookingNow}>
                 <IconPlus size={16} />
               </ActionIcon>
             </Tooltip>

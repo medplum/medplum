@@ -341,13 +341,13 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
       <Group justify="space-between" pb="sm">
         <Group gap="md">
           {toolbarStart}
-          <Button variant="default" size="sm" fw={400} onClick={() => controller.today()}>
+          <Button variant="default" size="sm" h={32} fw={400} onClick={() => controller.today()}>
             Today
           </Button>
           <Group gap="xs">
             <ActionIcon
               variant="default"
-              size="input-sm"
+              size={32}
               radius="xl"
               c="dimmed"
               aria-label="Previous"
@@ -357,7 +357,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
             </ActionIcon>
             <ActionIcon
               variant="default"
-              size="input-sm"
+              size={32}
               radius="xl"
               c="dimmed"
               aria-label="Next"
