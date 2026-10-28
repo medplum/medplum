@@ -78,13 +78,20 @@ export interface FhirOptions {
 }
 
 // Execute batch
-async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter): Promise<FhirResponse> {
+async function batch(
+  req: FhirRequest,
+  repo: FhirRepository,
+  router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
   const bundle = req.body as Resource;
   if (bundle.resourceType !== 'Bundle') {
     return [badRequest('Not a bundle')];
   }
 
-  const result = await processBatch(req, repo, router, bundle);
+  // A nested bundle shares the outer bundle's repository, so it must not change the repository mode
+  const batchReq = options?.batch ? { ...req, config: { ...req.config, readonlyBatchOnReader: false } } : req;
+  const result = await processBatch(batchReq, repo, router, bundle);
   return [allOk, result];
 }
 

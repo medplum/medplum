@@ -210,7 +210,7 @@ export class BatchProcessor {
     const bundleInfo = this.bundleInfo as BundlePreprocessInfo;
 
     if (!this.isTransaction()) {
-      if (bundleInfo.readOnly && this.req.config?.readonlyBatchOnReader) {
+      if (this.bundle.type === 'batch' && bundleInfo.readOnly && this.req.config?.readonlyBatchOnReader) {
         this.repo.setMode(RepositoryMode.READER);
       }
       const result = await this.processEntriesAndBuild();
