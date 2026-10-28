@@ -3,10 +3,10 @@
 import { Stack, Text } from '@mantine/core';
 import type { Attachment, DiagnosticReport } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
-import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
+import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { resolveDerivedFromAttachments, resolvePresentedFormAttachments } from './documentReference';
 import classes from './LabReportContent.module.css';
 
