@@ -579,7 +579,17 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     const cacheRedis = getCacheRedis();
     const redisOnlySubStrs = await cacheRedis.mget(activeSubKeys);
     if (project.features?.includes('websocket-subscriptions')) {
-      const activeSubStrs = redisOnlySubStrs.filter(Boolean);
+      // for consistency, keep the active-set ref (the cache key) for each hit instead
+      // of rebuilding it from the subscription data
+      const activeSubStrs: string[] = [];
+      const activeSubRefs: string[] = [];
+      for (let i = 0; i < redisOnlySubStrs.length; i++) {
+        const subStr = redisOnlySubStrs[i];
+        if (subStr) {
+          activeSubStrs.push(subStr);
+          activeSubRefs.push(activeSubKeys[i]);
+        }
+      }
       // This used to be set to 50 because we evaluated every Subscription for the entire project at this point
       // However, we now store the Subscription criteria and use that to filter before doing the mget above,
       // Which means by this point only Subscriptions with not only the same resource type but also have matching criteria
@@ -602,10 +612,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
-      for (const { resource } of inMemorySubs) {
+      for (let i = 0; i < inMemorySubs.length; i++) {
         subscriptionsWithMetadata.push({
-          subscription: resource,
-          authorMembershipId: activeSubEntries[getReferenceString(resource)].membershipId,
+          subscription: inMemorySubs[i].resource,
+          authorMembershipId: activeSubEntries[activeSubRefs[i]].membershipId,
         });
       }
     } else {
