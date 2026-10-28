@@ -52,7 +52,6 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
-  AsyncJob,
   AuditEvent,
   AuditEventEntityDetail,
   Binary,
@@ -103,12 +102,12 @@ import {
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
-import { LogThrottle } from '../util/logthrottle';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import { FhirQuotaCost } from './fhirquota';
+import { logAsyncJobAccess } from './operations/utils/asyncjobexecutor';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -700,7 +699,7 @@ export class Repository extends FhirRepository implements Disposable {
         resource.securityContext
       );
       if (securityContext.resourceType === 'AsyncJob') {
-        this.logAsyncJobAccess(securityContext);
+        logAsyncJobAccess(this, securityContext);
       }
     }
     return resource;
@@ -2489,33 +2488,6 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Diagnostic logging for access to an AsyncJob by users other than its requester and admins of its project.
-   * @param asyncJob - The AsyncJob, including `meta.project`.
-   */
-  logAsyncJobAccess(asyncJob: WithId<AsyncJob>): void {
-    if (this.isSuperAdmin()) {
-      return;
-    }
-    const projectId = asyncJob.meta?.project;
-    if (this.isProjectAdmin() && projectId === this.currentProject()?.id) {
-      return;
-    }
-    const reader = (this.context.onBehalfOf ?? this.context.author).reference;
-    if (asyncJob.requester?.reference === reader) {
-      return;
-    }
-    asyncJobAccessLogThrottle.maybeLog([projectId, asyncJob.id, reader].join('|'), (suppressed) => {
-      getLogger().warn('AsyncJob accessed by another user', {
-        asyncJobId: asyncJob.id,
-        projectId,
-        requester: asyncJob.requester?.reference,
-        reader,
-        suppressed,
-      });
-    });
-  }
-
-  /**
    * Diagnostic logging for access policy entry selection on create.
    * Logs the fields listed by the entry that matches the resource with server metadata assigned,
    * when those fields are present in the resource.
@@ -3133,8 +3105,6 @@ export async function getProjectSystemRepo(
   // But for now, all projects are on the global shard.
   return getShardSystemRepo(TODO_SHARD_ID);
 }
-
-const asyncJobAccessLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 const patchOperationDefinition: OperationDefinition = {
   resourceType: 'OperationDefinition',
