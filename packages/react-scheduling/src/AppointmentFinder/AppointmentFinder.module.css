@@ -43,6 +43,17 @@
   min-height: 0;
   overflow-y: auto;
   padding-top: var(--mantine-spacing-sm);
+  padding-bottom: var(--mantine-spacing-sm);
+}
+
+/* The calendar sets its month on a bare `<p>`, whose browser margins would push it away
+   from the header above and the weekdays below. */
+.monthPicker p {
+  margin: 0;
+}
+
+.monthPicker table {
+  margin-top: var(--mantine-spacing-xs);
 }
 
 /* Both columns are stacks, so everything in them is a flex item, and a clamped column

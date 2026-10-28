@@ -779,8 +779,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             Select a time
           </Title>
           <Divider mt="sm" />
-          <Stack ref={resultsRef} className={classes.resultsList} gap="lg">
-            <Stack gap={4}>
+          <Stack ref={resultsRef} className={classes.resultsList} gap="xl">
+            <div className={classes.monthPicker}>
               <CalendarDateInput
                 availableDates={NO_MARKED_DATES}
                 allowUnavailableDates
@@ -792,15 +792,24 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 onSelectRange={daySearch.chooseDayRange}
                 monthLabel={
                   <MonthPickerButton
-                    label={formatMonth(month ?? new Date())}
+                    label={
+                      <Text component="span" fz="md" fw={800}>
+                        {formatMonth(month ?? new Date())}
+                      </Text>
+                    }
                     date={month ?? new Date()}
                     minDate={new Date()}
                     onChange={setMonth}
                   />
                 }
               />
-              {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
-            </Stack>
+              {daySearch.windowError && (
+                <Alert color="yellow" mt={4}>
+                  {daySearch.windowError}
+                </Alert>
+              )}
+              <Divider mt="sm" />
+            </div>
             {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
               <ManualTime
                 dateTime={effectiveDateTime}
@@ -846,7 +855,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   </Stack>
                 )}
                 {/* No signal for how far ahead there's anything to find, so this has no end state. */}
-                <Button variant="subtle" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
+                <Button variant="outline" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
                   Show more days
                 </Button>
               </>
