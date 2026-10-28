@@ -3,6 +3,7 @@
 import { createReference, getReferenceString, Operator } from '@medplum/core';
 import type {
   Appointment,
+  AsyncJob,
   Coverage,
   CoverageEligibilityRequest,
   DiagnosticReport,
@@ -337,6 +338,25 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(result.entry).toHaveLength(1);
+    }));
+
+  test('Search by AsyncJob.requester', () =>
+    withTestContext(async () => {
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const job: AsyncJob = {
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'requester',
+        requestTime: new Date().toISOString(),
+      };
+      const requestedJob = await repo.createResource<AsyncJob>({ ...job, requester: createReference(practitioner) });
+      await repo.createResource<AsyncJob>(job);
+
+      const result = await repo.searchResources<AsyncJob>({
+        resourceType: 'AsyncJob',
+        filters: [{ code: 'requester', operator: Operator.EQUALS, value: getReferenceString(practitioner) }],
+      });
+      expect(result.map((r) => r.id)).toStrictEqual([requestedJob.id]);
     }));
 
   test('Search for Practitioner by qualification-code', () =>
