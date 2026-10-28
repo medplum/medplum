@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
 import type { Repository } from '../../repo';
+import { getAsyncJobRequester } from './asyncjobexecutor';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
@@ -61,7 +62,7 @@ export class BulkExporter {
       resourceType: 'AsyncJob',
       status: 'active',
       request: url,
-      requester: this.repo.getAsyncJobRequester(),
+      requester: getAsyncJobRequester(),
       requestTime: new Date().toISOString(),
       meta: {
         project: this.repo.currentProject()?.id,

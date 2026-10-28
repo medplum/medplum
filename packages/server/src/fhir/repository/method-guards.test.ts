@@ -39,7 +39,6 @@ const unguardedMembers = new Set<PropertyKey>([
   'supportsInteraction',
   'canPerformInteraction',
   'getAuthor',
-  'getAsyncJobRequester',
   'logAsyncJobAccess',
   'removeHiddenFields',
   'generateId',

@@ -1045,10 +1045,6 @@ export class Repository extends FhirRepository implements Disposable {
       deepClone(this.restoreReadonlyFields(validatedResource, existing))
     );
     updated = await replaceConditionalReferences(this, updated);
-    if (updated.resourceType === 'AsyncJob' && !this.isSuperAdmin()) {
-      // Server-assigned, like `meta.author`
-      updated.requester = existing ? (existing as AsyncJob).requester : this.getAsyncJobRequester();
-    }
 
     const resultMeta: Meta = {
       ...updated.meta,
@@ -2241,15 +2237,6 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Returns the requester recorded on the AsyncJobs created with this repository.
-   * With On-Behalf-Of, the request runs with that user's access, so that user is the requester.
-   * @returns The requester reference.
-   */
-  getAsyncJobRequester(): NonNullable<AsyncJob['requester']> {
-    return (this.context.onBehalfOf ?? this.context.author) as NonNullable<AsyncJob['requester']>;
-  }
-
-  /**
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
@@ -2513,7 +2500,7 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.isProjectAdmin() && projectId === this.currentProject()?.id) {
       return;
     }
-    const reader = this.getAsyncJobRequester().reference;
+    const reader = (this.context.onBehalfOf ?? this.context.author).reference;
     if (asyncJob.requester?.reference === reader) {
       return;
     }

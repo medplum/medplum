@@ -7,7 +7,7 @@ import { DelayedError } from 'bullmq';
 import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
-import { getAuthenticatedContext } from '../../../context';
+import { AuthenticatedRequestContext, getAuthenticatedContext, tryGetRequestContext } from '../../../context';
 import { getLogger } from '../../../logger';
 import { getProjectScopedUrl } from '../../../util/url';
 import { CancelledError, isJobActive } from '../../../workers/utils';
@@ -65,6 +65,7 @@ export class AsyncJobExecutor {
       resourceType: 'AsyncJob',
       status: 'accepted',
       request: url,
+      requester: getAsyncJobRequester(),
       requestTime: new Date().toISOString(),
     });
     return this.resource;
@@ -205,6 +206,16 @@ export class AsyncJobExecutor {
 
     return `${baseUrl}fhir/R4/job/${this.resource.id}/status`;
   }
+}
+
+/**
+ * Returns the requester of an AsyncJob started by the current request: the user's profile, or with
+ * On-Behalf-Of, the profile of the user the request acts for.
+ * @returns The requester, or undefined outside of an authenticated request.
+ */
+export function getAsyncJobRequester(): AsyncJob['requester'] {
+  const ctx = tryGetRequestContext();
+  return ctx instanceof AuthenticatedRequestContext ? ctx.profile : undefined;
 }
 
 /**

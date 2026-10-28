@@ -7,6 +7,7 @@ import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { runInAuthenticatedContext } from '../context';
 import { addTestUser, createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { getProjectSystemRepo } from './repo';
@@ -169,47 +170,21 @@ describe('Job status', () => {
       });
     }));
 
-  test('Updating a job keeps its requester', async () => {
-    const { project } = await createTestProject();
-    const systemRepo = await getProjectSystemRepo(project);
-    const job = await systemRepo.createResource<AsyncJob>({
-      resourceType: 'AsyncJob',
-      status: 'completed',
-      request: 'http://example.com/',
-      requestTime: new Date().toISOString(),
-      meta: { project: project.id },
-    });
-    const member = await addTestUser(project);
-
-    const updateRes = await request(app)
-      .put(`/fhir/R4/AsyncJob/${job.id}`)
-      .set('Authorization', 'Bearer ' + member.accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ ...job, requester: createReference(member.profile) });
-    expect(updateRes).toHaveStatus(200);
-    expect(updateRes.body.requester).toBeUndefined();
-  });
-
   test('Job access by other members is logged', async () => {
-    const { project } = await createTestProject();
-    const requester = await addTestUser(project);
+    const { project, login, membership, client, repo, accessToken } = await createTestProject({
+      withClient: true,
+      withAccessToken: true,
+      withRepo: true,
+    });
+    const exec = new AsyncJobExecutor(repo);
+    const authState = { login, project, membership, userConfig: { resourceType: 'UserConfiguration' } } as const;
+    const job = await runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
+      exec.init('http://example.com/')
+    );
+    expect(job.requester?.reference).toStrictEqual(getReferenceString(client));
+    await exec.completeJob();
     const otherMember = await addTestUser(project);
     const binaryReader = await addTestUser(project);
-
-    const createRes = await request(app)
-      .post('/fhir/R4/AsyncJob')
-      .set('Authorization', 'Bearer ' + requester.accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'AsyncJob',
-        status: 'completed',
-        request: 'http://example.com/',
-        requestTime: new Date().toISOString(),
-        output: { resourceType: 'Parameters', parameter: [{ name: 'result', valueString: 'test' }] },
-      });
-    expect(createRes).toHaveStatus(201);
-    const job = createRes.body as AsyncJob;
-    expect(job.requester?.reference).toStrictEqual(getReferenceString(requester.profile));
     const binary = await (
       await getProjectSystemRepo(project)
     ).createResource<Binary>({
@@ -221,16 +196,16 @@ describe('Job status', () => {
 
     const warnSpy = vi.spyOn(Logger.prototype, 'warn');
     try {
-      for (const [member, path] of [
-        [requester, `/fhir/R4/job/${job.id}/status`],
-        [otherMember, `/fhir/R4/AsyncJob/${job.id}`],
-        [otherMember, `/fhir/R4/job/${job.id}/status`],
-        [otherMember, `/fhir/R4/job/${job.id}/status`],
-        [binaryReader, `/fhir/R4/Binary/${binary.id}`],
+      for (const [token, path] of [
+        [accessToken, `/fhir/R4/job/${job.id}/status`],
+        [otherMember.accessToken, `/fhir/R4/AsyncJob/${job.id}`],
+        [otherMember.accessToken, `/fhir/R4/job/${job.id}/status`],
+        [otherMember.accessToken, `/fhir/R4/job/${job.id}/status`],
+        [binaryReader.accessToken, `/fhir/R4/Binary/${binary.id}`],
       ] as const) {
         const res = await request(app)
           .get(path)
-          .set('Authorization', 'Bearer ' + member.accessToken)
+          .set('Authorization', 'Bearer ' + token)
           .set('Accept', ContentType.FHIR_JSON);
         expect(res).toHaveStatus(200);
       }
@@ -240,7 +215,7 @@ describe('Job status', () => {
         [otherMember, binaryReader].map((member) => ({
           asyncJobId: job.id,
           projectId: project.id,
-          requester: getReferenceString(requester.profile),
+          requester: getReferenceString(client),
           reader: getReferenceString(member.profile),
           suppressed: 0,
         }))

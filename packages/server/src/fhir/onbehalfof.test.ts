@@ -17,7 +17,9 @@ import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { addTestUser, createTestProject, getSuperAdminTestProject, withTestContext } from '../test.setup';
+import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { getGlobalSystemRepo, getProjectSystemRepo } from './repo';
 
 describe('On Behalf Of', () => {
@@ -591,7 +593,11 @@ describe('On Behalf Of', () => {
 
   test('AsyncJob requester is the user the client acted on behalf of', () =>
     withTestContext(async () => {
-      const { client, project } = await createTestProject({ withClient: true, membership: { admin: true } });
+      const { client, project, login, membership } = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
       const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
       const accessPolicy: AccessPolicy = { resourceType: 'AccessPolicy', resource: [{ resourceType: 'AsyncJob' }] };
       const user1 = await addTestUser(project, { accessPolicy });
@@ -601,20 +607,18 @@ describe('On Behalf Of', () => {
         'X-Medplum-On-Behalf-Of': getReferenceString(profile),
       });
 
-      const createRes = await request(app)
-        .post('/fhir/R4/AsyncJob')
-        .set(onBehalfOf(user1.profile))
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .send({
-          resourceType: 'AsyncJob',
-          status: 'completed',
-          request: 'https://example.com/',
-          requester: createReference(user2.profile),
-          requestTime: new Date().toISOString(),
-          output: { resourceType: 'Parameters', parameter: [{ name: 'responseBody', valueString: 'user1' }] },
-        });
-      expect(createRes).toHaveStatus(201);
-      expect(createRes.body.requester.reference).toStrictEqual(getReferenceString(user1.profile));
+      const authState = {
+        login,
+        project,
+        membership,
+        onBehalfOf: user1.profile,
+        onBehalfOfMembership: user1.membership,
+        userConfig: { resourceType: 'UserConfiguration' },
+      } as const;
+      const job = await runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
+        new AsyncJobExecutor(getAuthenticatedContext().repo).init('https://example.com/')
+      );
+      expect(job.requester?.reference).toStrictEqual(getReferenceString(user1.profile));
 
       const warnSpy = vi.spyOn(Logger.prototype, 'warn');
       try {
@@ -625,9 +629,8 @@ describe('On Behalf Of', () => {
           { Authorization: basicAuth },
           onBehalfOf(user2.profile),
         ]) {
-          const res = await request(app).get(`/fhir/R4/job/${createRes.body.id}/status`).set(headers);
-          expect(res).toHaveStatus(200);
-          expect(res.body.output).toBeDefined();
+          const res = await request(app).get(`/fhir/R4/job/${job.id}/status`).set(headers);
+          expect(res).toHaveStatus(202);
         }
         const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob accessed by another user');
         expect(calls).toStrictEqual([
