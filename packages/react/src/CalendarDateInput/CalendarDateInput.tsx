@@ -89,7 +89,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);
 
   return (
-    <div>
+    <div className={classes.root}>
       <Group justify="space-between" gap="xs" grow wrap="nowrap">
         <p style={{ flex: 1 }}>{props.monthLabel ?? getMonthString(month)}</p>
         <Group justify="flex-end" gap={4}>
