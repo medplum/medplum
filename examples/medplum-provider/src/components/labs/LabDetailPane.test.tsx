@@ -15,9 +15,13 @@ import { LabDetailPane } from './LabDetailPane';
 vi.mock('../../utils/notifications', () => ({ showErrorNotification: vi.fn() }));
 
 vi.mock('./LabOrderDetails', () => ({
-  LabOrderDetails: (props: { order: ServiceRequest; onChange?: (order: ServiceRequest) => void }): JSX.Element => (
+  LabOrderDetails: (props: {
+    order: ServiceRequest;
+    onChange?: (order: ServiceRequest) => void;
+    selectedReport?: { reference?: string };
+  }): JSX.Element => (
     <button type="button" onClick={() => props.onChange?.({ ...props.order, status: 'revoked' })}>
-      Order {props.order.id}: {props.order.status}
+      Order {props.order.id}: {props.order.status} (selected: {props.selectedReport?.reference ?? 'none'})
     </button>
   ),
 }));
@@ -44,15 +48,15 @@ test('renders a ServiceRequest item as the order without fetching and propagates
   const readReference = vi.spyOn(medplum, 'readReference');
   setup({ item: HomerServiceRequest as WithId<ServiceRequest>, onOrderChange });
   expect(readReference).not.toHaveBeenCalled();
-  await userEvent.setup().click(screen.getByText('Order 123: active'));
+  await userEvent.setup().click(screen.getByText('Order 123: active (selected: none)'));
   expect(onOrderChange).toHaveBeenCalledWith(expect.objectContaining({ id: '123', status: 'revoked' }));
-  expect(screen.getByText('Order 123: revoked')).toBeInTheDocument();
+  expect(screen.getByText('Order 123: revoked (selected: none)')).toBeInTheDocument();
 });
 
 test('shows a loader then the order details for a report based on a ServiceRequest', async () => {
   const { container } = setup({ item: report });
   expect(container.querySelector('.mantine-Loader-root')).toBeInTheDocument();
-  expect(await screen.findByText('Order 123: active')).toBeInTheDocument();
+  expect(await screen.findByText('Order 123: active (selected: DiagnosticReport/123)')).toBeInTheDocument();
   expect(screen.queryByText('Result details: 123')).not.toBeInTheDocument();
 });
 
@@ -67,4 +71,20 @@ test('shows an error notification and falls back to result details when the orde
   setup({ item: report });
   expect(await screen.findByText('Result details: 123')).toBeInTheDocument();
   expect(showErrorNotification).toHaveBeenCalledWith(new Error('Not found'));
+});
+
+test('passes a Reference to the selected report, and updates it when switching reports under the same order', async () => {
+  const { rerender } = setup({ item: report });
+  expect(await screen.findByText('Order 123: active (selected: DiagnosticReport/123)')).toBeInTheDocument();
+
+  const secondReport = { ...report, id: 'dr-2' };
+  rerender(
+    <MedplumProvider medplum={medplum}>
+      <MantineProvider>
+        <LabDetailPane item={secondReport} />
+      </MantineProvider>
+    </MedplumProvider>
+  );
+
+  expect(await screen.findByText('Order 123: active (selected: DiagnosticReport/dr-2)')).toBeInTheDocument();
 });

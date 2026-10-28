@@ -63,7 +63,7 @@ import { getRepoForLogin } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
-import { getResourceCacheEntry } from './repository/resource-cache';
+import { deleteResourceCacheEntry, getResourceCacheEntry } from './repository/resource-cache';
 import { ExpungedHistoryTag } from './repository/row-builder';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
@@ -332,6 +332,20 @@ describe('FHIR Repo', () => {
     auditEvent = await systemRepo.readResource('AuditEvent', auditEvent.id);
     expect(updatedEvent.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
   });
+
+  test('Does not cache reads from the reader', () =>
+    withTestContext(async () => {
+      const patient = await testProjectRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await deleteResourceCacheEntry('Patient', patient.id);
+
+      const repo = testProjectRepo.clone();
+      repo.setMode(RepositoryMode.READER);
+      await repo.readResource('Patient', patient.id);
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeUndefined();
+
+      await testProjectRepo.readResource('Patient', patient.id);
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeDefined();
+    }));
 
   test('Only caches on read when cacheResourcesOnWrite is disabled', async () => {
     const prevCacheResourcesOnWrite = getConfig().cacheResourcesOnWrite;

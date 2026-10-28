@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Observation } from '@medplum/fhirtypes';
+import type { Observation, Quantity } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
   formatAddress,
@@ -20,6 +20,7 @@ import {
   formatTime,
   formatTiming,
   formatWallTime,
+  getPreservedValuePrecision,
   typedValueToString,
 } from './format';
 
@@ -499,4 +500,72 @@ test('Format Observation value', () => {
       ],
     })
   ).toBe('36.7 C / Oral');
+});
+
+test('getPreservedValuePrecision', () => {
+  expect(getPreservedValuePrecision(undefined)).toBeUndefined();
+  expect(getPreservedValuePrecision({})).toBeUndefined();
+  expect(getPreservedValuePrecision({ value: 1.3 })).toBeUndefined();
+  expect(
+    getPreservedValuePrecision({
+      value: 1.3,
+      // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON
+      _value: { extension: [{ url: 'https://example.com/other-extension', valueString: 'ignored' }] },
+    })
+  ).toBeUndefined();
+  expect(
+    getPreservedValuePrecision({
+      value: 1.3,
+      // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON
+      _value: {
+        extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger: 2 }],
+      },
+    })
+  ).toBe(2);
+  expect(
+    getPreservedValuePrecision({
+      value: 100,
+      // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON
+      _value: {
+        extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger: 0 }],
+      },
+    })
+  ).toBe(0);
+});
+
+test('getPreservedValuePrecision ignores malformed valueInteger', () => {
+  const withPrecision = (valueInteger: unknown): Quantity => ({
+    value: 1.3,
+    // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON; and
+    // valueInteger is deliberately malformed here to exercise the bounds check.
+    _value: { extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger }] },
+  });
+  expect(getPreservedValuePrecision(withPrecision(-1))).toBeUndefined();
+  expect(getPreservedValuePrecision(withPrecision(101))).toBeUndefined();
+  expect(getPreservedValuePrecision(withPrecision(2.5))).toBeUndefined();
+  expect(getPreservedValuePrecision(withPrecision('2'))).toBeUndefined();
+});
+
+test('formatObservationValue preserves original decimal precision when present', () => {
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueQuantity: { value: 1.3, unit: 'mg/dL' },
+    } as Observation)
+  ).toBe('1.3 mg/dL');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueQuantity: {
+        value: 1.3,
+        unit: 'mg/dL',
+        _value: {
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger: 2 }],
+        },
+      },
+      // _value isn't in the generated Quantity type (valid FHIR JSON regardless - see
+      // getPreservedValuePrecision's doc comment), which makes this object literal too dissimilar
+      // from Observation for a direct `as` cast; go through `unknown` first.
+    } as unknown as Observation)
+  ).toBe('1.30 mg/dL');
 });

@@ -4,6 +4,7 @@ import type {
   Address,
   CodeableConcept,
   Coding,
+  Extension,
   HumanName,
   Money,
   Observation,
@@ -537,7 +538,7 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   const result = [];
 
   if (obs.valueQuantity) {
-    result.push(formatQuantity(obs.valueQuantity));
+    result.push(formatQuantity(obs.valueQuantity, getPreservedValuePrecision(obs.valueQuantity)));
   } else if (obs.valueCodeableConcept) {
     result.push(formatCodeableConcept(obs.valueCodeableConcept));
   } else {
@@ -552,6 +553,45 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   }
 
   return result.join(' / ').trim();
+}
+
+const QUANTITY_PRECISION_EXTENSION_URL = 'http://hl7.org/fhir/StructureDefinition/quantity-precision';
+
+/**
+ * A FHIR primitive value (here, `Quantity.value`, a `decimal`) can carry an `id`/`extension` via
+ * the standard JSON sibling convention: `"value": 1.3, "_value": { "extension": [...] }`. Medplum's
+ * generated `Quantity` type doesn't declare `_value` (a codegen gap, not a storage/validation
+ * restriction - Medplum's server accepts and round-trips it fine), so it's accessed here via a
+ * local type rather than widening the shared `Quantity` interface.
+ */
+interface QuantityWithValueExtension extends Quantity {
+  _value?: { extension?: Extension[] };
+}
+
+/**
+ * A lab value's trailing zeros carry real significant-figure meaning (e.g. "1.30" vs "1.3"), but
+ * JSON numbers can't distinguish them - `1.30` and `1.3` parse to the identical float, and that
+ * distinction is gone the moment anything parses the response body as JSON. When the original
+ * precision was captured before that happened (in `receive-from-health-gorilla`, using a custom
+ * JSON.parse reviver to read the raw source of the parsed number), it's carried in the standard
+ * HL7 `quantity-precision` extension on `valueQuantity`'s primitive sibling (`_value`), so the
+ * value can still be displayed with its original precision even though `quantity.value` itself is
+ * just the plain, precision-collapsed number.
+ * @param quantity - A FHIR Quantity, e.g. an Observation's valueQuantity.
+ * @returns The number of digits after the decimal point to display, or undefined if no precision
+ *   was preserved or the stored value is out of `toFixed()`'s valid range (quantity.value should
+ *   then be displayed with its default precision).
+ */
+export function getPreservedValuePrecision(quantity: Quantity | undefined): number | undefined {
+  if (!quantity) {
+    return undefined;
+  }
+  const extended = quantity as QuantityWithValueExtension;
+  const extension = extended._value?.extension?.find((e) => e.url === QUANTITY_PRECISION_EXTENSION_URL);
+  const precision = extension?.valueInteger;
+  return typeof precision === 'number' && Number.isInteger(precision) && precision >= 0 && precision <= 100
+    ? precision
+    : undefined;
 }
 
 /**

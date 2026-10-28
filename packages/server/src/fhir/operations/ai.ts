@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinitionParameter, ParametersParameter } from '@medplum/fhirtypes';
+import type { Login, OperationDefinitionParameter, ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
 import type { AiApi, AiContext, AiResult } from '../../ai/openai';
 import { callOpenAi, streamOpenAi } from '../../ai/openai';
+import { hasSmartResourceScopes } from '../../auth/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { sendOutcome } from '../outcomes';
@@ -114,6 +115,20 @@ export const aiOperationHandler = async (req: Request, res: ExpressResponse): Pr
 };
 
 /**
+ * Returns true if the AI operation supports the caller's account type.
+ * @param profileReference - The caller's profile reference.
+ * @param login - The caller's login.
+ * @returns True if the account type is supported.
+ */
+function isSupportedAiCaller(profileReference: string | undefined, login: Login): boolean {
+  const profileType = profileReference?.split('/')[0];
+  if (profileType === 'Patient' || profileType === 'RelatedPerson') {
+    return false;
+  }
+  return !hasSmartResourceScopes(login);
+}
+
+/**
  * Implements FHIR AI operation.
  * Supports both regular and streaming responses based on Accept header.
  * @param req - The incoming request.
@@ -128,6 +143,10 @@ export async function aiOperation(
 ): Promise<FhirResponse | undefined> {
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai')) {
+    return [forbidden];
+  }
+
+  if (!isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
     return [forbidden];
   }
 

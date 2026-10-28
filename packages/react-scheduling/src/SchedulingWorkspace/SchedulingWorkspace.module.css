@@ -68,6 +68,13 @@
   flex-direction: column;
 }
 
+/* Pill colors, as ListWithDetailPane's, through the variables Mantine's pills variant reads. */
+.paneTab {
+  --tab-hover-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  --tabs-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  --tabs-text-color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+}
+
 /* Scrolls for a tab that does not scroll itself, as the block form does not. */
 .paneTabPanel {
   flex: 1;
