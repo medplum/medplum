@@ -637,6 +637,34 @@ describe('LabOrderDetails', () => {
         expect(screen.getByText('Lab Document')).toBeInTheDocument();
       });
     });
+
+    test('shows the exact selected report, not the most recently updated one', async () => {
+      const olderReport: DiagnosticReport = {
+        ...mockDiagnosticReport,
+        id: 'diagnostic-report-999',
+        conclusion: 'Older partial result',
+      };
+      medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
+      medplum.readResource = vi.fn().mockImplementation((resourceType: string, id: string) => {
+        if (resourceType === 'DiagnosticReport' && id === 'diagnostic-report-999') {
+          return Promise.resolve(olderReport);
+        }
+        return Promise.reject(new Error(`Unexpected readResource(${resourceType}, ${id})`));
+      });
+
+      await act(async () => {
+        setup({
+          order: mockCompletedServiceRequest,
+          selectedReport: { reference: 'DiagnosticReport/diagnostic-report-999' },
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Older partial result')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('All values within normal range')).not.toBeInTheDocument();
+      expect(medplum.searchResources).not.toHaveBeenCalledWith('DiagnosticReport', expect.anything());
+    });
   });
 
   describe('Document references', () => {

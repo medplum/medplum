@@ -38,6 +38,14 @@ interface LabOrderDetailsProps {
   order: ServiceRequest;
   onChange?: (order: WithId<ServiceRequest>) => void;
   onResume?: () => void;
+  /**
+   * When the caller has a specific DiagnosticReport in hand (e.g. the user picked one report
+   * out of several for this order in a list), show that report instead of defaulting to the
+   * order's most-recently-updated one. An order can have more than one report - e.g. a
+   * multi-day culture result that's been resent with additional findings - and without this,
+   * there was no way to view anything but the single latest report.
+   */
+  selectedReport?: Reference<DiagnosticReport>;
 }
 
 interface ProgressStep {
@@ -50,10 +58,11 @@ interface ProgressStep {
 }
 
 export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
-  const { order, onChange, onResume } = props;
+  const { order, onChange, onResume, selectedReport } = props;
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
+  const selectedReportResource = useResource(selectedReport);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [labOrderRequisitionDocs, setLabOrderRequisitionDocs] = useState<DocumentReference[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
@@ -81,22 +90,31 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     }
   }, [medplum, order.id, onChange]);
 
-  // Filter DiagnosticReports for this specific order
+  // An order can have more than one DiagnosticReport (e.g. a multi-day culture result resent
+  // with additional findings). When the caller didn't pass a specific selectedReport, fetch just
+  // the most recently updated one to show by default.
   useEffect(() => {
-    const fetchPrimaryReport = async (): Promise<void> => {
-      const primaryReport = await medplum.searchResources('DiagnosticReport', {
+    if (selectedReport) {
+      return;
+    }
+
+    const fetchReports = async (): Promise<void> => {
+      const reports = await medplum.searchResources('DiagnosticReport', {
         'based-on': `ServiceRequest/${order.id}`,
         _sort: '-_lastUpdated',
-        _count: 1,
+        _count: '1',
       });
-      setDiagnosticReports(primaryReport);
+      setDiagnosticReports(reports);
     };
 
-    fetchPrimaryReport().catch(showErrorNotification);
-  }, [medplum, order.id]);
+    fetchReports().catch(showErrorNotification);
+  }, [medplum, order.id, selectedReport]);
 
-  // Get the primary diagnostic report for this order
-  const primaryReport = diagnosticReports.length > 0 ? diagnosticReports[0] : undefined;
+  // When the caller passed a selectedReport, always show that exact resource - resolved directly
+  // by reference, never substituted with a different report. Otherwise fall back to the most
+  // recently updated report.
+  const latestReport = diagnosticReports.length > 0 ? diagnosticReports[0] : undefined;
+  const primaryReport = selectedReport ? selectedReportResource : latestReport;
 
   // Progress tracker logic
   const getProgressSteps = useMemo((): ProgressStep[] => {

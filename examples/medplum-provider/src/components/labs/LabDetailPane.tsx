@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { isReference } from '@medplum/core';
+import { createReference, isReference } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
@@ -86,8 +86,9 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
         <>
           {order && (
             <LabOrderDetails
-              key={order.id}
+              key={`${order.id}:${item.resourceType === 'DiagnosticReport' ? item.id : ''}`}
               order={order}
+              selectedReport={item.resourceType === 'DiagnosticReport' ? createReference(item) : undefined}
               onChange={(updated) => {
                 setOrder(updated);
                 onOrderChange?.(updated);
