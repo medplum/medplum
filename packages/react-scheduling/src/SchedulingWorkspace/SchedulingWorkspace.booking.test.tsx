@@ -30,6 +30,7 @@ import {
   addRow,
   chooseActor,
   chooseDay,
+  chooseFirstOfferedTime,
   chooseImagingService,
   choosePatient,
   chooseRepeat,
@@ -426,6 +427,32 @@ describe('SchedulingWorkspace booking', () => {
 
     expect(bookingPaneHeading()).not.toBeInTheDocument();
     expect(markedTime()).toBe('none');
+  });
+
+  test('Stays wide while the time search slides back, until the slide ends', async () => {
+    setup();
+    await clickCalendar();
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    const pane = screen.getByRole('region', { name: 'Book appointment' });
+    expect(pane.className).toMatch(/paneWide/);
+    // jsdom runs no animations, so each one's end is fired by hand.
+    fireEvent.animationEnd(pane);
+    expect(pane.className).not.toMatch(/paneClosing/);
+
+    // A slide back that's cancelled, as when the pane is hidden mid-slide, also ends it.
+    await chooseFirstOfferedTime();
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+    fireEvent(pane, new Event('animationcancel'));
+    expect(pane.className).not.toMatch(/paneWide|paneClosing/);
+
+    await openTimeFinder();
+    fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+
+    fireEvent.animationEnd(pane);
+    expect(pane.className).not.toMatch(/paneWide|paneClosing/);
   });
 
   test('Keeps what was answered, and searches the new day, when a different day is clicked', async () => {
