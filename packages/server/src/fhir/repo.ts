@@ -680,8 +680,8 @@ export class Repository extends FhirRepository implements Disposable {
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
 
-    // Only set cache entry if not in a transaction, and not from a reader that may lag behind the writer
-    if (!this.inOwnTransaction() && this.mode !== RepositoryMode.READER) {
+    // Only set cache entry if not in a transaction, and only from the writer (a reader may lag behind)
+    if (!this.inOwnTransaction() && this.mode === RepositoryMode.WRITER) {
       await this.setCacheEntry(resource, { force: true });
     }
 
