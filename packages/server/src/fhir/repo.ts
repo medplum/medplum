@@ -669,6 +669,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
+    // A reader may lag behind the writer, so only reads served by the writer are cached. Check this shard's
+    // connection rather than this.mode, which reports writer if any shard is writer. Read it before the query,
+    // which picks its pool synchronously from the same mode, so a concurrent writer switch cannot change it.
+    const { entry } = this.connectionFor({ resourceTypes: resourceType as ResourceType });
+    const servedByWriter = entry.connection.mode === RepositoryMode.WRITER;
     const rows = await this.sqlRead<{ content: string; deleted: boolean }>(builder, resourceType as ResourceType);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
@@ -680,10 +685,8 @@ export class Repository extends FhirRepository implements Disposable {
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
 
-    // Only set cache entry if not in a transaction, and only if this shard's writer served the read (a reader may
-    // lag behind). Check the shard's connection rather than this.mode, which reports writer if any shard is writer.
-    const { entry } = this.connectionFor({ resourceTypes: resourceType as ResourceType });
-    if (!this.inOwnTransaction() && entry.connection.mode === RepositoryMode.WRITER) {
+    // Only set cache entry if not in a transaction
+    if (!this.inOwnTransaction() && servedByWriter) {
       await this.setCacheEntry(resource, { force: true });
     }
 
