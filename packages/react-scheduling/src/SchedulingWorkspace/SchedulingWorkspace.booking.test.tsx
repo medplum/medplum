@@ -306,14 +306,14 @@ describe('SchedulingWorkspace booking', () => {
     setup();
     await clickCalendar();
     await act(async () => {
-      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
     });
 
     vi.setSystemTime(new Date(2026, 7, 17, 9, 10));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
     });
-    expect(screen.getByRole('tab', { name: 'Appointment' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Book Appointment' })).toHaveAttribute('aria-selected', 'true');
     expect(markedTime()).toBe(new Date(2026, 7, 17, 9, 30).toISOString());
     expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 17, 9, 30).toISOString());
 
