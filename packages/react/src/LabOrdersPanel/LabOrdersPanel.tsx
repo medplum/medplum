@@ -21,7 +21,7 @@ export type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
 
 const DEFAULT_COUNT = 20;
 
-export interface LabsInboxOrderModalProps {
+export interface LabOrdersPanelOrderModalProps {
   readonly opened: boolean;
   readonly draftOrder: WithId<ServiceRequest> | undefined;
   readonly onClose: () => void;
@@ -29,7 +29,7 @@ export interface LabsInboxOrderModalProps {
 }
 
 /**
- * LabsInbox lists a patient's lab orders and results, and shows the selected one.
+ * LabOrdersPanel lists a patient's lab orders and results, and shows the selected one.
  * It does no routing: the caller derives the search and selection from the URL and navigates.
  * @param patient - The patient whose labs are listed.
  * @param search - The normalized search for the active tab (status, sort, count, offset).
@@ -43,7 +43,7 @@ export interface LabsInboxOrderModalProps {
  * @param onNew - Called after an order is submitted or a draft is saved.
  * @param renderOrderModal - Renders the order modal. Without it, ordering and resuming drafts are hidden.
  */
-export interface LabsInboxProps {
+export interface LabOrdersPanelProps {
   readonly patient: Patient | Reference<Patient> | undefined;
   readonly search: SearchRequest;
   readonly activeTab: LabTab;
@@ -54,10 +54,10 @@ export interface LabsInboxProps {
   readonly openUri: string;
   readonly revokedUri: string;
   readonly onNew?: () => void;
-  readonly renderOrderModal?: (props: LabsInboxOrderModalProps) => ReactNode;
+  readonly renderOrderModal?: (props: LabOrdersPanelOrderModalProps) => ReactNode;
 }
 
-export function LabsInbox(props: LabsInboxProps): JSX.Element {
+export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
   const {
     patient,
     search,

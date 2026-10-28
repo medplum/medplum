@@ -7,8 +7,8 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { RenderResult } from '@testing-library/react';
 import { act, render, screen, userEvent, waitFor } from '../test-utils/render';
-import type { LabItem, LabsInboxOrderModalProps, LabsInboxProps, LabTab } from './LabsInbox';
-import { LabsInbox } from './LabsInbox';
+import type { LabItem, LabOrdersPanelOrderModalProps, LabOrdersPanelProps, LabTab } from './LabOrdersPanel';
+import { LabOrdersPanel } from './LabOrdersPanel';
 
 const completedReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
@@ -42,9 +42,9 @@ const TAB_SEARCH: Record<LabTab, string> = {
 const resourceArray = <T,>(resources: T[], total: number): T[] =>
   Object.assign(resources.slice(), { bundle: { resourceType: 'Bundle', type: 'searchset', total } });
 
-describe('LabsInbox', () => {
+describe('LabOrdersPanel', () => {
   let medplum: MockClient;
-  let orderModalProps: LabsInboxOrderModalProps | undefined;
+  let orderModalProps: LabOrdersPanelOrderModalProps | undefined;
 
   beforeEach(() => {
     medplum = new MockClient();
@@ -61,10 +61,10 @@ describe('LabsInbox', () => {
 
   const lastQuery = (): string => vi.mocked(medplum.searchResources).mock.calls.at(-1)?.[1] as string;
 
-  function setup(tab: LabTab, props: Partial<LabsInboxProps> = {}): RenderResult {
+  function setup(tab: LabTab, props: Partial<LabOrdersPanelProps> = {}): RenderResult {
     return render(
       <MedplumProvider medplum={medplum}>
-        <LabsInbox
+        <LabOrdersPanel
           patient={createReference(HomerSimpson)}
           search={parseSearchRequest(TAB_SEARCH[tab])}
           activeTab={tab}

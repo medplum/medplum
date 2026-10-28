@@ -3,7 +3,7 @@
 import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, parseSearchRequest } from '@medplum/core';
 import type { LabItem, LabTab } from '@medplum/react';
-import { LabsInbox } from '@medplum/react';
+import { LabOrdersPanel } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
@@ -75,7 +75,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
   }, [navigate, openUri]);
 
   return (
-    <LabsInbox
+    <LabOrdersPanel
       patient={patient}
       search={search}
       activeTab={activeTab}
