@@ -625,11 +625,11 @@ describe('On Behalf Of', () => {
           { Authorization: basicAuth },
           onBehalfOf(user2.profile),
         ]) {
-          const res = await request(app).get(`/fhir/R4/AsyncJob/${createRes.body.id}`).set(headers);
+          const res = await request(app).get(`/fhir/R4/job/${createRes.body.id}/status`).set(headers);
           expect(res).toHaveStatus(200);
           expect(res.body.output).toBeDefined();
         }
-        const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob output read by another user');
+        const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob accessed by another user');
         expect(calls).toStrictEqual([
           [expect.any(String), expect.objectContaining({ reader: getReferenceString(user2.profile) })],
         ]);

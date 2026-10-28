@@ -695,7 +695,13 @@ export class Repository extends FhirRepository implements Disposable {
       if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
       }
-      await this.readReference(resource.securityContext);
+      // Extended mode for meta.project
+      const securityContext = await this.withOverrideConfig({ extendedMode: true }).readReference(
+        resource.securityContext
+      );
+      if (securityContext.resourceType === 'AsyncJob') {
+        this.logAsyncJobAccess(securityContext);
+      }
     }
     return resource;
   }
@@ -2483,9 +2489,6 @@ export class Repository extends FhirRepository implements Disposable {
     for (const field of policy?.hiddenFields ?? EMPTY) {
       removeField(input, field);
     }
-    if (input.resourceType === 'AsyncJob') {
-      this.logAsyncJobOutputRead(input);
-    }
     if (!extendedMode && input.meta) {
       const meta = input.meta;
       meta.author = undefined;
@@ -2499,11 +2502,11 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Diagnostic logging for reads of AsyncJob output by users other than the requester and project admins.
+   * Diagnostic logging for access to an AsyncJob by users other than its requester and admins of its project.
    * @param asyncJob - The AsyncJob, including `meta.project`.
    */
-  private logAsyncJobOutputRead(asyncJob: AsyncJob): void {
-    if (!asyncJob.output || this.isSuperAdmin()) {
+  logAsyncJobAccess(asyncJob: WithId<AsyncJob>): void {
+    if (this.isSuperAdmin()) {
       return;
     }
     const projectId = asyncJob.meta?.project;
@@ -2514,8 +2517,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (asyncJob.requester?.reference === reader) {
       return;
     }
-    asyncJobOutputReadLogThrottle.maybeLog([projectId, asyncJob.id, reader].join('|'), (suppressed) => {
-      getLogger().warn('AsyncJob output read by another user', {
+    asyncJobAccessLogThrottle.maybeLog([projectId, asyncJob.id, reader].join('|'), (suppressed) => {
+      getLogger().warn('AsyncJob accessed by another user', {
         asyncJobId: asyncJob.id,
         projectId,
         requester: asyncJob.requester?.reference,
@@ -3144,7 +3147,7 @@ export async function getProjectSystemRepo(
   return getShardSystemRepo(TODO_SHARD_ID);
 }
 
-const asyncJobOutputReadLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
+const asyncJobAccessLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 const patchOperationDefinition: OperationDefinition = {
   resourceType: 'OperationDefinition',

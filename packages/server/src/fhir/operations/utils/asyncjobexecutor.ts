@@ -207,6 +207,20 @@ export class AsyncJobExecutor {
   }
 }
 
+/**
+ * Reads an AsyncJob for the current user, logging access by users other than its requester and admins of its
+ * project (see `Repository.logAsyncJobAccess`).
+ * @param id - The AsyncJob ID.
+ * @returns The AsyncJob.
+ */
+export async function readAsyncJob(id: string): Promise<WithId<AsyncJob>> {
+  const { repo } = getAuthenticatedContext();
+  // Extended mode for meta.project
+  const asyncJob = await repo.withOverrideConfig({ extendedMode: true }).readResource<AsyncJob>('AsyncJob', id);
+  repo.logAsyncJobAccess(asyncJob);
+  return repo.removeHiddenFields(asyncJob);
+}
+
 export async function sendAsyncResponse(
   req: Request,
   res: Response,

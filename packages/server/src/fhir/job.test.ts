@@ -190,7 +190,7 @@ describe('Job status', () => {
     expect(updateRes.body.requester).toBeUndefined();
   });
 
-  test('Reads of job output by other members are logged', async () => {
+  test('Job access by other members is logged', async () => {
     const { project } = await createTestProject();
     const requester = await addTestUser(project);
     const otherMember = await addTestUser(project);
@@ -222,8 +222,9 @@ describe('Job status', () => {
     const warnSpy = vi.spyOn(Logger.prototype, 'warn');
     try {
       for (const [member, path] of [
-        [requester, `/fhir/R4/AsyncJob/${job.id}`],
+        [requester, `/fhir/R4/job/${job.id}/status`],
         [otherMember, `/fhir/R4/AsyncJob/${job.id}`],
+        [otherMember, `/fhir/R4/job/${job.id}/status`],
         [otherMember, `/fhir/R4/job/${job.id}/status`],
         [binaryReader, `/fhir/R4/Binary/${binary.id}`],
       ] as const) {
@@ -234,7 +235,7 @@ describe('Job status', () => {
         expect(res).toHaveStatus(200);
       }
 
-      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob output read by another user');
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob accessed by another user');
       expect(calls.map(([, data]) => data)).toStrictEqual(
         [otherMember, binaryReader].map((member) => ({
           asyncJobId: job.id,
