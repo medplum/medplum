@@ -67,49 +67,47 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
   const { items, candidatesLoading, filters, onToggle, className } = props;
 
   return (
-    <>
-      <Stack gap="xs" w={300} className={className}>
-        <Text fz="lg" fw={800} py="xs">
-          Calendars
-        </Text>
-        <Divider />
+    <Stack gap="xs" w={300} className={className}>
+      <Text fz="lg" fw={800} py="xs">
+        Calendars
+      </Text>
+      <Divider />
 
-        {filters && (
-          <>
-            <Box mb="xs" role="group" aria-label="Filter calendars">
-              {filters}
-            </Box>
+      {filters && (
+        <>
+          <Box mb="xs" role="group" aria-label="Filter calendars">
+            {filters}
+          </Box>
+          <Divider />
+        </>
+      )}
+
+      {SECTIONS.map((section) => {
+        const sectionItems = items[section.actorType];
+        return (
+          <Fragment key={section.actorType}>
+            <SectionHeader title={section.title} loading={candidatesLoading}>
+              {sectionItems.length === 0 && !candidatesLoading ? (
+                <Text fz="sm" c="dimmed" p="xs">
+                  No {section.emptyLabel} found
+                </Text>
+              ) : (
+                <Stack gap={2}>
+                  {sectionItems.map((item) => (
+                    <CalendarRow
+                      key={item.id}
+                      item={item}
+                      onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
+                      icon={section.icon}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionHeader>
             <Divider />
-          </>
-        )}
-
-        {SECTIONS.map((section) => {
-          const sectionItems = items[section.actorType];
-          return (
-            <Fragment key={section.actorType}>
-              <SectionHeader title={section.title} loading={candidatesLoading}>
-                {sectionItems.length === 0 && !candidatesLoading ? (
-                  <Text fz="sm" c="dimmed" p="xs">
-                    No {section.emptyLabel} found
-                  </Text>
-                ) : (
-                  <Stack gap={2}>
-                    {sectionItems.map((item) => (
-                      <CalendarRow
-                        key={item.id}
-                        item={item}
-                        onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
-                        icon={section.icon}
-                      />
-                    ))}
-                  </Stack>
-                )}
-              </SectionHeader>
-              <Divider />
-            </Fragment>
-          );
-        })}
-      </Stack>
-    </>
+          </Fragment>
+        );
+      })}
+    </Stack>
   );
 }
