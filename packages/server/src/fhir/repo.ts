@@ -107,6 +107,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import { FhirQuotaCost } from './fhirquota';
+import { logAsyncJobAccess } from './operations/utils/asyncjobexecutor';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -288,8 +289,9 @@ export class Repository extends FhirRepository implements Disposable {
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
    * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
    * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
+   * 20. 10/28/26 - Added search param: AsyncJob-requester
    */
-  static readonly VERSION: number = 19;
+  static readonly VERSION: number = 20;
 
   /**
    * Constructs a new Repository instance.
@@ -698,7 +700,13 @@ export class Repository extends FhirRepository implements Disposable {
       if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
       }
-      await this.readReference(resource.securityContext);
+      // Extended mode for meta.project
+      const securityContext = await this.withOverrideConfig({ extendedMode: true }).readReference(
+        resource.securityContext
+      );
+      if (securityContext.resourceType === 'AsyncJob') {
+        logAsyncJobAccess(this, securityContext);
+      }
     }
     return resource;
   }
