@@ -7,6 +7,7 @@ import { MultiResourceInput } from '@medplum/react';
 import { IconLock } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { ServiceFacilityItem } from '../ServiceFacilityInput';
 import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import classes from './ServiceFacilitiesField.module.css';
 
@@ -74,6 +75,7 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
         placeholder={everywhere ? 'Offered at every service facility' : 'Add a service facility'}
         searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
         defaultValue={[...value]}
+        itemComponent={ServiceFacilityItem}
         onChange={handleChange}
       />
       {description && (

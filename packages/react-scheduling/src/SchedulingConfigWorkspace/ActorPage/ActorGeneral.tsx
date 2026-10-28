@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Select, SimpleGrid, Stack, Switch, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core';
 import { capitalize, createReference, getDisplayString } from '@medplum/core';
-import type { Location, Practitioner, Reference } from '@medplum/fhirtypes';
-import { ResourceInput } from '@medplum/react';
+import type { Practitioner } from '@medplum/fhirtypes';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { useId, useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
-import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
+import { NPI_SYSTEM } from '../../constants';
 import { getTimezoneOptions, timezoneFilter } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
+import { ServiceFacilityInput } from '../../ServiceFacilityInput';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
 import { hasEditableName, isOwnedBySchedulingWorkspace } from './actorDraft';
 
@@ -99,10 +99,12 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
         ) : (
           <ReadOnlyField label="Name" value={getDisplayString(resource)} />
         )}
-        <ServiceFacilityField
+        <ServiceFacilityInput
+          label="Service facility"
           placeholder={isRoom ? 'Hidden when booking by service facility' : 'Shown at every service facility'}
-          value={value.location}
-          onChange={(location) => update({ location })}
+          defaultValue={value.location}
+          onChange={(location) => update({ location: location && createReference(location) })}
+          clearable
         />
         <TimezoneField
           description={`Used for this ${typeLabel.toLowerCase()}'s hours unless a visit type sets its own.`}
@@ -243,32 +245,6 @@ function TimezoneField(props: {
       comboboxProps={{ keepMounted: false }}
       clearButtonProps={{ 'aria-label': 'Clear time zone' }}
       nothingFoundMessage="No matching time zone"
-    />
-  );
-}
-
-interface ServiceFacilityFieldProps {
-  readonly placeholder: string;
-  readonly value: Reference<Location> | undefined;
-  readonly onChange: (value: Reference<Location> | undefined) => void;
-}
-
-/**
- * Picks one of the service facilities booking's site filter offers, or one inactive because it isn't live yet.
- * @param props - What to show when blank, the Location referenced, and a change handler.
- * @returns The field.
- */
-function ServiceFacilityField(props: ServiceFacilityFieldProps): JSX.Element {
-  const { placeholder, value, onChange } = props;
-  return (
-    <ResourceInput<Location>
-      resourceType="Location"
-      name="service-facility"
-      label="Service facility"
-      placeholder={placeholder}
-      searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
-      defaultValue={value}
-      onChange={(location) => onChange(location && createReference(location))}
     />
   );
 }

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Anchor, Box, CloseButton, Group, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
+import { Alert, Anchor, Box, Tabs, Text, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -45,6 +45,7 @@ import { CalendarLegend } from './CalendarLegend';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
+import { PaneHeader } from './PaneHeader';
 import classes from './SchedulingWorkspace.module.css';
 import { getCalendarTimezones, groupAppointmentsByService, matchesCalendarFilters } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
@@ -82,7 +83,7 @@ export interface SchedulingWorkspaceProps {
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
-  /** Called with the Slots written when time is blocked from the pane's Block tab. */
+  /** Called with the Slots written when time is blocked from the pane's Block Time tab. */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /** Called with what `$confirm` wrote, after a pending appointment is confirmed from its details. */
@@ -139,7 +140,7 @@ export interface SchedulingWorkspaceProps {
  *   What was written is reported through `onBooked`, for a host that wants to say so.
  *   The new appointment then opens in the pane, selected on the calendar, which pages
  *   to its day.
- * - Blocks time from the calendar: the same pane has a Block tab, writing a `busy` Slot
+ * - Blocks time from the calendar: the same pane has a Block Time tab, writing a `busy` Slot
  *   over the time on each calendar the user names, reported through `onBlocked`. The new
  *   blocked time then opens in the pane, on a calendar shown where it can, with the other
  *   calendars it blocks listed beside it, and the calendar pages to its day.
@@ -332,7 +333,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       slots: [],
       appointments: group,
     }));
-    // Hidden with the Appointment tab, as the selection follows the tab on show. A draft, and
+    // Hidden with the Book Appointment tab, as the selection follows the tab on show. A draft, and
     // not clickable: there is nothing booked yet to open.
     const drawnProposal = paneTab === 'appointment' ? proposal : undefined;
     const proposalReference = extractServiceTypeReferences(drawnProposal?.serviceType)[0]?.reference;
@@ -600,10 +601,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
           aria-label="Appointment details"
         >
-          <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>Appointment details</Title>
-            <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
-          </Group>
+          <PaneHeader title="Appointment Details" closeLabel="Close appointment details" onClose={closeAppointment} />
           {hiddenNotice && (
             <Alert color="blue" mb="sm">
               {hiddenNotice}
@@ -626,10 +624,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       )}
       {showSlot && (
         <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
-          <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>Blocked time</Title>
-            <CloseButton aria-label="Close blocked time details" onClick={closeSlot} />
-          </Group>
+          <PaneHeader title="Blocked Time" closeLabel="Close blocked time details" onClose={closeSlot} />
           {slotNotice && (
             <Alert color="blue" mb="sm">
               {slotNotice}
@@ -656,20 +651,24 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
           aria-label="Book appointment"
         >
-          <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>{blocking ? 'Block time' : 'Book appointment'}</Title>
-            <CloseButton aria-label="Close booking form" onClick={closeBooking} />
-          </Group>
           {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
           <Tabs
             value={paneTab}
             onChange={(value) => setPaneTab(value as PaneTab)}
-            classNames={{ root: classes.paneTabs, panel: classes.paneTabPanel }}
+            variant="pills"
+            radius="xl"
+            classNames={{ root: classes.paneTabs, tab: classes.paneTab, panel: classes.paneTabPanel }}
           >
-            <Tabs.List mb="sm">
-              <Tabs.Tab value="appointment">Appointment</Tabs.Tab>
-              <Tabs.Tab value="block">Block</Tabs.Tab>
-            </Tabs.List>
+            <PaneHeader
+              title={
+                <Tabs.List>
+                  <Tabs.Tab value="appointment">Book Appointment</Tabs.Tab>
+                  <Tabs.Tab value="block">Block Time</Tabs.Tab>
+                </Tabs.List>
+              }
+              closeLabel="Close booking form"
+              onClose={closeBooking}
+            />
             <Tabs.Panel value="appointment">
               <AppointmentBookingForm
                 defaultStart={bookingSelection.start}
