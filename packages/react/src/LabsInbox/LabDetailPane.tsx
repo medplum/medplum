@@ -4,10 +4,10 @@ import { Box, Center, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, isReference } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { showErrorNotification } from '../../utils/notifications';
+import { showErrorNotification } from './notifications';
 import { LabOrderDetails } from './LabOrderDetails';
 import { LabResultDetails } from './LabResultDetails';
 

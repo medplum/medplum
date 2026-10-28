@@ -4,15 +4,15 @@ import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerServiceRequest, MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { showErrorNotification } from '../../utils/notifications';
+import { showErrorNotification } from './notifications';
 import { LabDetailPane } from './LabDetailPane';
 
-vi.mock('../../utils/notifications', () => ({ showErrorNotification: vi.fn() }));
+vi.mock('./notifications', () => ({ showErrorNotification: vi.fn() }));
 
 vi.mock('./LabOrderDetails', () => ({
   LabOrderDetails: (props: {

@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient, TestOrganization } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { LabResultListItem } from './LabResultListItem';

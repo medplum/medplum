@@ -3,13 +3,7 @@
 import { Flex, Stack, Text } from '@mantine/core';
 import type { JSX } from 'react';
 
-type LabTab = 'open' | 'completed' | 'revoked';
-
-interface LabSelectEmptyProps {
-  activeTab: LabTab;
-}
-
-export function LabSelectEmpty({ activeTab: _activeTab }: LabSelectEmptyProps): JSX.Element {
+export function LabSelectEmpty(): JSX.Element {
   return (
     <Flex direction="column" h="100%" justify="center" align="center">
       <Stack align="center" gap="md" pt="xl">

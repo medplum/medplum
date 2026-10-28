@@ -3,11 +3,11 @@
 import { Badge, Divider, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
 import { formatDate } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay } from '@medplum/react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import type { JSX } from 'react';
 import { LabReportContent } from './LabReportContent';
 
-interface LabResultDetailsProps {
+export interface LabResultDetailsProps {
   result: DiagnosticReport;
 }
 

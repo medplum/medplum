@@ -26,25 +26,20 @@ import type {
   Reference,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AttachmentDisplay, useMedplum, useResource } from '@medplum/react';
+import { useMedplum, useResource } from '@medplum/react-hooks';
+import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
-import { showErrorNotification } from '../../utils/notifications';
+import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
+import { showErrorNotification } from './notifications';
 import { LabReportContent } from './LabReportContent';
+import classes from './LabOrderDetails.module.css';
 
-interface LabOrderDetailsProps {
+export interface LabOrderDetailsProps {
   order: ServiceRequest;
   onChange?: (order: WithId<ServiceRequest>) => void;
   onResume?: () => void;
-  /**
-   * When the caller has a specific DiagnosticReport in hand (e.g. the user picked one report
-   * out of several for this order in a list), show that report instead of defaulting to the
-   * order's most-recently-updated one. An order can have more than one report - e.g. a
-   * multi-day culture result that's been resent with additional findings - and without this,
-   * there was no way to view anything but the single latest report.
-   */
   selectedReport?: Reference<DiagnosticReport>;
 }
 
@@ -424,7 +419,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                 value={detailTab}
                 onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
                 variant="unstyled"
-                className="pill-tabs"
+                className={classes.pillTabs}
               >
                 <Tabs.List>
                   {!hideProgress && (
