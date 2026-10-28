@@ -60,9 +60,8 @@ describe('Welcome email', () => {
 
     test('Includes planning as a top-level next step and indents the contribution link', () => {
       const text = welcomeEmailText(CTX);
-      expect(text).toContain(
-        '\n- Plan your application with AI: https://www.medplum.com/docs/building-with-ai-coding-assistants'
-      );
+      expect(text).toContain('\n- Plan your application with an AI agent\n');
+      expect(text).toContain('https://www.medplum.com/docs/building-with-ai-coding-assistants#plan-your-application');
       expect(text).toContain('\n    - Contribute:');
     });
 
