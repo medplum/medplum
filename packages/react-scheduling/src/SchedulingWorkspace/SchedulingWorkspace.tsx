@@ -599,9 +599,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           toolbarStart={
             <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
               <ActionIcon
+                className={classes.calendarsToggle}
                 variant="default"
                 size={32}
                 radius="xl"
+                c="dimmed"
                 aria-label={calendarsLabel}
                 aria-expanded={calendarsOpen}
                 aria-controls={sidebarId}
