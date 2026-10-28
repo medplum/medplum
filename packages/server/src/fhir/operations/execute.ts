@@ -116,9 +116,11 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
   // If the request is HTTP GET, then the query string is the input
+  const runAs = await getBotProjectMembership(ctx, bot);
   const result = await executeBot({
     bot,
-    runAs: await getBotProjectMembership(ctx, bot),
+    runAs,
+    callerLogin: runAs.id === ctx.membership.id ? ctx.login : undefined,
     runAsProject: ctx.project,
     requester: ctx.membership.profile,
     input: req.method === 'POST' ? req.body : req.query,

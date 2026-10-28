@@ -82,9 +82,11 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
   }
 
   // Execute the bot
+  const runAs = await getBotProjectMembership(ctx, bot);
   const result = await executeBot({
     bot,
-    runAs: await getBotProjectMembership(ctx, bot),
+    runAs,
+    callerLogin: runAs.id === ctx.membership.id ? ctx.login : undefined,
     runAsProject: ctx.project,
     requester: ctx.membership.profile,
     input,

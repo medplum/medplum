@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, ContentType, createReference } from '@medplum/core';
+import { badRequest, ContentType, createReference, parseJWTPayload } from '@medplum/core';
 import type { Bot, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 describe('Custom operation', () => {
   const app = express();
@@ -278,6 +278,58 @@ describe('Custom operation', () => {
       resourceType: 'Parameters',
       parameter: [{ name: 'result', valueString: 'ok' }],
     });
+  });
+
+  test('Bot runs with the SMART scopes of the caller', async () => {
+    const { project, accessToken: adminToken } = await createTestProject({ withAccessToken: true });
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + adminToken)
+      .send({ resourceType: 'Bot', name: 'Scope Operation Bot', runtimeVersion: 'vmcontext', runAsUser: true });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + adminToken)
+      .send({ code: `exports.handler = async (medplum) => ({ token: medplum.getAccessToken() });` });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + adminToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'scope-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'scope-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [{ use: 'out', name: 'token', type: 'string', min: 1, max: '1' }],
+      });
+    expect(res3).toHaveStatus(201);
+
+    const scope = 'openid user/Bot.rs user/OperationDefinition.rs';
+    const user = await withTestContext(() => addTestUser(project, { scope }));
+    const res4 = await request(app)
+      .post('/fhir/R4/$scope-operation')
+      .set('Authorization', 'Bearer ' + user.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res4).toHaveStatus(200);
+    expect(parseJWTPayload(res4.body.parameter[0].valueString).scope).toBe(scope);
   });
 
   test('Returns Parameters from bot unchanged', async () => {

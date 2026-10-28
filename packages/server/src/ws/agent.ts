@@ -277,6 +277,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
       bot,
       runAs: authState.membership,
       runAsProject: authState.project,
+      callerLogin: authState.login,
       requester: authState.membership.profile,
       contentType: command.contentType,
       input,
