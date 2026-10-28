@@ -33,7 +33,6 @@ export function ProjectSettingsPage(): JSX.Element | null {
         { name: HIDE_GET_STARTED_SETTING, valueBoolean: hide },
       ];
       await medplum.post(`admin/projects/${project.id}/settings`, settings);
-      // Re-activating the current login reloads the cached project so the new setting takes effect.
       const activeLogin = medplum.getActiveLogin();
       if (activeLogin) {
         await medplum.setActiveLogin(activeLogin);
@@ -53,7 +52,7 @@ export function ProjectSettingsPage(): JSX.Element | null {
           <Text>{project.name}</Text>
         </SettingsRow>
         <SettingsRow label="Project ID" description="Used when configuring integrations and API clients.">
-          <CopyButton value={project.id}>
+          <CopyButton value={project.id ?? ''}>
             {({ copied, copy }) => (
               <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow>
                 <UnstyledButton onClick={copy}>

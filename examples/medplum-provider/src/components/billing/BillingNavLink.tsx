@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Text } from '@mantine/core';
+import { Anchor, Divider, Text } from '@mantine/core';
 import { isAuxClick } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
 import classes from './BillingNavLink.module.css';
@@ -57,4 +57,12 @@ export function BillingNavLink(props: BillingNavLinkProps): JSX.Element {
  */
 export function BillingNavGroup(props: { readonly children: ReactNode }): JSX.Element {
   return <Text className={classes.group}>{props.children}</Text>;
+}
+
+/**
+ * A divider between groups of sidebar links, styled like the app navbar's.
+ * @returns The divider.
+ */
+export function BillingNavDivider(): JSX.Element {
+  return <Divider mt="xs" className={classes.divider} />;
 }

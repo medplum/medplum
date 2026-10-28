@@ -5,7 +5,7 @@ import { formatSearchQuery } from '@medplum/core';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { Fragment, useEffect, useState } from 'react';
-import { BillingNavGroup, BillingNavLink } from './BillingNavLink';
+import { BillingNavDivider, BillingNavGroup, BillingNavLink } from './BillingNavLink';
 import { AGING_BUCKETS, CLAIM_QUEUES, isAgingQueue } from './claimQueues';
 import type { AgingTotal } from './useClaimsAging';
 
@@ -35,6 +35,7 @@ export function ClaimQueueNav(props: ClaimQueueNavProps): JSX.Element {
         const count = isAgingQueue(queue) ? agingTotals?.[agingIndex]?.count : counts[queue.id];
         return (
           <Fragment key={queue.id}>
+            {showGroup && (queue.group === 'Aging' || queue.group === 'Pre-Submission') && <BillingNavDivider />}
             {showGroup && <BillingNavGroup>{queue.group}</BillingNavGroup>}
             <BillingNavLink
               href={`${baseUrl}/${queue.id}`}
@@ -47,6 +48,7 @@ export function ClaimQueueNav(props: ClaimQueueNavProps): JSX.Element {
           </Fragment>
         );
       })}
+      <BillingNavDivider />
     </Stack>
   );
 }

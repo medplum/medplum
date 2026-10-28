@@ -1,0 +1,31 @@
+.root :global(.mantine-Tabs-list) {
+  display: flex;
+  gap: 2px;
+}
+
+.root :global(.mantine-Tabs-tab) {
+  height: 32px;
+  padding-inline: calc(0.875rem * var(--mantine-scale));
+  padding-block: 0;
+  border-radius: var(--mantine-radius-xl);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 450;
+  background-color: transparent;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.root :global(.mantine-Tabs-tab):hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.root :global(.mantine-Tabs-tab[data-active]),
+.root :global(.mantine-Tabs-tab[data-active]):hover {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+}

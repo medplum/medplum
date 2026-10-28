@@ -1,4 +1,3 @@
-/* Typography and color tokens mirror the Get Started page. */
 .page {
   min-height: 100vh;
   background-color: var(--mantine-color-body);

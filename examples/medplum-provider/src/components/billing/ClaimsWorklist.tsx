@@ -1,23 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Button, Center, Divider, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import type { Filter, SearchRequest } from '@medplum/core';
+import { Badge, Button, Center, Divider, Drawer, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { useElementSize } from '@mantine/hooks';
+import type { SearchRequest } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchRequest } from '@medplum/core';
 import type { Claim, ClaimResponse, Resource } from '@medplum/fhirtypes';
 import type { SearchLoadEvent } from '@medplum/react';
 import { SearchControl, useMedplum } from '@medplum/react';
 import { IconHourglassEmpty, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { setClaimFollowUp } from './claimActions';
 import { ClaimActionsModal } from './ClaimActionsModal';
 import { ClaimDetailPane } from './ClaimDetailPane';
 import { ClaimFollowUpModal } from './ClaimFollowUpModal';
 import type { ClaimQueue } from './claimQueues';
-import { ALL_OPEN_QUEUE_ID, getClaimQueue, isAgingQueue } from './claimQueues';
+import { ALL_OPEN_QUEUE_ID, getClaimQueue, isAgingQueue, sameFilter } from './claimQueues';
 import { ClaimsAgingSummary } from './ClaimsAgingSummary';
-import { getClaimDisplayStatus } from './claimStatus';
+import { getClaimStatus } from './claimStatus';
 import classes from './ClaimsWorklist.module.css';
 import type { AgingTotal } from './useClaimsAging';
 
@@ -36,7 +37,7 @@ export interface ClaimsWorklistProps {
 }
 
 /**
- * The claims in one worklist queue, with the claim open beside them. The queue's filters are added to the
+ * The claims in one worklist queue, with the open claim in a drawer over the list. The queue's filters are added to the
  * table's own search but kept out of the URL query, which holds only what the user changed.
  * @param props - The ClaimsWorklist React props.
  * @returns The ClaimsWorklist React node.
@@ -46,10 +47,14 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
   const medplum = useMedplum();
   const queue = getClaimQueue(queueId);
   const [version, setVersion] = useState(0);
-  const [responses, setResponses] = useState<Record<string, ClaimResponse>>({});
+  const [responses, setResponses] = useState<Record<string, ClaimResponse[]>>({});
   const [actionIds, setActionIds] = useState<string[]>();
   const [submitAll, setSubmitAll] = useState(false);
   const [followUpIds, setFollowUpIds] = useState<string[]>();
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const { ref: mainRef, width: mainWidth } = useElementSize<HTMLDivElement>();
+  const drawerWidth = mainWidth ? Math.max(mainWidth - 300, 400) : undefined;
+  const responsesRequest = useRef(0);
 
   const queueFilters = useMemo(() => queue.filters?.(new Date()) ?? [], [queue]);
 
@@ -67,33 +72,53 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
   const path = (nextQueueId: string, nextClaimId?: string, nextQuery = query): string =>
     `${nextQueueId}${nextClaimId ? `/${nextClaimId}` : ''}${nextQuery}`;
 
+  const closeClaim = useCallback(() => onNavigate(`${queue.id}${query}`), [onNavigate, queue.id, query]);
+
+  useEffect(() => {
+    if (!claimId) {
+      return undefined;
+    }
+    const onPointerDown = (e: PointerEvent): void => {
+      const target = e.target as Element;
+      if (
+        !drawerRef.current?.contains(target) &&
+        !target.closest?.('[data-portal], [data-testid="search-control-row"]')
+      ) {
+        closeClaim();
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [claimId, closeClaim]);
+
   const changeSearch = (next: SearchRequest): void => {
     const own = (next.filters ?? []).filter((f) => !queueFilters.some((q) => sameFilter(q, f)));
     onNavigate(path(queue.id, claimId, formatSearchQuery({ ...next, filters: own })));
   };
 
-  // SearchControl reloads whenever onLoad changes, so it must be stable or the table refetches on every render.
   const loadResponses = useCallback(
     (e: SearchLoadEvent): void => {
       const ids = (e.response.entry ?? [])
         .map((entry) => entry.resource)
         .filter((r): r is Resource => r?.resourceType === 'Claim')
         .map((r) => `Claim/${r.id}`);
+      const request = ++responsesRequest.current;
       if (!ids.length) {
         return;
       }
       medplum
         .searchResources('ClaimResponse', { request: ids.join(','), _sort: '_lastUpdated', _count: '1000' })
         .then((found) => {
-          // Sorted oldest first, so a later response for the same claim replaces an earlier one.
-          const byClaim: Record<string, ClaimResponse> = {};
+          const byClaim: Record<string, ClaimResponse[]> = {};
           found.forEach((r) => {
             const id = r.request?.reference?.split('/')[1];
             if (id) {
-              byClaim[id] = r;
+              (byClaim[id] ??= []).push(r);
             }
           });
-          setResponses(byClaim);
+          if (request === responsesRequest.current) {
+            setResponses(byClaim);
+          }
         })
         .catch(console.error);
     },
@@ -105,7 +130,7 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
       {
         name: 'Status',
         renderCell: (resource: Resource) => {
-          const status = getClaimDisplayStatus(resource as Claim, responses[resource.id as string]);
+          const status = getClaimStatus(resource as Claim, responses[resource.id as string] ?? []);
           return (
             <Badge color={status.color} variant="light" title={status.detail}>
               {status.label}
@@ -125,8 +150,8 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
   const showAging = queue.id === ALL_OPEN_QUEUE_ID || isAgingQueue(queue);
 
   return (
-    <div className={claimId ? `${classes.root} ${classes.withPane}` : classes.root}>
-      <div className={classes.main}>
+    <div className={classes.root}>
+      <div className={classes.main} ref={mainRef}>
         {showAging && (
           <>
             <ClaimsAgingSummary
@@ -145,32 +170,39 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
             </Button>
           </Group>
         )}
-        {queue.filters ? (
-          <SearchControl
-            key={version}
-            search={search}
-            checkboxesEnabled
-            onLoad={loadResponses}
-            onChange={(e) => changeSearch(e.definition)}
-            onClick={(e) => onNavigate(path(queue.id, e.resource.id))}
-            onAuxClick={(e) => window.open(`/Billing/Claims/${path(queue.id, e.resource.id)}`, '_blank')}
-            onBulk={(ids) => setActionIds(ids)}
-            additionalColumns={statusColumns}
-          />
-        ) : (
-          <ComingSoonQueue queue={queue} />
-        )}
-      </div>
-      {claimId && (
-        <div className={classes.pane}>
-          <ClaimDetailPane
-            key={claimId}
-            claimId={claimId}
-            onClose={() => onNavigate(path(queue.id))}
-            onChanged={changed}
-          />
+        <div className={classes.listArea}>
+          {queue.filters ? (
+            <SearchControl
+              key={version}
+              search={search}
+              checkboxesEnabled
+              activeResourceId={claimId}
+              onLoad={loadResponses}
+              onChange={(e) => changeSearch(e.definition)}
+              onClick={(e) => onNavigate(path(queue.id, e.resource.id))}
+              onAuxClick={(e) => window.open(`/Billing/Claims/${path(queue.id, e.resource.id)}`, '_blank')}
+              onBulk={(ids) => setActionIds(ids)}
+              additionalColumns={statusColumns}
+            />
+          ) : (
+            <ComingSoonQueue queue={queue} />
+          )}
         </div>
-      )}
+        <Drawer.Root
+          opened={!!claimId}
+          onClose={closeClaim}
+          position="right"
+          styles={drawerWidth ? { content: { '--drawer-flex': `0 0 ${drawerWidth}px` } } : undefined}
+          trapFocus={false}
+          lockScroll={false}
+        >
+          <Drawer.Content aria-label="Claim" ref={drawerRef}>
+            <Drawer.Body className={classes.claimDrawerBody}>
+              {claimId && <ClaimDetailPane key={claimId} claimId={claimId} onClose={closeClaim} onChanged={changed} />}
+            </Drawer.Body>
+          </Drawer.Content>
+        </Drawer.Root>
+      </div>
       {actionIds && (
         <ClaimActionsModal
           opened
@@ -249,8 +281,4 @@ function ComingSoonQueue(props: { readonly queue: ClaimQueue }): JSX.Element {
       </Stack>
     </Center>
   );
-}
-
-function sameFilter(a: Filter, b: Filter): boolean {
-  return a.code === b.code && a.operator === b.operator && a.value === b.value;
 }

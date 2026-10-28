@@ -33,7 +33,6 @@ export function AccountSettingsPage(): JSX.Element | null {
     try {
       const updatedName: HumanName = { ...name, given: given.split(' ').filter(Boolean), family };
       await medplum.updateResource({ ...profile, name: [updatedName, ...(profile.name?.slice(1) ?? [])] });
-      // Re-activating the current login reloads the cached profile, so the navbar picks up the new name.
       const activeLogin = medplum.getActiveLogin();
       if (activeLogin) {
         await medplum.setActiveLogin(activeLogin);

@@ -102,6 +102,8 @@ export interface SearchControlProps {
   readonly hideToolbar?: boolean;
   /** Hides the per-column filter description row under the column headers. */
   readonly hideFilters?: boolean;
+  /** ID of the resource whose row is highlighted, e.g. the one open beside or over the table. */
+  readonly activeResourceId?: string;
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
   readonly onClick?: (e: SearchClickEvent) => void;
@@ -540,6 +542,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   <Table.Tr
                     key={resource.id}
                     className={classes.tr}
+                    data-active={(!!props.activeResourceId && resource.id === props.activeResourceId) || undefined}
                     data-testid="search-control-row"
                     tabIndex={resource.id === focusableRowId ? 0 : -1}
                     onFocus={(e) => {

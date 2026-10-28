@@ -21,7 +21,6 @@ export function VisitServiceTypesSettingsPage(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const [schedules, loading, outcome] = useSearchResources('Schedule', { _count: '100' });
 
-  // Default to the signed-in user's own calendar, falling back to the first one found.
   const ownSchedule = profile
     ? schedules?.find((s) => s.actor.some((a) => a.reference === getReferenceString(profile)))
     : undefined;

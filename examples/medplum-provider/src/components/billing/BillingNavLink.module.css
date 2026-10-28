@@ -1,4 +1,3 @@
-/* Copies the app navbar links (`AppShell/Navbar.module.css`). */
 .link {
   width: 100%;
   height: 36px;
@@ -57,7 +56,6 @@
   flex: none;
 }
 
-/* Copies the app navbar link counts, e.g. Tasks and Messages (`.linkCount` in `AppShell/Navbar.module.css`). */
 .count {
   margin-left: auto;
   font-size: var(--mantine-font-size-xs);
@@ -66,7 +64,6 @@
   white-space: nowrap;
 }
 
-/* Copies the app navbar section titles, e.g. "Quick Links" (`.menuTitle` in `AppShell/Navbar.module.css`). */
 .group {
   height: 40px;
   margin: 0;
@@ -81,4 +78,8 @@
   white-space: nowrap;
   overflow: hidden;
   color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-6));
+}
+
+.divider {
+  border-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }

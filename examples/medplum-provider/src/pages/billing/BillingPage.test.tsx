@@ -3,13 +3,14 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Claim, ClaimResponse, PaymentReconciliation } from '@medplum/fhirtypes';
+import type { ChargeItemDefinition, Claim, ClaimResponse, PaymentReconciliation } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { FEE_SCHEDULE_TAG, PAYER_USAGE_CONTEXT } from '../../components/billing/feeSchedules';
 import { CANDID_CLAIM_STATUS_SYSTEM, SOURCE_CLAIM_STATUS_EXTENSION_URL, toLocalCalendarDate } from '../../utils/candid';
 import { BillingPage } from './BillingPage';
 
@@ -73,20 +74,20 @@ describe('BillingPage', () => {
     expect(screen.getByRole('tab', { name: 'Claims' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('link', { name: 'Remits' })).toHaveAttribute('href', '/Billing/Remits');
     expect(screen.getByRole('link', { name: 'Configuration' })).toHaveAttribute('href', '/settings/billing');
-    for (const group of ['Aging', 'Before Submission', 'With Payer', 'After Payment']) {
+    for (const group of ['Aging', 'Pre-Submission', 'Submitted to Payer', 'After Payment']) {
       expect(within(nav()).getByText(group)).toBeInTheDocument();
     }
-    const allOpen = within(nav()).getByRole('link', { name: /All open/ });
+    const allOpen = within(nav()).getByRole('link', { name: /All Open/ });
     expect(allOpen).toHaveAttribute('aria-current', 'page');
-    await waitFor(() => expect(allOpen).toHaveTextContent('All open1'));
+    await waitFor(() => expect(allOpen).toHaveTextContent('All Open1'));
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
-  test.each(['/Billing', '/Billing/unknown', '/Billing/Claims/nope'])('defaults to All open for %s', async (url) => {
+  test.each(['/Billing', '/Billing/unknown', '/Billing/Claims/nope'])('defaults to All Open for %s', async (url) => {
     setup(url);
 
     expect(screen.getByRole('tab', { name: 'Claims' })).toHaveAttribute('aria-selected', 'true');
-    expect(within(nav()).getByRole('link', { name: /All open/ })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav()).getByRole('link', { name: /All Open/ })).toHaveAttribute('aria-current', 'page');
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
@@ -107,10 +108,10 @@ describe('BillingPage', () => {
     expect(router.state.location.pathname).toBe('/Billing/Claims/all');
   });
 
-  test('hides the aging cards outside All open and the aging queues', async () => {
+  test('hides the aging cards outside All Open and the aging queues', async () => {
     setup('/Billing/Claims/ready');
 
-    expect(await screen.findByRole('heading', { name: 'Ready to submit' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Ready to Submit' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /0–30 Days/ })).not.toBeInTheDocument();
   });
 
@@ -122,7 +123,7 @@ describe('BillingPage', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  test('submits every draft claim from Ready to submit', async () => {
+  test('submits every draft claim from Ready to Submit', async () => {
     const draft = await medplum.createResource(
       newClaim({ status: 'draft', insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/1' } }] })
     );
@@ -143,18 +144,34 @@ describe('BillingPage', () => {
     expect(await within(dialog).findByText('Submit: 1 of 1 claim done.')).toBeInTheDocument();
   });
 
-  test('opens a claim in the side pane and closes it', async () => {
+  test('opens a claim in a drawer over the list and closes it', async () => {
     const user = userEvent.setup();
     const { router } = setup('/Billing/Claims/all');
 
     await user.click(await within(await screen.findByRole('table')).findByText('$125.50'));
     expect(router.state.location.pathname).toBe(`/Billing/Claims/all/${claim.id}`);
-    expect(await screen.findByText('Lines & remittance')).toBeInTheDocument();
-    expect(screen.getAllByText('Submitted', { selector: '.mantine-Badge-label' })).toHaveLength(2);
-    expect(screen.getByRole('alert', { name: 'With the payer' })).toBeInTheDocument();
+    const drawer = await screen.findByRole('dialog', { name: 'Claim' });
+    expect(within(drawer).getByText('Lines & Remits')).toBeInTheDocument();
+    const activeRows = screen.getAllByTestId('search-control-row').filter((row) => row.hasAttribute('data-active'));
+    expect(activeRows).toHaveLength(1);
+    expect(activeRows[0]).toHaveTextContent('$125.50');
+    expect(screen.getByText('Submitted', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
+    expect(screen.getByText('Submitted', { selector: '.mantine-Button-label' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'With the payer' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Edit claim' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(router.state.location.pathname).toBe('/Billing/Claims/all');
+  });
+
+  test('closes the claim drawer on a click outside it, but not on another claim', async () => {
+    const user = userEvent.setup();
+    const { router } = setup(`/Billing/Claims/all/${claim.id}`);
+
+    await screen.findByRole('dialog', { name: 'Claim' });
+    await user.click(screen.getAllByTestId('search-control-row')[0]);
+    expect(router.state.location.pathname).toMatch(/^\/Billing\/Claims\/all\/.+/);
+    await user.click(screen.getByRole('button', { name: 'Fields' }));
     expect(router.state.location.pathname).toBe('/Billing/Claims/all');
   });
 
@@ -162,13 +179,13 @@ describe('BillingPage', () => {
     const user = userEvent.setup();
     setup(`/Billing/Claims/all/${claim.id}`);
 
-    await user.click(await screen.findByText('Notes'));
-    const submit = screen.getByRole('button', { name: 'Submit' });
-    expect(submit).toBeDisabled();
+    await user.click(await screen.findByText('Notes & Activity'));
+    expect(screen.getByRole('button', { name: 'Start voice mode' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add Note' })).not.toBeInTheDocument();
     await user.type(screen.getByPlaceholderText('Add a note...'), 'Called Aetna, ref 4471');
-    await user.click(submit);
+    await user.click(screen.getByRole('button', { name: 'Add Note' }));
     expect(screen.getByText('Called Aetna, ref 4471')).toBeInTheDocument();
-    expect(screen.getByText('Notes (1)')).toBeInTheDocument();
+    expect(screen.getByText(/^Note from /)).toBeInTheDocument();
   });
 
   test('shows the payer status from the claim response', async () => {
@@ -192,7 +209,7 @@ describe('BillingPage', () => {
     });
     setup(`/Billing/Claims/all/${claim.id}`);
 
-    expect(await screen.findByRole('alert', { name: 'Denied' })).toHaveTextContent('CO-50: not medically necessary');
+    expect(await screen.findByRole('region', { name: 'Denied' })).toHaveTextContent('CO-50: not medically necessary');
     expect(screen.getByRole('button', { name: 'Appeal' })).toBeDisabled();
   });
 
@@ -238,7 +255,7 @@ describe('BillingPage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Claims' }));
     expect(router.state.location.pathname).toBe('/Billing/Claims');
-    expect(within(nav()).getByRole('link', { name: /All open/ })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav()).getByRole('link', { name: /All Open/ })).toHaveAttribute('aria-current', 'page');
   });
 
   test('loads the selected queue from its link', async () => {
@@ -248,7 +265,7 @@ describe('BillingPage', () => {
 
     const table = await screen.findByRole('table');
     await waitFor(() => expect(table.querySelectorAll('tbody tr')).toHaveLength(2));
-    await user.click(within(nav()).getByRole('link', { name: /Ready to submit/ }));
+    await user.click(within(nav()).getByRole('link', { name: /Ready to Submit/ }));
     expect(router.state.location.pathname).toBe('/Billing/Claims/ready');
     await waitFor(() => expect(screen.getByRole('table').querySelectorAll('tbody tr')).toHaveLength(1));
     expect(within(screen.getByRole('table')).getByText('$77.00')).toBeInTheDocument();
@@ -297,7 +314,7 @@ describe('BillingPage', () => {
 
       const remitNav = screen.getByRole('navigation', { name: 'Remittance views' });
       expect(within(remitNav).getByText('By Status')).toBeInTheDocument();
-      expect(within(remitNav).getByRole('link', { name: /All remittances/ })).toHaveAttribute('aria-current', 'page');
+      expect(within(remitNav).getByRole('link', { name: /All Remittances/ })).toHaveAttribute('aria-current', 'page');
       expect(await screen.findByText(/EFT 1AET928451/)).toBeInTheDocument();
       expect(screen.getByText('Partially posted', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
       expect(screen.getByText('Posting error', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
@@ -356,6 +373,42 @@ describe('BillingPage', () => {
       await user.click(screen.getByRole('button', { name: 'Homer Simpson' }));
       expect(router.state.location.pathname).toBe(`/Billing/Claims/all/${claim.id}`);
     });
+
+    test('goes back to the remittance view it was opened from', async () => {
+      const user = userEvent.setup();
+      const { router } = setup(`/Billing/Remits/partial/${remit.id}`);
+
+      expect(await screen.findByText('Aetna', { selector: 'p' })).toBeInTheDocument();
+      expect(screen.queryByText('All Remittances', { selector: 'button *' })).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Back to partially posted' }));
+      expect(router.state.location.pathname).toBe('/Billing/Remits/partial');
+    });
+  });
+
+  test("lists the payers' fee schedules in a modal from the header", async () => {
+    const schedule = await medplum.createResource<ChargeItemDefinition>({
+      resourceType: 'ChargeItemDefinition',
+      url: 'https://example.com/fee-schedules/aetna-2026',
+      title: 'Aetna 2026',
+      status: 'active',
+      meta: { tag: [FEE_SCHEDULE_TAG] },
+      useContext: [
+        { code: PAYER_USAGE_CONTEXT, valueReference: { reference: 'Organization/aetna', display: 'Aetna' } },
+      ],
+      effectivePeriod: { start: '2026-01-01', end: '2026-12-31' },
+    });
+    const user = userEvent.setup();
+    const { router } = setup('/Billing/Claims/all');
+
+    await user.click(screen.getByRole('button', { name: 'Fee Schedules' }));
+    const modal = await screen.findByRole('dialog', { name: 'Fee Schedules' });
+    const row = (await within(modal).findByText('Aetna 2026')).closest('tr') as HTMLElement;
+    expect(within(row).getByText('Aetna')).toBeInTheDocument();
+    expect(within(row).getByText('active')).toBeInTheDocument();
+    expect(within(row).getByText('1/1/2026 – 12/31/2026')).toBeInTheDocument();
+
+    await user.click(within(row).getByText('Aetna 2026'));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/ChargeItemDefinition/${schedule.id}`));
   });
 
   test('sends the configuration gear and old settings links to the app settings', async () => {

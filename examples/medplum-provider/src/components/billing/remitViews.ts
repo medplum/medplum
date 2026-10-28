@@ -13,12 +13,10 @@ export interface RemitView {
   readonly filters: Filter[];
 }
 
-// A reversed payment keeps the outcome it had, so the posting views leave cancelled remittances to Voided.
 const NOT_VOIDED: Filter = { code: 'status', operator: Operator.EQUALS, value: 'active' };
 
 export const REMIT_VIEWS: RemitView[] = [
-  { id: 'all', label: 'All remittances', color: 'dark', filters: [] },
-  // A remittance still being matched shows under Posted, since matching takes seconds.
+  { id: 'all', label: 'All Remittances', color: 'dark', filters: [] },
   {
     id: 'posted',
     label: 'Posted',
@@ -28,14 +26,14 @@ export const REMIT_VIEWS: RemitView[] = [
   },
   {
     id: 'partial',
-    label: 'Partially posted',
+    label: 'Partially Posted',
     group: 'By Status',
     color: 'orange',
     filters: [NOT_VOIDED, { code: 'outcome', operator: Operator.EQUALS, value: 'partial' }],
   },
   {
     id: 'error',
-    label: 'Posting error',
+    label: 'Posting Error',
     group: 'By Status',
     color: 'red',
     filters: [NOT_VOIDED, { code: 'outcome', operator: Operator.EQUALS, value: 'error' }],

@@ -2,41 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ActionIcon,
-  Alert,
   Anchor,
   Badge,
   Button,
   Divider,
   Group,
   Menu,
-  SegmentedControl,
-  SimpleGrid,
   Stack,
   Table,
+  Tabs,
   Text,
-  Textarea,
   Timeline,
   Tooltip,
 } from '@mantine/core';
-import type { WithId } from '@medplum/core';
-import { formatDate, formatDateTime, formatMoney, getDisplayString, getReferenceString } from '@medplum/core';
-import type { Annotation, Claim, ClaimResponse, Coverage, Reference } from '@medplum/fhirtypes';
-import { Loading, ResourceName, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
+import type { MedplumClient, WithId } from '@medplum/core';
+import { formatDate, formatDateTime, formatMoney } from '@medplum/core';
+import type { Annotation, Claim, ClaimResponse, PaymentReconciliation } from '@medplum/fhirtypes';
+import { Loading, ResourceName, useMedplum } from '@medplum/react';
 import {
   IconAlertTriangle,
+  IconArrowRight,
   IconCheck,
-  IconCircleCheck,
   IconClock,
   IconDots,
   IconExternalLink,
-  IconInfoCircle,
   IconPencil,
   IconRefresh,
   IconX,
 } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { CANDID_CLAIM_URL_BOT_IDENTIFIER, isCandidClaimResponse } from '../../utils/candid';
+import { Link } from 'react-router';
+import { CANDID_CLAIM_URL_BOT_IDENTIFIER, CANDID_ENCOUNTER_ID_SYSTEM, isCandidClaimResponse } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 import type { ClaimFollowUp } from './claimActions';
 import {
@@ -49,11 +46,19 @@ import {
 } from './claimActions';
 import classes from './ClaimDetailPane.module.css';
 import { ClaimFollowUpModal } from './ClaimFollowUpModal';
+import { ClaimNoteInput } from './ClaimNoteInput';
 import type { ClaimDisplayStatus } from './claimStatus';
-import { getAdjudicationAmount, getAdjustmentReasons, getClaimDisplayStatus } from './claimStatus';
+import {
+  getAdjustmentReasons,
+  getClaimDisplayStatus,
+  getClaimStatus,
+  isRemitResponse,
+  sumAdjudicationAmount,
+} from './claimStatus';
 import { ComingSoon } from './ComingSoon';
+import pillTabs from './PillTabs.module.css';
 
-type DetailTab = 'lines' | 'notes' | 'activity' | 'patient';
+type DetailTab = 'lines' | 'activity';
 
 export interface ClaimDetailPaneProps {
   readonly claimId: string;
@@ -63,8 +68,8 @@ export interface ClaimDetailPaneProps {
 }
 
 /**
- * A claim's detail beside the worklist: what to do next, its lines with the payer's adjudication, notes, activity,
- * and the patient's coverage. Key it by `claimId`, so switching claims starts on the first tab.
+ * A claim's detail over the worklist: what to do next, its lines with the payer's adjudication and the remittance,
+ * then its notes and activity. Key it by `claimId`, so switching claims starts on the first tab.
  * @param props - The ClaimDetailPane React props.
  * @returns The ClaimDetailPane React node.
  */
@@ -72,7 +77,8 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
   const { claimId, onClose, onChanged } = props;
   const medplum = useMedplum();
   const [claim, setClaim] = useState<WithId<Claim>>();
-  const [response, setResponse] = useState<WithId<ClaimResponse> | null>();
+  const [responses, setResponses] = useState<WithId<ClaimResponse>[]>();
+  const [remittances, setRemittances] = useState<WithId<PaymentReconciliation>[]>();
   const [version, setVersion] = useState(0);
   const [tab, setTab] = useState<DetailTab>('lines');
   const [notes, setNotes] = useState<Annotation[]>(() => getClaimNotes(claimId));
@@ -84,19 +90,29 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
     let active = true;
     Promise.all([
       medplum.readResource('Claim', claimId, { cache: 'no-cache' }),
-      medplum.searchOne(
+      medplum.searchResources(
         'ClaimResponse',
-        { request: `Claim/${claimId}`, _sort: '-_lastUpdated' },
+        { request: `Claim/${claimId}`, _sort: '_lastUpdated', _count: '100' },
         { cache: 'no-cache' }
       ),
     ])
       .then(([c, r]) => {
         if (active) {
           setClaim(c);
-          setResponse(r ?? null);
+          setResponses(r);
         }
       })
       .catch(showErrorNotification);
+    return () => {
+      active = false;
+    };
+  }, [medplum, claimId, version]);
+
+  useEffect(() => {
+    let active = true;
+    findClaimRemittances(medplum, claimId)
+      .then((found) => active && setRemittances(found))
+      .catch(console.error);
     return () => {
       active = false;
     };
@@ -119,7 +135,7 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
     [onChanged]
   );
 
-  if (!claim || response === undefined) {
+  if (!claim || !responses) {
     return (
       <div className={classes.root}>
         <Loading />
@@ -127,99 +143,116 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
     );
   }
 
-  const status = getClaimDisplayStatus(claim, response ?? undefined);
+  const remits = responses.filter(isRemitResponse);
+  const response = responses.findLast((r) => !isRemitResponse(r)) ?? remits.at(-1);
+  const status = getClaimStatus(claim, responses);
   const editable = status.stage === 'ready' || status.stage === 'rejected';
   const encounterUrl = getEncounterUrl(claim);
+  const nextAction = getNextAction({
+    claim,
+    response,
+    status,
+    followUp,
+    busy,
+    encounterUrl,
+    onSubmit: () => run(() => submitClaim(medplum, claim), 'Claim submitted to Candid'),
+    onRefresh: () => run(() => refreshClaim(medplum, claim), 'Status refreshed from Candid'),
+    onFollowUp: () => setFollowUpOpen(true),
+  });
 
   return (
     <div className={classes.root}>
-      <Group className={classes.header} justify="space-between" wrap="nowrap" gap="sm">
-        <div className={classes.title}>
-          <Text fw={800} size="lg" truncate>
-            <ResourceName value={claim.patient} />
-          </Text>
-          <Text size="xs" c="dimmed" truncate>
-            {[claimId.slice(0, 8), getPayerName(response), getServiceDate(claim)].filter(Boolean).join(' · ')}
-          </Text>
-        </div>
-        <Group gap="xs" wrap="nowrap">
-          <Badge color={status.color} variant="light">
-            {status.label}
-          </Badge>
-          {status.stage !== 'ready' && status.stage !== 'voided' && (
-            <Tooltip label="Refresh status" position="bottom" openDelay={500}>
-              <ActionIcon
-                variant="transparent"
-                radius="xl"
-                size={32}
-                className="outline-icon-button"
-                aria-label="Refresh status"
-                loading={busy}
-                onClick={() => run(() => refreshClaim(medplum, claim), 'Status refreshed from Candid')}
-              >
-                <IconRefresh size={16} />
-              </ActionIcon>
-            </Tooltip>
-          )}
-          {editable && encounterUrl && (
-            <Tooltip label="Edit claim" position="bottom" openDelay={500}>
-              <ActionIcon
-                component="a"
-                href={encounterUrl}
-                variant="transparent"
-                radius="xl"
-                size={32}
-                className="outline-icon-button"
-                aria-label="Edit claim"
-              >
-                <IconPencil size={16} />
-              </ActionIcon>
-            </Tooltip>
-          )}
-          <ClaimMoreMenu claim={claim} response={response} onFollowUp={() => setFollowUpOpen(true)} />
-          <ActionIcon variant="subtle" color="gray" radius="xl" size={32} aria-label="Close" onClick={onClose}>
-            <IconX size={18} />
-          </ActionIcon>
-        </Group>
-      </Group>
-      <Divider />
-      <Stack className={classes.body} gap="md">
-        <SegmentedControl
-          fullWidth
-          radius="md"
-          value={tab}
-          onChange={(value) => setTab(value as DetailTab)}
-          data={[
-            { value: 'lines', label: 'Lines & remittance' },
-            { value: 'notes', label: notes.length ? `Notes (${notes.length})` : 'Notes' },
-            { value: 'activity', label: 'Activity' },
-            { value: 'patient', label: 'Patient' },
-          ]}
-        />
-        {tab === 'lines' && (
-          <>
-            <NextAction
+      <Stack className={classes.header} gap="md">
+        <Group justify="space-between" wrap="nowrap" gap="sm" align="flex-start">
+          <Stack gap={0} className={classes.title}>
+            <Text size="xl" fw={800} truncate>
+              <ResourceName value={claim.patient} inherit />
+            </Text>
+            <Text size="sm" c="gray.7" truncate>
+              {[getPayerName(responses), getServiceDate(claim)].filter(Boolean).join(' • ')}
+            </Text>
+          </Stack>
+          <Group gap="calc(var(--mantine-spacing-xs) / 2.5)" wrap="nowrap">
+            {status.stage !== 'ready' && status.stage !== 'voided' && (
+              <Tooltip label="Refresh status" position="bottom" openDelay={500}>
+                <ActionIcon
+                  variant="transparent"
+                  radius="xl"
+                  size={32}
+                  className="outline-icon-button"
+                  aria-label="Refresh status"
+                  loading={busy}
+                  onClick={() => run(() => refreshClaim(medplum, claim), 'Status refreshed from Candid')}
+                >
+                  <IconRefresh size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+            <ClaimMoreMenu
               claim={claim}
-              response={response ?? undefined}
-              status={status}
-              followUp={followUp}
-              busy={busy}
-              encounterUrl={encounterUrl}
-              onSubmit={() => run(() => submitClaim(medplum, claim), 'Claim submitted to Candid')}
-              onRefresh={() => run(() => refreshClaim(medplum, claim), 'Status refreshed from Candid')}
+              response={responses.find(isCandidClaimResponse) ?? null}
+              editUrl={editable ? encounterUrl : undefined}
               onFollowUp={() => setFollowUpOpen(true)}
             />
-            <ClaimTotals claim={claim} response={response ?? undefined} />
-            <ClaimLines claim={claim} response={response ?? undefined} />
-            <RemittanceCard response={response ?? undefined} />
+            <ActionIcon variant="subtle" color="gray" radius="xl" aria-label="Close" onClick={onClose}>
+              <IconX size={16} stroke={2} className={classes.headerIcon} />
+            </ActionIcon>
+          </Group>
+        </Group>
+        <Divider />
+        <Group justify="space-between" align="center" wrap="nowrap">
+          <Tabs
+            value={tab}
+            onChange={(value) => value && setTab(value as DetailTab)}
+            variant="unstyled"
+            className={pillTabs.root}
+          >
+            <Tabs.List>
+              <Tabs.Tab value="lines">Lines & Remits</Tabs.Tab>
+              <Tabs.Tab value="activity">Notes & Activity</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+          <Button component="div" variant="light" color={status.color} radius="xl" size="sm" title={status.detail}>
+            {toTitleCase(status.label)}
+          </Button>
+        </Group>
+        <Divider />
+      </Stack>
+      <Stack className={classes.body} gap="md">
+        {tab === 'lines' && (
+          <>
+            <section aria-label={nextAction.title}>
+              <Stack gap={4}>
+                <Text fz="md" fw={800}>
+                  Next Steps
+                </Text>
+                {nextAction.message}
+              </Stack>
+            </section>
+            <Divider className={classes.sectionDivider} />
+            <ClaimTotals claim={claim} remits={remits} />
+            <Divider className={classes.sectionDivider} />
+            <ClaimDiagnoses claim={claim} />
+            <Divider className={classes.sectionDivider} />
+            <ClaimLines claim={claim} remits={remits} />
+            <Divider className={classes.sectionDivider} />
+            <RemittanceDetails claimId={claimId} remits={remits} remittances={remittances} />
+            <Divider className={classes.sectionDivider} />
+            <ClaimIdentifiers claim={claim} />
           </>
         )}
-        {tab === 'notes' && <ClaimNotes notes={notes} onAdd={(note) => setNotes(addClaimNote(claimId, note))} />}
-        {tab === 'activity' && (
-          <ClaimActivity claim={claim} response={response ?? undefined} notes={notes} followUp={followUp} />
-        )}
-        {tab === 'patient' && <ClaimPatient claim={claim} />}
+        {tab === 'activity' && <ClaimActivity claim={claim} responses={responses} notes={notes} followUp={followUp} />}
       </Stack>
+      {tab === 'lines' && nextAction.actions && (
+        <Stack gap="sm" className={classes.footer} role="group" aria-label="Claim actions">
+          {nextAction.actions}
+        </Stack>
+      )}
+      {tab === 'activity' && (
+        <div className={classes.footer}>
+          <ClaimNoteInput autoFocus onAdd={(note) => setNotes(addClaimNote(claimId, note))} />
+        </div>
+      )}
       <ClaimFollowUpModal
         opened={followUpOpen}
         count={1}
@@ -237,9 +270,11 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
 function ClaimMoreMenu(props: {
   readonly claim: WithId<Claim>;
   readonly response: WithId<ClaimResponse> | null;
+  /** The encounter to edit the claim in, while the claim can still be edited. */
+  readonly editUrl?: string;
   readonly onFollowUp: () => void;
 }): JSX.Element {
-  const { claim, response, onFollowUp } = props;
+  const { claim, response, editUrl, onFollowUp } = props;
   const medplum = useMedplum();
   const patientRef = claim.patient?.reference;
 
@@ -262,17 +297,16 @@ function ClaimMoreMenu(props: {
   return (
     <Menu position="bottom-end" shadow="md" width={220}>
       <Menu.Target>
-        <ActionIcon
-          variant="transparent"
-          radius="xl"
-          size={32}
-          className="outline-icon-button"
-          aria-label="More actions"
-        >
-          <IconDots size={16} />
+        <ActionIcon variant="subtle" color="gray" radius="xl" aria-label="More actions">
+          <IconDots size={16} stroke={2} className={classes.headerIcon} />
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
+        {editUrl && (
+          <Menu.Item leftSection={<IconPencil size={16} />} component="a" href={editUrl}>
+            Edit claim
+          </Menu.Item>
+        )}
         <Menu.Item leftSection={<IconClock size={16} />} onClick={onFollowUp}>
           Set follow-up
         </Menu.Item>
@@ -313,19 +347,31 @@ interface NextActionProps {
   readonly onFollowUp: () => void;
 }
 
+interface NextAction {
+  /** What the claim needs, shown at the top of the tab under its status. */
+  readonly title: string;
+  readonly message: ReactNode;
+  /** The buttons for it, pinned under the tab, full width like a modal's actions. */
+  readonly actions?: ReactNode;
+}
+
 /**
- * What to do with the claim next, given its stage.
- * @param props - The NextAction React props.
- * @returns The NextAction React node.
+ * What to do with the claim next, given its stage: the message, and the buttons that do it.
+ * @param props - The claim, its stage and the action callbacks.
+ * @returns The alert and the actions.
  */
-function NextAction(props: NextActionProps): JSX.Element {
+function getNextAction(props: NextActionProps): NextAction {
   const { claim, response, status, followUp, busy, encounterUrl, onSubmit, onRefresh, onFollowUp } = props;
-  const disabledAction = (label: string): ReactNode => (
-    <Tooltip label="Coming soon" key={label}>
-      <Button size="xs" variant="default" disabled>
-        {label}
-      </Button>
-    </Tooltip>
+  const comingSoon = (...labels: string[]): ReactNode => (
+    <Group grow gap="sm">
+      {labels.map((label) => (
+        <Tooltip label="Coming soon" key={label}>
+          <Button variant="default" disabled>
+            {label}
+          </Button>
+        </Tooltip>
+      ))}
+    </Group>
   );
   const followUpLine = followUp && (
     <Text size="sm">
@@ -335,285 +381,464 @@ function NextAction(props: NextActionProps): JSX.Element {
 
   switch (status.stage) {
     case 'ready':
-      return (
-        <Alert color="blue" icon={<IconInfoCircle />} title="Ready to submit">
-          <Stack gap="xs">
-            <Text size="sm">Pre-submit checks aren't stored on claims yet. Review the lines before submitting.</Text>
-            <Group gap="xs">
-              <Button size="xs" loading={busy} onClick={onSubmit} disabled={!claim.insurance?.length}>
-                Submit to Candid
+      return {
+        title: 'Ready to submit',
+        message: (
+          <Text size="sm">Pre-submit checks aren't stored on claims yet. Review the lines before submitting.</Text>
+        ),
+        actions: (
+          <>
+            <Button fullWidth loading={busy} onClick={onSubmit} disabled={!claim.insurance?.length}>
+              Submit to Candid
+            </Button>
+            {encounterUrl && (
+              <Button fullWidth variant="default" component="a" href={encounterUrl}>
+                Edit claim
               </Button>
-              {encounterUrl && (
-                <Button size="xs" variant="default" component="a" href={encounterUrl}>
-                  Edit claim
-                </Button>
-              )}
-            </Group>
-          </Stack>
-        </Alert>
-      );
+            )}
+          </>
+        ),
+      };
     case 'rejected':
-      return (
-        <Alert color="red" icon={<IconAlertTriangle />} title="Rejected before adjudication">
-          <Stack gap="xs">
+      return {
+        title: 'Rejected before adjudication',
+        message: (
+          <Stack gap={4}>
             <Text size="sm">{getResponseMessage(response) ?? 'The clearinghouse or payer rejected this claim.'}</Text>
             <Text size="xs" c="dimmed">
               The payer never processed it, so it isn't a denial. Fix it and resubmit before the filing limit.
             </Text>
-            <Group gap="xs">
-              {encounterUrl && (
-                <Button size="xs" component="a" href={encounterUrl}>
-                  Fix claim
-                </Button>
-              )}
-              <Button size="xs" variant="default" loading={busy} onClick={onRefresh}>
-                Refresh status
-              </Button>
-            </Group>
           </Stack>
-        </Alert>
-      );
+        ),
+        actions: (
+          <>
+            {encounterUrl && (
+              <Button fullWidth component="a" href={encounterUrl}>
+                Fix claim
+              </Button>
+            )}
+            <Button fullWidth variant="default" loading={busy} onClick={onRefresh}>
+              Refresh status
+            </Button>
+          </>
+        ),
+      };
     case 'denied':
-      return (
-        <Alert color="red" icon={<IconAlertTriangle />} title="Denied">
-          <Stack gap="xs">
+      return {
+        title: 'Denied',
+        message: (
+          <Stack gap={4}>
             <Text size="sm">{getResponseMessage(response) ?? 'The payer denied this claim.'}</Text>
             {followUpLine}
-            <Group gap="xs">
-              {disabledAction('Appeal')}
-              {disabledAction('Corrected claim')}
-              {disabledAction('Write off')}
-            </Group>
           </Stack>
-        </Alert>
-      );
+        ),
+        actions: comingSoon('Appeal', 'Corrected claim', 'Write off'),
+      };
     case 'paid-incorrectly':
-      return (
-        <Alert color="yellow" icon={<IconAlertTriangle />} title="Paid incorrectly">
-          <Stack gap="xs">
-            <Text size="sm">The payer's allowed amount doesn't match the contracted rate.</Text>
-            <Group gap="xs">
-              {disabledAction('Appeal underpayment')}
-              {disabledAction('Accept as paid')}
-            </Group>
-          </Stack>
-        </Alert>
-      );
+      return {
+        title: 'Paid incorrectly',
+        message: <Text size="sm">The payer's allowed amount doesn't match the contracted rate.</Text>,
+        actions: comingSoon('Appeal underpayment', 'Accept as paid'),
+      };
     case 'paid':
-      return (
-        <Alert color="green" icon={<IconCircleCheck />} title="Paid">
-          <Text size="sm">The payer finalized this claim.</Text>
-        </Alert>
-      );
+      return {
+        title: 'Paid',
+        message: <Text size="sm">The payer finalized this claim.</Text>,
+      };
+    case 'awaiting-remit':
+      return {
+        title: 'Waiting for the remit',
+        message: (
+          <Stack gap={4}>
+            <Text size="sm">
+              {status.detail ? `Clearinghouse status: ${status.detail}. ` : ''}The payment posts when the 835 arrives.
+            </Text>
+            {followUpLine}
+          </Stack>
+        ),
+        actions: (
+          <Group grow gap="sm">
+            <Button variant="default" loading={busy} onClick={onRefresh}>
+              Refresh status
+            </Button>
+            <Button variant="default" onClick={onFollowUp}>
+              {followUp ? 'Change follow-up' : 'Set follow-up'}
+            </Button>
+          </Group>
+        ),
+      };
     case 'voided':
-      return (
-        <Alert color="gray" icon={<IconInfoCircle />} title="Voided">
-          <Text size="sm">This claim was cancelled.</Text>
-        </Alert>
-      );
+      return {
+        title: 'Voided',
+        message: <Text size="sm">This claim was cancelled.</Text>,
+      };
     default:
-      return (
-        <Alert color="violet" icon={<IconInfoCircle />} title="With the payer">
-          <Stack gap="xs">
+      return {
+        title: 'With the payer',
+        message: (
+          <Stack gap={4}>
             <Text size="sm">
               {status.detail ? `Clearinghouse status: ${status.detail}.` : 'Waiting for the payer to adjudicate.'}
             </Text>
             {followUpLine}
-            <Group gap="xs">
-              <Button size="xs" variant="default" loading={busy} onClick={onRefresh}>
-                Refresh status
-              </Button>
-              <Button size="xs" variant="default" onClick={onFollowUp}>
-                {followUp ? 'Change follow-up' : 'Set follow-up'}
-              </Button>
-            </Group>
           </Stack>
-        </Alert>
-      );
+        ),
+        actions: (
+          <Group grow gap="sm">
+            <Button variant="default" loading={busy} onClick={onRefresh}>
+              Refresh status
+            </Button>
+            <Button variant="default" onClick={onFollowUp}>
+              {followUp ? 'Change follow-up' : 'Set follow-up'}
+            </Button>
+          </Group>
+        ),
+      };
   }
 }
 
-function ClaimTotals(props: { readonly claim: Claim; readonly response?: ClaimResponse }): JSX.Element {
-  const { claim, response } = props;
-  const items = response?.item ?? [];
-  const sum = (...categories: string[]): number | undefined => {
-    const values = items.map((i) => getAdjudicationAmount(i, ...categories)).filter((v) => v !== undefined);
-    return values.length ? values.reduce((a, b) => a + b, 0) : undefined;
-  };
-  const paid = response?.payment?.amount?.value ?? sum('benefit');
-  const stats: [string, number | undefined][] = [
-    ['Billed', claim.total?.value],
-    ['Allowed', sum('eligible')],
-    ['Paid', paid],
-    ['Patient', sum('deductible', 'copay')],
-  ];
+/**
+ * A titled section of the tab, styled like the SMART Health Link import steps: a heavy subhead with an optional
+ * dimmed line under it.
+ * @param props - The section props.
+ * @param props.title - The subhead.
+ * @param props.description - The dimmed line under it.
+ * @param props.children - The section content.
+ * @returns The section.
+ */
+function DetailSection(props: {
+  readonly title: string;
+  readonly description?: ReactNode;
+  readonly children: ReactNode;
+}): JSX.Element {
   return (
-    <SimpleGrid cols={4} spacing={0} className={classes.stats}>
-      {stats.map(([label, value]) => (
-        <div key={label} className={classes.stat}>
-          <Text size="xs" c="dimmed">
-            {label}
+    <Stack gap="md">
+      <div>
+        <Text fz="md" fw={800}>
+          {props.title}
+        </Text>
+        {props.description && (
+          <Text size="sm" c="dimmed">
+            {props.description}
           </Text>
-          <Text fw={700}>{value === undefined ? '—' : formatMoney({ value, currency: 'USD' })}</Text>
-        </div>
-      ))}
-    </SimpleGrid>
+        )}
+      </div>
+      {props.children}
+    </Stack>
   );
 }
 
-function ClaimLines(props: { readonly claim: Claim; readonly response?: ClaimResponse }): JSX.Element {
-  const { claim, response } = props;
-  const money = (value: number | undefined): string =>
-    value === undefined ? '—' : formatMoney({ value, currency: 'USD' });
+function MetaItem(props: { readonly label: string; readonly value: ReactNode }): JSX.Element {
   return (
-    <Table fz="xs" verticalSpacing={6}>
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>Code</Table.Th>
-          <Table.Th>Dx</Table.Th>
-          <Table.Th ta="right">Billed</Table.Th>
-          <Table.Th ta="right">Allowed</Table.Th>
-          <Table.Th ta="right">Paid</Table.Th>
-          <Table.Th>Adjustments</Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {(claim.item ?? []).map((item) => {
-          const coding = item.productOrService?.coding?.[0];
-          const adjudicated = response?.item?.find((r) => r.itemSequence === item.sequence);
-          const billed = item.net?.value ?? (item.unitPrice?.value ?? 0) * (item.quantity?.value ?? 1);
-          return (
-            <Table.Tr key={item.sequence}>
-              <Table.Td>
-                <Text size="xs" fw={700}>
-                  {coding?.code ?? '—'}
-                </Text>
-                <Text size="xs" c="dimmed" lineClamp={1}>
-                  {coding?.display ?? item.productOrService?.text}
-                </Text>
-              </Table.Td>
-              <Table.Td>{(item.diagnosisSequence ?? []).map((n) => String.fromCharCode(64 + n)).join(', ')}</Table.Td>
-              <Table.Td ta="right">{money(billed)}</Table.Td>
-              <Table.Td ta="right">{money(getAdjudicationAmount(adjudicated, 'eligible'))}</Table.Td>
-              <Table.Td ta="right">{money(getAdjudicationAmount(adjudicated, 'benefit'))}</Table.Td>
-              <Table.Td>
-                {getAdjustmentReasons(adjudicated).map((r) => (
-                  <Text key={r.code} size="xs" ff="monospace">
-                    {r.code} {r.amount?.value !== undefined && money(r.amount.value)}
+    <div>
+      <Text size="xs" c="dimmed" fw={500}>
+        {props.label}
+      </Text>
+      <Text size="sm">{props.value}</Text>
+    </div>
+  );
+}
+
+function money(value: number | undefined): string {
+  return value === undefined ? '—' : formatMoney({ value, currency: 'USD' });
+}
+
+function ClaimTotals(props: { readonly claim: Claim; readonly remits: ClaimResponse[] }): JSX.Element {
+  const { claim, remits } = props;
+  const items = remits.flatMap((r) => r.item ?? []);
+  const sum = (...categories: string[]): number | undefined => sumAdjudicationAmount(items, ...categories);
+  const payments = remits.map((r) => r.payment?.amount?.value).filter((v) => v !== undefined);
+  const paid = payments.length ? payments.reduce((a, b) => a + b, 0) : sum('benefit');
+  return (
+    <DetailSection title="Claim Totals">
+      <div className={classes.metaGrid}>
+        <MetaItem label="Billed" value={money(claim.total?.value)} />
+        <MetaItem label="Allowed" value={money(sum('eligible'))} />
+        <MetaItem label="Paid" value={money(paid)} />
+        <MetaItem label="Patient" value={money(sum('deductible', 'copay'))} />
+      </div>
+    </DetailSection>
+  );
+}
+
+function ClaimLines(props: { readonly claim: Claim; readonly remits: ClaimResponse[] }): JSX.Element {
+  const { claim, remits } = props;
+  const lines = claim.item ?? [];
+  const remitItems = remits.flatMap((r) => r.item ?? []);
+  return (
+    <DetailSection
+      title="Service Lines"
+      description={`${lines.length} ${lines.length === 1 ? 'line' : 'lines'}, with the payer's adjudication`}
+    >
+      <Table horizontalSpacing="sm" verticalSpacing="xs" className={classes.table}>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Code</Table.Th>
+            <Table.Th>Dx</Table.Th>
+            <Table.Th>Billed</Table.Th>
+            <Table.Th>Allowed</Table.Th>
+            <Table.Th>Paid</Table.Th>
+            <Table.Th>Adjustments</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {lines.map((item) => {
+            const coding = item.productOrService?.coding?.[0];
+            const adjudicated = remitItems.filter((r) => r.itemSequence === item.sequence);
+            const billed = item.net?.value ?? (item.unitPrice?.value ?? 0) * (item.quantity?.value ?? 1);
+            return (
+              <Table.Tr key={item.sequence}>
+                <Table.Td>
+                  <Text size="sm">{coding?.code ?? '—'}</Text>
+                  <Text size="xs" c="dimmed" lineClamp={1}>
+                    {coding?.display ?? item.productOrService?.text}
                   </Text>
-                ))}
-              </Table.Td>
-            </Table.Tr>
-          );
-        })}
-      </Table.Tbody>
-    </Table>
+                </Table.Td>
+                <Table.Td>
+                  {item.diagnosisSequence?.length ? (
+                    <Text size="sm">{item.diagnosisSequence.map(toDiagnosisLetter).join(', ')}</Text>
+                  ) : (
+                    <Tooltip label="No diagnosis pointer. Payers reject a line without one.">
+                      <IconAlertTriangle
+                        size={16}
+                        color="var(--mantine-color-orange-6)"
+                        role="img"
+                        aria-label="No diagnosis pointer"
+                      />
+                    </Tooltip>
+                  )}
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">{money(billed)}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">{money(sumAdjudicationAmount(adjudicated, 'eligible'))}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">{money(sumAdjudicationAmount(adjudicated, 'benefit'))}</Text>
+                </Table.Td>
+                <Table.Td>
+                  {adjudicated.flatMap(getAdjustmentReasons).map((r, i) => (
+                    <Text key={`${r.code}-${i}`} size="xs" ff="monospace">
+                      {r.code} {r.amount?.value !== undefined && money(r.amount.value)}
+                    </Text>
+                  ))}
+                </Table.Td>
+              </Table.Tr>
+            );
+          })}
+        </Table.Tbody>
+      </Table>
+    </DetailSection>
   );
 }
 
-function RemittanceCard(props: { readonly response?: ClaimResponse }): JSX.Element {
-  const payment = props.response?.payment;
-  return (
-    <Stack gap={4} className={classes.card}>
-      <Text fw={700} size="sm">
-        Remittance
-      </Text>
-      {payment ? (
-        <Text size="sm">
-          {formatMoney(payment.amount)} paid {payment.date ? `on ${formatDate(payment.date)}` : ''}
-          {payment.identifier?.value ? ` · ${payment.identifier.value}` : ''}
-        </Text>
-      ) : (
-        <Text size="sm" c="dimmed">
-          No remittance yet. When the 835 arrives, its payment shows here.
-        </Text>
-      )}
-    </Stack>
-  );
+function toTitleCase(text: string): string {
+  return text.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function ClaimNotes(props: { readonly notes: Annotation[]; readonly onAdd: (note: Annotation) => void }): JSX.Element {
-  const { notes, onAdd } = props;
-  const profile = useMedplumProfile();
-  const [text, setText] = useState('');
+function toDiagnosisLetter(sequence: number): string {
+  return String.fromCharCode(64 + sequence);
+}
+
+/**
+ * The claim's diagnoses, lettered like box 21 of a CMS-1500, so the Dx pointers on the lines below mean something.
+ * Flags a diagnosis that no line points to, and a claim with no diagnoses.
+ * @param props - The component props.
+ * @param props.claim - The claim.
+ * @returns The diagnoses section.
+ */
+function ClaimDiagnoses(props: { readonly claim: Claim }): JSX.Element {
+  const diagnoses = props.claim.diagnosis ?? [];
+  const pointed = new Set((props.claim.item ?? []).flatMap((item) => item.diagnosisSequence ?? []));
   return (
-    <Stack gap={0}>
-      <Text size="lg" fw={600} mb="xs">
-        Notes
-      </Text>
-      {notes.length === 0 && (
-        <Text size="sm" c="dimmed" mb="sm">
-          No notes yet. Anyone on the team can add one: call reference numbers, what was tried, what's next.
-        </Text>
-      )}
-      {notes.map((note, i) => (
-        <Stack key={`${note.time}-${i}`} gap={4} py="sm" className={classes.note}>
-          <Group gap="xs">
-            <Text size="sm" fw={500}>
-              {note.authorString}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {formatDateTime(note.time)}
-            </Text>
-          </Group>
-          <Text size="sm">{note.text}</Text>
+    <DetailSection
+      title="Diagnoses"
+      description={diagnoses.length ? undefined : 'No diagnoses on this claim. Payers reject a claim without one.'}
+    >
+      {diagnoses.length > 0 && (
+        <Stack gap={6} aria-label="Diagnoses">
+          {diagnoses.map((d) => {
+            const coding = d.diagnosisCodeableConcept?.coding?.[0];
+            return (
+              <Group key={d.sequence} gap="sm" wrap="nowrap" align="baseline">
+                <Text size="sm" fw={600} w={16}>
+                  {toDiagnosisLetter(d.sequence)}
+                </Text>
+                <Text size="sm">{coding?.code ?? d.diagnosisReference?.display ?? '—'}</Text>
+                <Text size="sm" c="dimmed" truncate style={{ flex: 1 }}>
+                  {coding?.display ?? d.diagnosisCodeableConcept?.text}
+                </Text>
+                {!pointed.has(d.sequence) && (
+                  <Badge color="orange" variant="light" size="sm" style={{ flexShrink: 0 }}>
+                    Not on any line
+                  </Badge>
+                )}
+              </Group>
+            );
+          })}
         </Stack>
-      ))}
-      <Stack gap="xs" mt="sm">
-        <Textarea
-          placeholder="Add a note..."
-          minRows={3}
-          autosize
-          value={text}
-          onChange={(e) => setText(e.currentTarget.value)}
-        />
-        <Group justify="space-between">
-          <Text size="xs" c="dimmed">
-            Notes aren't saved yet. They last until the page reloads.
-          </Text>
-          <Button
-            disabled={!text.trim()}
-            onClick={() => {
-              onAdd({
-                text: text.trim(),
-                time: new Date().toISOString(),
-                authorString: profile ? getDisplayString(profile) : 'You',
-              });
-              setText('');
-            }}
-          >
-            Submit
-          </Button>
-        </Group>
-      </Stack>
-    </Stack>
+      )}
+    </DetailSection>
   );
+}
+
+/**
+ * The remittances (835s) that pay the claim, each linking to its detail on the Remits tab. Until one is found, the
+ * payments on the claim's remit responses stand in.
+ * @param props - The component props.
+ * @param props.claimId - The claim ID.
+ * @param props.remits - The claim's remit responses.
+ * @param props.remittances - The PaymentReconciliations that pay the claim, or undefined while loading.
+ * @returns The remittance section.
+ */
+function RemittanceDetails(props: {
+  readonly claimId: string;
+  readonly remits: ClaimResponse[];
+  readonly remittances?: WithId<PaymentReconciliation>[];
+}): JSX.Element {
+  const { claimId, remits, remittances } = props;
+  const payments = remits.map((r) => r.payment).filter((p) => p !== undefined);
+  const hasAny = !!remittances?.length || payments.length > 0;
+  return (
+    <DetailSection
+      title="Remittance"
+      description={hasAny ? undefined : 'No remittance yet. When the 835 arrives, its payment shows here.'}
+    >
+      {remittances?.length
+        ? remittances.map((remit) => {
+            const lines = (remit.detail ?? []).filter((d) => d.request?.reference === `Claim/${claimId}`);
+            const amount = lines.reduce((sum, d) => sum + (d.amount?.value ?? 0), 0);
+            return (
+              <Stack gap="xs" key={remit.id}>
+                <Group justify="space-between" wrap="nowrap">
+                  <Text size="sm" fw={600} truncate>
+                    {[remit.paymentIssuer?.display, remit.paymentIdentifier?.value].filter(Boolean).join(' · ') ||
+                      'Remittance'}
+                  </Text>
+                  <Anchor component={Link} to={`/Billing/Remits/all/${remit.id}`} size="sm" style={{ flexShrink: 0 }}>
+                    Open remittance <IconArrowRight size={14} style={{ verticalAlign: -2 }} />
+                  </Anchor>
+                </Group>
+                <div className={classes.metaGrid}>
+                  <MetaItem label="Paid on This Claim" value={money(amount)} />
+                  <MetaItem label="Payment Date" value={remit.paymentDate ? formatDate(remit.paymentDate) : '—'} />
+                  <MetaItem label="Payment ID" value={remit.paymentIdentifier?.value ?? '—'} />
+                </div>
+              </Stack>
+            );
+          })
+        : payments.map((payment, i) => (
+            <div className={classes.metaGrid} key={payment.identifier?.value ?? i}>
+              <MetaItem label="Amount Paid" value={formatMoney(payment.amount)} />
+              <MetaItem label="Payment Date" value={payment.date ? formatDate(payment.date) : '—'} />
+              <MetaItem label="Payment ID" value={payment.identifier?.value ?? '—'} />
+            </div>
+          ))}
+    </DetailSection>
+  );
+}
+
+/**
+ * Finds the remittances that pay a claim. A remittance names its claims only in `detail.request`, which has no search
+ * parameter, so this reads the most recent remittances and keeps the ones that name the claim.
+ * @param medplum - The Medplum client.
+ * @param claimId - The claim ID.
+ * @returns The claim's remittances, newest first.
+ */
+async function findClaimRemittances(medplum: MedplumClient, claimId: string): Promise<WithId<PaymentReconciliation>[]> {
+  const recent = await medplum.searchResources(
+    'PaymentReconciliation',
+    { _sort: '-created', _count: '200' },
+    { cache: 'no-cache' }
+  );
+  return recent.filter((r) => r.detail?.some((d) => d.request?.reference === `Claim/${claimId}`));
+}
+
+const IDENTIFIER_LABELS: Record<string, string> = {
+  [CANDID_ENCOUNTER_ID_SYSTEM]: 'Candid Encounter ID',
+  'https://www.stedi.com/claims': 'Stedi Claim ID',
+  'https://www.stedi.com/claim-submissions': 'Stedi Submission ID',
+};
+
+/**
+ * The IDs to quote when calling the clearinghouse or payer: the PCN, the clearinghouse's own IDs and the Medplum ID.
+ * @param props - The component props.
+ * @param props.claim - The claim.
+ * @returns The identifiers section.
+ */
+function ClaimIdentifiers(props: { readonly claim: WithId<Claim> }): JSX.Element {
+  const { claim } = props;
+  const pcn = getClaimNumber(claim);
+  const others = (claim.identifier ?? []).filter((id) => id.value && !isPatientControlNumber(id.system));
+  return (
+    <DetailSection title="Identifiers">
+      <div className={classes.metaGrid}>
+        <MetaItem label="PCN" value={pcn ?? '—'} />
+        {others.map((id) => (
+          <MetaItem
+            key={`${id.system}|${id.value}`}
+            label={IDENTIFIER_LABELS[id.system ?? ''] ?? 'Identifier'}
+            value={id.value}
+          />
+        ))}
+        <MetaItem label="Medplum ID" value={claim.id} />
+      </div>
+    </DetailSection>
+  );
+}
+
+interface ActivityEvent {
+  readonly title: string;
+  readonly time?: string;
+  readonly color?: string;
+  /** Shown under the title, e.g. a note's text. */
+  readonly body?: string;
 }
 
 function ClaimActivity(props: {
   readonly claim: Claim;
-  readonly response?: ClaimResponse;
+  readonly responses: ClaimResponse[];
   readonly notes: Annotation[];
   readonly followUp?: ClaimFollowUp;
 }): JSX.Element {
-  const { claim, response, notes, followUp } = props;
-  const events: { title: string; time?: string; color?: string }[] = [];
+  const { claim, responses, notes, followUp } = props;
+  const events: ActivityEvent[] = [];
   events.push({ title: 'Claim created', time: claim.created });
-  if (response) {
-    events.push({ title: 'Submitted to the clearinghouse', time: response.created, color: 'violet' });
-    const status = getClaimDisplayStatus(claim, response);
+  const tracker = responses.findLast((r) => !isRemitResponse(r));
+  if (responses.length) {
+    events.push({ title: 'Submitted to the clearinghouse', time: responses[0].created, color: 'violet' });
+  }
+  if (tracker) {
+    const status = getClaimDisplayStatus(claim, tracker);
     events.push({
       title: `Status: ${status.detail ?? status.label}`,
-      time: response.meta?.lastUpdated,
+      time: tracker.meta?.lastUpdated,
       color: status.color,
     });
   }
-  notes.forEach((n) => events.push({ title: `Note from ${n.authorString}`, time: n.time, color: 'grape' }));
+  responses.filter(isRemitResponse).forEach((r) =>
+    events.push({
+      title: r.payment?.amount ? `Remittance: ${formatMoney(r.payment.amount)} paid` : 'Remittance posted',
+      time: r.payment?.date ?? r.created,
+      color: 'green',
+    })
+  );
+  notes.forEach((n) =>
+    events.push({ title: `Note from ${n.authorString}`, time: n.time, color: 'grape', body: n.text })
+  );
+  events.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''));
   if (followUp) {
-    events.push({ title: `Follow-up set for ${formatDate(followUp.date)}`, color: 'grape' });
+    events.unshift({ title: `Follow-up set for ${formatDate(followUp.date)}`, color: 'grape', body: followUp.note });
   }
   return (
-    <Timeline bulletSize={14} lineWidth={1} active={events.length}>
+    <Timeline
+      bulletSize={14}
+      lineWidth={1}
+      active={events.length}
+      mt="calc(var(--mantine-spacing-xl) - var(--mantine-spacing-md))"
+      styles={{ itemTitle: { marginBottom: 'calc(var(--mantine-spacing-xs) / 2.5)' } }}
+    >
       {events.map((e, i) => (
         <Timeline.Item
           key={`${e.title}-${i}`}
@@ -623,7 +848,12 @@ function ClaimActivity(props: {
         >
           {e.time && (
             <Text size="xs" c="dimmed">
-              {formatDateTime(e.time)}
+              {formatActivityTime(e.time)}
+            </Text>
+          )}
+          {e.body && (
+            <Text size="sm" mt={6} className={classes.noteText}>
+              {e.body}
             </Text>
           )}
         </Timeline.Item>
@@ -632,49 +862,14 @@ function ClaimActivity(props: {
   );
 }
 
-function ClaimPatient(props: { readonly claim: Claim }): JSX.Element {
-  const { claim } = props;
-  return (
-    <Stack gap="sm">
-      {(claim.insurance ?? []).map((insurance) => (
-        <CoverageCard key={insurance.sequence} coverage={insurance.coverage} focal={insurance.focal} />
-      ))}
-      {!claim.insurance?.length && (
-        <Text size="sm" c="dimmed">
-          No coverage on this claim.
-        </Text>
-      )}
-      {claim.patient?.reference && (
-        <Anchor href={`/${claim.patient.reference}`} size="sm">
-          Open patient chart
-        </Anchor>
-      )}
-    </Stack>
-  );
-}
-
-function CoverageCard(props: { readonly coverage: Reference<Coverage>; readonly focal: boolean }): JSX.Element {
-  const coverage = useResource(props.coverage);
-  return (
-    <Stack gap={2} className={classes.card}>
-      <Group justify="space-between">
-        <Text fw={700} size="sm">
-          {props.focal ? 'Primary coverage' : 'Coverage'}
-        </Text>
-        {coverage?.status && (
-          <Badge size="sm" variant="light" color={coverage.status === 'active' ? 'green' : 'gray'}>
-            {coverage.status}
-          </Badge>
-        )}
-      </Group>
-      <Text size="sm">{coverage?.payor?.[0]?.display ?? getReferenceString(props.coverage)}</Text>
-      {coverage?.subscriberId && (
-        <Text size="xs" c="dimmed">
-          Member {coverage.subscriberId}
-        </Text>
-      )}
-    </Stack>
-  );
+/**
+ * Formats an activity time like `4/12/2026 · 3:05 PM`: the date and time without seconds.
+ * @param time - The FHIR dateTime.
+ * @returns The formatted time.
+ */
+function formatActivityTime(time: string): string {
+  const date = formatDateTime(time, undefined, { year: 'numeric', month: 'numeric', day: 'numeric' });
+  return `${date} · ${formatDateTime(time, undefined, { hour: 'numeric', minute: '2-digit' })}`;
 }
 
 function getEncounterUrl(claim: Claim): string | undefined {
@@ -688,8 +883,21 @@ function getServiceDate(claim: Claim): string | undefined {
   return date ? `DOS ${formatDate(date)}` : undefined;
 }
 
-function getPayerName(response: ClaimResponse | null): string | undefined {
-  return response?.insurer?.display;
+function getPayerName(responses: ClaimResponse[]): string | undefined {
+  return responses.findLast((r) => r.insurer?.display)?.insurer?.display;
+}
+
+function isPatientControlNumber(system: string | undefined): boolean {
+  return !!system?.endsWith('patient-control-number');
+}
+
+/**
+ * The patient control number (PCN): the claim's own number, which the clearinghouse and payer send back.
+ * @param claim - The claim.
+ * @returns The PCN, if the claim has one.
+ */
+function getClaimNumber(claim: Claim): string | undefined {
+  return claim.identifier?.find((id) => isPatientControlNumber(id.system))?.value;
 }
 
 function getResponseMessage(response: ClaimResponse | undefined): string | undefined {

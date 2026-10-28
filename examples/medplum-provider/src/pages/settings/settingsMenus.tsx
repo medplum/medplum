@@ -4,17 +4,18 @@ import type { NavbarMenu } from '@medplum/react';
 import {
   IconAdjustmentsHorizontal,
   IconApps,
+  IconArrowBarLeft,
   IconBriefcase,
   IconBuildingBank,
   IconBuildingHospital,
   IconCalendarCog,
-  IconChevronLeft,
   IconReceipt2,
   IconShieldLock,
   IconStethoscope,
   IconUserCircle,
   IconUsers,
 } from '@tabler/icons-react';
+import classes from './settingsMenus.module.css';
 
 export const SETTINGS_PATH = '/settings';
 
@@ -43,7 +44,9 @@ export interface SettingsMenuOptions {
 export function getSettingsMenus(options: SettingsMenuOptions): NavbarMenu[] {
   return [
     {
-      links: [{ icon: <IconChevronLeft />, label: 'Back to app', href: options.returnHref }],
+      links: [
+        { icon: <IconArrowBarLeft className={classes.backIcon} />, label: 'Back to app', href: options.returnHref },
+      ],
     },
     {
       title: 'Personal',

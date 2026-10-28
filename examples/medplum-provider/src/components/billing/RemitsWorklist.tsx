@@ -1,15 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Anchor, Badge, Button, Group, Paper, SimpleGrid, Stack, Table, Text, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Alert,
+  Anchor,
+  Badge,
+  Button,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import type { SearchRequest, WithId } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatDate, formatMoney, formatSearchQuery, parseSearchRequest } from '@medplum/core';
 import type { PaymentReconciliation, PaymentReconciliationDetail } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
-import { IconAlertTriangle, IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
+import { IconAlertTriangle, IconArrowBarLeft, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
-import { BillingNavGroup, BillingNavLink } from './BillingNavLink';
+import { BillingNavDivider, BillingNavGroup, BillingNavLink } from './BillingNavLink';
+import { sameFilter } from './claimQueues';
+import classes from './RemitsWorklist.module.css';
 import type { RemitView } from './remitViews';
 import { getRemitStatus, getRemitView, isUnmatched, REMIT_FIELDS, REMIT_VIEWS } from './remitViews';
 
@@ -55,19 +70,24 @@ export function RemitNav(props: RemitNavProps): JSX.Element {
 
   return (
     <Stack gap={2} component="nav" aria-label="Remittance views">
-      {REMIT_VIEWS.map((view, i) => (
-        <Fragment key={view.id}>
-          {view.group && REMIT_VIEWS[i - 1]?.group !== view.group && <BillingNavGroup>{view.group}</BillingNavGroup>}
-          <BillingNavLink
-            href={`${baseUrl}/${view.id}`}
-            label={view.label}
-            dotColor={view.color}
-            count={counts[view.id]}
-            active={view.id === viewId}
-            onNavigate={() => onNavigate(view.id)}
-          />
-        </Fragment>
-      ))}
+      {REMIT_VIEWS.map((view, i) => {
+        const showGroup = view.group && REMIT_VIEWS[i - 1]?.group !== view.group;
+        return (
+          <Fragment key={view.id}>
+            {showGroup && <BillingNavDivider />}
+            {showGroup && <BillingNavGroup>{view.group}</BillingNavGroup>}
+            <BillingNavLink
+              href={`${baseUrl}/${view.id}`}
+              label={view.label}
+              dotColor={view.color}
+              count={counts[view.id]}
+              active={view.id === viewId}
+              onNavigate={() => onNavigate(view.id)}
+            />
+          </Fragment>
+        );
+      })}
+      <BillingNavDivider />
     </Stack>
   );
 }
@@ -107,7 +127,15 @@ export function RemitsWorklist(props: RemitsWorklistProps): JSX.Element {
   const openRemit = (id: string | undefined): void => onNavigate(`${view.id}/${id}`);
 
   if (remitId) {
-    return <RemitDetail remitId={remitId} onBack={() => onNavigate(view.id)} onOpenClaim={onOpenClaim} />;
+    return (
+      <RemitDetail
+        key={remitId}
+        remitId={remitId}
+        backLabel={`Back to ${view.label.toLowerCase()}`}
+        onBack={() => onNavigate(view.id)}
+        onOpenClaim={onOpenClaim}
+      />
+    );
   }
 
   if (view.id === 'partial' || view.id === 'error') {
@@ -118,9 +146,7 @@ export function RemitsWorklist(props: RemitsWorklistProps): JSX.Element {
     <SearchControl
       search={search}
       onChange={(e) => {
-        const own = (e.definition.filters ?? []).filter(
-          (f) => !view.filters.some((v) => v.code === f.code && v.value === f.value)
-        );
+        const own = (e.definition.filters ?? []).filter((f) => !view.filters.some((v) => sameFilter(v, f)));
         onNavigate(`${view.id}${formatSearchQuery({ ...e.definition, filters: own })}`);
       }}
       onClick={(e) => openRemit(e.resource.id)}
@@ -268,21 +294,30 @@ function describeUnmatched(detail: PaymentReconciliationDetail): string {
  * One remittance: its payment, posting status, and each line with the claim it paid.
  * @param props - The remittance ID and navigation callbacks.
  * @param props.remitId - The PaymentReconciliation ID.
- * @param props.onBack - Returns to the list.
+ * @param props.backLabel - The accessible name of the back button, naming the list it returns to.
+ * @param props.onBack - Returns to the list the remittance was opened from.
  * @param props.onOpenClaim - Opens a claim.
  * @returns The detail.
  */
 function RemitDetail(props: {
   readonly remitId: string;
+  readonly backLabel: string;
   readonly onBack: () => void;
   readonly onOpenClaim: (claimId: string) => void;
 }): JSX.Element {
-  const { remitId, onBack, onOpenClaim } = props;
+  const { remitId, backLabel, onBack, onOpenClaim } = props;
   const medplum = useMedplum();
   const [remit, setRemit] = useState<WithId<PaymentReconciliation>>();
 
   useEffect(() => {
-    medplum.readResource('PaymentReconciliation', remitId).then(setRemit).catch(showErrorNotification);
+    let active = true;
+    medplum
+      .readResource('PaymentReconciliation', remitId)
+      .then((found) => active && setRemit(found))
+      .catch(showErrorNotification);
+    return () => {
+      active = false;
+    };
   }, [medplum, remitId]);
 
   if (!remit) {
@@ -294,20 +329,30 @@ function RemitDetail(props: {
 
   return (
     <Stack gap="md">
-      <Anchor component="button" type="button" size="sm" onClick={onBack}>
-        <Group gap={4}>
-          <IconArrowLeft size={14} /> All remittances
-        </Group>
-      </Anchor>
       <Group justify="space-between">
-        <div>
-          <Text fw={800} size="lg">
-            {remit.paymentIssuer?.display ?? 'Unknown payer'}
-          </Text>
-          <Text size="xs" c="dimmed" ff="monospace">
-            {remit.paymentIdentifier?.value}
-          </Text>
-        </div>
+        <Group gap="xs" wrap="nowrap">
+          <Tooltip label={backLabel} openDelay={500}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              radius="xl"
+              size="lg"
+              onClick={onBack}
+              aria-label={backLabel}
+              className={classes.backButton}
+            >
+              <IconArrowBarLeft size={20} />
+            </ActionIcon>
+          </Tooltip>
+          <div>
+            <Text fw={800} size="lg">
+              {remit.paymentIssuer?.display ?? 'Unknown payer'}
+            </Text>
+            <Text size="xs" c="dimmed" ff="monospace">
+              {remit.paymentIdentifier?.value}
+            </Text>
+          </div>
+        </Group>
         <Badge color={status.color} variant="light">
           {status.label}
         </Badge>

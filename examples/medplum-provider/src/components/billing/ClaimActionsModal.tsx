@@ -39,7 +39,6 @@ export function ClaimActionsModal(props: ClaimActionsModalProps): JSX.Element {
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<ClaimActionResult[]>();
 
-  // Mounted fresh each time it opens, so the state above starts over.
   useEffect(() => {
     let active = true;
     medplum

@@ -11,7 +11,7 @@ import { toLocalCalendarDate } from '../../utils/candid';
 export interface ClaimQueue {
   readonly id: string;
   readonly label: string;
-  readonly group?: 'Aging' | 'Before Submission' | 'With Payer' | 'After Payment';
+  readonly group?: 'Aging' | 'Pre-Submission' | 'Submitted to Payer' | 'After Payment';
   /** The Mantine color of the queue's dot in the nav. */
   readonly color: string;
   readonly filters?: (today: Date) => Filter[];
@@ -48,10 +48,37 @@ function withOutcome(outcome: string): Filter {
   return { code: '_has:ClaimResponse:request:outcome', operator: Operator.EQUALS, value: outcome };
 }
 
+const HAS_RESPONSE: Filter = { code: '_has:ClaimResponse:request:status', operator: Operator.EQUALS, value: 'active' };
+const HAS_REMIT: Filter = {
+  code: '_has:ClaimResponse:request:payment-date',
+  operator: Operator.MISSING,
+  value: 'false',
+};
+const NO_REMIT: Filter = {
+  code: '_filter',
+  operator: Operator.EQUALS,
+  value: 'not (_has:ClaimResponse:request:payment-date pr true)',
+};
+const NOT_REJECTED: Filter = {
+  code: '_filter',
+  operator: Operator.EQUALS,
+  value: 'not (_has:ClaimResponse:request:outcome eq error)',
+};
+
+/**
+ * Whether two search filters are the same, e.g. to tell a queue's own filters from the user's.
+ * @param a - A filter.
+ * @param b - Another filter.
+ * @returns True when the code, operator and value all match.
+ */
+export function sameFilter(a: Filter, b: Filter): boolean {
+  return a.code === b.code && a.operator === b.operator && a.value === b.value;
+}
+
 export const ALL_OPEN_QUEUE_ID = 'all';
 
 export const CLAIM_QUEUES: ClaimQueue[] = [
-  { id: ALL_OPEN_QUEUE_ID, label: 'All open', color: 'dark', filters: () => [OPEN] },
+  { id: ALL_OPEN_QUEUE_ID, label: 'All Open', color: 'dark', filters: () => [OPEN] },
   ...AGING_BUCKETS.map((bucket, i): ClaimQueue => ({
     id: bucket.id,
     label: bucket.label,
@@ -62,70 +89,74 @@ export const CLAIM_QUEUES: ClaimQueue[] = [
   {
     id: 'unbilled',
     label: 'Unbilled',
-    group: 'Before Submission',
+    group: 'Pre-Submission',
     color: 'gray',
     missing: 'Signed encounters with charges but no claim. This needs a billing status on ChargeItem.',
   },
   {
     id: 'ready',
-    label: 'Ready to submit',
-    group: 'Before Submission',
+    label: 'Ready to Submit',
+    group: 'Pre-Submission',
     color: 'blue',
     filters: () => [{ code: 'status', operator: Operator.EQUALS, value: 'draft' }],
   },
   {
     id: 'needs-fixing',
-    label: 'Needs fixing',
-    group: 'Before Submission',
+    label: 'Needs Fixing',
+    group: 'Pre-Submission',
     color: 'orange',
     missing: 'Draft claims with failing pre-submit checks. This needs check results stored on the claim.',
   },
   {
     id: 'awaiting-payer',
-    label: 'Awaiting payer',
-    group: 'With Payer',
+    label: 'Awaiting Payer',
+    group: 'Submitted to Payer',
     color: 'violet',
-    filters: () => [ACTIVE, withOutcome('queued')],
+    filters: () => [ACTIVE, HAS_RESPONSE, NO_REMIT, NOT_REJECTED],
   },
   {
     id: 'rejected',
     label: 'Rejected',
-    group: 'With Payer',
+    group: 'Submitted to Payer',
     color: 'red',
-    missing: 'Claims the clearinghouse or payer rejected. This needs a search parameter for the payer status.',
+    filters: () => [
+      { code: 'status', operator: Operator.NOT, value: 'draft,cancelled' },
+      withOutcome('error'),
+      NO_REMIT,
+    ],
   },
   {
     id: 'denied',
     label: 'Denied',
-    group: 'With Payer',
+    group: 'Submitted to Payer',
     color: 'red',
     missing: 'Claims the payer denied. This needs a search parameter for the payer status.',
   },
   {
     id: 'patient-balance',
-    label: 'Patient balance',
+    label: 'Patient Balance Remaining',
     group: 'After Payment',
     color: 'yellow',
     missing: 'Claims with a patient share still owed. This needs a patient responsibility model.',
   },
   {
     id: 'paid-incorrectly',
-    label: 'Paid incorrectly',
+    label: 'Paid Incorrectly',
     group: 'After Payment',
     color: 'yellow',
     missing: 'Claims paid off the contracted rate. This needs a search parameter for the payer status.',
   },
   {
     id: 'paid',
-    label: 'Paid & closed',
+    label: 'Paid & Closed',
     group: 'After Payment',
     color: 'green',
-    filters: () => [withOutcome('complete')],
+    filters: () => [ACTIVE, HAS_REMIT],
   },
 ];
 
 /**
- * Finds a queue by ID, falling back to All open.
+ * Finds a queue by ID, falling back to All Open.
  * @param id - The queue ID from the URL.
  * @returns The queue.
  */

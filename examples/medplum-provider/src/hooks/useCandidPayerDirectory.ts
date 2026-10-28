@@ -111,7 +111,6 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
         const page = await fetchPage(trimmed, SEARCH_RESULT_LIMIT - loaded.length, pageToken);
         const items = page.items ?? [];
         loaded.push(...items);
-        // An empty page with a cursor would loop forever
         pageToken = items.length > 0 ? page.nextPageToken : undefined;
       } while (pageToken && loaded.length < SEARCH_RESULT_LIMIT);
       setResults(loaded.slice(0, SEARCH_RESULT_LIMIT));

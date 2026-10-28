@@ -1,36 +1,34 @@
-/* The tabs, the configuration gear and the queues share one left column; the selected queue fills the rest. */
 .page {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  min-height: calc(100vh - var(--app-shell-header-height, 0px));
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: calc(100vh - var(--app-shell-header-height, 0px));
+  overflow: hidden;
   background-color: light-dark(var(--mantine-color-white), var(--mantine-color-body));
 
   @mixin smaller-than $mantine-breakpoint-sm {
     grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    overflow: visible;
   }
 }
 
 .sidebar {
-  border-inline-end: 1px solid var(--app-shell-border-color);
-  position: sticky;
-  top: var(--app-shell-header-height, 0px);
-  height: calc(100vh - var(--app-shell-header-height, 0px));
+  border-inline-end: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  min-height: 0;
   display: flex;
   flex-direction: column;
 
   @mixin smaller-than $mantine-breakpoint-sm {
-    position: static;
-    height: auto;
     border-inline-end: 0;
-    border-bottom: 1px solid var(--app-shell-border-color);
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   }
 }
 
 .sidebarHeader {
-  height: 56px;
+  height: 64px;
   flex: none;
-  padding: 0 var(--mantine-spacing-xs) 0 var(--mantine-spacing-sm);
-  border-bottom: 1px solid var(--app-shell-border-color);
+  padding: var(--mantine-spacing-md);
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
 .sidebarNav {
@@ -42,8 +40,14 @@
 
 .content {
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    overflow-y: visible;
+  }
 }
 
 .padded {

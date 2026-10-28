@@ -1,5 +1,3 @@
-/* The settings tabs sit to the left of the selected tab's content; the root fills the space it is given, so the
-divider runs its full height however short the tab content is. */
 .root {
   flex: 1;
   display: flex;

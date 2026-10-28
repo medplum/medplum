@@ -502,6 +502,22 @@ describe('SearchControl', () => {
     expect(onBulk).toHaveBeenCalled();
   });
 
+  test('Highlights the active row', async () => {
+    await setup({
+      search: {
+        resourceType: 'Patient',
+        fields: ['name'],
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+      },
+      activeResourceId: HomerSimpson.id,
+    });
+
+    const rows = await screen.findAllByTestId('search-control-row');
+    const active = rows.filter((row) => row.hasAttribute('data-active'));
+    expect(active).toHaveLength(1);
+    expect(active[0]).toHaveTextContent('Homer Simpson');
+  });
+
   test('Click on row', async () => {
     const props: SearchControlProps = {
       search: {

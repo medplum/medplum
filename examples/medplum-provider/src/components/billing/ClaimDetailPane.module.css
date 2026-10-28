@@ -6,8 +6,7 @@
 }
 
 .header {
-  min-height: 64px;
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg) 0;
 }
 
 .title {
@@ -17,29 +16,57 @@
 .body {
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  padding: var(--mantine-spacing-md);
-}
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--mantine-spacing-lg);
 
-.stats {
-  border: 1px solid var(--app-shell-border-color);
-  border-radius: var(--mantine-radius-md);
-}
-
-.stat {
-  padding: 8px 10px;
-
-  &:not(:last-child) {
-    border-inline-end: 1px solid var(--app-shell-border-color);
+  & > * {
+    flex-shrink: 0;
   }
 }
 
-.card {
-  border: 1px solid var(--app-shell-border-color);
-  border-radius: var(--mantine-radius-md);
-  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-xl);
 }
 
-.note {
-  border-bottom: 1px solid var(--app-shell-border-color);
+.sectionDivider {
+  margin-top: calc(var(--mantine-spacing-xl) - var(--mantine-spacing-md));
+}
+
+.table {
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.table thead th {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  line-height: var(--mantine-line-height-sm);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+
+.noteText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: var(--mantine-spacing-lg);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.headerIcon {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }

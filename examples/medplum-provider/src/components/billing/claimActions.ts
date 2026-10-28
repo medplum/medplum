@@ -95,8 +95,6 @@ export interface ClaimFollowUp {
   readonly note: string;
 }
 
-// Notes and follow-ups are not saved yet: they live in memory for the session, until the data model for claim
-// work items is decided.
 const notes = new Map<string, Annotation[]>();
 const followUps = new Map<string, ClaimFollowUp>();
 

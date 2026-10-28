@@ -119,19 +119,25 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
         leftSection={<IconSwitchHorizontal size={16} color={MENU_ICON_COLOR} />}
         onClick={() => navigate('/signin')}
       >
-        <Text size="sm">Switch to another project</Text>
+        <Text size="sm" fw={450}>
+          Switch to another project
+        </Text>
       </Menu.Item>
       <Menu.Item
         leftSection={<IconSettings size={16} color={MENU_ICON_COLOR} />}
         onClick={() => navigate(props.settingsHref ?? `/${getReferenceString(profile as ProfileResource)}`)}
       >
-        <Text size="sm">{props.settingsHref ? 'Settings' : 'Account settings'}</Text>
+        <Text size="sm" fw={450}>
+          {props.settingsHref ? 'Settings' : 'Account settings'}
+        </Text>
       </Menu.Item>
 
       <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
         <Flex align="center" gap="xs">
           <IconPalette size={16} color={MENU_ICON_COLOR} />
-          <Text size="sm">Appearance</Text>
+          <Text size="sm" fw={450}>
+            Appearance
+          </Text>
         </Flex>
         <Box className={classes.settingsControlWrapper}>
           <SegmentedControl
@@ -150,7 +156,9 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
         <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
           <Flex align="center" gap="xs">
             <IconTable size={16} color={MENU_ICON_COLOR} />
-            <Text size="sm">Layout</Text>
+            <Text size="sm" fw={450}>
+              Layout
+            </Text>
           </Flex>
           <Box className={classes.settingsControlWrapper}>
             <SegmentedControl
@@ -176,7 +184,9 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
           navigate('/signin');
         }}
       >
-        <Text size="sm">Sign out</Text>
+        <Text size="sm" fw={450}>
+          Sign out
+        </Text>
       </Menu.Item>
       <HeaderDropdownDivider />
       <Text size="xs" c="dimmed" fw={500} my="sm" ta="center">

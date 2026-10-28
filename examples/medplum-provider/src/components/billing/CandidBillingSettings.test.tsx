@@ -412,7 +412,6 @@ describe('CandidBillingSettings', () => {
     const searchBox = await within(dialog).findByLabelText('Search the Payer Directory');
     await waitFor(() => expect(searchBox).toHaveFocus());
     expect(within(screen.getByRole('tabpanel')).getByTestId('search-control')).toBeInTheDocument();
-    // The import footer waits for results to import from
     expect(within(dialog).queryByRole('button', { name: /Import selected/ })).not.toBeInTheDocument();
 
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
@@ -1494,7 +1493,6 @@ describe('CandidBillingSettings', () => {
       { searchTerm: '', limit: 70, pageToken: 'tok-2' },
       'application/json'
     );
-    // 45 results at 20 per page
     expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '4' })).not.toBeInTheDocument();
     expect(screen.queryByText(/Showing the first 100 matches/)).not.toBeInTheDocument();
@@ -1506,7 +1504,6 @@ describe('CandidBillingSettings', () => {
 
     await user.click(screen.getByRole('button', { name: '1' }));
     expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
-    // Paging never goes back to the directory
     expect(executeSpy).toHaveBeenCalledTimes(2);
   });
 

@@ -101,7 +101,6 @@ export function App(): JSX.Element | null {
 
   const [shlOpened, shlHandlers] = useDisclosure(false);
 
-  // Settings swaps the app navbar for its own; "Back to app" returns to the last page visited outside it.
   const inSettings = isSettingsPath(location.pathname);
   const [appReturnHref, setAppReturnHref] = useState('/');
   const currentHref = location.pathname + location.search;

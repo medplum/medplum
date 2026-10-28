@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Anchor, Group, Tabs, Tooltip } from '@mantine/core';
 import { isAuxClick } from '@medplum/react';
-import { IconSettings } from '@tabler/icons-react';
+import { IconReportMoney, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { ClaimQueueNav } from '../../components/billing/ClaimQueueNav';
 import { ClaimsWorklist } from '../../components/billing/ClaimsWorklist';
+import { FeeSchedulesModal } from '../../components/billing/FeeSchedulesModal';
+import pillTabs from '../../components/billing/PillTabs.module.css';
 import { RemitNav, RemitsWorklist } from '../../components/billing/RemitsWorklist';
 import { getClaimQueue } from '../../components/billing/claimQueues';
 import { getRemitView } from '../../components/billing/remitViews';
@@ -22,7 +24,6 @@ const SETTINGS_URL = '/settings/billing';
 
 type BillingSection = 'Claims' | 'Remits' | 'Settings';
 
-// `Settings` is only recognized to redirect old `/Billing/Settings` links to the app settings.
 const SECTIONS: BillingSection[] = ['Claims', 'Remits', 'Settings'];
 
 interface BillingLocation {
@@ -56,6 +57,7 @@ export function BillingPage(): JSX.Element {
   const { section, view, resourceId } = parseBillingPath(path);
   const [version, setVersion] = useState(0);
   const agingTotals = useClaimsAging(version);
+  const [feeSchedulesOpen, setFeeSchedulesOpen] = useState(false);
 
   const go = (url: string): void => {
     navigate(url)?.catch(console.error);
@@ -75,7 +77,7 @@ export function BillingPage(): JSX.Element {
             value={section}
             onChange={(value) => value && go(`${BASE_URL}/${value}`)}
             variant="unstyled"
-            className="pill-tabs"
+            className={pillTabs.root}
           >
             <Tabs.List>
               {(['Claims', 'Remits'] as const).map((s) => (
@@ -83,10 +85,10 @@ export function BillingPage(): JSX.Element {
                   <Anchor
                     c="inherit"
                     underline="never"
-                    lh={1}
+                    inherit
+                    inline
                     href={`${BASE_URL}/${s}`}
                     onClick={(e) => {
-                      // The tab's onChange navigates; only a click on the current tab needs to here, to reset it.
                       if (!isAuxClick(e)) {
                         e.preventDefault();
                         if (s === section) {
@@ -101,27 +103,43 @@ export function BillingPage(): JSX.Element {
               ))}
             </Tabs.List>
           </Tabs>
-          <Tooltip label="Configuration" position="bottom" openDelay={500}>
-            <ActionIcon
-              component="a"
-              href={SETTINGS_URL}
-              variant="transparent"
-              color="gray"
-              radius="xl"
-              size={32}
-              className="outline-icon-button"
-              aria-label="Configuration"
-              onClick={(e) => {
-                if (!isAuxClick(e)) {
-                  e.preventDefault();
-                  go(SETTINGS_URL);
-                }
-              }}
-            >
-              <IconSettings size={16} />
-            </ActionIcon>
-          </Tooltip>
+          <Group gap="xs" wrap="nowrap">
+            <Tooltip label="Fee Schedules" position="bottom" openDelay={500}>
+              <ActionIcon
+                variant="transparent"
+                color="gray"
+                radius="xl"
+                size={32}
+                className="outline-icon-button"
+                aria-label="Fee Schedules"
+                onClick={() => setFeeSchedulesOpen(true)}
+              >
+                <IconReportMoney size={16} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Configuration" position="bottom" openDelay={500}>
+              <ActionIcon
+                component="a"
+                href={SETTINGS_URL}
+                variant="transparent"
+                color="gray"
+                radius="xl"
+                size={32}
+                className="outline-icon-button"
+                aria-label="Configuration"
+                onClick={(e) => {
+                  if (!isAuxClick(e)) {
+                    e.preventDefault();
+                    go(SETTINGS_URL);
+                  }
+                }}
+              >
+                <IconSettings size={16} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         </Group>
+        <FeeSchedulesModal opened={feeSchedulesOpen} onClose={() => setFeeSchedulesOpen(false)} />
         <div className={classes.sidebarNav}>
           {section === 'Claims' && (
             <ClaimQueueNav

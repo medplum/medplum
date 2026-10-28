@@ -5,12 +5,14 @@ import { SearchControl } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { ChargeItemDefinitionModal } from './ChargeItemDefinitionModal';
+import { NOT_FEE_SCHEDULE_FILTER } from './feeSchedules';
 
 /** The `resourceId` that opens the modal for a new charge item. */
 const NEW_CHARGE_ITEM_ID = 'new';
 
 const DEFAULT_SEARCH: SearchRequest = {
   resourceType: 'ChargeItemDefinition',
+  filters: [NOT_FEE_SCHEDULE_FILTER],
   fields: ['title', 'code', '_lastUpdated', 'status'],
   sortRules: [{ code: 'title' }],
   count: 20,
