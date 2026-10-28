@@ -661,6 +661,16 @@ describe('AppointmentProposalForm', () => {
       expect(dayCell('19').className).toContain('selected');
     });
 
+    test('Nests the day headings under the column heading', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      expect(screen.getByRole('heading', { level: 5, name: 'Select a time' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 6, name: /Monday, August 17/ })).toBeInTheDocument();
+    });
+
     test('Puts the added days away when the named resources change', async () => {
       setup(medplum);
       await chooseImagingService();

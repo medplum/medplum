@@ -32,14 +32,24 @@
   flex: 1 1 380px;
   min-width: 0;
   max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The times scroll under the column's header. Spaced from it by padding rather than a
+   gap, so they scroll out of sight at the divider rather than a gap's width below it. */
+.resultsList {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  padding-top: var(--mantine-spacing-sm);
 }
 
 /* Both columns are stacks, so everything in them is a flex item, and a clamped column
    squeezes its items to fit before it agrees to scroll — enough to press a button flat.
    They keep their own heights and the column scrolls instead. */
 .form > *,
-.results > * {
+.resultsList > * {
   flex-shrink: 0;
 }
 

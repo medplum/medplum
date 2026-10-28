@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, Loader, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Divider,
+  Group,
+  Loader,
+  NumberInput,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
@@ -762,77 +774,85 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       </Stack>
 
       {searching && (
-        <Stack ref={resultsRef} className={classes.results} gap="lg">
-          <Stack gap={4}>
-            <CalendarDateInput
-              availableDates={NO_MARKED_DATES}
-              allowUnavailableDates
-              earliestDate={new Date()}
-              month={month}
-              range={daySearch.selectedDayRange}
-              onChangeMonth={setMonth}
-              onClick={daySearch.chooseDayRange}
-              onSelectRange={daySearch.chooseDayRange}
-              monthLabel={
-                <MonthPickerButton
-                  label={formatMonth(month ?? new Date())}
-                  date={month ?? new Date()}
-                  minDate={new Date()}
-                  onChange={setMonth}
-                />
-              }
-            />
-            {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
-          </Stack>
-          {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
-            <ManualTime
-              dateTime={effectiveDateTime}
-              durationMinutes={effectiveDurationMinutes}
-              timezone={timezone}
-              conflicts={conflicts}
-              onChange={enterManualTime}
-            />
-          )}
-          {daySearch.loadingFirstDays && <Loader size="sm" />}
-          {daySearch.findRequestError && <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>}
-          {!daySearch.loadingFirstDays &&
-            daySearch.hasTimes &&
-            daySearch.timeResultsByDay.map((day) => (
-              <AppointmentDayTimes
-                key={day.key}
-                date={day.date}
-                groups={day.groups}
-                timezone={timezone}
-                selected={chosen}
-                onSelectAppointment={chooseTime}
+        <div className={classes.results}>
+          <Title order={5} size="h4">
+            Select a time
+          </Title>
+          <Divider mt="sm" />
+          <Stack ref={resultsRef} className={classes.resultsList} gap="lg">
+            <Stack gap={4}>
+              <CalendarDateInput
+                availableDates={NO_MARKED_DATES}
+                allowUnavailableDates
+                earliestDate={new Date()}
+                month={month}
+                range={daySearch.selectedDayRange}
+                onChangeMonth={setMonth}
+                onClick={daySearch.chooseDayRange}
+                onSelectRange={daySearch.chooseDayRange}
+                monthLabel={
+                  <MonthPickerButton
+                    label={formatMonth(month ?? new Date())}
+                    date={month ?? new Date()}
+                    minDate={new Date()}
+                    onChange={setMonth}
+                  />
+                }
               />
-            ))}
-          {settled && (
-            <>
-              {!daySearch.hasTimes && (
-                <Text c="dimmed" ta="center">
-                  {daySearch.hasMoreCombinations
-                    ? 'No times yet for the options searched so far.'
-                    : 'No times are available for this selection.'}
-                </Text>
-              )}
-              {daySearch.hasMoreCombinations && (
-                <Stack gap={4}>
-                  <Text size="xs" c="dimmed" ta="center">
-                    {getSearchedOptionsHint(daySearch.searchedCombinationCount, daySearch.totalCombinationCount)}
+              {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
+            </Stack>
+            {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
+              <ManualTime
+                dateTime={effectiveDateTime}
+                durationMinutes={effectiveDurationMinutes}
+                timezone={timezone}
+                conflicts={conflicts}
+                onChange={enterManualTime}
+              />
+            )}
+            {daySearch.loadingFirstDays && <Loader size="sm" />}
+            {daySearch.findRequestError && (
+              <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>
+            )}
+            {!daySearch.loadingFirstDays &&
+              daySearch.hasTimes &&
+              daySearch.timeResultsByDay.map((day) => (
+                <AppointmentDayTimes
+                  key={day.key}
+                  date={day.date}
+                  groups={day.groups}
+                  timezone={timezone}
+                  selected={chosen}
+                  onSelectAppointment={chooseTime}
+                />
+              ))}
+            {settled && (
+              <>
+                {!daySearch.hasTimes && (
+                  <Text c="dimmed" ta="center">
+                    {daySearch.hasMoreCombinations
+                      ? 'No times yet for the options searched so far.'
+                      : 'No times are available for this selection.'}
                   </Text>
-                  <Button variant="subtle" onClick={daySearch.searchMoreCombinations}>
-                    Search more options
-                  </Button>
-                </Stack>
-              )}
-              {/* No signal for how far ahead there's anything to find, so this has no end state. */}
-              <Button variant="subtle" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
-                Show more days
-              </Button>
-            </>
-          )}
-        </Stack>
+                )}
+                {daySearch.hasMoreCombinations && (
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed" ta="center">
+                      {getSearchedOptionsHint(daySearch.searchedCombinationCount, daySearch.totalCombinationCount)}
+                    </Text>
+                    <Button variant="subtle" onClick={daySearch.searchMoreCombinations}>
+                      Search more options
+                    </Button>
+                  </Stack>
+                )}
+                {/* No signal for how far ahead there's anything to find, so this has no end state. */}
+                <Button variant="subtle" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
+                  Show more days
+                </Button>
+              </>
+            )}
+          </Stack>
+        </div>
       )}
     </div>
   );
