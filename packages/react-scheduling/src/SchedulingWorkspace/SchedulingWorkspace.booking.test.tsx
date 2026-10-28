@@ -183,7 +183,7 @@ async function clickCalendar(target: ClickTarget = 'tuesday morning'): Promise<v
 }
 
 function bookingPaneHeading(): HTMLElement | null {
-  return screen.queryByRole('heading', { name: /book appointment/i });
+  return screen.queryByRole('tab', { name: 'Book Appointment' });
 }
 
 /**
@@ -480,7 +480,7 @@ describe('SchedulingWorkspace booking', () => {
       expect(proposedTime()).toBe('none');
     });
 
-    test('Hides the proposal on the Block tab, and draws it again on coming back', async () => {
+    test('Hides the proposal on the Block Time tab, and draws it again on coming back', async () => {
       setup();
       await clickCalendar('tuesday morning');
       await chooseImagingService();
@@ -490,11 +490,11 @@ describe('SchedulingWorkspace booking', () => {
       const proposed = proposedTime();
       expect(screen.getByTestId('proposed-time')).toHaveAttribute('data-label', 'Draft New Appointment');
 
-      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
       expect(proposedTime()).toBe('none');
 
-      // The form stays mounted behind the Block tab, so its time is still there to draw.
-      fireEvent.click(screen.getByRole('tab', { name: 'Appointment' }));
+      // The form stays mounted behind the Block Time tab, so its time is still there to draw.
+      fireEvent.click(screen.getByRole('tab', { name: 'Book Appointment' }));
       expect(proposedTime()).toBe(proposed);
     });
 
