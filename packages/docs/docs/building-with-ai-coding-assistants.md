@@ -50,10 +50,10 @@ decision guides. Ask about consequential missing requirements; do not invent ans
 Save and summarize the decisions in my app's repo before implementation.
 ```
 
-The agent should read the rules and begin asking about your application. After saving
-the plan, it can propose a small addition to your `AGENTS.md`, `CLAUDE.md`, or equivalent
-project instructions for future sessions. It should show you the proposed changes and
-ask permission before applying them. You can decline and still use the planning workflow.
+The agent should read the rules and, once it knows your application's folder, check whether
+your project instructions already load them. If needed, it should offer to connect the rules
+to your `AGENTS.md`, `CLAUDE.md`, or equivalent before planning or implementation, showing
+the exact proposed change and asking permission. You can decline and continue the work.
 See the [setup details](#5-encode-your-conventions-in-a-rule-file) for an example.
 
 Without a clone, use the [planning instructions](pathname:///ai/planning.md) through an agent
@@ -103,6 +103,12 @@ Agnostic to your LLM and editor:
 
 You can read these files without installing or running the Medplum monorepo.
 Confirm that your agent can read them before starting.
+
+If you open the Medplum clone directly, its root `AGENTS.md` directs supported agents to
+this guide and the rules, and asks them to offer setup in your application's folder.
+When working in a separate application folder, use the [starting prompt](#plan-your-application)
+or [configure its project instructions](#5-encode-your-conventions-in-a-rule-file);
+access to a reference clone alone does not ensure its instructions are loaded.
 
 ### Option 2: Search Docs and GitHub
 
@@ -275,11 +281,22 @@ server (synthetic data, no BAA required) or a token against a live server; see
 
 ## 5. Encode Your Conventions in a Rule File
 
-The [starting prompt](#plan-your-application) lets the agent propose connecting the Medplum
-rules and saved decisions to the project instructions your coding tool loads. It asks for
-your permission before creating or editing those files. For manual setup, merge a short
-section like this into your application's `AGENTS.md`, `CLAUDE.md`, or equivalent rule file,
-adjusting the clone path:
+On first use, the agent should read the Medplum rules for the current task. Once your
+application's folder is known, it should check whether the project instructions your coding
+tool loads already include or reference those rules. If so, verify that the rules can be read
+instead of adding another copy. Otherwise, offer to connect them before planning or
+implementation. This setup also applies when you are starting development without a planning session.
+
+The agent must show the proposed filename and exact addition, then ask permission before
+creating or changing project instructions. Approval already given for the same change is
+sufficient. Preserve existing instructions, verify the agreed changes, and report what was
+configured. If you decline, cannot respond, or the files cannot be edited, continue the
+requested work without changing those instructions or claiming setup is complete. Do not
+repeat a declined offer in the same session.
+
+With a local clone, the default is a short reference to its rules file. For manual setup,
+merge a section like this into your application's `AGENTS.md`, `CLAUDE.md`, or equivalent
+rule file, adjusting the clone path:
 
 ```markdown
 ## Medplum
@@ -290,9 +307,14 @@ If the clone is unavailable, use https://www.medplum.com/ai/medplum-rules.md.
 ```
 
 This explicitly tells the agent to open the file; a standalone `medplum-rules.md` is not
-automatically discovered. Keep your existing project instructions. As plans and decisions
-are saved, add their actual paths here and tell the agent to read the relevant ones before
-implementation.
+automatically discovered. If you prefer a self-contained application repo, copy the rules
+there and reference that copy instead. Record its source and revision or retrieval date so
+you can refresh it when updating Medplum.
+
+After plans and decisions are saved, the agent can propose adding their actual paths to
+your project instructions, using the same review and permission process. If you declined
+setup in this session, it should include those paths in its handoff without repeating the
+offer. Reference only files that exist; keep the full plan and guides in their source files.
 
 Check your tool's instruction-loading behavior: see [Codex's AGENTS.md guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
 or [Claude Code's project instructions](https://code.claude.com/docs/en/memory). After setup,

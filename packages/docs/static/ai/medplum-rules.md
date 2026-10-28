@@ -10,11 +10,14 @@ FHIR. Don't re-read docs you've already read this session, EXCEPT: if the conver
 compacted/summarized (or you can no longer see the doc's actual text), re-read the relevant doc
 before writing code – the rules below are reminders, not a substitute for the doc.
 
-## Planning and saved decisions
+## Project setup and planning
 
-For planning and implementation, follow `medplum-link/packages/docs/static/ai/planning.md`
+On first use, check the application's agent instructions and offer the optional rules setup in section 5 of
+`medplum-link/packages/docs/docs/building-with-ai-coding-assistants.md`
+(or https://www.medplum.com/docs/building-with-ai-coding-assistants#5-encode-your-conventions-in-a-rule-file).
+For application design or substantial feature planning, follow `medplum-link/packages/docs/static/ai/planning.md`
 (or https://www.medplum.com/ai/planning.md with web access).
-Before coding, read the application's saved plan and relevant decision records alongside the technical docs.
+Before coding, read any existing application plan and relevant decision records alongside the technical docs.
 Keep these records current when requirements change; use the project's existing planning conventions.
 
 ## Core

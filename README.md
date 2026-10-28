@@ -12,6 +12,9 @@ Medplum is a developer platform that enables flexible and rapid development of h
 - **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
 - **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
 
+To build an application with an AI agent, start with the [AI coding guide](https://www.medplum.com/docs/building-with-ai-coding-assistants)
+to connect Medplum's rules to your agent and plan with the decision guides.
+
 ## Docs
 
 - [Contributing](#contributing)
