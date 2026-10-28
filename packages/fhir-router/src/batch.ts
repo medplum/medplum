@@ -494,7 +494,7 @@ export class BatchProcessor {
         // Conditional delete requires strong (serializable) transaction
         requiresStrongTransaction = true;
       }
-      readOnly &&= readOnlyInteractions.has(interaction)
+      readOnly &&= readOnlyInteractions.has(interaction);
       bucketedEntries[interaction].push(i);
     }
 
