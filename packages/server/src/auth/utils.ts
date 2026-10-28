@@ -35,7 +35,7 @@ import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
-import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
+import { getClientApplication, getMembershipsForLogin, isLoginReasonRequired } from '../oauth/utils';
 
 export type MfaMethod = 'totp' | 'email';
 
@@ -396,6 +396,11 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   }
 
   if (login.membership) {
+    if (!login.reason && isLoginReasonRequired(project)) {
+      res.json({ login: login.id, reasonRequired: true });
+      return;
+    }
+
     // User only has one profile, so proceed
     sendLoginCookie(res, login);
     res.json({
