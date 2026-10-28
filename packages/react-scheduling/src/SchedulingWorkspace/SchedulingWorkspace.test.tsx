@@ -149,7 +149,9 @@ describe('SchedulingWorkspace', () => {
     const providerRow = calendarRow('Dr. Maya Rivera');
     await userEvent.click(providerRow);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Hide calendars' }));
+    const toggle = screen.getByRole('button', { name: 'Hide calendars' });
+    expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).toContainElement(providerRow);
+    await userEvent.click(toggle);
     expect(providerRow).not.toBeVisible();
 
     await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));

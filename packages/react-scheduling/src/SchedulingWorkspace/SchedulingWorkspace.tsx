@@ -19,10 +19,10 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
-import { IconPlus } from '@tabler/icons-react';
+import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -220,6 +220,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What the calendar highlights while blocking: the block form's time, which a click resets.
   const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
+  const [calendarsOpen, setCalendarsOpen] = useState(true);
+  const sidebarId = useId();
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per bookable actor type.
@@ -564,6 +566,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   ) as Record<BookableActorType, CalendarsPanelItem[]>;
 
   const displayError = resourcesError ?? schedulesLoadingError;
+  const calendarsLabel = calendarsOpen ? 'Hide calendars' : 'Show calendars';
 
   // The pane beside the calendar shows one thing at a time. Opening any of them already
   // closes the others, so this only decides which wins if they ever hold something together.
@@ -573,7 +576,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
-      <Box className={classes.sidebar}>
+      {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
+      <Box id={sidebarId} className={classes.sidebar} display={calendarsOpen ? undefined : 'none'}>
         <CalendarsPanel
           items={panelItems}
           candidatesLoading={candidatesLoading}
@@ -592,6 +596,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
+          toolbarStart={
+            <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
+              <ActionIcon
+                variant="default"
+                size="input-sm"
+                radius="xl"
+                aria-label={calendarsLabel}
+                aria-expanded={calendarsOpen}
+                aria-controls={sidebarId}
+                onClick={() => setCalendarsOpen((open) => !open)}
+              >
+                <IconFilter2Search size={16} />
+              </ActionIcon>
+            </Tooltip>
+          }
           toolbarEnd={
             <Tooltip label="New appointment" position="bottom" openDelay={500}>
               <ActionIcon size="input-sm" radius="xl" aria-label="New appointment" onClick={startBookingNow}>
