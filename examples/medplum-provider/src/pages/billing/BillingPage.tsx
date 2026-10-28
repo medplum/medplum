@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Anchor, Group, Tabs, Tooltip } from '@mantine/core';
+import { useElementSize } from '@mantine/hooks';
 import { isAuxClick } from '@medplum/react';
 import { IconReportMoney, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -58,6 +59,7 @@ export function BillingPage(): JSX.Element {
   const [version, setVersion] = useState(0);
   const agingTotals = useClaimsAging(version);
   const [feeSchedulesOpen, setFeeSchedulesOpen] = useState(false);
+  const { ref: contentRef, width: contentWidth } = useElementSize<HTMLElement>();
 
   const go = (url: string): void => {
     navigate(url)?.catch(console.error);
@@ -155,13 +157,14 @@ export function BillingPage(): JSX.Element {
           )}
         </div>
       </aside>
-      <main className={classes.content}>
+      <main className={classes.content} ref={contentRef}>
         {section === 'Claims' && (
           <ClaimsWorklist
             queueId={queueId}
             claimId={resourceId}
             query={query}
             agingTotals={agingTotals}
+            areaWidth={contentWidth}
             onNavigate={(next) => go(`${CLAIMS_URL}/${next}`)}
             onChanged={() => setVersion((v) => v + 1)}
           />
@@ -172,6 +175,7 @@ export function BillingPage(): JSX.Element {
               viewId={remitViewId}
               remitId={resourceId}
               query={query}
+              areaWidth={contentWidth}
               onNavigate={(next) => go(`${REMITS_URL}/${next}`)}
               onOpenClaim={(claimId) => go(`${CLAIMS_URL}/all/${claimId}`)}
             />

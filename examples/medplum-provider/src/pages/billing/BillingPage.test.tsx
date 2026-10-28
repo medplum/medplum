@@ -364,23 +364,25 @@ describe('BillingPage', () => {
       expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDisabled();
     });
 
-    test('opens a remittance and follows a line to its claim', async () => {
+    test('opens a remittance in a drawer and follows a line to its claim', async () => {
       const user = userEvent.setup();
       const { router } = setup(`/Billing/Remits/all/${remit.id}`);
 
-      expect(await screen.findByText('Aetna', { selector: 'p' })).toBeInTheDocument();
-      expect(screen.getByText('Unmatched', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Homer Simpson' }));
+      const drawer = await screen.findByRole('dialog', { name: 'Remittance' });
+      expect(await within(drawer).findByText('Aetna', { selector: 'p' })).toBeInTheDocument();
+      expect(within(drawer).getByText('Unmatched', { selector: '.mantine-Badge-label' })).toBeInTheDocument();
+      expect(screen.getAllByRole('table')).toHaveLength(2);
+      await user.click(within(drawer).getByRole('button', { name: 'Homer Simpson' }));
       expect(router.state.location.pathname).toBe(`/Billing/Claims/all/${claim.id}`);
     });
 
-    test('goes back to the remittance view it was opened from', async () => {
+    test('closes the remittance drawer back to the view it was opened from', async () => {
       const user = userEvent.setup();
       const { router } = setup(`/Billing/Remits/partial/${remit.id}`);
 
-      expect(await screen.findByText('Aetna', { selector: 'p' })).toBeInTheDocument();
-      expect(screen.queryByText('All Remittances', { selector: 'button *' })).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Back to partially posted' }));
+      const drawer = await screen.findByRole('dialog', { name: 'Remittance' });
+      expect(await within(drawer).findByText('Aetna', { selector: 'p' })).toBeInTheDocument();
+      await user.click(within(drawer).getByRole('button', { name: 'Close' }));
       expect(router.state.location.pathname).toBe('/Billing/Remits/partial');
     });
   });

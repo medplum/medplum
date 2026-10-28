@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Button, Center, Divider, Drawer, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { useElementSize } from '@mantine/hooks';
+import { Badge, Button, Center, Divider, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchRequest } from '@medplum/core';
 import type { Claim, ClaimResponse, Resource } from '@medplum/fhirtypes';
@@ -21,6 +20,7 @@ import { ClaimsAgingSummary } from './ClaimsAgingSummary';
 import { getClaimStatus } from './claimStatus';
 import classes from './ClaimsWorklist.module.css';
 import type { AgingTotal } from './useClaimsAging';
+import { WorklistDrawer } from './WorklistDrawer';
 
 const CLAIM_FIELDS = ['patient', 'created', 'total'];
 
@@ -30,6 +30,8 @@ export interface ClaimsWorklistProps {
   /** The URL query, holding the table's own search: columns, filters and sort. */
   readonly query: string;
   readonly agingTotals: AgingTotal[] | undefined;
+  /** The width of the area the worklist fills, which sizes the claim drawer. */
+  readonly areaWidth: number;
   /** Navigates to a path below the claims root, e.g. `ready` or `all/:claimId?_sort=created`. */
   readonly onNavigate: (path: string) => void;
   /** Called after claims change, so counts and totals can reload. */
@@ -43,7 +45,7 @@ export interface ClaimsWorklistProps {
  * @returns The ClaimsWorklist React node.
  */
 export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
-  const { queueId, claimId, query, agingTotals, onNavigate, onChanged } = props;
+  const { queueId, claimId, query, agingTotals, areaWidth, onNavigate, onChanged } = props;
   const medplum = useMedplum();
   const queue = getClaimQueue(queueId);
   const [version, setVersion] = useState(0);
@@ -51,9 +53,6 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
   const [actionIds, setActionIds] = useState<string[]>();
   const [submitAll, setSubmitAll] = useState(false);
   const [followUpIds, setFollowUpIds] = useState<string[]>();
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const { ref: mainRef, width: mainWidth } = useElementSize<HTMLDivElement>();
-  const drawerWidth = mainWidth ? Math.max(mainWidth - 300, 400) : undefined;
   const responsesRequest = useRef(0);
 
   const queueFilters = useMemo(() => queue.filters?.(new Date()) ?? [], [queue]);
@@ -73,23 +72,6 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
     `${nextQueueId}${nextClaimId ? `/${nextClaimId}` : ''}${nextQuery}`;
 
   const closeClaim = useCallback(() => onNavigate(`${queue.id}${query}`), [onNavigate, queue.id, query]);
-
-  useEffect(() => {
-    if (!claimId) {
-      return undefined;
-    }
-    const onPointerDown = (e: PointerEvent): void => {
-      const target = e.target as Element;
-      if (
-        !drawerRef.current?.contains(target) &&
-        !target.closest?.('[data-portal], [data-testid="search-control-row"]')
-      ) {
-        closeClaim();
-      }
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [claimId, closeClaim]);
 
   const changeSearch = (next: SearchRequest): void => {
     const own = (next.filters ?? []).filter((f) => !queueFilters.some((q) => sameFilter(q, f)));
@@ -151,7 +133,7 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
 
   return (
     <div className={classes.root}>
-      <div className={classes.main} ref={mainRef}>
+      <div className={classes.main}>
         {showAging && (
           <>
             <ClaimsAgingSummary
@@ -188,20 +170,9 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
             <ComingSoonQueue queue={queue} />
           )}
         </div>
-        <Drawer.Root
-          opened={!!claimId}
-          onClose={closeClaim}
-          position="right"
-          styles={drawerWidth ? { content: { '--drawer-flex': `0 0 ${drawerWidth}px` } } : undefined}
-          trapFocus={false}
-          lockScroll={false}
-        >
-          <Drawer.Content aria-label="Claim" ref={drawerRef}>
-            <Drawer.Body className={classes.claimDrawerBody}>
-              {claimId && <ClaimDetailPane key={claimId} claimId={claimId} onClose={closeClaim} onChanged={changed} />}
-            </Drawer.Body>
-          </Drawer.Content>
-        </Drawer.Root>
+        <WorklistDrawer opened={!!claimId} label="Claim" areaWidth={areaWidth} onClose={closeClaim}>
+          {claimId && <ClaimDetailPane key={claimId} claimId={claimId} onClose={closeClaim} onChanged={changed} />}
+        </WorklistDrawer>
       </div>
       {actionIds && (
         <ClaimActionsModal

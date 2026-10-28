@@ -6,6 +6,7 @@ import {
   Anchor,
   Badge,
   Button,
+  Divider,
   Group,
   Paper,
   SimpleGrid,
@@ -18,15 +19,15 @@ import type { SearchRequest, WithId } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatDate, formatMoney, formatSearchQuery, parseSearchRequest } from '@medplum/core';
 import type { PaymentReconciliation, PaymentReconciliationDetail } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
-import { IconAlertTriangle, IconArrowBarLeft, IconInfoCircle } from '@tabler/icons-react';
+import { IconAlertTriangle, IconInfoCircle, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { BillingNavDivider, BillingNavGroup, BillingNavLink } from './BillingNavLink';
 import { sameFilter } from './claimQueues';
-import classes from './RemitsWorklist.module.css';
 import type { RemitView } from './remitViews';
 import { getRemitStatus, getRemitView, isUnmatched, REMIT_FIELDS, REMIT_VIEWS } from './remitViews';
+import { WorklistDrawer } from './WorklistDrawer';
 
 export interface RemitNavProps {
   readonly baseUrl: string;
@@ -94,9 +95,11 @@ export function RemitNav(props: RemitNavProps): JSX.Element {
 
 export interface RemitsWorklistProps {
   readonly viewId: string;
-  /** Set to show one remittance's detail instead of a list. */
+  /** Set to show one remittance's detail in a drawer over the list. */
   readonly remitId?: string;
   readonly query: string;
+  /** The width of the area the worklist fills, which sizes the remittance drawer. */
+  readonly areaWidth: number;
   /** Navigates to a path below the remits root. */
   readonly onNavigate: (path: string) => void;
   /** Opens a claim in the claims worklist. */
@@ -110,7 +113,7 @@ export interface RemitsWorklistProps {
  * @returns The RemitsWorklist React node.
  */
 export function RemitsWorklist(props: RemitsWorklistProps): JSX.Element {
-  const { viewId, remitId, query, onNavigate, onOpenClaim } = props;
+  const { viewId, remitId, query, areaWidth, onNavigate, onOpenClaim } = props;
   const view = getRemitView(viewId);
 
   const search = useMemo((): SearchRequest => {
@@ -124,32 +127,40 @@ export function RemitsWorklist(props: RemitsWorklistProps): JSX.Element {
     };
   }, [query, view]);
 
-  const openRemit = (id: string | undefined): void => onNavigate(`${view.id}/${id}`);
+  const openRemit = (id: string | undefined): void => onNavigate(`${view.id}/${id}${query}`);
+  const closeRemit = useCallback(() => onNavigate(`${view.id}${query}`), [onNavigate, view.id, query]);
 
-  if (remitId) {
-    return (
-      <RemitDetail
-        key={remitId}
-        remitId={remitId}
-        backLabel={`Back to ${view.label.toLowerCase()}`}
-        onBack={() => onNavigate(view.id)}
-        onOpenClaim={onOpenClaim}
-      />
-    );
-  }
+  return (
+    <>
+      {view.id === 'partial' || view.id === 'error' ? (
+        <RemitExceptions view={view} onOpenRemit={openRemit} />
+      ) : (
+        <RemitTable view={view} search={search} remitId={remitId} onNavigate={onNavigate} onOpenRemit={openRemit} />
+      )}
+      <WorklistDrawer opened={!!remitId} label="Remittance" areaWidth={areaWidth} onClose={closeRemit}>
+        {remitId && <RemitDetail key={remitId} remitId={remitId} onClose={closeRemit} onOpenClaim={onOpenClaim} />}
+      </WorklistDrawer>
+    </>
+  );
+}
 
-  if (view.id === 'partial' || view.id === 'error') {
-    return <RemitExceptions view={view} onOpenRemit={openRemit} />;
-  }
-
+function RemitTable(props: {
+  readonly view: RemitView;
+  readonly search: SearchRequest;
+  readonly remitId?: string;
+  readonly onNavigate: (path: string) => void;
+  readonly onOpenRemit: (id: string | undefined) => void;
+}): JSX.Element {
+  const { view, search, remitId, onNavigate, onOpenRemit } = props;
   return (
     <SearchControl
       search={search}
+      activeResourceId={remitId}
       onChange={(e) => {
         const own = (e.definition.filters ?? []).filter((f) => !view.filters.some((v) => sameFilter(v, f)));
         onNavigate(`${view.id}${formatSearchQuery({ ...e.definition, filters: own })}`);
       }}
-      onClick={(e) => openRemit(e.resource.id)}
+      onClick={(e) => onOpenRemit(e.resource.id)}
       additionalColumns={[
         {
           name: 'Status',
@@ -241,7 +252,7 @@ function RemitSummaryRow(props: { readonly remit: PaymentReconciliation; readonl
   const status = getRemitStatus(remit);
   return (
     <Group justify="space-between" wrap="nowrap">
-      <Anchor component="button" type="button" onClick={onOpen} c="inherit" underline="never">
+      <Anchor component="button" type="button" onClick={onOpen} c="inherit" underline="never" data-worklist-row>
         <Group gap="md" wrap="nowrap">
           <Text size="sm">{formatDate(remit.paymentDate)}</Text>
           <Text size="sm" fw={600}>
@@ -294,18 +305,16 @@ function describeUnmatched(detail: PaymentReconciliationDetail): string {
  * One remittance: its payment, posting status, and each line with the claim it paid.
  * @param props - The remittance ID and navigation callbacks.
  * @param props.remitId - The PaymentReconciliation ID.
- * @param props.backLabel - The accessible name of the back button, naming the list it returns to.
- * @param props.onBack - Returns to the list the remittance was opened from.
+ * @param props.onClose - Closes the drawer, back to the list.
  * @param props.onOpenClaim - Opens a claim.
  * @returns The detail.
  */
 function RemitDetail(props: {
   readonly remitId: string;
-  readonly backLabel: string;
-  readonly onBack: () => void;
+  readonly onClose: () => void;
   readonly onOpenClaim: (claimId: string) => void;
 }): JSX.Element {
-  const { remitId, backLabel, onBack, onOpenClaim } = props;
+  const { remitId, onClose, onOpenClaim } = props;
   const medplum = useMedplum();
   const [remit, setRemit] = useState<WithId<PaymentReconciliation>>();
 
@@ -328,35 +337,26 @@ function RemitDetail(props: {
   const unmatched = details.filter(isUnmatched);
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between">
+    <Stack gap="md" p="lg">
+      <Group justify="space-between" wrap="nowrap" gap="sm" align="flex-start">
+        <Stack gap={0} miw={0}>
+          <Text size="xl" fw={800} truncate>
+            {remit.paymentIssuer?.display ?? 'Unknown payer'}
+          </Text>
+          <Text size="sm" c="gray.7" truncate>
+            {[remit.paymentIdentifier?.value, formatDate(remit.paymentDate)].filter(Boolean).join(' • ')}
+          </Text>
+        </Stack>
         <Group gap="xs" wrap="nowrap">
-          <Tooltip label={backLabel} openDelay={500}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              radius="xl"
-              size="lg"
-              onClick={onBack}
-              aria-label={backLabel}
-              className={classes.backButton}
-            >
-              <IconArrowBarLeft size={20} />
-            </ActionIcon>
-          </Tooltip>
-          <div>
-            <Text fw={800} size="lg">
-              {remit.paymentIssuer?.display ?? 'Unknown payer'}
-            </Text>
-            <Text size="xs" c="dimmed" ff="monospace">
-              {remit.paymentIdentifier?.value}
-            </Text>
-          </div>
+          <Badge color={status.color} variant="light">
+            {status.label}
+          </Badge>
+          <ActionIcon variant="subtle" color="gray" radius="xl" aria-label="Close" onClick={onClose}>
+            <IconX size={16} stroke={2} />
+          </ActionIcon>
         </Group>
-        <Badge color={status.color} variant="light">
-          {status.label}
-        </Badge>
       </Group>
+      <Divider />
       {status.label === 'Posting…' && (
         <Alert color="blue" icon={<IconInfoCircle />} title="Posting">
           Matching to claims usually takes a few seconds. If it hasn't finished within an hour, it becomes a posting
