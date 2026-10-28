@@ -27,10 +27,12 @@
   padding-bottom: var(--mantine-spacing-sm);
 }
 
-/* Only present while the time search is open, which is what widens the panel. */
+/* Only present while the time search is open, which is what widens the panel. No wider
+   than CalendarDateInput's max-width, so the calendar at its top fills it. */
 .results {
-  flex: 1 1 380px;
+  flex: 1 1 350px;
   min-width: 0;
+  max-width: 350px;
   max-height: 100%;
   display: flex;
   flex-direction: column;
