@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Anchor, Box, Tabs, Text, useMantineTheme } from '@mantine/core';
+import { ActionIcon, Alert, Anchor, Box, Tabs, Text, Tooltip, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -19,6 +19,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
+import { IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -378,6 +379,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setBlockHighlight(interval);
   }, []);
 
+  const startBookingNow = useCallback((): void => {
+    const start = new Date();
+    start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
+    setPaneTab('appointment');
+    startBooking({ start, end: new Date(start.getTime() + 30 * 60 * 1000) });
+    calendarRef.current?.gotoDate(start);
+  }, [startBooking]);
+
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setProposal(undefined);
@@ -583,6 +592,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
+          toolbarEnd={
+            <Tooltip label="New appointment" position="bottom" openDelay={500}>
+              <ActionIcon size="input-sm" radius="xl" aria-label="New appointment" onClick={startBookingNow}>
+                <IconPlus size={16} />
+              </ActionIcon>
+            </Tooltip>
+          }
           loading={resourcesLoading || servicesPending}
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
