@@ -288,6 +288,16 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
     });
   }
 
+  if (resourceType === 'Task') {
+    tableDefinition.indexes.push({
+      indexNameSuffix: 'not_completed_idx',
+      indexType: 'gin',
+      columns: ['projectId', 'status', '___tag', '__code'],
+      where: "(deleted = false) AND (status <> 'completed'::text)",
+      fastupdate: false,
+    });
+  }
+
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
   result.tables.push(
