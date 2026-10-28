@@ -1503,6 +1503,11 @@ function buildIndexSql(
     result += ')';
   }
 
+  if (index.fastupdate !== undefined) {
+    assert(index.indexType === 'gin', `fastupdate is only supported for GIN indexes: ${indexName}`);
+    result += ` WITH (fastupdate = ${index.fastupdate ? 'on' : 'off'})`;
+  }
+
   if (index.where) {
     result += ' WHERE (';
     result += index.where;
@@ -1513,6 +1518,11 @@ function buildIndexSql(
 }
 
 export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
+  // An unspecified fastupdate means "no opinion", so it only differs when both sides set it
+  if (a.fastupdate !== undefined && b.fastupdate !== undefined && a.fastupdate !== b.fastupdate) {
+    return false;
+  }
+
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
       ...d,
@@ -1525,6 +1535,7 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
       indexNameOverride: undefined,
       indexNameSuffix: undefined,
       indexdef: undefined,
+      fastupdate: undefined,
     };
   });
 
