@@ -8,7 +8,6 @@ import { useMedplum } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { Document } from '../Document/Document';
 import type { LabItem, LabTab } from './LabOrdersPanel';
 import { LabOrdersPanel } from './LabOrdersPanel';
 
@@ -26,20 +25,18 @@ const TAB_SEARCH: Record<LabTab, string> = {
 function LabOrdersPanelStory(props: { activeTab: LabTab; selectedId: string | undefined }): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>(() => parseSearchRequest(TAB_SEARCH[props.activeTab]));
   return (
-    <Document>
-      <div style={{ height: 800 }}>
-        <LabOrdersPanel
-          patient={createReference(HomerSimpson)}
-          search={search}
-          getItemUri={(item: LabItem) => `/${item.resourceType}/${item.id}`}
-          onChange={setSearch}
-          completedUri={`/${TAB_SEARCH.completed}`}
-          openUri={`/${TAB_SEARCH.open}`}
-          revokedUri={`/${TAB_SEARCH.revoked}`}
-          {...props}
-        />
-      </div>
-    </Document>
+    <div style={{ height: '100vh', padding: '1em', boxSizing: 'border-box' }}>
+      <LabOrdersPanel
+        patient={createReference(HomerSimpson)}
+        search={search}
+        getItemUri={(item: LabItem) => `/${item.resourceType}/${item.id}`}
+        onChange={setSearch}
+        completedUri={`/${TAB_SEARCH.completed}`}
+        openUri={`/${TAB_SEARCH.open}`}
+        revokedUri={`/${TAB_SEARCH.revoked}`}
+        {...props}
+      />
+    </div>
   );
 }
 
