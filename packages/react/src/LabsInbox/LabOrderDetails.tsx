@@ -27,14 +27,14 @@ import type {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
-import { showErrorNotification } from './notifications';
-import { LabReportContent } from './LabReportContent';
 import classes from './LabOrderDetails.module.css';
+import { LabReportContent } from './LabReportContent';
+import { showErrorNotification } from './notifications';
 
 export interface LabOrderDetailsProps {
   order: ServiceRequest;

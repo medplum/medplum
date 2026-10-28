@@ -9,8 +9,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { showErrorNotification } from './notifications';
 import { LabDetailPane } from './LabDetailPane';
+import { showErrorNotification } from './notifications';
 
 vi.mock('./notifications', () => ({ showErrorNotification: vi.fn() }));
 

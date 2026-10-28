@@ -4,9 +4,9 @@ import { Badge, Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './LabListItem.module.css';
 
 type LabTab = 'open' | 'completed';

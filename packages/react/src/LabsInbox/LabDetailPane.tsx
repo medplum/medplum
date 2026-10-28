@@ -7,9 +7,9 @@ import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirt
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { showErrorNotification } from './notifications';
 import { LabOrderDetails } from './LabOrderDetails';
 import { LabResultDetails } from './LabResultDetails';
+import { showErrorNotification } from './notifications';
 
 interface LabDetailPaneProps {
   item: WithId<ServiceRequest> | WithId<DiagnosticReport>;
