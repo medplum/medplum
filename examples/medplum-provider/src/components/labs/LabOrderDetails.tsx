@@ -30,7 +30,11 @@ import { AttachmentDisplay, useMedplum, useResource } from '@medplum/react';
 import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
+import {
+  fetchLabOrderAbnDocuments,
+  fetchLabOrderRequisitionDocuments,
+  getHealthGorillaRequisitionId,
+} from '../../utils/documentReference';
 import { showErrorNotification } from '../../utils/notifications';
 import { LabReportContent } from './LabReportContent';
 
@@ -68,6 +72,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
+  const [abnDocs, setAbnDocs] = useState<DocumentReference[]>([]);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
@@ -273,6 +278,30 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     return () => {
       setSpecimenLabelDocs([]);
       setLoadingSpecimenDocs(false);
+    };
+  }, [medplum, order]);
+
+  useEffect(() => {
+    const fetchAbnDocuments = async (): Promise<void> => {
+      if (!order.id) {
+        setAbnDocs([]);
+        return;
+      }
+      setAbnDocs([]);
+
+      try {
+        const docs = await fetchLabOrderAbnDocuments(medplum, order);
+        setAbnDocs(docs);
+      } catch (error) {
+        console.error('Error fetching ABN documents:', error);
+        setAbnDocs([]);
+      }
+    };
+
+    fetchAbnDocuments().catch(console.error);
+
+    return () => {
+      setAbnDocs([]);
     };
   }, [medplum, order]);
 
@@ -639,6 +668,18 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                   )}
                 </Stack>
 
+                {abnDocs.length > 0 && (
+                  <>
+                    <Divider />
+                    <Stack gap="lg" mb="xl">
+                      <Text fw={800} size="md" pb="0">
+                        Advance Beneficiary Notice (ABN)
+                      </Text>
+                      <DocumentPdfList documents={abnDocs} />
+                    </Stack>
+                  </>
+                )}
+
                 {/* Order Entry Questions - show when QuestionnaireResponse is linked */}
                 {questionnaireResponse && (
                   <>
@@ -863,6 +904,44 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
         </Stack>
       </Paper>
     </ScrollArea>
+  );
+}
+
+function DocumentPdfList({ documents }: { documents: DocumentReference[] }): JSX.Element {
+  return (
+    <Stack gap="md">
+      {documents.map((doc, index) => (
+        <Stack key={doc.id || index} gap="xs">
+          {doc.content && doc.content.length > 0 && (
+            <Stack gap="xs">
+              {doc.content.map((content, contentIndex) => (
+                <div
+                  key={contentIndex}
+                  style={{
+                    height: '600px',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    border: '1px solid #3C3C3C',
+                  }}
+                >
+                  <style>
+                    {`
+                  div[data-testid="attachment-iframe"] {
+                    height: 600px !important;
+                  }
+                  div[data-testid="attachment-iframe"] iframe {
+                    height: 600px !important;
+                  }
+                `}
+                  </style>
+                  <AttachmentDisplay value={content.attachment} />
+                </div>
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      ))}
+    </Stack>
   );
 }
 
