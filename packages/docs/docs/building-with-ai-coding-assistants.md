@@ -31,9 +31,10 @@ exposure, especially access policies, ProjectMembership scopes, and PHI handling
 Cloning Medplum gives your agent reference material. Use this first prompt to connect
 that material to your project and start a planning conversation:
 
-1. Open your application's folder in your coding agent. If you are starting from scratch,
-   use an empty application folder or the [Hello World starter](/docs/tutorials/medplum-hello-world).
-   Your application's instructions and decisions belong there; the Medplum clone is a reference.
+1. Open your application's folder if you have one. Otherwise, you can start planning
+   directly in the Medplum clone before choosing an application folder. Choose a folder
+   before saving application files; an empty folder or the [Hello World starter](/docs/tutorials/medplum-hello-world)
+   works. Your application's instructions and decisions belong there; the Medplum clone is a reference.
 2. Give the agent access to your Medplum clone. The prompt assumes it is linked as
    `medplum-link`, as described in [section 1](#1-give-your-ai-tools-access-to-medplum).
    Otherwise, replace `medplum-link` with the clone's actual path.
@@ -50,10 +51,11 @@ decision guides. Ask about consequential missing requirements; do not invent ans
 Save and summarize the decisions in my app's repo before implementation.
 ```
 
-The agent should read the rules and, once it knows your application's folder, check whether
-your project instructions already load them. If needed, it should offer to connect the rules
-to your `AGENTS.md`, `CLAUDE.md`, or equivalent before planning or implementation, showing
-the exact proposed change and asking permission. You can decline and continue the work.
+The agent should read and apply the rules immediately. Initial planning does not require an
+application folder or persistent rules setup. Once your application's folder is known, the
+agent should verify existing setup or offer to connect the rules to your `AGENTS.md`,
+`CLAUDE.md`, or equivalent, showing the exact proposed change and asking permission.
+Planning can continue while setup is pending, and you can decline and continue the work.
 See the [setup details](#5-encode-your-conventions-in-a-rule-file) for an example.
 
 Without a clone, use the [planning instructions](pathname:///ai/planning.md) through an agent
@@ -281,11 +283,13 @@ server (synthetic data, no BAA required) or a token against a live server; see
 
 ## 5. Encode Your Conventions in a Rule File
 
-On first use, the agent should read the Medplum rules for the current task. Once your
-application's folder is known, it should check whether the project instructions your coding
-tool loads already include or reference those rules. If so, verify that the rules can be read
-instead of adding another copy. Otherwise, offer to connect them before planning or
-implementation. This setup also applies when you are starting development without a planning session.
+The agent should read and apply the Medplum rules immediately, including during initial
+planning before you have chosen an application folder. Once that folder is known, check
+whether the project instructions your coding tool loads already include or reference those
+rules. If so, verify that the rules can be read instead of adding another copy. Otherwise,
+offer to connect them for future sessions. Initial planning can continue while the folder
+is undecided or setup is pending. This setup also applies when you are starting development
+without a planning session.
 
 The agent must show the proposed filename and exact addition, then ask permission before
 creating or changing project instructions. Approval already given for the same change is

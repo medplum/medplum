@@ -10,6 +10,9 @@ Read these files before proposing an approach or beginning setup or implementati
 - `packages/docs/docs/building-with-ai-coding-assistants.md`
 - `packages/docs/static/ai/medplum-rules.md`
 
+Apply the rules to the current conversation immediately, even before an application folder exists. Initial planning does
+not depend on choosing that folder or completing persistent rules setup.
+
 Once the application's folder is known, check whether its agent instructions already load the Medplum rules. If not, offer
 the project rules setup described in section 5 of the AI coding guide. Show the exact proposed file and addition, and ask
 permission before applying it. Verify existing setup instead of adding another copy; respect a decline for this session.
