@@ -1,0 +1,9 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.prompt code {
+  display: block;
+  float: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
