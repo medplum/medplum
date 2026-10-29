@@ -13,6 +13,10 @@
   overflow-y: auto;
 }
 
+.calendarsToggle[aria-expanded='true'] {
+  border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+}
+
 .calendar {
   position: relative;
   display: flex;

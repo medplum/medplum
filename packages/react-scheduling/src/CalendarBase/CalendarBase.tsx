@@ -24,7 +24,7 @@ import { assertNever } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { getPatientParticipant } from '../actors';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
@@ -176,6 +176,10 @@ export interface CalendarBaseProps extends Omit<
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
+  /** Placed at the start of the toolbar, before the navigation buttons. */
+  toolbarStart?: ReactNode;
+  /** Placed at the end of the toolbar, after the view toggle. */
+  toolbarEnd?: ReactNode;
 }
 
 /** Imperative handle on a calendar. */
@@ -207,6 +211,8 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     selection,
     selectedId,
     loading,
+    toolbarStart,
+    toolbarEnd,
     ...fullCalendarProps
   } = props;
 
@@ -334,13 +340,14 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
-          <Button variant="default" size="sm" fw={400} onClick={() => controller.today()}>
+          {toolbarStart}
+          <Button variant="default" size="sm" h={32} fw={400} onClick={() => controller.today()}>
             Today
           </Button>
           <Group gap="xs">
             <ActionIcon
               variant="default"
-              size="input-sm"
+              size={32}
               radius="xl"
               c="dimmed"
               aria-label="Previous"
@@ -350,7 +357,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
             </ActionIcon>
             <ActionIcon
               variant="default"
-              size="input-sm"
+              size={32}
               radius="xl"
               c="dimmed"
               aria-label="Next"
@@ -373,16 +380,19 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
             {loading && <Loader size="sm" />}
           </Group>
         </Group>
-        <SegmentedControl
-          size="xs"
-          value={controller.view?.type}
-          onChange={(newView) => controller.changeView(newView)}
-          data={[
-            { label: 'Month', value: 'dayGridMonth' },
-            { label: 'Week', value: 'timeGridWeek' },
-            { label: 'Day', value: 'timeGridDay' },
-          ]}
-        />
+        <Group gap="sm">
+          <SegmentedControl
+            size="xs"
+            value={controller.view?.type}
+            onChange={(newView) => controller.changeView(newView)}
+            data={[
+              { label: 'Month', value: 'dayGridMonth' },
+              { label: 'Week', value: 'timeGridWeek' },
+              { label: 'Day', value: 'timeGridDay' },
+            ]}
+          />
+          {toolbarEnd}
+        </Group>
       </Group>
       <FullCalendar
         height="100%"
