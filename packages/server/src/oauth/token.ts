@@ -31,6 +31,8 @@ import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import { createHash, randomUUID } from 'node:crypto';
+import type { ExternalLoginIdentity } from '../auth/external';
+import { resolveExternalLoginIdentity } from '../auth/external';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -591,7 +593,12 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  if (!idp.useSubject && isExternalEmailUnverified(userInfo)) {
+  const identity = await tryResolveExternalLoginIdentity(res, idp, userInfo);
+  if (!identity) {
+    return;
+  }
+
+  if (identity.email && isExternalEmailUnverified(userInfo)) {
     getLogger().warn('External identity provider reported unverified email', {
       clientId,
       projectId,
@@ -599,11 +606,10 @@ export async function exchangeExternalAuthToken(
     });
   }
 
-  const { email, externalId } = getExternalAuthLoginIdentity(idp, userInfo);
   const login = await tryLogin({
     authMethod: 'exchange',
-    email,
-    externalId,
+    email: identity.email,
+    externalId: identity.externalId,
     projectId,
     clientId: client?.id,
     scope: req.body.scope || 'openid offline_access',
@@ -676,15 +682,18 @@ async function tryGetExternalUserInfo(
   }
 }
 
-function getExternalAuthLoginIdentity(
+async function tryResolveExternalLoginIdentity(
+  res: Response,
   idp: IdentityProvider,
   userInfo: JWTPayload
-): { email?: string; externalId?: string } {
-  if (idp.useSubject) {
-    return { externalId: userInfo.sub };
+): Promise<ExternalLoginIdentity | undefined> {
+  try {
+    return await resolveExternalLoginIdentity(idp, userInfo);
+  } catch (err: any) {
+    const outcome = normalizeOperationOutcome(err);
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
+    return undefined;
   }
-
-  return { email: userInfo.email as string };
 }
 
 function resolveExternalAuthProvider(clientId: string, client?: ClientApplication): IdentityProvider | undefined {
