@@ -5,6 +5,10 @@ or changing Medplum itself. Infer this from the request and project context; ask
 
 ## Application Development
 
+For applications using Medplum's hosted service, use its supported APIs, configuration, and extension points. Editing this
+clone's server code does not change the hosted service. Keep application customizations in the application's repository,
+including when starting from Medplum Provider.
+
 Read these files before proposing an approach or beginning setup or implementation:
 
 - `packages/docs/docs/building-with-ai-coding-assistants.md`

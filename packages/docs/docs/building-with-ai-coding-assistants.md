@@ -36,6 +36,9 @@ or build a custom application using Medplum's SDKs and components, for example w
 [Hello World starter](/docs/tutorials/medplum-hello-world). If undecided, your agent can help
 you choose a starting point during planning.
 
+You can fork and customize Provider while continuing to use Medplum's hosted backend;
+running your own Provider app does not require self-hosting the Medplum server.
+
 1. Open your application's folder if you have one. Otherwise, you can start planning
    directly in the Medplum clone before choosing a starting point or application folder.
    Choose a folder before saving application files. Your application's instructions and
