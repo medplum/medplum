@@ -217,8 +217,14 @@ export async function completePostDeployMigration(
   output?: Parameters
 ): Promise<WithId<AsyncJob>> {
   const asyncJob = exec.getAsyncJob();
-  if (asyncJob.type !== 'data-migration' || !asyncJob.dataVersion) {
+  if (asyncJob.meta?.project) {
+    throw new Error(`Invalid post-deploy migration job ${getReferenceString(asyncJob)}`);
+  }
+  if (asyncJob.type !== 'data-migration') {
     return exec.completeJob(output);
+  }
+  if (!asyncJob.dataVersion) {
+    throw new Error(`Invalid post-deploy migration job ${getReferenceString(asyncJob)}`);
   }
 
   // dataVersion should be moved into post-deploy job data and pass it to this function alongside targetShardId.

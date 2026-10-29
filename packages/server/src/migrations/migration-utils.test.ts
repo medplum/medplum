@@ -66,6 +66,36 @@ describe('withLongRunningDatabaseClient', () => {
     markCompletedSpy.mockRestore();
     getVersionSpy.mockRestore();
   });
+
+  test.each<[string, Partial<AsyncJob>]>([
+    ['a project-owned data migration', { meta: { project: 'project-1' } }],
+    ['a project-owned job without a type', { meta: { project: 'project-1' }, type: undefined, dataVersion: undefined }],
+    ['a data migration without a data version', { dataVersion: undefined }],
+  ])('rejects completing %s', async (_label, overrides) => {
+    const asyncJob: WithId<AsyncJob> = {
+      resourceType: 'AsyncJob',
+      id: 'data-migration-job',
+      type: 'data-migration',
+      status: 'accepted',
+      request: 'data-migration-v1',
+      requestTime: new Date().toISOString(),
+      dataVersion: 1,
+      ...overrides,
+    };
+    const exec = {
+      getAsyncJob: vi.fn(() => asyncJob),
+      completeJob: vi.fn(),
+    } as unknown as AsyncJobExecutor;
+    const markCompletedSpy = vi.spyOn(migrationSql, 'markPostDeployMigrationCompleted');
+
+    await expect(completePostDeployMigration(exec, GLOBAL_SHARD_ID)).rejects.toThrow(
+      'Invalid post-deploy migration job AsyncJob/data-migration-job'
+    );
+
+    expect(markCompletedSpy).not.toHaveBeenCalled();
+    expect(exec.completeJob).not.toHaveBeenCalled();
+    markCompletedSpy.mockRestore();
+  });
 });
 
 describe('getPostDeployMigration', () => {
