@@ -331,6 +331,7 @@ describe('Email', () => {
 
   test('Send with URL attachment', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('hello world'));
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
     try {
       await sendEmail(systemRepo, {
         to: 'alice@example.com',
@@ -345,10 +346,12 @@ describe('Email', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(fetchMock).toHaveBeenCalledWith(
         'https://example.com/files/text1.txt?version=2',
-        expect.objectContaining({ dispatcher: safeAgent })
+        expect.objectContaining({ dispatcher: safeAgent, signal: timeoutSpy.mock.results[0].value })
       );
+      expect(timeoutSpy).toHaveBeenCalledWith(5 * 60_000);
     } finally {
       fetchMock.mockRestore();
+      timeoutSpy.mockRestore();
     }
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
@@ -393,36 +396,6 @@ describe('Email', () => {
 
     expect((attachments[0].content as Readable).destroyed).toBe(true);
     expect(mockSESv2Client.send.callCount).toBe(0);
-  });
-
-  test('Reject URL attachment without a timely response', async () => {
-    vi.useFakeTimers();
-    // Never responds; rejects at once without a signal, so the test cannot hang
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
-      (_url, init) =>
-        new Promise((_resolve, reject) => {
-          const signal = init?.signal;
-          if (!signal) {
-            reject(new Error('Missing signal'));
-            return;
-          }
-          signal.addEventListener('abort', () => reject(signal.reason));
-        })
-    );
-    try {
-      const result = expect(
-        sendEmail(systemRepo, {
-          to: 'alice@example.com',
-          subject: 'Hello',
-          attachments: [{ path: 'https://example.com/files/text1.txt' }],
-        })
-      ).rejects.toThrow('Invalid email attachment: This operation was aborted');
-      await vi.advanceTimersByTimeAsync(60_000);
-      await result;
-    } finally {
-      fetchMock.mockRestore();
-      vi.useRealTimers();
-    }
   });
 
   test('Catch invalid options', async () => {

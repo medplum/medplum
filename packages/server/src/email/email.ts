@@ -142,10 +142,8 @@ async function readAttachmentBinary(repo: Repository, path: string): Promise<Bin
  */
 async function fetchAttachment(url: string): Promise<Readable> {
   try {
-    // Limit only the wait for the response headers; nodemailer reads the body later
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60_000);
-    const response = await safeFetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
+    // Also covers the body, which nodemailer reads later
+    const response = await safeFetch(url, { signal: AbortSignal.timeout(5 * 60_000) });
     if (!response.ok) {
       await response.body?.cancel();
       throw new Error('Received status ' + response.status);
