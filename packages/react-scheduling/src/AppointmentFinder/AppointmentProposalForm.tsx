@@ -20,7 +20,7 @@ import {
   toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
-import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
+import { CalendarDateInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -31,6 +31,7 @@ import { resolveBookingGeometry } from '../bookingGeometry';
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { useChanged } from '../hooks/useChanged';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
+import { ServiceFacilityInput } from '../ServiceFacilityInput';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -674,15 +675,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   return (
     <div className={classes.layout}>
       <Stack className={classes.form} gap="sm">
-        <ResourceInput<WithId<Location>>
-          resourceType="Location"
-          name="serviceFacility"
+        <ServiceFacilityInput
           label="Service facility"
           placeholder="Any service facility"
           searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
-          defaultValue={defaultServiceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
+          defaultValue={defaultServiceFacility}
           onChange={chooseServiceFacility}
-          clearable={false}
         />
 
         {fixedService && service ? (

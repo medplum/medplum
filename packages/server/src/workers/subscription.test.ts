@@ -2746,6 +2746,11 @@ describe('Subscription Worker', () => {
           { includeResource: true },
         ]);
 
+        const differentCase = await wsSubRepo.updateResource<Subscription>({
+          ...subscription,
+          id: subscription.id.toUpperCase(),
+        });
+
         // Delete the patient
         nextArgsPromise = waitForNextSubNotification<Patient>();
         await wsSubRepo.deleteResource('Patient', updatedPatient.id);
@@ -2754,7 +2759,7 @@ describe('Subscription Worker', () => {
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(updatedPatient),
-          subscription.id,
+          differentCase.id,
           { includeResource: true },
         ]);
       }));
