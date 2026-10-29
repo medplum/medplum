@@ -941,7 +941,7 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
-      await chooseFirstOfferedTime();
+      const picked = await chooseFirstOfferedTime();
 
       // Picking a time is what the search was open for, so it closes.
       expect(finderButton()).toHaveTextContent('Change time');
@@ -950,8 +950,14 @@ describe('AppointmentProposalForm', () => {
       // The picked time's button is gone, so focus lands where the search reopens.
       expect(finderButton()).toHaveFocus();
 
-      // Closing it by hand keeps the time.
+      // Reopened, it still marks the time picked, though once the client's cache has lapsed
+      // the times come back as new objects.
+      medplum.invalidateAll();
       await openTimeFinder();
+      const [firstGroup] = await screen.findAllByTestId(/^slot-group-/);
+      expect(within(firstGroup).getByRole('button', { name: picked })).toHaveAttribute('data-variant', 'filled');
+
+      // Closing it by hand keeps the time.
       expect(finderButton()).toHaveTextContent('Close time finder');
       await act(async () => {
         fireEvent.click(finderButton());
