@@ -298,6 +298,16 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
     });
   }
 
+  if (resourceType === 'Encounter') {
+    tableDefinition.indexes.push({
+      indexNameSuffix: 'unfinished_idx',
+      indexType: 'gin',
+      columns: ['projectId', 'status', '___tag', '__class', '__type'],
+      where: "(deleted = false) AND (status <> 'finished'::text)",
+      fastupdate: false,
+    });
+  }
+
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
   result.tables.push(
