@@ -59,8 +59,10 @@
   overflow-y: auto;
 }
 
+/* The narrow pane's form, then the finder's times column, so the form keeps its width
+   when the times open beside it. */
 .paneWide {
-  width: 760px;
+  width: calc(320px + var(--mantine-spacing-lg) + 350px);
 }
 
 /* The booking pane's tabs pass the pane's height down to the form, so the form and the
