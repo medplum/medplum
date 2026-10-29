@@ -336,7 +336,7 @@ describe('Email', () => {
         text: 'Hello Alice',
       });
 
-      expect(mockCreateTransport).toHaveBeenCalledWith({
+      expect(mockCreateTransport).toHaveBeenCalledExactlyOnceWith({
         host: 'smtp.example.com',
         port: 587,
         auth: { user: 'user', pass: 'pass' },
