@@ -11,17 +11,26 @@ Use this guide to define who can access which data and how organizational bounda
 
 _Companion to the [Authorization and Access Control](/docs/access) docs._
 
+Identify your users and organizational structure, then [distinguish API restrictions from UI filtering](#does-this-restriction-need-to-prevent-api-access-or-only-change-what-the-ui-displays). Work through these decisions for the access the API must enforce:
+
+1. **[How will you separate and share data?](#decision-1-how-will-you-separate-and-share-data)** For applications with internal or multi-organization isolation.
+2. **[Which data should each role be able to access?](#decision-2-which-data-should-each-role-be-able-to-access)** Define each role's scope.
+3. **[What should each role be allowed to do?](#decision-3-what-should-each-role-be-allowed-to-do)** Choose permissions and any restrictions.
+4. **[Who will administer users and configuration?](#decision-4-who-will-administer-users-and-configuration)** Assign administrative responsibilities.
+
+Also review [patient and caregiver access](#how-will-patients-and-caregivers-get-access), [third-party app access](#how-will-third-party-apps-get-access), and [IP restrictions](#should-access-be-restricted-to-specific-networks) where applicable.
+
 ---
 
-## Section 1: Use Case & Participants
+## Before you start
 
-**1.1 Who are the users?**
+### Who needs access?
 
-- Patients only
+- Patients / caregivers only
 - Providers / staff / partners (clients or outside vendors) only
 - Both
 
-**1.2 What is your organizational structure?**
+### How is your organization structured?
 
 - Single organization
 - Multiple locations of one organization
@@ -29,232 +38,83 @@ _Companion to the [Authorization and Access Control](/docs/access) docs._
 - Departments or service lines within one organization
 - Combination
 
-*Why: biggest driver of downstream design. If single org with no internal isolation, skip Section 2\.*
+### Does this restriction need to prevent API access, or only change what the UI displays?
+
+#### Option A: Prevent access to the data
+
+The user must not retrieve or modify the data, including through direct API requests. Enforce the restriction through `AccessPolicy` and `ProjectMembership` configuration.
+
+#### Option B: Change the displayed view
+
+The user is authorized to access the data, but the application should show a narrower view. Use UI filters or display settings within the user's permitted access.
+
+For example, a clinician authorized for three clinics can view one clinic at a time using a UI selector. If each session must only access one clinic's data, its authenticated permissions must also be limited to that clinic.
+
+**Both can apply:** the API defines the permitted access; the UI selects what to display within it. Apply this distinction to tenant boundaries, resource permissions, and individual fields throughout the guide.
 
 ---
 
-## Section 2: Multi-tenancy
+## Decision 1: How will you separate and share data?
 
-*Skip if single-organization with no internal isolation.*
+**For applications that need isolation between organizations, locations, teams, or service lines.** If you have a single organization with no internal isolation, skip to [Decision 2](#decision-2-which-data-should-each-role-be-able-to-access).
 
-Isolation uses **compartments** (`meta.compartment`) matched by parameterized access policies.
+Within a project, tenant isolation uses **compartments** matched by parameterized access policies. Use `$set-accounts` to assign tenant references; Medplum computes `meta.compartment`. These tenant assignments extend the standard FHIR patient-compartment model.
 
-**Design principle (from [Medplum docs](/docs/access/multi-tenant-access-policy)):** Push complexity into enrollment Bots, not policies. Each patient is tagged with their tenant(s); each practitioner's `ProjectMembership.access` lists every tenant they work in. See the [MSO demo `enrollment.ts`](https://github.com/medplum/medplum-mso-demo/blob/main/src/utils/enrollment.ts) for reference.
+**Recommended pattern:** Assign patients to tenants through enrollment workflows, then grant practitioners access through parameterized `ProjectMembership.access` entries. See [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy).
 
----
+### What does a tenant represent?
 
-### 2a Tenant Modeling
+Choose what a tenant represents in your application. What do you call these groups: clinics, programs, sites, or accounts?
 
-**Questions:**
+#### Option A: Organizations, clinics, or practices
 
-- Internal term for tenants? (clinics, programs, sites, accounts)
-- Grouping is organizational, functional, or per-patient?
-- Is there an organizational hierarchy (e.g., region → clinic)?
+Use `Organization` when tenants represent clinics, practices, or healthcare organizations in an MSO model.
 
-| Situation | Approach |
-| :---- | :---- |
-| Clinics, practices, locations (MSO) | `Organization` |
-| Service lines, departments | `HealthcareService` |
-| Dedicated team per patient | `CareTeam` per patient |
+#### Option B: Service lines or departments
 
-**Hierarchy pattern** (if tenants nest, e.g., region → clinic):
+Use `HealthcareService` to represent functional groups within an organization.
+
+#### Option C: A dedicated team for each patient
+
+Use a `CareTeam` per patient.
+
+#### If tenants form a hierarchy: how will access extend to child tenants?
+
+One approach for nested tenants, such as region → clinic, is to grant access through the lowest-level tenants:
 
 - Patients are tagged only at the **lowest level** they belong to.
 - Practitioners enrolled at an intermediary level get one `ProjectMembership.access` entry per lowest-level tenant under it (iteratively expanded).
 - Adding a new lowest-level tenant requires a workflow to update every practitioner membership at or above that intermediary.
 
----
+### Can a patient belong to one tenant or several?
 
-### 2b Patient and Practitioner Sharing
+| Patient access                | Approach                                   |
+| :---------------------------- | :----------------------------------------- |
+| One tenant per patient        | One tenant assignment on the Patient       |
+| Patient shared across tenants | Multiple tenant assignments on the Patient |
 
-**Questions:**
+### Are practitioners visible across tenants or only within their own?
 
-- Can a patient be enrolled in more than one tenant at a time?
-- Are practitioners isolated to their tenant, or visible across all tenants (global directory)?
+| Practitioner visibility                  | Approach                                                      |
+| :--------------------------------------- | :------------------------------------------------------------ |
+| Shared across tenants (global directory) | Allow `Practitioner` reads without a tenant filter            |
+| Visible only within their tenant         | Tag with tenant compartment; policy filters by `_compartment` |
 
-| Situation | Approach |
-| :---- | :---- |
-| One tenant per patient | Single compartment on the Patient |
-| Patient shared across tenants | Multiple compartments, one per tenant |
-| Practitioners shared (global directory) | Leave unassigned; policy reads without `_compartment` filter |
-| Practitioners isolated per tenant | Tag with tenant compartment; policy filters by `_compartment` |
+### Which resources are shared across tenants?
 
----
+For terminology (`CodeSystem`, `ValueSet`), Questionnaires, PlanDefinitions, and ActivityDefinitions, decide whether resources are shared or tenant-specific. Also identify any resources shared across projects.
 
-## Section 3: Roles & Permissions
+| Situation                             | Approach                                                                                                                                                        |
+| :------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All resources of a type are shared    | Allow reads without a tenant filter for that type                                                                                                               |
+| Tenant-specific Questionnaires        | Use `$set-accounts` to assign the tenant; filter by `_compartment`                                                                                              |
+| Some resources of a type are shared   | Use separate criteria for authorized tenant resources and explicitly designated shared resources. An unfiltered rule would also expose other tenants' resources |
+| Bots used across tenants              | Configure access to the Bot separately from its execution permissions; by default it uses its own `ProjectMembership` policy                                    |
+| Reference data shared across projects | A super admin configures a linked project and its exported resource types; access through the link is read-only and still subject to policy                     |
 
-For each role: name it, scope it (which tenants, if multi-tenant), say what resources it touches, and narrow as needed.
+Allow the terminology resources your UI needs; overly restrictive policies can leave dropdowns empty. For Bots, see [Run as User](/docs/bots/bot-run-as-user); for shared reference data, see [Linked Projects](/docs/access/projects#project-linking).
 
----
-
-### 3a Role Inventory & Scope
-
-**Questions:**
-
-- What are the role names? (physician, RN, MA, front desk, billing, care coordinator, medical director)
-- *If multi-tenant:* for each role, which tenants does it cover? (one, several, all)
-- Any oversight roles that need visibility across all tenants without per-tenant enrollment?
-
-| Role scope | Modeling approach |
-| :---- | :---- |
-| One tenant | Single `ProjectMembership.access` entry parameterized with that tenant |
-| Multiple tenants, combined view | One `access` entry per tenant, same policy |
-| Org-wide / cross-tenant oversight | Unparameterized policy, no `_compartment` filter |
-| Tenants contractually can't share data (e.g., locum across competitor clinics) | Separate logins per tenant — see callout below |
-
-**⚠ One-way door: stacking is additive only.** Policies compose by union — you can't narrow by composition. For genuinely narrower API access in one context (not just a filtered UI view), use **separate logins**, not stacked policies.
-
-*When separate logins are warranted:* contractual or regulatory obligations requiring the API to never return both scopes' data in the same session. Example: a provider works at two independent clinics under separate BAAs — stacking would let one token read both, violating the BAA. Two memberships (each parameterized to one clinic) bound each session to one tenant.
-
-Test: *if this token leaked, should the attacker reach both scopes?* No → separate logins. Yes or don't care → stacked; any "switcher" is purely a UI concern.
-
----
-
-### 3b Permission Mechanics
-
-**Questions:**
-
-- For each role: which resource types does it read / write / search / delete?
-- Any partial FHIR interactions? (create-only, read-without-search, etc.)
-
-| Situation | Approach |
-| :---- | :---- |
-| Full CRUD on a resource | Standard `resource` entry, no `interaction` restriction |
-| Read-only | `readonly: true` |
-| Partial interactions | Explicit `interaction` array |
-
----
-
-### 3c Narrowing What a Role Can Do
-
-*Cover only the knobs that apply.*
-
-**Field-level** — partial field access (e.g., billing sees Patient minus diagnoses):
-
-| Situation | Approach |
-| :---- | :---- |
-| Readable but not writable | `readonlyFields` |
-| Not visible | `hiddenFields` (masks output only — for decluttering, do it in the UI) |
-
-**Write constraints** — enforce state transitions or required fields at the policy layer:
-
-| Situation | Approach |
-| :---- | :---- |
-| Prevent field change in terminal state | `writeConstraint` on `%before` |
-| Require field at transition | `writeConstraint` on `%after` \+ field presence |
-| Update-only | Prefix with `%before.exists() implies ...` |
-| Create-only | Prefix with `%before.exists().not() implies ...` |
-
-Keep FHIRPath simple; complex logic belongs in a Bot.
-
-**Criteria-based filtering** — filter by resource attribute (geography, code, status):
-
-| Situation | Approach |
-| :---- | :---- |
-| State license | `Patient?address-state=%licensed_state`, parameterized |
-| Multi-state | One `access` entry per state |
-| Specialty or status filter | `criteria` with code/status filter |
-| Criteria \+ tenant | Single `criteria` string combining both |
-
-`criteria` supports only `:not` / `:missing` — no chained searches. Denormalize or tag via an enrollment Bot.
-
----
-
-## Section 4: Admin Structure
-
-**Questions:**
-
-- Who invites/removes users and manages memberships?
-- Who manages Bots, ClientApplications, AccessPolicies?
-- Any super admin needs? (project creation via API, overwriting protected fields)
-- Should admins be blocked from clinical data?
-
-| Situation | Approach |
-| :---- | :---- |
-| Standard admin | `ProjectMembership.admin` |
-| Admin with narrowed clinical access | Admin flag \+ dedicated AccessPolicy |
-| Admin blocked from clinical content | Admin flag \+ `hiddenFields` on clinical resources |
-| Project creation, overwriting protected fields | Super admin — server operators only |
-| Separate "user manager" vs. "tech admin" | Two AccessPolicies stacked on admin flag (see 3b) |
-
-**⚠ Note:** Admin flag covers admin resources only (`Project`, `ProjectMembership`, `User`) — admins still need a policy for clinical data.
-
----
-
-# Appendix: Additional Decisions
-
-*Narrower decisions that apply only in specific situations. Cover each only if relevant.*
-
----
-
-## A. Open Registration & Caregivers
-
-*If the product has a patient portal.*
-
-**Questions:**
-
-- Self-registration or staff-invite?
-- Are caregivers / proxies needed? (parents, adult children, guardians)
-- One caregiver with multiple patients? One patient with multiple caregivers?
-- How is the caregiver relationship established and revoked?
-
-| Situation | Approach |
-| :---- | :---- |
-| Invite-only | Standard `ProjectMembership` with patient policy |
-| Open self-registration | Set `Project.defaultPatientAccessPolicy`; enable open registration |
-| Patient sees own data | Parameterized policy with `%patient` on clinical resources |
-| Single caregiver, single patient | One `access` entry with `%patient` |
-| One caregiver, multiple patients | Multiple `access` entries, different `%patient` |
-| Multiple caregivers per patient | Each caregiver has their own ProjectMembership |
-| Revoke caregiver | Remove the corresponding `access` entry |
-| Time-bound caregiver access (e.g., expires at age 18\) | Application-layer enforcement — not native |
-
----
-
-## B. SMART on FHIR
-
-*If third-party apps (not your own frontend) request access.*
-
-**Questions:**
-
-- Patient-context launch, provider-context launch, or standalone?
-- Which scopes?
-- Offline access needed?
-
-| Situation | Approach |
-| :---- | :---- |
-| Your own frontend | Not SMART — standard ClientApplication \+ AccessPolicy |
-| Third-party, patient-context | SMART 2.0.0, `launch/patient` |
-| Third-party, provider-context | SMART 2.0.0, `launch` |
-| Standalone patient app | `patient/*.rs` or narrower |
-| Offline access | Add `offline_access` |
-
-**⚠ Note:** Effective access \= SMART scopes ∩ AccessPolicy.
-
----
-
-## C. IP Access Rules
-
-*If access should be restricted by IP range.*
-
-**Questions:**
-
-- Restrict by IP range? (VPN, on-prem devices)
-- Any roles that bypass?
-
-| Situation | Approach |
-| :---- | :---- |
-| VPN-only | Allow VPN ranges \+ wildcard block |
-| On-prem only | Allow clinic network \+ wildcard block |
-| Mixed | Different AccessPolicies per role |
-
-**⚠ Note:** IPv4 only. Rules evaluate sequentially — always terminate with a wildcard block.
-
----
-
-## D. Enrollment & Reassignment Workflows
-
-*If Section 2 multi-tenancy applies.*
+### How will patients be enrolled or transferred between tenants?
 
 **Questions:**
 
@@ -262,43 +122,196 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 - Who is authorized to move a patient between tenants?
 - On transfer: do records follow the patient, stay with the original tenant, or become shared?
 
-| Situation | Approach |
-| :---- | :---- |
-| Patient enrollment | Bot calls [`$set-accounts`](/docs/api/fhir/operations/set-accounts) on the triggering event; use `propagate: true` to tag related resources |
-| Transfer, records follow | Update compartment with `propagate: true`; old tenant loses access |
-| Transfer, records stay / shared | Add new compartment (don't replace); both tenants retain access |
+| Situation                                        | Approach                                                                                                                                                                                     |
+| :----------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Patient enrollment                               | An authorized admin or Bot calls [`$set-accounts`](/docs/api/fhir/operations/set-accounts) with the full tenant list; use `propagate: true` to update existing patient-compartment resources |
+| Transfer all patient-compartment data            | Replace the old tenant in the list and propagate the change. Verify completion and any other grants before treating access as revoked                                                        |
+| Share data with both tenants                     | Include both tenants in the list and propagate the change                                                                                                                                    |
+| Keep historical records with the original tenant | Design a separate record-level assignment workflow; patient-wide propagation does not distinguish historical from future records                                                             |
 
-**Reference implementation:** [MSO demo `enrollment.ts`](https://github.com/medplum/medplum-mso-demo/blob/main/src/utils/enrollment.ts) — canonical example patterns.
+`$set-accounts` requires project-admin or super-admin authority and checks access to the affected resources. Propagation follows each resource's own [patient-compartment references](/docs/access/multi-tenant-access-policy#why-is-patient-a-special-case), not arbitrary links between resources.
 
----
+**Reference implementation:** [MSO demo `enrollment.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-mso-demo/src/utils/enrollment.ts).
 
-## E. Shared vs. Tenant-Specific Resources
+**Next:** Define each role's data scope in [Decision 2](#decision-2-which-data-should-each-role-be-able-to-access).
 
-*If Section 2 multi-tenancy applies.*
+## Decision 2: Which data should each role be able to access?
 
-**Questions:**
+List your roles, such as physician, RN, MA, front desk, billing, care coordinator, and medical director. **If you have multiple tenants, choose the data scope for each role below.** Otherwise, continue to [Decision 3](#decision-3-what-should-each-role-be-allowed-to-do).
 
-- Terminology (CodeSystems, ValueSets) shared or tenant-specific?
-- Questionnaires shared or per-tenant?
-- PlanDefinitions / ActivityDefinitions global or per-tenant?
-- Any resources shared across projects (not just tenants)?
+### Option A: Access to one tenant
 
-| Situation | Approach |
-| :---- | :---- |
-| Shared standard terminology | Leave unassigned; unfiltered read in policy |
-| Tenant-specific Questionnaires | `$set-accounts` tags with tenant; filter by `_compartment` |
-| Mixed (some global, some per-tenant) | Two resource entries in policy: one filtered, one unfiltered |
-| Global Bots | Leave unassigned; Bots run as ClientApplication |
-| Reference data shared across multiple projects | Super admin creates a linked project (read-only view) |
+Use a single `ProjectMembership.access` entry parameterized with that tenant.
 
-**⚠ Note:** Forgetting unfiltered read on standard terminology causes empty dropdowns — a common multi-tenant misconfiguration.
+### Option B: Combined access to several tenants
 
-## F. Role-Aware UI
+Use one `access` entry per tenant with the same policy.
 
-*If your frontend needs to show / hide UI based on the user’s role*
+### Option C: Organization-wide or cross-tenant oversight
 
-| Situation | Approach |
-| :---- | :---- |
-| UI changes based on role | `AccessPolicy.basedOn` \+ `/auth/me` |
+Use an unparameterized policy with no `_compartment` filter.
 
-Using `AccessPolicy.basedOn` keeps the UI in sync with what the API enforces. The alternative (hardcoded role field, custom endpoint) tends to drift.
+### Option D: Separate authenticated sessions for each tenant
+
+Give each session a membership limited to one tenant. Switching context means switching the authenticated login, rather than changing a UI filter. Separate credentials are not always necessary: the [Invite API](/docs/api/project-admin/invite) supports creating additional memberships with `forceNewMembership`.
+
+### How do these policies combine?
+
+**Policy grants are additive, not a way to subtract access.** Do not add a restrictive policy to narrow an existing broad grant. For overlapping resource rules, the first matching rule determines field restrictions and write constraints; design and test those rules together.
+
+Implementation: [Parameterized Policies](/docs/access/access-policies#parameterized-policies), [Invite API](/docs/api/project-admin/invite).
+
+**Next:** Choose what each role can do with that data in [Decision 3](#decision-3-what-should-each-role-be-allowed-to-do).
+
+## Decision 3: What should each role be allowed to do?
+
+### Which resource types and interactions does the role need?
+
+For each role, list the resource types it needs and choose which interactions it can perform, such as reading, creating, updating, searching, or deleting.
+
+| Permission option                                                 | Approach                                                |
+| :---------------------------------------------------------------- | :------------------------------------------------------ |
+| All supported FHIR interactions                                   | Standard `resource` entry, no `interaction` restriction |
+| Read-only                                                         | `readonly: true`                                        |
+| Selected interactions, such as create-only or read without search | Explicit `interaction` array                            |
+
+### Does the role need additional restrictions?
+
+**Apply only the restrictions your roles need.**
+
+#### Should any fields be hidden or read-only?
+
+Use field-level restrictions for specific elements, such as a Patient's address.
+
+| Situation                             | Approach                                                                        |
+| :------------------------------------ | :------------------------------------------------------------------------------ |
+| Readable but not writable             | `readonlyFields`                                                                |
+| Hidden from returned resources        | `hiddenFields`; these restrictions also affect writes, not just returned output |
+| No access to a clinical resource type | Omit that type from the role's grants; ensure no broader rule grants access     |
+
+Field masking is not a substitute for denying access to a resource. For presentation-only changes, hide fields in the UI.
+
+#### Should writes enforce required fields or state transitions?
+
+Use write constraints to enforce these rules at the policy layer:
+
+| Situation                                       | Approach                                                                              |
+| :---------------------------------------------- | :------------------------------------------------------------------------------------ |
+| Prevent a field changing after a terminal state | Use `writeConstraint` to check the prior state and compare the field before and after |
+| Require a field when entering a state           | Check `%after` and field presence in a `writeConstraint`                              |
+| Apply a constraint only to updates              | Prefix with `%before.exists() implies ...`                                            |
+| Apply a constraint only to creates              | Prefix with `%before.exists().not() implies ...`                                      |
+
+These prefixes control when a constraint applies; use `interaction` to allow only creates or updates. Keep FHIRPath simple. If a Bot enforces complex rules, use a controlled invocation path; a Subscription-triggered Bot runs after the write and cannot reject it.
+
+#### Should access depend on resource attributes?
+
+Use criteria-based filtering for attributes such as geography, code, or status:
+
+| Situation                  | Approach                                      |
+| :------------------------- | :-------------------------------------------- |
+| Patient address filtering  | `Patient?address-state=%state`, parameterized |
+| Several allowed states     | One `access` entry per state                  |
+| Specialty or status filter | `criteria` with code/status filter            |
+| Criteria \+ tenant         | Single `criteria` string combining both       |
+
+Address filtering restricts records; it does not validate practitioner licensure. `criteria` supports a subset of FHIR search, with `:not` and `:missing` modifiers and no chained searches. Denormalize or assign tenant references through an enrollment workflow where needed.
+
+**Files:** `Binary` resources do not support policy `criteria`; set an appropriate `securityContext`. See [Binary Security Context](/docs/access/binary-security-context).
+
+Implementation: [Access Policies](/docs/access/access-policies), [Licensure and Scheduling](/docs/scheduling/state-by-state-licensure).
+
+### Should the UI change based on the role?
+
+**If your frontend shows or hides UI based on the user’s role.**
+
+| Situation                | Approach                                                         |
+| :----------------------- | :--------------------------------------------------------------- |
+| UI changes based on role | Read the effective policy's `basedOn` references from `/auth/me` |
+
+`basedOn` identifies the policies used to build the effective policy; it is not a policy-inheritance setting. Use it to inform the UI, while continuing to enforce access at the API.
+
+**Next:** Assign administrative responsibilities in [Decision 4](#decision-4-who-will-administer-users-and-configuration).
+
+## Decision 4: Who will administer users and configuration?
+
+Decide who manages users and memberships, who manages Bots, ClientApplications, and AccessPolicies, and whether those administrators should see clinical data. Identify any server-level needs, such as project creation or overwriting protected fields.
+
+| Situation                                          | Approach                                                                                                                               |
+| :------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| Trusted project administrator                      | `ProjectMembership.admin` grants project administration capabilities                                                                   |
+| Admin with limited routine clinical access         | Assign an explicit custom AccessPolicy limiting clinical resources                                                                     |
+| A role that must not access clinical content       | Use a non-admin role with narrowly scoped permissions; do not rely on `hiddenFields` or an admin's clinical policy as a hard boundary  |
+| Project creation or protected server-level changes | Super-admin operations; for hosted Medplum, coordinate with Medplum                                                                    |
+| Separate user-management and technical duties      | Define the permitted operations and use controlled backend workflows where needed; stacking policies does not subdivide the admin flag |
+
+**Project admins are trusted administrators.** They can manage access policies and memberships, and act on behalf of users. A clinical policy limits their routine access but does not prevent them from changing grants. The admin flag does not bypass clinical policies; omitting a policy can still grant broad access.
+
+Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/docs/access/access-policies#default-access-policies), [On-Behalf-Of](/docs/auth/on-behalf-of).
+
+**Next:** Review the additional decisions below that apply to your application.
+
+## Additional decisions, if applicable
+
+### How will patients and caregivers get access?
+
+**For applications with a patient portal.**
+
+Choose how patients register, whether caregivers or proxies need access (such as parents, adult children, or guardians), and how those relationships are established and revoked.
+
+#### How will patients register?
+
+| Registration option    | Approach                                                                 |
+| :--------------------- | :----------------------------------------------------------------------- |
+| Invite-only            | Use the Invite API with a patient-scoped policy                          |
+| Open self-registration | Set `Project.defaultPatientAccessPolicy`; this enables open registration |
+
+#### Which patient records can each person access?
+
+| Access option                                          | Approach                                                                                                   |
+| :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| Patient sees own data                                  | Parameterized policy with `%patient` on clinical resources                                                 |
+| Single caregiver, single patient                       | One `access` entry with `%patient`                                                                         |
+| One caregiver, multiple patients                       | Multiple `access` entries, different `%patient`                                                            |
+| Multiple caregivers per patient                        | Each caregiver has their own ProjectMembership                                                             |
+| Revoke caregiver                                       | Remove the corresponding grants and verify API access is revoked                                           |
+| Time-bound caregiver access (e.g., expires at age 18\) | Automate removal of the corresponding membership grants at expiry; hiding access in the UI is insufficient |
+
+Implementation: [Patient and Caregiver Policies](/docs/access/access-policies#caregiver-access), [Open Patient Registration](/docs/user-management/open-patient-registration).
+
+### How will third-party apps get access?
+
+**If an app needs SMART launch or delegated access.** SMART is commonly used for third-party integrations, but is not limited to them.
+
+Choose patient-context, provider-context, or standalone launch. Define the scopes the app needs and whether it needs offline access.
+
+| Situation                                           | Approach                                                                             |
+| :-------------------------------------------------- | :----------------------------------------------------------------------------------- |
+| Your own frontend without SMART launch requirements | Use a standard ClientApplication and AccessPolicy                                    |
+| App launched from an EHR or portal                  | Request `launch` plus the clinical data scopes the app needs                         |
+| Standalone app needing patient selection            | Request `launch/patient` plus patient data scopes, such as `patient/*.rs`            |
+| Patient data access                                 | Use `patient/` scopes with patient context; narrow the resource types where possible |
+| Access within the current user's permissions        | Use `user/` scopes and the user's AccessPolicy                                       |
+| Access after the user is offline                    | Request `offline_access` for a refresh token                                         |
+
+Launch scopes request context; they do not grant clinical data access. Clinical scopes work alongside AccessPolicy restrictions. Use `.rs` for read/search access or `.cruds` for full access within the policy; enforce finer interaction restrictions through `AccessPolicy.resource.interaction` rather than assuming arbitrary SMART permission-letter combinations are enforced.
+
+Implementation: [SMART Scopes](/docs/access/smart-scopes).
+
+### Should access be restricted to specific networks?
+
+**If access should be restricted by IP range.**
+
+Choose which networks can connect, such as a VPN or clinic network, and whether different roles need different rules.
+
+| Situation    | Approach                               |
+| :----------- | :------------------------------------- |
+| VPN-only     | Allow VPN ranges \+ wildcard block     |
+| On-prem only | Allow clinic network \+ wildcard block |
+| Mixed        | Different AccessPolicies per role      |
+
+Use the documented IPv4 address or address-prefix rules, not CIDR notation. The first matching rule wins; end an allowlist with a wildcard block.
+
+These rules apply to supported authentication paths, but are not enforced on refresh-token requests or rechecked on every bearer-token API call. Do not use them as the sole control for a requirement that every request originate from an approved network.
+
+Implementation: [IP Access Rules](/docs/access/ip-access-rules).
