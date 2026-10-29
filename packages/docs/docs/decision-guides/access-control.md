@@ -247,6 +247,8 @@ Decide who manages users and memberships, who manages Bots, ClientApplications, 
 
 **Project admins are trusted administrators.** They can manage access policies and memberships, and act on behalf of users. A clinical policy limits their routine access but does not prevent them from changing grants. The admin flag does not bypass clinical policies; omitting a policy can still grant broad access.
 
+**Default or custom policy?** The built-in Admin default grants broad read/write access. When admin status changes, Medplum swaps the recognized Practitioner/Admin default to the matching default, if configured. Custom policy assignments are unchanged by this swap; the admin flag still changes administrative capabilities. Use an explicit custom policy when the defaults are too broad.
+
 Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/docs/access/access-policies#default-access-policies), [On-Behalf-Of](/docs/auth/on-behalf-of).
 
 **Next:** Review the additional decisions below that apply to your application.
@@ -265,6 +267,8 @@ Choose how patients register, whether caregivers or proxies need access (such as
 | :--------------------- | :----------------------------------------------------------------------- |
 | Invite-only            | Use the Invite API with a patient-scoped policy                          |
 | Open self-registration | Set `Project.defaultPatientAccessPolicy`; this enables open registration |
+
+**Check both enrollment paths.** Open registration uses `Project.defaultPatientAccessPolicy`. Patient invitations without an explicit policy prefer the Patient entry in `Project.defaultAccessPolicies`, falling back to `defaultPatientAccessPolicy` if that entry is absent. Align these defaults if both paths should grant the same access. Changing the registration default affects future registrations; it does not migrate existing memberships. See [Default Access Policies](/docs/access/access-policies#default-access-policies).
 
 #### Which patient records can each person access?
 
@@ -315,3 +319,11 @@ Use the documented IPv4 address or address-prefix rules, not CIDR notation. The 
 These rules apply to supported authentication paths, but are not enforced on refresh-token requests or rechecked on every bearer-token API call. Do not use them as the sole control for a requirement that every request originate from an approved network.
 
 Implementation: [IP Access Rules](/docs/access/ip-access-rules).
+
+## Decisions to Record
+
+- **Tenant boundaries:** Isolated and shared data, including handling of patient transfers.
+- **Role permissions:** Allowed data and actions, distinguishing API restrictions from UI filters.
+- **Automation identity:** Identity and permissions for each Bot or backend service, where applicable.
+- **Access lifecycle:** Owners for grants, changes, revocation, expiry, and transfers.
+- **API acceptance checks:** Requests that should succeed or fail for each role, including after revocation.
