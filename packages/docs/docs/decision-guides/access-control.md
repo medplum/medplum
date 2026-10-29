@@ -319,11 +319,3 @@ Use the documented IPv4 address or address-prefix rules, not CIDR notation. The 
 These rules apply to supported authentication paths, but are not enforced on refresh-token requests or rechecked on every bearer-token API call. Do not use them as the sole control for a requirement that every request originate from an approved network.
 
 Implementation: [IP Access Rules](/docs/access/ip-access-rules).
-
-## Decisions to Record
-
-- **Tenant boundaries:** Isolated and shared data, including handling of patient transfers.
-- **Role permissions:** Allowed data and actions, distinguishing API restrictions from UI filters.
-- **Automation identity:** Identity and permissions for each Bot or backend service, where applicable.
-- **Access lifecycle:** Owners for grants, changes, revocation, expiry, and transfers.
-- **API acceptance checks:** Requests that should succeed or fail for each role, including after revocation.
