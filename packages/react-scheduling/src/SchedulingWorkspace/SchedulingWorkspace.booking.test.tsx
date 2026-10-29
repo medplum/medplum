@@ -496,6 +496,7 @@ describe('SchedulingWorkspace booking', () => {
       await openTimeFinder();
       await chooseSecondOfferedTime();
       expect(proposedTime()).not.toBe('none');
+      await openTimeFinder();
 
       // Searching another day drops the time, and a proposal left on the old one would
       // be pointing at a time nobody has chosen.

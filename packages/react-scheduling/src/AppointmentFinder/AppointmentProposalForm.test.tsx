@@ -817,6 +817,7 @@ describe('AppointmentProposalForm', () => {
       await openFinder();
       await chooseFirstOfferedTime();
       expect(chosenTimeField()).not.toBeNull();
+      await openTimeFinder();
 
       await dragDays('17', '21');
 
@@ -942,13 +943,21 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       await chooseFirstOfferedTime();
 
+      // Picking a time is what the search was open for, so it closes.
+      expect(finderButton()).toHaveTextContent('Change time');
+      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
+      // The picked time's button is gone, so focus lands where the search reopens.
+      expect(finderButton()).toHaveFocus();
+
+      // Closing it by hand keeps the time.
+      await openTimeFinder();
+      expect(finderButton()).toHaveTextContent('Close time finder');
       await act(async () => {
         fireEvent.click(finderButton());
       });
-      await settleAutocomplete();
-
       expect(finderButton()).toHaveTextContent('Change time');
-      expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
+      expect(chosenTimeField()).not.toBeNull();
     });
 
     test('Clears the chosen time when the day changes', async () => {
@@ -957,6 +966,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await openTimeFinder();
 
       await chooseDay('18');
 
@@ -981,6 +991,7 @@ describe('AppointmentProposalForm', () => {
       // `$book` would accept it: that time genuinely was Dr. Rivera's.
       expect(chosenTimeField()).not.toBeInTheDocument();
 
+      await openTimeFinder();
       const label = await chooseFirstOfferedTime();
 
       const chosen = chosenTimeField() as HTMLInputElement;
@@ -1017,6 +1028,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await openTimeFinder();
       onToggleTimeFinder.mockClear();
 
       await chooseActor(/room/i, 'exam', 'Exam Room A');
@@ -1201,6 +1213,7 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       await chooseFirstOfferedTime();
       expect(onChangeProposal).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(String) }));
+      await openTimeFinder();
 
       await chooseDay('18');
 
@@ -1450,6 +1463,7 @@ describe('AppointmentProposalForm', () => {
       await clickBook();
       expect(bookButton()).toBeDisabled();
 
+      await openTimeFinder();
       await chooseSecondOfferedTime();
 
       expect(bookButton()).toBeEnabled();

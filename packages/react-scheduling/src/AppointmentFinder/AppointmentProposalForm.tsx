@@ -35,7 +35,7 @@ import type { Appointment, Extension, HealthcareService, Location, Patient, Refe
 import { CalendarDateInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, RefObject } from 'react';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
@@ -165,7 +165,8 @@ export interface AppointmentProposalFormProps {
    */
   readonly mrnSystem?: string;
   /**
-   * Called when the time search opens or closes.
+   * Called when the time search opens or closes, including when picking an offered
+   * time closes it.
    *
    * The times render beside the form, not under it, so a host in a side panel has
    * to widen it to fit them.
@@ -423,6 +424,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }, [onChangeProposal]);
   useEffect(() => () => latestOnChangeProposal.current?.(undefined), []);
 
+  const finderButtonRef = useRef<HTMLButtonElement>(null);
+
   function toggleFinder(): void {
     setFinding(!finding);
   }
@@ -488,6 +491,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setChosen(next);
     setConflicts([]);
     setWritten(false);
+    setFinding(false);
+    // The picked time's button goes with the search, so focus would fall to the page.
+    finderButtonRef.current?.focus();
   }
 
   const configuredDurationMinutes = useMemo(
@@ -744,6 +750,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           searching={searching}
           blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
           onToggleFinder={toggleFinder}
+          finderButtonRef={finderButtonRef}
         />
 
         {takesDetails && (
@@ -877,6 +884,7 @@ interface ChosenTimeProps {
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: SelectionBlocker | undefined;
   readonly onToggleFinder: () => void;
+  readonly finderButtonRef: RefObject<HTMLButtonElement | null>;
 }
 
 /**
@@ -889,7 +897,7 @@ interface ChosenTimeProps {
  * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder } = props;
+  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder, finderButtonRef } = props;
 
   return (
     <>
@@ -911,6 +919,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
 
       <Stack gap={4}>
         <Button
+          ref={finderButtonRef}
           variant="outline"
           fullWidth
           leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
