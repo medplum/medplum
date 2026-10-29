@@ -342,7 +342,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="MRN" value={mrn} />
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
-      <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
+      <Detail label="Visit type" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
       <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
       <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
       <Detail label="Rooms" value={listActors(rooms)} />
