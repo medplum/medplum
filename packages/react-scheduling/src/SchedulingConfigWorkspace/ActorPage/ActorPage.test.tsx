@@ -34,6 +34,7 @@ import {
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
+  openAutocomplete,
   removePill,
   settleAutocomplete,
   typeInAutocomplete,
@@ -1281,6 +1282,12 @@ describe('ActorPage', () => {
 
       expect(await findChips(['Downtown Clinic', 'Northside'])).toBeInTheDocument();
       expect(chips()).not.toHaveTextContent('Room 3');
+
+      await openAutocomplete(await facilityPicker());
+      const checked = screen
+        .getAllByLabelText('Selected')
+        .map((check) => check.closest('[role="option"]')?.textContent);
+      expect(checked).toStrictEqual(['Downtown Clinic', 'Northside']);
     });
 
     test('removing a service facility takes it off the workspace role on save, deleting nothing and writing nothing else', async () => {

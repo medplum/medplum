@@ -629,6 +629,50 @@ describe('Generator', () => {
         postDeploy: [],
       });
     });
+
+    test('creates GIN index with fastupdate before WHERE', () => {
+      const startTable: TableDefinition = { name: 'Task', columns: [], indexes: [] };
+      const targetTable: TableDefinition = {
+        name: 'Task',
+        columns: [],
+        indexes: [
+          {
+            indexNameOverride: 'Task_open_idx',
+            indexType: 'gin',
+            columns: ['projectId', 'status'],
+            where: 'deleted = false',
+            fastupdate: false,
+          },
+        ],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
+      });
+
+      expect(result.postDeploy).toEqual([
+        {
+          type: 'CREATE_INDEX',
+          indexName: 'Task_open_idx',
+          createIndexSql:
+            'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Task_open_idx" ON "Task" USING gin ("projectId", "status") WITH (fastupdate = off) WHERE (deleted = false)',
+        },
+      ]);
+    });
+
+    test('rejects fastupdate on non-GIN index', () => {
+      const targetTable: TableDefinition = {
+        name: 'Task',
+        columns: [],
+        indexes: [{ columns: ['status'], indexType: 'btree', fastupdate: false }],
+      };
+
+      expect(() =>
+        generateIndexesActions({ name: 'Task', columns: [], indexes: [] }, targetTable, {
+          dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
+        })
+      ).toThrow('fastupdate is only supported for GIN indexes');
+    });
   });
 
   describe('parseIndexName', () => {

@@ -609,6 +609,8 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
+      const upperId = patient1.id.toUpperCase();
+      await systemRepo.updateResource<Patient>({ ...patient1, id: upperId, gender: 'unknown' });
 
       const patient2 = await systemRepo.updateResource<Patient>({
         ...(patient1 as Patient),
@@ -617,6 +619,9 @@ describe('FHIR Repo', () => {
 
       expect(patient2.id).toStrictEqual(patient1.id);
       expect(patient2.meta?.versionId).not.toStrictEqual(patient1.meta?.versionId);
+      await expect(systemRepo.readResource<Patient>('Patient', upperId)).resolves.toMatchObject({
+        meta: { versionId: patient2.meta?.versionId },
+      });
     }));
 
   test('Update patient remove meta.profile', () =>

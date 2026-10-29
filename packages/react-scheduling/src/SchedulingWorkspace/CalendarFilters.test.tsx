@@ -64,6 +64,8 @@ describe('CalendarFilters', () => {
 
       expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
       expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      // Named only, without the generic resource row's avatar and id.
+      expect(screen.queryByText(SatelliteClinic.id)).not.toBeInTheDocument();
       // Exam Room A is a calendar, listed under Rooms — never a site to filter by.
       expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
       expect(screen.queryByText('Exam Room A Bed 1')).not.toBeInTheDocument();
