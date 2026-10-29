@@ -45,8 +45,9 @@ Here are a few things to help you get started:
 
 - Sign in to your project: ${ctx.appBaseUrl}signin
 - Plan your application with an AI agent
-    Start with a copyable prompt to work through your requirements and save a plan for implementation,
-    whether you're customizing Medplum Provider or building a custom app.
+    Start with a copyable prompt to work through your requirements and save a
+    plan for implementation, whether you're customizing Medplum Provider or
+    building a custom app.
     Get started: https://www.medplum.com/docs/building-with-ai-coding-assistants#plan-your-application
 - Read the docs: https://www.medplum.com/docs
     - Contribute: https://github.com/medplum/medplum#contributing
