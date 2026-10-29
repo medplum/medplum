@@ -225,7 +225,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       parseStream.destroy(err);
     });
 
-    parsedInstances.push(Promise.all([instanceId, uploadPromise, parsePromise]));
+    parsedInstances.push(Promise.all([Promise.resolve(instanceId), uploadPromise, parsePromise]));
   });
 
   dicomwebMultipartParser.on('error', handleError);
