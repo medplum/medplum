@@ -9,7 +9,7 @@ import { DatabaseMode, getDatabasePool } from './database';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes } from './fhir/operations/db-configure-indexes';
 import { getGlobalSystemRepo, getShardSystemRepo } from './fhir/repo';
-import { getAllShards } from './fhir/sharding';
+import { buildProjectShard, getAllShards, GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -142,12 +142,11 @@ describe('Seed', () => {
         filters: [{ code: 'name', operator: 'eq', value: 'Super Admin' }],
       });
       expect(projects.length).toBe(1);
-      for (const project of projects) {
-        expect(project).toMatchObject({
-          name: 'Super Admin',
-          superAdmin: true,
-          strictMode: true,
-        });
-      }
+      expect(projects[0]).toMatchObject({
+        name: 'Super Admin',
+        superAdmin: true,
+        strictMode: true,
+        shard: buildProjectShard(GLOBAL_SHARD_ID),
+      });
     }));
 });

@@ -65,7 +65,7 @@ describe('Admin Invite', () => {
   let globalPool: Pool;
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     config.emailProvider = 'awsses';
     await withTestContext(() => initApp(app, config));
     globalPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);

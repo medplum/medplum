@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { getCacheRedis } from '../../redis';
-import { withTestContext } from '../../test.setup';
+import { TEST_SHARD_ID, withTestContext } from '../../test.setup';
 import type { SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
 import { GLOBAL_SHARD_ID } from '../sharding';
@@ -21,9 +21,9 @@ import {
 } from './resource-cache';
 
 describe('Repository resource cache', () => {
-  const shardId = GLOBAL_SHARD_ID;
+  const shardId = TEST_SHARD_ID;
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     await initAppServices(config);
   });
 

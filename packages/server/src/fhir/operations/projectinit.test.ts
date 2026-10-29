@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, isUUID } from '@medplum/core';
-import type { AccessPolicy, Practitioner, Project, Reference } from '@medplum/fhirtypes';
+import { ContentType, createReference, isUUID, Operator } from '@medplum/core';
+import type { CreateResourceOptions } from '@medplum/fhir-router';
+import type { AccessPolicy, Practitioner, Project, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -18,8 +19,9 @@ import {
   setupRecaptchaMock,
   withTestContext,
 } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
-import { PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
+import { getGlobalSystemRepo, getShardSystemRepo, Repository } from '../repo';
+import { GLOBAL_SHARD_ID } from '../sharding';
+import { createProject, PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -324,4 +326,34 @@ describe('Project $init', () => {
 
     config.defaultProjectSystemSetting = originalDefaultProjectSystemSetting;
   });
+
+  test('Rolls back the default access policies when a later write fails', () =>
+    withTestContext(async () => {
+      const createResource = Repository.prototype.createResource;
+      let projectId: string | undefined;
+      const spy = vi.spyOn(Repository.prototype, 'createResource').mockImplementation(async function (
+        this: Repository,
+        ...args: [Resource, CreateResourceOptions?]
+      ) {
+        const resource = args[0];
+        if (resource.resourceType === 'AccessPolicy') {
+          projectId = resource.meta?.project;
+        } else if (resource.resourceType === 'ClientApplication') {
+          throw new Error('Injected failure');
+        }
+        return createResource.apply(this, args);
+      });
+      try {
+        await expect(createProject('Rollback Project ' + randomUUID())).rejects.toThrow('Injected failure');
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(projectId).toBeDefined();
+      const policies = await getShardSystemRepo(GLOBAL_SHARD_ID).searchResources<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: projectId as string }],
+      });
+      expect(policies).toHaveLength(0);
+    }));
 });

@@ -15,7 +15,6 @@ import type {
   Practitioner,
   RelatedPerson,
   Task,
-  UserConfiguration,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError } from 'bullmq';
@@ -35,7 +34,7 @@ import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup'
 import type { BatchJobData } from '../workers/batch';
 import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
-import { normalizeShardId, TODO_SHARD_ID } from './sharding';
+import { getNormalizedProjectShardId } from './sharding';
 import { PostgresError } from './sql';
 
 /**
@@ -1993,7 +1992,7 @@ describe('Batch and Transaction processing', () => {
     const queue = getBatchQueue() as any;
     queue.add.mockClear();
 
-    const { accessToken, login, membership, project } = await createTestProject({
+    const { accessToken, membership, project } = await createTestProject({
       withAccessToken: true,
       withClient: true,
       project: {
@@ -2071,12 +2070,9 @@ describe('Batch and Transaction processing', () => {
       } as RateLimiterRes;
     });
 
-    const jobResult = runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-      undefined,
-      undefined,
-      { async: true },
-      () => execBatchJobImpl(job)
+    const { authState, requestId, traceId } = enqueued;
+    const jobResult = runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () =>
+      execBatchJobImpl(job)
     );
 
     await expect(jobResult).resolves.toBe(undefined);
@@ -2116,13 +2112,14 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
   let accessToken: string;
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     await initApp(app, config);
-    ({ accessToken } = await createTestProject({
+    let project;
+    ({ project, accessToken } = await createTestProject({
       project: { features: ['transaction-bundles'] },
       withAccessToken: true,
     }));
-    shardId = normalizeShardId(TODO_SHARD_ID); // get via the project returned from createTestProject
+    shardId = getNormalizedProjectShardId(project);
   });
 
   afterEach(() => {

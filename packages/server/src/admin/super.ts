@@ -523,7 +523,7 @@ superAdminRouter.post(
     checkExact(),
   ],
   async (req: Request, res: Response) => {
-    const ctx = requireSuperAdmin();
+    requireSuperAdmin();
     requireAsync(req);
     if (sendValidationErrors(req, res)) {
       return;
@@ -549,7 +549,8 @@ superAdminRouter.post(
       }
     }
 
-    const exec = new AsyncJobExecutor(ctx.systemRepo);
+    // System-owned AsyncJobs live on the global shard; only the index work targets shardId
+    const exec = new AsyncJobExecutor(getShardSystemRepo(GLOBAL_SHARD_ID));
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
       const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);
@@ -591,7 +592,7 @@ superAdminRouter.post(
     checkExact(),
   ],
   async (req: Request, res: Response) => {
-    const ctx = requireSuperAdmin();
+    requireSuperAdmin();
     requireAsync(req);
     if (sendValidationErrors(req, res)) {
       return;
@@ -613,7 +614,7 @@ superAdminRouter.post(
     }
 
     const shardId = getShardId(req.body);
-    const exec = new AsyncJobExecutor(ctx.systemRepo);
+    const exec = new AsyncJobExecutor(getShardSystemRepo(GLOBAL_SHARD_ID));
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
       const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);

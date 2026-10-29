@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
-import type { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
@@ -76,7 +76,7 @@ async function createPatient(
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
-  const profile = (await createProfile(systemRepo, project, 'Patient', firstName, lastName, user.email)) as Patient;
+  const profile = await createProfile(systemRepo, project, 'Patient', firstName, lastName, user.email);
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
   const membership = await createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),

@@ -3,8 +3,8 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import {
   badRequest,
-  createReference,
   created,
+  createReference,
   getResourceTypes,
   projectAdminResourceTypes,
   protectedResourceTypes,
@@ -28,8 +28,8 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import type { SystemRepository } from '../repo';
-import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
+import { buildProjectShard, getDefaultShardId, GLOBAL_SHARD_ID, normalizeShardId } from '../sharding';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -108,7 +108,7 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
  */
 export async function createProject(
   projectName: string,
-  admin: User
+  admin: WithId<User>
 ): Promise<{
   project: WithId<Project>;
   client: WithId<ClientApplication>;
@@ -117,7 +117,7 @@ export async function createProject(
 }>;
 export async function createProject(
   projectName: string,
-  admin?: User
+  admin?: WithId<User>
 ): Promise<{
   project: WithId<Project>;
   client: WithId<ClientApplication>;
@@ -126,7 +126,7 @@ export async function createProject(
 }>;
 export async function createProject(
   projectName: string,
-  admin?: User
+  admin?: WithId<User>
 ): Promise<{
   project: WithId<Project>;
   client: WithId<ClientApplication>;
@@ -134,35 +134,82 @@ export async function createProject(
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a parameter of this function
+  const shardId = getDefaultShardId();
+
+  log.info('Project creation request received', { shardId, name: projectName });
+
+  if (normalizeShardId(shardId) === GLOBAL_SHARD_ID) {
+    // Project and global resource types share a database, so create everything in one transaction
+    return getShardSystemRepo(shardId).withTransaction(
+      (txRepo) => createProjectResources(shardId, txRepo, txRepo, projectName, admin),
+      { resourceTypes: ['Project', 'AccessPolicy', 'ClientApplication', 'Practitioner', 'ProjectMembership'] }
+    );
+  }
+
+  // Skip background jobs: their post-commit Project lookup would run before the Project is created
+  const projectShardRepo = getShardSystemRepo(shardId, undefined, { skipBackgroundJobs: true });
+  return createProjectResources(shardId, projectShardRepo, getGlobalSystemRepo(), projectName, admin);
+}
+
+async function createProjectResources(
+  shardId: string,
+  projectShardRepo: SystemRepository,
+  globalRepo: SystemRepository,
+  projectName: string,
+  admin: WithId<User> | undefined
+): Promise<{
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
+}> {
+  const log = getLogger();
   const config = getConfig();
 
-  log.info('Project creation request received', { name: projectName });
+  // AccessPolicy and ProfileResource are project resource types while the Project, ClientApplication, and
+  // ProjectMembership are global. Pre-generate and assign Project.id so the project resource types can reference
+  // the project before it is created.
+  const projectId = globalRepo.generateId();
 
-  return systemRepo.withTransaction(
+  const { patientAccessPolicy, relatedPersonAccessPolicy, adminAccessPolicy, practitionerAccessPolicy, profile } =
+    await projectShardRepo.withTransaction(
+      async (txRepo) => {
+        const patientAccessPolicy = await createPatientCompartmentAccessPolicy(
+          txRepo,
+          projectId,
+          'Default Patient Access Policy'
+        );
+        const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
+          txRepo,
+          projectId,
+          'Default RelatedPerson Access Policy'
+        );
+        const adminAccessPolicy = await createAdminAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
+        const practitionerAccessPolicy = await createPractitionerAccessPolicy(
+          txRepo,
+          projectId,
+          'Default Practitioner Access Policy'
+        );
+        const profile = admin
+          ? await createProfile(txRepo, { id: projectId }, 'Practitioner', admin.firstName, admin.lastName, admin.email)
+          : undefined;
+        return { patientAccessPolicy, relatedPersonAccessPolicy, adminAccessPolicy, practitionerAccessPolicy, profile };
+      },
+      { resourceTypes: ['AccessPolicy', 'Practitioner'] }
+    );
+
+  log.info('Default access policies and profile created', {
+    shardId,
+    projectId,
+    patientAccessPolicyId: patientAccessPolicy.id,
+    relatedPersonAccessPolicyId: relatedPersonAccessPolicy.id,
+    adminAccessPolicyId: adminAccessPolicy.id,
+    practitionerAccessPolicyId: practitionerAccessPolicy.id,
+    profileId: profile?.id,
+  });
+
+  const result = await globalRepo.withTransaction(
     async (txRepo) => {
-      // Pre-generate the project ID so the default access policies (which reference the project via
-      // meta.project) can be created first, then the Project can be created in a single write with its
-      // default policies already set.
-      const projectId = txRepo.generateId();
-
-      const patientAccessPolicy = await createPatientCompartmentAccessPolicy(
-        txRepo,
-        projectId,
-        'Default Patient Access Policy'
-      );
-      const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
-        txRepo,
-        projectId,
-        'Default RelatedPerson Access Policy'
-      );
-      const adminAccessPolicy = await createAdminAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
-      const practitionerAccessPolicy = await createPractitionerAccessPolicy(
-        txRepo,
-        projectId,
-        'Default Practitioner Access Policy'
-      );
-
       const project = await txRepo.createResource<Project>(
         {
           resourceType: 'Project',
@@ -178,14 +225,10 @@ export async function createProject(
             { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
             { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
           ],
+          shard: buildProjectShard(shardId),
         },
         { assignedId: true }
       );
-
-      log.info('Project created', {
-        id: project.id,
-        name: projectName,
-      });
 
       const client = await createClient(txRepo, {
         project,
@@ -193,22 +236,22 @@ export async function createProject(
         description: 'Default client for ' + project.name,
       });
 
-      if (admin) {
-        const profile = await createProfile(
-          txRepo,
-          project,
-          'Practitioner',
-          admin.firstName,
-          admin.lastName,
-          admin.email
-        );
+      if (admin && profile) {
         const membership = await createProjectMembership(txRepo, admin, project, profile, { admin: true });
         return { project, profile, membership, client };
       }
       return { project, client };
     },
-    { resourceTypes: ['Project', 'AccessPolicy', 'ClientApplication', 'Practitioner', 'ProjectMembership'] }
+    { resourceTypes: ['Project', 'ClientApplication', 'ProjectMembership'] }
   );
+
+  log.info('Project created', {
+    id: result.project.id,
+    name: projectName,
+    shardId,
+  });
+
+  return result;
 }
 
 async function createPatientCompartmentAccessPolicy(

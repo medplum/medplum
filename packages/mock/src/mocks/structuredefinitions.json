@@ -12039,6 +12039,17 @@
           ]
         },
         {
+          "id": "Project.active",
+          "path": "Project.active",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
           "id": "Project.name",
           "path": "Project.name",
           "min": 0,
@@ -12367,6 +12378,28 @@
           "type": [
             {
               "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Project.shard",
+          "path": "Project.shard",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Project.shard.id",
+          "path": "Project.shard.id",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
             }
           ]
         }

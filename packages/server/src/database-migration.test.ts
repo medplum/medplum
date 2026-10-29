@@ -43,7 +43,7 @@ import * as migrationVersions from './migrations/migration-versions';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
-import { getSuperAdminTestProject, TEST_SHARD_ID, withTestContext } from './test.setup';
+import { createTestProject, getSuperAdminTestProject, TEST_SHARD_ID, withTestContext } from './test.setup';
 import * as version from './util/version';
 import * as workers from './workers';
 import type * as PostDeployMigration from './workers/post-deploy-migration';
@@ -657,17 +657,20 @@ describe('Database migrations', () => {
     const app = express();
 
     let adminAccessToken: string;
-    let shardSystemRepo: SystemRepository;
+    let nonGlobalSuperAdminAccessToken: string;
+    let nonGlobalShardSystemRepo: SystemRepository;
 
     beforeAll(async () => {
       const config = await loadTestConfig({ sharded: true });
       await initApp(app, config);
       await expungePostDeployMigrationAsyncJob();
-      shardSystemRepo = getShardSystemRepo(shardId);
+      nonGlobalShardSystemRepo = getShardSystemRepo(shardId);
 
-      const practitioner1 = await shardSystemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const practitioner1 = await nonGlobalShardSystemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+      });
 
-      const user1 = await shardSystemRepo.createResource<User>({
+      const user1 = await nonGlobalShardSystemRepo.createResource<User>({
         resourceType: 'User',
         firstName: 'Super',
         lastName: 'Admin',
@@ -675,14 +678,14 @@ describe('Database migrations', () => {
         passwordHash: 'abc',
       });
 
-      const membership1 = await shardSystemRepo.createResource<ProjectMembership>({
+      const membership1 = await nonGlobalShardSystemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         project: createReference(project),
         user: createReference(user1),
         profile: createReference(practitioner1),
       });
 
-      const login1 = await shardSystemRepo.createResource<Login>({
+      const login1 = await nonGlobalShardSystemRepo.createResource<Login>({
         resourceType: 'Login',
         authMethod: 'client',
         user: createReference(user1),
@@ -698,6 +701,12 @@ describe('Database migrations', () => {
         profile: getReferenceString(practitioner1),
         scope: 'openid',
       });
+
+      ({ accessToken: nonGlobalSuperAdminAccessToken } = await createTestProject({
+        shardId,
+        superAdmin: true,
+        withAccessToken: true,
+      }));
     });
 
     beforeEach(() => {
@@ -962,7 +971,7 @@ describe('Database migrations', () => {
 
         const res = await request(app)
           .post('/admin/super/rebuild-index')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Authorization', 'Bearer ' + nonGlobalSuperAdminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
           .send({ shardId, targets });
@@ -1039,7 +1048,7 @@ describe('Database migrations', () => {
 
         const res = await request(app)
           .post('/admin/super/drop-invalid-indexes')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Authorization', 'Bearer ' + nonGlobalSuperAdminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
           .send({ shardId, targets });

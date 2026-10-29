@@ -207,7 +207,8 @@
       "Enterprise": "#/definitions/Enterprise",
       "EnterpriseProject": "#/definitions/EnterpriseProject",
       "Cron": "#/definitions/Cron",
-      "CronParameter": "#/definitions/CronParameter"
+      "CronParameter": "#/definitions/CronParameter",
+      "ProjectShard": "#/definitions/ProjectShard"
     }
   },
   "oneOf": [
@@ -819,6 +820,9 @@
     },
     {
       "$ref": "#/definitions/CronParameter"
+    },
+    {
+      "$ref": "#/definitions/ProjectShard"
     }
   ],
   "definitions": {
@@ -1432,6 +1436,9 @@
         },
         {
           "$ref": "#/definitions/CronParameter"
+        },
+        {
+          "$ref": "#/definitions/ProjectShard"
         }
       ]
     },
@@ -61723,6 +61730,13 @@
             ]
           },
           "type": "array"
+        },
+        "shard": {
+          "description": "The shard(s) associated with this Project",
+          "items": {
+            "$ref": "#/definitions/ProjectShard"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -65964,6 +65978,16 @@
       "required": [
         "name"
       ]
+    },
+    "ProjectShard": {
+      "description": "The shard(s) associated with this Project",
+      "properties": {
+        "id": {
+          "description": "The shard id",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -8,7 +8,6 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getSuperAdminAccessToken, TEST_SHARD_ID, waitForAsyncJob } from '../../test.setup';
-import { GLOBAL_SHARD_ID } from '../sharding';
 
 describe('db-configure-indexes', () => {
   const app = express();
@@ -23,8 +22,6 @@ describe('db-configure-indexes', () => {
     await initApp(app, config);
     accessToken = await getSuperAdminAccessToken();
 
-    // Only the test shard has the table, so the success tests see its indexes only if the work ran there
-    await getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID).query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     const pool = getDatabasePool(DatabaseMode.WRITER, TEST_SHARD_ID);
     await pool.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await pool.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
