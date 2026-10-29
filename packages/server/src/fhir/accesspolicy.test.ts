@@ -3530,6 +3530,66 @@ describe('AccessPolicy', () => {
         await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
       }));
   });
+
+  describe('Logins with SMART scopes', () => {
+    const userConfig: UserConfiguration = { resourceType: 'UserConfiguration' };
+
+    test('Project admin resource types are only granted by scopes that name them', () =>
+      withTestContext(async () => {
+        const { project, membership, login } = await createTestProject({
+          withClient: true,
+          withAccessToken: true,
+          membership: { admin: true },
+        });
+        const getScopedRepo = (scope: string): Promise<Repository> =>
+          getRepoForLogin({ login: { ...login, scope }, project, membership, userConfig });
+
+        const namedRepo = await getScopedRepo('openid user/ProjectMembership.rs');
+        expect(namedRepo.isProjectAdmin()).toBe(true);
+        await expect(namedRepo.readResource('ProjectMembership', membership.id)).resolves.toBeDefined();
+        await expect(namedRepo.updateResource({ ...membership, externalId: randomUUID() })).rejects.toThrow(
+          'Forbidden'
+        );
+        await expect(namedRepo.readResource('Project', project.id)).rejects.toThrow('Forbidden');
+
+        const wildcardRepo = await getScopedRepo('openid user/*.cruds');
+        await expect(wildcardRepo.createResource<Patient>({ resourceType: 'Patient' })).resolves.toBeDefined();
+        await expect(wildcardRepo.readResource('Project', project.id)).rejects.toThrow('Forbidden');
+        await expect(wildcardRepo.readResource('ProjectMembership', membership.id)).rejects.toThrow('Forbidden');
+      }));
+
+    test('Scopes do not grant project admin resource types to non-admins', () =>
+      withTestContext(async () => {
+        const { project, membership, login } = await createTestProject({ withClient: true, withAccessToken: true });
+        const scopedRepo = await getRepoForLogin({
+          login: { ...login, scope: 'openid user/Project.cruds user/ProjectMembership.cruds' },
+          project,
+          membership,
+          userConfig,
+        });
+        await expect(scopedRepo.readResource('Project', project.id)).rejects.toThrow('Forbidden');
+        await expect(scopedRepo.readResource('ProjectMembership', membership.id)).rejects.toThrow('Forbidden');
+        await expect(scopedRepo.updateResource({ ...membership, admin: true })).rejects.toThrow('Forbidden');
+      }));
+
+    test('Super admin logins cannot use SMART scopes or launch context', () =>
+      withTestContext(async () => {
+        const { project, membership, login } = await createTestProject({
+          superAdmin: true,
+          withClient: true,
+          withAccessToken: true,
+        });
+        await expect(getRepoForLogin({ login, project, membership, userConfig })).resolves.toBeDefined();
+        for (const scopedLogin of [
+          { ...login, scope: 'openid user/*.rs' },
+          { ...login, launch: { reference: 'SmartAppLaunch/' + randomUUID() } },
+        ]) {
+          await expect(getRepoForLogin({ login: scopedLogin, project, membership, userConfig })).rejects.toThrow(
+            'SMART scopes are not supported for super admin logins'
+          );
+        }
+      }));
+  });
 });
 
 describe('reconcileDefaultAccessPolicy', () => {

@@ -312,6 +312,23 @@ describe('OAuth2 Token', () => {
     }
   );
 
+  test.each([
+    ['openid', 200],
+    ['openid system/*.rs', 400],
+  ] as const)('Token for super admin client credentials with scope %s', async (scope, status) => {
+    const superAdmin = await createTestProject({ superAdmin: true, withClient: true });
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: superAdmin.client.id,
+      client_secret: superAdmin.client.secret,
+      scope,
+    });
+    expect(res).toHaveStatus(status);
+    if (status === 400) {
+      expect(res.body.error_description).toBe('SMART scopes are not supported for super admin logins');
+    }
+  });
+
   test('Token for client credentials with missing client_id', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',

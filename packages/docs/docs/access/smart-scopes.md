@@ -46,6 +46,8 @@ Scopes grant read, write, search and update access to specific resources, here a
 - `scope=[array of individual scopes]`
 - `patient=123`: the user is allowed access to resources in the Patient/123 [compartment](http://hl7.org/fhir/R4B/compartmentdefinition.html).
 
+Wildcard scopes such as `user/*.rs` do not include the [project admin resource types](/docs/access/admin), such as `Project`, `ProjectMembership`, `User` and `AccessPolicy`. A project admin's token reaches those types only through scopes that name them, such as `user/ProjectMembership.rs`. Super admin logins cannot use `patient/`, `user/` or `system/` scopes or a SMART App Launch.
+
 ## Authorization UI
 
 During authorization, the user has an option to select/deselect scopes and will see a scope selection page like the below.
