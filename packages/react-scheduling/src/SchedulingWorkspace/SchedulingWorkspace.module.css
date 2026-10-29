@@ -7,11 +7,16 @@
   height: 100%;
   width: 100%;
   overflow-x: clip;
+  /* Bounds the widened pane by the workspace, not the viewport, and keeps its z-index
+     among the workspace's own layers rather than the host page's. */
+  container-type: inline-size;
   --pane-width: 320px;
 }
 
+/* Gives way once the calendar has no width left, so the pane beside it stays on screen. */
 .sidebar {
-  flex-shrink: 0;
+  flex: 0 1 300px;
+  min-width: 0;
   overflow-y: auto;
 }
 
@@ -78,7 +83,7 @@
 .paneWide {
   left: auto;
   width: calc(var(--mantine-spacing-md) + var(--pane-width) + var(--mantine-spacing-lg) + 350px);
-  max-width: 100vw;
+  max-width: 100cqi;
   padding-inline-start: var(--mantine-spacing-md);
   box-shadow: var(--mantine-shadow-xl);
   animation: paneSlideIn 100ms ease;

@@ -13,6 +13,7 @@
   align-items: flex-start;
   flex: 1 1 auto;
   min-height: 0;
+  container-type: inline-size;
 }
 
 /* Each column scrolls on its own, so a wide stretch of days does not carry the form
@@ -56,6 +57,21 @@
 
 .monthPicker table {
   margin-top: var(--mantine-spacing-xs);
+}
+
+/* Stacked, as they are below the two columns' bases and the gap between them (300px + 350px
+   + 20px), the columns scroll as one with whatever holds them, rather than each in its own
+   box with the times out of view below the form. */
+@container (width < 670px) {
+  .form,
+  .results {
+    max-height: none;
+  }
+
+  .form,
+  .resultsList {
+    overflow-y: visible;
+  }
 }
 
 /* Both columns are stacks, so everything in them is a flex item, and a clamped column
