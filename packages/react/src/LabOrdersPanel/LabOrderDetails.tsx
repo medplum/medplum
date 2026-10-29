@@ -17,10 +17,10 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import classes from '../ListWithDetailPane/ListWithDetailPane.module.css';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
 import { LabDetailLayout } from './LabDetailLayout';
+import { LabDocumentSection } from './LabDocumentSection';
 import {
   getOrderDisplayText,
   getOrderStatusColor,
@@ -469,65 +469,14 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             )}
           </Stack>
 
-          {/* Lab Order Requisition Documents - show for both open and completed items */}
           <Divider />
-          <Stack gap="lg" mb="xl">
-            <Text fw={800} size="md" pb="0">
-              Requisition Document
-            </Text>
-            {loadingDocs && (
-              <Group>
-                <Loader size="sm" />
-                <Text size="sm" c="dimmed">
-                  Loading requisition documents...
-                </Text>
-              </Group>
-            )}
-
-            {!loadingDocs && labOrderRequisitionDocs.length > 0 && (
-              <Stack gap="md">
-                {labOrderRequisitionDocs.map((doc, index) => (
-                  <Stack key={doc.id || index} gap="xs">
-                    {doc.content && doc.content.length > 0 && (
-                      <Stack gap="xs">
-                        {doc.content.map((content, contentIndex) => (
-                          <div
-                            key={contentIndex}
-                            style={{
-                              height: '600px',
-                              borderRadius: '4px',
-                              overflow: 'hidden',
-                              border: '1px solid #3C3C3C',
-                            }}
-                          >
-                            <style>
-                              {`
-                            div[data-testid="attachment-iframe"] {
-                              height: 600px !important;
-                            }
-                            div[data-testid="attachment-iframe"] iframe {
-                              height: 600px !important;
-                            }
-                          `}
-                            </style>
-                            <AttachmentDisplay value={content.attachment} />
-                          </div>
-                        ))}
-                      </Stack>
-                    )}
-                  </Stack>
-                ))}
-              </Stack>
-            )}
-
-            {!loadingDocs && labOrderRequisitionDocs.length === 0 && (
-              <Stack gap="xs">
-                <Text size="sm" c="dimmed">
-                  No lab order requisition documents found.
-                </Text>
-              </Stack>
-            )}
-          </Stack>
+          <LabDocumentSection
+            title="Requisition Document"
+            loading={loadingDocs}
+            loadingText="Loading requisition documents..."
+            emptyText="No lab order requisition documents found."
+            docs={labOrderRequisitionDocs}
+          />
 
           {/* Order Entry Questions - show when QuestionnaireResponse is linked */}
           {questionnaireResponse && (
@@ -622,63 +571,14 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             </>
           )}
 
-          {/* Specimen Label Documents - show for both open and completed items */}
           <Divider />
-          <Stack gap="lg" mb="xl">
-            <Text fw={800} size="md" pb="0">
-              Specimen Label
-            </Text>
-            {loadingSpecimenDocs && (
-              <Group>
-                <Loader size="sm" />
-                <Text size="sm" c="dimmed">
-                  Loading specimen label documents...
-                </Text>
-              </Group>
-            )}
-
-            {!loadingSpecimenDocs && specimenLabelDocs.length > 0 && (
-              <Stack gap="md">
-                {specimenLabelDocs.map((doc, index) => (
-                  <Stack key={doc.id || index} gap="xs">
-                    {doc.content && doc.content.length > 0 && (
-                      <Stack gap="xs">
-                        {doc.content.map((content, contentIndex) => (
-                          <div
-                            key={contentIndex}
-                            style={{
-                              height: '600px',
-                              borderRadius: '4px',
-                              overflow: 'hidden',
-                              border: '1px solid #3C3C3C',
-                            }}
-                          >
-                            <style>
-                              {`
-                            div[data-testid="attachment-iframe"] {
-                              height: 600px !important;
-                            }
-                            div[data-testid="attachment-iframe"] iframe {
-                              height: 600px !important;
-                            }
-                          `}
-                            </style>
-                            <AttachmentDisplay value={content.attachment} />
-                          </div>
-                        ))}
-                      </Stack>
-                    )}
-                  </Stack>
-                ))}
-              </Stack>
-            )}
-
-            {!loadingSpecimenDocs && specimenLabelDocs.length === 0 && (
-              <Text size="sm" c="dimmed">
-                No specimen label documents found.
-              </Text>
-            )}
-          </Stack>
+          <LabDocumentSection
+            title="Specimen Label"
+            loading={loadingSpecimenDocs}
+            loadingText="Loading specimen label documents..."
+            emptyText="No specimen label documents found."
+            docs={specimenLabelDocs}
+          />
         </Stack>
       )}
 
