@@ -1,20 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Badge,
-  Button,
-  Divider,
-  Group,
-  Loader,
-  Menu,
-  Paper,
-  ScrollArea,
-  Stack,
-  Tabs,
-  Text,
-  ThemeIcon,
-  Timeline,
-} from '@mantine/core';
+import { Badge, Button, Divider, Group, Loader, Menu, Stack, Tabs, Text, ThemeIcon, Timeline } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { formatDate, formatHumanName, normalizeErrorString } from '@medplum/core';
@@ -29,11 +15,18 @@ import type {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
+import classes from '../ListWithDetailPane/ListWithDetailPane.module.css';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
-import classes from './LabOrderDetails.module.css';
+import { LabDetailLayout } from './LabDetailLayout';
+import {
+  getOrderDisplayText,
+  getOrderStatusColor,
+  getOrderStatusDisplayText,
+  getQuestionnaireResponseRef,
+} from './labOrder';
 import { LabReportContent } from './LabReportContent';
 
 export interface LabOrderDetailsProps {
@@ -277,25 +270,16 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       setQuestionnaireResponse(null);
 
       // First, check if current order has QuestionnaireResponse in supportingInfo
-      if (order.supportingInfo && order.supportingInfo.length > 0) {
-        const questionnaireRef = order.supportingInfo.find((ref) =>
-          ref.reference?.startsWith('QuestionnaireResponse/')
-        );
-
-        if (questionnaireRef?.reference) {
-          try {
-            setLoadingQuestionnaire(true);
-            const response = await medplum.readResource(
-              'QuestionnaireResponse',
-              questionnaireRef.reference.split('/')[1]
-            );
-            setQuestionnaireResponse(response);
-            return;
-          } catch (error) {
-            console.error('Error fetching questionnaire response from current order:', error);
-          } finally {
-            setLoadingQuestionnaire(false);
-          }
+      const currentRef = getQuestionnaireResponseRef(order);
+      if (currentRef?.reference) {
+        try {
+          setLoadingQuestionnaire(true);
+          setQuestionnaireResponse(await medplum.readReference(currentRef as Reference<QuestionnaireResponse>));
+          return;
+        } catch (error) {
+          console.error('Error fetching questionnaire response from current order:', error);
+        } finally {
+          setLoadingQuestionnaire(false);
         }
       }
 
@@ -313,60 +297,19 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             _count: 50, // Get more results to filter through
           });
 
-          if (searchResult && searchResult.length > 0) {
-            // Find the ServiceRequest that has this order in its basedOn field
-            // Prioritize those that also have QuestionnaireResponse in supportingInfo
-            const originalOrder = searchResult.find((sr: ServiceRequest) => {
-              if (sr.basedOn && sr.basedOn.length > 0) {
-                const hasBasedOnMatch = sr.basedOn.some(
-                  (ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) =>
-                    ref.reference === `ServiceRequest/${order.id}`
-                );
-
-                if (hasBasedOnMatch) {
-                  // Check if this ServiceRequest also has QuestionnaireResponse in supportingInfo
-                  return sr.supportingInfo?.some((ref) => ref.reference?.startsWith('QuestionnaireResponse/')) ?? false;
-                }
-                return false;
-              }
-              return false;
-            });
-
-            if (originalOrder) {
-              // Check if original order has QuestionnaireResponse in supportingInfo
-              if (originalOrder.supportingInfo && originalOrder.supportingInfo.length > 0) {
-                const questionnaireRef = originalOrder.supportingInfo.find((ref) =>
-                  ref.reference?.startsWith('QuestionnaireResponse/')
-                );
-
-                if (questionnaireRef?.reference) {
-                  const response = await medplum.readResource(
-                    'QuestionnaireResponse',
-                    questionnaireRef.reference.split('/')[1]
-                  );
-                  setQuestionnaireResponse(response);
-                }
-              }
-            } else {
-              // Alternative: Look for any ServiceRequest with QuestionnaireResponse in supportingInfo
-              const serviceRequestWithQuestionnaire = searchResult.find((sr: ServiceRequest) =>
-                sr.supportingInfo?.some((ref) => ref.reference?.startsWith('QuestionnaireResponse/'))
-              );
-
-              if (serviceRequestWithQuestionnaire) {
-                const questionnaireRef = serviceRequestWithQuestionnaire.supportingInfo?.find((ref) =>
-                  ref.reference?.startsWith('QuestionnaireResponse/')
-                );
-
-                if (questionnaireRef?.reference) {
-                  const response = await medplum.readResource(
-                    'QuestionnaireResponse',
-                    questionnaireRef.reference.split('/')[1]
-                  );
-                  setQuestionnaireResponse(response);
-                }
-              }
-            }
+          // Prefer the ServiceRequest that has this order in its basedOn field and a QuestionnaireResponse;
+          // otherwise fall back to any ServiceRequest with a QuestionnaireResponse
+          const withQuestionnaire = searchResult.filter((sr) => getQuestionnaireResponseRef(sr));
+          const sourceOrder =
+            withQuestionnaire.find((sr) =>
+              sr.basedOn?.some(
+                (ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) =>
+                  ref.reference === `ServiceRequest/${order.id}`
+              )
+            ) ?? withQuestionnaire[0];
+          const sourceRef = getQuestionnaireResponseRef(sourceOrder);
+          if (sourceRef?.reference) {
+            setQuestionnaireResponse(await medplum.readReference(sourceRef as Reference<QuestionnaireResponse>));
           }
         } catch (error) {
           console.error('Error fetching questionnaire response from original order:', error);
@@ -386,524 +329,437 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   }, [medplum, order]);
 
   return (
-    <ScrollArea h="100%">
-      <Paper h="100%">
-        <Stack gap="0">
-          <Stack gap="md" p="md">
-            <Stack gap="0">
-              <Text size="xl" fw={800}>
-                {(() => {
-                  // If there are multiple codes (2 or more), show them separated by commas
-                  if (order.code?.coding && order.code.coding.length >= 2) {
-                    return order.code.coding.map((coding) => coding.display).join(', ');
-                  }
-
-                  // If there's a text field and only one code, use the text field
-                  if (order.code?.text) {
-                    return order.code.text;
-                  }
-
-                  // Otherwise, show the first code or fallback
-                  return order.code?.coding?.[0]?.display || 'Lab Order';
-                })()}
-              </Text>
-              <Text size="sm" c="gray.7">
-                {order.status === 'completed' && order.meta?.lastUpdated
-                  ? `Completed ${formatDate(order.meta.lastUpdated)} • Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`
-                  : `Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`}
-              </Text>
-            </Stack>
-            <Divider />
-            <Group justify="space-between" align="center">
-              <Tabs
-                value={detailTab}
-                onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
-                variant="unstyled"
-                className={classes.pillTabs}
+    <LabDetailLayout
+      title={getOrderDisplayText(order)}
+      subtitle={
+        order.status === 'completed' && order.meta?.lastUpdated
+          ? `Completed ${formatDate(order.meta.lastUpdated)} • Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`
+          : `Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`
+      }
+      actions={
+        <Group justify="space-between" align="center">
+          <Tabs
+            value={detailTab}
+            onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+            variant="unstyled"
+            className={classes.pillTabs}
+          >
+            <Tabs.List>
+              {!hideProgress && (
+                <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
+                  {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                </Tabs.Tab>
+              )}
+              <Tabs.Tab value="order">Order Details</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+          <Menu position="bottom-end" shadow="md">
+            <Menu.Target>
+              <Button
+                variant="light"
+                color={getOrderStatusColor(order.status)}
+                rightSection={canRevoke ? <IconChevronDown size={16} /> : undefined}
+                radius="xl"
+                size="sm"
               >
-                <Tabs.List>
-                  {!hideProgress && (
-                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
-                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                    </Tabs.Tab>
-                  )}
-                  <Tabs.Tab value="order">Order Details</Tabs.Tab>
-                </Tabs.List>
-              </Tabs>
-              <Menu position="bottom-end" shadow="md">
-                <Menu.Target>
-                  <Button
-                    variant="light"
-                    color={getStatusColor(order.status)}
-                    rightSection={canRevoke ? <IconChevronDown size={16} /> : undefined}
-                    radius="xl"
-                    size="sm"
-                  >
-                    {getStatusDisplayText(order.status)}
-                  </Button>
-                </Menu.Target>
-                {canRevoke && (
-                  <Menu.Dropdown>
-                    {isDraft && onResume && <Menu.Item onClick={onResume}>Active</Menu.Item>}
-                    <Menu.Item onClick={() => handleRevoke().catch(console.error)}>Revoked</Menu.Item>
-                  </Menu.Dropdown>
-                )}
-              </Menu>
-            </Group>
+                {getOrderStatusDisplayText(order.status)}
+              </Button>
+            </Menu.Target>
+            {canRevoke && (
+              <Menu.Dropdown>
+                {isDraft && onResume && <Menu.Item onClick={onResume}>Active</Menu.Item>}
+                <Menu.Item onClick={() => handleRevoke().catch(console.error)}>Revoked</Menu.Item>
+              </Menu.Dropdown>
+            )}
+          </Menu>
+        </Group>
+      }
+    >
+      {/* Order Details Tab Content */}
+      {detailTab === 'order' && (
+        <Stack gap="md">
+          <Stack gap="sm" mb="xl">
+            <DetailRow label="Order Date">
+              <Text size="sm">{formatDate(order.authoredOn || order.meta?.lastUpdated)}</Text>
+            </DetailRow>
+
+            {order.code?.coding && (
+              <DetailRow label="Test Code">
+                <Stack gap="xs">
+                  {order.code.coding.map((coding, index) => (
+                    <Text key={index} size="sm">
+                      {coding.display} ({coding.code})
+                    </Text>
+                  ))}
+                </Stack>
+              </DetailRow>
+            )}
+
+            {requester?.resourceType === 'Practitioner' && (
+              <DetailRow label="Ordering provider">
+                <Text size="sm">{formatHumanName(requester.name?.[0])}</Text>
+              </DetailRow>
+            )}
+
+            {order.performer?.[0]?.display && (
+              <DetailRow label="Performing lab">
+                <Text size="sm">{order.performer[0].display}</Text>
+              </DetailRow>
+            )}
+
+            {order.requisition?.value && (
+              <DetailRow label="Requisition ID">
+                <Text size="sm">{order.requisition.value}</Text>
+              </DetailRow>
+            )}
+
+            {patient?.resourceType === 'Patient' && (
+              <DetailRow label="Patient">
+                <Text size="sm">{formatHumanName(patient.name?.[0])}</Text>
+              </DetailRow>
+            )}
+
+            {order.priority && (
+              <DetailRow label="Priority">
+                <Text size="sm">{order.priority}</Text>
+              </DetailRow>
+            )}
+
+            {order.reasonCode && (
+              <DetailRow label="Reason">
+                <Stack gap="xs">
+                  {order.reasonCode.map((reason, index) => (
+                    <Text key={index} size="sm">
+                      {reason.text || reason.coding?.[0]?.display}
+                    </Text>
+                  ))}
+                </Stack>
+              </DetailRow>
+            )}
+
+            {order.note && (
+              <DetailRow label="Notes">
+                <Stack gap="xs">
+                  {order.note.map((note, index) => (
+                    <Text key={index} size="sm">
+                      {note.text}
+                    </Text>
+                  ))}
+                </Stack>
+              </DetailRow>
+            )}
+
+            {order.orderDetail && (
+              <>
+                <Divider />
+                <Stack gap="sm">
+                  <Text fw={800} size="lg">
+                    Order Details
+                  </Text>
+                  {order.orderDetail.map((detail, index) => (
+                    <Group key={index} align="flex-start">
+                      <Text fw={500} size="sm">
+                        Detail {index + 1}:
+                      </Text>
+                      <Text size="sm">{detail.text || detail.coding?.[0]?.display}</Text>
+                    </Group>
+                  ))}
+                </Stack>
+              </>
+            )}
           </Stack>
 
-          <Stack gap="xs" p="md">
-            {/* Order Details Tab Content */}
-            {detailTab === 'order' && (
+          {/* Lab Order Requisition Documents - show for both open and completed items */}
+          <Divider />
+          <Stack gap="lg" mb="xl">
+            <Text fw={800} size="md" pb="0">
+              Requisition Document
+            </Text>
+            {loadingDocs && (
+              <Group>
+                <Loader size="sm" />
+                <Text size="sm" c="dimmed">
+                  Loading requisition documents...
+                </Text>
+              </Group>
+            )}
+
+            {!loadingDocs && labOrderRequisitionDocs.length > 0 && (
               <Stack gap="md">
-                <Stack gap="sm" mb="xl">
-                  <Group align="flex-start" gap="lg">
-                    <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                      Order Date
+                {labOrderRequisitionDocs.map((doc, index) => (
+                  <Stack key={doc.id || index} gap="xs">
+                    {doc.content && doc.content.length > 0 && (
+                      <Stack gap="xs">
+                        {doc.content.map((content, contentIndex) => (
+                          <div
+                            key={contentIndex}
+                            style={{
+                              height: '600px',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              border: '1px solid #3C3C3C',
+                            }}
+                          >
+                            <style>
+                              {`
+                            div[data-testid="attachment-iframe"] {
+                              height: 600px !important;
+                            }
+                            div[data-testid="attachment-iframe"] iframe {
+                              height: 600px !important;
+                            }
+                          `}
+                            </style>
+                            <AttachmentDisplay value={content.attachment} />
+                          </div>
+                        ))}
+                      </Stack>
+                    )}
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+
+            {!loadingDocs && labOrderRequisitionDocs.length === 0 && (
+              <Stack gap="xs">
+                <Text size="sm" c="dimmed">
+                  No lab order requisition documents found.
+                </Text>
+              </Stack>
+            )}
+          </Stack>
+
+          {/* Order Entry Questions - show when QuestionnaireResponse is linked */}
+          {questionnaireResponse && (
+            <>
+              <Divider />
+              <Stack gap="md" mb="xl">
+                <Text fw={800} size="md">
+                  Order Entry Questions
+                </Text>
+
+                {loadingQuestionnaire && (
+                  <Group>
+                    <Loader size="sm" />
+                    <Text size="sm" c="dimmed">
+                      Loading questionnaire response...
                     </Text>
-                    <Text size="sm">{formatDate(order.authoredOn || order.meta?.lastUpdated)}</Text>
                   </Group>
-
-                  {order.code?.coding && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Test Code
-                      </Text>
-                      <Stack gap="xs">
-                        {order.code.coding.map((coding, index) => (
-                          <Text key={index} size="sm">
-                            {coding.display} ({coding.code})
-                          </Text>
-                        ))}
-                      </Stack>
-                    </Group>
-                  )}
-
-                  {requester?.resourceType === 'Practitioner' && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Ordering provider
-                      </Text>
-                      <Text size="sm">{formatHumanName(requester.name?.[0])}</Text>
-                    </Group>
-                  )}
-
-                  {order.performer?.[0]?.display && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Performing lab
-                      </Text>
-                      <Text size="sm">{order.performer[0].display}</Text>
-                    </Group>
-                  )}
-
-                  {order.requisition?.value && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Requisition ID
-                      </Text>
-                      <Text size="sm">{order.requisition.value}</Text>
-                    </Group>
-                  )}
-
-                  {patient?.resourceType === 'Patient' && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Patient
-                      </Text>
-                      <Text size="sm">{formatHumanName(patient.name?.[0])}</Text>
-                    </Group>
-                  )}
-
-                  {order.priority && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Priority
-                      </Text>
-                      <Text size="sm">{order.priority}</Text>
-                    </Group>
-                  )}
-
-                  {order.reasonCode && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Reason
-                      </Text>
-                      <Stack gap="xs">
-                        {order.reasonCode.map((reason, index) => (
-                          <Text key={index} size="sm">
-                            {reason.text || reason.coding?.[0]?.display}
-                          </Text>
-                        ))}
-                      </Stack>
-                    </Group>
-                  )}
-
-                  {order.note && (
-                    <Group align="flex-start" gap="lg">
-                      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
-                        Notes
-                      </Text>
-                      <Stack gap="xs">
-                        {order.note.map((note, index) => (
-                          <Text key={index} size="sm">
-                            {note.text}
-                          </Text>
-                        ))}
-                      </Stack>
-                    </Group>
-                  )}
-
-                  {order.orderDetail && (
-                    <>
-                      <Divider />
-                      <Stack gap="sm">
-                        <Text fw={800} size="lg">
-                          Order Details
-                        </Text>
-                        {order.orderDetail.map((detail, index) => (
-                          <Group key={index} align="flex-start">
-                            <Text fw={500} size="sm">
-                              Detail {index + 1}:
-                            </Text>
-                            <Text size="sm">{detail.text || detail.coding?.[0]?.display}</Text>
-                          </Group>
-                        ))}
-                      </Stack>
-                    </>
-                  )}
-                </Stack>
-
-                {/* Lab Order Requisition Documents - show for both open and completed items */}
-                <Divider />
-                <Stack gap="lg" mb="xl">
-                  <Text fw={800} size="md" pb="0">
-                    Requisition Document
-                  </Text>
-                  {loadingDocs && (
-                    <Group>
-                      <Loader size="sm" />
-                      <Text size="sm" c="dimmed">
-                        Loading requisition documents...
-                      </Text>
-                    </Group>
-                  )}
-
-                  {!loadingDocs && labOrderRequisitionDocs.length > 0 && (
-                    <Stack gap="md">
-                      {labOrderRequisitionDocs.map((doc, index) => (
-                        <Stack key={doc.id || index} gap="xs">
-                          {doc.content && doc.content.length > 0 && (
-                            <Stack gap="xs">
-                              {doc.content.map((content, contentIndex) => (
-                                <div
-                                  key={contentIndex}
-                                  style={{
-                                    height: '600px',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden',
-                                    border: '1px solid #3C3C3C',
-                                  }}
-                                >
-                                  <style>
-                                    {`
-                                  div[data-testid="attachment-iframe"] {
-                                    height: 600px !important;
-                                  }
-                                  div[data-testid="attachment-iframe"] iframe {
-                                    height: 600px !important;
-                                  }
-                                `}
-                                  </style>
-                                  <AttachmentDisplay value={content.attachment} />
-                                </div>
-                              ))}
-                            </Stack>
-                          )}
-                        </Stack>
-                      ))}
-                    </Stack>
-                  )}
-
-                  {!loadingDocs && labOrderRequisitionDocs.length === 0 && (
-                    <Stack gap="xs">
-                      <Text size="sm" c="dimmed">
-                        No lab order requisition documents found.
-                      </Text>
-                    </Stack>
-                  )}
-                </Stack>
-
-                {/* Order Entry Questions - show when QuestionnaireResponse is linked */}
-                {questionnaireResponse && (
-                  <>
-                    <Divider />
-                    <Stack gap="md" mb="xl">
-                      <Text fw={800} size="md">
-                        Order Entry Questions
-                      </Text>
-
-                      {loadingQuestionnaire && (
-                        <Group>
-                          <Loader size="sm" />
-                          <Text size="sm" c="dimmed">
-                            Loading questionnaire response...
-                          </Text>
-                        </Group>
-                      )}
-
-                      {!loadingQuestionnaire && questionnaireResponse && (
-                        <Stack gap="sm">
-                          {questionnaireResponse.item && questionnaireResponse.item.length > 0 ? (
-                            questionnaireResponse.item.map((item, index) => (
-                              <Group key={index} align="flex-start" style={{ alignItems: 'flex-start' }} gap="lg">
-                                <div style={{ width: '150px', flexShrink: 0 }}>
-                                  <Text fw={500} size="sm" c="dimmed">
-                                    {item.text || item.linkId || `Question ${index + 1}`}
-                                  </Text>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                  {item.answer && item.answer.length > 0 ? (
-                                    <Stack gap="xs">
-                                      {item.answer.map((answer, answerIndex) => {
-                                        // Extract the answer value based on FHIR QuestionnaireResponse answer types
-                                        let answerText = 'No answer provided';
-
-                                        if (answer.valueString) {
-                                          answerText = answer.valueString;
-                                        } else if (answer.valueCoding?.display) {
-                                          answerText = answer.valueCoding.display;
-                                        } else if (answer.valueCoding?.code) {
-                                          answerText = `${answer.valueCoding.code}${answer.valueCoding.display ? ` - ${answer.valueCoding.display}` : ''}`;
-                                        } else if (answer.valueBoolean !== undefined) {
-                                          answerText = answer.valueBoolean.toString();
-                                        } else if (answer.valueInteger !== undefined) {
-                                          answerText = answer.valueInteger.toString();
-                                        } else if (answer.valueDecimal !== undefined) {
-                                          answerText = answer.valueDecimal.toString();
-                                        } else if (answer.valueDate) {
-                                          answerText = answer.valueDate;
-                                        } else if (answer.valueDateTime) {
-                                          answerText = answer.valueDateTime;
-                                        } else if (answer.valueTime) {
-                                          answerText = answer.valueTime;
-                                        } else if (answer.valueUri) {
-                                          answerText = answer.valueUri;
-                                        } else if (answer.valueQuantity) {
-                                          answerText = `${answer.valueQuantity.value}${answer.valueQuantity.unit ? ` ${answer.valueQuantity.unit}` : ''}`;
-                                        } else if (answer.valueReference?.display) {
-                                          answerText = answer.valueReference.display;
-                                        } else if (answer.valueReference?.reference) {
-                                          answerText = answer.valueReference.reference;
-                                        } else if (answer.valueAttachment?.title) {
-                                          answerText = answer.valueAttachment.title;
-                                        } else if (answer.valueAttachment?.url) {
-                                          answerText = answer.valueAttachment.url;
-                                        }
-
-                                        return (
-                                          <Text key={answerIndex} size="sm">
-                                            {answerText}
-                                          </Text>
-                                        );
-                                      })}
-                                    </Stack>
-                                  ) : (
-                                    <Text size="sm" c="dimmed">
-                                      No answer provided
-                                    </Text>
-                                  )}
-                                </div>
-                              </Group>
-                            ))
-                          ) : (
-                            <Text size="sm" c="dimmed">
-                              No questionnaire items found.
-                            </Text>
-                          )}
-                        </Stack>
-                      )}
-                    </Stack>
-                  </>
                 )}
 
-                {/* Specimen Label Documents - show for both open and completed items */}
-                <Divider />
-                <Stack gap="lg" mb="xl">
-                  <Text fw={800} size="md" pb="0">
-                    Specimen Label
-                  </Text>
-                  {loadingSpecimenDocs && (
-                    <Group>
-                      <Loader size="sm" />
-                      <Text size="sm" c="dimmed">
-                        Loading specimen label documents...
-                      </Text>
-                    </Group>
-                  )}
+                {!loadingQuestionnaire && questionnaireResponse && (
+                  <Stack gap="sm">
+                    {questionnaireResponse.item && questionnaireResponse.item.length > 0 ? (
+                      questionnaireResponse.item.map((item, index) => (
+                        <Group key={index} align="flex-start" style={{ alignItems: 'flex-start' }} gap="lg">
+                          <div style={{ width: '150px', flexShrink: 0 }}>
+                            <Text fw={500} size="sm" c="dimmed">
+                              {item.text || item.linkId || `Question ${index + 1}`}
+                            </Text>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            {item.answer && item.answer.length > 0 ? (
+                              <Stack gap="xs">
+                                {item.answer.map((answer, answerIndex) => {
+                                  // Extract the answer value based on FHIR QuestionnaireResponse answer types
+                                  let answerText = 'No answer provided';
 
-                  {!loadingSpecimenDocs && specimenLabelDocs.length > 0 && (
-                    <Stack gap="md">
-                      {specimenLabelDocs.map((doc, index) => (
-                        <Stack key={doc.id || index} gap="xs">
-                          {doc.content && doc.content.length > 0 && (
-                            <Stack gap="xs">
-                              {doc.content.map((content, contentIndex) => (
-                                <div
-                                  key={contentIndex}
-                                  style={{
-                                    height: '600px',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden',
-                                    border: '1px solid #3C3C3C',
-                                  }}
-                                >
-                                  <style>
-                                    {`
-                                  div[data-testid="attachment-iframe"] {
-                                    height: 600px !important;
+                                  if (answer.valueString) {
+                                    answerText = answer.valueString;
+                                  } else if (answer.valueCoding?.display) {
+                                    answerText = answer.valueCoding.display;
+                                  } else if (answer.valueCoding?.code) {
+                                    answerText = `${answer.valueCoding.code}${answer.valueCoding.display ? ` - ${answer.valueCoding.display}` : ''}`;
+                                  } else if (answer.valueBoolean !== undefined) {
+                                    answerText = answer.valueBoolean.toString();
+                                  } else if (answer.valueInteger !== undefined) {
+                                    answerText = answer.valueInteger.toString();
+                                  } else if (answer.valueDecimal !== undefined) {
+                                    answerText = answer.valueDecimal.toString();
+                                  } else if (answer.valueDate) {
+                                    answerText = answer.valueDate;
+                                  } else if (answer.valueDateTime) {
+                                    answerText = answer.valueDateTime;
+                                  } else if (answer.valueTime) {
+                                    answerText = answer.valueTime;
+                                  } else if (answer.valueUri) {
+                                    answerText = answer.valueUri;
+                                  } else if (answer.valueQuantity) {
+                                    answerText = `${answer.valueQuantity.value}${answer.valueQuantity.unit ? ` ${answer.valueQuantity.unit}` : ''}`;
+                                  } else if (answer.valueReference?.display) {
+                                    answerText = answer.valueReference.display;
+                                  } else if (answer.valueReference?.reference) {
+                                    answerText = answer.valueReference.reference;
+                                  } else if (answer.valueAttachment?.title) {
+                                    answerText = answer.valueAttachment.title;
+                                  } else if (answer.valueAttachment?.url) {
+                                    answerText = answer.valueAttachment.url;
                                   }
-                                  div[data-testid="attachment-iframe"] iframe {
-                                    height: 600px !important;
-                                  }
-                                `}
-                                  </style>
-                                  <AttachmentDisplay value={content.attachment} />
-                                </div>
-                              ))}
-                            </Stack>
-                          )}
-                        </Stack>
-                      ))}
-                    </Stack>
-                  )}
 
-                  {!loadingSpecimenDocs && specimenLabelDocs.length === 0 && (
-                    <Text size="sm" c="dimmed">
-                      No specimen label documents found.
-                    </Text>
-                  )}
-                </Stack>
-              </Stack>
-            )}
-
-            {/* Progress Tracker Tab Content - for open items */}
-            {detailTab === 'progress' && (
-              <Stack gap="md">
-                <Stack p="xl" align="center">
-                  <Timeline
-                    active={getProgressSteps.findIndex((step) => step.status === 'current')}
-                    bulletSize={24}
-                    lineWidth={2}
-                    color="green"
-                    styles={{
-                      root: {
-                        maxWidth: '400px',
-                      },
-                    }}
-                  >
-                    {getProgressSteps.map((step, index) => {
-                      const nextStep = getProgressSteps[index + 1];
-                      const isCurrentToNext = step.status === 'current' && nextStep;
-                      const isCompletedToCompleted = step.status === 'completed' && nextStep?.status === 'completed';
-                      const isCompletedToCurrent = step.status === 'completed' && nextStep?.status === 'current';
-                      const isPendingToPending = step.status === 'pending' && nextStep?.status === 'pending';
-
-                      return (
-                        <Timeline.Item
-                          key={step.id}
-                          lineVariant={isCurrentToNext || isPendingToPending ? 'dotted' : 'solid'}
-                          bullet={
-                            <ThemeIcon
-                              size={32}
-                              radius="xl"
-                              color={getStepColor(step.status)}
-                              variant="filled"
-                              style={{
-                                color: step.status === 'pending' ? 'var(--mantine-color-gray-8)' : undefined,
-                              }}
-                              data-completed-to-completed={isCompletedToCompleted ? 'true' : undefined}
-                              data-completed-to-current={isCompletedToCurrent ? 'true' : undefined}
-                            >
-                              {step.icon}
-                            </ThemeIcon>
-                          }
-                          title={
-                            <Group gap="xs" align="center">
-                              <Text fw={step.status === 'current' ? 600 : 500} size="sm">
-                                {step.title}
+                                  return (
+                                    <Text key={answerIndex} size="sm">
+                                      {answerText}
+                                    </Text>
+                                  );
+                                })}
+                              </Stack>
+                            ) : (
+                              <Text size="sm" c="dimmed">
+                                No answer provided
                               </Text>
-                              {step.timestamp && (
-                                <Badge size="xs" variant="light" color="gray">
-                                  {step.timestamp}
-                                </Badge>
-                              )}
-                            </Group>
-                          }
-                        >
-                          <Text size="sm" c="dimmed">
-                            {step.description}
-                          </Text>
-                        </Timeline.Item>
-                      );
-                    })}
-                  </Timeline>
-                </Stack>
+                            )}
+                          </div>
+                        </Group>
+                      ))
+                    ) : (
+                      <Text size="sm" c="dimmed">
+                        No questionnaire items found.
+                      </Text>
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+            </>
+          )}
+
+          {/* Specimen Label Documents - show for both open and completed items */}
+          <Divider />
+          <Stack gap="lg" mb="xl">
+            <Text fw={800} size="md" pb="0">
+              Specimen Label
+            </Text>
+            {loadingSpecimenDocs && (
+              <Group>
+                <Loader size="sm" />
+                <Text size="sm" c="dimmed">
+                  Loading specimen label documents...
+                </Text>
+              </Group>
+            )}
+
+            {!loadingSpecimenDocs && specimenLabelDocs.length > 0 && (
+              <Stack gap="md">
+                {specimenLabelDocs.map((doc, index) => (
+                  <Stack key={doc.id || index} gap="xs">
+                    {doc.content && doc.content.length > 0 && (
+                      <Stack gap="xs">
+                        {doc.content.map((content, contentIndex) => (
+                          <div
+                            key={contentIndex}
+                            style={{
+                              height: '600px',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              border: '1px solid #3C3C3C',
+                            }}
+                          >
+                            <style>
+                              {`
+                            div[data-testid="attachment-iframe"] {
+                              height: 600px !important;
+                            }
+                            div[data-testid="attachment-iframe"] iframe {
+                              height: 600px !important;
+                            }
+                          `}
+                            </style>
+                            <AttachmentDisplay value={content.attachment} />
+                          </div>
+                        ))}
+                      </Stack>
+                    )}
+                  </Stack>
+                ))}
               </Stack>
             )}
 
-            {/* Report Tab Content - for completed items */}
-            {detailTab === 'report' && primaryReport && <LabReportContent report={primaryReport} />}
+            {!loadingSpecimenDocs && specimenLabelDocs.length === 0 && (
+              <Text size="sm" c="dimmed">
+                No specimen label documents found.
+              </Text>
+            )}
           </Stack>
         </Stack>
-      </Paper>
-    </ScrollArea>
+      )}
+
+      {/* Progress Tracker Tab Content - for open items */}
+      {detailTab === 'progress' && (
+        <Stack gap="md">
+          <Stack p="xl" align="center">
+            <Timeline
+              active={getProgressSteps.findIndex((step) => step.status === 'current')}
+              bulletSize={24}
+              lineWidth={2}
+              color="green"
+              styles={{
+                root: {
+                  maxWidth: '400px',
+                },
+              }}
+            >
+              {getProgressSteps.map((step, index) => {
+                const nextStep = getProgressSteps[index + 1];
+                const isCurrentToNext = step.status === 'current' && nextStep;
+                const isCompletedToCompleted = step.status === 'completed' && nextStep?.status === 'completed';
+                const isCompletedToCurrent = step.status === 'completed' && nextStep?.status === 'current';
+                const isPendingToPending = step.status === 'pending' && nextStep?.status === 'pending';
+
+                return (
+                  <Timeline.Item
+                    key={step.id}
+                    lineVariant={isCurrentToNext || isPendingToPending ? 'dotted' : 'solid'}
+                    bullet={
+                      <ThemeIcon
+                        size={32}
+                        radius="xl"
+                        color={getStepColor(step.status)}
+                        variant="filled"
+                        style={{
+                          color: step.status === 'pending' ? 'var(--mantine-color-gray-8)' : undefined,
+                        }}
+                        data-completed-to-completed={isCompletedToCompleted ? 'true' : undefined}
+                        data-completed-to-current={isCompletedToCurrent ? 'true' : undefined}
+                      >
+                        {step.icon}
+                      </ThemeIcon>
+                    }
+                    title={
+                      <Group gap="xs" align="center">
+                        <Text fw={step.status === 'current' ? 600 : 500} size="sm">
+                          {step.title}
+                        </Text>
+                        {step.timestamp && (
+                          <Badge size="xs" variant="light" color="gray">
+                            {step.timestamp}
+                          </Badge>
+                        )}
+                      </Group>
+                    }
+                  >
+                    <Text size="sm" c="dimmed">
+                      {step.description}
+                    </Text>
+                  </Timeline.Item>
+                );
+              })}
+            </Timeline>
+          </Stack>
+        </Stack>
+      )}
+
+      {/* Report Tab Content - for completed items */}
+      {detailTab === 'report' && primaryReport && <LabReportContent report={primaryReport} />}
+    </LabDetailLayout>
   );
 }
 
-const getStatusColor = (status: string | undefined): string => {
-  switch (status) {
-    case 'active':
-      return 'blue';
-    case 'draft':
-    case 'requested':
-      return 'yellow';
-    case 'on-hold':
-      return 'orange';
-    case 'revoked':
-    case 'cancelled':
-    case 'entered-in-error':
-      return 'red';
-    case 'completed':
-      return 'green';
-    case 'unknown':
-      return 'gray';
-    default:
-      return 'gray';
-  }
-};
-
-const getStatusDisplayText = (status: string | undefined): string => {
-  switch (status) {
-    case 'active':
-      return 'Active';
-    case 'draft':
-      return 'Draft';
-    case 'requested':
-      return 'Requested';
-    case 'on-hold':
-      return 'On Hold';
-    case 'revoked':
-      return 'Revoked';
-    case 'cancelled':
-      return 'Cancelled';
-    case 'entered-in-error':
-      return 'Error';
-    case 'completed':
-      return 'Completed';
-    case 'unknown':
-      return 'Unknown';
-    default:
-      return status || 'Unknown';
-  }
-};
+function DetailRow({ label, children }: { label: string; children: ReactNode }): JSX.Element {
+  return (
+    <Group align="flex-start" gap="lg">
+      <Text fw={500} size="sm" style={{ width: '150px' }} c="dimmed">
+        {label}
+      </Text>
+      {children}
+    </Group>
+  );
+}
