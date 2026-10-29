@@ -74,13 +74,9 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
  * Every address the host resolves to must be allowed; the connection may use any of them.
  * Resolving and connecting must finish within the transport's `connectionTimeout`.
  * @param projectId - The project ID, for logging.
- * @param isAllowedAddress - Optional address check.
  * @returns The `getSocket` hook.
  */
-export function getProjectSmtpSocket(
-  projectId: string,
-  isAllowedAddress = (address: string): boolean => !isUnsafeIpAddress(address)
-): SMTPTransportGetSocket {
+export function getProjectSmtpSocket(projectId: string): SMTPTransportGetSocket {
   const invalidHost = (): OperationOutcomeError => {
     getLogger().warn('Project SMTP is misconfigured', { projectId, invalid: 'smtpHost' });
     return new OperationOutcomeError(badRequest('Project SMTP configuration is incomplete or invalid'));
@@ -91,7 +87,7 @@ export function getProjectSmtpSocket(
     dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
       if (err) {
         callback(err, []);
-      } else if (addresses.length === 0 || !addresses.every(({ address }) => isAllowedAddress(address))) {
+      } else if (addresses.length === 0 || addresses.some(({ address }) => isUnsafeIpAddress(address))) {
         callback(invalidHost(), []);
       } else {
         callback(null, addresses);
@@ -102,7 +98,7 @@ export function getProjectSmtpSocket(
   return (options, callback) => {
     const host = options.host ?? '';
     // net.connect() skips the lookup for IP literals
-    if (net.isIP(host) && !isAllowedAddress(host)) {
+    if (net.isIP(host) && isUnsafeIpAddress(host)) {
       callback(invalidHost());
       return;
     }

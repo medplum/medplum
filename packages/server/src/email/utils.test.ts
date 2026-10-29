@@ -6,7 +6,18 @@ import dns from 'node:dns';
 import net from 'node:net';
 import type { SMTPTransportGetSocket } from 'nodemailer/lib/smtp-transport';
 import { vi } from 'vitest';
+import type * as Url from '../util/url';
 import { addressToString, applyFromDisplayName, getProjectAppName, getProjectSmtpSocket } from './utils';
+
+const urlMocks = vi.hoisted(() => ({ allowUnsafeIpAddress: false }));
+
+vi.mock('../util/url', async (importOriginal) => {
+  const actual = await importOriginal<typeof Url>();
+  return {
+    ...actual,
+    isUnsafeIpAddress: (address: string) => !urlMocks.allowUnsafeIpAddress && actual.isUnsafeIpAddress(address),
+  };
+});
 
 describe('Email utils', () => {
   function projectWithAppName(valueString: string | undefined): Project {
@@ -55,6 +66,7 @@ describe('Email utils', () => {
 
   describe('getProjectSmtpSocket', () => {
     afterEach(() => {
+      urlMocks.allowUnsafeIpAddress = false;
       vi.restoreAllMocks();
     });
 
@@ -86,17 +98,18 @@ describe('Email utils', () => {
     }
 
     test.each([
-      ['smtp.project.example.com', [{ address: '10.20.30.40', family: 4 }]],
+      ['a private address', 'smtp.project.example.com', [{ address: '10.20.30.40', family: 4 }]],
       [
+        'a public and a private address',
         'smtp.project.example.com',
         [
           { address: '93.184.215.14', family: 4 },
           { address: '10.20.30.40', family: 4 },
         ],
       ],
-      ['smtp.project.example.com', []],
-      ['10.20.30.40', undefined],
-    ])('Rejects project SMTP host %s resolving to %j', async (host, addresses) => {
+      ['no addresses', 'smtp.project.example.com', []],
+      ['an unsafe IP literal', '10.20.30.40', undefined],
+    ])('Rejects a project SMTP host with %s', async (_label, host, addresses) => {
       mockLookup(addresses);
       await expect(openSocket(getProjectSmtpSocket('p1'), host)).rejects.toThrow(
         'Project SMTP configuration is incomplete or invalid'
@@ -109,17 +122,14 @@ describe('Email utils', () => {
         server.listen(0, '127.0.0.1', resolve);
       });
       const { port } = server.address() as net.AddressInfo;
+      urlMocks.allowUnsafeIpAddress = true;
       mockLookup([
         { address: '::1', family: 6 },
         { address: '127.0.0.1', family: 4 },
       ]);
 
       try {
-        const socket = await openSocket(
-          getProjectSmtpSocket('p1', () => true),
-          'smtp.project.example.com',
-          port
-        );
+        const socket = await openSocket(getProjectSmtpSocket('p1'), 'smtp.project.example.com', port);
         expect(socket.remoteAddress).toBe('127.0.0.1');
         socket.destroy();
       } finally {
