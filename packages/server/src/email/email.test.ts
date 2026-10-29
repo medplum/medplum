@@ -17,6 +17,7 @@ import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
+import { PROJECT_SMTP_SOCKET_TIMEOUT_MS, PROJECT_SMTP_TIMEOUT_MS } from './utils';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
@@ -385,8 +386,9 @@ describe('Email', () => {
           secure: false,
           auth: { user: 'projectuser', pass: 'projectpass' },
           getSocket: expect.any(Function),
-          connectionTimeout: 20_000,
-          greetingTimeout: 20_000,
+          connectionTimeout: PROJECT_SMTP_TIMEOUT_MS,
+          greetingTimeout: PROJECT_SMTP_TIMEOUT_MS,
+          socketTimeout: PROJECT_SMTP_SOCKET_TIMEOUT_MS,
         })
       );
       expect(mockSendMail).toHaveBeenCalledTimes(1);
