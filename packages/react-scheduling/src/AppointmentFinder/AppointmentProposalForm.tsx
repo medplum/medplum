@@ -800,6 +800,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
+        <Divider />
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
         <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
           {getSubmitLabel(mode, effectiveOccurrenceCount)}
