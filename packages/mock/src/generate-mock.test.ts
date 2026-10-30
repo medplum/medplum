@@ -375,9 +375,21 @@ test('preserves authored core quantities, doses and contained resources', () => 
   );
 });
 
+test.each(['nope', 1, null, []])('rejects a non-object contained entry: %j', (item) => {
+  expect(() =>
+    // @ts-expect-error Exercise malformed input from untyped callers.
+    generateMockResources('Patient', 1, { values: { contained: [item] } })
+  ).toThrow('Patient.contained: expected an object');
+});
+
 test('supports bare and versioned base reference targets', () => {
   const link = [{ project: { reference: 'Project/one' } }];
   expect(generateMockResources('Project', 1, { values: { link } })[0].link).toEqual(link);
+  const owner = { reference: 'User/one' };
+  const defaultPatientAccessPolicy = { reference: 'AccessPolicy/one' };
+  const [project] = generateMockResources('Project', 1, { values: { owner, defaultPatientAccessPolicy } });
+  expect(project.owner).toEqual(owner);
+  expect(project.defaultPatientAccessPolicy).toEqual(defaultPatientAccessPolicy);
   const sd = profile('Condition', [
     {
       path: 'Condition.subject',

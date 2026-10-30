@@ -135,7 +135,10 @@ export function generateMockResources<K extends ResourceType>(
           element.slicing ||
           (fieldType.profile?.length && !datatypeProfile) ||
           fieldType.targetProfile?.some(
-            (url) => !/^(?:http:\/\/hl7\.org\/fhir\/StructureDefinition\/)?[A-Z][A-Za-z]+$/.test(url.split('|')[0])
+            (url) =>
+              !/^(?:(?:http:\/\/hl7\.org\/fhir|https:\/\/medplum\.com\/fhir)\/StructureDefinition\/)?[A-Z][A-Za-z]+$/.test(
+                url.split('|')[0]
+              )
           )
         ) {
           fail(fieldPath, 'slices and dependent profiles are not supported');
@@ -178,10 +181,10 @@ export function generateMockResources<K extends ResourceType>(
           fail(fieldPath, 'omit an optional empty array or supply a value');
         }
         for (const item of items) {
+          if (!isPrimitiveType(fieldType.code) && (!item || typeof item !== 'object' || Array.isArray(item))) {
+            fail(fieldPath, 'expected an object');
+          }
           if (!isPrimitiveType(fieldType.code) && fieldType.code !== 'Resource') {
-            if (!item || typeof item !== 'object' || Array.isArray(item)) {
-              fail(fieldPath, 'expected an object');
-            }
             const child =
               schema.innerTypes.find((inner) => inner.name === fieldType.code) ??
               tryGetDataType(datatypeProfile ?? fieldType.code);
@@ -212,7 +215,7 @@ export function generateMockResources<K extends ResourceType>(
         return deepClone(specified.value);
       }
       if (code === 'Resource') {
-        return fail(path, 'supply a contained resource in values');
+        return fail(path, 'supply a resource in values');
       }
       if (code === 'Reference') {
         return fail(path, 'supply an explicit reference in values');
