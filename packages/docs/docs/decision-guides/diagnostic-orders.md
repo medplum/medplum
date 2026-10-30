@@ -3,6 +3,7 @@ title: Diagnostic Orders Decision Guide
 sidebar_label: Diagnostic Orders
 sidebar_position: 9
 download_slug: diagnostic-orders
+toc_max_heading_level: 2
 ---
 
 # Diagnostic Orders Decision Guide
@@ -13,11 +14,27 @@ _Companion to [Labs and Imaging](/docs/labs-imaging), [Order Labs and Imaging](/
 
 The review queues and follow-up rules are application patterns to implement with Medplum resources. Confirm each facility's supported operations before committing to a workflow.
 
----
+Choose the decisions that match your application's role:
 
-## Section 1: Use Case and Participants
+1. **[Choose connectivity](#how-will-systems-exchange-data).** Define which systems exchange orders and results and which interfaces they support.
+2. **[Define ordering and release](#ordering-and-release)** if your application places orders. Decide who owns the catalog and what must happen before release.
+3. **[Plan fulfillment and exceptions](#fulfillment-and-exceptions)** if you coordinate specimen collection, appointments, or incomplete orders.
+4. **[Define result matching and display](#matching-and-displaying-results).** Match results to patients and orders and choose the detail users need. Include image storage, viewers, and context synchronization when displaying diagnostic images.
+5. **[Assign review and closure](#review-and-closure).** Define follow-up, access, and responsibility for operational failures.
 
-### 1.1 Which diagnostic services are in scope?
+Results-only applications can focus on connectivity, results, and review; add ordering and fulfillment if you coordinate them. External ordering and internal testing need all five areas. For internal testing, separately scope the system that performs the tests; for lab-only workflows, skip imaging details.
+
+Use the [questions below](#before-you-start) to establish your use case, then follow the relevant sections. Add requirements beyond these examples where needed.
+
+<div id="section-1-use-case-and-participants"></div>
+
+## Before you start
+
+<div id="11-which-diagnostic-services-are-in-scope"></div>
+
+<div id="q1-which-diagnostic-services-are-in-scope"></div>
+
+### Which diagnostic services are in scope?
 
 - Laboratory tests sent to external labs
 - Tests performed in your own facility or at the point of care
@@ -26,7 +43,11 @@ The review queues and follow-up rules are application patterns to implement with
 
 *Why it matters: laboratory workflows coordinate specimens; imaging workflows usually coordinate appointments and access to reports or images. An internal laboratory also needs catalog and laboratory operations design beyond sending orders.*
 
-### 1.2 Which parts of the workflow will your application own?
+<div id="12-which-parts-of-the-workflow-will-your-application-own"></div>
+
+<div id="q2-which-parts-of-the-workflow-will-your-application-own"></div>
+
+### Which parts of the workflow will your application own?
 
 - Ordering and receiving results
 - Receiving and reviewing results ordered elsewhere
@@ -35,42 +56,41 @@ The review queues and follow-up rules are application patterns to implement with
 
 *Why it matters: a results-only application needs patient matching and review routing even when it has no original order. An ordering application also needs transmission, cancellation, and outstanding-order tracking.*
 
-### 1.3 Who participates, and who is accountable?
+<div id="13-who-participates-and-who-is-accountable"></div>
+
+<div id="q3-who-participates-and-who-is-accountable"></div>
+
+### Who participates, and who is accountable?
 
 Identify who can prepare and authorize orders, collect specimens or arrange appointments, resolve integration exceptions, review results, cover absent clinicians, and communicate with patients. Decide whether those responsibilities vary by organization, location, or service line.
 
 *Why it matters: the ordering clinician, performing organization, result reviewer, and follow-up owner may be different people. Unassigned work needs an explicit fallback.*
 
-### 1.4 Which systems are already involved?
+<div id="14-which-systems-are-already-involved"></div>
+
+<div id="q4-which-systems-are-already-involved"></div>
+
+### Which systems are already involved?
 
 List the performing labs and imaging facilities, existing interfaces, vendor accounts, scheduling systems, and image archives. For each, identify what it can send and receive: orders, acknowledgments, cancellations, status updates, structured results, documents, or image access.
 
 *Why it matters: the application's workflow must reflect the capabilities of each connected facility. Connectivity to one laboratory does not establish imaging support or identical behavior across every facility.*
 
-## Section 2: Approach-Defining Decisions
+<div id="section-2-approach-defining-decisions"></div>
 
-Choose the path that matches your application's responsibilities:
+<div id="scope-checklist"></div>
 
-- **Ordering externally:** Cover all nine decisions; skip imaging details if you only order labs.
-- **Receiving results only:** Start with connectivity (3.1), then matching, display, review, and access (3.6–3.9). Skip 3.2–3.5 unless you also coordinate fulfillment.
-- **Performing tests internally:** Cover all nine decisions, including catalog ownership and specimen or appointment tracking. Separately scope the system that performs the tests.
-- **Displaying diagnostic images:** Include the storage/viewer and context-synchronization choices in 3.7, whichever path you use.
+<div id="section-3-key-decisions"></div>
 
-| Decision | What your choice determines |
-| --- | --- |
-| [3.1 Integration path](#31-how-will-orders-and-results-cross-system-boundaries) | Interfaces, write authority, and integration operations |
-| [3.2 Catalog and order grouping](#32-what-can-clinicians-order-and-who-maintains-the-menu) | Definitions, codes, order boundaries, and maintenance |
-| [3.3 Order release](#33-what-must-happen-before-an-order-can-be-released) | Required information, authorization, and transmission |
-| [3.4 Fulfillment](#34-how-will-the-patient-or-specimen-reach-the-performing-facility) | Specimens, appointments, and assigned work |
-| [3.5 Changes and exceptions](#35-what-happens-when-an-order-changes-or-never-completes) | Replacement, cancellation, and recurring-order tracking |
-| [3.6 Result matching](#36-how-will-incoming-results-find-the-correct-patient-and-order) | Identifiers, reconciliation, and exception queues |
-| [3.7 Result formats and imaging](#37-what-result-detail-must-the-application-display-and-use) | Observations, documents, images, and viewer integration |
-| [3.8 Review and follow-up](#38-what-closes-the-loop-after-results-arrive) | Ownership, escalation, and completion evidence |
-| [3.9 Access and operations](#39-who-can-access-the-data-and-resolve-operational-failures) | Policies and responsibility for unresolved work |
+<div id="decisions"></div>
 
-## Section 3: Key Decisions
+<div id="31-how-will-orders-and-results-cross-system-boundaries"></div>
 
-### 3.1 How will orders and results cross system boundaries?
+<div id="decision-1"></div>
+
+<div id="decision-1-how-will-systems-exchange-orders-and-results"></div>
+
+## How will systems exchange data?
 
 Choose an integration path for each facility. Confirm ordering, acknowledgments, cancellations, status updates, and result delivery separately; capabilities vary by destination.
 
@@ -80,7 +100,7 @@ Choose an integration path for each facility. Confirm ordering, acknowledgments,
 | Direct lab or imaging interface | Own the HL7v2 or API mapping, identifiers, acknowledgments, corrections, and recovery in each supported direction. See [HL7 interfacing](/docs/integration/hl7-interfacing). |
 | Internal testing | Create operational orders and results in your application; define which laboratory or imaging system owns performance and reporting. |
 | Requisition or manual handoff | Track handoff and acceptance separately, with an owner to reconcile completion. A generated requisition does not establish acceptance. |
-| Results only | Preserve source identifiers and support reports without local originating orders. Build patient matching and review routing (3.6–3.8). |
+| Results only | Preserve source identifiers and support reports without local originating orders. Build patient matching and review routing ([Result matching](#how-will-incoming-results-find-the-correct-patient-and-order), [Result display](#what-result-detail-must-the-application-display-and-use), [Review and follow-up](#what-closes-the-loop-after-results-arrive)). |
 
 #### Do you need an on-site protocol bridge?
 
@@ -89,7 +109,17 @@ Choose an integration path for each facility. Confirm ordering, acknowledgments,
 
 Name the authoritative system for the order, fulfillment status, and report, and define which updates may flow back.
 
-### 3.2 What can clinicians order, and who maintains the menu?
+<div id="decision-2"></div>
+
+<div id="decision-2-what-can-be-ordered-and-when-can-it-be-released"></div>
+
+## Ordering and release
+
+<div id="32-what-can-clinicians-order-and-who-maintains-the-menu"></div>
+
+<div id="decision-2a-what-can-clinicians-order-and-who-maintains-the-menu"></div>
+
+### What can clinicians order, and who maintains the menu?
 
 First choose who owns the catalog, then decide how selections become patient-specific orders.
 
@@ -112,7 +142,11 @@ If clinicians also need reusable order sets, keep those definitions separate fro
 
 Preserve source codes and use verified terminology mappings. Flag unresolved mappings for review.
 
-### 3.3 What must happen before an order can be released?
+<div id="33-what-must-happen-before-an-order-can-be-released"></div>
+
+<div id="decision-2b-what-must-happen-before-an-order-can-be-released"></div>
+
+### What must happen before an order can be released?
 
 **Questions:** Can staff prepare orders for a clinician? Are orders placed within an encounter or independently? Which demographics, indications, Ask on Order Entry (AOE) answers, billing details, and supporting documents does the destination require?
 
@@ -129,7 +163,17 @@ Track saving, authorization, and transmission separately. Follow the chosen inte
 
 References: [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging), [Health Gorilla Sending Orders](/docs/integration/health-gorilla/sending-orders).
 
-### 3.4 How will the patient or specimen reach the performing facility?
+<div id="decision-3"></div>
+
+<div id="decision-3-how-will-fulfillment-and-exceptions-be-managed"></div>
+
+## Fulfillment and exceptions
+
+<div id="34-how-will-the-patient-or-specimen-reach-the-performing-facility"></div>
+
+<div id="decision-3a-how-will-the-patient-or-specimen-reach-the-performing-facility"></div>
+
+### How will the patient or specimen reach the performing facility?
 
 **Questions:** Who collects the specimen? Who schedules imaging? Are home kits involved? How will staff identify missing collections, missed appointments, rejected specimens, or incomplete kits?
 
@@ -143,7 +187,11 @@ References: [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging), 
 
 **If you only display clinical order state,** use `ServiceRequest`. **If staff need assignments, deadlines, or escalation,** add `Task`, with `focus` on the order and `for` referencing the patient. Track that work separately from order status. See [Tasks and Work Queues](/docs/careplans/tasks).
 
-### 3.5 What happens when an order changes or never completes?
+<div id="35-what-happens-when-an-order-changes-or-never-completes"></div>
+
+<div id="decision-3b-what-happens-when-an-order-changes-or-never-completes"></div>
+
+### What happens when an order changes or never completes?
 
 **Questions:** Can orders be edited after transmission? How is cancellation acknowledged? What happens after a rejected specimen, missed appointment, or overdue result? Are recurring orders in scope?
 
@@ -163,7 +211,17 @@ After a send timeout, reconcile the destination's order identifier before resend
 
 References: [Order lifecycle](/docs/integration/health-gorilla/sending-orders#order-lifecycle), [Cancelling and Amending Orders](/docs/labs-imaging/ordering-labs-imaging#cancelling-and-amending-orders).
 
-### 3.6 How will incoming results find the correct patient and order?
+<div id="decision-4"></div>
+
+<div id="decision-4-how-will-results-be-matched-and-presented"></div>
+
+## Matching and displaying results
+
+<div id="36-how-will-incoming-results-find-the-correct-patient-and-order"></div>
+
+<div id="decision-4a-how-will-incoming-results-find-the-correct-patient-and-order"></div>
+
+### How will incoming results find the correct patient and order?
 
 Choose the identifiers used to match patients, orders, and report revisions. Preserve their source namespaces; one order may produce multiple reports or deliveries.
 
@@ -177,7 +235,11 @@ Choose the identifiers used to match patients, orders, and report revisions. Pre
 
 **Health Gorilla implication:** Its receiver flags unsolicited reports with `DetectedIssue`. An unmatched patient causes it to create a patient from the supplied demographics and flag an `unknown-patient` issue. Plan a resolution queue; see [Receiving Results](/docs/integration/health-gorilla/receiving-results#resolving-orders-with-results).
 
-### 3.7 What result detail must the application display and use?
+<div id="37-what-result-detail-must-the-application-display-and-use"></div>
+
+<div id="decision-4b-what-result-detail-must-the-application-display-and-use"></div>
+
+### What result detail must the application display and use?
 
 Choose the formats your users need. Structured values, original reports, and images can coexist; each adds different modeling and integration work.
 
@@ -208,7 +270,17 @@ Choose the formats your users need. Structured values, original reports, and ima
 
 **If independent navigation is sufficient,** skip context synchronization. FHIRcast does not replace image retrieval, authentication, or persisted order/result records.
 
-### 3.8 What closes the loop after results arrive?
+<div id="decision-5"></div>
+
+<div id="decision-5-who-reviews-results-and-closes-the-loop"></div>
+
+## Review and closure
+
+<div id="38-what-closes-the-loop-after-results-arrive"></div>
+
+<div id="decision-5a-what-closes-the-loop-after-results-arrive"></div>
+
+### What closes the loop after results arrive?
 
 **Questions:** Who reviews routine and critical results? Who covers absences? When are patients notified? How are follow-up actions tracked? Does a correction require another review?
 
@@ -226,7 +298,11 @@ Choose the formats your users need. Structured values, original reports, and ima
 
 If routing is automated, use narrowly scoped Subscriptions and Bots. Handle report creation and meaningful updates, even when status is unchanged; conditionally create review work so repeated deliveries do not duplicate tasks. See [Subscription Extensions](/docs/subscriptions/subscription-extensions).
 
-### 3.9 Who can access the data and resolve operational failures?
+<div id="39-who-can-access-the-data-and-resolve-operational-failures"></div>
+
+<div id="decision-5b-who-can-access-the-data-and-resolve-operational-failures"></div>
+
+### Who can access the data and resolve operational failures?
 
 **Questions:** Which organizations share patients? Can ordering and covering clinicians see the same results? What can collection staff, integration services, and patients read or change? Who owns failed sends and unresolved matches?
 

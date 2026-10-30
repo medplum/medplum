@@ -3,6 +3,7 @@ title: Care Coordination Decision Guide
 sidebar_label: Care Coordination
 sidebar_position: 5.5
 download_slug: care-coordination
+toc_max_heading_level: 2
 ---
 
 # Care Coordination Decision Guide
@@ -11,11 +12,25 @@ Use this guide with your clinical and operations teams to decide what work needs
 
 _Companion to the [Care Coordination](/docs/careplans) docs._
 
----
+Start with the work your team needs to coordinate:
 
-## Section 1: Use Case & Participants
+1. **[Define work items and delegation](#work-and-delegation).** Decide what each task represents and which steps each role can perform.
+2. **[Assign ownership and handoffs](#ownership-and-handoffs).** Define queues, assignment, workflow stages, deadlines, visibility, and responsibilities across teams.
+3. **[Plan care across visits](#care-across-visits)** if you need longitudinal cases, care plans, or shared goals.
+4. **[Choose automation and decision support](#automation-and-decision-support)** where protocols or clinical recommendations should create follow-up work.
+5. **[Define how progress is measured](#how-will-progress-be-measured).** Agree on completion criteria and the operational or clinical outcomes you will track.
 
-**1.1 Which operational problems are you trying to solve first?**
+Use the [questions below](#before-you-start) to establish your use case, then follow the relevant sections. Add requirements beyond these examples where needed.
+
+<div id="section-1-use-case--participants"></div>
+
+## Before you start
+
+The approaches below name recommended resources and fields. Local workflow stages, eligibility checks, and automation are application conventions that you implement; storing these resources does not execute those rules automatically.
+
+<div id="q1-which-operational-problems-are-you-trying-to-solve-first"></div>
+
+### Which operational problems are you trying to solve first?
 
 - Clinicians spend time on work that other team members could perform
 - Work gets lost between people, teams, visits, or systems
@@ -26,7 +41,9 @@ _Companion to the [Care Coordination](/docs/careplans) docs._
 
 *Why: establishes whether the starting point is delegation, a work queue, longitudinal tracking, or a more structured care program.*
 
-**1.2 Who participates, and where does responsibility sit?**
+<div id="q2-who-participates-and-where-does-responsibility-sit"></div>
+
+### Who participates, and where does responsibility sit?
 
 - Which clinicians, nurses, assistants, coordinators, administrative staff, patients, and caregivers perform work?
 - Is work organized by individual, role, care team, service line, location, or organization?
@@ -35,7 +52,9 @@ _Companion to the [Care Coordination](/docs/careplans) docs._
 
 *Why: separates ongoing care responsibility from task ownership and identifies the access and handoff boundaries.*
 
-**1.3 What creates work, and where is it managed today?**
+<div id="q3-what-creates-work-and-where-is-it-managed-today"></div>
+
+### What creates work, and where is it managed today?
 
 - Staff action, completed intake, an incoming message, an admission/discharge event, an order or result, a missed appointment, a scheduled follow-up, or a recommendation?
 - Are you replacing spreadsheets, inboxes, or another task system, or coordinating work that will remain in those systems?
@@ -43,7 +62,9 @@ _Companion to the [Care Coordination](/docs/careplans) docs._
 
 *Why: establishes entry points, integration needs, and which system can authoritatively change each state.*
 
-**1.4 How much continuity and scale do you need?**
+<div id="q4-how-much-continuity-and-scale-do-you-need"></div>
+
+### How much continuity and scale do you need?
 
 - Does work end with one action or encounter, or continue across months of care?
 - Can a patient participate in several programs or cases at once?
@@ -52,7 +73,9 @@ _Companion to the [Care Coordination](/docs/careplans) docs._
 
 *Why: determines the need for case grouping, concurrent assignment controls, escalation, and reporting.*
 
-**1.5 Does a care program require consent or service-time records?**
+<div id="q5-does-a-care-program-require-consent-or-service-time-records"></div>
+
+### Does a care program require consent or service-time records?
 
 - What program consent must be captured, reviewed, renewed, or withdrawn before enrollment or ongoing work?
 - Which activities require time records, and who performed them for which patient and program?
@@ -60,35 +83,25 @@ _Companion to the [Care Coordination](/docs/careplans) docs._
 
 *Why: identifies program-specific consent and time-recording requirements. Task execution windows alone do not establish billable effort. Choose the time-record model and any Consent representation after confirming the program's requirements; see [Consent](/docs/consent).*
 
----
+<div id="section-2-feature-scoping"></div>
 
-## Section 2: Feature Scoping
+<div id="scope-checklist"></div>
 
-*For each feature, mark Yes / No / Nice-to-have / Not sure. The § column points to the relevant deep dive. Cover 3.1 for every implementation.*
+<div id="section-3-feature-deep-dives"></div>
 
-| # | Feature | § | Yes | No | Nice-to-have | Not sure |
-| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| 1 | Top-of-license care: delegate eligible steps while preserving required clinical review | 3.2 | | | | |
-| 2 | Shared work queues, individual assignment, claiming, and reassignment | 3.3 | | | | |
-| 3 | Care teams or an ongoing coordinator responsible for a patient's care | 3.3 3.5 | | | | |
-| 4 | Multiple workflow stages, handoffs, blocked work, and completion evidence | 3.4 | | | | |
-| 5 | Due dates, business-hour response targets, and overdue escalation | 3.4 | | | | |
-| 6 | Longitudinal patient case tracking across visits or concurrent programs | 3.5 | | | | |
-| 7 | Patient-specific care plans, goals, and progress review | 3.6 | | | | |
-| 8 | Reusable protocols, recurring work, and event-driven automation | 3.7 | | | | |
-| 9 | Clinical decision support that informs or initiates follow-up work | 3.8 | | | | |
-| 10 | Patient, caregiver, or external organization participation in handoffs | 3.9 | | | | |
-| 11 | Operational dashboards, time-in-stage reporting, and outcome measures | 3.10 | | | | |
+<div id="decisions"></div>
 
----
+<div id="decision-1"></div>
 
-## Section 3: Feature Deep Dives
+<div id="decision-1-what-work-needs-to-happen-and-who-may-perform-it"></div>
 
-*Cover each feature selected above. Record the chosen approach and unresolved decisions for the first workflow before expanding to additional workflows.*
+## Work and delegation
 
-The approaches below name recommended resources and fields. Local workflow stages, eligibility checks, and automation are application conventions that you implement; storing these resources does not execute those rules automatically.
+<div id="31-work-items--clinical-context"></div>
 
-### 3.1 Work Items & Clinical Context
+<div id="decision-1a-what-does-each-work-item-represent"></div>
+
+### What does each work item represent?
 
 Decide what a work item represents and how it relates to the clinical record.
 
@@ -107,7 +120,11 @@ Decide what a work item represents and how it relates to the clinical record.
 
 See [Tasks and Work Queues](/docs/careplans/tasks).
 
-### 3.2 Top-of-License Care & Delegation
+<div id="32-top-of-license-care--delegation"></div>
+
+<div id="decision-1b-which-steps-can-each-role-perform"></div>
+
+### Which steps can each role perform?
 
 Decide which steps each role can perform and where clinical judgment or review is required.
 
@@ -125,7 +142,17 @@ Decide which steps each role can perform and where clinical judgment or review i
 
 Define the role/action matrix with the practice's clinical and operational owners. Enforce data access using [Access Policies](/docs/access/access-policies). For booking, see [State-by-State Licensure](/docs/scheduling/state-by-state-licensure); scheduling operations do not enforce licensure themselves.
 
-### 3.3 Queues, Ownership & Care Teams
+<div id="decision-2"></div>
+
+<div id="decision-2-how-will-ownership-and-handoffs-work"></div>
+
+## Ownership and handoffs
+
+<div id="33-queues-ownership--care-teams"></div>
+
+<div id="decision-2a-how-will-staff-find-claim-and-reassign-work"></div>
+
+### How will staff find, claim, and reassign work?
 
 Decide how staff discover work, take responsibility, and hand it to someone else.
 
@@ -148,7 +175,11 @@ Care team membership and task assignment describe responsibility; neither automa
 
 See [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing), [Version Checking](/docs/fhir-datastore/updating-data#preventing-lost-updates-with-version-checking), and [Resource History](/docs/fhir-datastore/resource-history).
 
-### 3.4 Lifecycle, Handoffs & Deadlines
+<div id="34-lifecycle-handoffs--deadlines"></div>
+
+<div id="decision-2b-what-moves-work-forward-and-when-is-it-overdue"></div>
+
+### What moves work forward, and when is it overdue?
 
 Decide what each stage means and what evidence allows work to move forward.
 
@@ -168,88 +199,11 @@ Decide what each stage means and what evidence allows work to move forward.
 
 See the [Task guide](/docs/careplans/tasks) for status and timing fields. Queue ordering, deadline calculations, and escalation require application or Bot logic.
 
-### 3.5 Longitudinal Patient Case Tracking
+<div id="39-participation-access--external-handoffs"></div>
 
-Decide whether care needs an identity and lifecycle that spans multiple visits.
+<div id="decision-2c-what-can-participants-see-and-how-will-external-handoffs-work"></div>
 
-- What defines a case: a condition, a treatment course, a service program, or a period of responsibility?
-- What starts, pauses, transfers, and ends that case?
-- Can a patient have concurrent cases, including more than one addressing the same condition?
-- Can one encounter contribute to multiple cases?
-- Which organization, coordinator, or care team is responsible over time?
-
-| Situation | Approach |
-| :---- | :---- |
-| Independent tasks or a single visit are sufficient | Keep patient and encounter context; add case grouping when a distinct longitudinal lifecycle is needed. |
-| Care spans multiple visits under a defined responsibility | Use `EpisodeOfCare` with `patient`, `status`, `period`, and `managingOrganization`. Use `careManager` and `team` for ongoing responsibility, and link visits through `Encounter.episodeOfCare`. |
-| Concurrent programs or treatment courses | Give each episode its own identity and lifecycle; an Encounter can reference more than one episode. |
-| A case also needs a clinical plan | Follow the longitudinal guide's convention: reference the `EpisodeOfCare` in `CarePlan.supportingInfo`. This is an explicit supporting-context link, not a dedicated FHIR case-membership field; agree whether a plan may span multiple episodes. |
-| Several cases share a diagnosis | Keep diagnoses in `EpisodeOfCare.diagnosis.condition` and `CarePlan.addresses`. When finding a case's plans, verify their explicit `supportingInfo` references; a patient or condition search alone can return plans for other cases. |
-
-See [Longitudinal Patient Case Tracking](/docs/careplans/longitudinal-patient-case-tracking).
-
-### 3.6 Care Plans, Goals & Progress
-
-Decide whether the team needs a coordinated clinical plan in addition to its work queue.
-
-- Do staff need to see agreed goals and planned activities together for a patient?
-- Who authors, approves, reviews, and changes the plan? Does the patient participate?
-- How is goal progress assessed, and which observations or assessments support it?
-- When a plan changes, what happens to already assigned work?
-- What closes the plan, and can individual goals or activities finish at different times?
-
-| Situation | Approach |
-| :---- | :---- |
-| A patient-specific plan is needed | Set `CarePlan.subject` to the patient, `addresses` to the relevant Conditions, `goal` to Goals, and `activity.reference` to planned requests or Tasks. Use `careTeam` for the people responsible for the plan. |
-| Goals need independent tracking | Reference each `Goal` through `CarePlan.goal`. Use `Goal.target` for the measure, target value, and due date; `achievementStatus` for progress; and `outcomeReference` for supporting Observations. Keep goal lifecycle separate from achievement. |
-| Planned activities create staff work | For directly authored work, reference the Task in `CarePlan.activity.reference` and the authorizing plan in `Task.basedOn`; keep `Task.focus` for the item being acted on. Assess goal achievement separately from Task completion. |
-| Plans change during treatment | Update the existing CarePlan for routine revisions. For a replacement plan, use `CarePlan.replaces` and close the prior plan appropriately. Explicitly retain, cancel, or replace outstanding Tasks; changing a plan does not migrate them automatically. |
-
-See [Care Plans and Goals](/docs/careplans/care-plans-and-goals) and [Clinical Protocols](/docs/careplans/protocols) for the distinction between a patient's plan and a reusable protocol.
-
-### 3.7 Protocols, Recurring Work & Automation
-
-Decide which patterns should repeat and which decisions remain with people.
-
-- Is work created manually, from events, on a schedule, or from a reusable protocol?
-- Which steps repeat for every patient, and which depend on prior outcomes?
-- Are there dependencies, delays, repeated attempts, or stop conditions?
-- When a protocol changes, do existing patients continue their current version or migrate?
-- How are failed runs, duplicate events, and missed follow-ups detected and recovered?
-
-| Situation | Approach |
-| :---- | :---- |
-| Staff initiate occasional work | Create a Task with `code`, `status`, `intent`, patient context where applicable, and an owner or required role. Add `focus` for the resource being acted on. |
-| A reusable clinical protocol is useful | Use `PlanDefinition` and `ActivityDefinition`. Medplum's [`$apply`](/docs/api/fhir/operations/plandefinition-apply) creates a CarePlan whose activity references a RequestGroup with Task actions. Check generated resources and supported behavior against the workflow before adopting it. |
-| A resource event should create or advance work | Use tightly scoped Subscriptions and Bots. Select create/update events and transition criteria where needed to avoid triggering on unrelated edits. |
-| Recurring or overdue work | Use a scheduled Bot to create one Task per due occurrence. Put a stable source/step/occurrence key in `Task.identifier`; stop creating work when the source plan or case is no longer eligible. For overdue work, update or escalate the existing Task. |
-| Events may be processed more than once | Conditionally create generated Tasks by `identifier`, for example with `createResourceIfNoneExist`. Reprocessing the same event must reuse the same key. Track and retry external delivery separately; avoiding duplicate Tasks does not make an external send idempotent. |
-| Conditional or dependent workflow steps | Use scoped transition Subscriptions and Bots to evaluate prerequisites and create or release the next Task. Implement the dependency rules in the application or Bot. |
-
-See [Clinical Protocols](/docs/careplans/protocols), [Subscription Extensions](/docs/subscriptions/subscription-extensions), [Cron Jobs for Bots](/docs/bots/bot-cron-job), and [Working with FHIR Data](/docs/fhir-datastore/working-with-fhir).
-
-### 3.8 Clinical Decision Support & Follow-Through
-
-Decide how clinical guidance enters the workflow and whether it creates an obligation to act.
-
-- Do clinicians need contextual reference material, rules-based recommendations, or predictive outputs?
-- When should guidance appear: chart review, order entry, assessment review, or background monitoring?
-- Is the output informational, does it require acknowledgment, or should accepted recommendations create work?
-- Who can accept, dismiss, or override a recommendation, and what reason or evidence should be recorded?
-- Who maintains the knowledge or model, and how will you evaluate usefulness, missed follow-up, and excessive alerts?
-
-| Situation | Approach |
-| :---- | :---- |
-| Guidance is needed during a clinical interaction | Configure a Bot's `cdsService` for the hook and prefetch requirements; have the client invoke it at the chosen workflow point and display returned cards. A card does not itself create a persistent work item. |
-| A recommendation needs review and follow-up | Use a review Task with patient context and the relevant evidence in `focus` or `input`. Record the disposition in locally defined `businessStatus` values and the rationale in `note`. Reference any resulting clinical request in `output`; track its fulfillment with a separate Task. |
-| Background rules identify patients for review | Have a Bot conditionally create a review Task with `for`, `owner` or `performerType`, and an `identifier` derived from the rule and triggering event or review period. Repeated evaluations should reuse that work item until a new review is warranted. |
-| An external CDS Hooks service is used | Map the supported hook's context and prefetch to the service request, then render its cards in the client. Implement timeout and failure handling there; create a fallback review Task only when the workflow requires human follow-up. |
-
-See [Clinical Decision Support](/docs/careplans/clinical-decision-support) for broader CDS considerations and [CDS Hooks](/docs/integration/cds-hooks) for the integration contract. Define clinical review and applicable governance requirements alongside the workflow design.
-
-If every evaluation must be retained, including informational results with no follow-up, choose that persistence model separately. A review Task records work and its disposition; it is not a complete CDS evaluation record. See the [GuidanceResponse design choice](/docs/careplans/clinical-decision-support#decide-whether-to-retain-every-evaluation).
-
-### 3.9 Participation, Access & External Handoffs
+### What can participants see, and how will external handoffs work?
 
 Decide what each participant can see and how work crosses organizational boundaries.
 
@@ -270,7 +224,122 @@ Decide what each participant can see and how work crosses organizational boundar
 
 Use the [Access Control Decision Guide](/docs/decision-guides/access-control), [Messaging Decision Guide](/docs/decision-guides/messaging), and [Binary Data](/docs/fhir-datastore/binary-data) docs for the detailed designs. Scheduling and billing decisions should likewise link to their respective workflow documentation.
 
-### 3.10 Operational Reporting & Closure
+<div id="decision-3"></div>
+
+<div id="decision-3-how-will-care-continue-across-visits"></div>
+
+## Care across visits
+
+<div id="35-longitudinal-patient-case-tracking"></div>
+
+<div id="decision-3a-does-care-need-a-longitudinal-case-identity"></div>
+
+### Does care need a longitudinal case identity?
+
+Decide whether care needs an identity and lifecycle that spans multiple visits.
+
+- What defines a case: a condition, a treatment course, a service program, or a period of responsibility?
+- What starts, pauses, transfers, and ends that case?
+- Can a patient have concurrent cases, including more than one addressing the same condition?
+- Can one encounter contribute to multiple cases?
+- Which organization, coordinator, or care team is responsible over time?
+
+| Situation | Approach |
+| :---- | :---- |
+| Independent tasks or a single visit are sufficient | Keep patient and encounter context; add case grouping when a distinct longitudinal lifecycle is needed. |
+| Care spans multiple visits under a defined responsibility | Use `EpisodeOfCare` with `patient`, `status`, `period`, and `managingOrganization`. Use `careManager` and `team` for ongoing responsibility, and link visits through `Encounter.episodeOfCare`. |
+| Concurrent programs or treatment courses | Give each episode its own identity and lifecycle; an Encounter can reference more than one episode. |
+| A case also needs a clinical plan | Follow the longitudinal guide's convention: reference the `EpisodeOfCare` in `CarePlan.supportingInfo`. This is an explicit supporting-context link, not a dedicated FHIR case-membership field; agree whether a plan may span multiple episodes. |
+| Several cases share a diagnosis | Keep diagnoses in `EpisodeOfCare.diagnosis.condition` and `CarePlan.addresses`. When finding a case's plans, verify their explicit `supportingInfo` references; a patient or condition search alone can return plans for other cases. |
+
+See [Longitudinal Patient Case Tracking](/docs/careplans/longitudinal-patient-case-tracking).
+
+<div id="36-care-plans-goals--progress"></div>
+
+<div id="decision-3b-how-will-care-plans-goals-and-progress-be-managed"></div>
+
+### How will care plans, goals, and progress be managed?
+
+Decide whether the team needs a coordinated clinical plan in addition to its work queue.
+
+- Do staff need to see agreed goals and planned activities together for a patient?
+- Who authors, approves, reviews, and changes the plan? Does the patient participate?
+- How is goal progress assessed, and which observations or assessments support it?
+- When a plan changes, what happens to already assigned work?
+- What closes the plan, and can individual goals or activities finish at different times?
+
+| Situation | Approach |
+| :---- | :---- |
+| A patient-specific plan is needed | Set `CarePlan.subject` to the patient, `addresses` to the relevant Conditions, `goal` to Goals, and `activity.reference` to planned requests or Tasks. Use `careTeam` for the people responsible for the plan. |
+| Goals need independent tracking | Reference each `Goal` through `CarePlan.goal`. Use `Goal.target` for the measure, target value, and due date; `achievementStatus` for progress; and `outcomeReference` for supporting Observations. Keep goal lifecycle separate from achievement. |
+| Planned activities create staff work | For directly authored work, reference the Task in `CarePlan.activity.reference` and the authorizing plan in `Task.basedOn`; keep `Task.focus` for the item being acted on. Assess goal achievement separately from Task completion. |
+| Plans change during treatment | Update the existing CarePlan for routine revisions. For a replacement plan, use `CarePlan.replaces` and close the prior plan appropriately. Explicitly retain, cancel, or replace outstanding Tasks; changing a plan does not migrate them automatically. |
+
+See [Care Plans and Goals](/docs/careplans/care-plans-and-goals) and [Clinical Protocols](/docs/careplans/protocols) for the distinction between a patient's plan and a reusable protocol.
+
+<div id="decision-4"></div>
+
+<div id="decision-4-what-should-protocols-automation-and-decision-support-initiate"></div>
+
+## Automation and decision support
+
+<div id="37-protocols-recurring-work--automation"></div>
+
+<div id="decision-4a-which-work-should-protocols-and-automation-create"></div>
+
+### Which work should protocols and automation create?
+
+Decide which patterns should repeat and which decisions remain with people.
+
+- Is work created manually, from events, on a schedule, or from a reusable protocol?
+- Which steps repeat for every patient, and which depend on prior outcomes?
+- Are there dependencies, delays, repeated attempts, or stop conditions?
+- When a protocol changes, do existing patients continue their current version or migrate?
+- How are failed runs, duplicate events, and missed follow-ups detected and recovered?
+
+| Situation | Approach |
+| :---- | :---- |
+| Staff initiate occasional work | Create a Task with `code`, `status`, `intent`, patient context where applicable, and an owner or required role. Add `focus` for the resource being acted on. |
+| A reusable clinical protocol is useful | Use `PlanDefinition` and `ActivityDefinition`. Medplum's [`$apply`](/docs/api/fhir/operations/plandefinition-apply) creates a CarePlan whose activity references a RequestGroup with Task actions. Check generated resources and supported behavior against the workflow before adopting it. |
+| A resource event should create or advance work | Use tightly scoped Subscriptions and Bots. Select create/update events and transition criteria where needed to avoid triggering on unrelated edits. |
+| Recurring or overdue work | Use a scheduled Bot to create one Task per due occurrence. Put a stable source/step/occurrence key in `Task.identifier`; stop creating work when the source plan or case is no longer eligible. For overdue work, update or escalate the existing Task. |
+| Events may be processed more than once | Conditionally create generated Tasks by `identifier`, for example with `createResourceIfNoneExist`. Reprocessing the same event must reuse the same key. Track and retry external delivery separately; avoiding duplicate Tasks does not make an external send idempotent. |
+| Conditional or dependent workflow steps | Use scoped transition Subscriptions and Bots to evaluate prerequisites and create or release the next Task. Implement the dependency rules in the application or Bot. |
+
+For event-driven workflows, check subscription scale, tenant scope, execution identity, and failure recovery in [Planning Automations](/docs/subscriptions#planning-automations). See also [Clinical Protocols](/docs/careplans/protocols), [Subscription Extensions](/docs/subscriptions/subscription-extensions), [Cron Jobs for Bots](/docs/bots/bot-cron-job), and [Working with FHIR Data](/docs/fhir-datastore/working-with-fhir).
+
+<div id="38-clinical-decision-support--follow-through"></div>
+
+<div id="decision-4b-when-should-clinical-decision-support-create-follow-up-work"></div>
+
+### When should clinical decision support create follow-up work?
+
+Decide how clinical guidance enters the workflow and whether it creates an obligation to act.
+
+- Do clinicians need contextual reference material, rules-based recommendations, or predictive outputs?
+- When should guidance appear: chart review, order entry, assessment review, or background monitoring?
+- Is the output informational, does it require acknowledgment, or should accepted recommendations create work?
+- Who can accept, dismiss, or override a recommendation, and what reason or evidence should be recorded?
+- Who maintains the knowledge or model, and how will you evaluate usefulness, missed follow-up, and excessive alerts?
+
+| Situation | Approach |
+| :---- | :---- |
+| Guidance is needed during a clinical interaction | Configure a Bot's `cdsService` for the hook and prefetch requirements; have the client invoke it at the chosen workflow point and display returned cards. A card does not itself create a persistent work item. |
+| A recommendation needs review and follow-up | Use a review Task with patient context and the relevant evidence in `focus` or `input`. Record the disposition in locally defined `businessStatus` values and the rationale in `note`. Reference any resulting clinical request in `output`; track its fulfillment with a separate Task. |
+| Background rules identify patients for review | Have a Bot conditionally create a review Task with `for`, `owner` or `performerType`, and an `identifier` derived from the rule and triggering event or review period. Repeated evaluations should reuse that work item until a new review is warranted. |
+| An external CDS Hooks service is used | Map the supported hook's context and prefetch to the service request, then render its cards in the client. Implement timeout and failure handling there; create a fallback review Task only when the workflow requires human follow-up. |
+
+See [Clinical Decision Support](/docs/careplans/clinical-decision-support) for broader CDS considerations and [CDS Hooks](/docs/integration/cds-hooks) for the integration contract. Define clinical review and applicable governance requirements alongside the workflow design.
+
+If every evaluation must be retained, including informational results with no follow-up, choose that persistence model separately. A review Task records work and its disposition; it is not a complete CDS evaluation record. See the [GuidanceResponse design choice](/docs/careplans/clinical-decision-support#decide-whether-to-retain-every-evaluation).
+
+<div id="310-operational-reporting--closure"></div>
+
+<div id="decision-5"></div>
+
+<div id="decision-5-how-will-progress-and-completion-be-measured"></div>
+
+## How will progress be measured?
 
 Decide what the practice needs to measure and what each completion signal means.
 

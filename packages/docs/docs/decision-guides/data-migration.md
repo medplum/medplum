@@ -3,6 +3,7 @@ title: Data Migration Decision Guide
 sidebar_label: Data Migration
 sidebar_position: 8
 download_slug: data-migration
+toc_max_heading_level: 2
 ---
 
 # Data Migration Decision Guide
@@ -11,13 +12,24 @@ Use this guide to plan a migration to Medplum and decide what moves, which syste
 
 _Companion to the [Migrating to Medplum](/docs/migration) docs._
 
----
+Plan the migration around four decisions:
 
-## Section 1: Migration Context & Participants
+1. **[Define scope, identity, and mapping](#scope-identity-and-mapping).** Agree on the data and history to move, identifier and deduplication rules, FHIR mappings, and acceptance owners.
+2. **[Choose loading and validation](#loading-and-validation).** Select an import approach that meets throughput and recovery needs, and define evidence that the migrated data is correct.
+3. **[Plan cutover and rehearsal](#cutover-and-rehearsal).** Decide when write authority changes, how later updates are handled, and what rehearsals must demonstrate.
+4. **[Plan protection and operational handoff](#protection-and-operational-handoff).** Define access and audit controls, preserve usable documents and binaries, and assign monitoring and exception ownership.
 
-These questions establish what is moving, why it is moving, and who owns each decision before implementation begins.
+Use the [context questions](#before-you-start) to establish the migration's purpose and owners, then check the [factors that change the plan](#factors-that-change-the-migration-plan) for additional design and validation needs.
 
-### 1.1 What outcome defines success?
+<div id="section-1-migration-context--participants"></div>
+
+## Before you start
+
+<div id="11-what-outcome-defines-success"></div>
+
+<div id="q1-what-outcome-defines-success"></div>
+
+### What outcome defines success?
 
 - Replace a legacy clinical or operational system
 - Consolidate several systems into one Medplum project
@@ -28,7 +40,11 @@ These questions establish what is moving, why it is moving, and who owns each de
 
 _Why: determines whether this is a finite conversion, ongoing synchronization, or a reusable product capability._
 
-### 1.2 Which sources and interfaces are in scope?
+<div id="12-which-sources-and-interfaces-are-in-scope"></div>
+
+<div id="q2-which-sources-and-interfaces-are-in-scope"></div>
+
+### Which sources and interfaces are in scope?
 
 For each source, identify:
 
@@ -43,7 +59,11 @@ For each source, identify:
 
 _Why: a database snapshot, FHIR endpoint, HL7 feed, document archive, and DICOM repository need different extraction and reconciliation plans._
 
-### 1.3 What data and history are required at go-live?
+<div id="13-what-data-and-history-are-required-at-go-live"></div>
+
+<div id="q3-what-data-and-history-are-required-at-go-live"></div>
+
+### What data and history are required at go-live?
 
 Consider:
 
@@ -57,7 +77,11 @@ For each domain, choose full history, current records only, a date range, summar
 
 _Why: "all data" is not an actionable scope. Each domain needs an explicit boundary, owner, target, and acceptance criteria._
 
-### 1.4 Where is each domain authoritative during and after migration?
+<div id="14-where-is-each-domain-authoritative-during-and-after-migration"></div>
+
+<div id="q4-where-is-each-domain-authoritative-during-and-after-migration"></div>
+
+### Where is each domain authoritative during and after migration?
 
 - Source remains authoritative
 - Medplum becomes authoritative at cutover
@@ -67,7 +91,11 @@ _Why: "all data" is not an actionable scope. Each domain needs an explicit bound
 
 _Why: coexistence without one write authority per domain creates conflicts and makes reconciliation inconclusive._
 
-### 1.5 Who approves the migration?
+<div id="15-who-approves-the-migration"></div>
+
+<div id="q5-who-approves-the-migration"></div>
+
+### Who approves the migration?
 
 Assign accountable owners for:
 
@@ -81,7 +109,11 @@ Assign accountable owners for:
 
 _Why: many migration decisions require clinical, operational, and compliance judgment rather than engineering judgment._
 
-### 1.6 What operational change accompanies the migration?
+<div id="16-what-operational-change-accompanies-the-migration"></div>
+
+<div id="q6-what-operational-change-accompanies-the-migration"></div>
+
+### What operational change accompanies the migration?
 
 - Which user workflows, reports, and integrations change at cutover?
 - How much planned downtime can each workflow tolerate?
@@ -92,38 +124,50 @@ _Why: many migration decisions require clinical, operational, and compliance jud
 
 _Why: technically correct data is not a successful migration if users cannot safely perform their work after go-live._
 
----
+<div id="section-2-approach-defining-factors"></div>
 
-## Section 2: Approach-Defining Factors
+<div id="scope-checklist"></div>
+
+## Factors that change the migration plan
 
 Every migration must define scope, identifiers, mapping ownership, validation, security, testing, cutover authority, and acceptance. The matrix below identifies additional complexity, not optional safeguards.
 
-Mark each factor Yes, No, or Unknown. For every Yes or Unknown answer, follow the linked decision section.
+Use these factors to identify where the migration needs additional design and validation.
 
-| #   | Factor                                                             | What it changes                                       | Decision section                                                                                 | Answer |
-| :-- | :----------------------------------------------------------------- | :---------------------------------------------------- | :----------------------------------------------------------------------------------------------- | :----- |
-| 1   | Multiple source systems, versions, or local variations             | Inventory, identifier systems, and mapping layers     | [3.1](#31-scope-inventory--ownership), [3.3](#33-mapping--terminology-governance)                |        |
-| 2   | Cross-source or existing-record patient matching                   | Identity workflow and reference sequencing            | [3.2](#32-identity-identifiers--deduplication)                                                   |        |
-| 3   | Automated merge execution during migration                         | Review thresholds, audit, and reversal risk           | [3.2](#32-identity-identifiers--deduplication)                                                   |        |
-| 4   | Custom profiles, extensions, or implementation-guide conformance   | Mapping approval and validation configuration         | [3.3](#33-mapping--terminology-governance), [3.4](#34-validation-reconciliation--acceptance)     |        |
-| 5   | One source record producing several linked FHIR resources          | Stable IDs, all-or-nothing writes, and reconciliation | [3.3](#33-mapping--terminology-governance), [3.5](#35-load-architecture--production-operations)  |        |
-| 6   | Expected load time may exceed the cutover window or service limits | Import path, throughput testing, and recovery         | [3.5](#35-load-architecture--production-operations), [3.7](#37-testing--dress-rehearsals)        |        |
-| 7   | The source remains active while data moves                         | Incremental changes, write authority, and conflicts   | [3.6](#36-cutover-incremental-changes--coexistence)                                              |        |
-| 8   | Little or no downtime is acceptable                                | Change capture, rehearsal depth, and rollback         | [3.6](#36-cutover-incremental-changes--coexistence), [3.7](#37-testing--dress-rehearsals)        |        |
-| 9   | Documents, files, images, or DICOM                                 | Storage, access, integrity, and retrieval testing     | [3.9](#39-documents-binaries--complex-data)                                                      |        |
-| 10  | Historical workflows must remain operational                       | Domain-specific modeling and validation               | [3.3](#33-mapping--terminology-governance), [3.4](#34-validation-reconciliation--acceptance)     |        |
-| 11  | External systems remaining authoritative after cutover             | Long-term ownership and synchronization               | [3.6](#36-cutover-incremental-changes--coexistence), [3.10](#310-monitoring-exceptions--handoff) |        |
-| 12  | Reusable onboarding or ongoing synchronization pipeline            | Operational ownership, versioning, and reconciliation | [3.1](#31-scope-inventory--ownership), [3.10](#310-monitoring-exceptions--handoff)               |        |
+| Factor | What it changes | Guidance |
+| :--- | :--- | :--- |
+| Multiple source systems, versions, or local variations | Inventory, identifier systems, and mapping layers | [Scope and acceptance](#what-data-and-history-will-move-and-who-accepts-them), [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed) |
+| Cross-source or existing-record patient matching | Identity workflow and reference sequencing | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work) |
+| Automated merge execution during migration | Review thresholds, audit, and reversal risk | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work) |
+| Custom profiles, extensions, or implementation-guide conformance | Mapping approval and validation configuration | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Validation](#what-evidence-establishes-correctness-and-acceptance) |
+| One source record producing several linked FHIR resources | Stable IDs, all-or-nothing writes, and reconciliation | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs) |
+| Expected load time may exceed the cutover window or service limits | Import path, throughput testing, and recovery | [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate) |
+| The source remains active while data moves | Incremental changes, write authority, and conflicts | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled) |
+| Little or no downtime is acceptable | Change capture, rehearsal depth, and rollback | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate) |
+| Documents, files, images, or DICOM | Storage, access, integrity, and retrieval testing | [Files and complex data](#how-will-documents-binaries-and-complex-data-remain-usable) |
+| Historical workflows must remain operational | Domain-specific modeling and validation | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Validation](#what-evidence-establishes-correctness-and-acceptance) |
+| External systems remaining authoritative after cutover | Long-term ownership and synchronization | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled), [Operational ownership](#who-monitors-runs-resolves-exceptions-and-accepts-operational-ownership) |
+| Reusable onboarding or ongoing synchronization pipeline | Operational ownership, versioning, and reconciliation | [Scope and acceptance](#what-data-and-history-will-move-and-who-accepts-them), [Operational ownership](#who-monitors-runs-resolves-exceptions-and-accepts-operational-ownership) |
 
----
+Cover every topic, adjusting the depth to your migration. Include documents, binaries, and complex data only when those domains are in scope. For each topic, record the decision, accountable owner, and acceptance criteria.
 
-## Section 3: Decision Deep Dives
+<div id="section-3-decision-deep-dives"></div>
 
-Complete 3.1 through 3.8 and 3.10 for every migration, adjusting the depth to your situation. Complete 3.9 when files, imaging, or another complex data type is in scope. For each section, document the decision, accountable owner, and acceptance criteria.
+<div id="decisions"></div>
 
-### Define What Will Move
+<div id="decision-1"></div>
 
-#### 3.1 Scope, Inventory & Ownership
+<div id="decision-1-what-will-move-and-how-will-identity-and-meaning-be-preserved"></div>
+
+## Scope, identity, and mapping
+
+<div id="define-what-will-move"></div>
+
+<div id="31-scope-inventory--ownership"></div>
+
+<div id="decision-1a-what-data-and-history-will-move-and-who-accepts-them"></div>
+
+### What data and history will move, and who accepts them?
 
 Decide what migrates, how far back each domain goes, and who can accept the result. See [Planning your Migration](/docs/migration/migration-planning).
 
@@ -147,7 +191,11 @@ Decide what migrates, how far back each domain goes, and who can accept the resu
 
 **Output:** Complete the [Source and Domain Inventory](/docs/migration/migration-planning#source-and-domain-inventory).
 
-#### 3.2 Identity, Identifiers & Deduplication
+<div id="32-identity-identifiers--deduplication"></div>
+
+<div id="decision-1b-how-will-identifiers-matching-and-deduplication-work"></div>
+
+### How will identifiers, matching, and deduplication work?
 
 Decide whether a source record remains distinct, maps to an existing resource, or enters a master-record workflow. See [Patient Deduplication Architectures](/docs/fhir-datastore/patient-deduplication) and [Patient `$match`](/docs/api/fhir/operations/patient-match).
 
@@ -175,7 +223,11 @@ Decide whether a source record remains distinct, maps to an existing resource, o
 
 A source identifier answers "which source record is this?" It does not by itself answer "which real-world person is this?"
 
-#### 3.3 Mapping & Terminology Governance
+<div id="33-mapping--terminology-governance"></div>
+
+<div id="decision-1c-how-will-fhir-mappings-and-terminology-be-governed"></div>
+
+### How will FHIR mappings and terminology be governed?
 
 Decide how source meaning maps to FHIR R4 and how decisions are versioned and approved. See [Governing Data Mappings](/docs/migration/mapping-governance) and [Converting Data to FHIR](/docs/migration/convert-to-fhir).
 
@@ -205,9 +257,19 @@ Decide how source meaning maps to FHIR R4 and how decisions are versioned and ap
 
 Use the [mapping register example](/docs/migration/mapping-governance#mapping-register-example) to define the information your project must track. Mapping approval is distinct from code review.
 
-### Prove It Can Move Safely
+<div id="decision-2"></div>
 
-#### 3.4 Validation, Reconciliation & Acceptance
+<div id="decision-2-how-will-loading-and-validation-prove-readiness"></div>
+
+## Loading and validation
+
+<div id="prove-it-can-move-safely"></div>
+
+<div id="34-validation-reconciliation--acceptance"></div>
+
+<div id="decision-2a-what-evidence-establishes-correctness-and-acceptance"></div>
+
+### What evidence establishes correctness and acceptance?
 
 Decide how the team will prove structural conformance, referential integrity, semantic correctness, completeness, and workflow readiness. See [Validating and Reconciling Migrated Data](/docs/migration/validation-and-reconciliation) and [Testing and Accepting Migrated Data](/docs/migration/testing-and-acceptance).
 
@@ -231,7 +293,11 @@ Decide how the team will prove structural conformance, referential integrity, se
 
 Do not prescribe a universal verification percentage. Choose samples after exact extraction counts are known and adjust for variability, risk, complexity, and defect history.
 
-#### 3.5 Load Architecture & Production Operations
+<div id="35-load-architecture--production-operations"></div>
+
+<div id="decision-2b-which-load-architecture-meets-throughput-and-recovery-needs"></div>
+
+### Which load architecture meets throughput and recovery needs?
 
 Decide which writes must succeed or fail together, how the pipeline resumes, and how much throughput the cutover requires. Implementation details and project prerequisites are covered in [Building Migration Pipelines](/docs/migration/migration-pipelines).
 
@@ -244,11 +310,23 @@ Decide which writes must succeed or fail together, how the pipeline resumes, and
 - How are results, checkpoints, retries, and rejected resources recorded?
 - Which downstream automations run, and what thresholds pause the load?
 
+For automations that remain active during the load, verify tenant scope and idempotency, and define how missed or failed work is recovered. Apply [Planning Automations](/docs/subscriptions#planning-automations) to these subscriptions; a successful import does not establish that its downstream side effects succeeded.
+
 **Output:** Choose a load path, define groups that require all-or-nothing writes and source-of-truth boundaries, and document recovery and side-effect handling in the [pipeline design](/docs/migration/migration-pipelines).
 
-### Plan the Transition
+<div id="decision-3"></div>
 
-#### 3.6 Cutover, Incremental Changes & Coexistence
+<div id="decision-3-how-will-the-transition-be-rehearsed-and-executed"></div>
+
+## Cutover and rehearsal
+
+<div id="plan-the-transition"></div>
+
+<div id="36-cutover-incremental-changes--coexistence"></div>
+
+<div id="decision-3a-when-does-write-authority-change-and-how-are-later-changes-handled"></div>
+
+### When does write authority change, and how are later changes handled?
 
 Decide when Medplum becomes authoritative and prevent two systems from independently accepting authoritative writes. See [Phased Adoption and Cutover](/docs/migration/adoption-strategy).
 
@@ -275,7 +353,11 @@ Decide when Medplum becomes authoritative and prevent two systems from independe
 
 **Output:** Complete the [Authority and Coexistence Matrix](/docs/migration/migration-planning#authority-and-coexistence-matrix).
 
-#### 3.7 Testing & Dress Rehearsals
+<div id="37-testing--dress-rehearsals"></div>
+
+<div id="decision-3b-what-must-testing-and-dress-rehearsals-demonstrate"></div>
+
+### What must testing and dress rehearsals demonstrate?
 
 Decide how closely testing must match production volume, infrastructure, access, and workflow behavior. See [Testing and Accepting Migrated Data](/docs/migration/testing-and-acceptance).
 
@@ -299,9 +381,19 @@ Decide how closely testing must match production volume, infrastructure, access,
 
 A small pilot does not prove production throughput. A full-volume load does not prove clinical meaning. Test both when those risks apply.
 
-### Protect the Data and Hand Off Operations
+<div id="decision-4"></div>
 
-#### 3.8 Security, Compliance & Audit
+<div id="decision-4-how-will-data-be-protected-and-operations-handed-off"></div>
+
+## Protection and operational handoff
+
+<div id="protect-the-data-and-hand-off-operations"></div>
+
+<div id="38-security-compliance--audit"></div>
+
+<div id="decision-4a-how-will-migration-data-credentials-and-audit-evidence-be-protected"></div>
+
+### How will migration data, credentials, and audit evidence be protected?
 
 Decide how protected data is extracted, staged, transmitted, logged, retained, and destroyed. See [Access Policies](/docs/access/access-policies) and [HIPAA Compliance](/docs/compliance/hipaa).
 
@@ -325,7 +417,11 @@ Decide how protected data is extracted, staged, transmitted, logged, retained, a
 
 Security review covers the pipeline and temporary artifacts, not only final FHIR resources.
 
-#### 3.9 Documents, Binaries & Complex Data
+<div id="39-documents-binaries--complex-data"></div>
+
+<div id="decision-4b-how-will-documents-binaries-and-complex-data-remain-usable"></div>
+
+### How will documents, binaries, and complex data remain usable?
 
 Decide whether complex data becomes structured resources, binary content, metadata, external references, or a separate workstream.
 
@@ -340,7 +436,11 @@ Decide whether complex data becomes structured resources, binary content, metada
 
 Use [Binary Data](/docs/fhir-datastore/binary-data), the [Messaging Data Model](/docs/communications/messaging-data-model), and the [DICOM Data Model](/docs/dicom/data-model) rather than defining those models inside the migration plan.
 
-#### 3.10 Monitoring, Exceptions & Handoff
+<div id="310-monitoring-exceptions--handoff"></div>
+
+<div id="decision-4c-who-monitors-runs-resolves-exceptions-and-accepts-operational-ownership"></div>
+
+### Who monitors runs, resolves exceptions, and accepts operational ownership?
 
 Decide how production runs are controlled and when migration ownership transfers to normal operations.
 
