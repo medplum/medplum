@@ -68,6 +68,14 @@ let server: http.Server | undefined = undefined;
 
 export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
+// Routes that can invoke a Bot, under each mount point.
+// FHIR operation paths cover both Bot $execute and Bot-backed custom operations.
+const BOT_EXECUTION_PATHS = ['', '/api', '/projects/:projectId', '/api/projects/:projectId'].flatMap((prefix) => [
+  prefix + '/webhook/:id',
+  prefix + '/fhir/R4{/*splat}/$:operation',
+  prefix + '/fhir/R4{/*splat}/%24:operation',
+]);
+
 /**
  * Sets standard headers for all requests.
  * @param _req - The request.
@@ -233,23 +241,9 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
     asyncBatchHandler(config)
   );
 
-  // Routes that can invoke a Bot keep the unparsed JSON, which a Bot with Bot.rawBody set gets as its input.
-  // FHIR operation paths cover both Bot $execute and Bot-backed custom operations.
+  // Keep the unparsed JSON, which a Bot with Bot.rawBody set gets as its input
   app.use(
-    [
-      '/webhook/:id',
-      '/api/webhook/:id',
-      '/projects/:projectId/webhook/:id',
-      '/api/projects/:projectId/webhook/:id',
-      '/fhir/R4{/*splat}/$:operation',
-      '/fhir/R4{/*splat}/%24:operation',
-      '/api/fhir/R4{/*splat}/$:operation',
-      '/api/fhir/R4{/*splat}/%24:operation',
-      '/projects/:projectId/fhir/R4{/*splat}/$:operation',
-      '/projects/:projectId/fhir/R4{/*splat}/%24:operation',
-      '/api/projects/:projectId/fhir/R4{/*splat}/$:operation',
-      '/api/projects/:projectId/fhir/R4{/*splat}/%24:operation',
-    ],
+    BOT_EXECUTION_PATHS,
     json({
       type: JSON_TYPE,
       limit: config.maxJsonSize,
