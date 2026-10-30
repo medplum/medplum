@@ -3,17 +3,17 @@
 import { InvokeModelCommand, InvokeModelWithResponseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import type { NextFunction, Request, Response } from 'express';
 import { json, Router } from 'express';
-import { getAuthenticatedContext } from '../context';
-import { getLogger } from '../logger';
-import { authenticateRequest } from '../oauth/middleware';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
+import { authenticateRequest } from '../../oauth/middleware';
 import {
   AuditEventOutcome,
   createAuditEvent,
   logAuditEvent,
   OperationInteraction,
   RestfulOperationType,
-} from '../util/auditevent';
-import { isSupportedAiCaller } from './access';
+} from '../../util/auditevent';
+import { isSupportedAiCaller } from '../access';
 import type { AnthropicError } from './bedrock';
 import { anthropicErrorType, getBedrockClient, toAnthropicError, toBedrockBody } from './bedrock';
 
@@ -62,7 +62,7 @@ export function createAnthropicGatewayRouter(region: string): Router {
 
 async function handleMessages(region: string, req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  if (!ctx.project.features?.includes('ai-gateway') || !isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
+  if (!ctx.project.features?.includes('ai') || !isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
     sendError(res, 403, 'The AI gateway is not enabled for this account');
     return;
   }

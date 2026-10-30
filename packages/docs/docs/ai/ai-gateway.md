@@ -18,7 +18,7 @@ The request and response bodies are those of the [Anthropic Messages API](https:
 
 ## Requirements
 
-- The project must have the `ai-gateway` feature enabled.
+- The project must have the `ai` feature enabled.
 - The caller must be a Practitioner or a ClientApplication. Patient and RelatedPerson logins, and logins limited by SMART resource scopes, are not allowed.
 - The `model` is an Anthropic model ID on Bedrock, such as `us.anthropic.claude-sonnet-4-5-20250929-v1:0`. See [Choosing a model](#choosing-a-model).
 
@@ -62,6 +62,6 @@ Set the small model too: agents use it for background tasks, and without it they
 
 ## Self-hosting
 
-The gateway is available on every server and is enabled per project with the `ai-gateway` project feature. The server calls Bedrock in `awsRegion`, and request bodies may be up to 20 MB.
+The gateway is available on every server and is enabled per project with the `ai` project feature. The server calls Bedrock in `awsRegion`, and request bodies may be up to 20 MB.
 
 The server uses its own AWS credentials. Grant its role `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream`. With the Medplum CDK, set `aiGatewayBedrockEnabled: true` in the infra config.

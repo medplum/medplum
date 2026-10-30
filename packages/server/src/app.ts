@@ -18,7 +18,7 @@ import http from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { adminRouter } from './admin/routes';
-import { ANTHROPIC_GATEWAY_PATHS, apiKeyAsBearer, createAnthropicGatewayRouter } from './ai/gateway';
+import { ANTHROPIC_GATEWAY_PATHS, apiKeyAsBearer, createAnthropicGatewayRouter } from './ai/anthropic/gateway';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { cdsRouter } from './cds/routes';

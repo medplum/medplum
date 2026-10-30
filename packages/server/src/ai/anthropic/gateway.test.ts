@@ -10,9 +10,9 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import request from 'supertest';
-import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
-import { addTestUser, createTestProject, withTestContext } from '../test.setup';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config/loader';
+import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 
 const MODEL_ID = 'us.anthropic.claude-sonnet-4-5-20250929-v1:0';
 
@@ -39,7 +39,7 @@ describe('AI gateway', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    ({ accessToken } = await createTestProject({ withAccessToken: true, project: { features: ['ai-gateway'] } }));
+    ({ accessToken } = await createTestProject({ withAccessToken: true, project: { features: ['ai'] } }));
   });
 
   afterAll(async () => {
@@ -163,8 +163,8 @@ describe('AI gateway', () => {
       body: { transformToString: () => JSON.stringify(message) } as any,
       contentType: 'application/json',
     });
-    const { project } = await createTestProject({ project: { features: ['ai-gateway'] } });
-    const noAi = await createTestProject({ withAccessToken: true, project: { features: ['ai'] } });
+    const { project } = await createTestProject({ project: { features: ['ai'] } });
+    const noAi = await createTestProject({ withAccessToken: true });
     const [patient, smartApp, practitioner] = await withTestContext(async () => [
       await addTestUser(project, { resourceType: 'Patient' }),
       await addTestUser(project, { scope: 'openid user/Observation.rs' }),
