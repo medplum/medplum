@@ -7,9 +7,9 @@ import { globalLogger } from '../../logger';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import { moveToDelayedAndThrow, queueRegistry } from '../../workers/utils';
 import * as fns from '../migrate-functions';
-import { runReadCommittedBatch } from '../migration-utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigration, CustomPostDeployMigrationJobData } from './types';
+import { runReadCommittedBatch } from './utils';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',

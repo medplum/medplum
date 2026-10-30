@@ -5,9 +5,9 @@ import type { PoolClient } from 'pg';
 import { systemResourceProjectId } from '../../constants';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
-import { runReadCommittedBatch } from '../migration-utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigration } from './types';
+import { runReadCommittedBatch } from './utils';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
