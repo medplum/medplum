@@ -53,6 +53,8 @@ describe('v50: HumanName.projectId NOT NULL', () => {
   afterEach(async () => {
     // Leave the shared test database with the column NOT NULL even if a test failed partway
     const pool = getDatabasePool(DatabaseMode.WRITER);
+    // A run that failed partway through the NOT NULL step can leave its temporary check constraint behind
+    await pool.query('ALTER TABLE "HumanName" DROP CONSTRAINT IF EXISTS "HumanName_projectId_not_null"');
     await pool.query('DELETE FROM "HumanName" WHERE "projectId" IS NULL');
     await pool.query('ALTER TABLE "HumanName" ALTER COLUMN "projectId" SET NOT NULL');
   });
