@@ -167,7 +167,9 @@ describe('MFA', () => {
     const send = (): request.Test =>
       method === 'GET' ? request(app).get(url) : request(app).post(url).type('json').send(body);
 
-    const res1 = await send().set('Authorization', basicAuth).set('X-Medplum-On-Behalf-Of', getReferenceString(profile));
+    const res1 = await send()
+      .set('Authorization', basicAuth)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(profile));
     expect(res1).toHaveStatus(403);
 
     // Token issued by the project for a user who also has their own project
