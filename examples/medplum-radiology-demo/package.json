@@ -1,0 +1,50 @@
+{
+  "name": "medplum-radiology-demo",
+  "version": "5.1.35",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "generate-task": "tsx scripts/generate-diag-report-task.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview"
+  },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-organize-imports"
+    ],
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "devDependencies": {
+    "@mantine/core": "8.3.18",
+    "@mantine/hooks": "8.3.18",
+    "@mantine/notifications": "8.3.18",
+    "@medplum/core": "5.1.35",
+    "@medplum/eslint-config": "5.1.35",
+    "@medplum/fhirtypes": "5.1.35",
+    "@medplum/react": "5.1.35",
+    "@tabler/icons-react": "3.46.0",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.5",
+    "postcss": "8.5.26",
+    "postcss-preset-mantine": "1.18.0",
+    "postcss-simple-vars": "7.0.1",
+    "prettier-plugin-organize-imports": "4.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router": "8.3.0",
+    "tsx": "4.20.6",
+    "typescript": "6.0.3",
+    "vite": "8.2.1"
+  },
+  "packageManager": "npm@10.9.9",
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}
