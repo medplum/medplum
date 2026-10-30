@@ -105,6 +105,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'recordCacheAccess',
   'assertUsable',
   'authorizeBinarySecurityContext',
+  'shouldAddBackgroundJobs',
 ]);
 
 interface MethodInvocation {

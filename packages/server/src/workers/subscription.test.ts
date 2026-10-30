@@ -2786,7 +2786,7 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
 
-        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Not found');
+        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Job not found');
 
         // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
         // if the job had made its way to the queue previously under different logic
