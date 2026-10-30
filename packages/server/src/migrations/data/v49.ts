@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import type { Job } from 'bullmq';
-import type { PoolClient, QueryResultRow } from 'pg';
-import { PostgresError } from '../../fhir/sql';
+import type { PoolClient } from 'pg';
 import { globalLogger } from '../../logger';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import { moveToDelayedAndThrow, queueRegistry } from '../../workers/utils';
 import * as fns from '../migrate-functions';
+import { runReadCommittedBatch } from '../migration-utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigration, CustomPostDeployMigrationJobData } from './types';
 
@@ -78,9 +78,7 @@ export interface BackfillOptions {
   readonly onCheckpoint?: (checkpoint: BackfillCheckpoint) => Promise<void>;
 }
 
-export const defaultOptions: Required<
-  Pick<BackfillOptions, 'batchSize' | 'delayBetweenBatches' | 'progressLogThreshold'>
-> = {
+const defaultOptions: Required<Pick<BackfillOptions, 'batchSize' | 'delayBetweenBatches' | 'progressLogThreshold'>> = {
   batchSize: 5000,
   delayBetweenBatches: 100,
   progressLogThreshold: 100_000,
@@ -92,50 +90,11 @@ interface BatchResult {
   readonly updated: number;
 }
 
-const maxBatchAttempts = 2;
-
-/**
- * Runs one batch statement in its own READ COMMITTED transaction, retrying on a serialization failure.
- *
- * Pool connections default to REPEATABLE READ, where a concurrent resource write that rewrites a batch's
- * `HumanName` rows fails the whole statement; READ COMMITTED skips those rows, whose replacements already carry
- * the right `projectId`.
- * @param client - The database client.
- * @param sql - The batch statement, returning a single summary row.
- * @param params - The batch statement parameters.
- * @returns The batch statement's summary row.
- */
-export async function runBatch<T extends QueryResultRow>(
-  client: PoolClient,
-  sql: string,
-  params: unknown[]
-): Promise<T> {
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= maxBatchAttempts; attempt++) {
-    await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
-    try {
-      const result = await client.query<T>(sql, params);
-      await client.query('COMMIT');
-      return result.rows[0];
-    } catch (err: any) {
-      await client.query('ROLLBACK');
-      if (err?.code !== PostgresError.SerializationFailure) {
-        throw err;
-      }
-      lastError = err;
-      if (attempt < maxBatchAttempts) {
-        globalLogger.warn('Retrying HumanName.projectId batch after serialization failure', {
-          params,
-          error: err.message,
-        });
-      }
-    }
-  }
-  throw lastError;
-}
-
 /**
  * Copies each resource's `projectId` onto its `HumanName` rows, covering rows written before the column existed.
+ *
+ * Each batch runs under READ COMMITTED, so a concurrent resource write that rewrites a batch's `HumanName` rows is
+ * skipped rather than failing the batch; the replacements already carry the right `projectId`.
  *
  * Paginates by resource `id` so each batch is a primary key range scan joined to `HumanName` via its `resourceId`
  * index, rather than re-selecting `projectId IS NULL` rows each pass, which is not indexed and would rescan the table.
@@ -200,7 +159,7 @@ export async function backfillHumanNameProjectId(
     let updated = 0;
     let hasMore = true;
     while (hasMore) {
-      const row = await runBatch<BatchResult>(client, sql, [lastId, batchSize]);
+      const row = await runReadCommittedBatch<BatchResult>(client, sql, [lastId, batchSize]);
       // A partial batch means the end of the table was reached
       hasMore = row.scanned === batchSize;
 

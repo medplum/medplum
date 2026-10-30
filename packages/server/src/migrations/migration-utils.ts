@@ -3,13 +3,14 @@
 import type { WithId } from '@medplum/core';
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
+import { PostgresError } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
@@ -199,6 +200,44 @@ export async function withLongRunningDatabaseClient<TResult>(
     },
     getDatabasePool(databaseMode ?? DatabaseMode.WRITER)
   );
+}
+
+const maxBatchAttempts = 2;
+
+/**
+ * Runs one batch statement in its own READ COMMITTED transaction, retrying on a serialization failure.
+ *
+ * Pool connections default to REPEATABLE READ, where a concurrent write to a row the batch touches fails the whole
+ * statement; READ COMMITTED skips rows a concurrent transaction deleted and re-evaluates ones it updated.
+ * @param client - The database client.
+ * @param sql - The batch statement, returning a single summary row.
+ * @param params - The batch statement parameters.
+ * @returns The batch statement's summary row.
+ */
+export async function runReadCommittedBatch<T extends QueryResultRow>(
+  client: PoolClient,
+  sql: string,
+  params: unknown[]
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxBatchAttempts; attempt++) {
+    await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+    try {
+      const result = await client.query<T>(sql, params);
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      if (err?.code !== PostgresError.SerializationFailure) {
+        throw err;
+      }
+      lastError = err;
+      if (attempt < maxBatchAttempts) {
+        globalLogger.warn('Retrying migration batch after serialization failure', { params, error: err.message });
+      }
+    }
+  }
+  throw lastError;
 }
 
 export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {

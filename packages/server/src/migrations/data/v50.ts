@@ -5,10 +5,9 @@ import type { PoolClient } from 'pg';
 import { systemResourceProjectId } from '../../constants';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
+import { runReadCommittedBatch } from '../migration-utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigration } from './types';
-import type { BackfillOptions } from './v49';
-import { defaultOptions, runBatch } from './v49';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
@@ -24,6 +23,18 @@ async function callback(client: PoolClient, results: MigrationActionResult[]): P
 
 const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
 
+export interface RepairOptions {
+  /** NULL rows selected per statement. Bounds how long any single row lock is held. */
+  readonly batchSize?: number;
+  /** Milliseconds to pause between batches, giving replicas and autovacuum time to keep up with the rewrite. */
+  readonly delayBetweenBatches?: number;
+}
+
+const defaultOptions: Required<RepairOptions> = {
+  batchSize: 5000,
+  delayBetweenBatches: 100,
+};
+
 interface RepairBatchResult {
   readonly scanned: number;
   readonly updated: number;
@@ -37,6 +48,7 @@ interface RepairBatchResult {
  * the backfill passed its resource is left NULL. Rows whose resource no longer exists in any of the name-bearing
  * tables are never matched by search, so they are deleted rather than guessed at.
  *
+ * Batches run under READ COMMITTED, so a concurrent write that replaces a batch's rows skips them rather than failing.
  * Each batch repairs or deletes every row it selects, so re-selecting `projectId IS NULL` always makes progress, and
  * the `projectId` indexes built by v49 keep that lookup from scanning the table.
  * @param client - The database client.
@@ -46,7 +58,7 @@ interface RepairBatchResult {
 export async function repairNullHumanNameProjectIds(
   client: PoolClient,
   results: MigrationActionResult[],
-  options?: Pick<BackfillOptions, 'batchSize' | 'delayBetweenBatches'>
+  options?: RepairOptions
 ): Promise<void> {
   const { batchSize, delayBetweenBatches } = { ...defaultOptions, ...options };
   const owners = resourceTypes
@@ -80,7 +92,7 @@ export async function repairNullHumanNameProjectIds(
   let updated = 0;
   let deleted = 0;
   while (true) {
-    const row = await runBatch<RepairBatchResult>(client, sql, [systemResourceProjectId, batchSize]);
+    const row = await runReadCommittedBatch<RepairBatchResult>(client, sql, [systemResourceProjectId, batchSize]);
     if (row.scanned === 0) {
       break;
     }
