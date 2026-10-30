@@ -437,21 +437,23 @@ describe('SchedulingWorkspace booking', () => {
     await openTimeFinder();
     const pane = screen.getByRole('region', { name: 'Book appointment' });
     expect(pane.className).toMatch(/paneWide/);
-    // jsdom runs no animations, so each one's end is fired by hand.
-    fireEvent.animationEnd(pane);
-    expect(pane.className).not.toMatch(/paneClosing/);
 
-    // A slide back that's cancelled, as when the pane is hidden mid-slide, also ends it.
+    // jsdom runs no animations, so each one's end is fired by hand. Closing while the pane is
+    // still sliding open cuts that slide short, which doesn't end the slide back.
     await chooseFirstOfferedTime();
     expect(pane.className).toMatch(/paneWide.*paneClosing/);
-    fireEvent(pane, new Event('animationcancel'));
+    fireEvent(pane, new AnimationEvent('animationcancel', { animationName: 'paneSlideIn' }));
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+
+    // A slide back that's cancelled, as when the pane is hidden mid-slide, does.
+    fireEvent(pane, new AnimationEvent('animationcancel', { animationName: 'paneSlideOut' }));
     expect(pane.className).not.toMatch(/paneWide|paneClosing/);
 
     await openTimeFinder();
     fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
     expect(pane.className).toMatch(/paneWide.*paneClosing/);
 
-    fireEvent.animationEnd(pane);
+    fireEvent.animationEnd(pane, { animationName: 'paneSlideOut' });
     expect(pane.className).not.toMatch(/paneWide|paneClosing/);
   });
 

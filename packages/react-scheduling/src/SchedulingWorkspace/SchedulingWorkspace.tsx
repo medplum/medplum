@@ -761,11 +761,11 @@ function SidePane(props: SidePaneProps): JSX.Element {
     if (!closing || !pane) {
       return undefined;
     }
-    // Only the slide back ends it, not an animation inside the pane. A cancelled slide (the
-    // pane hidden, or its animation removed) ends it too, so the pane can't stay wide.
-    // Listened for natively, as React has no `onAnimationCancel`.
+    // Only the slide back ends it, not an animation inside the pane, nor the slide open it cut
+    // short. A cancelled slide back (the pane hidden, or its animation removed) ends it too, so
+    // the pane can't stay wide. Listened for natively, as React has no `onAnimationCancel`.
     const settle = (event: AnimationEvent): void => {
-      if (event.target === pane) {
+      if (event.animationName === classes.paneSlideOut) {
         setExtended(false);
       }
     };
