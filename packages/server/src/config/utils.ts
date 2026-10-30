@@ -210,6 +210,7 @@ const booleanKeys = new Set([
   'allowUnsafeOutbound',
   'autoDownloadEnabled',
   'cacheResourcesOnWrite',
+  'defaultChainedSearchOnReader',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
   'database.disableConnectionConfiguration',
