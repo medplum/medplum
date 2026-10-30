@@ -1308,9 +1308,21 @@ async function makeAuthResult(
   // Resolve "on behalf of" before building the repository, so that the access policy is built from
   // the effective membership.  Resolving it afterwards would require a repository to already exist,
   // which cannot be built for a login whose scopes depend on the on-behalf-of membership.
-  await tryAddOnBehalfOf(systemRepo, req, authState);
-  const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  return { authState, repo };
+  try {
+    await tryAddOnBehalfOf(systemRepo, req, authState);
+    const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
+    return { authState, repo };
+  } catch (err) {
+    // The caller is known here, but the "Authentication error" log line does not include it
+    getLogger().warn('Authentication failed for known caller', {
+      login: login.id,
+      project: project.id,
+      membership: membership.id,
+      profile: membership.profile?.reference,
+      onBehalfOf: req?.headers?.['x-medplum-on-behalf-of'],
+    });
+    throw err;
+  }
 }
 
 /**
