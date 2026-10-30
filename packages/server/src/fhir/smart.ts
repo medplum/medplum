@@ -15,6 +15,7 @@ import {
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
   OperationOutcomeError,
+  projectAdminResourceTypes,
   readInteractions,
   splitN,
 } from '@medplum/core';
@@ -267,6 +268,10 @@ function intersectSmartScopes(
   for (const policy of accessPolicy.resource ?? EMPTY) {
     if (policy.resourceType === '*') {
       for (const scope of smartScope) {
+        if (projectAdminResourceTypes.includes(scope.resourceType)) {
+          // A wildcard policy does not cover project admin resource types
+          continue;
+        }
         // Expand the wildcard policy before merging, so that any criteria added by the scope
         // is prefixed with the resource type the policy will be applied to
         const merged = mergeAccessPolicyWithScope({ ...policy, resourceType: scope.resourceType }, scope, context);
@@ -332,5 +337,7 @@ function appendCriteria(policy: AccessPolicyResource, criteria: string): void {
 }
 
 function getScopesForResourceType(scopes: SmartScope[], resourceType: string): SmartScope[] {
-  return scopes.filter((s) => s.resourceType === resourceType || s.resourceType === '*');
+  // Project admin resource types are only covered by scopes that name them
+  const wildcardMatches = !projectAdminResourceTypes.includes(resourceType);
+  return scopes.filter((s) => s.resourceType === resourceType || (wildcardMatches && s.resourceType === '*'));
 }
