@@ -12,13 +12,17 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bot, OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';
-import { getBotDefaultHeaders, getBotProjectMembership, isBinaryWithoutData } from '../../bots/utils';
+import { getBotBodyInput, getBotDefaultHeaders, getBotProjectMembership, isBinaryWithoutData } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { searchUnique } from '../searchunique';
 import { buildOutputParameters } from './utils/parameters';
 
-export async function tryCustomOperation(req: FhirRequest, repo: Repository): Promise<FhirResponse | undefined> {
+export async function tryCustomOperation(
+  req: FhirRequest,
+  repo: Repository,
+  rawBody?: Buffer
+): Promise<FhirResponse | undefined> {
   // Parse the URL to find the operation code
   const parts = req.url.split('/');
   const operationPart = parts.find((part) => part.startsWith('$'));
@@ -78,7 +82,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
     const resourceId = parts[operationIndex - 1];
     input = await repo.readResource(resourceType, resourceId);
   } else {
-    input = req.method === 'POST' ? req.body : req.query;
+    input = req.method === 'POST' ? getBotBodyInput(bot, req.body, rawBody) : req.query;
   }
 
   // Execute the bot

@@ -85,6 +85,19 @@ export async function getBotProjectMembership(
 }
 
 /**
+ * Returns the bot input for a POST request body.
+ * If the bot has rawBody set and the original JSON text was captured, then use that text.
+ * Otherwise, use the parsed body.
+ * @param bot - The bot resource.
+ * @param body - The parsed request body.
+ * @param rawBody - The unparsed JSON body, captured by the raw-body JSON parser in app.ts.
+ * @returns The bot input.
+ */
+export function getBotBodyInput(bot: Bot, body: unknown, rawBody: Buffer | undefined): unknown {
+  return bot.rawBody && rawBody ? rawBody.toString('utf8') : body;
+}
+
+/**
  * Returns the default headers to add to the MedplumClient.
  * If the bot is configured to run as the user, then include the HTTP cookies from the request.
  * Otherwise, no default headers are added.

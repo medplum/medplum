@@ -198,9 +198,7 @@ protectedRoutes.post(['/Agent/:id/$push', '/Agent/:id/%24push'], agentPushHandle
 
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
-// Exported so app.ts can register a raw-body-capturing parser on the same paths, prefixed with
-// each FHIR route mount point (this router itself is mounted under one of those prefixes already).
-export const BOT_EXECUTE_PATHS = [
+const botPaths = [
   '/Bot/$execute',
   '/Bot/%24execute',
   '/Bot/:id/$execute',
@@ -210,8 +208,8 @@ export const BOT_EXECUTE_PATHS = [
   '/Bot/:id/$execute/*splat',
   '/Bot/:id/%24execute/*splat',
 ];
-protectedRoutes.get(BOT_EXECUTE_PATHS, executeHandler);
-protectedRoutes.post(BOT_EXECUTE_PATHS, executeHandler);
+protectedRoutes.get(botPaths, executeHandler);
+protectedRoutes.post(botPaths, executeHandler);
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
@@ -518,7 +516,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
   if (isNotFound(result[0])) {
-    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo, res.locals.rawBody);
     if (customOperationResponse) {
       result = customOperationResponse;
     }

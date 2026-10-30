@@ -37,7 +37,7 @@ import { binaryRouter } from './fhir/binary';
 import { smartHealthLinkRouter } from './fhir/operations/smarthealthlinks';
 import { closeAgentCallbackSubscriber } from './fhir/operations/utils/agentcallback';
 import { sendOutcome } from './fhir/outcomes';
-import { BOT_EXECUTE_PATHS, fhirRouter } from './fhir/routes';
+import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
@@ -59,7 +59,7 @@ import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
-import { WEBHOOK_PATHS, webhookRouter } from './webhook/routes';
+import { webhookRouter } from './webhook/routes';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 import { closeWebSockets, initWebSockets } from './ws/routes';
@@ -233,32 +233,28 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
     asyncBatchHandler(config)
   );
 
+  // Routes that can invoke a Bot keep the unparsed JSON, which a Bot with Bot.rawBody set gets as its input.
+  // FHIR operation paths cover both Bot $execute and Bot-backed custom operations.
   app.use(
-    WEBHOOK_PATHS,
+    [
+      '/webhook/:id',
+      '/api/webhook/:id',
+      '/projects/:projectId/webhook/:id',
+      '/api/projects/:projectId/webhook/:id',
+      '/fhir/R4{/*splat}/$:operation',
+      '/fhir/R4{/*splat}/%24:operation',
+      '/api/fhir/R4{/*splat}/$:operation',
+      '/api/fhir/R4{/*splat}/%24:operation',
+      '/projects/:projectId/fhir/R4{/*splat}/$:operation',
+      '/projects/:projectId/fhir/R4{/*splat}/%24:operation',
+      '/api/projects/:projectId/fhir/R4{/*splat}/$:operation',
+      '/api/projects/:projectId/fhir/R4{/*splat}/%24:operation',
+    ],
     json({
       type: JSON_TYPE,
       limit: config.maxJsonSize,
-      verify: (req, _res, buf) => {
-        (req as any).rawBody = buf;
-      },
-    })
-  );
-
-  // Bot $execute, under each FHIR route mount point. A Bot with rawBody set uses this instead of
-  // the parsed body, same as WEBHOOK_PATHS above - see Bot.rawBody.
-  const botExecutePaths = [
-    '/fhir/R4',
-    '/api/fhir/R4',
-    '/projects/:projectId/fhir/R4',
-    '/api/projects/:projectId/fhir/R4',
-  ].flatMap((prefix) => BOT_EXECUTE_PATHS.map((path) => prefix + path));
-  app.use(
-    botExecutePaths,
-    json({
-      type: JSON_TYPE,
-      limit: config.maxJsonSize,
-      verify: (req, _res, buf) => {
-        (req as any).rawBody = buf;
+      verify: (_req, res, buf) => {
+        (res as Response).locals.rawBody = buf;
       },
     })
   );
