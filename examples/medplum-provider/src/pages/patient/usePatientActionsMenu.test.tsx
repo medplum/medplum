@@ -85,4 +85,29 @@ describe('usePatientActionsMenu', () => {
     expect(screen.getByText('Edit Patient Profile Details')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
+
+  test('Renders the export menu item', () => {
+    setup(HomerSimpson);
+    expect(screen.getByText('Export Patient Records')).toBeInTheDocument();
+  });
+
+  test('Opens the export modal when the menu item is clicked', async () => {
+    setup(HomerSimpson);
+
+    fireEvent.click(screen.getByText('Export Patient Records'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Export Homer Simpson’s Records' })).toBeInTheDocument();
+    });
+  });
+
+  test('Opens the SMART Health Link import modal when the menu item is clicked', async () => {
+    setup(HomerSimpson);
+
+    fireEvent.click(screen.getByText('Import Patient Records'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Import from SMART Health Card or Link')).toBeInTheDocument();
+    });
+  });
 });
