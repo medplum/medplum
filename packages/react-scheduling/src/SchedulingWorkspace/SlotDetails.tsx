@@ -53,7 +53,7 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
 
   return (
     <Stack gap="sm" className={classes.details}>
-      <Badge color="gray">{slot.status}</Badge>
+      <Detail label="Status" value={<Badge color="gray">{slot.status}</Badge>} />
       <Detail
         label="For"
         value={actors?.map((actor, index) => (

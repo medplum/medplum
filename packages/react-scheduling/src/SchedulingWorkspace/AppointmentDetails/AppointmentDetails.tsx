@@ -339,7 +339,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   // foot of either.
   return (
     <Stack gap="sm" className={classes.details}>
-      <AppointmentStatusBadge status={appointment.status} />
+      <Detail label="Status" value={<AppointmentStatusBadge status={appointment.status} />} />
       {patientLine}
       <Detail label="MRN" value={mrn} />
       {whenLine}

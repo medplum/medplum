@@ -77,7 +77,7 @@ describe('SchedulingWorkspace blocked time details', () => {
 
     await userEvent.click(await screen.findByText('Blocked'));
     const pane = within(slotDetails() as HTMLElement);
-    expect(pane.getByText('busy-unavailable')).toBeInTheDocument();
+    expect(pane.getByText('Status').nextElementSibling).toHaveTextContent('busy-unavailable');
     expect(await pane.findByText('Dr. Maya Rivera')).toBeInTheDocument();
     expect(pane.getByText(formatWhen(BLOCKED_SLOT) as string)).toBeInTheDocument();
     expect(pane.getByText('Lunch')).toBeInTheDocument();
