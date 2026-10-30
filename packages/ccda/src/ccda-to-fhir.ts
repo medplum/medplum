@@ -118,6 +118,7 @@ import type {
   CcdaPerformer,
   CcdaProcedure,
   CcdaQuantity,
+  CcdaReference,
   CcdaReferenceRange,
   CcdaSection,
   CcdaSubstanceAdministration,
@@ -150,11 +151,13 @@ class CcdaToFhirConverter {
   private readonly ccda: Ccda;
   private readonly options: CcdaToFhirOptions | undefined;
   private readonly resources: Resource[] = [];
+  private readonly narrativeTexts: Map<string, string | undefined>;
   private patient?: Patient;
 
   constructor(ccda: Ccda, options?: CcdaToFhirOptions) {
     this.ccda = ccda;
     this.options = options;
+    this.narrativeTexts = indexNarrativeTexts(ccda);
   }
 
   convert(): Bundle {
@@ -886,7 +889,10 @@ class CcdaToFhirConverter {
       }
     }
 
-    const text = code['@_displayName'] || code.originalText?.reference?.['@_value'] || nodeToString(code.originalText);
+    const text =
+      code['@_displayName'] ||
+      nodeToString(code.originalText) ||
+      this.resolveNarrativeReference(code.originalText?.reference);
 
     if (codings.length === 0) {
       return text ? { text } : undefined;
@@ -896,6 +902,16 @@ class CcdaToFhirConverter {
       coding: codings,
       ...(text && { text }),
     };
+  }
+
+  /**
+   * Returns the section narrative text that a reference such as `#Med0Name` points at.
+   * @param reference - The C-CDA reference.
+   * @returns The narrative text, or undefined if the reference does not point at exactly one narrative element.
+   */
+  private resolveNarrativeReference(reference: CcdaReference | undefined): string | undefined {
+    const value = reference?.['@_value'];
+    return value?.startsWith('#') ? this.narrativeTexts.get(value.substring(1)) : undefined;
   }
 
   private mapCodeToCoding(code: CcdaCode | undefined): Coding | undefined {
@@ -1266,6 +1282,10 @@ class CcdaToFhirConverter {
           result.valueString = observation.value['#text'] ?? '';
           break;
 
+        case 'ED': // Encapsulated Data
+          result.valueString = this.mapEncapsulatedDataToString(observation.value);
+          break;
+
         case 'INT': // Integer
           result.valueInteger = observation.value['@_value']
             ? Number.parseInt(observation.value['@_value'], 10)
@@ -1300,6 +1320,17 @@ class CcdaToFhirConverter {
     }
 
     return result;
+  }
+
+  private mapEncapsulatedDataToString(value: CcdaReference): string | undefined {
+    const mediaType = value['@_mediaType'] ?? 'text/plain';
+    const representation = value['@_representation'] ?? 'TXT';
+    if (!mediaType.startsWith('text/') || representation !== 'TXT') {
+      // Binary content, such as a PDF, has no Observation.value[x] type in FHIR R4
+      console.warn(`Unhandled observation value type: ED (${mediaType}, ${representation})`);
+      return undefined;
+    }
+    return value['#text'] || this.resolveNarrativeReference(value.reference);
   }
 
   private mapObservationTemplateIdToObservationCategory(
@@ -1519,4 +1550,49 @@ function nodeToString(node: CcdaText | string | undefined): string | undefined {
     return node['#text'];
   }
   return undefined;
+}
+
+/**
+ * Indexes the text of every section narrative element that has an ID, so that references such as `#Med0Name` resolve.
+ * CDA IDs are unique within a document (xs:ID), so one index serves every section.
+ * An ID that appears more than once is ambiguous, and maps to undefined.
+ * @param ccda - The C-CDA document.
+ * @returns The narrative text by ID.
+ */
+function indexNarrativeTexts(ccda: Ccda): Map<string, string | undefined> {
+  const texts = new Map<string, string | undefined>();
+  for (const component of ccda.component?.structuredBody?.component ?? EMPTY) {
+    for (const section of component.section ?? EMPTY) {
+      indexNarrativeText(section.text, texts);
+    }
+  }
+  return texts;
+}
+
+/**
+ * Returns the text of a parsed narrative node, and adds each element in it that has an ID to the index.
+ * The parsed narrative does not keep the order of mixed content, so text around child elements may be reordered.
+ * @param node - The parsed narrative node.
+ * @param texts - The narrative text by ID.
+ * @returns The text of the node and its descendants.
+ */
+function indexNarrativeText(node: unknown, texts: Map<string, string | undefined>): string {
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (Array.isArray(node)) {
+    return node.map((child) => indexNarrativeText(child, texts)).join(' ');
+  }
+  if (!node || typeof node !== 'object') {
+    return '';
+  }
+  const text = Object.entries(node)
+    .filter(([key]) => !key.startsWith('@_'))
+    .map(([, child]) => indexNarrativeText(child, texts))
+    .join(' ');
+  const id = (node as Record<string, unknown>)['@_ID'];
+  if (typeof id === 'string') {
+    texts.set(id, texts.has(id) ? undefined : text.replace(/\s+/g, ' ').trim() || undefined);
+  }
+  return text;
 }
