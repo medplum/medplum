@@ -83,6 +83,10 @@ export function getDicomQueue(): Queue<DicomJobData> | undefined {
  * @param previousVersion - The previous version of the resource, if available
  */
 export async function addDicomJobs(resource: WithId<DicomInstance>, previousVersion: DicomInstance): Promise<void> {
+  if (!resource.meta?.project) {
+    return;
+  }
+
   if (resource.raw?.reference !== previousVersion?.raw?.reference) {
     const ctx = tryGetRequestContext();
     await addDicomJobData({
