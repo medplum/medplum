@@ -1369,13 +1369,15 @@ describe('AppointmentProposalForm', () => {
       expect(searched.some((url) => url.includes('Patient'))).toBe(false);
     });
 
-    test('Asks nothing else below the action that finds a time', async () => {
+    test('Asks only the patient and the notes below the action that finds a time', async () => {
       setup(medplum);
 
-      // The free text about the visit that used to sit here is one of the fields a
-      // practice configures, so the patient is the form's last question.
+      // Anything else the visit needs is one of the fields a practice configures.
       const inputs = [...screen.getAllByRole('searchbox'), ...screen.queryAllByRole('textbox')];
-      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([field(/patient/i)]);
+      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([
+        field(/patient/i),
+        screen.getByRole('textbox', { name: 'Notes' }),
+      ]);
     });
 
     test('Names the patient as a required participant, once', async () => {
@@ -1470,6 +1472,22 @@ describe('AppointmentProposalForm', () => {
 
       // The other Jordan is a different visit, not the one already written.
       expect(bookButton()).toBeEnabled();
+    });
+
+    test('Records the notes, trimmed, and offers to book again once they change', async () => {
+      setup(medplum);
+      await fillBooking();
+      const notes = screen.getByRole('textbox', { name: 'Notes' });
+      fireEvent.change(notes, { target: { value: ' ' } });
+      await clickBook();
+      expect(proposedAppointment().comment).toBeUndefined();
+      expect(bookButton()).toBeDisabled();
+
+      fireEvent.change(notes, { target: { value: '  Bring prior films  ' } });
+      expect(bookButton()).toBeEnabled();
+      await clickBook();
+      const [proposal] = onSubmit.mock.lastCall as [Appointment];
+      expect(proposal.comment).toBe('Bring prior films');
     });
 
     test('Offers to book again once the time changes', async () => {
@@ -2029,6 +2047,7 @@ describe('AppointmentProposalForm', () => {
       await chooseFirstOfferedTime();
 
       expect(screen.queryByRole('searchbox', { name: /patient/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: 'Notes' })).not.toBeInTheDocument();
       await clickReschedule();
 
       const proposal = proposedAppointment();
