@@ -10,6 +10,72 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "clinical-code",
+    "name": "code",
+    "code": "code",
+    "base": [
+      "AllergyIntolerance",
+      "Condition",
+      "DeviceRequest",
+      "DiagnosticReport",
+      "FamilyMemberHistory",
+      "List",
+      "Medication",
+      "MedicationAdministration",
+      "MedicationDispense",
+      "MedicationRequest",
+      "MedicationStatement",
+      "Observation",
+      "Procedure",
+      "ServiceRequest"
+    ],
+    "type": "token",
+    "expression": "AllergyIntolerance.code | AllergyIntolerance.reaction.substance | Condition.code | (DeviceRequest.code.ofType(CodeableConcept)) | DiagnosticReport.code | FamilyMemberHistory.condition.code | List.code | Medication.code | (MedicationAdministration.medication.ofType(CodeableConcept)) | (MedicationDispense.medication.ofType(CodeableConcept)) | (MedicationRequest.medication.ofType(CodeableConcept)) | (MedicationStatement.medication.ofType(CodeableConcept)) | Observation.code | Procedure.code | ServiceRequest.code"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "clinical-patient",
+    "name": "patient",
+    "code": "patient",
+    "base": [
+      "AllergyIntolerance",
+      "CarePlan",
+      "CareTeam",
+      "ClinicalImpression",
+      "Composition",
+      "Condition",
+      "Consent",
+      "DetectedIssue",
+      "DeviceRequest",
+      "DeviceUseStatement",
+      "DiagnosticReport",
+      "DocumentManifest",
+      "DocumentReference",
+      "Encounter",
+      "EpisodeOfCare",
+      "FamilyMemberHistory",
+      "Flag",
+      "Goal",
+      "ImagingStudy",
+      "Immunization",
+      "List",
+      "MedicationAdministration",
+      "MedicationDispense",
+      "MedicationRequest",
+      "MedicationStatement",
+      "NutritionOrder",
+      "Observation",
+      "Procedure",
+      "RiskAssessment",
+      "ServiceRequest",
+      "SupplyDelivery",
+      "VisionPrescription"
+    ],
+    "type": "reference",
+    "expression": "AllergyIntolerance.patient | CarePlan.subject.where(resolve() is Patient) | CareTeam.subject.where(resolve() is Patient) | ClinicalImpression.subject.where(resolve() is Patient) | Composition.subject.where(resolve() is Patient) | Condition.subject.where(resolve() is Patient) | Consent.patient | DetectedIssue.patient | DeviceRequest.subject.where(resolve() is Patient) | DeviceUseStatement.subject | DiagnosticReport.subject.where(resolve() is Patient) | DocumentManifest.subject.where(resolve() is Patient) | DocumentReference.subject.where(resolve() is Patient) | Encounter.subject.where(resolve() is Patient) | EpisodeOfCare.patient | FamilyMemberHistory.patient | Flag.subject.where(resolve() is Patient) | Goal.subject.where(resolve() is Patient) | ImagingStudy.subject.where(resolve() is Patient) | Immunization.patient | List.subject.where(resolve() is Patient) | MedicationAdministration.subject.where(resolve() is Patient) | MedicationDispense.subject.where(resolve() is Patient) | MedicationRequest.subject.where(resolve() is Patient) | MedicationStatement.subject.where(resolve() is Patient) | NutritionOrder.patient | Observation.subject.where(resolve() is Patient) | Procedure.subject.where(resolve() is Patient) | RiskAssessment.subject.where(resolve() is Patient) | ServiceRequest.subject.where(resolve() is Patient) | SupplyDelivery.patient | VisionPrescription.patient"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Communication-encounter",
     "name": "encounter",
     "code": "encounter",
@@ -25,6 +91,15 @@
     "base": ["Communication"],
     "type": "reference",
     "expression": "Communication.partOf"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Coverage-beneficiary",
+    "name": "beneficiary",
+    "code": "beneficiary",
+    "base": ["Coverage"],
+    "type": "reference",
+    "expression": "Coverage.beneficiary"
   },
   {
     "resourceType": "SearchParameter",
@@ -88,6 +163,42 @@
     "base": ["Media"],
     "type": "reference",
     "expression": "Media.encounter"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "MedicationRequest-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["MedicationRequest"],
+    "type": "reference",
+    "expression": "MedicationRequest.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "MedicationStatement-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["MedicationStatement"],
+    "type": "reference",
+    "expression": "MedicationStatement.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Observation-category",
+    "name": "category",
+    "code": "category",
+    "base": ["Observation"],
+    "type": "token",
+    "expression": "Observation.category"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Observation-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["Observation"],
+    "type": "reference",
+    "expression": "Observation.subject"
   },
   {
     "resourceType": "SearchParameter",
@@ -235,15 +346,6 @@
   },
   {
     "resourceType": "SearchParameter",
-    "id": "ServiceRequest-based-on",
-    "name": "based-on",
-    "code": "based-on",
-    "base": ["ServiceRequest"],
-    "type": "reference",
-    "expression": "ServiceRequest.basedOn"
-  },
-  {
-    "resourceType": "SearchParameter",
     "id": "ServiceRequest-authored",
     "name": "authored",
     "code": "authored",
@@ -253,12 +355,12 @@
   },
   {
     "resourceType": "SearchParameter",
-    "id": "ServiceRequest-subject",
-    "name": "subject",
-    "code": "subject",
+    "id": "ServiceRequest-based-on",
+    "name": "based-on",
+    "code": "based-on",
     "base": ["ServiceRequest"],
     "type": "reference",
-    "expression": "ServiceRequest.subject"
+    "expression": "ServiceRequest.basedOn"
   },
   {
     "resourceType": "SearchParameter",
@@ -268,6 +370,15 @@
     "base": ["ServiceRequest"],
     "type": "token",
     "expression": "ServiceRequest.status"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "ServiceRequest-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["ServiceRequest"],
+    "type": "reference",
+    "expression": "ServiceRequest.subject"
   },
   {
     "resourceType": "SearchParameter",

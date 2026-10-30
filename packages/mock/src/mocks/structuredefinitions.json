@@ -824,6 +824,477 @@
   },
   {
     "resourceType": "StructureDefinition",
+    "id": "AllergyIntolerance",
+    "name": "AllergyIntolerance",
+    "type": "AllergyIntolerance",
+    "snapshot": {
+      "element": [
+        {
+          "id": "AllergyIntolerance",
+          "path": "AllergyIntolerance",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "AllergyIntolerance.id",
+          "path": "AllergyIntolerance.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.meta",
+          "path": "AllergyIntolerance.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.implicitRules",
+          "path": "AllergyIntolerance.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.language",
+          "path": "AllergyIntolerance.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.text",
+          "path": "AllergyIntolerance.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.contained",
+          "path": "AllergyIntolerance.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.extension",
+          "path": "AllergyIntolerance.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.modifierExtension",
+          "path": "AllergyIntolerance.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.identifier",
+          "path": "AllergyIntolerance.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.clinicalStatus",
+          "path": "AllergyIntolerance.clinicalStatus",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.verificationStatus",
+          "path": "AllergyIntolerance.verificationStatus",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.type",
+          "path": "AllergyIntolerance.type",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.category",
+          "path": "AllergyIntolerance.category",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.criticality",
+          "path": "AllergyIntolerance.criticality",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.code",
+          "path": "AllergyIntolerance.code",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.patient",
+          "path": "AllergyIntolerance.patient",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Patient"]
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.encounter",
+          "path": "AllergyIntolerance.encounter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.onset[x]",
+          "path": "AllergyIntolerance.onset[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.recordedDate",
+          "path": "AllergyIntolerance.recordedDate",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.recorder",
+          "path": "AllergyIntolerance.recorder",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.asserter",
+          "path": "AllergyIntolerance.asserter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.lastOccurrence",
+          "path": "AllergyIntolerance.lastOccurrence",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.note",
+          "path": "AllergyIntolerance.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction",
+          "path": "AllergyIntolerance.reaction",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.id",
+          "path": "AllergyIntolerance.reaction.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.extension",
+          "path": "AllergyIntolerance.reaction.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.modifierExtension",
+          "path": "AllergyIntolerance.reaction.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.substance",
+          "path": "AllergyIntolerance.reaction.substance",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.manifestation",
+          "path": "AllergyIntolerance.reaction.manifestation",
+          "min": 1,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.description",
+          "path": "AllergyIntolerance.reaction.description",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.onset",
+          "path": "AllergyIntolerance.reaction.onset",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.severity",
+          "path": "AllergyIntolerance.reaction.severity",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.exposureRoute",
+          "path": "AllergyIntolerance.reaction.exposureRoute",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "AllergyIntolerance.reaction.note",
+          "path": "AllergyIntolerance.reaction.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
     "id": "Communication",
     "name": "Communication",
     "type": "Communication",
@@ -1321,6 +1792,1117 @@
           "type": [
             {
               "code": "Annotation"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Condition",
+    "name": "Condition",
+    "type": "Condition",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Condition",
+          "path": "Condition",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Condition.id",
+          "path": "Condition.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Condition.meta",
+          "path": "Condition.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Condition.implicitRules",
+          "path": "Condition.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Condition.language",
+          "path": "Condition.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Condition.text",
+          "path": "Condition.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Condition.contained",
+          "path": "Condition.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Condition.extension",
+          "path": "Condition.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Condition.modifierExtension",
+          "path": "Condition.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Condition.identifier",
+          "path": "Condition.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Condition.clinicalStatus",
+          "path": "Condition.clinicalStatus",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.verificationStatus",
+          "path": "Condition.verificationStatus",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.category",
+          "path": "Condition.category",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.severity",
+          "path": "Condition.severity",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.code",
+          "path": "Condition.code",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.bodySite",
+          "path": "Condition.bodySite",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.subject",
+          "path": "Condition.subject",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Condition.encounter",
+          "path": "Condition.encounter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
+            }
+          ]
+        },
+        {
+          "id": "Condition.onset[x]",
+          "path": "Condition.onset[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Condition.abatement[x]",
+          "path": "Condition.abatement[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Condition.recordedDate",
+          "path": "Condition.recordedDate",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "Condition.recorder",
+          "path": "Condition.recorder",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Condition.asserter",
+          "path": "Condition.asserter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Condition.stage",
+          "path": "Condition.stage",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Condition.stage.id",
+          "path": "Condition.stage.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Condition.stage.extension",
+          "path": "Condition.stage.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Condition.stage.modifierExtension",
+          "path": "Condition.stage.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Condition.stage.summary",
+          "path": "Condition.stage.summary",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.stage.assessment",
+          "path": "Condition.stage.assessment",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ClinicalImpression",
+                "http://hl7.org/fhir/StructureDefinition/DiagnosticReport",
+                "http://hl7.org/fhir/StructureDefinition/Observation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Condition.stage.type",
+          "path": "Condition.stage.type",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.evidence",
+          "path": "Condition.evidence",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Condition.evidence.id",
+          "path": "Condition.evidence.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Condition.evidence.extension",
+          "path": "Condition.evidence.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Condition.evidence.modifierExtension",
+          "path": "Condition.evidence.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Condition.evidence.code",
+          "path": "Condition.evidence.code",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Condition.evidence.detail",
+          "path": "Condition.evidence.detail",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
+            }
+          ]
+        },
+        {
+          "id": "Condition.note",
+          "path": "Condition.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Coverage",
+    "name": "Coverage",
+    "type": "Coverage",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Coverage",
+          "path": "Coverage",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Coverage.id",
+          "path": "Coverage.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.meta",
+          "path": "Coverage.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.implicitRules",
+          "path": "Coverage.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.language",
+          "path": "Coverage.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.text",
+          "path": "Coverage.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.contained",
+          "path": "Coverage.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.extension",
+          "path": "Coverage.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.modifierExtension",
+          "path": "Coverage.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.identifier",
+          "path": "Coverage.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.status",
+          "path": "Coverage.status",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.type",
+          "path": "Coverage.type",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.policyHolder",
+          "path": "Coverage.policyHolder",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Coverage.subscriber",
+          "path": "Coverage.subscriber",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Coverage.subscriberId",
+          "path": "Coverage.subscriberId",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.beneficiary",
+          "path": "Coverage.beneficiary",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Patient"]
+            }
+          ]
+        },
+        {
+          "id": "Coverage.dependent",
+          "path": "Coverage.dependent",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.relationship",
+          "path": "Coverage.relationship",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.period",
+          "path": "Coverage.period",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.payor",
+          "path": "Coverage.payor",
+          "min": 1,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Coverage.class",
+          "path": "Coverage.class",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.class.id",
+          "path": "Coverage.class.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.class.extension",
+          "path": "Coverage.class.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.class.modifierExtension",
+          "path": "Coverage.class.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.class.type",
+          "path": "Coverage.class.type",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.class.value",
+          "path": "Coverage.class.value",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.class.name",
+          "path": "Coverage.class.name",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.order",
+          "path": "Coverage.order",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.network",
+          "path": "Coverage.network",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary",
+          "path": "Coverage.costToBeneficiary",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.id",
+          "path": "Coverage.costToBeneficiary.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.extension",
+          "path": "Coverage.costToBeneficiary.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.modifierExtension",
+          "path": "Coverage.costToBeneficiary.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.type",
+          "path": "Coverage.costToBeneficiary.type",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.value[x]",
+          "path": "Coverage.costToBeneficiary.value[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Money"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.exception",
+          "path": "Coverage.costToBeneficiary.exception",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.exception.id",
+          "path": "Coverage.costToBeneficiary.exception.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.exception.extension",
+          "path": "Coverage.costToBeneficiary.exception.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.exception.modifierExtension",
+          "path": "Coverage.costToBeneficiary.exception.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.exception.type",
+          "path": "Coverage.costToBeneficiary.exception.type",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.costToBeneficiary.exception.period",
+          "path": "Coverage.costToBeneficiary.exception.period",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.subrogation",
+          "path": "Coverage.subrogation",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Coverage.contract",
+          "path": "Coverage.contract",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Contract"]
             }
           ]
         }
@@ -2746,6 +4328,1274 @@
   },
   {
     "resourceType": "StructureDefinition",
+    "id": "Goal",
+    "name": "Goal",
+    "type": "Goal",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Goal",
+          "path": "Goal",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Goal.id",
+          "path": "Goal.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Goal.meta",
+          "path": "Goal.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Goal.implicitRules",
+          "path": "Goal.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Goal.language",
+          "path": "Goal.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Goal.text",
+          "path": "Goal.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Goal.contained",
+          "path": "Goal.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Goal.extension",
+          "path": "Goal.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Goal.modifierExtension",
+          "path": "Goal.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Goal.identifier",
+          "path": "Goal.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Goal.lifecycleStatus",
+          "path": "Goal.lifecycleStatus",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Goal.achievementStatus",
+          "path": "Goal.achievementStatus",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Goal.category",
+          "path": "Goal.category",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Goal.priority",
+          "path": "Goal.priority",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Goal.description",
+          "path": "Goal.description",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Goal.subject",
+          "path": "Goal.subject",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Goal.start[x]",
+          "path": "Goal.start[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            },
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Goal.target",
+          "path": "Goal.target",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Goal.target.id",
+          "path": "Goal.target.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Goal.target.extension",
+          "path": "Goal.target.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Goal.target.modifierExtension",
+          "path": "Goal.target.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Goal.target.measure",
+          "path": "Goal.target.measure",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Goal.target.detail[x]",
+          "path": "Goal.target.detail[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "Ratio"
+            }
+          ]
+        },
+        {
+          "id": "Goal.target.due[x]",
+          "path": "Goal.target.due[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            },
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "Goal.statusDate",
+          "path": "Goal.statusDate",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "Goal.statusReason",
+          "path": "Goal.statusReason",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Goal.expressedBy",
+          "path": "Goal.expressedBy",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Goal.addresses",
+          "path": "Goal.addresses",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/MedicationStatement",
+                "http://hl7.org/fhir/StructureDefinition/NutritionOrder",
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest",
+                "http://hl7.org/fhir/StructureDefinition/RiskAssessment"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Goal.note",
+          "path": "Goal.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        },
+        {
+          "id": "Goal.outcomeCode",
+          "path": "Goal.outcomeCode",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Goal.outcomeReference",
+          "path": "Goal.outcomeReference",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Observation"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Immunization",
+    "name": "Immunization",
+    "type": "Immunization",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Immunization",
+          "path": "Immunization",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Immunization.id",
+          "path": "Immunization.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.meta",
+          "path": "Immunization.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.implicitRules",
+          "path": "Immunization.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.language",
+          "path": "Immunization.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.text",
+          "path": "Immunization.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.contained",
+          "path": "Immunization.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.extension",
+          "path": "Immunization.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.modifierExtension",
+          "path": "Immunization.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.identifier",
+          "path": "Immunization.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.status",
+          "path": "Immunization.status",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.statusReason",
+          "path": "Immunization.statusReason",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.vaccineCode",
+          "path": "Immunization.vaccineCode",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.patient",
+          "path": "Immunization.patient",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Patient"]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.encounter",
+          "path": "Immunization.encounter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.occurrence[x]",
+          "path": "Immunization.occurrence[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.recorded",
+          "path": "Immunization.recorded",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.primarySource",
+          "path": "Immunization.primarySource",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reportOrigin",
+          "path": "Immunization.reportOrigin",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.location",
+          "path": "Immunization.location",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.manufacturer",
+          "path": "Immunization.manufacturer",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.lotNumber",
+          "path": "Immunization.lotNumber",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.expirationDate",
+          "path": "Immunization.expirationDate",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.site",
+          "path": "Immunization.site",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.route",
+          "path": "Immunization.route",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.doseQuantity",
+          "path": "Immunization.doseQuantity",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.performer",
+          "path": "Immunization.performer",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.performer.id",
+          "path": "Immunization.performer.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.performer.extension",
+          "path": "Immunization.performer.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.performer.modifierExtension",
+          "path": "Immunization.performer.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.performer.function",
+          "path": "Immunization.performer.function",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.performer.actor",
+          "path": "Immunization.performer.actor",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.note",
+          "path": "Immunization.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reasonCode",
+          "path": "Immunization.reasonCode",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reasonReference",
+          "path": "Immunization.reasonReference",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/DiagnosticReport"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.isSubpotent",
+          "path": "Immunization.isSubpotent",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.subpotentReason",
+          "path": "Immunization.subpotentReason",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education",
+          "path": "Immunization.education",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education.id",
+          "path": "Immunization.education.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education.extension",
+          "path": "Immunization.education.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education.modifierExtension",
+          "path": "Immunization.education.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education.documentType",
+          "path": "Immunization.education.documentType",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education.reference",
+          "path": "Immunization.education.reference",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education.publicationDate",
+          "path": "Immunization.education.publicationDate",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.education.presentationDate",
+          "path": "Immunization.education.presentationDate",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.programEligibility",
+          "path": "Immunization.programEligibility",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.fundingSource",
+          "path": "Immunization.fundingSource",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reaction",
+          "path": "Immunization.reaction",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reaction.id",
+          "path": "Immunization.reaction.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reaction.extension",
+          "path": "Immunization.reaction.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reaction.modifierExtension",
+          "path": "Immunization.reaction.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reaction.date",
+          "path": "Immunization.reaction.date",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reaction.detail",
+          "path": "Immunization.reaction.detail",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Observation"]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.reaction.reported",
+          "path": "Immunization.reaction.reported",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied",
+          "path": "Immunization.protocolApplied",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.id",
+          "path": "Immunization.protocolApplied.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.extension",
+          "path": "Immunization.protocolApplied.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.modifierExtension",
+          "path": "Immunization.protocolApplied.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.series",
+          "path": "Immunization.protocolApplied.series",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.authority",
+          "path": "Immunization.protocolApplied.authority",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.targetDisease",
+          "path": "Immunization.protocolApplied.targetDisease",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.doseNumber[x]",
+          "path": "Immunization.protocolApplied.doseNumber[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Immunization.protocolApplied.seriesDoses[x]",
+          "path": "Immunization.protocolApplied.seriesDoses[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
     "id": "Media",
     "name": "Media",
     "type": "Media",
@@ -3156,6 +6006,1200 @@
           "type": [
             {
               "code": "Annotation"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "MedicationRequest",
+    "name": "MedicationRequest",
+    "type": "MedicationRequest",
+    "snapshot": {
+      "element": [
+        {
+          "id": "MedicationRequest",
+          "path": "MedicationRequest",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "MedicationRequest.id",
+          "path": "MedicationRequest.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.meta",
+          "path": "MedicationRequest.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.implicitRules",
+          "path": "MedicationRequest.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.language",
+          "path": "MedicationRequest.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.text",
+          "path": "MedicationRequest.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.contained",
+          "path": "MedicationRequest.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.extension",
+          "path": "MedicationRequest.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.modifierExtension",
+          "path": "MedicationRequest.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.identifier",
+          "path": "MedicationRequest.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.status",
+          "path": "MedicationRequest.status",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.statusReason",
+          "path": "MedicationRequest.statusReason",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.intent",
+          "path": "MedicationRequest.intent",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.category",
+          "path": "MedicationRequest.category",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.priority",
+          "path": "MedicationRequest.priority",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.doNotPerform",
+          "path": "MedicationRequest.doNotPerform",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.reported[x]",
+          "path": "MedicationRequest.reported[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.medication[x]",
+          "path": "MedicationRequest.medication[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Medication"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.subject",
+          "path": "MedicationRequest.subject",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.encounter",
+          "path": "MedicationRequest.encounter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.supportingInformation",
+          "path": "MedicationRequest.supportingInformation",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.authoredOn",
+          "path": "MedicationRequest.authoredOn",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.requester",
+          "path": "MedicationRequest.requester",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Device"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.performer",
+          "path": "MedicationRequest.performer",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/CareTeam"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.performerType",
+          "path": "MedicationRequest.performerType",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.recorder",
+          "path": "MedicationRequest.recorder",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.reasonCode",
+          "path": "MedicationRequest.reasonCode",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.reasonReference",
+          "path": "MedicationRequest.reasonReference",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Observation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.instantiatesCanonical",
+          "path": "MedicationRequest.instantiatesCanonical",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "canonical"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.instantiatesUri",
+          "path": "MedicationRequest.instantiatesUri",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.basedOn",
+          "path": "MedicationRequest.basedOn",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/CarePlan",
+                "http://hl7.org/fhir/StructureDefinition/MedicationRequest",
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest",
+                "http://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.groupIdentifier",
+          "path": "MedicationRequest.groupIdentifier",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.courseOfTherapyType",
+          "path": "MedicationRequest.courseOfTherapyType",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.insurance",
+          "path": "MedicationRequest.insurance",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Coverage",
+                "http://hl7.org/fhir/StructureDefinition/ClaimResponse"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.note",
+          "path": "MedicationRequest.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dosageInstruction",
+          "path": "MedicationRequest.dosageInstruction",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Dosage"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest",
+          "path": "MedicationRequest.dispenseRequest",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.id",
+          "path": "MedicationRequest.dispenseRequest.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.extension",
+          "path": "MedicationRequest.dispenseRequest.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.modifierExtension",
+          "path": "MedicationRequest.dispenseRequest.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.initialFill",
+          "path": "MedicationRequest.dispenseRequest.initialFill",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.initialFill.id",
+          "path": "MedicationRequest.dispenseRequest.initialFill.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.initialFill.extension",
+          "path": "MedicationRequest.dispenseRequest.initialFill.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.initialFill.modifierExtension",
+          "path": "MedicationRequest.dispenseRequest.initialFill.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.initialFill.quantity",
+          "path": "MedicationRequest.dispenseRequest.initialFill.quantity",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.initialFill.duration",
+          "path": "MedicationRequest.dispenseRequest.initialFill.duration",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.dispenseInterval",
+          "path": "MedicationRequest.dispenseRequest.dispenseInterval",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.validityPeriod",
+          "path": "MedicationRequest.dispenseRequest.validityPeriod",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.numberOfRepeatsAllowed",
+          "path": "MedicationRequest.dispenseRequest.numberOfRepeatsAllowed",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "unsignedInt"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.quantity",
+          "path": "MedicationRequest.dispenseRequest.quantity",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.expectedSupplyDuration",
+          "path": "MedicationRequest.dispenseRequest.expectedSupplyDuration",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.dispenseRequest.performer",
+          "path": "MedicationRequest.dispenseRequest.performer",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.substitution",
+          "path": "MedicationRequest.substitution",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.substitution.id",
+          "path": "MedicationRequest.substitution.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.substitution.extension",
+          "path": "MedicationRequest.substitution.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.substitution.modifierExtension",
+          "path": "MedicationRequest.substitution.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.substitution.allowed[x]",
+          "path": "MedicationRequest.substitution.allowed[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.substitution.reason",
+          "path": "MedicationRequest.substitution.reason",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.priorPrescription",
+          "path": "MedicationRequest.priorPrescription",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/MedicationRequest"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.detectedIssue",
+          "path": "MedicationRequest.detectedIssue",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/DetectedIssue"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationRequest.eventHistory",
+          "path": "MedicationRequest.eventHistory",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Provenance"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "MedicationStatement",
+    "name": "MedicationStatement",
+    "type": "MedicationStatement",
+    "snapshot": {
+      "element": [
+        {
+          "id": "MedicationStatement",
+          "path": "MedicationStatement",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "MedicationStatement.id",
+          "path": "MedicationStatement.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.meta",
+          "path": "MedicationStatement.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.implicitRules",
+          "path": "MedicationStatement.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.language",
+          "path": "MedicationStatement.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.text",
+          "path": "MedicationStatement.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.contained",
+          "path": "MedicationStatement.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.extension",
+          "path": "MedicationStatement.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.modifierExtension",
+          "path": "MedicationStatement.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.identifier",
+          "path": "MedicationStatement.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.basedOn",
+          "path": "MedicationStatement.basedOn",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/MedicationRequest",
+                "http://hl7.org/fhir/StructureDefinition/CarePlan",
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.partOf",
+          "path": "MedicationStatement.partOf",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/MedicationAdministration",
+                "http://hl7.org/fhir/StructureDefinition/MedicationDispense",
+                "http://hl7.org/fhir/StructureDefinition/MedicationStatement",
+                "http://hl7.org/fhir/StructureDefinition/Procedure",
+                "http://hl7.org/fhir/StructureDefinition/Observation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.status",
+          "path": "MedicationStatement.status",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.statusReason",
+          "path": "MedicationStatement.statusReason",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.category",
+          "path": "MedicationStatement.category",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.medication[x]",
+          "path": "MedicationStatement.medication[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Medication"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.subject",
+          "path": "MedicationStatement.subject",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.context",
+          "path": "MedicationStatement.context",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Encounter",
+                "http://hl7.org/fhir/StructureDefinition/EpisodeOfCare"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.effective[x]",
+          "path": "MedicationStatement.effective[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.dateAsserted",
+          "path": "MedicationStatement.dateAsserted",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.informationSource",
+          "path": "MedicationStatement.informationSource",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.derivedFrom",
+          "path": "MedicationStatement.derivedFrom",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.reasonCode",
+          "path": "MedicationStatement.reasonCode",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.reasonReference",
+          "path": "MedicationStatement.reasonReference",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/DiagnosticReport"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.note",
+          "path": "MedicationStatement.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        },
+        {
+          "id": "MedicationStatement.dosage",
+          "path": "MedicationStatement.dosage",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Dosage"
             }
           ]
         }
@@ -12035,6 +16079,17 @@
           "type": [
             {
               "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Project.active",
+          "path": "Project.active",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
             }
           ]
         },
