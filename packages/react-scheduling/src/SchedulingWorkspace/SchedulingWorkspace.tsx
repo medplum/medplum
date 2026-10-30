@@ -22,7 +22,7 @@ import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -755,7 +755,8 @@ function SidePane(props: SidePaneProps): JSX.Element {
   }
   const closing = extended && !wide;
   const paneRef = useRef<HTMLElement>(null);
-  useEffect(() => {
+  // Before paint, as the slide back starts then and a reduced-motion one can end a frame later.
+  useLayoutEffect(() => {
     const pane = paneRef.current;
     if (!closing || !pane) {
       return undefined;
