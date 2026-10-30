@@ -14,6 +14,9 @@
   flex: 1 1 auto;
   min-height: 0;
   container-type: inline-size;
+  /* A container sizes as though empty, so a host that fits the form to its content would
+     squeeze it to nothing. It gets the form at its widest instead. */
+  contain-intrinsic-inline-size: 420px;
 }
 
 /* Each column scrolls on its own, so a wide stretch of days does not carry the form
