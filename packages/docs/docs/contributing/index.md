@@ -79,6 +79,8 @@ Medplum team members and established community contributors aren't subject to th
 
 By submitting content to this project, you agree to adopt the [Developer Certificate of Origin (DCO)](https://developercertificate.org/) for your contributions.
 
+Medplum personnel are expected to follow the Medplum [Code of Conduct](./contributing/code-of-conduct).
+
 All conversations and communities on Medplum are expected to follow GitHub's [Community Guidelines](https://help.github.com/en/github/site-policy/github-community-guidelines)
 and [Acceptable Use Policies](https://help.github.com/en/github/site-policy/github-acceptable-use-policies).
 
