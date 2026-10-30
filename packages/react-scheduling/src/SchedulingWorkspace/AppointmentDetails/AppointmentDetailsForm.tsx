@@ -83,7 +83,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
 
   return (
     <Stack gap="sm">
-      {service && requirements.size > 0 && (
+      {service && (
         <BookingRequirementFields
           key={service.id}
           requirements={requirements}

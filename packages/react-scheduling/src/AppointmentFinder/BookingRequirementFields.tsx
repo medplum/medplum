@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Checkbox, Group, Input, Pill, Stack, Text } from '@mantine/core';
+import { ActionIcon, Box, Button, Checkbox, Group, Input, Pill, Stack, Text, Textarea } from '@mantine/core';
 import type { SchedulingRequirement } from '@medplum/core';
 import { REQUIRES_DIAGNOSIS_CODE, REQUIRES_MEDICAL_NECESSITY_CODE, REQUIRES_PROCEDURE_CODE } from '@medplum/core';
 import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
@@ -36,6 +36,15 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
   const { requirements, values, procedureBinding, diagnosisBinding, onChange, showValidation } = props;
   return (
     <>
+      <Textarea
+        label="Appointment note"
+        placeholder="Reason for visit"
+        autosize
+        minRows={2}
+        maxRows={4}
+        value={values.comment ?? ''}
+        onChange={(event) => onChange({ ...values, comment: event.currentTarget.value })}
+      />
       {requirements.has(REQUIRES_PROCEDURE_CODE) && (
         <ConceptRows
           name="procedure-code"

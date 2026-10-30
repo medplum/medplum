@@ -20,19 +20,22 @@ export const DEFAULT_PROCEDURE_VALUE_SET = `${CPT}/vs`;
 export const DEFAULT_DIAGNOSIS_VALUE_SET = `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm/vs`;
 
 /**
- * What the booking form captures for a visit type's requirements: one value per requirement it
- * can be asked for.
+ * What the booking form captures for a visit type's requirements, plus the free-text appointment
+ * note offered regardless of what the visit type requires.
  */
 export interface BookingRequirementValues {
   readonly procedure: readonly CodeableConcept[];
   readonly diagnosis: readonly CodeableConcept[];
   readonly medicalNecessity: boolean;
+  /** Written onto `Appointment.comment`. Not gated by a `SchedulingRequirement`: always offered. */
+  readonly comment?: string;
 }
 
 export const EMPTY_REQUIREMENT_VALUES: BookingRequirementValues = {
   procedure: [],
   diagnosis: [],
   medicalNecessity: false,
+  comment: '',
 };
 
 /** What answers each requirement. */

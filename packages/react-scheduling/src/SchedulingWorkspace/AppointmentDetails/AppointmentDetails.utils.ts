@@ -25,6 +25,7 @@ export function readRequirementValues(appointment: Appointment): BookingRequirem
     procedure: partitionServiceTypes(appointment).procedures,
     diagnosis: appointment.reasonCode ?? [],
     medicalNecessity: getExtensionValue(appointment, SchedulingMedicalNecessityURI) === true,
+    comment: appointment.comment ?? '',
   };
 }
 
@@ -44,7 +45,8 @@ export function isEdited(
   return (
     (requirements.has(REQUIRES_PROCEDURE_CODE) && !deepEquals(values.procedure, saved.procedure)) ||
     (requirements.has(REQUIRES_DIAGNOSIS_CODE) && !deepEquals(values.diagnosis, saved.diagnosis)) ||
-    (requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && values.medicalNecessity !== saved.medicalNecessity)
+    (requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && values.medicalNecessity !== saved.medicalNecessity) ||
+    (values.comment ?? '').trim() !== saved.comment
   );
 }
 
@@ -64,7 +66,7 @@ export function buildAppointmentUpdate(
   values: BookingRequirementValues,
   requirements: ReadonlySet<SchedulingRequirement>
 ): WithId<Appointment> {
-  const updated: WithId<Appointment> = { ...appointment };
+  const updated: WithId<Appointment> = { ...appointment, comment: values.comment?.trim() || undefined };
   if (requirements.has(REQUIRES_PROCEDURE_CODE)) {
     // Preserve referenced entries even when the UI only uses the first one.
     const referenced = (appointment.serviceType ?? []).filter((concept) =>

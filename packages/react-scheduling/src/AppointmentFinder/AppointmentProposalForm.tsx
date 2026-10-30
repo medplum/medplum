@@ -755,8 +755,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
-        {/* Each field is shown only for a visit type whose eligibility asks for it. */}
-        {takesDetails && service && requirements.size > 0 && (
+        {/* The note is always offered; the coded fields below it only for a visit type whose eligibility asks for them. */}
+        {takesDetails && service && (
           <BookingRequirementFields
             key={service.id}
             requirements={requirements}
@@ -1149,6 +1149,7 @@ function buildBooking(options: BuildBookingOptions): Appointment {
   const supportingInformation = site
     ? [...(proposal.supportingInformation ?? []), toAppointmentSiteReference(site)]
     : undefined;
+  const comment = values.comment?.trim();
 
   return {
     ...proposal,
@@ -1163,6 +1164,7 @@ function buildBooking(options: BuildBookingOptions): Appointment {
     ...(reasonCode.length > 0 && { reasonCode }),
     ...(extension.length > 0 && { extension }),
     ...(supportingInformation && { supportingInformation }),
+    ...(comment && { comment }),
   };
 }
 
