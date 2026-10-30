@@ -8,6 +8,7 @@ import {
   Button,
   Divider,
   Group,
+  Input,
   Loader,
   NumberInput,
   Select,
@@ -1001,6 +1002,8 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
   };
 
   const durationMinutes = appointment ? getDurationMinutes(appointment) : 0;
+  const noTimeField = !manualTime && !appointment?.start;
+  const finderLabelId = useId();
 
   return (
     <>
@@ -1018,7 +1021,8 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
         <TextInput
           key={flashKey}
           {...flash}
-          label="Date & time"
+          label="Date & Time"
+          withAsterisk
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
@@ -1033,6 +1037,12 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
       )}
 
       <Stack gap={4}>
+        {/* With no time field to label, it describes the button instead. */}
+        {noTimeField && (
+          <Input.Label id={finderLabelId} labelElement="div" required>
+            Date & Time
+          </Input.Label>
+        )}
         <Button
           ref={finderButtonRef}
           variant="outline"
@@ -1040,6 +1050,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
           disabled={!!blockedBy}
           onClick={onToggleFinder}
+          aria-describedby={noTimeField ? finderLabelId : undefined}
         >
           {getFinderLabel(searching, !!appointment)}
         </Button>
@@ -1162,7 +1173,8 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
     <>
       <TextInput
         {...flash}
-        label="Date & time"
+        label="Date & Time"
+        withAsterisk
         type={getNativeInputType('datetime-local')}
         value={dateTime}
         disabled={disabled}

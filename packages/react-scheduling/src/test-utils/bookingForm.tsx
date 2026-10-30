@@ -410,7 +410,7 @@ export function chosenTimeField(): HTMLInputElement | null {
  * @returns The field.
  */
 export function typedTimeField(): HTMLInputElement {
-  return screen.getByLabelText<HTMLInputElement>('Date & time');
+  return screen.getByLabelText<HTMLInputElement>(/^Date & Time/);
 }
 
 /**

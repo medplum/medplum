@@ -192,19 +192,19 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * The workspace when the host lets a user enter a time of their own.
  *
  * Everything in `Basic` still works: a time picked from the search is booked through
- * `$book`, which checks it. What this changes is the form's **Date & time** field, which
+ * `$book`, which checks it. What this changes is the form's **Date & Time** field, which
  * becomes editable, with the visit's length under it, whose **Change** link opens a
  * **Custom duration (minutes)** field, for placing a visit the rules would refuse. A time
  * picked from the search fills both; editing either makes it a typed time. The field's reset
  * button puts back the length it opened on and closes it.
  *
- * **Date & time** starts out on the time clicked to open the form, unless that time has
+ * **Date & Time** starts out on the time clicked to open the form, unless that time has
  * passed or a whole day was picked in month view.
  *
  * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
  * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
  * **Ultrasound Imaging** and **Dr. Maya Rivera**, then type that Tuesday and *the time
- * the visit on the calendar starts* into **Date & time** — read it off the event rather
+ * the visit on the calendar starts* into **Date & Time** — read it off the event rather
  * than copying a time from here, since the fixtures are kept on your own clock. A line
  * appears under the fields:
  *
