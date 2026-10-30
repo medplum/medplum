@@ -156,12 +156,13 @@ export async function createProject(
         projectId,
         'Default RelatedPerson Access Policy'
       );
-      const adminAccessPolicy = await createAdminAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
+      const adminAccessPolicy = await createFullAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
       const practitionerAccessPolicy = await createPractitionerAccessPolicy(
         txRepo,
         projectId,
         'Default Practitioner Access Policy'
       );
+      const botAccessPolicy = await createFullAccessPolicy(txRepo, projectId, 'Default Bot Access Policy');
 
       const project = await txRepo.createResource<Project>(
         {
@@ -177,6 +178,7 @@ export async function createProject(
             { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
             { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
             { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
+            { profileType: 'Bot', accessPolicy: createReference(botAccessPolicy) },
           ],
         },
         { assignedId: true }
@@ -248,7 +250,7 @@ async function createPatientCompartmentAccessPolicy(
   });
 }
 
-async function createAdminAccessPolicy(
+async function createFullAccessPolicy(
   systemRepo: SystemRepository,
   projectId: string,
   name: string
