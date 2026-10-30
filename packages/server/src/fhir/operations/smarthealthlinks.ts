@@ -485,7 +485,7 @@ async function readSmartHealthLinkEncryptedFile(
   try {
     const systemRepo = await getProjectSystemRepo(projectId);
     const binary = await systemRepo.readResource<Binary>('Binary', binaryReference.substring('Binary/'.length));
-    if (binary.meta?.project !== projectId) {
+    if (binary.meta?.project !== projectId || binary.contentType !== ContentType.JOSE) {
       return undefined;
     }
     const stream = await getBinaryStorage().readBinary(binary);
