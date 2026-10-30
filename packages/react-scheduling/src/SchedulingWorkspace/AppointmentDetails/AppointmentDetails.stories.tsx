@@ -140,8 +140,9 @@ export default {
  * - Cancelling: "Cancel Appointment" turns the view over to a page of its own, which
  *   requires selecting a `cancelationReason` from the `appointment-cancellation-reason`
  *   value set before it can be confirmed, and sends it as part of a `$cancel` request.
- *   "Back" returns to the details without cancelling anything, and without keeping the
- *   reason that was chosen.
+ *   The visit's details stay listed under it. "Back to Appointment Details", at the foot,
+ *   returns to the details without cancelling anything, and without keeping the reason
+ *   that was chosen.
  *
  * - Rescheduling: swaps this view for the form that moves the visit, opened on the
  *   visit type and the actors it is held on now — Dr. Rivera, Ultrasound 1 and Exam
