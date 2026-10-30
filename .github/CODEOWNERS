@@ -18,7 +18,7 @@
 /examples/ @medplum/fde @medplum/dev
 
 # Both Core and FDE own the packages/docs directory.
-/packages/docs/ @medplum/core @medplum/fde @medplum/dev
+/packages/docs/ @medplum/fde @medplum/dev
 
 # Frontend owns the frontend packages. A PR that only touches these packages
 # needs review from Product; touching anything else pulls in that file's owner too.
