@@ -7,11 +7,15 @@
 // to move to the next page instead.
 export function preventRowSplitting(documentXml) {
   return documentXml.replace(/<w:tbl>[\s\S]*?<\/w:tbl>/g, (tblXml) =>
-    tblXml.replace(/(<w:tr\b[^>]*>)(\s*<w:trPr>)?/g, (_match, trOpen, trPrOpen) => {
-      if (trPrOpen) {
-        return `${trOpen}${trPrOpen}<w:cantSplit/>`;
-      }
-      return `${trOpen}<w:trPr><w:cantSplit/></w:trPr>`;
-    })
+    tblXml
+      .replace(/(<w:tr\b[^>]*>)(\s*<w:trPr>)?/g, (_match, trOpen, trPrOpen) => {
+        if (trPrOpen) {
+          return `${trOpen}${trPrOpen}<w:cantSplit/>`;
+        }
+        return `${trOpen}<w:trPr><w:cantSplit/></w:trPr>`;
+      })
+      // Keep the header with the first body row. An orphaned header can cause
+      // LibreOffice to omit the remaining rows when exporting a page break.
+      .replace(/<w:tr\b[^>]*>[\s\S]*?<\/w:tr>/, (headerXml) => headerXml.replace(/<w:pPr>/g, '<w:pPr><w:keepNext/>'))
   );
 }

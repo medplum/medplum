@@ -4,7 +4,7 @@ import Link from '@docusaurus/Link';
 import { useDoc } from '@docusaurus/plugin-content-docs/client';
 import CodeBlock from '@theme/CodeBlock';
 import Details from '@theme/Details';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import styles from './styles.module.css';
 
 export default function GuidePlanning(): ReactNode {
@@ -20,9 +20,7 @@ Follow medplum-link/packages/docs/static/ai/planning.md
 (or https://www.medplum.com/ai/planning.md), including its Medplum rules.
 Ask before creating or changing my app's project instruction files.
 
-Read my existing requirements and decisions, then ask me about consequential
-missing requirements; do not invent answers. Save and summarize the decisions
-in my app's repo before implementation.`;
+Read my existing requirements and decisions, then ask me about consequential missing requirements; do not invent answers. Save and summarize the decisions in my app's repo before implementation.`;
 
   return (
     <Details summary={<summary>Plan with this guide</summary>}>
