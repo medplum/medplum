@@ -4,7 +4,7 @@ import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { CommanderError, Option } from 'commander';
 import { existsSync } from 'node:fs';
 import { agent } from './agent';
-import { login, token, whoami } from './auth';
+import { login, logout, token, whoami } from './auth';
 import { buildAwsCommand } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { bulk } from './bulk';
@@ -55,6 +55,7 @@ export async function main(argv: string[]): Promise<void> {
 
   // Auth commands
   addSubcommand(index, login);
+  addSubcommand(index, logout);
   addSubcommand(index, whoami);
   addSubcommand(index, token);
 
