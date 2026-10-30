@@ -949,6 +949,12 @@ describe('AppointmentProposalForm', () => {
       expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
       // The picked time's button is gone, so focus lands where the search reopens.
       expect(finderButton()).toHaveFocus();
+      // And the time flashes where it landed, once: the browser would replay it each time the
+      // field is shown again.
+      const pickedField = chosenTimeField();
+      expect(pickedField?.className).toMatch(/justPicked/);
+      fireEvent.animationEnd(pickedField as HTMLElement, { animationName: 'justPicked' });
+      expect(pickedField?.className).not.toMatch(/justPicked/);
 
       // Reopened, it still marks the time picked, though once the client's cache has lapsed
       // the times come back as new objects.
@@ -956,6 +962,12 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       const [firstGroup] = await screen.findAllByTestId(/^slot-group-/);
       expect(within(firstGroup).getByRole('button', { name: picked })).toHaveAttribute('data-variant', 'filled');
+
+      // Picking again flashes it again, though the field never left the screen.
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).not.toBe(pickedField);
+      expect(chosenTimeField()?.className).toMatch(/justPicked/);
+      await openTimeFinder();
 
       // Closing it by hand keeps the time.
       expect(finderButton()).toHaveTextContent('Close time finder');

@@ -90,6 +90,26 @@
   max-width: 14rem;
 }
 
+/* Flashes the chosen time as the search closes on it, drawing the eye from where the time
+   was picked to where it landed. */
+.justPicked {
+  animation: justPicked 0.8s linear;
+}
+
+@keyframes justPicked {
+  0%,
+  50% {
+    border-color: var(--mantine-primary-color-filled);
+    box-shadow: 0 0 16px 2px color-mix(in srgb, var(--mantine-primary-color-filled) 25%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .justPicked {
+    animation: none;
+  }
+}
+
 /* Mantine doesn't include asterisks for Checkboxes marked as required, so we add them here. */
 .requiredLabel::after {
   content: ' *';
