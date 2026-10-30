@@ -6,10 +6,18 @@ import { readJson } from '@medplum/definitions';
 import type { BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { getValueSetValues } from './valuesets';
 
 const resourceTypes = [
   'Address',
   'Patient',
+  'Coverage',
+  'Condition',
+  'AllergyIntolerance',
+  'MedicationRequest',
+  'MedicationStatement',
+  'Immunization',
+  'Goal',
   'Organization',
   'Practitioner',
   'Encounter',
@@ -65,6 +73,9 @@ const searchParams = [
   'individual-phone',
   'individual-address-city',
   'individual-address-state',
+  'ServiceRequest-status',
+  'ServiceRequest-based-on',
+  'DiagnosticReport-status',
   'ServiceRequest-subject',
   'ServiceRequest-authored',
   'Observation-value-quantity',
@@ -86,6 +97,15 @@ const searchParams = [
   'Slot-schedule',
   'Slot-start',
   'Measure-url',
+  // PatientSummary sections (packages/react/src/PatientSummary/sectionConfigs.tsx)
+  'clinical-patient',
+  'clinical-code',
+  'Coverage-beneficiary',
+  'MedicationRequest-subject',
+  'MedicationStatement-subject',
+  'DiagnosticReport-subject',
+  'Observation-subject',
+  'Observation-category',
 ];
 
 const USCoreStructureDefinitionFiles = [
@@ -103,6 +123,7 @@ const BUILD_USCORE = false;
 
 export function main(): void {
   writeStructureDefinitions();
+  writeGenerationCodes();
   writeSearchParameters();
 
   if (BUILD_USCORE) {
@@ -144,6 +165,32 @@ function removeBaseFromElements(sd: StructureDefinition): void {
       element.base = undefined;
     }
   }
+}
+
+function writeGenerationCodes(): void {
+  const bindings: Record<string, string> = {};
+  const valueSets: Record<string, string[]> = {};
+  for (const file of ['profiles-resources.json', 'profiles-types.json']) {
+    for (const entry of readJson('fhir/r4/' + file).entry as BundleEntry<StructureDefinition>[]) {
+      const sd = entry.resource;
+      if (!sd || (sd.kind === 'resource' && !resourceTypes.includes(sd.type))) {
+        continue;
+      }
+      for (const element of sd.snapshot?.element ?? []) {
+        if (element.type?.some((type) => type.code === 'code') && element.binding?.valueSet && element.path) {
+          const values = getValueSetValues(element.binding.valueSet);
+          if (values.length) {
+            bindings[element.path] = element.binding.valueSet;
+            valueSets[element.binding.valueSet] = values;
+          }
+        }
+      }
+    }
+  }
+  writeFileSync(
+    resolve(import.meta.dirname, '../../mock/src/mocks/generation-codes.json'),
+    JSON.stringify({ bindings, valueSets }, null, 2) + '\n'
+  );
 }
 
 function writeSearchParameters(): void {
