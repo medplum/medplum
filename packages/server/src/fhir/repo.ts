@@ -1120,7 +1120,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
-    if (!this.context.skipBackgroundJobs) {
+    if (this.shouldAddBackgroundJobs(result)) {
       await this.postCommit(async () => {
         const project = await this.getProjectById(projectId);
         await addBackgroundJobs(result, existing, { project, interaction });
@@ -1129,6 +1129,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
+  }
+
+  private shouldAddBackgroundJobs(resource: Resource): boolean {
+    // Cache-only resources have no history rows for the dispatch worker to read
+    return !this.context.skipBackgroundJobs && !this.isCacheOnly(resource);
   }
 
   /**
@@ -1610,7 +1615,7 @@ export class Repository extends FhirRepository implements Disposable {
         );
       }
 
-      if (!this.context.skipBackgroundJobs) {
+      if (this.shouldAddBackgroundJobs(resource)) {
         await this.postCommit(async () => {
           const project = await this.getProjectById(resource.meta?.project);
           await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
