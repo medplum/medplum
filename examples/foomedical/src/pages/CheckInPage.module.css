@@ -1,0 +1,20 @@
+.walletCard {
+  width: 100%;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &:hover:not(:disabled) .walletCardInner {
+    border-color: var(--mantine-color-teal-5);
+    box-shadow: var(--mantine-shadow-sm);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.walletCardInner {
+  transition: inherit;
+}
