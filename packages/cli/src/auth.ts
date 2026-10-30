@@ -40,7 +40,7 @@ login.action(async (options) => {
 
 logout.action(async (options) => {
   const storage = new FileSystemStorage(options.profile ?? 'default');
-  const logins = getStoredLogins(storage);
+  const logins = storage.getObject<LoginState[]>('logins') ?? [];
   if (logins.length === 0) {
     console.log('Not logged in');
     return;
@@ -65,7 +65,6 @@ logout.action(async (options) => {
     const display = `${login.profile.display} (${login.profile.reference})`;
     rejected = false;
     try {
-      // Server-side logout revokes the Login, invalidating both the access token and the refresh token
       medplum.setAccessToken(login.accessToken, login.refreshToken);
       await medplum.signOut();
       console.log(`Revoked session: ${display}`);
@@ -102,16 +101,6 @@ token.action(async (options) => {
   }
   console.log(token);
 });
-
-function getStoredLogins(storage: FileSystemStorage): LoginState[] {
-  const activeLogin = storage.getObject<LoginState>('activeLogin');
-  const logins = storage.getObject<LoginState[]>('logins') ?? [];
-  const result = new Map<string, LoginState>();
-  for (const login of activeLogin ? [activeLogin, ...logins] : logins) {
-    result.set(login.accessToken, login);
-  }
-  return Array.from(result.values());
-}
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const authType = profile?.authType ?? 'authorization-code';
