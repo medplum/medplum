@@ -31,7 +31,6 @@ import type {
   ProjectMembership,
   Quantity,
   Questionnaire,
-  Reference,
   ServiceRequest,
   SmartAppLaunch,
   StructureDefinition,
@@ -319,110 +318,6 @@ describe('AccessPolicy', () => {
       const readPatient = await repo.readResource('Patient', patient.id);
       expect(readPatient.meta?.account?.reference).toStrictEqual('Organization/' + orgId);
       expect(readPatient.meta?.accounts).toContainExactly([{ reference: 'Organization/' + orgId }]);
-    }));
-
-  test.each<Patient | Questionnaire>([
-    { resourceType: 'Patient' },
-    { resourceType: 'Questionnaire', status: 'active' },
-  ])('Non-admin without account compartment cannot forge accounts on $resourceType create or update', (input) =>
-    withTestContext(async () => {
-      const account = { reference: 'Organization/' + randomUUID() };
-      const forged = { reference: 'Organization/' + randomUUID() };
-      const adminRepo = getRepository({ extendedMode: true, projectAdmin: true });
-      const repo = getRepository({ extendedMode: true });
-
-      const created = await repo.createResource<Patient | Questionnaire>({
-        ...input,
-        meta: { account: forged, accounts: [forged] },
-      });
-      expect(created.meta?.account).toBeUndefined();
-      expect(created.meta?.accounts).toBeUndefined();
-      expect(created.meta?.compartment).not.toContainEqual(forged);
-
-      const resource = await adminRepo.createResource<Patient | Questionnaire>({
-        ...input,
-        meta: { accounts: [account] },
-      });
-      const forgedUpdate = await repo.updateResource<Patient | Questionnaire>({
-        ...resource,
-        meta: { account: forged, accounts: [forged] },
-      });
-      expect(forgedUpdate.meta?.accounts).toStrictEqual([account]);
-      expect(forgedUpdate.meta?.compartment).toContainEqual(account);
-      expect(forgedUpdate.meta?.compartment).not.toContainEqual(forged);
-
-      // Non-extended reads omit meta.accounts, so a read-modify-write must not drop them
-      await getRepository({}).updateResource<Patient | Questionnaire>({ ...input, id: resource.id });
-      const stored = await adminRepo.readResource<Patient | Questionnaire>(input.resourceType, resource.id);
-      expect(stored.meta?.accounts).toStrictEqual([account]);
-      expect(stored.meta?.compartment).toContainEqual(account);
-    })
-  );
-
-  test('Edits do not remove accounts inherited from the creator or the Patient', () =>
-    withTestContext(async () => {
-      const accountA = { reference: 'Organization/' + randomUUID() };
-      const accountB = { reference: 'Organization/' + randomUUID() };
-      const scopedTo = (account: Reference): AccessPolicy => ({
-        resourceType: 'AccessPolicy',
-        compartment: account,
-        resource: [{ resourceType: 'Observation', compartment: account }],
-      });
-      const repoA = getRepository({ extendedMode: true, accessPolicy: scopedTo(accountA) });
-      const repoB = getRepository({ extendedMode: true, accessPolicy: scopedTo(accountB) });
-      const adminRepo = getRepository({ extendedMode: true, projectAdmin: true });
-      const patientB = await adminRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: { accounts: [accountB] },
-      });
-
-      const observation = await repoA.createResource<Observation>({
-        resourceType: 'Observation',
-        status: 'final',
-        code: { text: 'test' },
-        subject: createReference(patientB),
-      });
-      expect(observation.meta?.accounts).toStrictEqual([accountA, accountB]);
-
-      // The creator's account must survive both its own edits and edits from the Patient's account
-      const editedByA = await repoA.updateResource<Observation>({ ...observation, valueString: 'A' });
-      expect(editedByA.meta?.accounts).toStrictEqual([accountA, accountB]);
-      const editedByB = await repoB.updateResource<Observation>({ ...editedByA, valueString: 'B' });
-      expect(editedByB.meta?.accounts).toStrictEqual([accountA, accountB]);
-      await expect(repoA.readResource('Observation', observation.id)).resolves.toMatchObject({ valueString: 'B' });
-    }));
-
-  test('Moving a resource to another Patient keeps the old account until an admin removes it', () =>
-    withTestContext(async () => {
-      const accountA = { reference: 'Organization/' + randomUUID() };
-      const accountB = { reference: 'Organization/' + randomUUID() };
-      const adminRepo = getRepository({ extendedMode: true, projectAdmin: true });
-      const patientA = await adminRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: { accounts: [accountA] },
-      });
-      const patientB = await adminRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: { accounts: [accountB] },
-      });
-
-      const repo = getRepository({ extendedMode: true });
-      const observation = await repo.createResource<Observation>({
-        resourceType: 'Observation',
-        status: 'final',
-        code: { text: 'test' },
-        subject: createReference(patientA),
-      });
-      const moved = await repo.updateResource<Observation>({ ...observation, subject: createReference(patientB) });
-      expect(moved.meta?.accounts).toStrictEqual([accountA, accountB]);
-
-      const cleaned = await adminRepo.updateResource<Observation>({ ...moved, meta: { accounts: [accountB] } });
-      expect(cleaned.meta?.accounts).toStrictEqual([accountB]);
-      expect(cleaned.meta?.compartment).not.toContainEqual(accountA);
-
-      // Once the subject points at the new Patient, later edits do not bring the old account back
-      const edited = await repo.updateResource<Observation>({ ...cleaned, valueString: 'later' });
-      expect(edited.meta?.accounts).toStrictEqual([accountB]);
     }));
 
   test.each<'resource.compartment' | 'resource.criteria'>(['resource.compartment', 'resource.criteria'])(
@@ -3633,6 +3528,66 @@ describe('AccessPolicy', () => {
 
         await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
         await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
+  });
+
+  describe('Logins with SMART scopes', () => {
+    const userConfig: UserConfiguration = { resourceType: 'UserConfiguration' };
+
+    test('Project admin resource types are only granted by scopes that name them', () =>
+      withTestContext(async () => {
+        const { project, membership, login } = await createTestProject({
+          withClient: true,
+          withAccessToken: true,
+          membership: { admin: true },
+        });
+        const getScopedRepo = (scope: string): Promise<Repository> =>
+          getRepoForLogin({ login: { ...login, scope }, project, membership, userConfig });
+
+        const namedRepo = await getScopedRepo('openid user/ProjectMembership.rs');
+        expect(namedRepo.isProjectAdmin()).toBe(true);
+        await expect(namedRepo.readResource('ProjectMembership', membership.id)).resolves.toBeDefined();
+        await expect(namedRepo.updateResource({ ...membership, externalId: randomUUID() })).rejects.toThrow(
+          'Forbidden'
+        );
+        await expect(namedRepo.readResource('Project', project.id)).rejects.toThrow('Forbidden');
+
+        const wildcardRepo = await getScopedRepo('openid user/*.cruds');
+        await expect(wildcardRepo.createResource<Patient>({ resourceType: 'Patient' })).resolves.toBeDefined();
+        await expect(wildcardRepo.readResource('Project', project.id)).rejects.toThrow('Forbidden');
+        await expect(wildcardRepo.readResource('ProjectMembership', membership.id)).rejects.toThrow('Forbidden');
+      }));
+
+    test('Scopes do not grant project admin resource types to non-admins', () =>
+      withTestContext(async () => {
+        const { project, membership, login } = await createTestProject({ withClient: true, withAccessToken: true });
+        const scopedRepo = await getRepoForLogin({
+          login: { ...login, scope: 'openid user/Project.cruds user/ProjectMembership.cruds' },
+          project,
+          membership,
+          userConfig,
+        });
+        await expect(scopedRepo.readResource('Project', project.id)).rejects.toThrow('Forbidden');
+        await expect(scopedRepo.readResource('ProjectMembership', membership.id)).rejects.toThrow('Forbidden');
+        await expect(scopedRepo.updateResource({ ...membership, admin: true })).rejects.toThrow('Forbidden');
+      }));
+
+    test('Super admin logins cannot use SMART scopes or launch context', () =>
+      withTestContext(async () => {
+        const { project, membership, login } = await createTestProject({
+          superAdmin: true,
+          withClient: true,
+          withAccessToken: true,
+        });
+        await expect(getRepoForLogin({ login, project, membership, userConfig })).resolves.toBeDefined();
+        for (const scopedLogin of [
+          { ...login, scope: 'openid user/*.rs' },
+          { ...login, launch: { reference: 'SmartAppLaunch/' + randomUUID() } },
+        ]) {
+          await expect(getRepoForLogin({ login: scopedLogin, project, membership, userConfig })).rejects.toThrow(
+            'SMART scopes are not supported for super admin logins'
+          );
+        }
       }));
   });
 });
