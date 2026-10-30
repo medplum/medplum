@@ -178,16 +178,19 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
   }
   const loggerMetadata = logTag ? { logTag } : undefined;
 
+  // Authenticate within an unauthenticated context, so that anything logged during authentication
+  // carries the request and trace IDs
+  const unauthenticatedCtx = new RequestContext(requestId, traceId, undefined, loggerMetadata);
   let ctx: RequestContext | undefined;
   try {
-    const result = await authenticateTokenImpl(req);
+    const result = await requestContextStore.run(unauthenticatedCtx, () => authenticateTokenImpl(req));
     if (result) {
       const { authState, repo } = result;
       ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo, { logTag });
     }
   } catch (err: any) {
     // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
-    ctx ??= new RequestContext(requestId, traceId, undefined, loggerMetadata);
+    ctx ??= unauthenticatedCtx;
     requestContextStore.run(ctx, () => {
       getLogger().error('Authentication error', { err: err.toString(), stack: err.stack });
       const outcome = badRequest('Authentication error');
@@ -198,7 +201,7 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
     return;
   }
 
-  ctx ??= new RequestContext(requestId, traceId, undefined, loggerMetadata);
+  ctx ??= unauthenticatedCtx;
   requestContextStore.run(ctx, () => next());
 }
 
