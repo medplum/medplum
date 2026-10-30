@@ -27,7 +27,6 @@ import { validateResourceWithJsonSchema } from '../jsonschema';
 import { findTerminologyResource } from '../operations/utils/terminology';
 import { validateCodingInValueSet } from '../operations/valuesetvalidatecode';
 import type { Repository } from '../repo';
-import { cacheProfile, getCachedProfile } from './profile-cache';
 
 /**
  * Validates a resource against the current project configuration.
@@ -234,20 +233,8 @@ async function validateTerminology(
 }
 
 async function loadProfile(repo: Repository, url: string): Promise<StructureDefinition | undefined> {
-  const context = repo.getConfig();
-  // Profile fetching/caching should be pushed to a lower level of Repository; as it is, if `repo` has an
-  // AccessPolicy on StructureDefinition hiding fields (that would be a strange choice, but possible), then caching
-  // it here would impact other repositories in the project with different AccessPolicies.
-  if (context.projects?.length) {
-    // Try loading from cache, using all available Project IDs
-    const cachedProfile = await getCachedProfile(context.projects, url);
-    if (cachedProfile) {
-      return cachedProfile;
-    }
-  }
-
-  // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
-  const profile = await repo.searchOne<StructureDefinition>({
+  // Descending version sort approximates version resolution for some cases
+  return repo.searchOne<StructureDefinition>({
     resourceType: 'StructureDefinition',
     filters: [
       {
@@ -267,9 +254,4 @@ async function loadProfile(repo: Repository, url: string): Promise<StructureDefi
       },
     ],
   });
-
-  if (context.projects?.length && profile) {
-    await cacheProfile(profile);
-  }
-  return profile;
 }

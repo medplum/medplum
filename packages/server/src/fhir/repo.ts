@@ -119,7 +119,6 @@ import type {
 } from './repository/access-tracker';
 import { normalizeResourceTypes, repoAccess } from './repository/access-tracker';
 import { removeField } from './repository/field-utils';
-import { removeCachedProfile } from './repository/profile-cache';
 import type {
   ConnectionScope,
   RepositoryConnection,
@@ -1210,10 +1209,6 @@ export class Repository extends FhirRepository implements Disposable {
         criteria: resource.criteria,
         user: resource.meta?.author?.reference,
       });
-    }
-
-    if (resource.resourceType === 'StructureDefinition') {
-      await removeCachedProfile(resource);
     }
   }
 
