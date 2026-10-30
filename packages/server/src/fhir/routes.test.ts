@@ -932,7 +932,7 @@ describe('FHIR Routes', () => {
     }));
 
   test('Set accounts on create', async () => {
-    const { project, accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+    const { project, accessToken } = await createTestProject({ withAccessToken: true });
 
     const res1 = await request(app)
       .post('/fhir/R4/Organization')
