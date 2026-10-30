@@ -246,9 +246,12 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
 
   // Bot $execute, under each FHIR route mount point. A Bot with rawBody set uses this instead of
   // the parsed body, same as WEBHOOK_PATHS above - see Bot.rawBody.
-  const botExecutePaths = ['/fhir/R4', '/api/fhir/R4', '/projects/:projectId/fhir/R4', '/api/projects/:projectId/fhir/R4'].flatMap(
-    (prefix) => BOT_EXECUTE_PATHS.map((path) => prefix + path)
-  );
+  const botExecutePaths = [
+    '/fhir/R4',
+    '/api/fhir/R4',
+    '/projects/:projectId/fhir/R4',
+    '/api/projects/:projectId/fhir/R4',
+  ].flatMap((prefix) => BOT_EXECUTE_PATHS.map((path) => prefix + path));
   app.use(
     botExecutePaths,
     json({
