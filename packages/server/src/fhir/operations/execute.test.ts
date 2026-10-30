@@ -160,13 +160,21 @@ exports.handler = async function (medplum, event) {
 type BotName =
   | 'echoBot'
   | 'systemEchoBot'
+  | 'rawBodyEchoBot'
   | 'booleanBot'
   | 'binaryBot'
   | 'streamingBot'
   | 'streamingErrorBot'
   | 'streamingHeadersBot';
-const botDefinitions: { name: BotName; system: boolean; code: [string, string]; streaming?: boolean }[] = [
+const botDefinitions: {
+  name: BotName;
+  system: boolean;
+  code: [string, string];
+  streaming?: boolean;
+  rawBody?: boolean;
+}[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
+  { name: 'rawBodyEchoBot', system: false, code: botCodes[0], rawBody: true },
   { name: 'echoBot', system: false, code: botCodes[0] },
   { name: 'booleanBot', system: false, code: botCodes[1] },
   { name: 'binaryBot', system: false, code: botCodes[2] },
@@ -209,7 +217,8 @@ describe('Execute', () => {
       system: boolean,
       esmCode: string,
       cjsCode: string,
-      streaming?: boolean
+      streaming?: boolean,
+      rawBody?: boolean
     ): Promise<WithId<Bot>> {
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
@@ -223,6 +232,7 @@ describe('Execute', () => {
           code: esmCode,
           system,
           ...(streaming && { streamingEnabled: true }),
+          ...(rawBody && { rawBody: true }),
         });
 
       expect(res1).toHaveStatus(201);
@@ -241,8 +251,8 @@ describe('Execute', () => {
       return bot;
     }
 
-    for (const { name, system, code, streaming } of botDefinitions) {
-      bots[name] = await setupBot(name, system, code[0], code[1], streaming);
+    for (const { name, system, code, streaming, rawBody } of botDefinitions) {
+      bots[name] = await setupBot(name, system, code[0], code[1], streaming, rawBody);
     }
   });
 
@@ -288,66 +298,31 @@ describe('Execute', () => {
     expect(res.body.identifier).toStrictEqual([]);
   });
 
-  test('Persists the raw-input setting and selects the input representation', async () => {
+  test('Bot.rawBody selects raw or parsed JSON input', async () => {
     const rawBody = '{ "value": 1.00 }\n';
-    try {
-      for (const enabled of [false, true]) {
-        const update = await request(app)
-          .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
-          .set('Authorization', 'Bearer ' + accessToken1)
-          .set('Content-Type', ContentType.JSON_PATCH)
-          .send([{ op: 'add', path: '/rawBody', value: enabled }]);
-        expect(update).toHaveStatus(200);
-        expect(update.body.rawBody).toBe(enabled);
-
-        const res = await request(app)
-          .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
-          .set('Content-Type', ContentType.JSON)
-          .set('Authorization', 'Bearer ' + accessToken1)
-          .send(rawBody);
-        expect(res).toHaveStatus(200);
-        // supertest/superagent re-parses any application/json response into res.body, which would
-        // collapse the raw-body case's trailing zero right back - check the literal wire bytes instead.
-        if (enabled) {
-          expect(res.text).toStrictEqual(rawBody);
-        } else {
-          expect(res.body).toEqual({ value: 1 });
-        }
-      }
-    } finally {
-      const reset = await request(app)
-        .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
+    for (const [botName, output] of [
+      ['echoBot', '{"value":1}'],
+      ['rawBodyEchoBot', rawBody],
+    ] as const) {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots[botName].id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
         .set('Authorization', 'Bearer ' + accessToken1)
-        .set('Content-Type', ContentType.JSON_PATCH)
-        .send([{ op: 'remove', path: '/rawBody' }]);
-      expect(reset).toHaveStatus(200);
+        .send(rawBody);
+      expect(res).toHaveStatus(200);
+      // Check the wire text: superagent re-parses JSON responses, so res.body can't tell raw from parsed
+      expect(res.text).toStrictEqual(output);
     }
   });
 
   test('Falls back to parsed body when rawBody is enabled but content type is not JSON', async () => {
-    try {
-      const update = await request(app)
-        .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .set('Content-Type', ContentType.JSON_PATCH)
-        .send([{ op: 'add', path: '/rawBody', value: true }]);
-      expect(update).toHaveStatus(200);
-
-      const res = await request(app)
-        .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .send('hello');
-      expect(res).toHaveStatus(200);
-      expect(res.text).toStrictEqual('hello');
-    } finally {
-      const reset = await request(app)
-        .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .set('Content-Type', ContentType.JSON_PATCH)
-        .send([{ op: 'remove', path: '/rawBody' }]);
-      expect(reset).toHaveStatus(200);
-    }
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.rawBodyEchoBot.id}/$execute`)
+      .set('Content-Type', ContentType.FORM_URL_ENCODED)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send('value=1.00');
+    expect(res).toHaveStatus(200);
+    expect(res.body).toEqual({ value: '1.00' });
   });
 
   test('Return non-Resource JSON response', async () => {
