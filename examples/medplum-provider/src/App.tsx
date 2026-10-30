@@ -6,35 +6,34 @@ import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import type { SpotlightLinkAction } from '@medplum/react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
-  IconApps,
   IconBook2,
   IconCalendarEvent,
   IconClipboardCheck,
   IconMail,
   IconPill,
   IconPrinter,
-  IconReceipt2,
+  IconReceipt,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { Navigate, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
 import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
+import { HIDE_GET_STARTED_SETTING } from './utils/projectSettings';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
-const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
 
+import { BillingPage } from './pages/billing/BillingPage';
 import { EncountersPage } from './pages/encounter/EncountersPage';
 import { FaxPage } from './pages/fax/FaxPage';
 import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
-import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
@@ -59,11 +58,24 @@ import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { ResourceSchedulingPage } from './pages/resource/ResourceSchedulingPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
-import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
 import { InternalSchedulingConfigWorkspacePage } from './pages/scheduling/InternalSchedulingConfigWorkspacePage';
 import { InternalSchedulingWorkspacePage } from './pages/scheduling/InternalSchedulingWorkspacePage';
 import { SearchPage } from './pages/SearchPage';
-import { BillingSetupPage } from './pages/settings/BillingSetupPage';
+import { AccountSettingsPage } from './pages/settings/AccountSettingsPage';
+import {
+  BillingOrganizationsSettingsPage,
+  BillingPayersSettingsPage,
+  BillingPractitionersSettingsPage,
+  ChargeItemsSettingsPage,
+  EligibilitySettingsPage,
+} from './pages/settings/BillingSettingsPages';
+import { IntegrationsSettingsPage } from './pages/settings/IntegrationsSettingsPage';
+import { MembersSettingsPage } from './pages/settings/MembersSettingsPage';
+import { PreferencesSettingsPage } from './pages/settings/PreferencesSettingsPage';
+import { ProjectSettingsPage } from './pages/settings/ProjectSettingsPage';
+import { SecuritySettingsPage } from './pages/settings/SecuritySettingsPage';
+import { getSettingsMenus, isSettingsPath, SETTINGS_PATH } from './pages/settings/settingsMenus';
+import { VisitServiceTypesSettingsPage } from './pages/settings/VisitServiceTypesSettingsPage';
 import { SignInPage } from './pages/SignInPage';
 import { SmartHealthLinkImportModal } from './pages/smart/SmartHealthLinkImportModal';
 import { SmartHealthLinkImportPage } from './pages/smart/SmartHealthLinkImportPage';
@@ -79,7 +91,7 @@ export function App(): JSX.Element | null {
   const [searchParams] = useSearchParams();
   const project = medplum.getProject();
   const setupDisabledByProject =
-    project?.setting?.find((s) => s.name === PROVIDER_HIDE_GET_STARTED_SETTING)?.valueBoolean === true;
+    project?.setting?.find((s) => s.name === HIDE_GET_STARTED_SETTING)?.valueBoolean === true;
   const [setupDismissedByUser, setSetupDismissedByUser] = useState(
     () => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true'
   );
@@ -90,6 +102,14 @@ export function App(): JSX.Element | null {
   const hasBilling = project?.features?.includes('billing') ?? false;
 
   const [shlOpened, shlHandlers] = useDisclosure(false);
+
+  const inSettings = isSettingsPath(location.pathname);
+  const [appReturnHref, setAppReturnHref] = useState('/');
+  const currentHref = location.pathname + location.search;
+  if (!inSettings && appReturnHref !== currentHref) {
+    setAppReturnHref(currentHref);
+  }
+  const settingsMenus = profile && inSettings ? getSettingsMenus({ returnHref: appReturnHref, hasBilling }) : undefined;
 
   const handleDismissSetup = (): void => {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
@@ -138,13 +158,16 @@ export function App(): JSX.Element | null {
 
   const appShellContent = (
     <AppShell
-      logo={<Logo size={24} />}
+      logo={inSettings ? null : <Logo size={24} />}
       pathname={location.pathname}
       searchParams={searchParams}
       layoutVersion="v2"
       showLayoutVersionToggle={false}
+      settingsHref={SETTINGS_PATH}
+      spotlightDisabled={inSettings}
       menus={
-        profile
+        settingsMenus ??
+        (profile
           ? [
               {
                 links: [
@@ -177,6 +200,7 @@ export function App(): JSX.Element | null {
                     },
                   },
                   { icon: <IconPrinter />, label: 'Faxes', href: '/Fax/Communication' },
+                  ...(hasBilling ? [{ icon: <IconReceipt />, label: 'Billing', href: '/Billing/Claims' }] : []),
                 ],
               },
               {
@@ -193,10 +217,6 @@ export function App(): JSX.Element | null {
                       ]
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
-                  { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
-                  ...(hasBilling
-                    ? [{ icon: <IconReceipt2 />, label: 'Billing Settings', href: '/Settings/Billing' }]
-                    : []),
                   ...(hasDoseSpot
                     ? [
                         {
@@ -220,7 +240,7 @@ export function App(): JSX.Element | null {
                 ],
               },
             ]
-          : undefined
+          : undefined)
       }
       resourceTypeSearchDisabled={true}
       spotlightPatientsOnly={true}
@@ -300,7 +320,7 @@ export function App(): JSX.Element | null {
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
-              <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
+              <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsRedirect />} />
               {/* Internal-only test harness for `SchedulingWorkspace` — intentionally not in `menus` above */}
               <Route path="/internal-scheduling-workspace" element={<InternalSchedulingWorkspacePage />} />
               {/* Internal-only test harness for `SchedulingConfigWorkspace` — intentionally not in `menus` above */}
@@ -309,9 +329,33 @@ export function App(): JSX.Element | null {
               <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
-              <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/integrations" element={<Navigate to={`${SETTINGS_PATH}/integrations`} replace />} />
               {/* Must precede the /:resourceType catch-alls below */}
-              {hasBilling && <Route path="/Settings/Billing/*" element={<BillingSetupPage />} />}
+              <Route path={SETTINGS_PATH}>
+                <Route index element={<Navigate to="account" replace />} />
+                <Route path="account" element={<AccountSettingsPage />} />
+                <Route path="preferences" element={<PreferencesSettingsPage />} />
+                <Route path="security" element={<SecuritySettingsPage />} />
+                <Route path="project" element={<ProjectSettingsPage />} />
+                <Route path="members" element={<MembersSettingsPage />} />
+                <Route path="integrations" element={<IntegrationsSettingsPage />} />
+                <Route
+                  path="billing"
+                  element={<Navigate to={hasBilling ? 'organizations' : 'charge-items'} replace />}
+                />
+                {hasBilling && (
+                  <>
+                    <Route path="billing/organizations" element={<BillingOrganizationsSettingsPage />} />
+                    <Route path="billing/practitioners" element={<BillingPractitionersSettingsPage />} />
+                    <Route path="billing/payers" element={<BillingPayersSettingsPage />} />
+                    <Route path="billing/eligibility" element={<EligibilitySettingsPage />} />
+                  </>
+                )}
+                <Route path="billing/charge-items" element={<ChargeItemsSettingsPage />} />
+                <Route path="schedule/visit-service-types" element={<VisitServiceTypesSettingsPage />} />
+                <Route path="*" element={<Navigate to={`${SETTINGS_PATH}/account`} replace />} />
+              </Route>
+              {hasBilling && <Route path="/Billing/*" element={<BillingPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
@@ -344,4 +388,13 @@ export function App(): JSX.Element | null {
   );
 
   return hasScriptSure ? <ScriptSurePracticeProvider>{content}</ScriptSurePracticeProvider> : content;
+}
+
+/**
+ * The per-calendar settings page moved into settings; keep old links working.
+ * @returns A redirect to the calendar's visit service types settings.
+ */
+function ScheduleSettingsRedirect(): JSX.Element {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`${SETTINGS_PATH}/schedule/visit-service-types?schedule=${id}`} replace />;
 }
