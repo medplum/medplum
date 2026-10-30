@@ -311,6 +311,47 @@ describe('apply default values', () => {
       delete elem.pattern;
       expect(elem.pattern).toBeUndefined();
     });
+
+    test('adds required primitive pattern values', () => {
+      const patternedSchema = {
+        ...schema,
+        elements: {
+          ...schema.elements,
+          active: { ...schema.elements['active'], min: 1, pattern: { type: 'boolean', value: false } },
+          'multipleBirth[x]': {
+            ...schema.elements['multipleBirth[x]'],
+            min: 1,
+            pattern: { type: 'integer', value: 2 },
+            type: [{ code: 'integer', targetProfile: undefined, profile: undefined }],
+          },
+        },
+      };
+
+      expect(applyDefaultValuesToResource({ resourceType: 'Patient' }, patternedSchema)).toEqual({
+        resourceType: 'Patient',
+        active: false,
+        multipleBirthInteger: 2,
+      });
+    });
+
+    test('adds a string nested in an object pattern', () => {
+      const patterned = {
+        ...schema.elements['maritalStatus'],
+        pattern: { type: 'CodeableConcept', value: { text: 'Unknown' } },
+      };
+
+      expect(applyFixedOrPatternValue({}, 'maritalStatus', patterned, schema.elements)).toEqual({
+        maritalStatus: { text: 'Unknown' },
+      });
+    });
+
+    test('adds a primitive pattern on a repeating element as an array', () => {
+      const patterned = { ...schema.elements['name.given'], pattern: { type: 'string', value: 'Unknown' } };
+
+      expect(applyFixedOrPatternValue({ name: [{}] }, 'name.given', patterned, schema.elements)).toEqual({
+        name: [{ given: ['Unknown'] }],
+      });
+    });
   });
 
   describe('US Core Smoking Status', () => {
