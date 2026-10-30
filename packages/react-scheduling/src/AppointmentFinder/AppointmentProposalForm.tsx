@@ -305,7 +305,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return unsatisfiable && { [unsatisfiable.actorType]: unsatisfiable.message };
   }, [selections]);
 
-  // Derived, not a flag: closing is never its own rule, so losing the last provider
+  // Derived, not a flag: closing is never its own rule, so losing the last resource
   // closes the search however it was lost.
   const searching = finding && !selectionError;
 
