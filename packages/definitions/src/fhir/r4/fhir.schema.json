@@ -64371,6 +64371,13 @@
             "$ref": "#/definitions/Expression"
           },
           "type": "array"
+        },
+        "allowedAccounts": {
+          "description": "Accounts that a user may request in meta.accounts when creating a resource that this rule permits. Values may use access policy parameters, e.g. %organization. Not applied to updates.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
