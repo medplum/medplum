@@ -217,7 +217,7 @@ export interface ProjectDefaultAccessPolicies {
   /**
    * The member role this policy applies to.
    */
-  profileType: 'Patient' | 'Practitioner' | 'RelatedPerson' | 'Admin';
+  profileType: 'Patient' | 'Practitioner' | 'RelatedPerson' | 'Admin' | 'Bot';
 
   /**
    * The access policy to apply to members of this role.
