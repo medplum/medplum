@@ -290,7 +290,7 @@ export interface CcdaSubstanceAdministration {
 }
 
 export interface CcdaQuantity {
-  '@_xsi:type'?: 'PQ' | 'CO' | 'IVL_PQ';
+  '@_xsi:type'?: 'PQ' | 'CO' | 'IVL_PQ' | 'REAL';
   '@_value'?: string;
   '@_unit'?: string;
   low?: CcdaQuantity;
