@@ -16,9 +16,9 @@ import { capitalize, deepClone, getPathDifference, isComplexTypeCode, isEmpty, i
 const SLICE_NAME_KEY = '__sliceName';
 
 /**
- * Adds default values to `resource` based on the supplied `schema`. Default values includes all required fixed and pattern
- * values specified on elements in the schema. If an element has a fixed/pattern value but is optional, i.e.
- * `element.min === 0`, the default value is not added.
+ * Adds default values to `resource` based on the supplied `schema`. Default values include the fixed and pattern values
+ * specified on elements in the schema, on optional elements (`element.min === 0`) as well as required ones. Values on
+ * elements nested inside an optional element that is not present are not added.
  *
  * @param resource - The resource to which default values should be added.
  * @param schema - The schema to use for adding default values.
