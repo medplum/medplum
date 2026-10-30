@@ -677,6 +677,73 @@ describe('Custom operation', () => {
     expect(res).toHaveStatus(404);
   });
 
+  test('Bot.rawBody selects raw or parsed body input', async () => {
+    const botRes = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Bot', name: 'Raw Body Operation Bot', runtimeVersion: 'vmcontext' });
+    expect(botRes).toHaveStatus(201);
+    const bot = botRes.body as WithId<Bot>;
+
+    const deployRes = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function (medplum, event) {
+            return { result: typeof event.input === 'string' ? event.input : JSON.stringify(event.input) };
+          };
+          `,
+      });
+    expect(deployRes).toHaveStatus(200);
+
+    const opRes = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'my-raw-body-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'my-raw-body-operation',
+        resource: ['Patient'],
+        system: true,
+        type: true,
+        instance: false,
+        parameter: [{ use: 'out', name: 'result', type: 'string', min: 1, max: '1' }],
+      });
+    expect(opRes).toHaveStatus(201);
+
+    const rawBody = '{ "value": 1.00 }\n';
+    for (const enabled of [false, true]) {
+      const updateRes = await request(app)
+        .patch(`/fhir/R4/Bot/${bot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'add', path: '/rawBody', value: enabled }]);
+      expect(updateRes).toHaveStatus(200);
+
+      for (const url of ['/fhir/R4/$my-raw-body-operation', '/fhir/R4/Patient/$my-raw-body-operation']) {
+        const res = await request(app)
+          .post(url)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.JSON)
+          .send(rawBody);
+        expect(res).toHaveStatus(200);
+        expect(res.body.parameter).toStrictEqual([{ name: 'result', valueString: enabled ? rawBody : '{"value":1}' }]);
+      }
+    }
+  });
+
   test('GET request on instance-level operation loads resource as input', async () => {
     const patientRes = await request(app)
       .post('/fhir/R4/Patient')
