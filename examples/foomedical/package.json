@@ -27,6 +27,7 @@
     "@medplum/fhirtypes": "5.2.13",
     "@medplum/mock": "5.2.13",
     "@medplum/react": "5.2.13",
+    "@smart-health-checkin/client": "https://github.com/smart-health-checkin/client/releases/download/v0.4.4/smart-health-checkin-client-0.4.4.tgz",
     "@tabler/icons-react": "3.49.0",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
