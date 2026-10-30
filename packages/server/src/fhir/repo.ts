@@ -466,6 +466,20 @@ export class Repository extends FhirRepository implements Disposable {
     await limiter?.consume(points);
   }
 
+  /**
+   * Executes a read-only SQL query.
+   *
+   * The `READER` default permits the reader pool but does not select it: the query runs on the
+   * writer unless this repository was put in reader mode via `setMode(RepositoryMode.READER)`.
+   * See `RepositoryConnection.getDatabaseClient`.
+   * @param query - The query to execute.
+   * @param query.execute - Runs the query on the selected database client.
+   * @param resourceTypes - The resource types involved, used for shard routing and access tracking.
+   * @param options - Optional settings.
+   * @param options.mode - Lowest permitted database mode; defaults to `READER`.
+   * @param options.source - Short label identifying the call site.
+   * @returns The result rows.
+   */
   async sqlRead<R extends QueryResultRow = any>(
     query: { execute(conn: PgQueryable): Promise<R[]> },
     resourceTypes: ResourceTypeInput,
@@ -1106,7 +1120,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
-    if (!this.context.skipBackgroundJobs) {
+    if (this.shouldAddBackgroundJobs(result)) {
       await this.postCommit(async () => {
         const project = await this.getProjectById(projectId);
         await addBackgroundJobs(result, existing, { project, interaction });
@@ -1115,6 +1129,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
+  }
+
+  private shouldAddBackgroundJobs(resource: Resource): boolean {
+    // Cache-only resources have no history rows for the dispatch worker to read
+    return !this.context.skipBackgroundJobs && !this.isCacheOnly(resource);
   }
 
   /**
@@ -1596,7 +1615,7 @@ export class Repository extends FhirRepository implements Disposable {
         );
       }
 
-      if (!this.context.skipBackgroundJobs) {
+      if (this.shouldAddBackgroundJobs(resource)) {
         await this.postCommit(async () => {
           const project = await this.getProjectById(resource.meta?.project);
           await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
