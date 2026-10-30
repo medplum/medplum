@@ -247,7 +247,7 @@ describe('AppointmentDetails', () => {
   test('describes the appointment', async () => {
     renderDetails(BOOKED_APPOINTMENT);
 
-    expect(screen.getByText('booked')).toBeInTheDocument();
+    expect(screen.getByText('Status').nextElementSibling).toHaveTextContent('booked');
     expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
