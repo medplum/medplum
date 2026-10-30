@@ -69,7 +69,8 @@ export interface AppointmentDetailsProps {
    */
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /**
-   * Called when the reschedule form's time search opens or closes.
+   * Called when the reschedule form's time search opens or closes, including when
+   * picking an offered time closes it.
    *
    * The times render beside that form rather than under it, so a host showing this in a
    * drawer or a panel has to widen it to fit them — under the width they need they wrap,

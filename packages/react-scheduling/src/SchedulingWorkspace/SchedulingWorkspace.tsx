@@ -21,8 +21,8 @@ import type {
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX } from 'react';
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -635,11 +635,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         </div>
       </div>
       {openAppointment && (
-        <section
-          key={openAppointment.id}
-          className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
-          aria-label="Appointment details"
-        >
+        <SidePane key={openAppointment.id} label="Appointment details" wide={rescheduleFinderOpen}>
           <PaneHeader title="Appointment Details" closeLabel="Close appointment details" onClose={closeAppointment} />
           {hiddenNotice && (
             <Alert color="blue" mb="sm">
@@ -659,10 +655,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             diagnosisBinding={diagnosisBinding}
             mrnSystem={mrnSystem}
           />
-        </section>
+        </SidePane>
       )}
       {showSlot && (
-        <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
+        <SidePane key={openSlot.id} label="Blocked time details">
           <PaneHeader title="Blocked Time" closeLabel="Close blocked time details" onClose={closeSlot} />
           {slotNotice && (
             <Alert color="blue" mb="sm">
@@ -683,13 +679,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             </Text>
           )}
           <SlotDetails slot={openSlot} />
-        </section>
+        </SidePane>
       )}
       {showBooking && (
-        <section
-          className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
-          aria-label="Book appointment"
-        >
+        <SidePane label="Book appointment" wide={timeFinderOpen && !blocking}>
           {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
           <Tabs
             value={paneTab}
@@ -733,8 +726,65 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
               />
             </Tabs.Panel>
           </Tabs>
-        </section>
+        </SidePane>
       )}
+    </div>
+  );
+}
+
+interface SidePaneProps {
+  /** Names the pane for assistive technology. */
+  readonly label: string;
+  /** Whether the pane widens over the calendar, as it does for a time search. */
+  readonly wide?: boolean;
+  readonly children: ReactNode;
+}
+
+/**
+ * The pane beside the calendar. Widened, it slides out over the calendar like a drawer, and
+ * stays wide while it slides back.
+ * @param props - The React props.
+ * @returns The pane.
+ */
+function SidePane(props: SidePaneProps): JSX.Element {
+  const { label, wide = false, children } = props;
+  // Out over the calendar from widening until the slide back ends.
+  const [extended, setExtended] = useState(wide);
+  if (wide && !extended) {
+    setExtended(true);
+  }
+  const closing = extended && !wide;
+  const paneRef = useRef<HTMLElement>(null);
+  // Before paint, as the slide back starts then and a reduced-motion one can end a frame later.
+  useLayoutEffect(() => {
+    const pane = paneRef.current;
+    if (!closing || !pane) {
+      return undefined;
+    }
+    // Only the slide back ends it, not an animation inside the pane, nor the slide open it cut
+    // short. A cancelled slide back (the pane hidden, or its animation removed) ends it too, so
+    // the pane can't stay wide. Listened for natively, as React has no `onAnimationCancel`.
+    const settle = (event: AnimationEvent): void => {
+      if (event.animationName === classes.paneSlideOut) {
+        setExtended(false);
+      }
+    };
+    pane.addEventListener('animationend', settle);
+    pane.addEventListener('animationcancel', settle);
+    return () => {
+      pane.removeEventListener('animationend', settle);
+      pane.removeEventListener('animationcancel', settle);
+    };
+  }, [closing]);
+  return (
+    <div className={classes.paneSlot}>
+      <section
+        ref={paneRef}
+        className={cx(classes.pane, { [classes.paneWide]: extended, [classes.paneClosing]: closing })}
+        aria-label={label}
+      >
+        {children}
+      </section>
     </div>
   );
 }

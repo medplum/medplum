@@ -209,7 +209,7 @@ export async function chooseSite(query: string, name: string): Promise<void> {
 /** Opens the time search, which is what sends the `$find` request. */
 export async function openTimeFinder(): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /find a time/i }));
+    fireEvent.click(screen.getByRole('button', { name: /find a time|change time/i }));
   });
   await settleAutocomplete();
 }
