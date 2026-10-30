@@ -3,6 +3,7 @@
 import type * as Preset from '@docusaurus/preset-classic';
 import type { Config } from '@docusaurus/types';
 import { themes as prismThemes } from 'prism-react-renderer';
+import remarkGuidePlanning from './scripts/remark-guide-planning.mjs';
 
 /**
  * Algolia DocSearch credentials for the navbar search and /search page. AI chat is served by Kapa.
@@ -152,6 +153,7 @@ const config: Config = {
       'classic',
       {
         docs: {
+          remarkPlugins: [remarkGuidePlanning],
           sidebarPath: './sidebars.ts',
           editUrl: 'https://github.com/medplum/medplum/blob/main/packages/docs/',
           async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {

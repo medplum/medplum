@@ -342,6 +342,6 @@ describe('SchedulingWorkspace appointment details', () => {
     await clickAppointment();
 
     // An event click is not a selection gesture on the grid behind it.
-    expect(screen.queryByRole('heading', { name: /book appointment/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Book Appointment' })).not.toBeInTheDocument();
   });
 });

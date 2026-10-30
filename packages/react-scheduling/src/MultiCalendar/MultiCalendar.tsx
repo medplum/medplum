@@ -5,6 +5,7 @@ import { useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import cx from 'clsx';
+import type { ReactNode } from 'react';
 import { forwardRef, useMemo } from 'react';
 import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
 import type { CalendarHandle, ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
@@ -15,6 +16,14 @@ import type { DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
 
 export type { CalendarHandle } from '../CalendarBase/CalendarBase';
+
+// Fewer, wider days than a week, so overlapping events from several calendars have room.
+const VIEWS = {
+  timeGridFourDay: {
+    type: 'timeGrid',
+    duration: { days: 4 },
+  },
+};
 
 export interface MultiCalendarSource {
   schedule?: WithId<Schedule>;
@@ -44,6 +53,10 @@ export interface MultiCalendarProps {
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
+  /** Placed at the start of the toolbar, before the navigation buttons. */
+  toolbarStart?: ReactNode;
+  /** Placed at the end of the toolbar, after the view toggle. */
+  toolbarEnd?: ReactNode;
 }
 
 /**
@@ -104,6 +117,8 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
         omitZeroMinute: true,
         meridiem: 'lowercase',
       }}
+      views={VIEWS}
+      initialView="timeGridFourDay"
     />
   );
 });

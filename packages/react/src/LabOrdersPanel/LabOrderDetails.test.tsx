@@ -12,7 +12,7 @@ import type {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
@@ -20,7 +20,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { LabOrderDetails } from './LabOrderDetails';
 
 // Mock the documentReference utility
-vi.mock('../../utils/documentReference', () => ({
+vi.mock('./documentReference', () => ({
   fetchLabOrderRequisitionDocuments: vi.fn(),
   getHealthGorillaRequisitionId: vi.fn(),
   resolvePresentedFormAttachments: vi.fn(),
@@ -258,7 +258,7 @@ describe('LabOrderDetails', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
 
-    const documentReferenceUtils = await import('../../utils/documentReference');
+    const documentReferenceUtils = await import('./documentReference');
     fetchLabOrderRequisitionDocumentsMock = vi.mocked(documentReferenceUtils.fetchLabOrderRequisitionDocuments);
     getHealthGorillaRequisitionIdMock = vi.mocked(documentReferenceUtils.getHealthGorillaRequisitionId);
     resolvePresentedFormAttachmentsMock = vi.mocked(documentReferenceUtils.resolvePresentedFormAttachments);

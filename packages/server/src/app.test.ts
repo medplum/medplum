@@ -339,6 +339,34 @@ describe('App', () => {
       expect(logObj).toMatchObject({ method: 'GET', path: '/fhir/R4/Patient', status: 400 });
     });
 
+    test('Logs caller identity on authentication error', async () => {
+      const { accessToken, login, project, membership } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        membership: { admin: true },
+      });
+      const other = await createTestProject({ withClient: true });
+      const onBehalfOf = getReferenceString(other.membership);
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-On-Behalf-Of', onBehalfOf);
+      expect(res1).toHaveStatus(400);
+
+      const logObjs = stdOutSpy.mock.calls.map((call) => JSON.parse(call[0]));
+      const callerLog = logObjs.find((obj) => obj.msg === 'Authentication failed for known caller');
+      const servedLog = logObjs.find((obj) => obj.msg === 'Request served');
+      expect(callerLog).toMatchObject({
+        requestId: res1.headers['x-request-id'],
+        login: login.id,
+        project: project.id,
+        membership: membership.id,
+        onBehalfOf,
+      });
+      expect(servedLog).toMatchObject({ requestId: res1.headers['x-request-id'], status: 400 });
+    });
+
     test('Route parsing error', async () => {
       const accessToken = await initTestAuth();
       const res1 = await request(app)

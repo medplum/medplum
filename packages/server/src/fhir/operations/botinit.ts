@@ -95,9 +95,9 @@ export async function createBot(
 ): Promise<WithId<Bot>> {
   let sourceCode: Attachment | undefined;
   if (params.sourceCode) {
-    sourceCode = await createCodeBinary(repo, params.sourceCode);
+    sourceCode = await createCodeBinary(repo, project, params.sourceCode);
   } else {
-    sourceCode = await createCodeBinary(repo, {
+    sourceCode = await createCodeBinary(repo, project, {
       contentType: ContentType.TYPESCRIPT,
       title: 'index.ts',
       data: Buffer.from(defaultBotCode).toString('base64'),
@@ -106,7 +106,7 @@ export async function createBot(
 
   let executableCode: Attachment | undefined;
   if (params.executableCode) {
-    executableCode = await createCodeBinary(repo, params.executableCode);
+    executableCode = await createCodeBinary(repo, project, params.executableCode);
   }
 
   const bot = await repo.createResource<Bot>({
@@ -142,7 +142,11 @@ export async function createBot(
   return bot;
 }
 
-async function createCodeBinary(repo: Repository, attachment: Attachment): Promise<Attachment> {
+async function createCodeBinary(
+  repo: Repository,
+  project: WithId<Project>,
+  attachment: Attachment
+): Promise<Attachment> {
   const url = attachment.url;
   if (url) {
     if (url.startsWith('Binary/')) {
@@ -168,6 +172,9 @@ async function createCodeBinary(repo: Repository, attachment: Attachment): Promi
   const filename = attachment.title ?? 'index.js';
 
   const binary = await repo.createResource<Binary>({
+    meta: {
+      project: project.id,
+    },
     resourceType: 'Binary',
     contentType,
   });

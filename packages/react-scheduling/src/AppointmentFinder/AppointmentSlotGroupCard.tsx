@@ -69,6 +69,7 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
               key={appointment.start}
               variant={isSelected ? 'filled' : 'outline'}
               size="sm"
+              px="sm"
               disabled={disabled}
               onClick={() => onSelectAppointment(appointment)}
             >

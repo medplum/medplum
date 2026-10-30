@@ -171,21 +171,18 @@ describe('AppointmentProposalForm', () => {
       expect(field(/provider/i)).toBeInTheDocument();
     });
 
-    test('Offers no search until a provider is named, and says so', async () => {
+    test('Offers no search until a provider, room, or device is named, and says so', async () => {
       setup(medplum);
       await chooseImagingService();
 
-      // A room alone holds a room but no calendar to book it against.
+      expect(finderButton()).toBeDisabled();
+      expect(screen.getByText('Choose at least one provider, room, or device first.')).toBeInTheDocument();
+
+      // A room holds a schedule of its own, so it is enough to book against.
       await chooseActor(/room/i, 'exam', 'Exam Room A');
 
-      expect(finderButton()).toBeDisabled();
-      expect(screen.getByText('Choose at least one provider first.')).toBeInTheDocument();
-      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
-
-      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-
       expect(finderButton()).toBeEnabled();
-      expect(screen.queryByText('Choose at least one provider first.')).not.toBeInTheDocument();
+      expect(screen.queryByText('Choose at least one provider, room, or device first.')).not.toBeInTheDocument();
     });
 
     test('Searches against the provider alone when the room and device are left empty', async () => {
@@ -659,6 +656,16 @@ describe('AppointmentProposalForm', () => {
       // too, the same as the day first picked.
       expect(dayCell('17').className).toContain('selected');
       expect(dayCell('19').className).toContain('selected');
+    });
+
+    test('Nests the day headings under the column heading', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      expect(screen.getByRole('heading', { level: 5, name: 'Select a time' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 6, name: /Monday, August 17/ })).toBeInTheDocument();
     });
 
     test('Puts the added days away when the named resources change', async () => {
