@@ -136,3 +136,12 @@
 .notes .notesCountOver {
   color: var(--mantine-color-error);
 }
+
+.addButton {
+  align-self: flex-start;
+}
+
+/* Matches the gap SearchControl's "Add Filter" leaves between its icon and label. */
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
+}
