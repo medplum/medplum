@@ -9,7 +9,7 @@ import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM, APPOINTMENT_CANCELLATION_R
 import { installCancelStub } from '../stories/mockCancel';
 import { installValueSetStub } from '../stories/mockValueSet';
 import { DrRiveraPractitioner, MilesCooperPatient, SchedulingFixtures } from '../stories/scheduling';
-import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { act, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 // The calendar opens on today, so the visit is dated into the week on screen rather than
@@ -115,7 +115,7 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(details()).not.toBeInTheDocument();
   });
 
-  test('clicking an appointment opens its details, until its calendar is hidden', async () => {
+  test('clicking an appointment opens its details, which stay open once it leaves the calendar', async () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await clickAppointment();
@@ -125,9 +125,72 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(open.getByText('booked')).toBeInTheDocument();
     expect(open.getByText('Ultrasound Imaging')).toBeInTheDocument();
 
-    // The visit is on Dr. Rivera's calendar alone, so hiding it takes the details with it.
+    const isDrawn = (): boolean =>
+      [...document.querySelectorAll('.appointment')].some((event) => event.textContent?.includes('Miles Cooper'));
+    const hiddenNotice = "None of this appointment's calendars are shown.";
+
+    // The visit is on Dr. Rivera's calendar alone.
+    const riveraRow = screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
+    await userEvent.click(riveraRow);
+    await waitFor(() => expect(isDrawn()).toBe(false));
+    expect(open.getByText(hiddenNotice)).toBeInTheDocument();
+
+    // Someone else checks the patient in, which the calendar loads on showing the calendar again.
+    const stored = await medplum.repo.readResource<Appointment>('Appointment', APPOINTMENT.id);
+    await medplum.repo.updateResource<Appointment>({ ...stored, status: 'arrived' });
+    medplum.invalidateAll();
+    await userEvent.click(riveraRow);
+    await waitFor(() => expect(open.getByText('arrived')).toBeInTheDocument());
+    expect(open.queryByText(hiddenNotice)).not.toBeInTheDocument();
+
+    // Another week is plain from the visit's time, so needs no notice. The pane keeps the copy the
+    // calendar last loaded.
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(isDrawn()).toBe(false));
+    expect(open.getByText('arrived')).toBeInTheDocument();
+    expect(open.queryByText(hiddenNotice)).not.toBeInTheDocument();
+  });
+
+  test('a search sent before the open appointment is changed does not take its details back', async () => {
+    // Once held, the calendar's Appointment searches wait until the test lets them through.
+    let hold = false;
+    const held: Promise<unknown>[] = [];
+    const releases: (() => void)[] = [];
+    const searchResources = medplum.searchResources.bind(medplum);
+    vi.spyOn(medplum, 'searchResources').mockImplementation(((resourceType, query, options) => {
+      const result = searchResources(resourceType, query, options);
+      if (resourceType !== 'Appointment' || !hold) {
+        return result;
+      }
+      held.push(result);
+      return new Promise((resolve) => {
+        releases.push(() => resolve(result));
+      });
+    }) as typeof medplum.searchResources);
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await clickAppointment();
+    const open = within(details() as HTMLElement);
+    expect(await open.findByText('booked')).toBeInTheDocument();
+
+    // Showing Dr. Rivera's calendar again searches for the visit, which comes back still booked
+    // only after it is checked in.
+    hold = true;
     await userEvent.click(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
-    await waitFor(() => expect(details()).not.toBeInTheDocument());
+    await userEvent.click(await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: false }));
+    await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
+    await Promise.all(held);
+    vi.setSystemTime(new Date(TODAY_AT_TEN.getTime() + 60 * 1000));
+    await medplum.updateResource({ ...APPOINTMENT, status: 'arrived' });
+    await waitFor(() => expect(open.getByText('arrived')).toBeInTheDocument());
+
+    await act(async () => {
+      releases.forEach((release) => release());
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    });
+    expect(open.getByText('arrived')).toBeInTheDocument();
   });
 
   test('closing the details leaves the appointment on the calendar', async () => {
@@ -279,6 +342,6 @@ describe('SchedulingWorkspace appointment details', () => {
     await clickAppointment();
 
     // An event click is not a selection gesture on the grid behind it.
-    expect(screen.queryByRole('heading', { name: /book appointment/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Book Appointment' })).not.toBeInTheDocument();
   });
 });

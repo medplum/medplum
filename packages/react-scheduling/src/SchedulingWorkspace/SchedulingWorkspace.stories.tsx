@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import { SchedulingColorURI } from '@medplum/core';
-import type { Appointment, Location, Reference } from '@medplum/fhirtypes';
+import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -29,6 +29,7 @@ import {
   SchedulingFixtures,
   TelehealthService,
 } from '../stories/scheduling';
+import type { SchedulingWorkspaceProps } from './SchedulingWorkspace';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 /**
@@ -217,11 +218,13 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  * scheduling from.
  *
  * The host passes a reference to the Location, and the Service facility filter starts on **Uro Associates
- * - Satellite**: only the calendars held there are listed, and the visit types on offer
- * are the ones the satellite holds. Click open time and the booking form starts on the
+ * - Satellite**: only the calendars held there are listed, only the appointments recording the
+ * satellite are drawn, such as Dr. Brown's telehealth visit with Priya Shah on Thursday, and the
+ * visit types on offer are the ones the satellite holds. Click open time and the booking form starts on the
  * satellite too, which is the site the booked appointment records.
  *
- * It is only where the filter starts. Take the pill off and every calendar comes back.
+ * It is only where the filter starts. Take the pill off and every calendar and appointment comes
+ * back.
  *
  * @returns The story.
  */
@@ -232,7 +235,7 @@ AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
-  readonly defaultServiceFacility?: Reference<Location>;
+  readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
 }
 
 /**

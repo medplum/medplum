@@ -68,7 +68,9 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
 
   // Test if this caller can actually read the user resource
   // The read will throw NOT FOUND if user does not have permissions
-  const user = await ctx.repo.readResource<User>('User', userId);
+  await ctx.repo.readResource<User>('User', userId);
+  // The caller's copy may lack hidden fields such as `project`, which the checks below need
+  const user = await ctx.systemRepo.readResource<User>('User', userId);
 
   if (!(await isCallerAllowedToRescopeUser(ctx, user, params))) {
     return [forbidden];
@@ -106,7 +108,7 @@ async function isCallerAllowedToRescopeUser(
   }
 
   // Caller needs UPDATE perms for the user
-  if (!ctx.repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, user)) {
+  if (!(await ctx.repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'User', user.id))) {
     return false;
   }
 

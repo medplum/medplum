@@ -455,6 +455,18 @@ describe('AppointmentProposalForm', () => {
       expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
     });
 
+    test('Leaves out a site that is inactive because it is not live yet', async () => {
+      await medplum.createResource({ resourceType: 'Location', name: 'Uro Associates - North', status: 'inactive' });
+      setup(medplum);
+
+      const listbox = await searchField(/service facility/i, 'Uro Associates');
+
+      // Neither clinic records a status, and both are still offered.
+      expect(within(listbox).getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+      expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      expect(within(listbox).queryByText('Uro Associates - North')).not.toBeInTheDocument();
+    });
+
     test('Narrows the visit types to the chosen site', async () => {
       setup(medplum);
       await chooseSite('Satellite', 'Uro Associates - Satellite');
@@ -644,6 +656,16 @@ describe('AppointmentProposalForm', () => {
       // too, the same as the day first picked.
       expect(dayCell('17').className).toContain('selected');
       expect(dayCell('19').className).toContain('selected');
+    });
+
+    test('Nests the day headings under the column heading', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      expect(screen.getByRole('heading', { level: 5, name: 'Select a time' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 6, name: /Monday, August 17/ })).toBeInTheDocument();
     });
 
     test('Puts the added days away when the named resources change', async () => {

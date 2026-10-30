@@ -51,7 +51,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
-import { parseSmartScopes } from '../fhir/smart';
+import { getPartialPermissionScopes, parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import {
@@ -598,13 +598,17 @@ function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean 
   return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
-function matchesScope(existing: SmartScope, candidate: SmartScope): boolean {
-  // Ensure types match
-  if (candidate.permissionType !== existing.permissionType || candidate.resourceType !== existing.resourceType) {
+function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientContext = false): boolean {
+  if (!matchesPermissionType(existing.permissionType, candidate.permissionType, hasPatientContext)) {
     return false;
   }
-  // Scopes granted must be a subset
+  // An existing wildcard resource type covers any resource type
+  if (existing.resourceType !== '*' && candidate.resourceType !== existing.resourceType) {
+    return false;
+  }
+  // Scopes granted must be a non-empty subset; an empty permission is not narrower than any other
   if (
+    !candidate.scope ||
     candidate.scope.length > existing.scope.length ||
     candidate.scope.split('').some((s) => !existing.scope.includes(s))
   ) {
@@ -614,6 +618,67 @@ function matchesScope(existing: SmartScope, candidate: SmartScope): boolean {
     return false;
   }
   return true;
+}
+
+/**
+ * Returns true if the candidate permission type is the same as or narrower than the existing one.
+ * `system/` narrows to `user/`, and either narrows to `patient/` when there is a patient context to scope it to.
+ * @param existing - The permission type already granted.
+ * @param candidate - The permission type being requested.
+ * @param hasPatientContext - True if a patient context is available to scope `patient/` access.
+ * @returns True if the candidate permission type is covered by the existing one.
+ */
+function matchesPermissionType(
+  existing: SmartScope['permissionType'],
+  candidate: SmartScope['permissionType'],
+  hasPatientContext: boolean
+): boolean {
+  if (candidate === existing) {
+    return true;
+  }
+  if (candidate === 'user') {
+    return existing === 'system';
+  }
+  return candidate === 'patient' && hasPatientContext;
+}
+
+/**
+ * Returns true if the requested scope grants no more SMART resource access than the existing scope.
+ * A scope without SMART scopes is unrestricted, so a restricted existing scope requires at least one requested SMART scope.
+ * @param existingScope - The scope already granted.
+ * @param requestedScope - The scope being requested.
+ * @param hasPatientContext - True if the requested scope will have a patient context, allowing `patient/` scopes.
+ * @returns True if every requested SMART scope is covered by an existing SMART scope.
+ */
+export function isSmartScopeSubset(
+  existingScope: string | undefined,
+  requestedScope: string,
+  hasPatientContext = false
+): boolean {
+  const existingScopes = parseSmartScopes(existingScope);
+  if (existingScopes.length === 0) {
+    return true;
+  }
+  const requestedScopes = parseSmartScopes(requestedScope);
+  return (
+    requestedScopes.length > 0 &&
+    requestedScopes.every((candidate) =>
+      existingScopes.some((existing) => matchesScope(existing, candidate, hasPatientContext))
+    )
+  );
+}
+
+/**
+ * Returns true if every non-SMART term in the requested scope, other than `openid`, is in the existing scope.
+ * @param existingScope - The scope already granted.
+ * @param requestedScope - The scope being requested.
+ * @returns True if the requested scope adds no non-SMART terms.
+ */
+export function isNonSmartScopeSubset(existingScope: string | undefined, requestedScope: string): boolean {
+  const existingTerms = existingScope?.split(' ') ?? [];
+  return requestedScope
+    .split(' ')
+    .every((term) => !term || term === 'openid' || parseSmartScopeString(term) || existingTerms.includes(term));
 }
 
 /**
@@ -637,6 +702,15 @@ export async function setLoginScope(systemRepo: SystemRepository, login: Login, 
 
   const existingScopes = parseSmartScopes(login.scope);
   const submittedScopes = parseSmartScopes(scope);
+
+  // A scope without SMART scopes is unrestricted, so a restricted login cannot drop all of them
+  if (existingScopes.length > 0 && submittedScopes.length === 0) {
+    throw new OperationOutcomeError(badRequest('Invalid scope'));
+  }
+
+  if (!isNonSmartScopeSubset(login.scope, scope)) {
+    throw new OperationOutcomeError(badRequest('Invalid scope'));
+  }
 
   // If user requests any scope that is not in existing scope, then reject
   for (const candidate of submittedScopes) {
@@ -665,6 +739,23 @@ export async function getAuthTokens(
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
+  }
+
+  const partialPermissionScopes = getPartialPermissionScopes(login.scope);
+  if (partialPermissionScopes.length > 0) {
+    let projectId = resolveId(login.project);
+    if (!projectId) {
+      // A logging lookup must not prevent token issuance.
+      const membership = await getGlobalSystemRepo()
+        .readReference(login.membership)
+        .catch(() => undefined);
+      projectId = resolveId(membership?.project);
+    }
+    getLogger().warn('SMART scopes with partial permissions', {
+      clientId,
+      projectId,
+      scopes: partialPermissionScopes,
+    });
   }
 
   if (!login.granted) {
@@ -1217,9 +1308,21 @@ async function makeAuthResult(
   // Resolve "on behalf of" before building the repository, so that the access policy is built from
   // the effective membership.  Resolving it afterwards would require a repository to already exist,
   // which cannot be built for a login whose scopes depend on the on-behalf-of membership.
-  await tryAddOnBehalfOf(systemRepo, req, authState);
-  const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  return { authState, repo };
+  try {
+    await tryAddOnBehalfOf(systemRepo, req, authState);
+    const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
+    return { authState, repo };
+  } catch (err) {
+    // The caller is known here, but the "Authentication error" log line does not include it
+    getLogger().warn('Authentication failed for known caller', {
+      login: login.id,
+      project: project.id,
+      membership: membership.id,
+      profile: membership.profile?.reference,
+      onBehalfOf: req?.headers?.['x-medplum-on-behalf-of'],
+    });
+    throw err;
+  }
 }
 
 /**

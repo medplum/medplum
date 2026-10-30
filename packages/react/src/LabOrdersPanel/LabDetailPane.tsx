@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Loader } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { isReference } from '@medplum/core';
+import { createReference, isReference, normalizeErrorString } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { showErrorNotification } from '../../utils/notifications';
 import { LabOrderDetails } from './LabOrderDetails';
 import { LabResultDetails } from './LabResultDetails';
 
@@ -62,7 +62,7 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
         }
       } catch (err) {
         if (subscribed) {
-          showErrorNotification(err);
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
         }
       } finally {
         if (subscribed) {
@@ -86,8 +86,9 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
         <>
           {order && (
             <LabOrderDetails
-              key={order.id}
+              key={`${order.id}:${item.resourceType === 'DiagnosticReport' ? item.id : ''}`}
               order={order}
+              selectedReport={item.resourceType === 'DiagnosticReport' ? createReference(item) : undefined}
               onChange={(updated) => {
                 setOrder(updated);
                 onOrderChange?.(updated);

@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ResourceModifiedEvent, WithId } from '@medplum/core';
-import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  createReference,
+  getAppointmentSite,
+  getReferenceString,
+  setPrimaryProvider,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -13,6 +19,7 @@ import {
   DrOkaforSchedule,
   DrRiveraSchedule,
   ExamRoomASchedule,
+  MainClinic,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
 } from '../stories/scheduling';
@@ -21,6 +28,7 @@ import {
   chooseActor,
   chooseDay,
   chooseFirstOfferedTime,
+  chooseSite,
   chosenTimeField,
   hasPill,
   lastFindParams,
@@ -51,6 +59,13 @@ const HELD_SLOTS: WithId<Slot>[] = RiveraImagingHeldSlots.map((slot) => ({
 
 /** The schedules those times are on, which are the ones a move keeps unless it is told otherwise. */
 const HELD_SCHEDULES = HELD_SLOTS.map((slot) => slot.schedule.reference as string);
+
+/** The same visit, recording no site. */
+const UNSITED_APPOINTMENT: WithId<Appointment> = {
+  ...APPOINTMENT,
+  id: 'appt-unsited',
+  supportingInformation: undefined,
+};
 
 /** Every mount needs one, and it is the only prop a host must supply besides the visit. */
 const onRescheduled = vi.fn();
@@ -331,15 +346,16 @@ describe('AppointmentRescheduleForm', () => {
   });
 
   describe('Opening on the visit as it stands', () => {
-    test('Fills in the visit type and everyone the visit is held on', async () => {
+    test('Fills in the visit type, service facility, and everyone the visit is held on', async () => {
       // Read off the Slots the appointment holds: its participants would not say which
       // of an actor's schedules the visit is on.
       await setup(medplum);
 
       expect(screen.getByRole('textbox', { name: /visit type/i })).toHaveValue('Ultrasound Imaging');
-      expect(hasPill(/Rivera/)).toBe(true);
-      expect(hasPill(/Ultrasound 1/)).toBe(true);
-      expect(hasPill(/Exam Room A/)).toBe(true);
+      expect(hasPill(/Rivera/)).toBe(true); // Practitioner actor
+      expect(hasPill(/Ultrasound 1/)).toBe(true); // Device actor
+      expect(hasPill(/Exam Room A/)).toBe(true); // Location actor
+      expect(hasPill(MainClinic.name as string)).toBe(true); // Service facility
       expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
     });
 
@@ -553,6 +569,29 @@ describe('AppointmentRescheduleForm', () => {
       const schedules = parameterValues(lastRescheduleParameters(post), 'schedule');
       expect(schedules).toContain('Schedule/schedule-exam-room-b');
       expect(schedules).not.toContain('Schedule/schedule-exam-room-a');
+    });
+
+    test('Moves the visit to a newly chosen service facility before moving its time', async () => {
+      // `$reschedule` keeps whatever site it finds, so the site is written first.
+      const unsited = await medplum.createResource(UNSITED_APPOINTMENT);
+      await setup(medplum, { appointment: unsited });
+      // Edited elsewhere while the form is open: the site is still written, onto the newer version.
+      await medplum.updateResource({ ...unsited, comment: 'Edited elsewhere' });
+      vi.spyOn(medplum, 'updateResource').mockRejectedValueOnce(new Error('Precondition failed'));
+      const post = vi.spyOn(medplum, 'post');
+
+      await chooseSite('Main Clinic', MainClinic.name as string);
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await moveToAnotherTime();
+
+      expect(screen.getByText('Precondition failed')).toBeInTheDocument();
+      expect(lastRescheduleParameters(post)).toBeUndefined();
+
+      await clickReschedule();
+
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(getAppointmentSite(reschedule.appointments[0])?.reference).toBe(getReferenceString(MainClinic));
+      expect(reschedule.appointments[0].comment).toBe('Edited elsewhere');
     });
 
     test('Leaves the visit type on file, and the codes booked with it, alone', async () => {

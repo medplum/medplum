@@ -1176,12 +1176,13 @@ export const AppointmentPatientFixtures = [
   buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
   buildPatient('pt-patel', 'Anika', 'Patel', '1983-03-19'),
   buildPatient('pt-novak', 'Theo', 'Novak', '1967-10-08'),
+  buildPatient('pt-shah', 'Priya', 'Shah', '1992-05-26'),
 ];
 
 /**
- * Appointments and Slots for the calendar view, dated within the week of Monday,
- * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
- * always renders Sun May 3 through Sat May 9.
+ * Appointments and Slots for the calendar view, dated Monday, May 4 2020 — the date
+ * `MockDateWrapper` freezes the clock to — through Thursday, May 7, so they all fall within
+ * the four days `MultiCalendar` opens on.
  */
 
 /**
@@ -1306,10 +1307,10 @@ export const ExamRoomABlockedSlot: WithId<Slot> = {
 /** Availability at the satellite site, for when the service facility filter is switched. */
 export const SatelliteRoomFreeSlot: WithId<Slot> = {
   resourceType: 'Slot',
-  id: 'slot-satellite-room-free-fri',
+  id: 'slot-satellite-room-free-thu',
   status: 'free',
-  start: '2020-05-08T13:00:00Z',
-  end: '2020-05-08T15:00:00Z',
+  start: '2020-05-07T13:00:00Z',
+  end: '2020-05-07T15:00:00Z',
   schedule: createReference(SatelliteRoomSchedule),
 };
 
@@ -1498,6 +1499,34 @@ function garciaSeriesOccurrence(position: number): Pick<Appointment, 'identifier
   };
 }
 
+export const SatelliteTelehealthHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'brown-thu',
+  status: 'busy',
+  schedule: createReference(DrBrownSchedule),
+  start: '2020-05-07T20:00:00Z',
+  end: '2020-05-07T20:20:00Z',
+};
+
+/** A telehealth visit Dr. Brown sees from the satellite, so the satellite has a visit to filter to. */
+export const SatelliteTelehealthAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appointment-brown-thu',
+  status: 'booked',
+  start: SatelliteTelehealthHeldSlot.start,
+  end: SatelliteTelehealthHeldSlot.end,
+  serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+  slot: [createReference(SatelliteTelehealthHeldSlot)],
+  supportingInformation: [toAppointmentSiteReference(SatelliteClinic)],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+      { status: 'accepted', actor: { reference: 'Patient/pt-shah', display: 'Priya Shah' } },
+    ],
+    createReference(DrBrownPractitioner)
+  ),
+};
+
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-chen-infusion-thu',
@@ -1531,6 +1560,7 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
   slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(ElderJordanPatient) },
@@ -1573,6 +1603,8 @@ export const CalendarWeekFixtures = [
   MondayTelehealthAppointment,
   ...GarciaSeriesSlots,
   ...GarciaSeriesAppointments,
+  SatelliteTelehealthHeldSlot,
+  SatelliteTelehealthAppointment,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,

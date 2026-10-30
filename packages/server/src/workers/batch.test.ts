@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry, Reference } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, UnrecoverableError, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
@@ -172,6 +172,11 @@ describe('Batch worker', () => {
         expect(results.type).toStrictEqual('batch-response');
         expect(results.entry).toHaveLength(3);
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
+
+        const binary = await systemRepo.readReference<Binary>(
+          finished.output?.parameter?.[0].valueReference as Reference<Binary>
+        );
+        expect(binary.securityContext?.reference).toStrictEqual(getReferenceString(finished));
       }));
 
     test('Assembles completion results from memory without re-reading chunks written this run', () =>

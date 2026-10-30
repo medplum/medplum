@@ -39,6 +39,11 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
+  if (config.newProjectRegistrationEnabled === false) {
+    sendOutcome(res, badRequest('New project registration is disabled'));
+    return;
+  }
+
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 

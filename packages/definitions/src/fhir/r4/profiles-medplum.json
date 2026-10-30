@@ -1275,6 +1275,12 @@
             "type" : [{
               "code" : "uri"
             }],
+            "constraint" : [{
+              "key" : "clapp-2",
+              "severity" : "error",
+              "human" : "Launch URI must use the http: or https: scheme",
+              "expression" : "$this.lower().matches('^https?://')"
+            }],
             "base": {
               "path" : "ClientApplication.launchUri",
               "min" : 0,

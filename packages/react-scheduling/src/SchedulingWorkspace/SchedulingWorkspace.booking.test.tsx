@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { getExtensionValue, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
-import type { JSX, Ref } from 'react';
+import type { JSX, ReactNode, Ref } from 'react';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -116,6 +116,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
       onRangeChange?: (range: { start: Date; end: Date }) => void;
       selection?: { start: Date; end: Date };
       selectedId?: string;
+      toolbarEnd?: ReactNode;
     },
     ref: Ref<CalendarHandle>
   ): JSX.Element {
@@ -128,6 +129,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
 
     return (
       <div>
+        {props.toolbarEnd}
         {Object.entries(CLICK_TARGETS).map(([name, target]) => (
           <button
             key={name}
@@ -183,7 +185,7 @@ async function clickCalendar(target: ClickTarget = 'tuesday morning'): Promise<v
 }
 
 function bookingPaneHeading(): HTMLElement | null {
-  return screen.queryByRole('heading', { name: /book appointment/i });
+  return screen.queryByRole('tab', { name: 'Book Appointment' });
 }
 
 /**
@@ -298,6 +300,28 @@ describe('SchedulingWorkspace booking', () => {
     expect(bookingPaneHeading()).toBeInTheDocument();
     // Scoped to the pane, since the sidebar filter wears the same label.
     expect(field(/visit type/i)).toBeInTheDocument();
+  });
+
+  test('Opens the booking form from the toolbar, on the next half hour', async () => {
+    setup();
+    await clickCalendar();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+    });
+
+    vi.setSystemTime(new Date(2026, 7, 17, 9, 10));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
+    });
+    expect(screen.getByRole('tab', { name: 'Book Appointment' })).toHaveAttribute('aria-selected', 'true');
+    expect(markedTime()).toBe(new Date(2026, 7, 17, 9, 30).toISOString());
+    expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 17, 9, 30).toISOString());
+
+    vi.setSystemTime(new Date(2026, 7, 17, 9, 30));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
+    });
+    expect(markedTime()).toBe(new Date(2026, 7, 17, 10, 0).toISOString());
   });
 
   test('Starts on the site the workspace was opened on', async () => {
@@ -480,7 +504,7 @@ describe('SchedulingWorkspace booking', () => {
       expect(proposedTime()).toBe('none');
     });
 
-    test('Hides the proposal on the Block tab, and draws it again on coming back', async () => {
+    test('Hides the proposal on the Block Time tab, and draws it again on coming back', async () => {
       setup();
       await clickCalendar('tuesday morning');
       await chooseImagingService();
@@ -490,11 +514,11 @@ describe('SchedulingWorkspace booking', () => {
       const proposed = proposedTime();
       expect(screen.getByTestId('proposed-time')).toHaveAttribute('data-label', 'Draft New Appointment');
 
-      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
       expect(proposedTime()).toBe('none');
 
-      // The form stays mounted behind the Block tab, so its time is still there to draw.
-      fireEvent.click(screen.getByRole('tab', { name: 'Appointment' }));
+      // The form stays mounted behind the Block Time tab, so its time is still there to draw.
+      fireEvent.click(screen.getByRole('tab', { name: 'Book Appointment' }));
       expect(proposedTime()).toBe(proposed);
     });
 

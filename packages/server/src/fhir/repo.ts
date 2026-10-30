@@ -669,6 +669,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
+    // A reader may lag behind the writer, so only reads served by the writer are cached. Check this shard's
+    // connection rather than this.mode, which reports writer if any shard is writer. Read it before the query,
+    // which picks its pool synchronously from the same mode, so a concurrent writer switch cannot change it.
+    const { entry } = this.connectionFor({ resourceTypes: resourceType as ResourceType });
+    const servedByWriter = entry.connection.mode === RepositoryMode.WRITER;
     const rows = await this.sqlRead<{ content: string; deleted: boolean }>(builder, resourceType as ResourceType);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
@@ -680,8 +685,8 @@ export class Repository extends FhirRepository implements Disposable {
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
 
-    if (!this.inOwnTransaction()) {
-      // Only set cache entry if not in a transaction
+    // Only set cache entry if not in a transaction
+    if (!this.inOwnTransaction() && servedByWriter) {
       await this.setCacheEntry(resource, { force: true });
     }
 
@@ -1020,8 +1025,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
-      (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
-      if (!this.canPerformInteraction(interaction, existing)) {
+      if (!this.canUpdateExisting(existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
@@ -1630,9 +1634,7 @@ export class Repository extends FhirRepository implements Disposable {
           }
 
           // Check before evaluating the patch, which can disclose resource content (e.g. a failed "test" operation)
-          resource.meta ??= {};
-          resource.meta.compartment = txRepo.getCompartments(resource); // Update compartments with latest rules
-          if (!txRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource)) {
+          if (!txRepo.canUpdateExisting(resource)) {
             throw new OperationOutcomeError(forbidden);
           }
           // Hidden fields are restored from the existing resource on update
@@ -2332,8 +2334,11 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Determines if the current user can actually perform some interaction on the specified resource.
    * This is a more in-depth check, e.g. after building the candidate result of a write operation.
+   * The resource MUST be complete: a stored version or a write candidate. Copies returned by `readResource()`
+   * or search may lack hidden fields and `meta.project`, which changes the result; for those, use
+   * `canPerformInteractionById()` instead.
    * @param interaction - The interaction to be performed.
-   * @param resource - The resource.
+   * @param resource - The complete resource.
    * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
   canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): AccessPolicyResource | undefined {
@@ -2358,6 +2363,48 @@ export class Repository extends FhirRepository implements Disposable {
       }
     }
     return satisfiedAccessPolicy(resource, interaction, this.context.accessPolicy);
+  }
+
+  /**
+   * Determines if the current user can perform some interaction on the current version of a resource.
+   * The stored resource is read in full, so the check sees fields that access policy hides from the user.
+   * @param interaction - The interaction to be performed.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @returns True if the interaction is permitted; false if not, or if the resource cannot be read.
+   */
+  async canPerformInteractionById(
+    interaction: AccessPolicyInteraction,
+    resourceType: ResourceType,
+    id: string
+  ): Promise<boolean> {
+    this.assertUsable();
+    let resource: WithId<Resource>;
+    try {
+      resource = await this.readResourceImpl(resourceType, id);
+    } catch (err) {
+      const outcome = normalizeOperationOutcome(err);
+      if (isNotFound(outcome) || isGone(outcome) || outcome.id === forbidden.id) {
+        return false;
+      }
+      throw err;
+    }
+    if (interaction === AccessPolicyInteraction.UPDATE) {
+      return this.canUpdateExisting(resource);
+    }
+    return Boolean(this.canPerformInteraction(interaction, resource));
+  }
+
+  /**
+   * Determines if the current user can update the stored version of a resource.
+   * Compartments are recomputed first, so the check uses the latest compartment rules.
+   * @param existing - The stored resource; its `meta.compartment` is updated in place.
+   * @returns True if the update is permitted.
+   */
+  private canUpdateExisting(existing: WithId<Resource>): boolean {
+    existing.meta ??= {};
+    existing.meta.compartment = this.getCompartments(existing);
+    return Boolean(this.canPerformInteraction(AccessPolicyInteraction.UPDATE, existing));
   }
 
   /**

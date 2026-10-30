@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "5.2.9",
+  "version": "5.2.12",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -52,12 +52,12 @@
     "shx": "0.4.0",
     "sort-package-json": "4.1.0",
     "source-map-explorer": "2.5.3",
-    "storybook": "10.6.2",
+    "storybook": "10.6.3",
     "tslib": "2.8.1",
     "tsx": "4.23.15",
-    "turbo": "2.11.8",
+    "turbo": "2.11.10",
     "typescript": "6.0.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "4.1.12",
     "vitest-websocket-mock": "0.5.0"
   },

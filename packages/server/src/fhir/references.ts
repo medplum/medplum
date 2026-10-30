@@ -19,24 +19,11 @@ import type { OperationOutcomeIssue, Reference, Resource, ResourceType } from '@
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repo';
 
-/**
- * Exceptional, system-level references that should use systemRepo for validation
- *
- * Project.owner:
- * `User` reference which typically does not have meta.compartment specified
- * and is not technically in the project and thus would not be visible through
- * the non-system repo.
- *
- * Project.link.project:
- * The synthetic Project policy from `applyProjectAdminAccessPolicy` applies
- * a criteria that requires Project.id matches the admin's ProjectMembership.project
- * reference which will always fail for linked projects.
- */
 const SYSTEM_REFERENCE_PATHS = [
-  'Project.owner',
-  'Project.link.project',
-  'ProjectMembership.user',
-  'ProjectMembership.invitedBy',
+  'Project.owner', // can be a server-scoped User
+  'Project.link.project', // readonly for non-super admins
+  'ProjectMembership.user', // readonly for non-super admins
+  'ProjectMembership.invitedBy', // can be a server-scoped User
 ];
 
 async function validateReferences(
@@ -105,10 +92,13 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
   const references = collectReferences(resource);
   const userReferences: TypedValueWithPath[] = [];
   const systemReferences: TypedValueWithPath[] = [];
+  const validateSystemReferences = repo.isSuperAdmin();
 
   for (const path of Object.keys(references)) {
     if (SYSTEM_REFERENCE_PATHS.includes(path)) {
-      systemReferences.push(...references[path]);
+      if (validateSystemReferences) {
+        systemReferences.push(...references[path]);
+      }
     } else {
       userReferences.push(...references[path]);
     }

@@ -17,14 +17,14 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
+import { ActionIcon, Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { getPatientParticipant } from '../actors';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
@@ -176,6 +176,10 @@ export interface CalendarBaseProps extends Omit<
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
+  /** Placed at the start of the toolbar, before the navigation buttons. */
+  toolbarStart?: ReactNode;
+  /** Placed at the end of the toolbar, after the view toggle. */
+  toolbarEnd?: ReactNode;
 }
 
 /** Imperative handle on a calendar. */
@@ -207,6 +211,9 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     selection,
     selectedId,
     loading,
+    toolbarStart,
+    toolbarEnd,
+    views,
     ...fullCalendarProps
   } = props;
 
@@ -334,17 +341,32 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
-          <Button.Group>
-            <Button variant="default" size="xs" aria-label="Previous" onClick={() => controller.prev()}>
-              <IconChevronLeft size={12} />
-            </Button>
-            <Button variant="default" size="xs" onClick={() => controller.today()}>
-              Today
-            </Button>
-            <Button variant="default" size="xs" aria-label="Next" onClick={() => controller.next()}>
-              <IconChevronRight size={12} />
-            </Button>
-          </Button.Group>
+          {toolbarStart}
+          <Button variant="default" size="sm" h={32} fw={400} onClick={() => controller.today()}>
+            Today
+          </Button>
+          <Group gap="xs">
+            <ActionIcon
+              variant="default"
+              size={32}
+              radius="xl"
+              c="dimmed"
+              aria-label="Previous"
+              onClick={() => controller.prev()}
+            >
+              <IconChevronLeft size={16} />
+            </ActionIcon>
+            <ActionIcon
+              variant="default"
+              size={32}
+              radius="xl"
+              c="dimmed"
+              aria-label="Next"
+              onClick={() => controller.next()}
+            >
+              <IconChevronRight size={16} />
+            </ActionIcon>
+          </Group>
           <Group>
             <MonthPickerButton
               size="compact-md"
@@ -359,33 +381,32 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
             {loading && <Loader size="sm" />}
           </Group>
         </Group>
-        <SegmentedControl
-          size="xs"
-          value={controller.view?.type}
-          onChange={(newView) => controller.changeView(newView)}
-          data={[
-            { label: 'Month', value: 'dayGridMonth' },
-            { label: 'Week', value: 'timeGridWeek' },
-            { label: 'Day', value: 'timeGridDay' },
-          ]}
-        />
+        <Group gap="sm">
+          <SegmentedControl
+            size="xs"
+            value={controller.view?.type}
+            onChange={(newView) => controller.changeView(newView)}
+            data={[
+              { label: 'Month', value: 'dayGridMonth' },
+              { label: 'Week', value: 'timeGridWeek' },
+              ...(views?.timeGridFourDay ? [{ label: '4 Day', value: 'timeGridFourDay' }] : []),
+              { label: 'Day', value: 'timeGridDay' },
+            ]}
+          />
+          {toolbarEnd}
+        </Group>
       </Group>
       <FullCalendar
         height="100%"
         plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
         initialView="timeGridWeek"
         slotMinHeight={38}
+        eventShortHeight={33}
         colorScheme={colorScheme}
         displayEventEnd={false}
         eventTimeFormat={{ timeStyle: 'short' }}
-        views={{
-          timeGridWeek: {
-            allDaySlot: false,
-          },
-          timeGridDay: {
-            allDaySlot: false,
-          },
-        }}
+        allDaySlot={false}
+        views={views}
         selectable={selectable}
         unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
         select={(eventInfo) => {

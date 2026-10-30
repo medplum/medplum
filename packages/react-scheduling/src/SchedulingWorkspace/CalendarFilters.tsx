@@ -3,27 +3,22 @@
 import { Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
-import { ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { AppointmentServiceSelect } from '../AppointmentFinder/AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
-import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { ServiceFacilityInput } from '../ServiceFacilityInput';
 
 /**
- * What the two filters currently narrow calendars to, for `searchScheduleCandidates`.
- *
- * Each field searches the server for its own options, so what is held here is the
- * resource itself rather than an id: a typeahead's list is whatever was last searched
- * for, which is no place to look a choice up. Both keep their identity for as long as
- * the choice stands, so a caller can key an effect on them.
+ * The chosen filter values, used to constrain visible Schedules and Appointments.
  */
 export interface CalendarFilterValues {
   /**
    * The chosen site, or absent for every site. A reference only when it is the site the
    * filters started on and the user has not changed it.
    */
-  readonly serviceFacility?: Reference<Location> | WithId<Location>;
+  readonly serviceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
   /** The chosen visit type, or absent for every visit type. */
   readonly service?: WithId<HealthcareService>;
 }
@@ -39,7 +34,7 @@ export interface CalendarFiltersProps {
 }
 
 /**
- * Fields narrowing which calendars are visible
+ * Fields narrowing which calendars and appointments are visible
  *
  * Typeaheads rather than lists: a tenant might have dozens of sites or visit
  * types. The same pickers the booking form uses, so a visit type is searched
@@ -55,7 +50,7 @@ export interface CalendarFiltersProps {
  */
 export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const { defaultValue, onChange } = props;
-  const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
+  const [serviceFacility, setServiceFacility] = useState<CalendarFilterValues['serviceFacility']>(
     defaultValue?.serviceFacility
   );
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultValue?.service);
@@ -88,15 +83,12 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
 
   return (
     <Stack gap="xs">
-      <ResourceInput<WithId<Location>>
-        resourceType="Location"
-        name="serviceFacility"
+      <ServiceFacilityInput
         label="Service Facility"
         placeholder="All service facilities"
-        searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
-        defaultValue={serviceFacility as WithId<Location> | Reference<WithId<Location>> | undefined}
+        searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
+        defaultValue={serviceFacility}
         onChange={selectServiceFacility}
-        clearable={false}
       />
       <AppointmentServiceSelect
         key={serviceFieldKey}

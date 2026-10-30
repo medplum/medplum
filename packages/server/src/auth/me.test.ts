@@ -356,6 +356,25 @@ describe('Me', () => {
     expect(res5.body.security.sessions.map((s: any) => s.id)).toContainExactly([login.id, res1.body.login]);
   });
 
+  test('SMART-scoped login does not get security details', async () => {
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'SMART-scoped /auth/me',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        scope: 'openid user/Observation.rs',
+      })
+    );
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.profile.resourceType).toBe('Practitioner');
+    expect(res.body.user).toBeDefined();
+    expect(res.body.security).toBeUndefined();
+  });
+
   test('Project features are returned in /auth/me', async () => {
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "5.2.9",
+  "version": "5.2.12",
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -27,19 +27,19 @@
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
     "@mantine/spotlight": "8.3.18",
-    "@medplum/core": "5.2.9",
-    "@medplum/fhirtypes": "5.2.9",
-    "@medplum/react": "5.2.9",
+    "@medplum/core": "5.2.12",
+    "@medplum/fhirtypes": "5.2.12",
+    "@medplum/react": "5.2.12",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "graphiql": "5.4.0",
     "graphql": "17.0.2",
     "graphql-ws": "6.4.1",
-    "postcss": "8.5.30",
+    "postcss": "8.5.31",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vite-plugin-monaco-editor-esm": "2.0.3"
   },
   "engines": {
