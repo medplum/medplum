@@ -27,7 +27,10 @@ describe('Repository profile cache', () => {
 
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
-      const { project: project2, repo: repo2 } = await createTestProject({ withRepo: true });
+      const { project: project2, repo: repo2 } = await createTestProject({
+        withRepo: true,
+        project: { exportedResourceType: ['StructureDefinition'] },
+      });
       const { project, repo, membership } = await createTestProject({
         withRepo: true,
         withClient: true,
