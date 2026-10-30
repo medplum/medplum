@@ -37,10 +37,15 @@ function getDefaultResourceType(config: UserConfiguration | undefined): string {
 }
 
 export function getDefaultFields(resourceType: string): string[] {
-  const lastSearch = getLastSearch(resourceType);
-  if (lastSearch?.fields) {
-    return lastSearch.fields;
-  }
+  return getLastSearch(resourceType)?.fields ?? getResourceTypeDefaultFields(resourceType);
+}
+
+/**
+ * Returns the built-in default columns for a resource type, ignoring any saved search.
+ * @param resourceType - The resource type.
+ * @returns The default column names.
+ */
+export function getResourceTypeDefaultFields(resourceType: string): string[] {
   const fields = ['id', '_lastUpdated'];
   switch (resourceType) {
     case 'Patient':
