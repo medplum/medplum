@@ -35,7 +35,7 @@ The routes fall into two groups depending on what they authenticate against.
 
 | Method & Path | Body | Purpose |
 |---|---|---|
-| `GET /auth/mfa/status` | — | Read the user's current enrollment status and the TOTP QR code. |
+| `GET /auth/mfa/status` | — | Read the user's current enrollment status and the TOTP QR code while TOTP is not enrolled. |
 | `POST /auth/mfa/send-email-challenge` | `{}` | Email a 6-digit code to the current user (used to prove control of their email when enrolling email MFA, removing a factor, or disabling MFA). |
 | `POST /auth/mfa/enroll` | `{ method?, token }` | Enroll the current user in a method. `method` defaults to `totp`. |
 | `POST /auth/mfa/disable` | `{ token, method? }` | Remove a single factor (when `method` is given) or disable MFA entirely (when `method` is omitted). |
@@ -110,7 +110,7 @@ For TOTP, `login-enroll` both enrolls the user and verifies the supplied code, c
 
 ## Flow: Self-enrolling from a settings page
 
-These flows assume the user is already authenticated (you have a bearer token). The token must not be limited by SMART resource scopes. Start by reading status:
+These flows assume the user is already authenticated (you have a bearer token). The token must not be limited by SMART resource scopes. For users that are not scoped to a single project, the token must come from a direct sign-in, e.g. password or Google. Start by reading status:
 
 ```ts
 const status = await medplum.get('auth/mfa/status', { cache: 'no-cache' });
@@ -120,12 +120,12 @@ const status = await medplum.get('auth/mfa/status', { cache: 'no-cache' });
 //   allowedMethods: ('totp' | 'email')[],
 //   mfaRequired: boolean,   // if true, do not offer "Disable MFA"
 //   email: string,
-//   enrollUri: string,      // otpauth:// URI
-//   enrollQrCode: string,   // data-URL QR image
+//   enrollUri?: string,     // otpauth:// URI, only while TOTP is not enrolled
+//   enrollQrCode?: string,  // data-URL QR image, only while TOTP is not enrolled
 // }
 ```
 
-`/auth/mfa/status` always returns a TOTP `enrollQrCode`/`enrollUri` (generating a secret if the user does not have one yet), so you can offer authenticator enrollment at any time — including adding TOTP to an account that currently only has email.
+`/auth/mfa/status` returns a TOTP `enrollQrCode`/`enrollUri` while the user is not enrolled in TOTP (generating a secret if the user does not have one yet), so you can offer authenticator enrollment at any time — including adding TOTP to an account that currently only has email. Once TOTP is enrolled, they are no longer returned.
 
 **Enroll in TOTP (authenticator app):**
 

@@ -20,10 +20,10 @@ import {
   buildTotpEnrollment,
   clearMfaEmailCode,
   getAllowedMfaMethods,
-  getCallerUserReference,
   getEnrolledMfaMethods,
   getLoginProject,
   isMfaRequired,
+  readUserForAccountManagement,
   sendLoginResult,
   sendMfaEmailCode,
   verifyEmailMfaCode,
@@ -89,24 +89,26 @@ export async function verifyConnectedFactor(user: User, login: Login, token: str
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
+  const user = await readUserForAccountManagement(ctx);
   const allowedMethods = getAllowedMfaMethods(ctx.project);
+  const enrolledMethods = getEnrolledMfaMethods(user);
 
-  // The TOTP QR code can always be shown, whether for initial enrollment or for
-  // adding TOTP as a second method to an account already enrolled in
-  // email-based MFA, because a secret is generated on demand if missing.
-  const { enrollUri, enrollQrCode } = await buildTotpEnrollment(ctx.systemRepo, user, ctx.project);
+  // The TOTP QR code is only returned while TOTP is not enrolled: for initial enrollment,
+  // or to add TOTP alongside email-based MFA. A secret is generated if the user has none.
+  const enrollment = enrolledMethods.includes('totp')
+    ? undefined
+    : await buildTotpEnrollment(ctx.systemRepo, user, ctx.project);
 
   res.json({
     enrolled: Boolean(user.mfaEnrolled),
-    enrolledMethods: getEnrolledMfaMethods(user),
+    enrolledMethods,
     allowedMethods,
     // When MFA is required for the account, the client must not offer to disable
     // it (the `/disable` endpoint enforces this server-side as well).
     mfaRequired: isMfaRequired(user, ctx.project),
     email: user.email,
-    enrollUri,
-    enrollQrCode,
+    enrollUri: enrollment?.enrollUri,
+    enrollQrCode: enrollment?.enrollQrCode,
   });
 });
 
@@ -176,7 +178,7 @@ mfaRouter.post(
 mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Response) => {
   const systemRepo = getGlobalSystemRepo();
   const ctx = getAuthenticatedContext();
-  const user = await systemRepo.readReference<User>(getCallerUserReference(ctx));
+  const user = await readUserForAccountManagement(ctx);
 
   const method = parseMfaMethod(req.body.method);
 
@@ -292,7 +294,7 @@ mfaRouter.post(
  */
 mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
+  const user = await readUserForAccountManagement(ctx);
 
   const emailEnrolled = getEnrolledMfaMethods(user).includes('email');
   const emailAllowed = getAllowedMfaMethods(ctx.project).includes('email');
@@ -311,7 +313,7 @@ mfaRouter.post(
   [body('token').optional().isString(), body('method').optional().isString()],
   async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
+    const user = await readUserForAccountManagement(ctx);
 
     if (!user.mfaEnrolled) {
       sendOutcome(res, badRequest('User not enrolled in MFA'));
