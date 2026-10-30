@@ -1,14 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Divider, Group, Stack, Text } from '@mantine/core';
-import {
-  IconCalculatorFilled,
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
-  IconMapPinFilled,
-} from '@tabler/icons-react';
+import { Box, Divider, Stack, Text } from '@mantine/core';
+import { IconCalculatorFilled, IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import type { BookableActorType } from '../../actors';
 import { CalendarRow } from './CalendarRow';
 import { SectionHeader } from './SectionHeader';
@@ -59,7 +54,6 @@ const SECTIONS: readonly CalendarsPanelSection[] = [
 /**
  * A sidebar panel for selecting calendars, grouped under collapsible sections, above
  * which a host may place the fields narrowing which calendars are worth listing at all.
- * The whole panel collapses to a single button that brings it back.
  *
  * This is a presentational component that renders whatever is passed in. It does not
  * fetch or group FHIR resources, which is why the filters arrive as a node rather than
@@ -71,69 +65,49 @@ const SECTIONS: readonly CalendarsPanelSection[] = [
  */
 export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
   const { items, candidatesLoading, filters, onToggle, className } = props;
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <>
-      {collapsed && (
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          mt="xs"
-          aria-label="Show calendars"
-          onClick={() => setCollapsed(false)}
-        >
-          <IconLayoutSidebarLeftExpand size={18} />
-        </ActionIcon>
+    <Stack gap="xs" w={300} className={className}>
+      <Text fz="lg" fw={800} py="xs">
+        Calendars
+      </Text>
+      <Divider />
+
+      {filters && (
+        <>
+          <Box mb="xs" role="group" aria-label="Filter calendars">
+            {filters}
+          </Box>
+          <Divider />
+        </>
       )}
-      {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
-      <Stack gap="xs" w={300} display={collapsed ? 'none' : undefined} className={className}>
-        <Group justify="space-between" wrap="nowrap">
-          <Text fz="lg" fw={800} py="xs">
-            Calendars
-          </Text>
-          <ActionIcon variant="subtle" color="gray" aria-label="Hide calendars" onClick={() => setCollapsed(true)}>
-            <IconLayoutSidebarLeftCollapse size={18} />
-          </ActionIcon>
-        </Group>
-        <Divider />
 
-        {filters && (
-          <>
-            <Box mb="xs" role="group" aria-label="Filter calendars">
-              {filters}
-            </Box>
+      {SECTIONS.map((section) => {
+        const sectionItems = items[section.actorType];
+        return (
+          <Fragment key={section.actorType}>
+            <SectionHeader title={section.title} loading={candidatesLoading}>
+              {sectionItems.length === 0 && !candidatesLoading ? (
+                <Text fz="sm" c="dimmed" p="xs">
+                  No {section.emptyLabel} found
+                </Text>
+              ) : (
+                <Stack gap={2}>
+                  {sectionItems.map((item) => (
+                    <CalendarRow
+                      key={item.id}
+                      item={item}
+                      onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
+                      icon={section.icon}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionHeader>
             <Divider />
-          </>
-        )}
-
-        {SECTIONS.map((section) => {
-          const sectionItems = items[section.actorType];
-          return (
-            <Fragment key={section.actorType}>
-              <SectionHeader title={section.title} loading={candidatesLoading}>
-                {sectionItems.length === 0 && !candidatesLoading ? (
-                  <Text fz="sm" c="dimmed" p="xs">
-                    No {section.emptyLabel} found
-                  </Text>
-                ) : (
-                  <Stack gap={2}>
-                    {sectionItems.map((item) => (
-                      <CalendarRow
-                        key={item.id}
-                        item={item}
-                        onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
-                        icon={section.icon}
-                      />
-                    ))}
-                  </Stack>
-                )}
-              </SectionHeader>
-              <Divider />
-            </Fragment>
-          );
-        })}
-      </Stack>
-    </>
+          </Fragment>
+        );
+      })}
+    </Stack>
   );
 }

@@ -1134,10 +1134,10 @@ describe('Subscription Worker', () => {
 
   test('Ignore resource changes in different account compartment', () =>
     withTestContext(async () => {
-      const project = randomUUID();
+      const project = (await createTestProject()).project.id;
       const account = 'Organization/' + randomUUID();
 
-      const subscription = await repo.createResource<Subscription>({
+      const subscription = await systemRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         meta: {
@@ -1155,7 +1155,7 @@ describe('Subscription Worker', () => {
       });
       expect(subscription).toBeDefined();
 
-      const patient = await repo.createResource<Patient>({
+      const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: {
           project,
@@ -2746,6 +2746,11 @@ describe('Subscription Worker', () => {
           { includeResource: true },
         ]);
 
+        const differentCase = await wsSubRepo.updateResource<Subscription>({
+          ...subscription,
+          id: subscription.id.toUpperCase(),
+        });
+
         // Delete the patient
         nextArgsPromise = waitForNextSubNotification<Patient>();
         await wsSubRepo.deleteResource('Patient', updatedPatient.id);
@@ -2754,7 +2759,7 @@ describe('Subscription Worker', () => {
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(updatedPatient),
-          subscription.id,
+          differentCase.id,
           { includeResource: true },
         ]);
       }));

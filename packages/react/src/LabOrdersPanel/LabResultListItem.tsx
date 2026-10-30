@@ -3,9 +3,10 @@
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
-import { MedplumLink, useResource } from '@medplum/react';
+import { useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './LabListItem.module.css';
 
 interface LabResultListItemProps {

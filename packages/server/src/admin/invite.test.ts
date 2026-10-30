@@ -651,6 +651,7 @@ describe('Admin Invite', () => {
     expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(res2.body.issue?.[0].details.text).toBe('Could not send email. Make sure you have AWS SES set up.');
+    expect(res2.body.issue?.[0].diagnostics).toBeUndefined();
   });
 
   test('Super admin invite to different project', async () => {

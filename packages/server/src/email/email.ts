@@ -5,13 +5,22 @@ import { EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Binary, Project } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { applyFromDisplayName, getFromAddress, getProjectAppName, getProjectSmtpConfig } from './utils';
+import {
+  applyFromDisplayName,
+  getFromAddress,
+  getProjectAppName,
+  getProjectSmtpConfig,
+  getProjectSmtpSocket,
+  PROJECT_SMTP_SOCKET_TIMEOUT_MS,
+  PROJECT_SMTP_TIMEOUT_MS,
+} from './utils';
 
 /**
  * Sends an email using the AWS SES service.
@@ -104,7 +113,7 @@ async function sendEmailViaSmtp(
   options: Mail.Options,
   projectId?: string
 ): Promise<void> {
-  const transport = createTransport({
+  const transportOptions: SMTPTransport.Options = {
     host: smtpConfig.host,
     port: smtpConfig.port,
     secure: smtpConfig.secure,
@@ -112,7 +121,16 @@ async function sendEmailViaSmtp(
       user: smtpConfig.username,
       pass: smtpConfig.password,
     },
-  });
+  };
+  if (projectId) {
+    if (!getConfig().allowUnsafeOutbound) {
+      transportOptions.getSocket = getProjectSmtpSocket(projectId);
+    }
+    transportOptions.connectionTimeout = PROJECT_SMTP_TIMEOUT_MS;
+    transportOptions.greetingTimeout = PROJECT_SMTP_TIMEOUT_MS;
+    transportOptions.socketTimeout = PROJECT_SMTP_SOCKET_TIMEOUT_MS;
+  }
+  const transport = createTransport(transportOptions);
   try {
     await transport.sendMail(options);
   } catch (err) {

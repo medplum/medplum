@@ -16,8 +16,8 @@ This feature displays Lab Order Requisition PDFs in the Orders content section w
 
 ### Files Modified/Created
 
-- `src/utils/documentReference.ts` - Utility function to fetch Lab Order Requisition documents
-- `src/components/labs/LabOrderDetails.tsx` - Updated to display PDF previews
+- `documentReference.ts` - Utility function to fetch Lab Order Requisition documents
+- `LabOrderDetails.tsx` - Updated to display PDF previews
 
 ### Key Components
 

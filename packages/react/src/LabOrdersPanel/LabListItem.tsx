@@ -3,10 +3,12 @@
 import { Badge, Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { Practitioner, ServiceRequest } from '@medplum/fhirtypes';
-import { MedplumLink, useResource } from '@medplum/react';
+import { useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './LabListItem.module.css';
+import { getOrderDisplayText, getOrderStatusColor, getOrderStatusDisplayText } from './labOrder';
 
 type LabTab = 'open' | 'completed';
 
@@ -34,11 +36,11 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
         <Stack gap={0} flex={1} miw={0}>
           <Group justify="space-between" align="flex-start">
             <Text fw={700} className={classes.title} flex={1}>
-              {getDisplayText(item)}
+              {getOrderDisplayText(item)}
             </Text>
             {activeTab !== 'completed' && (
-              <Badge size="sm" color={getStatusColor(item.status)} variant="light">
-                {getStatusDisplayText(item.status)}
+              <Badge size="sm" color={getOrderStatusColor(item.status)} variant="light">
+                {getOrderStatusDisplayText(item.status)}
               </Badge>
             )}
           </Group>
@@ -55,68 +57,6 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
     </MedplumLink>
   );
 }
-
-const getStatusColor = (status: string | undefined): string => {
-  switch (status) {
-    case 'active':
-      return 'blue';
-    case 'draft':
-    case 'requested':
-      return 'yellow';
-    case 'on-hold':
-      return 'orange';
-    case 'revoked':
-    case 'cancelled':
-    case 'entered-in-error':
-      return 'red';
-    case 'completed':
-      return 'green';
-    case 'unknown':
-      return 'gray';
-    default:
-      return 'gray';
-  }
-};
-
-const getStatusDisplayText = (status: string | undefined): string => {
-  switch (status) {
-    case 'active':
-      return 'Active';
-    case 'draft':
-      return 'Draft';
-    case 'requested':
-      return 'Requested';
-    case 'on-hold':
-      return 'On Hold';
-    case 'revoked':
-      return 'Revoked';
-    case 'cancelled':
-      return 'Cancelled';
-    case 'entered-in-error':
-      return 'Error';
-    case 'completed':
-      return 'Completed';
-    case 'unknown':
-      return 'Unknown';
-    default:
-      return status || 'Unknown';
-  }
-};
-
-const getDisplayText = (item: ServiceRequest): string => {
-  // If there are multiple codes (2 or more), show them separated by commas
-  if (item.code?.coding && item.code.coding.length >= 2) {
-    return item.code.coding.map((coding) => coding.display).join(', ');
-  }
-
-  // If there's a text field and only one code, use the text field
-  if (item.code?.text) {
-    return item.code.text;
-  }
-
-  // Otherwise, show the first code or fallback
-  return item.code?.coding?.[0]?.display || 'Lab Order';
-};
 
 const getSubText = (item: ServiceRequest, requester: Practitioner | undefined): string => {
   // Use authoredOn if available, otherwise fall back to meta.lastUpdated
