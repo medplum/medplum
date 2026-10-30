@@ -121,6 +121,9 @@ describe('Project $init', () => {
     for (const readonlyType of PRACTITIONER_READONLY_RESOURCE_TYPES) {
       expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
     }
+    // Non-admin Practitioners can read (and therefore execute) Bots, but not save or deploy them
+    expect(PRACTITIONER_READONLY_RESOURCE_TYPES).toContain('Bot');
+    expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: 'Bot' });
   });
 
   test('Requires project name', async () => {
