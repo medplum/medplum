@@ -87,7 +87,8 @@ describe('v50: HumanName.projectId NOT NULL', () => {
       const client = await getDatabasePool(DatabaseMode.WRITER).connect();
       const results: MigrationActionResult[] = [];
       try {
-        await repairNullHumanNameProjectIds(client, results);
+        // One row per batch, so the patient's two names are split across batches
+        await repairNullHumanNameProjectIds(client, results, { batchSize: 1, delayBetweenBatches: 0 });
       } finally {
         client.release();
       }
@@ -97,8 +98,7 @@ describe('v50: HumanName.projectId NOT NULL', () => {
       expect(await getProjectIds(untouched.id)).toStrictEqual([project.id]);
       expect(await getProjectIds(orphanId)).toStrictEqual([]);
       expect(results).toStrictEqual([
-        expect.objectContaining({ name: 'Set NULL HumanName.projectId from resource', updated: 3 }),
-        expect.objectContaining({ name: 'Delete NULL HumanName.projectId rows with no resource', deleted: 1 }),
+        expect.objectContaining({ name: 'Repair NULL HumanName.projectId', updated: 3, deleted: 1 }),
       ]);
     }));
 

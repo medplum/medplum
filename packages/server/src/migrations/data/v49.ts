@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import type { Job } from 'bullmq';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 import { PostgresError } from '../../fhir/sql';
 import { globalLogger } from '../../logger';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
@@ -78,7 +78,9 @@ export interface BackfillOptions {
   readonly onCheckpoint?: (checkpoint: BackfillCheckpoint) => Promise<void>;
 }
 
-const defaultOptions: Required<Pick<BackfillOptions, 'batchSize' | 'delayBetweenBatches' | 'progressLogThreshold'>> = {
+export const defaultOptions: Required<
+  Pick<BackfillOptions, 'batchSize' | 'delayBetweenBatches' | 'progressLogThreshold'>
+> = {
   batchSize: 5000,
   delayBetweenBatches: 100,
   progressLogThreshold: 100_000,
@@ -93,22 +95,26 @@ interface BatchResult {
 const maxBatchAttempts = 2;
 
 /**
- * Runs one backfill batch in its own READ COMMITTED transaction, retrying on a serialization failure.
+ * Runs one batch statement in its own READ COMMITTED transaction, retrying on a serialization failure.
  *
  * Pool connections default to REPEATABLE READ, where a concurrent resource write that rewrites a batch's
  * `HumanName` rows fails the whole statement; READ COMMITTED skips those rows, whose replacements already carry
  * the right `projectId`.
  * @param client - The database client.
- * @param sql - The batch statement.
+ * @param sql - The batch statement, returning a single summary row.
  * @param params - The batch statement parameters.
- * @returns The batch result.
+ * @returns The batch statement's summary row.
  */
-async function runBatch(client: PoolClient, sql: string, params: unknown[]): Promise<BatchResult> {
+export async function runBatch<T extends QueryResultRow>(
+  client: PoolClient,
+  sql: string,
+  params: unknown[]
+): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxBatchAttempts; attempt++) {
     await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
     try {
-      const result = await client.query<BatchResult>(sql, params);
+      const result = await client.query<T>(sql, params);
       await client.query('COMMIT');
       return result.rows[0];
     } catch (err: any) {
@@ -118,8 +124,8 @@ async function runBatch(client: PoolClient, sql: string, params: unknown[]): Pro
       }
       lastError = err;
       if (attempt < maxBatchAttempts) {
-        globalLogger.warn('Retrying HumanName.projectId backfill batch after serialization failure', {
-          lastId: params[0],
+        globalLogger.warn('Retrying HumanName.projectId batch after serialization failure', {
+          params,
           error: err.message,
         });
       }
@@ -194,7 +200,7 @@ export async function backfillHumanNameProjectId(
     let updated = 0;
     let hasMore = true;
     while (hasMore) {
-      const row = await runBatch(client, sql, [lastId, batchSize]);
+      const row = await runBatch<BatchResult>(client, sql, [lastId, batchSize]);
       // A partial batch means the end of the table was reached
       hasMore = row.scanned === batchSize;
 
