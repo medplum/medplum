@@ -793,6 +793,44 @@ describe('SMART Health operations', () => {
     expect(manifestResponse).toHaveStatus(200);
     expect(manifestResponse.body.files).toStrictEqual([]);
   });
+
+  test('Unsupported file content type', async () => {
+    const patient = await createPatient();
+
+    const binaryResponse = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world');
+    expect(binaryResponse).toHaveStatus(201);
+
+    const smartHealthLink: SmartHealthLink = {
+      resourceType: 'SmartHealthLink',
+      status: 'active',
+      mode: 'direct',
+      subject: { reference: `Patient/${patient.id}` },
+      url: 'https://example.com/',
+      file: [
+        {
+          contentType: ContentType.FHIR_JSON,
+          attachment: { contentType: ContentType.JOSE, url: `Binary/${binaryResponse.body.id}` },
+        },
+      ],
+    };
+
+    const direct = await repo.createResource<SmartHealthLink>(smartHealthLink);
+    const payloadResponse = await request(app).get(`/shl/${direct.id}/payload`).query({ recipient: 'Test Recipient' });
+    expect(payloadResponse).toHaveStatus(404);
+    expect(payloadResponse.body.error).toContain('payload not found');
+
+    const manifest = await repo.createResource<SmartHealthLink>({ ...smartHealthLink, mode: 'manifest' });
+    const manifestResponse = await request(app)
+      .post(`/shl/${manifest.id}/manifest`)
+      .set('Content-Type', ContentType.JSON)
+      .send({});
+    expect(manifestResponse).toHaveStatus(200);
+    expect(manifestResponse.body.files).toStrictEqual([]);
+  });
 });
 
 async function createPatient(): Promise<Patient> {
