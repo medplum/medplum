@@ -9,6 +9,12 @@ import { CcdaDisplay } from './CcdaDisplay';
 
 const EXAMPLE_CCDA_URL = 'http://example.com/ccda';
 const VALIDATION_URL_PATTERN = 'https://ccda-validator.medplum.com/referenceccdaservice/';
+const EXAMPLE_CCDA_XML = `<ClinicalDocument xmlns="urn:hl7-org:v3">
+  <title>Example CCDA</title>
+  <component><structuredBody>
+    <component><section><code code="11450-4"/><title>Problems</title><text>Asthma</text></section></component>
+  </structuredBody></component>
+</ClinicalDocument>`;
 
 describe('CcdaDisplay', () => {
   let medplum: MockClient;
@@ -35,7 +41,7 @@ describe('CcdaDisplay', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          text: () => Promise.resolve('<ClinicalDocument>Example CCDA Content</ClinicalDocument>'),
+          text: () => Promise.resolve(EXAMPLE_CCDA_XML),
         } as Response);
       }
 
@@ -98,30 +104,76 @@ describe('CcdaDisplay', () => {
     ));
   }
 
-  test('Does not open Iframe when no URL passed in', async () => {
+  test('Renders nothing when no URL passed in', async () => {
     setup(undefined);
-    expect(screen.queryByTestId('ccda-iframe')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ccda-display')).not.toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   test('Renders C-CDA', async () => {
-    const sendCommandSpy = vi.spyOn(domUtils, 'sendCommand').mockImplementation(vi.fn(async () => {}));
     setup(EXAMPLE_CCDA_URL);
-    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
-    await act(async () => {
-      fireEvent.load(screen.getByTitle('C-CDA Viewer'));
-    });
-    expect(sendCommandSpy).toHaveBeenCalledWith(expect.any(HTMLIFrameElement), {
-      command: 'loadCcdaXml',
-      value: EXAMPLE_CCDA_URL,
-    });
+    expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
+    expect(screen.getByText('Asthma')).toBeInTheDocument();
+    expect(fetchSpy).toHaveBeenCalledWith(EXAMPLE_CCDA_URL);
+    // Short documents are not capped
+    expect(screen.queryByRole('button', { name: 'Show full document' })).not.toBeInTheDocument();
+  });
+
+  test.each([
+    ['presigned storage URL', 'https://storage.medplum.com/binary/abc-123/def-456?Expires=1&Signature=sig'],
+    ['Binary reference', 'Binary/abc-123'],
+  ])('Downloads a %s through the FHIR API', async (_name, url) => {
+    const downloadSpy = vi
+      .spyOn(medplum, 'downloadResponse')
+      .mockResolvedValue({ ok: true, text: async () => EXAMPLE_CCDA_XML } as Response);
+    setup(url);
+    expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
+    expect(downloadSpy).toHaveBeenCalledWith('Binary/abc-123');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test('Caps a tall document until expanded', async () => {
+    // Report a rendered height taller than the collapsed cap
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        private readonly callback: ResizeObserverCallback;
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback;
+        }
+        observe(target: Element): void {
+          const entry = { target, contentRect: { width: 800, height: 2000 } } as unknown as ResizeObserverEntry;
+          this.callback([entry], this);
+        }
+        unobserve(): void {}
+        disconnect(): void {}
+      }
+    );
+    try {
+      setup(EXAMPLE_CCDA_URL);
+      const expand = await screen.findByRole('button', { name: 'Show full document' });
+      expect(screen.getByText('Example CCDA').closest('[style*="max-height"]')).toBeInTheDocument();
+
+      fireEvent.click(expand);
+      expect(screen.queryByRole('button', { name: 'Show full document' })).not.toBeInTheDocument();
+      expect(screen.getByText('Example CCDA').closest('[style*="max-height"]')).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  test('Shows an error when the C-CDA cannot be loaded', async () => {
+    fetchSpy.mockResolvedValueOnce({ ok: false, status: 404, statusText: 'Not Found' });
+    setup(EXAMPLE_CCDA_URL);
+    expect(await screen.findByText('Unable to load C-CDA')).toBeInTheDocument();
+    expect(screen.getByText('Failed to load C-CDA: 404 Not Found')).toBeInTheDocument();
   });
 
   test('Validate button triggers validation process', async () => {
     setup(EXAMPLE_CCDA_URL);
 
     // Wait for the component to load
-    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
 
     // Validate button should be present
     const validateButton = screen.getByRole('button', { name: /Validate/i });
@@ -132,12 +184,8 @@ describe('CcdaDisplay', () => {
       fireEvent.click(validateButton);
     });
 
-    // Should make fetch calls for both content and validation
+    // Should submit the already loaded content to the validation API
     await waitFor(() => {
-      // First call for CCDA content
-      expect(fetchSpy).toHaveBeenCalledWith(EXAMPLE_CCDA_URL);
-
-      // Second call for validation API
       const calls = fetchSpy.mock.calls;
       const validationCall = calls.find(
         (call) => call[0].toString().includes(VALIDATION_URL_PATTERN) && call[1]?.method === 'POST'
@@ -164,7 +212,7 @@ describe('CcdaDisplay', () => {
     setup(EXAMPLE_CCDA_URL);
 
     // Wait for the component to load
-    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
 
     // Validate first
     const validateButton = screen.getByRole('button', { name: /Validate/i });
@@ -222,7 +270,7 @@ describe('CcdaDisplay', () => {
     setup(EXAMPLE_CCDA_URL);
 
     // Wait for the component to load
-    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
 
     // Click validate
     const validateButton = screen.getByRole('button', { name: /Validate/i });
@@ -268,7 +316,7 @@ describe('CcdaDisplay', () => {
     setup(EXAMPLE_CCDA_URL);
 
     // Wait for the component to load
-    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
 
     // Click validate
     const validateButton = screen.getByRole('button', { name: /Validate/i });
