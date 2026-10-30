@@ -10,6 +10,7 @@ import {
   Select,
   Stack,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -189,8 +190,8 @@ export interface AppointmentProposalFormProps {
    * Resolving marks the form written, so it stops offering to write until an answer
    * changes; rejecting shows the reason as the write's refusal, every answer kept.
    *
-   * In `book` mode the proposal carries the patient and the visit type's required
-   * codes; in `reschedule` mode it is the time as `$find` offered it, plus a newly chosen site.
+   * In `book` mode the proposal carries the patient, the visit type's required codes,
+   * and any notes; in `reschedule` mode it is the time as `$find` offered it, plus a newly chosen site.
    */
   readonly onSubmit: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
   /** Extensions to put on every appointment this form books. */
@@ -263,6 +264,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
   const [requirementValues, setRequirementValues] = useState<BookingRequirementValues>(EMPTY_REQUIREMENT_VALUES);
+  const [comment, setComment] = useState('');
   const [writing, setWriting] = useState(false);
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
@@ -279,7 +281,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
-  // Only a booking writes the patient and the visit type's codes, so only a booking
+  // Only a booking writes the patient, the visit type's codes, and the notes, so only a booking
   // asks for them: `$reschedule` takes a time and the schedules to hold it on.
   const takesDetails = mode === 'book';
 
@@ -664,6 +666,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           proposal: chosen,
           patient,
           values: requirementValues,
+          comment,
           site,
           requirements,
           extensions: appointmentExtensions,
@@ -752,6 +755,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             mrnSystem={mrnSystem}
             required
             onChange={choosePatient}
+          />
+        )}
+
+        {takesDetails && (
+          <Textarea
+            label="Notes"
+            autosize
+            minRows={2}
+            value={comment}
+            onChange={(event) => {
+              setComment(event.currentTarget.value);
+              setWritten(false);
+            }}
           />
         )}
 
@@ -1115,6 +1131,8 @@ interface BuildBookingOptions {
   readonly site: WithId<Location> | undefined;
   /** The codes and attestation given. */
   readonly values: BookingRequirementValues;
+  /** The notes, as typed. */
+  readonly comment: string;
   /** What the visit type requires, from its eligibility codes. */
   readonly requirements: ReadonlySet<SchedulingRequirement>;
   /** Extensions the host asked to be carried on the appointment. */
@@ -1122,8 +1140,8 @@ interface BuildBookingOptions {
 }
 
 /**
- * Puts the patient, the site, anything the visit type required, and whatever the host
- * wants carried onto the proposal that will be booked.
+ * Puts the patient, the site, anything the visit type required, the notes, and whatever
+ * the host wants carried onto the proposal that will be booked.
  *
  * Records a value only where the visit type asked for one: a field nobody was shown holds
  * whatever it was left at, and writing that would put an answer on the booking that was
@@ -1133,7 +1151,7 @@ interface BuildBookingOptions {
  * @returns The appointment to book.
  */
 function buildBooking(options: BuildBookingOptions): Appointment {
-  const { proposal, patient, site, values, requirements, extensions } = options;
+  const { proposal, patient, site, values, comment, requirements, extensions } = options;
   const patientReference = getReferenceString(patient);
   const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
   const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
@@ -1149,6 +1167,8 @@ function buildBooking(options: BuildBookingOptions): Appointment {
   const supportingInformation = site
     ? [...(proposal.supportingInformation ?? []), toAppointmentSiteReference(site)]
     : undefined;
+  // FHIR has no empty strings, so blank notes are left off.
+  const trimmedComment = comment.trim();
 
   return {
     ...proposal,
@@ -1163,6 +1183,7 @@ function buildBooking(options: BuildBookingOptions): Appointment {
     ...(reasonCode.length > 0 && { reasonCode }),
     ...(extension.length > 0 && { extension }),
     ...(supportingInformation && { supportingInformation }),
+    ...(trimmedComment && { comment: trimmedComment }),
   };
 }
 

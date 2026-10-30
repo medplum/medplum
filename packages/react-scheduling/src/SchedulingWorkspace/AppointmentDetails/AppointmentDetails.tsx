@@ -3,13 +3,11 @@
 import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
-  extractServiceTypeReferences,
   formatCodeableConcept,
   getAppointmentSite,
   getExtension,
   getExtensionValue,
   getPrimaryProvider,
-  getSchedulingRequirements,
   normalizeErrorString,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
@@ -22,7 +20,7 @@ import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
 import type { AppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
 import { readAppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
@@ -87,7 +85,7 @@ export interface AppointmentDetailsProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
-  /** Called with the appointment as written, after the visit type's codes are saved. */
+  /** Called with the appointment as written, after the visit type's codes or the notes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
 
@@ -209,8 +207,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
   const patientResource = useResource(patient);
-  const service = useResource(extractServiceTypeReferences(appointment.serviceType)[0]);
-  const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -349,7 +345,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="Devices" value={listActors(devices)} />
       <Detail label="With" value={listActors(others)} />
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
-      <Detail label="Notes" value={appointment.comment ?? appointment.description} />
+      {!editing && <Detail label="Notes" value={appointment.comment} />}
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
       {editing ? (
         <AppointmentDetailsForm
@@ -411,12 +407,9 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             </Text>
           ) : (
             <>
-              {/* The visit type's codes are all there is to edit. */}
-              {requirements.size > 0 && (
-                <Button variant="outline" onClick={() => setEditing(true)}>
-                  Edit
-                </Button>
-              )}
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
               {isReschedulable(appointment) && (
                 <Button
                   variant="outline"
