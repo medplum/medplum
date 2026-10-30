@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Divider, Stack, Textarea, TextInput } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference, isDefined, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Schedule, Slot } from '@medplum/fhirtypes';
@@ -18,6 +18,7 @@ import {
 } from '../../AppointmentFinder/AppointmentFinder.times';
 import { useChanged } from '../../hooks/useChanged';
 import type { DateTimeRange } from '../../types';
+import classes from './BlockTimeForm.module.css';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, readonly ScheduleCandidate[]>>;
 
@@ -136,7 +137,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   }
 
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" className={classes.form}>
       <TextInput
         label="Start"
         type={getNativeInputType('datetime-local')}
@@ -180,15 +181,22 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
           setWritten(false);
         }}
       />
-
-      {writeError !== undefined && (
-        <Alert color="red" title="Could not block this time">
-          {normalizeErrorString(writeError)}
-        </Alert>
-      )}
-      <Button fullWidth disabled={!range || schedules.length === 0 || written} loading={writing} onClick={handleSubmit}>
-        {getBlockLabel(schedules.length)}
-      </Button>
+      <Stack gap="sm" className={classes.controls}>
+        <Divider />
+        {writeError !== undefined && (
+          <Alert color="red" title="Could not block this time">
+            {normalizeErrorString(writeError)}
+          </Alert>
+        )}
+        <Button
+          fullWidth
+          disabled={!range || schedules.length === 0 || written}
+          loading={writing}
+          onClick={handleSubmit}
+        >
+          {getBlockLabel(schedules.length)}
+        </Button>
+      </Stack>
     </Stack>
   );
 }

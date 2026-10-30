@@ -861,19 +861,22 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
-        {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
-        <Stack gap={4}>
-          <Button
-            fullWidth
-            disabled={!chosen || written || detailsOutstanding}
-            loading={writing}
-            onClick={handleSubmit}
-            aria-describedby={chosenActors.length > 0 ? chosenActorsId : undefined}
-          >
-            {getSubmitLabel(mode, effectiveOccurrenceCount)}
-          </Button>
-          {/* Read off the proposal, as the search may be what settled who holds it. */}
-          {chosenActors.length > 0 && <ChosenActors id={chosenActorsId} actors={chosenActors} />}
+        <Stack gap="sm" className={classes.controls}>
+          <Divider />
+          {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
+          <Stack gap={4}>
+            <Button
+              fullWidth
+              disabled={!chosen || written || detailsOutstanding}
+              loading={writing}
+              onClick={handleSubmit}
+              aria-describedby={chosenActors.length > 0 ? chosenActorsId : undefined}
+            >
+              {getSubmitLabel(mode, effectiveOccurrenceCount)}
+            </Button>
+            {/* Read off the proposal, as the search may be what settled who holds it. */}
+            {chosenActors.length > 0 && <ChosenActors id={chosenActorsId} actors={chosenActors} />}
+          </Stack>
         </Stack>
       </Stack>
 
