@@ -95,6 +95,12 @@
   animation: paneSlideOut 100ms ease forwards;
 }
 
+/* Already at the narrow pane's width, which is all the tucked pane shows, so the content
+   holds still while the pane slides back rather than spreading out and snapping back. */
+.paneClosing > * {
+  max-width: var(--pane-width);
+}
+
 @keyframes paneSlideIn {
   from {
     transform: var(--pane-tucked);
