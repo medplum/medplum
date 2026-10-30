@@ -313,35 +313,44 @@ describe('apply default values', () => {
     });
 
     test('adds required primitive pattern values', () => {
-      const originalActive = schema.elements['active'];
-      const originalMultipleBirth = schema.elements['multipleBirth[x]'];
-      schema.elements['active'] = { ...originalActive, min: 1, pattern: { type: 'boolean', value: false } };
-      schema.elements['multipleBirth[x]'] = {
-        ...originalMultipleBirth,
-        min: 1,
-        pattern: { type: 'integer', value: 2 },
-        type: [{ code: 'integer', targetProfile: undefined, profile: undefined }],
+      const patternedSchema = {
+        ...schema,
+        elements: {
+          ...schema.elements,
+          active: { ...schema.elements['active'], min: 1, pattern: { type: 'boolean', value: false } },
+          'multipleBirth[x]': {
+            ...schema.elements['multipleBirth[x]'],
+            min: 1,
+            pattern: { type: 'integer', value: 2 },
+            type: [{ code: 'integer', targetProfile: undefined, profile: undefined }],
+          },
+        },
       };
 
-      expect(applyDefaultValuesToResource({ resourceType: 'Patient' }, schema)).toEqual({
+      expect(applyDefaultValuesToResource({ resourceType: 'Patient' }, patternedSchema)).toEqual({
         resourceType: 'Patient',
         active: false,
         multipleBirthInteger: 2,
       });
-
-      schema.elements['active'] = originalActive;
-      schema.elements['multipleBirth[x]'] = originalMultipleBirth;
     });
 
     test('adds a string nested in an object pattern', () => {
-      const elem = schema.elements['maritalStatus'];
-      elem.pattern = { type: 'CodeableConcept', value: { text: 'Unknown' } };
+      const patterned = {
+        ...schema.elements['maritalStatus'],
+        pattern: { type: 'CodeableConcept', value: { text: 'Unknown' } },
+      };
 
-      expect(applyFixedOrPatternValue({}, 'maritalStatus', elem, schema.elements)).toEqual({
+      expect(applyFixedOrPatternValue({}, 'maritalStatus', patterned, schema.elements)).toEqual({
         maritalStatus: { text: 'Unknown' },
       });
+    });
 
-      delete elem.pattern;
+    test('adds a primitive pattern on a repeating element as an array', () => {
+      const patterned = { ...schema.elements['name.given'], pattern: { type: 'string', value: 'Unknown' } };
+
+      expect(applyFixedOrPatternValue({ name: [{}] }, 'name.given', patterned, schema.elements)).toEqual({
+        name: [{ given: ['Unknown'] }],
+      });
     });
   });
 

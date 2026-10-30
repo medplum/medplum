@@ -369,7 +369,8 @@ export function applyFixedOrPatternValue(
         if (element.fixed) {
           item[keyPart] ??= element.fixed.value;
         } else if (element.pattern && isComplexTypeCode(element.type[0].code) === isObject(element.pattern.value)) {
-          item[keyPart] = applyPattern(item[keyPart], element.pattern.value);
+          const pattern = element.pattern.value;
+          item[keyPart] = applyPattern(item[keyPart], element.isArray && !Array.isArray(pattern) ? [pattern] : pattern);
         }
       }
     } else {
