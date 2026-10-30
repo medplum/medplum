@@ -5,7 +5,7 @@ import { getDisplayString, getReferenceString, isReference, isResource } from '@
 import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -135,6 +135,12 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
    * resolved on mount. Treated as uncontrolled — changes after mount are ignored.
    */
   readonly defaultValue?: (T | Reference<T>)[];
+  /**
+   * The selected values, each a full resource or a reference to resolve. Passing this (`[]` for none)
+   * makes the input controlled; see `AsyncAutocompleteProps.value`. A reference that cannot be read
+   * is left out of the selection.
+   */
+  readonly value?: readonly (T | Reference<T>)[];
   readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
   readonly required?: boolean;
@@ -159,14 +165,16 @@ export function MultiResourceInput<T extends Resource = Resource>(
   const { resourceType, searchCriteria } = props;
   const ItemComponent = props.itemComponent ?? DefaultResourceItemComponent;
   const onChange = props.onChange;
+  const controlled = props.value !== undefined;
+  const { resources: valueResources, pending } = useControlledResources(props.value);
 
   // Capture initial defaultValue at mount — treated as uncontrolled (initial-only).
   // The Mantine MultiSelect component does not reliably handle changes to defaultValue after mount.
-  const initialDefaultValue = useRef(props.defaultValue);
+  const initialDefaultValue = useRef(controlled ? undefined : props.defaultValue);
 
   // undefined = still resolving references, [] = ready with no defaults, T[] = ready with resolved resources
   const [defaultResources, setDefaultResources] = useState<T[] | undefined>(
-    !props.defaultValue || props.defaultValue.length === 0 ? [] : undefined
+    controlled || !props.defaultValue || props.defaultValue.length === 0 ? [] : undefined
   );
 
   useEffect(() => {
@@ -231,13 +239,15 @@ export function MultiResourceInput<T extends Resource = Resource>(
 
   return (
     <AsyncAutocomplete<T>
-      disabled={props.disabled}
+      disabled={props.disabled || pending}
+      loading={pending}
       name={props.name}
       label={props.label}
       error={props.error}
       required={props.required}
       itemComponent={ItemComponent}
       defaultValue={defaultResources}
+      value={valueResources}
       placeholder={props.placeholder}
       maxValues={props.maxValues}
       toOption={toOption}
@@ -247,4 +257,75 @@ export function MultiResourceInput<T extends Resource = Resource>(
       clearable={props.clearable ?? true}
     />
   );
+}
+
+/**
+ * Resolves a controlled `value` to resources, reading references the client hasn't cached. While a
+ * read is pending, the last fully resolved selection is shown.
+ * @param value - The controlled value, or undefined when uncontrolled.
+ * @returns The resources to show (undefined when uncontrolled), and whether a read is pending. An edit
+ * made while pending would drop the references still being read.
+ */
+function useControlledResources<T extends Resource>(
+  value: readonly (T | Reference<T>)[] | undefined
+): { resources: T[] | undefined; pending: boolean } {
+  const medplum = useMedplum();
+  // The last read, for the uncached references it covered. null marks a reference that could not be read.
+  const [read, setRead] = useState<{ key: string; results: Map<string, T | null> }>();
+
+  const { resolved, pendingKey } = useMemo(() => {
+    if (!value) {
+      return { resolved: undefined, pendingKey: '' };
+    }
+    const uncached = new Set<string>();
+    for (const item of value) {
+      if (!isResource<T>(item) && isReference<T>(item) && !medplum.getCachedReference(item)) {
+        uncached.add(item.reference);
+      }
+    }
+    const key = uncached.size > 0 ? JSON.stringify([...uncached]) : '';
+    const results = read?.key === key ? read.results : undefined;
+
+    const resolved: T[] = [];
+    for (const item of value) {
+      if (isResource<T>(item)) {
+        resolved.push(item);
+      } else if (isReference<T>(item)) {
+        const resource = medplum.getCachedReference(item) ?? results?.get(item.reference);
+        if (resource) {
+          resolved.push(resource);
+        }
+      }
+    }
+    return { resolved, pendingKey: key && !results ? key : '' };
+  }, [medplum, value, read]);
+
+  useEffect(() => {
+    if (!pendingKey) {
+      return undefined;
+    }
+    let cancelled = false;
+    const references: string[] = JSON.parse(pendingKey);
+    Promise.allSettled(references.map((reference) => medplum.readReference<T>({ reference })))
+      .then((settled) => {
+        if (!cancelled) {
+          const results = new Map<string, T | null>();
+          settled.forEach((result, i) => {
+            results.set(references[i], result.status === 'fulfilled' ? result.value : null);
+          });
+          setRead({ key: pendingKey, results });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [medplum, pendingKey]);
+
+  const [lastResolved, setLastResolved] = useState(resolved);
+  if (!pendingKey && resolved !== lastResolved) {
+    setLastResolved(resolved);
+  }
+
+  return { resources: pendingKey ? lastResolved : resolved, pending: !!pendingKey };
 }
