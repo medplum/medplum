@@ -27,7 +27,7 @@ describe('Config', () => {
         { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
         { Name: 'RedisSecrets', Value: 'RedisSecretsArn' },
         { Name: 'port', Value: '8080' },
-        { Name: 'rateLimitsEnabled', Value: 'true' },
+        { Name: 'botCustomFunctionsEnabled', Value: 'true' },
         { Name: 'logAuditEvents', Value: 'true' },
         { Name: 'registerEnabled', Value: 'false' },
         { Name: 'requireVerifiedEmailForProjectCreation', Value: 'false' },
@@ -49,7 +49,7 @@ describe('Config', () => {
     expect(config).toBeDefined();
     expect(config.baseUrl).toBeDefined();
     expect(config.port).toStrictEqual(8080);
-    expect(config.rateLimitsEnabled).toStrictEqual(true);
+    expect(config.botCustomFunctionsEnabled).toStrictEqual(true);
     expect(config.logAuditEvents).toStrictEqual(true);
     expect(config.registerEnabled).toStrictEqual(false);
     expect(config.requireVerifiedEmailForProjectCreation).toStrictEqual(false);

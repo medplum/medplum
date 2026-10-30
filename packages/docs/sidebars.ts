@@ -387,6 +387,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'bots/bots-in-production' },
         { type: 'doc', id: 'bots/bot-code-organization' },
         { type: 'doc', id: 'bots/running-bots-on-fission' },
+        { type: 'doc', id: 'bots/external-function' },
         { type: 'doc', id: 'bots/bot-lambda-layer' },
 
         { type: 'html', value: '<strong class="menu__link">Security & Permissions</strong>' },

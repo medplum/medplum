@@ -209,6 +209,7 @@ const booleanKeys = new Set([
   'allowProjectSmtp',
   'allowUnsafeOutbound',
   'autoDownloadEnabled',
+  'botCustomFunctionsEnabled',
   'cacheResourcesOnWrite',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
