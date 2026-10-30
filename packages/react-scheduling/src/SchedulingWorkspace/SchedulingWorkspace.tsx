@@ -574,7 +574,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   ) as Record<BookableActorType, CalendarsPanelItem[]>;
 
   const displayError = resourcesError ?? schedulesLoadingError;
-  const calendarsLabel = calendarsOpen ? 'Hide calendars' : 'Show calendars';
+  const calendarsLabel = calendarsOpen ? 'Hide Calendar Filters' : 'Show Calendar Filters';
 
   // The pane beside the calendar shows one thing at a time. Opening any of them already
   // closes the others, so this only decides which wins if they ever hold something together.

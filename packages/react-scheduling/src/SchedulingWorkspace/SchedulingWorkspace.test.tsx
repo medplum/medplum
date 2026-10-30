@@ -149,15 +149,15 @@ describe('SchedulingWorkspace', () => {
     const providerRow = calendarRow('Dr. Maya Rivera');
     await userEvent.click(providerRow);
 
-    const toggle = screen.getByRole('button', { name: 'Hide calendars' });
+    const toggle = screen.getByRole('button', { name: 'Hide Calendar Filters' });
     expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).toContainElement(providerRow);
     await userEvent.click(toggle);
     expect(providerRow).not.toBeVisible();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Show Calendar Filters' }));
     expect(providerRow).toBeVisible();
     expect(providerRow).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByRole('button', { name: 'Show calendars' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Show Calendar Filters' })).toBeNull();
   });
 
   test('shows the empty state for sections with no schedules', async () => {
