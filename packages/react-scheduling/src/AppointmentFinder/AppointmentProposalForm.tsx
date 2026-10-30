@@ -5,6 +5,7 @@ import {
   Button,
   Divider,
   Group,
+  Input,
   Loader,
   NumberInput,
   Select,
@@ -941,7 +942,8 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
               setFlashedKey(flashKey);
             }
           }}
-          label="Date & time"
+          label="Date & Time"
+          withAsterisk
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
@@ -956,6 +958,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
       )}
 
       <Stack gap={4}>
+        {!appointment?.start && <Input.Label required>Date & Time</Input.Label>}
         <Button
           ref={finderButtonRef}
           variant="outline"

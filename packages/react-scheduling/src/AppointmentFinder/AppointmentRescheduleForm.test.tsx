@@ -224,8 +224,7 @@ describe('AppointmentRescheduleForm', () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      const shownTime = (): HTMLElement | undefined =>
-        screen.getAllByLabelText('Date & time').find((input) => input.hasAttribute('readonly'));
+      const shownTime = (): HTMLElement | undefined => screen.queryByLabelText(/^Date & Time/) ?? undefined;
       expect(shownTime()?.className).toMatch(/justPicked/);
 
       // Another day takes the picked time down; a time typed for it comes up without a flash.
