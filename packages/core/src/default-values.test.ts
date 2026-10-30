@@ -311,6 +311,38 @@ describe('apply default values', () => {
       delete elem.pattern;
       expect(elem.pattern).toBeUndefined();
     });
+
+    test('adds required primitive pattern values', () => {
+      const originalActive = schema.elements['active'];
+      const originalMultipleBirth = schema.elements['multipleBirth[x]'];
+      schema.elements['active'] = { ...originalActive, min: 1, pattern: { type: 'boolean', value: false } };
+      schema.elements['multipleBirth[x]'] = {
+        ...originalMultipleBirth,
+        min: 1,
+        pattern: { type: 'integer', value: 2 },
+        type: [{ code: 'integer', targetProfile: undefined, profile: undefined }],
+      };
+
+      expect(applyDefaultValuesToResource({ resourceType: 'Patient' }, schema)).toEqual({
+        resourceType: 'Patient',
+        active: false,
+        multipleBirthInteger: 2,
+      });
+
+      schema.elements['active'] = originalActive;
+      schema.elements['multipleBirth[x]'] = originalMultipleBirth;
+    });
+
+    test('adds a string nested in an object pattern', () => {
+      const elem = schema.elements['maritalStatus'];
+      elem.pattern = { type: 'CodeableConcept', value: { text: 'Unknown' } };
+
+      expect(applyFixedOrPatternValue({}, 'maritalStatus', elem, schema.elements)).toEqual({
+        maritalStatus: { text: 'Unknown' },
+      });
+
+      delete elem.pattern;
+    });
   });
 
   describe('US Core Smoking Status', () => {

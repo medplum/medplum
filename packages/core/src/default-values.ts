@@ -368,7 +368,7 @@ export function applyFixedOrPatternValue(
       for (const item of lastArray) {
         if (element.fixed) {
           item[keyPart] ??= element.fixed.value;
-        } else if (element.pattern) {
+        } else if (element.pattern && isComplexTypeCode(element.type[0].code) === isObject(element.pattern.value)) {
           item[keyPart] = applyPattern(item[keyPart], element.pattern.value);
         }
       }
@@ -398,6 +398,8 @@ function applyPattern(existingValue: any, pattern: any): any {
       }
       return resultObj;
     }
+  } else if (existingValue === undefined) {
+    return deepClone(pattern);
   }
 
   return existingValue;
