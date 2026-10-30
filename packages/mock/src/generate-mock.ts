@@ -90,7 +90,7 @@ export function generateMockResources<K extends ResourceType>(
       parentContext?: ElementsContextType,
       depth = 0
     ): void {
-      if (depth > 8) {
+      if (depth > 32) {
         fail(path, 'required structure is recursive or too deep');
       }
       const context = buildElementsContext({ parentContext, path, elements: current.elements }) as ElementsContextType;
@@ -123,15 +123,40 @@ export function generateMockResources<K extends ResourceType>(
         }
         const prop = present[0] ?? variants[0];
         const fieldType = element.type[variants.indexOf(prop)];
+        // These two core Quantity profiles already have local datatype schemas.
+        const datatypeProfile =
+          fieldType?.profile?.length === 1
+            ? fieldType.profile[0].match(
+                /^http:\/\/hl7\.org\/fhir\/StructureDefinition\/(SimpleQuantity|MoneyQuantity)(?:\|[^|]+)?$/
+              )?.[1]
+            : undefined;
         if (
           !fieldType ||
           element.slicing ||
-          fieldType.profile?.length ||
+          (fieldType.profile?.length && !datatypeProfile) ||
           fieldType.targetProfile?.some(
-            (url) => !/^http:\/\/hl7.org\/fhir\/StructureDefinition\/[A-Z][A-Za-z]+$/.test(url)
+            (url) => !/^(?:http:\/\/hl7\.org\/fhir\/StructureDefinition\/)?[A-Z][A-Za-z]+$/.test(url.split('|')[0])
           )
         ) {
           fail(fieldPath, 'slices and dependent profiles are not supported');
+        }
+        if (isPrimitiveType(fieldType.code) || fieldType.code === 'Resource') {
+          for (const [childKey, child] of Object.entries(context.elements)) {
+            if (!childKey.startsWith(key + '.')) {
+              continue;
+            }
+            const parts = childKey.split('.');
+            const required = parts.slice(1).every((_, index) => {
+              const prefix = parts.slice(0, index + 2).join('.');
+              return (context.elements[prefix]?.min ?? 0) > 0 || requiredSlices.has(`${path}.${prefix}`);
+            });
+            if (required && (child.min > 0 || requiredSlices.has(`${path}.${childKey}`))) {
+              fail(
+                `${path}.${childKey}`,
+                `required ${fieldType.code === 'Resource' ? 'contained resource' : 'primitive'} child constraints are not supported`
+              );
+            }
+          }
         }
         // Profile max=1 does not change the JSON representation of a base repeating field.
         const isArray = baseElement?.isArray ?? element.isArray;
@@ -153,12 +178,13 @@ export function generateMockResources<K extends ResourceType>(
           fail(fieldPath, 'omit an optional empty array or supply a value');
         }
         for (const item of items) {
-          if (!isPrimitiveType(fieldType.code)) {
+          if (!isPrimitiveType(fieldType.code) && fieldType.code !== 'Resource') {
             if (!item || typeof item !== 'object' || Array.isArray(item)) {
               fail(fieldPath, 'expected an object');
             }
             const child =
-              schema.innerTypes.find((inner) => inner.name === fieldType.code) ?? tryGetDataType(fieldType.code);
+              schema.innerTypes.find((inner) => inner.name === fieldType.code) ??
+              tryGetDataType(datatypeProfile ?? fieldType.code);
             if (!child) {
               fail(fieldPath, `unsupported datatype ${fieldType.code}`);
             }
@@ -184,6 +210,9 @@ export function generateMockResources<K extends ResourceType>(
       const specified = element.fixed ?? element.pattern;
       if (specified) {
         return deepClone(specified.value);
+      }
+      if (code === 'Resource') {
+        return fail(path, 'supply a contained resource in values');
       }
       if (code === 'Reference') {
         return fail(path, 'supply an explicit reference in values');

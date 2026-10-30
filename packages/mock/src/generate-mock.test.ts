@@ -344,10 +344,114 @@ test('rejects unsupported primitive generation, profile dependencies and unresol
 
 test('bounds recursion with a field-path error', () => {
   let extension: Extension = { url: 'https://example.com/deep' };
-  for (let index = 0; index < 10; index++) {
+  for (let index = 0; index < 35; index++) {
     extension = { url: 'https://example.com/deep', extension: [extension] };
   }
   expect(() => generateMockResources('Patient', 1, { values: { extension: [extension] } })).toThrow(
     /Patient.extension.*recursive or too deep/
   );
+});
+
+test('preserves authored core quantities, doses and contained resources', () => {
+  const values = { code: { text: 'Measurement' }, valueRange: { low: { value: 1 } } };
+  expect(generateMockResources('Observation', 1, { values })[0].valueRange).toEqual(values.valueRange);
+  const [medication] = generateMockResources('MedicationRequest', 1, {
+    values: {
+      subject: { reference: 'Patient/one' },
+      medicationCodeableConcept: { text: 'Authored medication' },
+      dosageInstruction: [{ doseAndRate: [{ doseQuantity: { value: 1 } }] }],
+    },
+  });
+  expect(medication.dosageInstruction?.[0].doseAndRate?.[0].doseQuantity).toEqual({ value: 1 });
+  const contained = [{ resourceType: 'Practitioner' as const, id: 'pr' }];
+  const [patient] = generateMockResources('Patient', 1, { values: { contained } });
+  expect(patient.contained).toEqual(contained);
+  assert(patient.contained);
+  patient.contained[0].id = 'edited';
+  expect(contained[0].id).toBe('pr');
+  const constrained = profile('Patient', [{ path: 'Patient.contained.id', min: 1, max: '1', type: [{ code: 'id' }] }]);
+  expect(() => generateMockResources('Patient', 1, { profile: constrained, values: { contained } })).toThrow(
+    'required contained resource child constraints'
+  );
+});
+
+test('supports bare and versioned base reference targets', () => {
+  const link = [{ project: { reference: 'Project/one' } }];
+  expect(generateMockResources('Project', 1, { values: { link } })[0].link).toEqual(link);
+  const sd = profile('Condition', [
+    {
+      path: 'Condition.subject',
+      type: [{ code: 'Reference', targetProfile: ['http://hl7.org/fhir/StructureDefinition/Patient|4.0.1'] }],
+    },
+  ]);
+  const [condition] = generateMockResources('Condition', 1, {
+    profile: sd,
+    values: { subject: { reference: 'Patient/one' } },
+  });
+  expect(condition.subject.reference).toBe('Patient/one');
+});
+
+test('rejects required primitive children but leaves optional primitive metadata absent', () => {
+  const sd = profile('Patient', [
+    { path: 'Patient.birthDate', min: 1 },
+    { path: 'Patient.birthDate.extension', min: 1, max: '*', type: [{ code: 'Extension' }] },
+  ]);
+  expect(() => generateMockResources('Patient', 1, { profile: sd })).toThrow(
+    'Patient.birthDate.extension: required primitive child'
+  );
+  const nested = deepClone(mockPatientProfile);
+  assert(nested.snapshot);
+  nested.snapshot.element.splice(nested.snapshot.element.findIndex((ed) => ed.path === 'Patient.name.given') + 1, 0, {
+    path: 'Patient.name.given.extension',
+    min: 1,
+    max: '*',
+    type: [{ code: 'Extension' }],
+  });
+  expect(() => generateMockResources('Patient', 1, { profile: nested, values: { name: [{ given: ['A'] }] } })).toThrow(
+    'Patient.name.given.extension: required primitive child'
+  );
+  const optional = profile('Patient', [
+    { path: 'Patient.birthDate', min: 1 },
+    { path: 'Patient.birthDate.extension', min: 0, max: '*', type: [{ code: 'Extension' }] },
+    { path: 'Patient.birthDate.extension.url', min: 1, max: '1', type: [{ code: 'uri' }] },
+  ]);
+  expect(generateMockResources('Patient', 1, { profile: optional })[0]).toEqual({
+    resourceType: 'Patient',
+    id: 'patient-1',
+    birthDate: '2020-05-04',
+  });
+});
+
+test('supports ordinary deep authored data and supplied snapshots for unbundled types', () => {
+  let extension: Extension = { url: 'https://example.com/deep' };
+  for (let index = 0; index < 12; index++) {
+    extension = { url: 'https://example.com/deep', extension: [extension] };
+  }
+  expect(generateMockResources('Patient', 1, { values: { extension: [extension] } })[0].extension).toEqual([extension]);
+  const sd: StructureDefinition = {
+    resourceType: 'StructureDefinition',
+    name: 'DemoMedication',
+    url: 'https://example.com/StructureDefinition/demo-medication',
+    status: 'draft',
+    kind: 'resource',
+    abstract: false,
+    type: 'Medication',
+    snapshot: {
+      element: [
+        { path: 'Medication', min: 0, max: '*' },
+        {
+          path: 'Medication.code',
+          min: 1,
+          max: '1',
+          type: [{ code: 'CodeableConcept' }],
+          patternCodeableConcept: { text: 'Authored medication' },
+        },
+      ],
+    },
+  };
+  expect(generateMockResources('Medication', 1, { profile: sd })[0]).toEqual({
+    resourceType: 'Medication',
+    id: 'medication-1',
+    code: { text: 'Authored medication' },
+  });
 });

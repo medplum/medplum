@@ -9,8 +9,9 @@ You can reuse it in an app, a demo, a test, or Storybook.
 ## Generate required fields from a profile
 
 The generator fills missing required fields from a base FHIR StructureDefinition or a supplied
-profile. Base Patient has no required demographic fields, so this produces only resource types
-and stable IDs:
+profile. Base generation covers only the types bundled with the mock package; other types need
+a supplied snapshot or fully authored resources. Base Patient has no required demographic fields,
+so this produces only resource types and stable IDs:
 
 ```ts
 const patients = generateMockResources('Patient', 6);
@@ -96,6 +97,11 @@ Missing required primitive `code` values use bundled code lists. An explicit pro
 wins over the base binding. A versioned binding needs that exact local version; an unversioned
 binding can use an exact entry or a single available version. Missing or ambiguous lists require
 an authored value. Clinical codes and meaningful measurements belong to the author.
+
+Authored contained resources are copied without recursive generation; required constraints on
+their children are unsupported. Core SimpleQuantity and MoneyQuantity use their existing local
+datatype schemas. Required constraints beneath primitive
+fields (such as `birthDate.extension`) are rejected rather than silently omitted.
 
 Required slices, supplied sliced fields, and fields that need dependent datatype or reference
 target profiles are not supported. Absent optional fields with those features remain absent.
@@ -191,10 +197,10 @@ add them to `packages/generator/src/mockclient.ts` and run `npm run mockclient -
 ## Typing and validation
 
 The generator reuses Medplum's StructureDefinition parser, datatype schemas, element contexts,
-and value comparison helpers.
-Its primitive code choices come from the bundled definitions through the existing ValueSet
-helper. It runs in the browser and in Node. Contributors regenerate the metadata with
-`npm run mockclient --workspace @medplum/generator`; screen authors do not need a build step.
+and value comparison helpers. It runs in the browser and in Node. Primitive code choices are
+precomputed from bundled definitions through the existing ValueSet helper. Contributors regenerate
+that metadata with `npm run mockclient --workspace @medplum/generator`; screen authors do not need
+a fixture build step.
 
 Use `@medplum/fhirtypes` to check authored resource fields and values. `values` and the returned
 resources use the base resource type; supplying a runtime profile does not narrow that TypeScript
