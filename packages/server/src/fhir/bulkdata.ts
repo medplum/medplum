@@ -55,13 +55,15 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
     return;
   }
 
+  const deleted = extractOutputParameters(bulkDataExport, 'deleted');
   const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, {
     transactionTime: bulkDataExport.transactionTime,
     request: bulkDataExport.request,
     requiresAccessToken: false, // Rewritten attachments use presigned S3 URLs and do not require the access token
     output: extractOutputParameters(bulkDataExport, 'output'),
     error: extractOutputParameters(bulkDataExport, 'error'),
-    deleted: extractOutputParameters(bulkDataExport, 'deleted'),
+    // The IG makes `deleted` optional; an empty array would wrongly claim nothing was deleted
+    ...(deleted.length ? { deleted } : undefined),
   });
   res.status(200).type(ContentType.JSON).json(json);
 });
