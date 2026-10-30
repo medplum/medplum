@@ -288,6 +288,68 @@ describe('Execute', () => {
     expect(res.body.identifier).toStrictEqual([]);
   });
 
+  test('Persists the raw-input setting and selects the input representation', async () => {
+    const rawBody = '{ "value": 1.00 }\n';
+    try {
+      for (const enabled of [false, true]) {
+        const update = await request(app)
+          .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
+          .set('Authorization', 'Bearer ' + accessToken1)
+          .set('Content-Type', ContentType.JSON_PATCH)
+          .send([{ op: 'add', path: '/rawBody', value: enabled }]);
+        expect(update).toHaveStatus(200);
+        expect(update.body.rawBody).toBe(enabled);
+
+        const res = await request(app)
+          .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken1)
+          .send(rawBody);
+        expect(res).toHaveStatus(200);
+        // supertest/superagent re-parses any application/json response into res.body, which would
+        // collapse the raw-body case's trailing zero right back - check the literal wire bytes instead.
+        if (enabled) {
+          expect(res.text).toStrictEqual(rawBody);
+        } else {
+          expect(res.body).toEqual({ value: 1 });
+        }
+      }
+    } finally {
+      const reset = await request(app)
+        .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'remove', path: '/rawBody' }]);
+      expect(reset).toHaveStatus(200);
+    }
+  });
+
+  test('Falls back to parsed body when rawBody is enabled but content type is not JSON', async () => {
+    try {
+      const update = await request(app)
+        .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'add', path: '/rawBody', value: true }]);
+      expect(update).toHaveStatus(200);
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('hello');
+      expect(res).toHaveStatus(200);
+      expect(res.text).toStrictEqual('hello');
+    } finally {
+      const reset = await request(app)
+        .patch(`/fhir/R4/Bot/${bots.systemEchoBot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'remove', path: '/rawBody' }]);
+      expect(reset).toHaveStatus(200);
+    }
+  });
+
   test('Return non-Resource JSON response', async () => {
     const input = { type: 'not-a-resource', result: [] };
     const res = await request(app)

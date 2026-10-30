@@ -114,14 +114,21 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   }
 
   // Execute the bot
-  // If the request is HTTP POST, then the body is the input
+  // If the request is HTTP POST, then the body is the input (the raw body, when Bot.rawBody is
+  // set and available - see the matching json() middleware in app.ts)
   // If the request is HTTP GET, then the query string is the input
+  let input: unknown = req.query;
+  if (req.method === 'POST') {
+    const rawBody = (req as any).rawBody as Buffer | undefined;
+    input = bot.rawBody && rawBody ? rawBody.toString('utf8') : req.body;
+  }
+
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
     runAsProject: ctx.project,
     requester: ctx.membership.profile,
-    input: req.method === 'POST' ? req.body : req.query,
+    input,
     contentType: req.header('content-type') as string,
     headers: req.headers,
     traceId: ctx.traceId,

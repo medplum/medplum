@@ -240,7 +240,7 @@ describe('Anonymous webhooks', () => {
     }
   });
 
-  test('Does not capture raw body for authenticated execute', async () => {
+  test('Authenticated execute parses the body by default (rawBody not set)', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Authorization', 'Bearer ' + accessToken)

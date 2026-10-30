@@ -198,7 +198,9 @@ protectedRoutes.post(['/Agent/:id/$push', '/Agent/:id/%24push'], agentPushHandle
 
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
-const botPaths = [
+// Exported so app.ts can register a raw-body-capturing parser on the same paths, prefixed with
+// each FHIR route mount point (this router itself is mounted under one of those prefixes already).
+export const BOT_EXECUTE_PATHS = [
   '/Bot/$execute',
   '/Bot/%24execute',
   '/Bot/:id/$execute',
@@ -208,8 +210,8 @@ const botPaths = [
   '/Bot/:id/$execute/*splat',
   '/Bot/:id/%24execute/*splat',
 ];
-protectedRoutes.get(botPaths, executeHandler);
-protectedRoutes.post(botPaths, executeHandler);
+protectedRoutes.get(BOT_EXECUTE_PATHS, executeHandler);
+protectedRoutes.post(BOT_EXECUTE_PATHS, executeHandler);
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);

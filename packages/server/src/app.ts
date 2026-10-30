@@ -37,7 +37,7 @@ import { binaryRouter } from './fhir/binary';
 import { smartHealthLinkRouter } from './fhir/operations/smarthealthlinks';
 import { closeAgentCallbackSubscriber } from './fhir/operations/utils/agentcallback';
 import { sendOutcome } from './fhir/outcomes';
-import { fhirRouter } from './fhir/routes';
+import { BOT_EXECUTE_PATHS, fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
@@ -235,6 +235,22 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
 
   app.use(
     WEBHOOK_PATHS,
+    json({
+      type: JSON_TYPE,
+      limit: config.maxJsonSize,
+      verify: (req, _res, buf) => {
+        (req as any).rawBody = buf;
+      },
+    })
+  );
+
+  // Bot $execute, under each FHIR route mount point. A Bot with rawBody set uses this instead of
+  // the parsed body, same as WEBHOOK_PATHS above - see Bot.rawBody.
+  const botExecutePaths = ['/fhir/R4', '/api/fhir/R4', '/projects/:projectId/fhir/R4', '/api/projects/:projectId/fhir/R4'].flatMap(
+    (prefix) => BOT_EXECUTE_PATHS.map((path) => prefix + path)
+  );
+  app.use(
+    botExecutePaths,
     json({
       type: JSON_TYPE,
       limit: config.maxJsonSize,
