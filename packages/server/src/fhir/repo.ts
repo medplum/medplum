@@ -1059,8 +1059,10 @@ export class Repository extends FhirRepository implements Disposable {
       resultMeta.project = projectId;
     }
     const accounts = await this.getAccounts(existing, updated);
-    resultMeta.account = accounts?.[0];
-    resultMeta.accounts = accounts;
+    if (accounts) {
+      resultMeta.account = accounts[0];
+      resultMeta.accounts = accounts;
+    }
     resultMeta.compartment = this.getCompartments(result);
 
     // Validate resource after all modifications and touchups above are done
@@ -2232,7 +2234,9 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Returns the accounts to store in `meta.accounts` for a write.
+   * Returns the author reference string (resourceType/id).
+   * If the current context is a ClientApplication, handles "on behalf of".
+   * Otherwise uses the current context profile.
    * @param existing - Current (soon to be previous) resource, if one exists.
    * @param updated - The incoming updated resource.
    * @returns The account values.
@@ -2255,14 +2259,14 @@ export class Repository extends FhirRepository implements Disposable {
       accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
-    for (const account of extractAccountReferences(existing?.meta) ?? EMPTY) {
-      if (account.reference) {
-        accounts.add(account.reference);
+    if (updated.resourceType === 'Patient') {
+      // When examining a Patient resource, we only look at the individual patient
+      // We should not call `getPatients` and `readReference`
+      const existingAccounts = extractAccountReferences(existing?.meta);
+      for (const account of existingAccounts ?? EMPTY) {
+        accounts.add(account.reference as string);
       }
-    }
-
-    // A Patient's accounts come only from the Patient itself; other resources inherit the accounts of the Patients they reference
-    if (updated.resourceType !== 'Patient') {
+    } else {
       const systemRepo = this.getSystemRepo();
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
@@ -2271,6 +2275,7 @@ export class Repository extends FhirRepository implements Disposable {
           continue;
         }
 
+        // If the patient has an account, then use it as the resource account.
         const patientAccounts = extractAccountReferences(patient.meta);
         for (const account of patientAccounts ?? EMPTY) {
           if (account.reference) {
