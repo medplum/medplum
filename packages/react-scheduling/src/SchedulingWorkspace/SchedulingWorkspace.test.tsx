@@ -160,6 +160,28 @@ describe('SchedulingWorkspace', () => {
     expect(screen.queryByRole('button', { name: 'Show Calendar Filters' })).toBeNull();
   });
 
+  test('marks the filter toggle with how many filters are applied', async () => {
+    const medplum = await setupClient();
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+    await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+
+    const toggle = screen.getByRole('button', { name: 'Hide Calendar Filters' });
+    const dot = (): Element | null =>
+      toggle.closest('.mantine-Indicator-root')?.querySelector('.mantine-Indicator-indicator') ?? null;
+    expect(dot()).toBeNull();
+    expect(toggle).not.toHaveAccessibleDescription();
+
+    await userEvent.click(calendarRow('Dr. Maya Rivera'));
+    await userEvent.click(calendarRow('Exam Room A'));
+    expect(dot()).not.toBeNull();
+    expect(toggle).toHaveAccessibleDescription('2 Applied');
+
+    await userEvent.click(calendarRow('Dr. Maya Rivera'));
+    await userEvent.click(calendarRow('Exam Room A'));
+    expect(dot()).toBeNull();
+    expect(toggle).not.toHaveAccessibleDescription();
+  });
+
   test('shows the empty state for sections with no schedules', async () => {
     // A fresh MockClient always seeds its own default provider (Dr. Alice Smith)
     // and its Schedule, but no devices or rooms, so those two sections stay empty
