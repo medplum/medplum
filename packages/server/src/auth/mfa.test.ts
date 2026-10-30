@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, getReferenceString } from '@medplum/core';
+import { allOk, badRequest, getReferenceString, OAuthGrantType } from '@medplum/core';
 import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -152,22 +152,62 @@ describe('MFA', () => {
   });
 
   test.each([
-    ['GET', '/auth/mfa/status', {}],
-    ['POST', '/auth/mfa/enroll', {}],
-    ['POST', '/auth/mfa/send-email-challenge', {}],
-    ['POST', '/auth/mfa/disable', {}],
-    ['POST', '/auth/changepassword', { oldPassword: 'old-password', newPassword: 'new-password-123' }],
-    ['POST', '/auth/revoke', { loginId: randomUUID() }],
-  ])('%s %s requires a user login', async (method, url, body) => {
+    ['GET', '/auth/mfa/status', {}, 403],
+    ['POST', '/auth/mfa/enroll', {}, 403],
+    ['POST', '/auth/mfa/send-email-challenge', {}, 403],
+    ['POST', '/auth/mfa/disable', {}, 403],
+    ['POST', '/auth/changepassword', { oldPassword: 'old-password', newPassword: 'new-password-123' }, 403],
+    ['POST', '/auth/revoke', { loginId: randomUUID() }, 404],
+  ])('%s %s requires a user login', async (method, url, body, issuedTokenStatus) => {
     const { client, project } = await withTestContext(() =>
       createTestProject({ withClient: true, membership: { admin: true } })
     );
     const { profile } = await withTestContext(() => addTestUser(project));
     const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+    const send = (): request.Test =>
+      method === 'GET' ? request(app).get(url) : request(app).post(url).type('json').send(body);
 
-    const req = method === 'GET' ? request(app).get(url) : request(app).post(url).type('json').send(body);
-    const res = await req.set('Authorization', basicAuth).set('X-Medplum-On-Behalf-Of', getReferenceString(profile));
-    expect(res).toHaveStatus(403);
+    const res1 = await send()
+      .set('Authorization', basicAuth)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(profile));
+    expect(res1).toHaveStatus(403);
+
+    // Token issued by the project for a user who also has their own project
+    const email = `user${randomUUID()}@example.com`;
+    const { membership } = await withTestContext(async () => {
+      await registerNew({
+        firstName: 'Other',
+        lastName: 'User',
+        projectName: 'Other Project',
+        email,
+        password: randomUUID(),
+      });
+      return inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Other',
+        lastName: 'User',
+        email,
+        sendEmail: false,
+      });
+    });
+    const res2 = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', basicAuth)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
+      .type('json')
+      .send({ clientId: client.id });
+    expect(res2).toHaveStatus(200);
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: client.id,
+      'pre-authorized_code': res2.body.preAuthorizedCode,
+    });
+    expect(res3).toHaveStatus(200);
+
+    const res4 = await send().set('Authorization', `Bearer ${res3.body.access_token}`);
+    expect(res4).toHaveStatus(issuedTokenStatus);
+    expect(res4.body.enrollUri).toBeUndefined();
   });
 
   test('Login with SMART resource scopes cannot read status', async () => {
@@ -2362,8 +2402,11 @@ describe('MFA', () => {
       expect(res).toHaveStatus(200);
       // The field old clients read:
       expect(res.body.enrolled).toBe(true);
-      // For an already-enrolled user the secret must NOT be regenerated.
-      expect(new URL(res.body.enrollUri).searchParams.get('secret')).toBe(secret);
+      // For an already-enrolled user the secret must NOT be regenerated, and enrollment details are not returned.
+      const stored = await withTestContext(() => getGlobalSystemRepo().readResource<User>('User', user.id));
+      expect(stored.mfaSecret).toBe(secret);
+      expect(res.body.enrollUri).toBeUndefined();
+      expect(res.body.enrollQrCode).toBeUndefined();
       // The new fields are additive and reflect the inferred method.
       expect(res.body.enrolledMethods).toEqual(['totp']);
     });

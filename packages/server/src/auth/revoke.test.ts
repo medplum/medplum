@@ -1,17 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference } from '@medplum/core';
+import { createReference, getReferenceString, OAuthGrantType } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getGlobalSystemRepo } from '../fhir/repo';
 import { getAuthTokens, tryLogin } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { setPassword } from './setpassword';
 
 const app = express();
 
@@ -111,7 +109,7 @@ describe('Revoke', () => {
     const bobEmail = `bob${randomUUID()}@example.com`;
     const bobPassword = randomUUID();
 
-    const { bobLogin, aliceAccessToken } = await withTestContext(async () => {
+    const { aliceRegResult, bobRegResult, bobMembership } = await withTestContext(async () => {
       const aliceRegResult = await registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -122,37 +120,82 @@ describe('Revoke', () => {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
 
-      // Second, Alice invites Bob to the project
-      const { user: bobUser } = await inviteUser({
+      // Bob has his own project
+      const bobRegResult = await registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: bobEmail,
+        password: bobPassword,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      });
+
+      // Alice invites Bob to her project
+      const { membership: bobMembership } = await inviteUser({
         project: aliceRegResult.project,
         resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
+        sendEmail: false,
       });
-
-      // Set Bob password
-      await setPassword(getGlobalSystemRepo(), bobUser, bobPassword);
-
-      // Login as Bob
-      const bobLogin = await tryLogin({
-        authMethod: 'password',
-        email: bobEmail,
-        password: bobPassword,
-        scope: 'openid',
-        nonce: 'nonce',
-      });
-      expect(bobLogin).toBeDefined();
-      return { bobLogin, aliceAccessToken: aliceRegResult.accessToken };
+      return { aliceRegResult, bobRegResult, bobMembership };
     });
 
     // Try to revoke Bob's session as Alice
     // This should fail
-    const revokeResponse = await request(app)
+    const res1 = await request(app)
       .post('/auth/revoke')
-      .set('Authorization', `Bearer ${aliceAccessToken}`)
+      .set('Authorization', `Bearer ${aliceRegResult.accessToken}`)
       .type('json')
-      .send({ loginId: bobLogin.id });
-    expect(revokeResponse).toHaveStatus(404);
+      .send({ loginId: bobRegResult.login.id });
+    expect(res1).toHaveStatus(404);
+
+    // Get a token for Bob in Alice's project
+    const res2 = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${aliceRegResult.accessToken}`)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(bobMembership))
+      .type('json')
+      .send({ clientId: aliceRegResult.client.id });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.PreAuthorizedCode,
+      client_id: aliceRegResult.client.id,
+      'pre-authorized_code': res2.body.preAuthorizedCode,
+    });
+    expect(res3).toHaveStatus(200);
+    const bobToken2 = res3.body.access_token;
+
+    // Sessions are limited to Alice's project
+    const res4 = await request(app).get('/auth/me').set('Authorization', `Bearer ${bobToken2}`);
+    expect(res4).toHaveStatus(200);
+    expect(res4.body.security.sessions.map((s: { id: string }) => s.id)).not.toContain(bobRegResult.login.id);
+
+    const res5 = await request(app)
+      .post('/auth/revoke')
+      .set('Authorization', `Bearer ${bobToken2}`)
+      .type('json')
+      .send({ loginId: bobRegResult.login.id });
+    expect(res5).toHaveStatus(404);
+
+    // Bob's own login sees and revokes sessions in both projects
+    const res6 = await request(app).get('/auth/me').set('Authorization', `Bearer ${bobRegResult.accessToken}`);
+    expect(res6).toHaveStatus(200);
+    const bobSessions: string[] = res6.body.security.sessions.map((s: { id: string }) => s.id);
+    expect(bobSessions).toHaveLength(2);
+    expect(bobSessions).toContain(bobRegResult.login.id);
+
+    const res7 = await request(app)
+      .post('/auth/revoke')
+      .set('Authorization', `Bearer ${bobRegResult.accessToken}`)
+      .type('json')
+      .send({ loginId: bobSessions.find((id) => id !== bobRegResult.login.id) });
+    expect(res7).toHaveStatus(200);
+
+    const res8 = await request(app).get('/auth/me').set('Authorization', `Bearer ${bobToken2}`);
+    expect(res8).toHaveStatus(401);
   });
 });

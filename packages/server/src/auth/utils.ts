@@ -71,6 +71,35 @@ export function getCallerUserReference(ctx: AuthenticatedRequestContext): Refere
 }
 
 /**
+ * Returns true if the user signed in directly (password or Google).
+ * Such logins may manage the user's account and sessions across all of the user's projects.
+ * @param login - The login.
+ * @returns True if the login may manage the user's account.
+ */
+export function canManageUserAccount(login: Login): boolean {
+  return login.authMethod === 'password' || login.authMethod === 'google';
+}
+
+/**
+ * Reads the User of the authenticated caller, for routes that manage the caller's own account.
+ * A server-scoped User can only be managed from a login where the user signed in directly.
+ * @param ctx - The authenticated request context.
+ * @returns The caller's User.
+ */
+export async function readUserForAccountManagement(ctx: AuthenticatedRequestContext): Promise<WithId<User>> {
+  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
+  if (!user.project && !canManageUserAccount(ctx.authState.login)) {
+    getLogger().warn('Account update denied', {
+      userId: user.id,
+      projectId: ctx.project.id,
+      authMethod: ctx.authState.login.authMethod,
+    });
+    throw new OperationOutcomeError(forbidden);
+  }
+  return user;
+}
+
+/**
  * Returns the MFA methods that a project allows users to enroll in.
  * Controlled by the `allowedMfaMethods` project setting, a comma-delimited
  * string (e.g. "totp", "email", or "totp,email"). When unset, only TOTP
