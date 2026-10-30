@@ -3,7 +3,7 @@
 import { getStatus, OperationOutcomeError } from '@medplum/core';
 import type { Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { json } from 'body-parser';
-import type { ErrorRequestHandler } from 'express';
+import type { ErrorRequestHandler, Response } from 'express';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -27,8 +27,8 @@ app.use(
   json({
     type: 'application/json',
     limit: '10mb',
-    verify: (req, _res, buf) => {
-      (req as any).rawBody = buf;
+    verify: (_req, res, buf) => {
+      (res as Response).locals.rawBody = buf;
     },
   })
 );
