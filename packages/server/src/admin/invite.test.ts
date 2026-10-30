@@ -27,6 +27,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
 import { authenticator } from 'otplib';
+import type { Pool } from 'pg';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -35,6 +36,7 @@ import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getProjectSystemRepo } from '../fhir/repo';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { SelectQuery } from '../fhir/sql';
 import {
   addTestUser,
@@ -60,11 +62,13 @@ async function addAllowedEmailDomain(project: WithId<Project>, domain: string): 
 
 describe('Admin Invite', () => {
   let mockSESv2Client: AwsClientStub<SESv2Client>;
+  let globalPool: Pool;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     config.emailProvider = 'awsses';
     await withTestContext(() => initApp(app, config));
+    globalPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
   });
 
   afterAll(async () => {
@@ -120,14 +124,10 @@ describe('Admin Invite', () => {
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
-
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
 
     expect(parsed.subject).toBe('Welcome to Medplum');
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(globalPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -179,10 +179,7 @@ describe('Admin Invite', () => {
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(globalPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -229,10 +226,7 @@ describe('Admin Invite', () => {
     expect(res3).toHaveStatus(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(globalPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -281,10 +275,7 @@ describe('Admin Invite', () => {
     expect(res3).toHaveStatus(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(globalPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -416,10 +407,7 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
 
-    const rows = await new SelectQuery('User')
-      .column('projectId')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('projectId').where('email', '=', bobEmail).execute(globalPool);
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
@@ -601,10 +589,7 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
-    const rows = await new SelectQuery('User')
-      .column('projectId')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('projectId').where('email', '=', bobEmail).execute(globalPool);
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
@@ -666,6 +651,7 @@ describe('Admin Invite', () => {
     expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(res2.body.issue?.[0].details.text).toBe('Could not send email. Make sure you have AWS SES set up.');
+    expect(res2.body.issue?.[0].diagnostics).toBeUndefined();
   });
 
   test('Super admin invite to different project', async () => {
@@ -1348,6 +1334,21 @@ describe('Admin Invite', () => {
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not belong to this project');
+
+    const res2 = await request(app)
+      .post('/admin/projects/' + bobRegistration.project.id + '/invite')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Carol',
+        lastName: 'Brown',
+        email: carolEmail,
+        membership: { accessPolicy: createReference(accessPolicy) },
+        sendEmail: false,
+      });
+
+    expect(res2).toHaveStatus(400);
+    expect(normalizeErrorString(res2.body)).toContain('does not belong to this project');
   });
 
   test('Invite without access policy (backwards compatibility)', async () => {
@@ -2193,6 +2194,44 @@ describe('Admin Invite', () => {
 
     expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
+  });
+
+  test('Email with comma does not match a user outside the allowed domains', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
+
+    const bobEmail = `bob${randomUUID()}@other.example.com`;
+    const { user: bob } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: bobEmail,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + restricted.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `"x,${bobEmail},y"@allowed.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(200);
+    expect(res.body.user.reference).not.toBe(getReferenceString(bob));
   });
 
   test('Invite by externalId is unaffected by allowed domain restrictions', async () => {

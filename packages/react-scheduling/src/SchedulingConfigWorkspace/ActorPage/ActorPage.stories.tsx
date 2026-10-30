@@ -11,8 +11,19 @@ import type { BookableActorType } from '../../actors';
 import type { ConfigurableActor } from '../../configSearch';
 import { searchConfigurableActors, searchConfigurableServices } from '../../configSearch';
 import { withFixtures } from '../../stories/decorators';
-import { ConfigFixtures, DrNguyenPractitioner, DrReyesPractitioner, ExamRoomC } from '../../stories/scheduling';
+import {
+  ConfigFixtures,
+  DrBrooksPractitioner,
+  DrLindqvistPractitioner,
+  DrMensahPractitioner,
+  DrNguyenPractitioner,
+  DrPatelPractitioner,
+  DrReyesPractitioner,
+  ExamRoomC,
+  ManyVisitTypesFixtures,
+} from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
+import type { NewActorType } from './actorDraft';
 
 export default {
   title: 'Medplum/SchedulingConfigWorkspace/ActorPage',
@@ -24,6 +35,32 @@ export default {
 interface Loaded {
   readonly actor: ConfigurableActor;
   readonly services: WithId<HealthcareService>[];
+}
+
+// Creates a new actor of the type given, once the visit types it could offer are loaded.
+function NewActor(props: { readonly newActorType: NewActorType }): JSX.Element {
+  const medplum = useMedplum();
+  const [services, setServices] = useState<WithId<HealthcareService>[]>();
+
+  useEffect(() => {
+    searchConfigurableServices(medplum, {})
+      .then((result) => setServices(result.services))
+      .catch(console.error);
+  }, [medplum]);
+
+  if (!services) {
+    return <Text c="dimmed">Loading…</Text>;
+  }
+  return (
+    <Box p="md">
+      <ActorPage
+        newActorType={props.newActorType}
+        services={services}
+        onSynced={() => undefined}
+        onDiscardNew={() => undefined}
+      />
+    </Box>
+  );
 }
 
 /**
@@ -86,7 +123,69 @@ export const ProviderOnLeave = (): JSX.Element => (
 );
 
 /**
- * Exam Room C has no Schedule, so it offers nothing and there is no Schedule status switch.
+ * Exam Room C has no Schedule, so it offers nothing and there is no Schedule status switch. Offering a first
+ * visit type creates its Schedule when you save, and not before.
  * @returns The story.
  */
 export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
+
+/**
+ * Dr. Anika Patel offers Walk-in Clinic, and neither she nor the visit type sets a time zone. Her name and status are
+ * kept by the system she comes from and are read-only; her time zone is edited here.
+ *
+ * Pick a Time zone under General and the entry's custom hours are read in it at once. Save writes the time zone
+ * to her `Practitioner` and nothing else.
+ * @returns The story.
+ */
+export const ProviderTimeZone = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrPatelPractitioner.id} />
+);
+
+/**
+ * Dr. Elena Brooks works at both clinics. Another system linked her to the main clinic, so it is shown locked,
+ * marked Linked by another system, and can't be removed. The satellite clinic was linked here, so it can be
+ * removed. Nothing asks when it is, since the main clinic still limits where she is offered.
+ *
+ * Saving turns the satellite's role off rather than deleting it, and adding the satellite back turns the same role
+ * on again.
+ * @returns The story.
+ */
+export const ProviderServiceFacilities = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrBrooksPractitioner.id} />
+);
+
+/**
+ * A room being created, marked as new and not saved yet. Nothing is written until Create, which is refused until
+ * it has a name. It starts active and is typed as a room, at the service facility picked from the same list
+ * booking filters by. Its Schedule is created with it, and visit types can be offered once it is created.
+ * @returns The story.
+ */
+export const CreateRoom = (): JSX.Element => <NewActor newActorType="Location" />;
+
+/**
+ * A provider being created. They get no NPI, since providers with one come from elsewhere, and Create is refused
+ * until they have a first and last name. Unlike providers from elsewhere, their status and names stay editable once
+ * created. Visit types and service facilities can be set once they are created.
+ * @returns The story.
+ */
+export const CreateProvider = (): JSX.Element => <NewActor newActorType="Practitioner" />;
+
+/**
+ * Dr. Elin Lindqvist offers 70 visit types, listed twenty at a time. Filter them by name, tick several, or tick the
+ * box above the list to take every match, and stop offering them together. Cardiology Follow-up has custom hours.
+ * @returns The story.
+ */
+export const ProviderWithManyVisitTypes = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrLindqvistPractitioner.id} />
+);
+ProviderWithManyVisitTypes.decorators = [withFixtures(ManyVisitTypesFixtures)];
+
+/**
+ * Dr. Kwame Mensah offers every visit type, so none can be stopped on its own, but each can be customized:
+ * Neurology New Patient Visit has custom hours. Switching Offer all visit types off keeps only that one.
+ * @returns The story.
+ */
+export const ProviderOfferingAllVisitTypes = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrMensahPractitioner.id} />
+);
+ProviderOfferingAllVisitTypes.decorators = [withFixtures(ManyVisitTypesFixtures)];

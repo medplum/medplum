@@ -5,6 +5,7 @@ import type {
   Bundle,
   CodeableConcept,
   Coding,
+  DetectedIssue,
   DeviceDeviceName,
   Observation,
   ObservationDefinition,
@@ -87,6 +88,7 @@ import {
   stringify,
   sumBy,
   trimTrailingEmptyElements,
+  tryParseReference,
 } from './utils';
 
 if (typeof btoa === 'undefined') {
@@ -128,6 +130,17 @@ describe('Core Utils', () => {
     expect(getReferenceString({ reference: 'Patient/123' })).toBe('Patient/123');
   });
 
+  test('getReferenceString and createReference with a resource that has a reference element', () => {
+    const detectedIssue: DetectedIssue = {
+      resourceType: 'DetectedIssue',
+      id: 'abc',
+      status: 'final',
+      reference: 'https://example.com/x',
+    };
+    expect(getReferenceString(detectedIssue)).toBe('DetectedIssue/abc');
+    expect(createReference(detectedIssue)).toMatchObject({ reference: 'DetectedIssue/abc' });
+  });
+
   test('resolveId', () => {
     expect(resolveId(undefined)).toBeUndefined();
     expect(resolveId({})).toBeUndefined();
@@ -136,19 +149,33 @@ describe('Core Utils', () => {
     expect(resolveId({ reference: 'Patient/123' })).toBe('123');
   });
 
-  test('parseReference', () => {
+  test('parseReference and tryParseReference', () => {
     expect(() => parseReference(undefined)).toThrow(OperationOutcomeError);
-    expect(() => parseReference({})).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ id: '123' })).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ reference: 'Patient' })).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ reference: '/' })).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ reference: 'Patient/' })).toThrow(OperationOutcomeError);
-    expect(parseReference({ reference: 'Patient/123' })).toStrictEqual(['Patient', '123']);
+    expect(tryParseReference(undefined)).toBeUndefined();
 
-    // Destructuring test
-    const [resourceType, id] = parseReference({ reference: 'Patient/123' });
-    expect(resourceType).toStrictEqual('Patient');
-    expect(id).toStrictEqual('123');
+    expect(() => parseReference({})).toThrow(OperationOutcomeError);
+    expect(tryParseReference({})).toBeUndefined();
+
+    expect(() => parseReference({ id: '123' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ id: '123' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: 'Patient' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: 'Patient' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: '/' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: '/' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: 'Patient/' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: 'Patient/' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: '#contained' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: '#contained' })).toBeUndefined();
+
+    expect(parseReference({ reference: 'Patient/123' })).toStrictEqual(['Patient', '123']);
+    expect(tryParseReference({ reference: 'Patient/123' })).toStrictEqual(['Patient', '123']);
+
+    expect(parseReference({ reference: 'Patient/123/_history/1' })).toStrictEqual(['Patient', '123']);
+    expect(tryParseReference({ reference: 'Patient/123/_history/1' })).toStrictEqual(['Patient', '123']);
   });
 
   test('isProfileResource', () => {

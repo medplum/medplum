@@ -68,6 +68,12 @@ async function verifyAndLoadBinary(req: Request, res: Response, method: 'GET' | 
     return undefined;
   }
 
+  // The route parameters must come from the same path that is signed
+  if (originalUrl.pathname !== req.baseUrl + req.path) {
+    res.status(401).send('Invalid signature');
+    return undefined;
+  }
+
   originalUrl.searchParams.delete('Signature');
   const urlToVerify = originalUrl.toString();
   const publicKey = getPublicKey();
@@ -89,7 +95,12 @@ async function verifyAndLoadBinary(req: Request, res: Response, method: 'GET' | 
   const projectId = originalUrl.searchParams.get('Project');
   // SHARDING: Drop support for URLs without Project: https://github.com/medplum/medplum/issues/10451
   const systemRepo = projectId ? await getProjectSystemRepo(projectId) : getShardSystemRepo(TODO_SHARD_ID);
-  return systemRepo.readResource<Binary>('Binary', id);
+  const binary = await systemRepo.readResource<Binary>('Binary', id);
+  if (projectId && binary.meta?.project !== projectId) {
+    res.status(401).send('Invalid signature');
+    return undefined;
+  }
+  return binary;
 }
 
 function getPublicKey(): KeyObject {

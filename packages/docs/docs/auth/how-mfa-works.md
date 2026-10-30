@@ -110,7 +110,7 @@ For TOTP, `login-enroll` both enrolls the user and verifies the supplied code, c
 
 ## Flow: Self-enrolling from a settings page
 
-These flows assume the user is already authenticated (you have a bearer token). Start by reading status:
+These flows assume the user is already authenticated (you have a bearer token). The token must not be limited by SMART resource scopes. Start by reading status:
 
 ```ts
 const status = await medplum.get('auth/mfa/status', { cache: 'no-cache' });

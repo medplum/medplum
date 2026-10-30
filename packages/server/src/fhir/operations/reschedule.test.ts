@@ -2,11 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   createReference,
+  getExtension,
   getPrimaryProvider,
   getReferenceString,
   isDefined,
   isResource,
+  MEDPLUM_VERSION,
+  OccurrenceChangedExtensionURI,
+  SchedulingBookedByOperationURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
   toServiceTypeCodeableConcepts,
@@ -31,6 +36,8 @@ import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { addTestUser, createTestProject } from '../../test.setup';
+import { SchedulingRescheduledByOperationURI, SchedulingUnvalidatedRescheduleURI } from './reschedule';
+import { weeklyRecurrenceTemplate } from './utils/recurrence';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
@@ -352,9 +359,36 @@ describe('Appointment/:id/$reschedule', () => {
     // The patient participant is preserved without the request having to resubmit it
     expect(appointment.participant).toContainEqual({ actor: createReference(patient), status: 'accepted' });
 
+    // Only an occurrence of a recurring series is marked as changed
+    expect(getExtension(appointment, OccurrenceChangedExtensionURI)).toBeUndefined();
+
     // The vacated time is bookable again
     const rebooked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
     expect(rebooked.id).not.toStrictEqual(booked.id);
+  });
+
+  test('stamps the move as made by $reschedule, replacing an earlier manual move marker', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const booked = await book(
+      makeProposal({
+        start: '2026-01-14T16:00:00.000Z',
+        end: '2026-01-14T17:00:00.000Z',
+        schedules: [practitionerSchedule],
+      }),
+      { extension: [{ url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true }] }
+    );
+
+    const response = await reschedule(booked.id as string, {
+      start: '2026-01-14T19:00:00.000Z',
+      schedules: [practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(200);
+    const appointment = bundleResources(response.body).find((r) => isResource<Appointment>(r, 'Appointment'));
+    expect(appointment?.extension).toStrictEqual([
+      { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
+      { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+    ]);
   });
 
   test('keeps the original slots when the new time is unavailable', async () => {
@@ -444,6 +478,61 @@ describe('Appointment/:id/$reschedule', () => {
       start: '2026-01-27T18:30:00.000Z',
       end: newStart,
     });
+  });
+
+  test('marks an occurrence of a recurring series moved to a new time as changed', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const roomOneSchedule = await makeSchedule(roomOne);
+    const roomTwoSchedule = await makeSchedule(roomTwo);
+    const start = '2026-02-03T16:00:00.000Z'; // Tue 11am EST
+    const end = '2026-02-03T17:00:00.000Z';
+
+    const proposal = makeProposal({ start, end, schedules: [practitionerSchedule, roomOneSchedule] });
+    proposal.extension = [weeklyRecurrenceTemplate(new Date(start), 2, 'America/New_York')];
+    const bookResponse = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'appointment', resource: proposal }] });
+    expect(bookResponse).toHaveStatus(201);
+    const [first, second] = bundleResources(bookResponse.body).filter((r) =>
+      isResource<Appointment>(r, 'Appointment')
+    ) as WithId<Appointment>[];
+
+    const moveSecond = async (newStart: string): Promise<Appointment> => {
+      const response = await reschedule(second.id, {
+        start: newStart,
+        schedules: [practitionerSchedule, roomOneSchedule],
+      });
+      expect(response).toHaveStatus(200);
+      return bundleResources(response.body).find((r) => isResource<Appointment>(r, 'Appointment')) as Appointment;
+    };
+    const rescheduled = [
+      await moveSecond('2026-02-10T19:00:00.000Z'), // Tuesday, 2pm EST
+      await moveSecond('2026-02-10T20:00:00.000Z'), // Tuesday, 3pm EST
+    ];
+
+    // Marked once, however many times it is moved, and the rest of its extensions are kept
+    for (const appointment of rescheduled) {
+      expect(appointment.extension).toStrictEqual([
+        ...(second.extension ?? []),
+        { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+        { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+      ]);
+    }
+
+    // Reassigning an occurrence to another room at the same time keeps it on the series' pattern
+    const reassignResponse = await reschedule(first.id, {
+      start,
+      schedules: [practitionerSchedule, roomTwoSchedule],
+    });
+    expect(reassignResponse).toHaveStatus(200);
+    const reassigned = bundleResources(reassignResponse.body).find((r) =>
+      isResource<Appointment>(r, 'Appointment')
+    ) as Appointment;
+    expect(reassigned.extension).toStrictEqual([
+      ...(first.extension ?? []),
+      { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+    ]);
   });
 
   test('rejects an appointment that is not pending or booked', async () => {
@@ -835,6 +924,33 @@ describe('Appointment/:id/$reschedule', () => {
     expect(response.body).toMatchObject({
       issue: [{ details: { text: 'Schedule is not schedulable for requested service type' } }],
     });
+  });
+
+  test('moves an appointment onto a schedule marked as offering all service types', async () => {
+    const roomOneSchedule = await makeSchedule(roomOne);
+    const start = '2026-04-28T16:00:00.000Z'; // Tue 12pm EDT
+    const end = '2026-04-28T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [roomOneSchedule] }));
+
+    // Only the marker; the office visit isn't listed by reference
+    const anyVisitSchedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(roomTwo)],
+      serviceType: [allServiceTypesCodeableConcept()],
+      extension: [makeSchedulingExtension()],
+    });
+
+    const response = await reschedule(booked.id as string, { start, schedules: [anyVisitSchedule] });
+
+    expect(response).toHaveStatus(200);
+    const resources = bundleResources(response.body);
+    const slots = resources.filter((r) => isResource<Slot>(r, 'Slot'));
+    expect(slots.map((slot) => slot.schedule.reference)).toStrictEqual([`Schedule/${anyVisitSchedule.id}`]);
+    // Keeps the service it was booked under, never the marker
+    const appointment = resources.find((r) => isResource<Appointment>(r, 'Appointment'));
+    expect(appointment?.serviceType).toStrictEqual(booked.serviceType);
   });
 
   test('rejects rescheduling onto an inactive schedule', async () => {

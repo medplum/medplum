@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Client, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
+import { setConnectionShardId } from '../sharding/connection-shard-id';
 import type { CTE, Operator, PgQueryable } from './sql';
 import {
   Column,
@@ -36,6 +37,11 @@ describe('SqlBuilder', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').column('name').buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable"');
+    });
+
+    test('Select rejects invalid identifiers', () => {
+      const sql = new SqlBuilder();
+      expect(() => new SelectQuery('My"Table').column('id').buildSql(sql)).toThrow('Invalid identifier: My"Table');
     });
 
     test('Select where', () => {
@@ -521,6 +527,11 @@ test('debug', async () => {
   writeSpy.mockClear();
   await executeQuery();
   expect(writeSpy).toHaveBeenCalledWith('sql SELECT "MyTable"."id" FROM "MyTable"');
+
+  setConnectionShardId(conn, 'some-shard');
+  writeSpy.mockClear();
+  await executeQuery();
+  expect(writeSpy).toHaveBeenCalledWith('[some-shard] sql SELECT "MyTable"."id" FROM "MyTable"');
 
   setSqlDebug(undefined);
 

@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Group, Stack, Text } from '@mantine/core';
+import { Badge, Box, Group, Stack, Text } from '@mantine/core';
 import type { MedicationOrderExtensions } from '@medplum/core';
 import { formatCodeableConcept, formatDate, formatHumanName, getPendingMedicationOrderStatus } from '@medplum/core';
 import type { MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import { MedplumLink, useResource } from '@medplum/react';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import classes from './MedListItem.module.css';
 
 export type MedTab = 'active' | 'draft' | 'completed';
@@ -21,47 +21,55 @@ interface MedListItemProps {
    */
   getItemUrl: (item: MedicationRequest) => string;
   medicationOrderExtensions: MedicationOrderExtensions;
+  actions?: ReactNode;
 }
 
 export function MedListItem(props: MedListItemProps): JSX.Element {
-  const { item, selectedItem, activeTab, getItemUrl, medicationOrderExtensions } = props;
+  const { item, selectedItem, activeTab, getItemUrl, medicationOrderExtensions, actions } = props;
   const isSelected = selectedItem?.id === item.id;
   const requester = useResource(item.requester) as Practitioner | undefined;
   const pendingStatus = getPendingMedicationOrderStatus(item, medicationOrderExtensions);
 
   return (
-    <MedplumLink to={getItemUrl(item)} underline="never">
-      <Group
-        align="center"
-        wrap="nowrap"
-        className={cx(classes.contentContainer, {
-          [classes.selected]: isSelected,
-        })}
-      >
-        <Stack gap={0} flex={1}>
-          <Group justify="space-between" align="flex-start">
-            <Text fw={700} className={classes.title} flex={1}>
-              {getMedicationDisplay(item)}
-            </Text>
-            <Group gap={4}>
-              {pendingStatus && (
-                <Badge size="sm" color="violet" variant="light">
-                  ScriptSure: {pendingStatus}
-                </Badge>
-              )}
-              {activeTab !== 'completed' && (
-                <Badge size="sm" color={getStatusColor(item.status)} variant="light">
-                  {getStatusDisplayText(item.status)}
-                </Badge>
-              )}
+    <div className={classes.itemWrapper}>
+      <Group gap={0} wrap="nowrap" align="center" pr={actions ? 4 : undefined}>
+        <Box className={classes.rowContent}>
+          <MedplumLink to={getItemUrl(item)} underline="never">
+            <Group
+              align="center"
+              wrap="nowrap"
+              className={cx(classes.contentContainer, {
+                [classes.selected]: isSelected,
+              })}
+            >
+              <Stack gap={0} flex={1} miw={0}>
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <Text fw={700} className={classes.title} flex={1}>
+                    {getMedicationDisplay(item)}
+                  </Text>
+                  <Group gap={4} wrap="nowrap">
+                    {pendingStatus && (
+                      <Badge size="sm" color="violet" variant="light">
+                        ScriptSure: {pendingStatus}
+                      </Badge>
+                    )}
+                    {activeTab !== 'completed' && (
+                      <Badge size="sm" color={getStatusColor(item.status)} variant="light">
+                        {getStatusDisplayText(item.status)}
+                      </Badge>
+                    )}
+                  </Group>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  {getSubText(item, requester)}
+                </Text>
+              </Stack>
             </Group>
-          </Group>
-          <Text size="sm" c="dimmed">
-            {getSubText(item, requester)}
-          </Text>
-        </Stack>
+          </MedplumLink>
+        </Box>
+        {actions}
       </Group>
-    </MedplumLink>
+    </div>
   );
 }
 

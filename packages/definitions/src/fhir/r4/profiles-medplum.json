@@ -461,6 +461,23 @@
             }
           },
           {
+            "id" : "Project.active",
+            "path" : "Project.active",
+            "short" : "Whether this project is in active use",
+            "definition" : "Whether this project is in active use. When a project is inactive, no one can log in to the project, existing sessions in the project stop working, and its subscriptions, cron bots, and async jobs do not run. Can only be set by a super admin.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Project.active",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "meaningWhenMissing" : "This resource is generally assumed to be active if no value is provided for the active element"
+          },
+          {
             "id" : "Project.name",
             "path" : "Project.name",
             "definition" : "A name associated with the Project.",
@@ -1257,6 +1274,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
+            }],
+            "constraint" : [{
+              "key" : "clapp-2",
+              "severity" : "error",
+              "human" : "Launch URI must use the http: or https: scheme",
+              "expression" : "$this.lower().matches('^https?://')"
             }],
             "base": {
               "path" : "ClientApplication.launchUri",

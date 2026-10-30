@@ -5,7 +5,14 @@ import type { HealthcareService, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import type { BookableActorType } from '../actors';
-import { SatelliteClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
+import {
+  DrOkaforSchedule,
+  DrRiveraSchedule,
+  SatelliteClinic,
+  SchedulingFixtures,
+  UltrasoundImagingService,
+  WalkInService,
+} from '../stories/scheduling';
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
@@ -30,7 +37,7 @@ async function setupClient(): Promise<MockClient> {
 interface SetupProps {
   readonly actorType?: BookableActorType;
   readonly service?: WithId<HealthcareService>;
-  readonly location?: WithId<Location>;
+  readonly serviceFacility?: WithId<Location>;
   readonly disabled?: boolean;
 }
 
@@ -46,7 +53,7 @@ async function setup(medplum: MockClient, props?: SetupProps): Promise<{ onChang
     <AppointmentActorSelect
       actorType={props?.actorType ?? 'Practitioner'}
       service={props?.service ?? UltrasoundImagingService}
-      location={props?.location}
+      serviceFacility={props?.serviceFacility}
       disabled={props?.disabled}
       onChange={onChange}
     />
@@ -135,6 +142,12 @@ describe('AppointmentActorSelect', () => {
 
     await typeInAutocomplete(input, 'riv');
     await clickAutocompleteOption('Dr. Maya Rivera');
+    // The pick is marked in the list, and Dr. Okafor, not picked, is not.
+    await typeInAutocomplete(input, 'dr');
+    const checked = screen.getAllByLabelText('Selected').map((check) => check.closest('[role="option"]')?.textContent);
+    expect(checked).toStrictEqual([expect.stringContaining('Dr. Maya Rivera')]);
+    expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument();
+
     await typeInAutocomplete(input, 'oka');
     await clickAutocompleteOption('Dr. Tunde Okafor');
 
@@ -143,7 +156,7 @@ describe('AppointmentActorSelect', () => {
 
   test('Leaves out actors sited at another clinic', async () => {
     const medplum = await setupClient();
-    await setup(medplum, { actorType: 'Location', location: SatelliteClinic });
+    await setup(medplum, { actorType: 'Location', serviceFacility: SatelliteClinic });
 
     await openAutocomplete();
 
@@ -206,7 +219,34 @@ describe('AppointmentActorSelect', () => {
     expect(await screen.findByText('Dr. Maya Rivera - Ultrasound Imaging availability')).toBeInTheDocument();
   });
 
-  test('Reruns the search when the location changes', async () => {
+  test('Offers only the candidates it was handed, searching nothing and needing no service', async () => {
+    const medplum = await setupClient();
+    const onChange = vi.fn();
+    const candidates: ScheduleCandidate[] = [
+      { schedule: DrRiveraSchedule, actorResource: undefined },
+      { schedule: DrOkaforSchedule, actorResource: undefined },
+    ];
+    renderWithMedplum(
+      <AppointmentActorSelect
+        actorType="Practitioner"
+        service={undefined}
+        candidates={candidates}
+        onChange={onChange}
+      />,
+      medplum
+    );
+
+    await openAutocomplete();
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+
+    await typeInAutocomplete(screen.getByRole('searchbox'), 'riv');
+    await clickAutocompleteOption('Dr. Maya Rivera');
+
+    expect(namesGiven(onChange)).toStrictEqual(['Dr. Maya Rivera']);
+    expect(medplum.search).not.toHaveBeenCalled();
+  });
+
+  test('Reruns the search when the service facility changes', async () => {
     const medplum = await setupClient();
     const onChange = vi.fn();
     const { rerender } = renderWithMedplum(
@@ -220,7 +260,7 @@ describe('AppointmentActorSelect', () => {
         <AppointmentActorSelect
           actorType="Location"
           service={UltrasoundImagingService}
-          location={SatelliteClinic}
+          serviceFacility={SatelliteClinic}
           onChange={onChange}
         />
       );

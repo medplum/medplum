@@ -15,7 +15,7 @@ import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
-import { getConfig, loadTestConfig } from '../../config/loader';
+import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
 import { initTestAuth } from '../../test.setup';
 import { getLambdaFunctionName, normalizeLambdaExecutionError } from './execute';
@@ -208,23 +208,8 @@ describe('Execute', () => {
     expect(res3).toHaveStatus(400);
   });
 
-  test('Get function name', async () => {
-    const config = getConfig();
-    const normalBot: Bot = { resourceType: 'Bot', id: '123' };
-    const customBot: Bot = {
-      resourceType: 'Bot',
-      id: '456',
-      identifier: [{ system: 'https://medplum.com/bot-external-function-id', value: 'custom' }],
-    };
-
-    expect(getLambdaFunctionName(normalBot)).toStrictEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toStrictEqual('medplum-bot-lambda-456');
-
-    // Temporarily enable custom bot support
-    config.botCustomFunctionsEnabled = true;
-    expect(getLambdaFunctionName(normalBot)).toStrictEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toStrictEqual('custom');
-    config.botCustomFunctionsEnabled = false;
+  test('Get function name', () => {
+    expect(getLambdaFunctionName({ resourceType: 'Bot', id: '123' })).toStrictEqual('medplum-bot-lambda-123');
   });
 
   test('Execute by identifier', async () => {

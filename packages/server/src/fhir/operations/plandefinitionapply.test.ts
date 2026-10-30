@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, toTypedValue } from '@medplum/core';
 import type {
   ActivityDefinition,
   CarePlan,
@@ -22,6 +22,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
+import { applyDynamicValues } from './plandefinitionapply';
 
 const app = express();
 let accessToken: string;
@@ -966,6 +967,202 @@ describe('PlanDefinition apply', () => {
     expect(outcome.issue?.[0]?.details?.text).toContain('text/cql');
   });
 
+  test('ActivityDefinition dynamicValue requester and performer', async () => {
+    // Apply a plan for Homer Simpson with Alice Smith as the practitioner. The plan has two orders:
+    //   Lab order:     requester from %practitioner, performer Springfield Lab
+    //   Imaging order: performer Springfield Lab, no requester dynamicValue
+    // Expected result:
+    //   Lab ServiceRequest.requester      -> Alice Smith
+    //   Lab Task.requester                -> Alice Smith (same as its ServiceRequest)
+    //   Imaging ServiceRequest.requester  -> the caller's profile
+    //   Imaging Task.requester            -> the caller's profile (same as its ServiceRequest)
+    //   Both ServiceRequest.performer     -> Springfield Lab
+    //   Both ServiceRequest.subject       -> Homer Simpson
+    //   Both Task.for                     -> Homer Simpson
+    //   RequestGroup.subject              -> Homer Simpson
+    //   CarePlan.subject                  -> Homer Simpson
+
+    // 1. Create the practitioner applying the plan
+    const resAlice = await request(app)
+      .post(`/fhir/R4/Practitioner`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Practitioner', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resAlice).toHaveStatus(201);
+    const aliceRef = getReferenceString(resAlice.body as WithId<Practitioner>);
+
+    // 2. Create the lab that performs both orders
+    const resLab = await request(app)
+      .post(`/fhir/R4/Organization`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Organization', name: 'Springfield Lab' });
+    expect(resLab).toHaveStatus(201);
+    const labRef = getReferenceString(resLab.body as WithId<Organization>);
+
+    // 3. Create the patient
+    const resHomer = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Homer'], family: 'Simpson' }] });
+    expect(resHomer).toHaveStatus(201);
+    const homerRef = getReferenceString(resHomer.body as WithId<Patient>);
+
+    // 4. Lab order: requester is the practitioner applying the plan, performer is the lab
+    const resLabOrder = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        url: 'http://example.com/ActivityDefinition/' + randomUUID(),
+        status: 'active',
+        kind: 'ServiceRequest',
+        intent: 'order',
+        dynamicValue: [
+          {
+            path: 'requester.reference',
+            expression: { language: 'text/fhirpath', expression: '%practitioner.reference' },
+          },
+          {
+            path: 'requester.display',
+            expression: { language: 'text/fhirpath', expression: '%practitioner.display' },
+          },
+          {
+            path: 'performer.reference',
+            expression: { language: 'text/fhirpath', expression: `'${labRef}'` },
+          },
+        ],
+      });
+    expect(resLabOrder).toHaveStatus(201);
+
+    // 5. Imaging order: performer is the lab, requester is left to the default
+    const resImagingOrder = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        url: 'http://example.com/ActivityDefinition/' + randomUUID(),
+        status: 'active',
+        kind: 'ServiceRequest',
+        intent: 'order',
+        dynamicValue: [
+          {
+            path: 'performer.reference',
+            expression: { language: 'text/fhirpath', expression: `'${labRef}'` },
+          },
+        ],
+      });
+    expect(resImagingOrder).toHaveStatus(201);
+
+    // 6. Create a PlanDefinition with both orders
+    const resPlanDefinition = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        status: 'active',
+        action: [
+          { title: 'Lab order', definitionCanonical: (resLabOrder.body as ActivityDefinition).url },
+          { title: 'Imaging order', definitionCanonical: (resImagingOrder.body as ActivityDefinition).url },
+        ],
+      });
+    expect(resPlanDefinition).toHaveStatus(201);
+
+    // 7. Apply with Homer as subject and Alice as practitioner
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPlanDefinition.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'subject', valueString: homerRef },
+          { name: 'practitioner', valueString: aliceRef },
+        ],
+      });
+    expect(resApply).toHaveStatus(200);
+    const carePlan = resApply.body as WithId<CarePlan>;
+
+    // 8. Walk CarePlan -> RequestGroup -> Task -> ServiceRequest for each order
+    const resRequestGroup = await request(app)
+      .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resRequestGroup).toHaveStatus(200);
+    const requestGroup = resRequestGroup.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(2);
+
+    const tasks: Task[] = [];
+    const serviceRequests: ServiceRequest[] = [];
+    for (const action of requestGroup.action ?? []) {
+      const resTask = await request(app)
+        .get(`/fhir/R4/${action.resource?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(resTask).toHaveStatus(200);
+      tasks.push(resTask.body as Task);
+
+      const resServiceRequest = await request(app)
+        .get(`/fhir/R4/${(resTask.body as Task).focus?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(resServiceRequest).toHaveStatus(200);
+      serviceRequests.push(resServiceRequest.body as ServiceRequest);
+    }
+    const [labServiceRequest, imagingServiceRequest] = serviceRequests;
+    const [labTask, imagingTask] = tasks;
+
+    const resMe = await request(app)
+      .get('/auth/me')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resMe).toHaveStatus(200);
+    const profileRef = getReferenceString(resMe.body.profile);
+    const alice = { reference: aliceRef, display: 'Alice Smith' };
+    const homer = { reference: homerRef, display: 'Homer Simpson' };
+
+    // Lab order: requester Alice Smith on both the ServiceRequest and its Task
+    expect(labServiceRequest.requester).toStrictEqual(alice);
+    expect(labTask.requester).toStrictEqual(alice);
+
+    // Imaging order: requester the caller on both the ServiceRequest and its Task
+    expect(imagingServiceRequest.requester?.reference).toStrictEqual(profileRef);
+    expect(imagingTask.requester?.reference).toStrictEqual(profileRef);
+
+    // Both orders: performer Springfield Lab, subject Homer Simpson
+    for (const serviceRequest of serviceRequests) {
+      expect(serviceRequest.performer).toStrictEqual([{ reference: labRef }]);
+      expect(serviceRequest.subject).toStrictEqual(homer);
+    }
+    for (const task of tasks) {
+      expect(task.for).toStrictEqual(homer);
+    }
+    expect(requestGroup.subject).toStrictEqual(homer);
+    expect(carePlan.subject).toStrictEqual(homer);
+  });
+
+  test('applyDynamicValues leaves variable values unchanged', () => {
+    // Assign %practitioner to performer, then relabel performer.display. Expected result:
+    //   target.performer -> [{ reference: 'Practitioner/alice', display: 'Dr. Alice Smith' }]
+    //   practitioner     -> { reference: 'Practitioner/alice', display: 'Alice Smith' } (unchanged)
+    const practitioner = { reference: 'Practitioner/alice', display: 'Alice Smith' };
+    const activityDefinition: ActivityDefinition = {
+      resourceType: 'ActivityDefinition',
+      status: 'active',
+      dynamicValue: [
+        { path: 'performer', expression: { language: 'text/fhirpath', expression: '%practitioner' } },
+        { path: 'performer.display', expression: { language: 'text/fhirpath', expression: "'Dr. Alice Smith'" } },
+      ],
+    };
+    const target: Record<string, unknown> = { resourceType: 'ServiceRequest' };
+
+    applyDynamicValues(target, 'ServiceRequest', activityDefinition, { '%practitioner': toTypedValue(practitioner) });
+
+    expect(target.performer).toStrictEqual([{ reference: 'Practitioner/alice', display: 'Dr. Alice Smith' }]);
+    expect(practitioner).toStrictEqual({ reference: 'Practitioner/alice', display: 'Alice Smith' });
+  });
+
   test('Dynamic and static assigned owner and performerType', async () => {
     // 1. Create two ActivityDefinitions with different kinds
     // 2. Create a PlanDefinition
@@ -1481,6 +1678,19 @@ describe('PlanDefinition apply', () => {
 
       await updateQuestionnaire(version1, 'draft');
       expect(await applyAndGetTaskFocus(url)).toStrictEqual(getReferenceString(version1));
+    });
+
+    test('Prefers ActivityDefinition over a Questionnaire with the same url', async () => {
+      const url = 'http://example.com/ActivityDefinition/versioned-' + randomUUID();
+      const activityDefinition = await request(app)
+        .post(`/fhir/R4/ActivityDefinition`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'ActivityDefinition', url, status: 'active', kind: 'ServiceRequest', intent: 'order' });
+      expect(activityDefinition).toHaveStatus(201);
+      await createQuestionnaire(url, '1', 'active');
+
+      expect(await applyAndGetTaskFocus(url)).toMatch(/^ServiceRequest\//);
     });
   });
 });

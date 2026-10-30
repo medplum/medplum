@@ -13,6 +13,7 @@ import classes from './Header.module.css';
 import { HeaderDropdown } from './HeaderDropdown';
 import headerDropdownClasses from './HeaderDropdown.module.css';
 import { HeaderSearchInput } from './HeaderSearchInput';
+import { userMenuMiddlewares } from './userMenuMiddlewares';
 
 export interface HeaderProps {
   readonly pathname?: string;
@@ -58,6 +59,7 @@ export function Header(props: HeaderProps): JSX.Element {
               shadow="md"
               radius="md"
               position="bottom-end"
+              middlewares={userMenuMiddlewares}
               transitionProps={{ transition: 'fade-down' }}
               opened={userMenuOpened}
               onClose={() => setUserMenuOpened(false)}

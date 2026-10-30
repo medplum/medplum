@@ -16,6 +16,7 @@ import {
 } from '@medplum/core';
 import type { Bot, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
+import { canProjectReadBot } from '../bots/utils';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
@@ -114,6 +115,11 @@ export async function preCommitValidation<T extends Resource>(
     }
 
     const bot = await systemRepo.readReference<Bot>({ reference: url });
+    if (!(await canProjectReadBot(project, bot))) {
+      // Skip if the Bot is not readable from the project
+      continue;
+    }
+
     const runAs = await findProjectMembership(project.id, createReference(bot));
     if (!runAs) {
       // Skip if the Bot is not in the project
@@ -129,6 +135,7 @@ export async function preCommitValidation<T extends Resource>(
       subscription,
       bot,
       runAs,
+      runAsProject: project,
       input: resource,
       contentType: ContentType.FHIR_JSON,
       requestTime: new Date().toISOString(),

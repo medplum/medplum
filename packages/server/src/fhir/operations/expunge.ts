@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Filter } from '@medplum/core';
 import {
   accepted,
   AccessPolicyInteraction,
@@ -16,7 +17,9 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
 import type { Repository } from '../repo';
+import { SelectQuery } from '../sql';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildBinaryIds } from './utils/binary';
 
@@ -50,7 +53,7 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
     await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
     exec.start(async () => {
       ctx.logger.info('Expunge started', { resourceType, id });
-      await new Expunger(ctx.repo, id).expunge();
+      await new Expunger(ctx.repo, id, { project: resourceType === 'Project' }).expunge();
     });
     return [accepted(exec.getContentLocation(baseUrl))];
   } else {
@@ -59,15 +62,26 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   }
 }
 
+// Storage objects are deleted after each batch commits, so an interrupted job can orphan up to one batch of them
+const binaryBatchSize = 1000;
+
+export interface ExpungerOptions {
+  /** True if the compartment is a Project, which also expunges its deleted resources and all of its Binaries. */
+  readonly project?: boolean;
+  readonly maxResultsPerPage?: number;
+}
+
 export class Expunger {
   readonly repo: Repository;
   readonly compartment: string;
+  readonly project: boolean;
   readonly maxResultsPerPage: number;
 
-  constructor(repo: Repository, compartment: string, maxResultsPerPage = 10000) {
+  constructor(repo: Repository, compartment: string, options: ExpungerOptions = {}) {
     this.repo = repo;
     this.compartment = compartment;
-    this.maxResultsPerPage = maxResultsPerPage;
+    this.project = !!options.project;
+    this.maxResultsPerPage = options.maxResultsPerPage ?? 10000;
   }
 
   async expunge(): Promise<void> {
@@ -79,6 +93,9 @@ export class Expunger {
 
   async expungeByResourceType(resourceType: ResourceType): Promise<void> {
     if (resourceType === 'Binary') {
+      if (this.project) {
+        await this.expungeProjectBinaries();
+      }
       return;
     }
 
@@ -89,17 +106,80 @@ export class Expunger {
       return;
     }
 
+    await this.expungeMatching(resourceType, [
+      { code: '_compartment', operator: Operator.EQUALS, value: this.compartment },
+    ]);
+    if (this.project) {
+      // Deleted rows have no compartments or search columns, only a projectId, so access policy
+      // criteria never match them either
+      await this.expungeMatching(resourceType, [
+        { code: '_deleted', operator: Operator.EQUALS, value: 'true' },
+        { code: '_project', operator: Operator.EQUALS, value: this.compartment },
+      ]);
+    }
+  }
+
+  /**
+   * Binary is not searchable, so select Binary ids by projectId directly, including deleted rows.
+   * Only for Project expunges, which the handler limits to the caller's own project unless super admin,
+   * so every selected Binary is one expungeResources can delete and each batch makes progress.
+   */
+  private async expungeProjectBinaries(): Promise<void> {
+    const batchSize = Math.min(this.maxResultsPerPage, binaryBatchSize);
+    let ids: string[];
+    do {
+      // Read from the writer so a lagging replica cannot return Binaries that were just expunged
+      const rows = await this.repo.sqlRead<{ id: string }>(
+        new SelectQuery('Binary').column('id').where('projectId', '=', this.compartment).limit(batchSize),
+        'Binary',
+        { mode: DatabaseMode.WRITER }
+      );
+      ids = rows.map((r) => r.id);
+      if (ids.length) {
+        await this.repo.expungeResources('Binary', ids);
+      }
+    } while (ids.length === batchSize);
+  }
+
+  /**
+   * Expunges Binaries referenced by attachment URLs, limited to the Project of the referencing resource.
+   * @param projectId - The Project of the resources that reference the Binaries.
+   * @param binaryIds - The referenced Binary IDs.
+   */
+  private async expungeReferencedBinaries(projectId: string, binaryIds: Set<string>): Promise<void> {
+    if (binaryIds.size === 0) {
+      return;
+    }
+    const rows = await this.repo.sqlRead<{ id: string }>(
+      new SelectQuery('Binary')
+        .column('id')
+        .where('id', 'IN', Array.from(binaryIds))
+        .where('projectId', '=', projectId),
+      'Binary',
+      { mode: DatabaseMode.WRITER }
+    );
+    if (rows.length > 0) {
+      await this.repo.expungeResources(
+        'Binary',
+        rows.map((r) => r.id)
+      );
+    }
+  }
+
+  private async expungeMatching(resourceType: ResourceType, filters: Filter[]): Promise<void> {
     const repo = this.repo;
+    // Extended mode so that search results include meta.project
+    const searchRepo = repo.withOverrideConfig({ extendedMode: true });
     // NOTE(ThatOneBro 23/01/2025): Attempted to convert this to using `repo.processAllResources`,
     // But it doesn't quite fit the pattern since the "next" links are not usable
     // As the expunge process is destructive and the "cursor" essentially is always at the beginning of the table
     // We delete the next N resources over and over and use the "next" link as a signal if there are more resources to delete
     let hasNext = true;
     while (hasNext) {
-      const bundle = await repo.search({
+      const bundle = await searchRepo.search({
         resourceType,
         count: this.maxResultsPerPage,
-        filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
+        filters,
       });
 
       if (!bundle.entry || bundle.entry.length === 0) {
@@ -107,17 +187,27 @@ export class Expunger {
       }
 
       const resourcesToExpunge: string[] = [];
-      const binaryIds = new Set<string>();
+      const binaryIdsByProject = new Map<string, Set<string>>();
 
       for (const entry of bundle.entry) {
-        if (entry.resource?.id) {
-          resourcesToExpunge.push(entry.resource.id);
-          buildBinaryIds(entry.resource, binaryIds);
+        const resource = entry.resource;
+        if (resource?.id) {
+          resourcesToExpunge.push(resource.id);
+          // Project expunges delete all of the Project's Binaries by projectId instead
+          const projectId = resource.meta?.project;
+          if (!this.project && projectId) {
+            let binaryIds = binaryIdsByProject.get(projectId);
+            if (!binaryIds) {
+              binaryIds = new Set<string>();
+              binaryIdsByProject.set(projectId, binaryIds);
+            }
+            buildBinaryIds(resource, binaryIds);
+          }
         }
       }
       await repo.expungeResources(resourceType, resourcesToExpunge);
-      if (binaryIds.size > 0) {
-        await repo.expungeResources('Binary', Array.from(binaryIds));
+      for (const [projectId, binaryIds] of binaryIdsByProject) {
+        await this.expungeReferencedBinaries(projectId, binaryIds);
       }
 
       const linkNext = bundle.link?.find((b) => b.relation === 'next');

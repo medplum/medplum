@@ -26,6 +26,17 @@ import type { AuthState } from '../oauth/middleware';
 import { getProjectScopedUrl } from '../util/url';
 import type { PopulatedAccessPolicy } from './accesspolicy';
 
+export const SMART_SCOPES_SUPPORTED = [
+  'patient/*.rs',
+  'user/*.cruds',
+  'openid',
+  'fhirUser',
+  'launch',
+  'launch/patient',
+  'offline_access',
+  'online_access',
+];
+
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 
 const missingPatientContext = 'Missing patient context for patient/ scope';
@@ -70,16 +81,7 @@ export function smartConfigurationHandler(req: Request, res: Response): void {
         OAuthSigningAlgorithm.RS384,
         OAuthSigningAlgorithm.ES384,
       ],
-      scopes_supported: [
-        'patient/*.rs',
-        'user/*.cruds',
-        'openid',
-        'fhirUser',
-        'launch',
-        'launch/patient',
-        'offline_access',
-        'online_access',
-      ],
+      scopes_supported: SMART_SCOPES_SUPPORTED,
       response_types_supported: ['code'],
       introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
       capabilities: [
@@ -167,6 +169,38 @@ export function parseSmartScopeString(scope: string): SmartScope | undefined {
     scope: normalizeV2ScopeString(match[3]),
     criteria,
   };
+}
+
+/**
+ * Returns the SMART scopes whose combined permissions, per permission type and resource type, are
+ * neither read-only (`rs`) nor full access (`cruds`).
+ * @param scope - The OAuth scope string.
+ * @returns The partial permission scopes, such as `patient/Observation.cs`.
+ */
+export function getPartialPermissionScopes(scope: string | undefined): string[] {
+  const permissions = new Map<string, Set<string>>();
+  for (const smartScope of parseSmartScopes(scope)) {
+    const key = `${smartScope.permissionType}/${smartScope.resourceType}`;
+    let letters = permissions.get(key);
+    if (!letters) {
+      letters = new Set<string>();
+      permissions.set(key, letters);
+    }
+    for (const letter of smartScope.scope) {
+      letters.add(letter);
+    }
+  }
+
+  const result: string[] = [];
+  for (const [key, letters] of permissions) {
+    // Wildcard scopes also apply to each concrete resource type of the same permission type
+    const wildcard = permissions.get(key.split('/')[0] + '/*');
+    const combined = [...'cruds'].filter((letter) => letters.has(letter) || wildcard?.has(letter)).join('');
+    if (combined !== 'rs' && combined !== 'cruds') {
+      result.push(`${key}.${combined}`);
+    }
+  }
+  return result;
 }
 
 function normalizeV2ScopeString(str: string): string {
@@ -258,6 +292,10 @@ function mergeAccessPolicyWithScope(
   scope: SmartScope,
   context?: Reference<Patient>
 ): AccessPolicyResource | undefined {
+  if (!scope.scope) {
+    // A scope with no permissions grants no access
+    return undefined;
+  }
   const result = deepClone(policy);
   if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
     result.criteria = result.criteria.replace('*', scope.resourceType);

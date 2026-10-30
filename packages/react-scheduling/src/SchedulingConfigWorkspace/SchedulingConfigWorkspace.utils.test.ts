@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  allServiceTypesCodeableConcept,
+  getDisplayString,
+  ServiceTypeReferenceURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { HealthcareService, Location, Practitioner, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor } from '../configSearch';
@@ -11,6 +16,7 @@ import {
   buildServiceItems,
   getActorNotices,
   getOfferedServices,
+  getOfferings,
   isSameSelection,
   matchesFilter,
   withStoredActorResource,
@@ -86,6 +92,14 @@ describe('isSameSelection', () => {
     expect(isSameSelection({ kind: 'new-service', key: 1 }, { kind: 'new-service', key: 1 })).toBe(true);
     expect(isSameSelection({ kind: 'new-service', key: 1 }, { kind: 'new-service', key: 2 })).toBe(false);
     expect(isSameSelection({ kind: 'service', id: 'exam' }, undefined)).toBe(false);
+  });
+
+  test('matches the same room or device being created, and nothing else', () => {
+    const room = { kind: 'new-actor', resourceType: 'Location', key: 1 } as const;
+
+    expect(isSameSelection(room, { ...room })).toBe(true);
+    expect(isSameSelection(room, { ...room, key: 2 })).toBe(false);
+    expect(isSameSelection(room, { kind: 'new-service', key: 1 })).toBe(false);
   });
 
   test('matches the same actor, whichever of its visit types is open', () => {
@@ -193,6 +207,66 @@ describe('withStoredActorResource', () => {
 
     expect(withStoredActorResource(actors, makeSchedule('x', 'Practitioner/dr-other', []))).toEqual(actors);
     expect(withStoredActorResource(actors, shared)).toEqual(actors);
+  });
+
+  test('an actor just created joins where its name sorts', () => {
+    const rooms: ConfigurableActor[] = [
+      { resource: { resourceType: 'Location', id: 'a', name: 'Room 1' }, schedules: [] },
+      { resource: { resourceType: 'Location', id: 'c', name: 'Room 3' }, schedules: [] },
+    ];
+    const created: WithId<Location> = { resourceType: 'Location', id: 'b', name: 'Room 2' };
+
+    expect(
+      withStoredActorResource(rooms, created).map(({ resource }) => [resource.id, getDisplayString(resource)])
+    ).toEqual([
+      ['a', 'Room 1'],
+      ['b', 'Room 2'],
+      ['c', 'Room 3'],
+    ]);
+  });
+});
+
+describe('getOfferings', () => {
+  test('lists the actors whose edited Schedule offers the visit type', () => {
+    const offering = makeSchedule('s', 'Practitioner/dr-smith', [configured]);
+    const second = makeSchedule('t', 'Location/room-1', [unconfigured]);
+    const other = makeSchedule('u', 'Location/room-1', [configured]);
+
+    const found = getOfferings(
+      [
+        { resource: drSmith, schedules: [offering] },
+        { resource: typedRoom, schedules: [second, other] },
+      ],
+      configured
+    );
+
+    expect(found.map((item) => item.schedule.id)).toEqual(['s']);
+  });
+
+  test('lists an actor whose Schedule offers every visit type, for an active visit type only', () => {
+    const everything = {
+      ...makeSchedule('s', 'Practitioner/dr-smith', []),
+      serviceType: [allServiceTypesCodeableConcept()],
+    };
+    const actors = [{ resource: drSmith, schedules: [everything] }];
+
+    expect(getOfferings(actors, configured).map((item) => item.schedule.id)).toEqual(['s']);
+    expect(getOfferings(actors, { ...configured, active: false })).toEqual([]);
+  });
+
+  test('leaves out an actor that is turned off, or whose Schedule is, as booking skips both', () => {
+    const left = makeSchedule('s', 'Practitioner/dr-left', [configured]);
+    const paused = makeSchedule('t', 'Practitioner/dr-smith', [configured], { active: false });
+
+    expect(
+      getOfferings(
+        [
+          { resource: drLeft, schedules: [left] },
+          { resource: drSmith, schedules: [paused] },
+        ],
+        configured
+      )
+    ).toEqual([]);
   });
 });
 

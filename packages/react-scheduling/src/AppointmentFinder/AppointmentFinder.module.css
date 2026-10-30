@@ -24,21 +24,45 @@
   max-width: 420px;
   max-height: 100%;
   overflow-y: auto;
+  padding-bottom: var(--mantine-spacing-sm);
 }
 
-/* Only present while the time search is open, which is what widens the panel. */
+/* Only present while the time search is open, which is what widens the panel. No wider
+   than CalendarDateInput's max-width, so the calendar at its top fills it. */
 .results {
-  flex: 1 1 380px;
+  flex: 1 1 350px;
   min-width: 0;
+  max-width: 350px;
   max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The times scroll under the column's header. Spaced from it by padding rather than a
+   gap, so they scroll out of sight at the divider rather than a gap's width below it. */
+.resultsList {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  padding-top: var(--mantine-spacing-sm);
+  padding-bottom: var(--mantine-spacing-sm);
+}
+
+/* The calendar sets its month on a bare `<p>`, whose browser margins would push it away
+   from the header above and the weekdays below. */
+.monthPicker p {
+  margin: 0;
+}
+
+.monthPicker table {
+  margin-top: var(--mantine-spacing-xs);
 }
 
 /* Both columns are stacks, so everything in them is a flex item, and a clamped column
    squeezes its items to fit before it agrees to scroll — enough to press a button flat.
    They keep their own heights and the column scrolls instead. */
 .form > *,
-.results > * {
+.resultsList > * {
   flex-shrink: 0;
 }
 

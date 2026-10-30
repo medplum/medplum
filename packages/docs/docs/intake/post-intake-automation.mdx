@@ -83,9 +83,8 @@ When intake data requires human follow-up, create a [`Task`](/docs/api/fhir/reso
   "resourceType": "Task",
   "status": "requested",
   "intent": "order",
-  "description": "Verify insurance information — subscriber ID missing",
+  "description": "Verify insurance information: subscriber ID missing",
   "for": { "reference": "Patient/example" },
-  "requester": { "reference": "Bot/intake-bot" },
   "owner": { "reference": "Practitioner/front-desk" }
 }
 ```
@@ -98,7 +97,7 @@ Many teams process intake with a single Bot triggered on QuestionnaireResponse c
 
 :::
 
-A [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) defines a reusable template for a multi-step workflow. When applied with the [`$apply` operation](/docs/careplans/clinical-decision-support), it automatically creates a [`CarePlan`](/docs/api/fhir/resources/careplan), [`RequestGroup`](/docs/api/fhir/resources/requestgroup), and a set of [`Task`](/docs/api/fhir/resources/task) resources — one per action in the plan.
+A [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) defines a reusable template for a multi-step workflow. When applied with the [`$apply` operation](/docs/careplans/automating-workflows#apply-a-protocol), it automatically creates a [`CarePlan`](/docs/api/fhir/resources/careplan), [`RequestGroup`](/docs/api/fhir/resources/requestgroup), and a set of [`Task`](/docs/api/fhir/resources/task) resources — one per action in the plan.
 
 ### How It Works
 
@@ -169,13 +168,13 @@ For PlanDefinitions to work correctly:
 - Reference Questionnaires and ActivityDefinitions via `definitionCanonical` using their `url` field
 - Ensure all referenced resources have a `url` field set, since `$apply` resolves canonical URLs
 
-For more on PlanDefinitions, see [Clinical Decision Support](/docs/careplans/clinical-decision-support).
+For more on PlanDefinitions, see [Applying Clinical Protocols](/docs/careplans/automating-workflows#apply-a-protocol).
 
 ## See Also
 
 - [Bot Basics](/docs/bots/bot-basics) — Creating and deploying Bots
 - [Subscriptions](/docs/subscriptions) — Event-driven triggers
-- [Clinical Decision Support](/docs/careplans/clinical-decision-support) — PlanDefinition and `$apply`
+- [Applying Clinical Protocols](/docs/careplans/automating-workflows#apply-a-protocol) — PlanDefinition and `$apply`
 - [Tasks](/docs/careplans/tasks) — Task resource patterns
 - [Intake Questionnaires](/docs/intake/intake-questionnaires) — Questionnaire design and extraction details
 - [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) — Working reference implementation

@@ -8,16 +8,21 @@ import {
   createReference,
   getStatus,
   Hl7Message,
+  isGone,
+  isNotFound,
   isOk,
   isOperationOutcome,
   isResource,
+  LRUCache,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OperationOutcomeError,
   resolveId,
   serverError,
 } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
 import type {
+  Binary,
   Bot,
   Login,
   OperationOutcome,
@@ -31,20 +36,24 @@ import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
+import { getAllowedProjects } from '../fhir/accesspolicy';
 import { sendOutcome } from '../fhir/outcomes';
 import { findProjectMembership } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getPermittedProjectIds } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
+import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
+
+const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
  * Returns the bot's project membership.
  * If the bot is configured to run as the user, then use the current user's membership.
- * Otherwise, use the bot's project membership
+ * Otherwise, use the bot's project membership in the current project
  * @param ctx - The authenticated request context.
  * @param bot - The bot resource.
  * @returns The project membership for the bot.
@@ -57,9 +66,22 @@ export async function getBotProjectMembership(
     // If the bot is configured to run as the user, then use the current user's membership
     return ctx.membership;
   }
-  // Otherwise, use the bot's project membership
-  const project = bot.meta?.project as string;
-  return (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
+  // Otherwise, use the bot's project membership in the current project
+  const project = ctx.project.id;
+  const membership = await findProjectMembership(project, createReference(bot));
+  if (membership) {
+    return membership;
+  }
+  missingMembershipLogThrottle.maybeLog(`${project}/${bot.id}`, (suppressed) => {
+    getLogger().warn('Bot executed without ProjectMembership', {
+      botId: bot.id,
+      botProject: bot.meta?.project,
+      runAsProject: project,
+      runAsMembership: ctx.membership.id,
+      suppressed,
+    });
+  });
+  return ctx.membership;
 }
 
 /**
@@ -150,13 +172,35 @@ export function normalizeBotExecutionResult(result: BotExecutionResult): BotExec
  * Takes the project rather than the bot, because the two differ: a bot shared from a linked project
  * runs in the caller's project, and it is the caller who has to be entitled to run bots. Deploying
  * that same bot is a write to the project that owns it, so callers name the project they mean.
- * @param projectId - The project to check.
+ * @param project - The project to check.
  * @returns True if the project has the `bots` feature.
  */
-export async function isBotEnabledForProject(projectId: string): Promise<boolean> {
-  const systemRepo = getGlobalSystemRepo();
-  const project = await systemRepo.readResource<Project>('Project', projectId);
+export function isBotEnabledForProject(project: Project): boolean {
   return !!project.features?.includes('bots');
+}
+
+/**
+ * Returns whether a project may run the given bot.
+ *
+ * A bot is code, not authority, so the bot may live in a linked project. The link is what makes
+ * that safe, and it must be checked wherever a bot is resolved on an unscoped system repo from a
+ * user-controlled id or reference string (Subscription endpoints, Cron targets, webhook
+ * memberships), which would otherwise reach a bot in any project at all.
+ * @param project - The project that names the bot.
+ * @param bot - The bot to run.
+ * @returns True if the bot's project is the given project or a link that exports Bot.
+ */
+export async function canProjectReadBot(project: WithId<Project>, bot: Bot): Promise<boolean> {
+  const botProjectId = bot.meta?.project;
+  if (!botProjectId) {
+    return false;
+  }
+  if (botProjectId === project.id) {
+    return true;
+  }
+
+  const permitted = getPermittedProjectIds(await getAllowedProjects(project), 'Bot');
+  return !permitted || permitted.includes(botProjectId);
 }
 
 /**
@@ -183,6 +227,8 @@ export async function writeBotInputToStorage(request: BotExecutionRequest): Prom
   // partition. Its account compartments stay behind for the same reason -- they name another project.
   const projectId = resolveId(runAs.project) as string;
   const sameProject = bot.meta?.project === projectId;
+  // The `bot/` prefix is also the scope of the storageBotInputExpirationDays lifecycle rules in packages/cdk/src/storage.ts
+  // If the prefix changes, the corresponding lifecycle rules in packages/cdk/src/storage.ts must be updated accordingly.
   const key = `bot/${projectId}/${today}/${now.getTime()}-${randomUUID()}.json`;
   const row: Record<string, unknown> = {
     contentType,
@@ -234,8 +280,46 @@ export async function writeBotInputToStorage(request: BotExecutionRequest): Prom
   await getBinaryStorage().writeFile(key, ContentType.JSON, JSON.stringify(row));
 }
 
-export async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
+// Bot access tokens are valid for 1 hour; reusing each for only 30 minutes guarantees
+// every bot execution receives a token with at least 30 minutes of remaining lifetime
+const BOT_ACCESS_TOKEN_CACHE_MS = 30 * 60 * 1000;
+
+const botAccessTokenCache = new LRUCache<{ accessToken: string; loginId: string; expiresAt: number }>(1000);
+
+// Cache for concurrent requests for the same Bot and ProjectMembership
+const botAccessTokenInFlight = new Map<string, Promise<string>>();
+
+export function clearBotAccessTokenCache(): void {
+  botAccessTokenCache.clear();
+  botAccessTokenInFlight.clear();
+}
+
+export function getBotAccessToken(bot: WithId<Bot>, runAs: WithId<ProjectMembership>): Promise<string> {
+  const versionId = runAs.meta?.versionId;
+  if (!versionId) {
+    // Without a versionId, changes to the membership can't be detected, so the token is never cached
+    return ensureBotAccessToken(runAs, undefined);
+  }
+
+  const cacheKey = `${bot.id}:${runAs.id}:${versionId}`;
+  let pending = botAccessTokenInFlight.get(cacheKey);
+  if (!pending) {
+    pending = ensureBotAccessToken(runAs, cacheKey).finally(() => botAccessTokenInFlight.delete(cacheKey));
+    botAccessTokenInFlight.set(cacheKey, pending);
+  }
+  return pending;
+}
+
+async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: string | undefined): Promise<string> {
   const systemRepo = getGlobalSystemRepo();
+  if (cacheKey) {
+    const cached = botAccessTokenCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt && (await isLoginValid(systemRepo, cached.loginId))) {
+      return cached.accessToken;
+    } else {
+      botAccessTokenCache.delete(cacheKey);
+    }
+  }
 
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
@@ -257,7 +341,27 @@ export async function getBotAccessToken(runAs: ProjectMembership): Promise<strin
     scope: 'openid',
   });
 
+  if (cacheKey) {
+    botAccessTokenCache.set(cacheKey, {
+      accessToken,
+      loginId: login.id,
+      expiresAt: Date.now() + BOT_ACCESS_TOKEN_CACHE_MS,
+    });
+  }
   return accessToken;
+}
+
+async function isLoginValid(systemRepo: SystemRepository, loginId: string): Promise<boolean> {
+  try {
+    const login = await systemRepo.readResource<Login>('Login', loginId, { checkCacheOnly: true });
+    return !login.revoked;
+  } catch (err) {
+    const outcome = normalizeOperationOutcome(err);
+    if (!isNotFound(outcome) && !isGone(outcome)) {
+      getLogger().warn('Failed to read cached bot Login', { loginId, err: normalizeErrorString(err) });
+    }
+    return false;
+  }
 }
 
 /**
@@ -346,6 +450,16 @@ export function getJsFileExtension(bot: Bot, code: string): string {
 }
 
 /**
+ * Returns true if the value is a Binary without inline data.
+ * Bots must return Binary content inline, because a Binary without data would be read from storage by its ID.
+ * @param value - The bot return value.
+ * @returns True if the value is a Binary without inline data.
+ */
+export function isBinaryWithoutData(value: unknown): boolean {
+  return isResource<Binary>(value, 'Binary') && !value.data;
+}
+
+/**
  * Sends the bot execution result to the client.
  * If the bot execution result is an OperationOutcome, then it is sent as an OperationOutcome response.
  * Otherwise, the return value is sent as the response body. If the return value is undefined, then the log result is sent as an OperationOutcome.
@@ -374,6 +488,11 @@ export async function sendBotResponse(
   }
 
   const outcome = result.success ? allOk : badRequest(result.logResult);
+
+  if (isBinaryWithoutData(responseBody)) {
+    sendOutcome(res, badRequest('Bot returned a Binary without data'));
+    return;
+  }
 
   if (isResource(responseBody)) {
     await sendFhirResponse(req, res, outcome, responseBody, { forceRawBinaryResponse: true });

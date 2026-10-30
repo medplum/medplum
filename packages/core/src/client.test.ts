@@ -4767,6 +4767,22 @@ describe('Client', () => {
     await expect(getPromise2).resolves.toEqual(patient);
   });
 
+  test('Requests sent with an already-aborted signal are not cached', async () => {
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const fetch = vi.fn((async (_url: string, options?: RequestInit) => {
+      options?.signal?.throwIfAborted();
+      return mockFetchResponse(200, patient);
+    }) satisfies FetchLike);
+
+    const client = new MedplumClient({ fetch });
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal })).rejects.toThrow();
+    await expect(client.get(client.fhirUrl('Patient', '123'))).resolves.toEqual(patient);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('Browser ReadableStream uses duplex half', async () => {
     const fetch = mockFetch(200, { success: true });
     const client = new MedplumClient({ fetch });

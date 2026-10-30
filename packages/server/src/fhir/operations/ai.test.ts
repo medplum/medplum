@@ -9,7 +9,7 @@ import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -331,6 +331,44 @@ describe('AI Operation', () => {
       });
 
     expect(res).toHaveStatus(403);
+  });
+
+  test('Supported account types', async () => {
+    const { project } = await createTestProject({
+      project: {
+        features: ['ai'],
+        secret: [{ name: 'OPENAI_API_KEY', valueString: 'sk-test-key' }],
+      },
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ choices: [{ message: { content: 'Hello' } }] }),
+    });
+
+    const [patient, smartApp, practitioner] = await withTestContext(async () => [
+      await addTestUser(project, { resourceType: 'Patient' }),
+      await addTestUser(project, { scope: 'openid user/Observation.rs' }),
+      await addTestUser(project),
+    ]);
+
+    const callAi = (token: string): Promise<Response> =>
+      request(app)
+        .post(`/fhir/R4/$ai`)
+        .set('Authorization', 'Bearer ' + token)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'Test message' }]) },
+            { name: 'model', valueString: 'gpt-4' },
+          ],
+        });
+
+    expect(await callAi(practitioner.accessToken)).toHaveStatus(200);
+    expect(await callAi(patient.accessToken)).toHaveStatus(403);
+    expect(await callAi(smartApp.accessToken)).toHaveStatus(403);
   });
 
   test('Missing API key in project settings', async () => {

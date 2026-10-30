@@ -1020,6 +1020,12 @@
       "type": "token",
       "description": "The status of the EligibilityRequest",
       "expression": "CoverageEligibilityRequest.status"
+    },
+    {
+      "name": "coverage",
+      "type": "reference",
+      "description": "The insurance coverage being checked for eligibility",
+      "expression": "CoverageEligibilityRequest.insurance.coverage"
     }
   ]
 }

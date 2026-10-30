@@ -85,6 +85,7 @@ export async function expandOperator(
   if (filter && filter.trim().split(/\s+/g).length > MAX_FILTER_TOKENS) {
     return [badRequest(`Filter value cannot contain more than ${MAX_FILTER_TOKENS} tokens`)];
   }
+  params.filter = filter?.trim() || undefined;
 
   const repo = getAuthenticatedContext().repo;
   if (!options?.batch) {
@@ -143,7 +144,7 @@ function flattenConcepts(
     if (!display && options?.displayLanguage && options?.dropUntranslated) {
       continue;
     }
-    if (!filter || matchesTextFilter(display, filter)) {
+    if (!filter || matchesTextFilter(concept.code, display, filter)) {
       result.push({ system, code: concept.code, display });
     }
   }
@@ -187,7 +188,7 @@ async function computeExpansion(
   ) {
     // Full expansion is already available, use that
     return flattenConcepts(preExpansion.contains, {
-      filter: normalizeTextFilter(params.filter),
+      filter: params.filter,
       displayLanguage: params.displayLanguage,
       dropUntranslated: true,
     });
@@ -242,15 +243,14 @@ async function computeExpansion(
     if (include.concept) {
       // Under displayLanguage, an enumerated concept's display is resolved from the CodeSystem by
       // validateCodings below, so the text filter has nothing to match against until after that
-      const filter = normalizeTextFilter(params.filter);
-      const deferredFilter = params.displayLanguage ? filter : undefined;
+      const deferredFilter = params.displayLanguage ? params.filter : undefined;
       const codings = flattenConcepts(include.concept, {
         system: include.system,
         displayLanguage: params.displayLanguage,
-        filter: deferredFilter ? undefined : filter,
+        filter: deferredFilter ? undefined : params.filter,
       });
-      for (const c of await validateEnumeratedConcepts(codeSystem, codings, params)) {
-        if (c && (!deferredFilter || matchesTextFilter(c.display, deferredFilter))) {
+      for (const c of await validateEnumeratedConcepts(repo, codeSystem, codings, params)) {
+        if (c && (!deferredFilter || matchesTextFilter(c.code, c.display, deferredFilter))) {
           c.id = undefined;
           expansion.push(c);
         }
@@ -264,6 +264,7 @@ async function computeExpansion(
 }
 
 async function validateEnumeratedConcepts(
+  repo: Repository,
   codeSystem: WithId<CodeSystem>,
   codings: Coding[],
   params: ValueSetExpandParameters
@@ -277,15 +278,17 @@ async function validateEnumeratedConcepts(
     }
   }
   if (!overriddenIndexes.length) {
-    return validateCodings(codeSystem, codings, params);
+    return validateCodings(repo, codeSystem, codings, params);
   }
 
   const overridden = await validateCodings(
+    repo,
     codeSystem,
     overriddenIndexes.map((i) => codings[i])
   );
   const translated = translatedIndexes.length
     ? await validateCodings(
+        repo,
         codeSystem,
         translatedIndexes.map((i) => codings[i]),
         params
@@ -471,6 +474,17 @@ export type ParentFilterStrategy = 'ancestor' | 'descendant';
  */
 const CANDIDATE_THRESHOLD = 2000;
 
+/** Below this length a filter can't use the trigram index, so SQL matches the code exactly and skips display */
+const MIN_SUBSTRING_FILTER_LENGTH = 3;
+
+function isCodePrefixFilter(filterText: string): boolean {
+  return filterText.length >= MIN_SUBSTRING_FILTER_LENGTH;
+}
+
+function filterWords(filterText: string): string[] {
+  return filterText.split(/\s+/g);
+}
+
 /**
  * Builds the text-filter predicate used by `$expand` filtering: an exact code match, plus (for filters of at
  * least 3 characters) a per-word accent-insensitive `display` substring match. Below 3 characters the display
@@ -489,7 +503,7 @@ function buildFilterPredicate(
 ): Expression {
   // Below 3 characters the display-substring branch cannot use the trigram GIN index
   // (a substring needs at least one full trigram), so match on the code alone.
-  const matchDisplay = filterText.length >= 3;
+  const matchDisplay = filterText.length >= MIN_SUBSTRING_FILTER_LENGTH;
 
   // Restrict the `code` branch to canonical rows: synonyms for the same code are redundant. This scoping lets the planner
   // use the partial `(system, lower(code)) WHERE "synonymOf" IS NULL` index, keeping the `code` branch of the query plan
@@ -523,22 +537,21 @@ function buildFilterPredicate(
 }
 
 function buildCodeMatch(filterText: string, tableName: string): Expression {
-  return filterText.length >= 3
+  return isCodePrefixFilter(filterText)
     ? new Condition(new Column(tableName, 'code'), 'LOWER_LIKE', `${escapeLikeString(filterText)}%`)
     : new Condition(new Column(tableName, 'code'), '=', filterText);
 }
 
 function buildDisplayMatch(filterText: string, tableName: string): Expression {
-  return new Conjunction(
-    filterText
-      .split(/\s+/g)
-      .map((word) => new Condition(new Column(tableName, 'display'), 'UNACCENT_ILIKE', `%${escapeLikeString(word)}%`))
+  const conditions = filterWords(filterText).map(
+    (word) => new Condition(new Column(tableName, 'display'), 'UNACCENT_ILIKE', `%${escapeLikeString(word)}%`)
   );
+  return new Conjunction(conditions);
 }
 
 function buildDisplayMatchRank(filterText: string, tableName: string): Expression {
   return new Conjunction(
-    filterText.split(/\s+/g).map((word) => {
+    filterWords(filterText).map((word) => {
       const pattern = `%${escapeLikeString(word)}%`;
       return new Disjunction([
         new Condition(new Column(tableName, 'display'), 'ILIKE', pattern), // Cheaper check first to short-circuit
@@ -576,7 +589,7 @@ function joinTranslation(
     .where(new Column(innerAlias, 'code'), '=', new Column(anchorAlias, 'code'))
     .where(new Column(innerAlias, 'language'), '=', displayLanguage);
 
-  if (filterText && filterText.length >= 3) {
+  if (filterText && filterText.length >= MIN_SUBSTRING_FILTER_LENGTH) {
     translation.orderByExpr(buildDisplayMatchRank(filterText, innerAlias), true);
   }
   translation.orderBy(new Column(innerAlias, 'id')).limit(1);
@@ -641,7 +654,7 @@ async function chooseParentFilterStrategy(
   params: ValueSetExpandParameters
 ): Promise<ParentFilterStrategy | undefined> {
   const filterText = params.filter;
-  if (!filterText || filterText.length < 3 || include.filter?.length !== 1) {
+  if (!filterText || filterText.length < MIN_SUBSTRING_FILTER_LENGTH || include.filter?.length !== 1) {
     return undefined;
   }
   const op = include.filter[0].op;
@@ -668,7 +681,7 @@ export function addParentFilter(
   strategy: ParentFilterStrategy = 'ancestor'
 ): SelectQuery | undefined {
   if (params?.filter && strategy === 'ancestor') {
-    if (params.filter.length < 3) {
+    if (params.filter.length < MIN_SUBSTRING_FILTER_LENGTH) {
       return undefined; // Must specify minimum filter length to make this expensive query workable
     }
 
@@ -765,19 +778,26 @@ function unaccent(expr: Expression): Expression {
 }
 
 /**
- * Folds the `filter` parameter for in-memory matching (enumerated concepts and stored expansions), so that it
- * approximates the accent-insensitive `medplum_unaccent` comparison the DB-backed filter performs. See
- * {@link foldText} for the characters where the two diverge.
- * @param filter - The `filter` parameter value.
- * @returns The folded filter text, or undefined when the filter is absent or blank.
+ * In-memory counterpart of {@link buildFilterPredicate}, for enumerated concepts and stored expansions.
+ * @param code - The concept's code.
+ * @param display - The concept's display text.
+ * @param filterText - The `filter` parameter value.
+ * @returns True when the concept matches the filter.
  */
-function normalizeTextFilter(filter: string | undefined): string | undefined {
-  const trimmed = filter?.trim();
-  return trimmed ? foldText(trimmed) : undefined;
-}
-
-function matchesTextFilter(text: string | undefined, filter: string): boolean {
-  return text ? foldText(text).includes(filter) : false;
+function matchesTextFilter(code: string | undefined, display: string | undefined, filterText: string): boolean {
+  if (code) {
+    const codeMatches = isCodePrefixFilter(filterText)
+      ? code.toLowerCase().startsWith(filterText.toLowerCase())
+      : code === filterText;
+    if (codeMatches) {
+      return true;
+    }
+  }
+  if (!display || !isCodePrefixFilter(filterText)) {
+    return false;
+  }
+  const foldedDisplay = foldText(display);
+  return filterWords(foldText(filterText)).every((word) => foldedDisplay.includes(word));
 }
 
 function getDisplayText(

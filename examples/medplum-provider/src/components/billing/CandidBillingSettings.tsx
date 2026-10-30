@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Stack } from '@mantine/core';
-import { IconBuilding, IconShieldCheck, IconStethoscope, IconTag } from '@tabler/icons-react';
+import { IconBuilding, IconListCheck, IconShieldCheck, IconStethoscope, IconTag } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
 import { BillingNavLink } from './BillingNavLink';
@@ -10,9 +10,10 @@ import { CandidBillingPractitioners } from './CandidBillingPractitioners';
 import classes from './CandidBillingSettings.module.css';
 import { CandidImportedPayers } from './CandidImportedPayers';
 import { ChargeItemDefinitions } from './ChargeItemDefinitions';
+import { EligibilityServiceTypeSettings } from './EligibilityServiceTypeSettings';
 
 /** The tabs of the billing settings. */
-export type BillingSettingsTab = 'Organizations' | 'Practitioners' | 'Payers' | 'ChargeItems';
+export type BillingSettingsTab = 'Organizations' | 'Practitioners' | 'Payers' | 'ChargeItems' | 'Eligibility';
 
 /**
  * The tabs with the URL path each lives at, relative to the billing settings root. The Payers tab lists
@@ -24,6 +25,7 @@ const TABS: { label: string; value: BillingSettingsTab; path: string; icon: Reac
   { label: 'Practitioners', value: 'Practitioners', path: 'Practitioners', icon: <IconStethoscope /> },
   { label: 'Enrolled Payers', value: 'Payers', path: 'Payers/Organization', icon: <IconShieldCheck /> },
   { label: 'Charge Items', value: 'ChargeItems', path: 'ChargeItems', icon: <IconTag /> },
+  { label: 'Eligibility', value: 'Eligibility', path: 'Eligibility', icon: <IconListCheck /> },
 ];
 
 /**
@@ -60,7 +62,7 @@ function parseBillingSettingsPath(path: string | undefined): BillingSettingsLoca
   if (tab.value === 'Payers' && rest[0]?.toLowerCase() === 'organization') {
     rest.shift();
   }
-  return { tab: tab.value, resourceId: rest[0] };
+  return { tab: tab.value, resourceId: tab.value === 'Eligibility' ? undefined : rest[0] };
 }
 
 /**
@@ -142,6 +144,7 @@ export function CandidBillingSettingsPanel(props: Omit<CandidBillingSettingsProp
       {currentTab === 'ChargeItems' && (
         <ChargeItemDefinitions resourceId={resourceId} onNavigate={(id) => navigate('ChargeItems', id)} />
       )}
+      {currentTab === 'Eligibility' && <EligibilityServiceTypeSettings />}
     </div>
   );
 }

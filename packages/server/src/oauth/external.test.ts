@@ -14,7 +14,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject } from '../test.setup';
+import { addTestUser, createTestProject } from '../test.setup';
 import { mockFetchJson } from '../test.setup.fetch';
 
 // RFC 7662 - External auth
@@ -153,6 +153,43 @@ describe('External auth', () => {
 
       expect(res).toHaveStatus(200);
       expect(res.body.sub).toBe(client.id);
+    });
+  });
+
+  test('Project-scoped client token honors on-behalf-of and extended mode', async () => {
+    const keyPair = await generateKeyPair('ES256');
+    const publicJwk = await exportJWK(keyPair.publicKey);
+    const { client, project } = await createTestProject({
+      withClient: true,
+      membership: { admin: true },
+      client: {
+        identityProvider: {
+          issuer: 'https://external-auth.example.com',
+          jwksUrl: 'https://external-auth.example.com/.well-known/obo-jwks.json',
+        },
+      },
+    });
+    const { profile } = await addTestUser(project);
+    await withExternalAuthProviders(undefined, async () => {
+      fetchMock.mockImplementationOnce(() => mockFetchJson({ keys: [publicJwk] }));
+
+      const jwt = await new SignJWT({ nonce: randomUUID() })
+        .setProtectedHeader({ alg: 'ES256' })
+        .setIssuer('https://external-auth.example.com')
+        .setIssuedAt()
+        .setExpirationTime('2h')
+        .sign(keyPair.privateKey);
+      const res = await request(app)
+        .post(`/projects/${project.id}/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + jwt)
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(profile))
+        .send({ resourceType: 'Patient' });
+
+      expect(res).toHaveStatus(201);
+      expect(res.body.meta.project).toBe(project.id);
+      expect(res.body.meta.author.reference).toBe(getReferenceString(client));
+      expect(res.body.meta.onBehalfOf.reference).toBe(getReferenceString(profile));
     });
   });
 
@@ -309,6 +346,29 @@ describe('External auth', () => {
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
     expect(res2).toHaveStatus(200);
+  });
+
+  test('Login is listed as a session', async () => {
+    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+
+    // Use a fresh user, so that only this login is in the list
+    const { profile } = await inviteUser({
+      project: testProject,
+      resourceType: 'Practitioner',
+      firstName: 'Session',
+      lastName: 'User',
+    });
+
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      fhirUser: getReferenceString(profile),
+    });
+    const res = await request(app)
+      .get(`/auth/me`)
+      .set('Authorization', 'Bearer ' + jwt);
+    expect(res).toHaveStatus(200);
+    expect(res.body.security.sessions).toHaveLength(1);
+    expect(res.body.security.sessions[0].authMethod).toStrictEqual('external');
   });
 
   test('Success by search string', async () => {

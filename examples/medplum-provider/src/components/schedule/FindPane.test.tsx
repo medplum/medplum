@@ -9,6 +9,7 @@ import {
   SchedulingParametersURI,
   SchedulingPlanDefinitionURI,
   ServiceTypeReferenceURI,
+  allServiceTypesCodeableConcept,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -193,6 +194,17 @@ describe('FindPane', () => {
       });
 
       expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
+      expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
+    });
+
+    test('renders every scheduleable HealthcareService when the Schedule offers all visit types', async () => {
+      const schedule = { ...createScheduleWithServices([]), serviceType: [allServiceTypesCodeableConcept()] };
+
+      await act(async () => {
+        setup({ schedule });
+      });
+
+      expect(await screen.findByText('Annual Checkup')).toBeInTheDocument();
       expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
     });
   });

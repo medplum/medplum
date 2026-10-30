@@ -11,6 +11,7 @@ import {
   isString,
   OperationOutcomeError,
   projectAdminResourceTypes,
+  readInteractions,
   resolveId,
 } from '@medplum/core';
 import type {
@@ -19,6 +20,7 @@ import type {
   AccessPolicyResource,
   Bot,
   ClientApplication,
+  Expression,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
@@ -26,6 +28,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { membershipProfileTypes, readMembershipReference } from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
@@ -58,8 +61,12 @@ export async function getRepoForLogin(
     try {
       // project system repo since not all ProfileResource types are global
       const realProjectSystemRepo = await getProjectSystemRepo(realProject);
-      profile = await realProjectSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(
-        realMembership.profile
+      profile = await readMembershipReference<ProfileResource | Bot | ClientApplication>(
+        realProjectSystemRepo,
+        realMembership,
+        realMembership.profile,
+        membershipProfileTypes,
+        { allowLinkedProjects: true }
       );
     } catch (err: unknown) {
       if (!(err instanceof OperationOutcomeError && isNotFound(err.outcome))) {
@@ -91,6 +98,26 @@ export async function getRepoForLogin(
     validateTerminology: project.features?.includes('validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
     client: login.client,
+  });
+}
+
+/**
+ * Creates a repository that is limited to what a project may read: the project itself and the projects it links to.
+ *
+ * Use this instead of a `SystemRepository` to resolve references found in project content when there is
+ * no user to act as, such as in unauthenticated endpoints and background jobs.
+ * A `SystemRepository` can read every resource in every project, so it authorizes nothing.
+ * @param projectId - The ID of the project.
+ * @returns A repository scoped to the project.
+ */
+export async function getRepoForProject(projectId: string): Promise<Repository> {
+  const globalSystemRepo = getGlobalSystemRepo();
+  const project = await globalSystemRepo.readResource<Project>('Project', projectId);
+  return new Repository({
+    routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+    projects: await getAllowedProjects(project, globalSystemRepo),
+    author: { reference: 'system' },
+    extendedMode: true,
   });
 }
 
@@ -212,6 +239,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   for (const entry of access) {
     const replaced = await buildAccessPolicyResources(
       systemRepo,
+      membership,
       entry,
       membership.profile as Reference<ProfileResource>,
       accessPolicyMap
@@ -250,6 +278,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
 /**
  * Reads an access policy and replaces all variables.
  * @param systemRepo - The system repository.
+ * @param membership - The project membership that references the access policy.
  * @param access - The access policy and parameters.
  * @param profile - The user profile.
  * @param accessPolicyMap - Map of already-fetched access policies to avoid redundant lookups.
@@ -257,6 +286,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
  */
 async function buildAccessPolicyResources(
   systemRepo: SystemRepository,
+  membership: ProjectMembership,
   access: ProjectMembershipAccess,
   profile: Reference<ProfileResource>,
   accessPolicyMap: Map<string, AccessPolicy>
@@ -270,7 +300,7 @@ async function buildAccessPolicyResources(
   let original = accessPolicyMap.get(policyReferenceString);
   if (!original) {
     try {
-      original = await systemRepo.readReference(accessPolicyReference);
+      original = await readMembershipReference(systemRepo, membership, accessPolicyReference, ['AccessPolicy']);
       accessPolicyMap.set(policyReferenceString, original);
     } catch {
       // Intentionally catch and rethrow with a generic error message for security
@@ -321,6 +351,19 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
 }
 
 /**
+ * Returns a write constraint that requires a new resource's `project` element, if present, to be the admin's own Project.
+ * Updates are covered by `readonlyFields`, which restores `project` from the previous version.
+ * @param membership - The project admin's membership.
+ * @returns The write constraint expression.
+ */
+function ownProjectWriteConstraint(membership: ProjectMembership): Expression {
+  return {
+    language: 'text/fhirpath',
+    expression: `%before.exists() or project.empty() or project.reference = 'Project/${resolveId(membership.project)}'`,
+  };
+}
+
+/**
  * Updates the access policy to include project admin rules.
  * This includes ensuring no admin rights for non-admins and restricted access for admins.
  * @param project - The project.
@@ -354,7 +397,7 @@ function applyProjectAdminAccessPolicy(
         // Project admins have full access to their own project, except for a few sensitive fields
         resourceType: 'Project',
         criteria: `Project?_id=${resolveId(membership.project)}`,
-        readonlyFields: ['features', 'link', 'systemSetting'],
+        readonlyFields: ['active', 'features', 'link', 'systemSetting'],
         hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
         interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
       },
@@ -368,6 +411,7 @@ function applyProjectAdminAccessPolicy(
         resourceType: 'ProjectMembership',
         criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
         readonlyFields: ['project', 'user'],
+        writeConstraint: [ownProjectWriteConstraint(membership)],
       },
       {
         resourceType: 'UserSecurityRequest',
@@ -379,6 +423,7 @@ function applyProjectAdminAccessPolicy(
         criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+        writeConstraint: [ownProjectWriteConstraint(membership)],
       },
       {
         resourceType: 'Cron',
@@ -398,8 +443,18 @@ function applyProjectAdminAccessPolicy(
       }
     );
   } else {
-    // Remove any references to project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+    // Preserve policy reads, including wildcard grants, but never grant non-admins policy writes.
+    const policyReadRules = accessPolicy.resource
+      .filter((r) => r.resourceType === 'AccessPolicy' || r.resourceType === '*')
+      .map((r) => ({
+        ...r,
+        resourceType: 'AccessPolicy',
+        criteria: r.criteria?.replace(/^\*\?/, 'AccessPolicy?'),
+        interaction: r.interaction?.filter((i) => readInteractions.includes(i)) ?? [...readInteractions],
+      }));
+
+    accessPolicy.resource = accessPolicy.resource.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+    accessPolicy.resource.push(...policyReadRules);
   }
 
   return accessPolicy;

@@ -7,12 +7,14 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
+  isSmartScopeSubset,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -207,6 +209,19 @@ describe('OAuth utils', () => {
     }
   });
 
+  test('Invalid projectId', async () => {
+    await expect(
+      tryLogin({
+        authMethod: 'password',
+        projectId: 'not-a-project-id',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+      })
+    ).rejects.toThrow('Invalid projectId');
+  });
+
   test('Login successfully', async () => {
     const login = await tryLogin({
       clientId: client.id,
@@ -217,6 +232,28 @@ describe('OAuth utils', () => {
       nonce: 'nonce',
     });
     expect(login).toBeDefined();
+  });
+
+  test.each([
+    ['https://example.com/', false],
+    ['https://example.com/other', true],
+  ])('Login with redirect URI %s', async (redirectUri, warned) => {
+    const warnSpy = vi.spyOn(globalLogger, 'warn');
+    try {
+      await tryLogin({
+        clientId: client.id,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        redirectUri,
+      });
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Login redirect URI is not registered for client');
+      expect(calls.length > 0).toBe(warned);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('External auth without email or externalId', () => {
@@ -540,6 +577,54 @@ describe('OAuth utils', () => {
       });
     });
 
+    test.each(['login', 'membership', 'unavailable'])(
+      'Logs partial SMART permissions with project %s',
+      async (source) => {
+        const { user, login, patient } = await withTestContext(async () => {
+          const user = await systemRepo.createResource<User>({
+            resourceType: 'User',
+            firstName: 'Test',
+            lastName: 'User',
+          });
+          const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+          const membership = await systemRepo.createResource<ProjectMembership>({
+            resourceType: 'ProjectMembership',
+            user: createReference(user),
+            profile: createReference(patient),
+            project: createReference(project),
+          });
+          const login = await systemRepo.createResource<Login>({
+            resourceType: 'Login',
+            authMethod: 'password',
+            user: createReference(user),
+            membership: createReference(membership),
+            project: source === 'login' ? createReference(project) : undefined,
+            scope: 'openid user/Patient.c',
+            granted: true,
+            authTime: new Date().toISOString(),
+            nonce: randomUUID(),
+          });
+          return { user, login, patient };
+        });
+
+        if (source === 'unavailable') {
+          login.membership = { reference: `ProjectMembership/${randomUUID()}` };
+        }
+        const warnSpy = vi.spyOn(globalLogger, 'warn');
+        try {
+          const tokens = await getAuthTokens(user, login, createReference(patient));
+          expect((await verifyJwt(tokens.accessToken)).payload.scope).toBe(login.scope);
+          expect(warnSpy).toHaveBeenCalledWith('SMART scopes with partial permissions', {
+            clientId: undefined,
+            projectId: source === 'unavailable' ? undefined : project.id,
+            scopes: ['user/Patient.c'],
+          });
+        } finally {
+          warnSpy.mockRestore();
+        }
+      }
+    );
+
     test('Access token includes email when email scope is requested for User', async () => {
       await withTestContext(async () => {
         // Create a User with email
@@ -743,5 +828,22 @@ describe('OAuth utils', () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
     expect(client.id).toStrictEqual('medplum-cli');
+  });
+});
+
+describe('isSmartScopeSubset', () => {
+  test.each([
+    ['system/*.rs', 'user/Patient.rs', false, true],
+    ['system/*.rs', 'patient/*.rs', true, true],
+    ['user/*.rs', 'patient/Observation.r', true, true],
+    ['system/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'system/Patient.rs', true, false],
+    ['patient/*.rs', 'user/Patient.rs', true, false],
+    ['user/Patient.rs', 'patient/Patient.cruds', true, false],
+    ['user/Patient.rs', 'user/Patient.', false, false],
+    ['user/*.rs', 'user/*.', false, false],
+  ])('%s covers %s (patient context: %s) -> %s', (existing, requested, hasPatientContext, expected) => {
+    expect(isSmartScopeSubset(existing, requested, hasPatientContext)).toBe(expected);
   });
 });

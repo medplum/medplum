@@ -1,22 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, Button, Center, Group, Loader, Modal, Stack, Text } from '@mantine/core';
+import { Alert, Box, Center, Divider, Loader, Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
-import { isBookableActorType } from '../actors';
+import { getActorTypeLabel, isBookableActorType } from '../actors';
+import type { NewActorType } from './ActorPage/actorDraft';
 import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
 import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
+import { ConfirmModal } from './ConfirmModal';
 import classes from './SchedulingConfigWorkspace.module.css';
 import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
-import { buildActorItems, buildServiceItems, isSameSelection } from './SchedulingConfigWorkspace.utils';
+import { buildActorItems, buildServiceItems, getOfferings, isSameSelection } from './SchedulingConfigWorkspace.utils';
 import { useConfigurableResources } from './useConfigurableResources';
 import { VisitTypePage } from './VisitTypePage/VisitTypePage';
 
@@ -59,6 +61,16 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   const [pending, setPending] = useState<ConfigSelection>();
   const [nextNewKey, setNextNewKey] = useState(1);
 
+  const detailRef = useRef<HTMLElement>(null);
+
+  // A different page opens at its top. The same page remounting, as after a save, keeps its place.
+  function open(next: ConfigSelection | undefined): void {
+    setSelection(next);
+    if (detailRef.current) {
+      detailRef.current.scrollTop = 0;
+    }
+  }
+
   function select(next: ConfigSelection): void {
     if (isSameSelection(next, selection)) {
       return;
@@ -67,17 +79,17 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       setPending(next);
       return;
     }
-    setSelection(next);
+    open(next);
   }
 
-  function startNew(): void {
-    select({ kind: 'new-service', key: nextNewKey });
+  function startNew(next: { kind: 'new-service' } | { kind: 'new-actor'; resourceType: NewActorType }): void {
+    select({ ...next, key: nextNewKey });
     setNextNewKey((key) => key + 1);
   }
 
   function confirmDiscard(): void {
     setDirty(false);
-    setSelection(pending);
+    open(pending);
     setPending(undefined);
   }
 
@@ -91,13 +103,21 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   );
 
   // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
-  // the viewer moved on must not touch the page now shown.
+  // the viewer moved on must not touch the page now shown. A room or device just created is selected by its new
+  // id, so its page remounts on what was stored.
   const handleActorSynced = useCallback(
     (syncedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
       store(resources);
-      setSelection((current) =>
-        current?.kind === 'actor' && isSameSelection(current, syncedFor) ? { ...current, openServiceId } : current
-      );
+      setSelection((current) => {
+        if (!isSameSelection(syncedFor, current)) {
+          return current;
+        }
+        if (syncedFor.kind === 'new-actor') {
+          const created = resources.find((resource) => resource.resourceType === syncedFor.resourceType);
+          return created ? { kind: 'actor', resourceType: syncedFor.resourceType, id: created.id } : current;
+        }
+        return current?.kind === 'actor' ? { ...current, openServiceId } : current;
+      });
     },
     [store]
   );
@@ -126,9 +146,28 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         service={service}
         onSynced={handleSynced}
         onDirtyChange={setDirty}
+        offeringGroups={ACTOR_SECTIONS.map(({ title, resourceType }) => ({
+          title,
+          offerings: getOfferings(actors[resourceType].items, service),
+        }))}
+        offeringsLoading={ACTOR_SECTIONS.some(({ resourceType }) => actors[resourceType].loading)}
+        onOpenOffering={({ actor: { resource } }) =>
+          select({ kind: 'actor', resourceType: resource.resourceType, id: resource.id, openServiceId: service.id })
+        }
       />
     ) : (
       <ConfigEmptyState notFound />
+    );
+  } else if (selection?.kind === 'new-actor') {
+    detail = (
+      <ActorPage
+        key={`new-${selection.key}`}
+        newActorType={selection.resourceType}
+        services={services.items}
+        onSynced={(resources) => handleActorSynced(selection, resources, undefined)}
+        onDiscardNew={handleDiscardNew}
+        onDirtyChange={setDirty}
+      />
     );
   } else if (selection?.kind === 'actor') {
     const list = actors[selection.resourceType];
@@ -169,7 +208,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       incomplete: !services.complete,
       icon: <IconCalendarEvent size={12} />,
       createLabel: 'New visit type',
-      onCreate: startNew,
+      onCreate: () => startNew({ kind: 'new-service' }),
     },
     ...ACTOR_SECTIONS.map(({ resourceType, ...section }): ConfigPanelSection => ({
       key: resourceType,
@@ -177,6 +216,8 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       items: buildActorItems(actors[resourceType].items, selection, filter, showInactive),
       loading: actors[resourceType].loading,
       incomplete: !actors[resourceType].complete,
+      createLabel: `New ${getActorTypeLabel(resourceType).toLowerCase()}`,
+      onCreate: () => startNew({ kind: 'new-actor', resourceType }),
     })),
   ];
 
@@ -204,7 +245,9 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         />
       </Box>
 
-      <Box component="section" className={classes.detail} aria-label="Configuration details">
+      <Divider orientation="vertical" />
+
+      <Box component="section" ref={detailRef} className={classes.detail} aria-label="Configuration details">
         <Stack gap="md">
           {loadErrors.map(
             ([title, error]) =>
@@ -218,24 +261,17 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         </Stack>
       </Box>
 
-      <Modal
+      <ConfirmModal
         opened={pending !== undefined}
-        onClose={() => setPending(undefined)}
         title="Discard unsaved changes?"
-        centered
+        cancelLabel="Keep editing"
+        confirmLabel="Discard changes"
+        destructive
+        onCancel={() => setPending(undefined)}
+        onConfirm={confirmDiscard}
       >
-        <Stack gap="md">
-          <Text size="sm">The changes on this page haven't been saved.</Text>
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => setPending(undefined)}>
-              Keep editing
-            </Button>
-            <Button color="red" onClick={confirmDiscard}>
-              Discard changes
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        The changes on this page haven't been saved.
+      </ConfirmModal>
     </Box>
   );
 }

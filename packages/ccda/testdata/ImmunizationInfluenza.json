@@ -137,7 +137,7 @@
           "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
           "display": "Katherine Madison"
         },
-        "occurrenceDateTime": "2010-08-15T00:00:00Z",
+        "occurrenceDateTime": "2010-08-15",
         "lotNumber": "1",
         "performer": [
           {

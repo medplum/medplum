@@ -29,7 +29,9 @@ import {
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingEncounterCoding';
 export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';
-export const SchedulingScheduleColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+export const SchedulingColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+/** @deprecated Use SchedulingColorURI instead. */
+export const SchedulingScheduleColorURI = SchedulingColorURI;
 
 /** Code system for scheduling requirements, recorded on `HealthcareService.eligibility.code`. */
 export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-eligibility';
@@ -95,6 +97,12 @@ export const SchedulingBookedByOperationURI =
 /** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
 export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 
+/**
+ * This extension holds a `valueUrl` linking to the same `Appointment` in an external
+ * system, such as the scheduling system it is synced with.
+ */
+export const SchedulingExternalUrlURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingExternalUrl';
+
 /** Code system for `Appointment.participant.type`. */
 export const PARTICIPATION_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-ParticipationType`;
 
@@ -126,6 +134,20 @@ export const PRIMARY_PERFORMER_CODE = 'PPRF';
  * ```
  */
 export const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
+
+/** Code system for the `Schedule.serviceType` codes Medplum scheduling defines. */
+export const SCHEDULING_SERVICE_TYPE_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-service-type';
+
+/**
+ * The `Schedule.serviceType` code marking a Schedule that offers every HealthcareService, including ones
+ * created later.
+ *
+ * It decides only which services the Schedule accepts, not when: hours still resolve from the Schedule's
+ * SchedulingParameters for the service, then the service's own, then the defaults. Build it with
+ * `allServiceTypesCodeableConcept`.
+ */
+export const ALL_SERVICE_TYPES_CODE = 'all';
+
 export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
 
 /**
@@ -144,6 +166,13 @@ export const RecurrenceTemplateExtensionURI =
  */
 export const RecurrenceIdExtensionURI =
   'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId';
+
+/**
+ * R5's `Appointment.occurrenceChanged`, as the R4 cross-version extension: set (valueBoolean) on an
+ * occurrence of a recurring series that has been rescheduled off the series' pattern.
+ */
+export const OccurrenceChangedExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.occurrenceChanged';
 
 /** Identifier system for the `Appointment.identifier` shared by every occurrence of one recurring series. */
 export const RecurringAppointmentSeriesIdentifierSystem = 'https://medplum.com/fhir/recurring-appointment-series';
@@ -530,7 +559,53 @@ export function toServiceTypeCodeableConcepts(service: WithId<HealthcareService>
 }
 
 /**
+ * Builds the CodeableConcept that marks a Schedule as offering every HealthcareService, for
+ * `Schedule.serviceType`. An Appointment never carries it: it records the service actually booked.
+ * @returns The marker concept
+ */
+export function allServiceTypesCodeableConcept(): CodeableConcept {
+  return {
+    coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: ALL_SERVICE_TYPES_CODE }],
+    text: 'All service types',
+  };
+}
+
+/**
+ * Returns whether serviceType concepts carry the marker for offering every HealthcareService.
+ *
+ * An empty or missing `serviceType` does not count.
+ * @param serviceType - CodeableConcept values to inspect
+ * @returns True if any concept is the marker
+ */
+export function serviceTypeIncludesAllServices(serviceType: CodeableConcept[] | undefined): boolean {
+  return (
+    serviceType?.some((concept) =>
+      concept.coding?.some(
+        (coding) => coding.system === SCHEDULING_SERVICE_TYPE_SYSTEM && coding.code === ALL_SERVICE_TYPES_CODE
+      )
+    ) ?? false
+  );
+}
+
+/**
+ * Returns whether a Schedule with these serviceType concepts can be booked for the given HealthcareService:
+ * because it refers to the service, or because it carries the marker for offering every one.
+ * @param serviceType - CodeableConcept values to inspect
+ * @param service - HealthcareService or reference to match
+ * @returns True if the concepts offer the service
+ */
+export function serviceTypeOffersService(
+  serviceType: CodeableConcept[] | undefined,
+  service: WithId<HealthcareService> | (Reference<HealthcareService> & { reference: string })
+): boolean {
+  return serviceTypeIncludesAllServices(serviceType) || serviceTypeIncludesService(serviceType, service);
+}
+
+/**
  * Returns whether any serviceType concept refers to the given HealthcareService.
+ *
+ * Ignores the marker for offering every HealthcareService; use `serviceTypeOffersService` to ask whether a
+ * Schedule can be booked for the service.
  * @param serviceType - CodeableConcept values to inspect
  * @param service - HealthcareService or reference to match
  * @returns True if any concept references the service

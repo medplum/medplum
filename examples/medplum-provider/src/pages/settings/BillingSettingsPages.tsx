@@ -6,6 +6,7 @@ import { CandidBillingOrganizations } from '../../components/billing/CandidBilli
 import { CandidBillingPractitioners } from '../../components/billing/CandidBillingPractitioners';
 import { CandidImportedPayers } from '../../components/billing/CandidImportedPayers';
 import { ChargeItemDefinitions } from '../../components/billing/ChargeItemDefinitions';
+import { EligibilityServiceTypeSettings } from '../../components/billing/EligibilityServiceTypeSettings';
 import { SettingsPage, SettingsPanel } from '../../components/settings/SettingsLayout';
 import { useCandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
 
@@ -62,6 +63,16 @@ export function ChargeItemsSettingsPage(): JSX.Element {
     >
       <SettingsPanel>
         <ChargeItemDefinitions resourceId={resourceId} onNavigate={setResourceId} />
+      </SettingsPanel>
+    </SettingsPage>
+  );
+}
+
+export function EligibilitySettingsPage(): JSX.Element {
+  return (
+    <SettingsPage title="Eligibility" description="The service types eligibility checks ask payers about.">
+      <SettingsPanel>
+        <EligibilityServiceTypeSettings />
       </SettingsPanel>
     </SettingsPage>
   );

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   createReference,
   encodeBase64,
   getReferenceString,
@@ -17,6 +18,7 @@ import type {
   Binary,
   Bot,
   ClientApplication,
+  Communication,
   Condition,
   Cron,
   Device,
@@ -45,7 +47,7 @@ import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { buildAccessPolicy, getRepoForLogin, reconcileDefaultAccessPolicy } from './accesspolicy';
+import { buildAccessPolicy, getRepoForLogin, getRepoForProject, reconcileDefaultAccessPolicy } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
@@ -639,6 +641,21 @@ describe('AccessPolicy', () => {
 
       await expect(repo2.readResource('Patient', patient1.id)).rejects.toThrow('Not found');
       await expect(repo1.readResource('Patient', patient2.id)).rejects.toThrow('Not found');
+    }));
+
+  test('Access policy in another project', () =>
+    withTestContext(async () => {
+      const { accessPolicy } = await createTestProject({
+        withClient: true,
+        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+      });
+      await expect(
+        createTestProject({
+          withClient: true,
+          withRepo: true,
+          membership: { accessPolicy: createReference(accessPolicy) },
+        })
+      ).rejects.toThrow('Invalid access policy configuration');
     }));
 
   test('Multiple entries per resource type', () =>
@@ -1270,6 +1287,84 @@ describe('AccessPolicy', () => {
       expect(historyBundle.entry?.[0]?.resource?.name).toBeUndefined();
     }));
 
+  test('Hidden fields on patch', () =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides Patient name
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['name'],
+            },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
+      });
+
+      // Empty patch returns the resource as it would be read
+      const unmodified = await repo2.patchResource<Patient>('Patient', patient.id, { resourceType: 'Parameters' });
+      expect(unmodified.birthDate).toBe('1970-01-01');
+      expect(unmodified.name).toBeUndefined();
+
+      // Patch operations cannot observe hidden fields
+      try {
+        await repo2.patchResource('Patient', patient.id, [{ op: 'test', path: '/name/0/family', value: 'x' }]);
+        throw new Error('Should not be able to test hidden field');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toContain('Test failed');
+        expect(normalizeErrorString(err)).not.toContain('Smith');
+      }
+      await expect(
+        repo2.patchResource('Patient', patient.id, [{ op: 'copy', from: '/name/0/family', path: '/language' }])
+      ).rejects.toThrow();
+
+      // Hidden fields are preserved by a successful patch
+      const patched = await repo2.patchResource<Patient>('Patient', patient.id, [
+        { op: 'replace', path: '/birthDate', value: '1970-01-02' },
+      ]);
+      expect(patched.birthDate).toBe('1970-01-02');
+      expect(patched.name).toBeUndefined();
+      expect(await systemRepo.readResource<Patient>('Patient', patient.id)).toMatchObject({
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-02',
+      });
+    }));
+
+  test.each<[string, AccessPolicyResource[]]>([
+    ['no access', [{ resourceType: 'Observation' }]],
+    ['readonly access', [{ resourceType: 'Patient', readonly: true }]],
+    ['update without read access', [{ resourceType: 'Patient', interaction: ['update'] }]],
+  ])('Patch requires read and update access (%s)', (_, resource) =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resourceType: 'AccessPolicy', resource },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await expect(repo2.patchResource('Patient', patient.id, { resourceType: 'Parameters' })).rejects.toThrow(
+        'Forbidden'
+      );
+      await expect(
+        repo2.patchResource('Patient', patient.id, [{ op: 'test', path: '/name/0/family', value: 'x' }])
+      ).rejects.toThrow('Forbidden');
+    })
+  );
+
   test('Nested hidden fields on read', () =>
     withTestContext(async () => {
       const { repo: repo2, project } = await createTestProject({
@@ -1355,6 +1450,34 @@ describe('AccessPolicy', () => {
       expect(readResource.name?.[0]).toBeDefined();
       expect(readResource.name?.[0].given).toStrictEqual(['Alice']);
       expect(readResource.name?.[0].family).toBeUndefined();
+    }));
+
+  test('canPerformInteractionById checks fields hidden from reads', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+        gender: 'female',
+      });
+
+      const repo2 = getRepository({
+        projects: [testProject],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?gender=female', hiddenFields: ['gender'] }],
+        },
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id);
+      expect(readResource.gender).toBeUndefined();
+      expect(readResource.meta?.project).toBeUndefined();
+      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', patient.id)).toBe(true);
+
+      await systemRepo.deleteResource('Patient', patient.id);
+      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', patient.id)).toBe(false);
+      expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', randomUUID())).toBe(
+        false
+      );
     }));
 
   test('Hidden fields on possible missing values', () =>
@@ -1909,13 +2032,16 @@ describe('AccessPolicy', () => {
       });
       const broadened: AccessPolicy = { ...policy, resource: [{ resourceType: '*' }] };
 
+      await expect(repo.readResource('AccessPolicy', policy.id)).resolves.toBeDefined();
+      await expect(repo.searchResources<AccessPolicy>({ resourceType: 'AccessPolicy' })).resolves.toMatchObject([
+        { id: policy.id },
+      ]);
+
       if (admin) {
-        await expect(repo.readResource('AccessPolicy', policy.id)).resolves.toBeDefined();
         await expect(repo.updateResource(broadened)).resolves.toMatchObject({ resource: [{ resourceType: '*' }] });
         const created = await repo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' });
         await repo.deleteResource('AccessPolicy', created.id);
       } else {
-        await expect(repo.readResource('AccessPolicy', policy.id)).rejects.toThrow('Forbidden');
         await expect(repo.updateResource(broadened)).rejects.toThrow('Forbidden');
         await expect(
           repo.patchResource('AccessPolicy', policy.id, [
@@ -1928,6 +2054,28 @@ describe('AccessPolicy', () => {
       }
     })
   );
+
+  test('Non-admin policy reads preserve wildcard restrictions', () =>
+    withTestContext(async () => {
+      const { project, repo, accessPolicy } = await createTestProject({
+        withRepo: true,
+        membership: { admin: false },
+        accessPolicy: {
+          resource: [{ resourceType: '*', criteria: '*?name=Allowed', interaction: ['read', 'search', 'update'] }],
+        },
+      });
+      const projectRepo = await getProjectSystemRepo(project);
+      const allowed = await projectRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+        name: 'Allowed',
+      });
+      await expect(repo.readResource('AccessPolicy', allowed.id)).resolves.toMatchObject({ id: allowed.id });
+      await expect(repo.readResource('AccessPolicy', accessPolicy.id)).rejects.toThrow('Not found');
+      const results = await repo.searchResources<AccessPolicy>({ resourceType: 'AccessPolicy' });
+      expect(results.map((r) => r.id)).toEqual([allowed.id]);
+      await expect(repo.updateResource({ ...allowed, description: 'Changed' })).rejects.toThrow('Forbidden');
+    }));
 
   test('Project admin cannot delete project', () =>
     withTestContext(async () => {
@@ -1999,6 +2147,7 @@ describe('AccessPolicy', () => {
       // This should be a no-op
       const check3 = await repo2.updateResource<Project>({
         ...check2,
+        active: false,
         superAdmin: true,
         features: ['bots'],
         systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
@@ -2006,6 +2155,7 @@ describe('AccessPolicy', () => {
       });
       expect(check3.id).toStrictEqual(project.id);
       expect(check3.meta?.versionId).toStrictEqual(check2.meta?.versionId);
+      expect(check3.active).toBeUndefined();
       expect(check3.superAdmin).toBeUndefined();
       expect(check3.features).toBeUndefined();
       expect(check3.systemSetting).toBeUndefined();
@@ -2042,6 +2192,104 @@ describe('AccessPolicy', () => {
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
       }
+    }));
+
+  test.each([
+    ['_project', true],
+    ['subject', false],
+  ])('Field rules on create with %s criteria', async (param, warned) => {
+    const value = param === '_project' ? testProject.id : 'Patient/' + randomUUID();
+    const repo = getRepository({
+      projects: [testProject],
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Communication',
+            criteria: `Communication?${param}=${value}`,
+            readonlyFields: ['priority'],
+          },
+        ],
+      },
+    });
+    const warnSpy = vi.spyOn(globalLogger, 'warn');
+    try {
+      await repo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+        subject: param === 'subject' ? { reference: value } : undefined,
+        priority: 'stat',
+      });
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Access policy field match after metadata');
+      expect(calls.length > 0).toBe(warned);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  test('Project admin creates User and ProjectMembership in own project', () =>
+    withTestContext(async () => {
+      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const otherProject = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Other' });
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: createReference(project),
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin: true,
+      });
+      const repo2 = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership, project, userConfig: {} as UserConfiguration },
+        true
+      );
+
+      const user = await repo2.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Own',
+        lastName: 'User',
+        project: createReference(project),
+      });
+      const member = await repo2.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(user),
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+      expect(member.project.reference).toBe(getReferenceString(project));
+
+      // Updates still work, with project restored by readonlyFields
+      const updated = await repo2.updateResource<ProjectMembership>({
+        ...member,
+        admin: true,
+        project: createReference(otherProject),
+      });
+      expect(updated.admin).toBe(true);
+      expect(updated.project.reference).toBe(getReferenceString(project));
+
+      await expect(
+        repo2.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Other',
+          lastName: 'User',
+          project: createReference(otherProject),
+        })
+      ).rejects.toThrow('Forbidden');
+      const serverUser = await repo2.createResource<User>({
+        resourceType: 'User',
+        firstName: 'No',
+        lastName: 'Project',
+      });
+      expect(serverUser.project).toBeUndefined();
+      // Defense in depth: meta.project of a ProjectMembership comes from its project element,
+      // so this create is also outside the admin's _project criteria
+      await expect(
+        repo2.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(otherProject),
+          user: createReference(user),
+          profile: { reference: 'Practitioner/' + randomUUID() },
+        })
+      ).rejects.toThrow('Forbidden');
     }));
 
   test('Project admin cannot override synthetic access policy for admin types', () =>
@@ -2932,6 +3180,22 @@ describe('AccessPolicy', () => {
       ).resolves.toBeDefined();
     }));
 
+  test('Malformed criteria denies access instead of granting it', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+      // Bypasses write-time validation, as a policy stored before the check existed would
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', criteria: 'identifier=123' }],
+        },
+      });
+
+      await expect(repo2.readResource('Patient', patient.id)).rejects.toThrow();
+      await expect(repo2.search(parseSearchRequest('Patient'))).rejects.toThrow();
+    }));
+
   test('Wildcard policy with criteria', async () =>
     withTestContext(async () => {
       const compartment = 'Patient/' + randomUUID();
@@ -3137,6 +3401,28 @@ describe('AccessPolicy', () => {
 
       const membershipsB = await repoB.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
       expect(membershipsB).toHaveLength(1);
+    }));
+
+  test('getRepoForProject is limited to the project and its linked projects', () =>
+    withTestContext(async () => {
+      const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
+      const { repo: otherRepo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({
+        project: { link: [{ project: createReference(linkedProject) }] },
+        withRepo: true,
+      });
+      const binary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+      const linkedBinary = await linkedRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+      });
+      const otherBinary = await otherRepo.createResource<Binary>({ resourceType: 'Binary', contentType: 'text/plain' });
+
+      const projectRepo = await getRepoForProject(project.id);
+      expect(projectRepo.isSuperAdmin()).toBe(false);
+      await expect(projectRepo.readResource('Binary', binary.id)).resolves.toMatchObject({ id: binary.id });
+      await expect(projectRepo.readResource('Binary', linkedBinary.id)).resolves.toMatchObject({ id: linkedBinary.id });
+      await expect(projectRepo.readResource('Binary', otherBinary.id)).rejects.toThrow('Not found');
     }));
 
   describe('Patient scoped access token', () => {

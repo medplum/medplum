@@ -15,9 +15,10 @@ import Bowser from 'bowser';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { isMfaRequired } from './utils';
+import { hasSmartResourceScopes, isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
@@ -37,10 +38,16 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState, systemRepo } = getAuthenticatedContext();
+  const { authState, repo, systemRepo } = getAuthenticatedContext();
   const { project, membership } = authState;
   const profileRef = membership.profile as Reference<ProfileResource>;
-  const profile = await systemRepo.readReference<ProfileResource>(profileRef);
+  const profile = await readMembershipReference<ProfileResource>(
+    systemRepo,
+    membership,
+    profileRef,
+    membershipProfileTypes,
+    { allowLinkedProjects: true }
+  );
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
   let user: WithId<User> | undefined = undefined;
@@ -48,6 +55,10 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+  }
+
+  // Account security details are only for logins that can manage the account (see getCallerUserReference)
+  if (user && !hasSmartResourceScopes(authState.login)) {
     const sessions = await getSessions(systemRepo, user);
     const memberships = await systemRepo.searchResources<ProjectMembership>({
       resourceType: 'ProjectMembership',
@@ -112,7 +123,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     security,
   };
 
-  res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
+  res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result));
 }
 
 export async function getUserConfiguration(
@@ -123,7 +134,9 @@ export async function getUserConfiguration(
   let result: UserConfiguration;
 
   if (membership.userConfiguration) {
-    result = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+    result = await readMembershipReference<UserConfiguration>(systemRepo, membership, membership.userConfiguration, [
+      'UserConfiguration',
+    ]);
   } else {
     result = { resourceType: 'UserConfiguration' };
   }
@@ -189,7 +202,8 @@ async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Pr
 
   const result = [];
   for (const login of logins) {
-    if (!login.membership || login.revoked) {
+    // A login that has not been granted yet is not a session
+    if (!login.membership || !login.granted || login.revoked) {
       continue;
     }
 

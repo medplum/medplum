@@ -1,9 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError } from '@medplum/core';
-import type { Project, User } from '@medplum/fhirtypes';
+import type { Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { MAX_PASSWORD_LENGTH } from '../constants';
-import { bcryptHashPassword, isMfaRequired, isPractitionerEmailDomainAllowed } from './utils';
+import type { AuthenticatedRequestContext } from '../context';
+import {
+  bcryptHashPassword,
+  getCallerUserReference,
+  hasSmartResourceScopes,
+  isMfaRequired,
+  isPractitionerEmailDomainAllowed,
+} from './utils';
 
 describe('isMfaRequired', () => {
   function createMfaTestUser(mfaRequired?: boolean): User {
@@ -139,5 +146,43 @@ describe('bcryptHashPassword', () => {
     expect(multibyte.length).toBeLessThanOrEqual(MAX_PASSWORD_LENGTH);
     expect(Buffer.byteLength(multibyte, 'utf8')).toBeGreaterThan(MAX_PASSWORD_LENGTH);
     expect(() => bcryptHashPassword(multibyte)).toThrow(OperationOutcomeError);
+  });
+});
+
+function makeLogin(scope: string | undefined): Login {
+  return { resourceType: 'Login', user: { reference: 'User/123' }, authMethod: 'password', authTime: '', scope };
+}
+
+describe('hasSmartResourceScopes', () => {
+  test.each([
+    [undefined, false],
+    ['openid', false],
+    ['openid profile email fhirUser launch/patient offline_access', false],
+    ['openid user/Observation.rs', true],
+    ['openid patient/*.rs', true],
+    ['openid user/*.*', true],
+  ])('%s', (scope, expected) => {
+    expect(hasSmartResourceScopes(makeLogin(scope))).toBe(expected);
+  });
+});
+
+describe('getCallerUserReference', () => {
+  const membership: ProjectMembership = {
+    resourceType: 'ProjectMembership',
+    project: { reference: 'Project/123' },
+    user: { reference: 'User/123' },
+    profile: { reference: 'Practitioner/123' },
+  };
+
+  function getContext(scope: string): AuthenticatedRequestContext {
+    return { authState: { login: makeLogin(scope), membership } } as unknown as AuthenticatedRequestContext;
+  }
+
+  test('Returns the user for a login without SMART resource scopes', () => {
+    expect(getCallerUserReference(getContext('openid offline_access'))).toStrictEqual({ reference: 'User/123' });
+  });
+
+  test('Rejects a login with SMART resource scopes', () => {
+    expect(() => getCallerUserReference(getContext('openid user/Observation.rs'))).toThrow(OperationOutcomeError);
   });
 });

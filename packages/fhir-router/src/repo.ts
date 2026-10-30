@@ -44,10 +44,22 @@ export type UpdateResourceOptions = {
   ifMatch?: string;
 };
 
+export type DeleteResourceOptions = {
+  ifMatch?: string;
+};
+
 export type ReadHistoryOptions = {
   offset?: number;
   limit?: number;
 };
+
+export interface SearchOptions {
+  /**
+   * When true, only `Bundle.entry` is guaranteed to be populated.
+   * Bundle-level metadata such as `link` and `total` may be omitted.
+   */
+  resourceOnly?: boolean;
+}
 
 /** One or more resource types, as a single type, an array, or a set. */
 export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
@@ -170,8 +182,9 @@ export abstract class FhirRepository {
    * See: https://www.hl7.org/fhir/http.html#delete
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
+   * @param options - Optional delete options.
    */
-  abstract deleteResource(resourceType: string, id: string): Promise<void>;
+  abstract deleteResource(resourceType: string, id: string, options?: DeleteResourceOptions): Promise<void>;
 
   /**
    * Patches a FHIR resource.
@@ -194,9 +207,13 @@ export abstract class FhirRepository {
    *
    * See: https://www.hl7.org/fhir/http.html#search
    * @param searchRequest - The FHIR search request.
+   * @param options - Optional search options.
    * @returns The search results.
    */
-  abstract search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>>;
+  abstract search<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    options?: SearchOptions
+  ): Promise<Bundle<WithId<T>>>;
 
   /**
    * Searches for FHIR resources by reference.
@@ -238,7 +255,7 @@ export abstract class FhirRepository {
    * @returns Promise to the first search result or undefined.
    */
   async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T> | undefined> {
-    const bundle = await this.search({ ...searchRequest, count: 1 });
+    const bundle = await this.search({ ...searchRequest, count: 1 }, { resourceOnly: true });
     return bundle.entry?.[0]?.resource;
   }
 
@@ -254,7 +271,7 @@ export abstract class FhirRepository {
    * @returns Promise to the array of search results.
    */
   async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T>[]> {
-    const bundle = await this.search(searchRequest);
+    const bundle = await this.search(searchRequest, { resourceOnly: true });
     return bundle.entry?.map((e) => e.resource as WithId<T>) ?? [];
   }
 
@@ -757,9 +774,13 @@ export class MemoryRepository extends FhirRepository {
     return results;
   }
 
-  async deleteResource(resourceType: string, id: string): Promise<void> {
-    if (!this.resources.get(resourceType)?.get(id)) {
+  async deleteResource(resourceType: string, id: string, options?: DeleteResourceOptions): Promise<void> {
+    const existing = this.resources.get(resourceType)?.get(id);
+    if (!existing) {
       throw new OperationOutcomeError(notFound);
+    }
+    if (options?.ifMatch && existing.meta?.versionId !== options.ifMatch) {
+      throw new OperationOutcomeError(preconditionFailed);
     }
     this.resources.get(resourceType)?.delete(id);
   }

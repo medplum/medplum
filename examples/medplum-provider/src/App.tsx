@@ -58,6 +58,7 @@ import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { ResourceSchedulingPage } from './pages/resource/ResourceSchedulingPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
+import { InternalSchedulingConfigWorkspacePage } from './pages/scheduling/InternalSchedulingConfigWorkspacePage';
 import { InternalSchedulingWorkspacePage } from './pages/scheduling/InternalSchedulingWorkspacePage';
 import { SearchPage } from './pages/SearchPage';
 import { AccountSettingsPage } from './pages/settings/AccountSettingsPage';
@@ -66,6 +67,7 @@ import {
   BillingPayersSettingsPage,
   BillingPractitionersSettingsPage,
   ChargeItemsSettingsPage,
+  EligibilitySettingsPage,
 } from './pages/settings/BillingSettingsPages';
 import { IntegrationsSettingsPage } from './pages/settings/IntegrationsSettingsPage';
 import { MembersSettingsPage } from './pages/settings/MembersSettingsPage';
@@ -321,6 +323,8 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsRedirect />} />
               {/* Internal-only test harness for `SchedulingWorkspace` — intentionally not in `menus` above */}
               <Route path="/internal-scheduling-workspace" element={<InternalSchedulingWorkspacePage />} />
+              {/* Internal-only test harness for `SchedulingConfigWorkspace` — intentionally not in `menus` above */}
+              <Route path="/internal-scheduling-config" element={<InternalSchedulingConfigWorkspacePage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
@@ -344,6 +348,7 @@ export function App(): JSX.Element | null {
                     <Route path="billing/organizations" element={<BillingOrganizationsSettingsPage />} />
                     <Route path="billing/practitioners" element={<BillingPractitionersSettingsPage />} />
                     <Route path="billing/payers" element={<BillingPayersSettingsPage />} />
+                    <Route path="billing/eligibility" element={<EligibilitySettingsPage />} />
                   </>
                 )}
                 <Route path="billing/charge-items" element={<ChargeItemsSettingsPage />} />

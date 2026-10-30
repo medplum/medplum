@@ -1,7 +1,7 @@
 # DoseSpot
 
 :::tip[Planning this integration?]
-The [E-Prescribe Decision Guide](/docs/decision-guides/e-prescribe) walks through the integration and enrollment decisions behind an e-prescribing build — iframe vs. integrated UI, controlled substances, and prescriber enrollment — use it alongside these docs.
+The [E-Prescribe Decision Guide](/docs/decision-guides/e-prescribe) walks through the integration and enrollment decisions for e-prescribing in the Medplum EHR — hosted iframe vs. custom workflow, controlled substances, and prescriber enrollment — use it alongside these docs.
 :::
 
 Medplum has partnered with [DoseSpot](https://www.dosespot.com/), a leader in e-prescription (eRx) technology, to offer prescription ordering services for the [Medplum EHR](/solutions/medplum-ehr). Medplum's e-prescribe functionality is exclusively available to providers directly engaged in patient care as part of [Medplum EHR](/solutions/medplum-ehr).

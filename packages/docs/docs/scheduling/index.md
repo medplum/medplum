@@ -23,7 +23,7 @@ Welcome to the Medplum Scheduling documentation. We currently support a range of
 
 Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each appointment type or service. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
 
-Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute.
+Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute. A Schedule that should take every appointment type can instead be marked as [offering all service types](/docs/scheduling/defining-availability#offering-all-service-types).
 
 <details>
   <summary>Referencing a HealthcareService</summary>

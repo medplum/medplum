@@ -39,11 +39,22 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
+  if (config.newProjectRegistrationEnabled === false) {
+    sendOutcome(res, badRequest('New project registration is disabled'));
+    return;
+  }
+
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
     sendOutcome(res, badRequest('Login already has a membership'));
+    return;
+  }
+
+  if (login.project?.reference && login.project.reference !== 'Project/new') {
+    // The login was started for an existing project, so it cannot be used outside of that project
+    sendOutcome(res, badRequest('Invalid project'));
     return;
   }
 

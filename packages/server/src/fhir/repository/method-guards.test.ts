@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { createReference, Operator, parseSearchRequest } from '@medplum/core';
+import { AccessPolicyInteraction, createReference, Operator, parseSearchRequest } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { NIL } from 'uuid';
 import { initAppServices, shutdownApp } from '../../app';
@@ -66,6 +66,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'handleStorage',
   'writeToDatabase',
   'checkExistingResource',
+  'canUpdateExisting',
   'isNotModified',
   'getPermittedProjectIds',
   'addProjectFilters',
@@ -86,9 +87,11 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'isResourceWriteable',
   'isCacheOnly',
   'restoreReadonlyFields',
+  'logPostMetadataFieldMatch',
   'logEvent',
   'getCacheEntry',
   'getCacheEntries',
+  'cacheEntryOnShard',
   'setCacheEntry',
   'deleteCacheEntry',
   'deleteCacheEntries',
@@ -212,6 +215,11 @@ const guardedInvocations: MethodInvocation[] = [
     kind: 'method',
     invoke: (repo) => repo.readVersion<Patient>('Patient', guardedPatient.id, NIL),
   },
+  {
+    name: 'canPerformInteractionById',
+    kind: 'method',
+    invoke: (repo) => repo.canPerformInteractionById(AccessPolicyInteraction.READ, 'Patient', guardedPatient.id),
+  },
 
   // Writes
   {
@@ -240,6 +248,11 @@ const guardedInvocations: MethodInvocation[] = [
     invoke: (repo) => repo.reindexResource<Patient>('Patient', guardedPatient.id),
   },
   { name: 'reindexResources', kind: 'method', invoke: (repo) => repo.reindexResources<Patient>([]) },
+  {
+    name: 'restoreResourceVersions',
+    kind: 'method',
+    invoke: (repo) => repo.restoreResourceVersions('Patient', NIL, []),
+  },
   {
     name: 'resendSubscriptions',
     kind: 'method',

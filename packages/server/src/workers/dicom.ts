@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { createReference, isGone, normalizeOperationOutcome } from '@medplum/core';
+import { createReference, isGone, isNotFound, normalizeOperationOutcome } from '@medplum/core';
 import type { Binary, DicomInstance } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import dcmjs from 'dcmjs';
 import { Readable } from 'node:stream';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getRepoForProject } from '../fhir/accesspolicy';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import type { ProjectJobTarget } from './base';
@@ -125,8 +126,25 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
     throw err;
   }
 
+  const projectId = resource.meta?.project;
+  if (!projectId) {
+    log.info('DICOM instance has no project', { id });
+    return;
+  }
+
   try {
-    const binary = await systemRepo.readReference(resource.raw);
+    // Read the raw file with the instance's project access, because the reference is user-supplied
+    using projectRepo = await getRepoForProject(projectId);
+    let binary: WithId<Binary>;
+    try {
+      binary = await projectRepo.readReference(resource.raw);
+    } catch (err) {
+      if (isNotFound(normalizeOperationOutcome(err))) {
+        log.info('DICOM instance raw Binary not found', { id });
+        return;
+      }
+      throw err;
+    }
     const stream = await getBinaryStorage().readBinary(binary);
     const listener = new DicomMetadataListener();
     listener.startObject({});

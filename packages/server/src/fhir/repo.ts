@@ -42,7 +42,12 @@ import {
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import type {
+  CreateResourceOptions,
+  DeleteResourceOptions,
+  ReadHistoryOptions,
+  UpdateResourceOptions,
+} from '@medplum/fhir-router';
 import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
@@ -131,6 +136,7 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
+import type { HistoryRow } from './repository/row-builder';
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
@@ -146,7 +152,14 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
+import {
+  getResourceTypeShardId,
+  GLOBAL_SHARD_ID,
+  normalizeShardId,
+  resolveShardId,
+  shardRoutingError,
+  TODO_SHARD_ID,
+} from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -274,8 +287,9 @@ export class Repository extends FhirRepository implements Disposable {
    * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
    * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
+   * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
    */
-  static readonly VERSION: number = 18;
+  static readonly VERSION: number = 19;
 
   /**
    * Constructs a new Repository instance.
@@ -649,10 +663,17 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(notFound);
     }
 
+    validateResourceType(resourceType);
+
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
+    // A reader may lag behind the writer, so only reads served by the writer are cached. Check this shard's
+    // connection rather than this.mode, which reports writer if any shard is writer. Read it before the query,
+    // which picks its pool synchronously from the same mode, so a concurrent writer switch cannot change it.
+    const { entry } = this.connectionFor({ resourceTypes: resourceType as ResourceType });
+    const servedByWriter = entry.connection.mode === RepositoryMode.WRITER;
     const rows = await this.sqlRead<{ content: string; deleted: boolean }>(builder, resourceType as ResourceType);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
@@ -664,8 +685,8 @@ export class Repository extends FhirRepository implements Disposable {
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
 
-    if (!this.inOwnTransaction()) {
-      // Only set cache entry if not in a transaction
+    // Only set cache entry if not in a transaction
+    if (!this.inOwnTransaction() && servedByWriter) {
       await this.setCacheEntry(resource, { force: true });
     }
 
@@ -682,7 +703,7 @@ export class Repository extends FhirRepository implements Disposable {
     return resource;
   }
 
-  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+  async readReferences<T extends Resource>(references: readonly Reference<T>[]): Promise<(WithId<T> | Error)[]> {
     await this.recordFhirQuota(references.length * FhirQuotaCost.READ);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
@@ -1004,8 +1025,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
-      (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
-      if (!this.canPerformInteraction(interaction, existing)) {
+      if (!this.canUpdateExisting(existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
@@ -1073,6 +1093,10 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.isNotModified(existing, result)) {
       this.removeHiddenFields(existing);
       return existing;
+    }
+
+    if (!existing) {
+      this.logPostMetadataFieldMatch(updated, result);
     }
 
     if (!this.isResourceWriteable(existing, result, interaction)) {
@@ -1310,6 +1334,109 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Restores archived versions of one resource type, preserving ids, version ids, and meta.
+   * Inserts each version into history, then rebuilds the current row from the latest stored version.
+   * Idempotent, and does not trigger subscriptions or bots.
+   * This is only available to super admins.
+   * @param resourceType - The FHIR resource type.
+   * @param projectId - The project being restored. Every version must belong to it.
+   * @param versions - The archived versions.
+   */
+  async restoreResourceVersions(resourceType: ResourceType, projectId: string, versions: Resource[]): Promise<void> {
+    this.assertUsable();
+    // Protected types are server-wide (e.g. JsonWebKey signing keys), so an archive must never contain them
+    if (!this.isSuperAdmin() || protectedResourceTypes.includes(resourceType)) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    // Super admin Project fields come from the target, never the archive, so reruns keep what the operator set
+    let existingProject: Project | undefined;
+    if (resourceType === 'Project') {
+      const [row] = await this.sqlRead<{ content: string }>(
+        new SelectQuery('Project').column('content').where('id', '=', projectId),
+        'Project',
+        { mode: DatabaseMode.WRITER }
+      );
+      existingProject = row ? (parseHistoryContent(row.content) as Project) : undefined;
+    }
+    const restored = versions.map((v) => {
+      if (v.resourceType !== resourceType || !isRestorableToProject(v, projectId)) {
+        throw new OperationOutcomeError(
+          badRequest(`${v.resourceType}/${v.id} does not belong to Project/${projectId}`)
+        );
+      }
+      return v.resourceType === 'Project' ? replaceSuperAdminProjectFields(v, existingProject) : v;
+    });
+    const ids = [...new Set(versions.map((v) => v.id as string))];
+
+    await this.withTransaction(
+      async (txRepo) => {
+        const conflicts = await txRepo.sqlRead<{ id: string }>(
+          new SelectQuery(resourceType).column('id').where('id', 'IN', ids).where('projectId', '!=', projectId),
+          resourceType,
+          { mode: DatabaseMode.WRITER }
+        );
+        if (conflicts.length) {
+          throw new OperationOutcomeError(badRequest(`${resourceType}/${conflicts[0].id} belongs to another project`));
+        }
+
+        await txRepo.sqlWrite(
+          new InsertQuery(
+            resourceType + '_History',
+            restored.map((v) => ({
+              id: v.id,
+              versionId: v.meta?.versionId,
+              lastUpdated: v.meta?.lastUpdated,
+              content: stringify(v),
+            }))
+          ).ignoreOnConflict(),
+          resourceType
+        );
+
+        // Latest per id from the database, so reruns and versions split across batches resolve correctly
+        const latest = await txRepo.sqlRead<Omit<HistoryRow, 'versionId'>>(
+          new SelectQuery(resourceType + '_History')
+            .distinctOn('id')
+            .column('id')
+            .column('lastUpdated')
+            .column('content')
+            .where('id', 'IN', ids)
+            .orderBy('id')
+            .orderBy('lastUpdated', true)
+            .orderBy('versionId', true),
+          resourceType,
+          { mode: DatabaseMode.WRITER }
+        );
+
+        const current: WithId<Resource>[] = [];
+        const deleted: { id: string; lastUpdated: Date }[] = [];
+        for (const row of latest) {
+          const resource = parseHistoryContent(row.content) as WithId<Resource>;
+          if (resource.meta?.deleted) {
+            deleted.push(row);
+          } else {
+            current.push(resource);
+          }
+        }
+        if (deleted.length) {
+          const deletedRows = deleted.map((row) =>
+            buildDeletedResourceRow(
+              { resourceType, id: row.id, meta: { project: projectId } } as WithId<Resource>,
+              row.lastUpdated
+            )
+          );
+          await txRepo.sqlWrite(new InsertQuery(resourceType, deletedRows).mergeOnConflict(), resourceType);
+          for (const row of deleted) {
+            await txRepo.deleteFromLookupTables({ resourceType, id: row.id } as WithId<Resource>);
+          }
+        }
+        await txRepo.reindexResources(current);
+      },
+      { resourceTypes: resourceType, source: 'repo.restoreResourceVersions' }
+    );
+    await this.deleteCacheEntries(resourceType, ids);
+  }
+
+  /**
    * Resends subscriptions for the resource.
    * This is only available to the admin accounts.
    * This should not result in any change to the resource or its history.
@@ -1351,7 +1478,11 @@ export class Repository extends FhirRepository implements Disposable {
     );
   }
 
-  async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+  async deleteResource<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: DeleteResourceOptions
+  ): Promise<void> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1363,6 +1494,11 @@ export class Repository extends FhirRepository implements Disposable {
     } catch (err) {
       const outcomeErr = err as OperationOutcomeError;
       if (isGone(outcomeErr.outcome)) {
+        if (options?.ifMatch) {
+          // Trying to delete something that was already deleted tells us that someone mutated this
+          // since our requested version; report that error.
+          throw new OperationOutcomeError(preconditionFailed);
+        }
         return; // Resource is already deleted, return successfully
       }
       throw err;
@@ -1371,6 +1507,9 @@ export class Repository extends FhirRepository implements Disposable {
     try {
       if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
+      }
+      if (options?.ifMatch && resource.meta?.versionId !== options.ifMatch) {
+        throw new OperationOutcomeError(preconditionFailed);
       }
 
       await preCommitValidation(this, resource, 'delete');
@@ -1403,6 +1542,15 @@ export class Repository extends FhirRepository implements Disposable {
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(
           async (txRepo) => {
+            if (options?.ifMatch) {
+              // Re-check against the snapshot this transaction writes from. A write committed after this
+              // read fails the upsert below with a serialization error, and the retry lands back here.
+              const current = await txRepo.readResourceFromDatabase<T>(resourceType, id);
+              if (current.meta?.versionId !== options.ifMatch) {
+                throw new OperationOutcomeError(preconditionFailed);
+              }
+            }
+
             // FHIR logical delete: retain history and append a new deleted version. Instance
             // reads and vread of that version return HTTP 410 Gone; prior versions stay readable.
             const versionId = txRepo.generateId();
@@ -1449,9 +1597,9 @@ export class Repository extends FhirRepository implements Disposable {
       }
 
       if (!this.context.skipBackgroundJobs) {
-        await addBackgroundJobs(resource, resource, {
-          project: await this.getProjectById(resource.meta?.project),
-          interaction: 'delete',
+        await this.postCommit(async () => {
+          const project = await this.getProjectById(resource.meta?.project);
+          await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
         });
       }
     } catch (err) {
@@ -1476,7 +1624,7 @@ export class Repository extends FhirRepository implements Disposable {
     try {
       return await this.ensureInTransaction(
         async (txRepo) => {
-          const resource = await txRepo.readResourceFromDatabase<T>(resourceType, id);
+          const resource = await txRepo.readResourceImpl<T>(resourceType, id);
 
           if (resource.resourceType !== resourceType) {
             throw new OperationOutcomeError(badRequest('Incorrect resource type'));
@@ -1484,6 +1632,13 @@ export class Repository extends FhirRepository implements Disposable {
           if (resource.id !== id) {
             throw new OperationOutcomeError(badRequest('Incorrect ID'));
           }
+
+          // Check before evaluating the patch, which can disclose resource content (e.g. a failed "test" operation)
+          if (!txRepo.canUpdateExisting(resource)) {
+            throw new OperationOutcomeError(forbidden);
+          }
+          // Hidden fields are restored from the existing resource on update
+          txRepo.removeHiddenFields(resource, AccessPolicyInteraction.UPDATE, true);
 
           if (Array.isArray(patch)) {
             patchObject(resource, patch);
@@ -1494,7 +1649,7 @@ export class Repository extends FhirRepository implements Disposable {
             );
             fhirpathPatchTypedValue(toTypedValue(resource), params.operation as FhirPathPatch[]);
           } else {
-            return resource; // No patch present, return unmodified
+            return txRepo.removeHiddenFields(resource); // No patch present, return unmodified
           }
 
           const result = await txRepo.updateResourceImpl(resource, false, options);
@@ -1824,12 +1979,13 @@ export class Repository extends FhirRepository implements Disposable {
           );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
-            getLogger().warn('Invalid access policy criteria', {
+            getLogger().error('Invalid access policy criteria', {
               accessPolicy: accessPolicy.id,
               resourceType: policy.resourceType,
               criteria: policy.criteria,
             });
-            return; // Ignore invalid access policy criteria
+            // Fail closed: a criteria that cannot be applied must not leave the type unfiltered
+            throw new OperationOutcomeError(forbidden);
           }
 
           // Add subquery for access policy criteria.
@@ -2178,8 +2334,11 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Determines if the current user can actually perform some interaction on the specified resource.
    * This is a more in-depth check, e.g. after building the candidate result of a write operation.
+   * The resource MUST be complete: a stored version or a write candidate. Copies returned by `readResource()`
+   * or search may lack hidden fields and `meta.project`, which changes the result; for those, use
+   * `canPerformInteractionById()` instead.
    * @param interaction - The interaction to be performed.
-   * @param resource - The resource.
+   * @param resource - The complete resource.
    * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
   canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): AccessPolicyResource | undefined {
@@ -2204,6 +2363,48 @@ export class Repository extends FhirRepository implements Disposable {
       }
     }
     return satisfiedAccessPolicy(resource, interaction, this.context.accessPolicy);
+  }
+
+  /**
+   * Determines if the current user can perform some interaction on the current version of a resource.
+   * The stored resource is read in full, so the check sees fields that access policy hides from the user.
+   * @param interaction - The interaction to be performed.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @returns True if the interaction is permitted; false if not, or if the resource cannot be read.
+   */
+  async canPerformInteractionById(
+    interaction: AccessPolicyInteraction,
+    resourceType: ResourceType,
+    id: string
+  ): Promise<boolean> {
+    this.assertUsable();
+    let resource: WithId<Resource>;
+    try {
+      resource = await this.readResourceImpl(resourceType, id);
+    } catch (err) {
+      const outcome = normalizeOperationOutcome(err);
+      if (isNotFound(outcome) || isGone(outcome) || outcome.id === forbidden.id) {
+        return false;
+      }
+      throw err;
+    }
+    if (interaction === AccessPolicyInteraction.UPDATE) {
+      return this.canUpdateExisting(resource);
+    }
+    return Boolean(this.canPerformInteraction(interaction, resource));
+  }
+
+  /**
+   * Determines if the current user can update the stored version of a resource.
+   * Compartments are recomputed first, so the check uses the latest compartment rules.
+   * @param existing - The stored resource; its `meta.compartment` is updated in place.
+   * @returns True if the update is permitted.
+   */
+  private canUpdateExisting(existing: WithId<Resource>): boolean {
+    existing.meta ??= {};
+    existing.meta.compartment = this.getCompartments(existing);
+    return Boolean(this.canPerformInteraction(AccessPolicyInteraction.UPDATE, existing));
   }
 
   /**
@@ -2259,14 +2460,20 @@ export class Repository extends FhirRepository implements Disposable {
    * Removes hidden fields from a resource as defined by the access policy.
    * This should be called for any "read" operation.
    * @param input - The input resource.
+   * @param interaction - The interaction whose access policy defines the hidden fields.
+   * @param extendedMode - Whether to keep internal meta fields. Defaults to the context's extended mode.
    * @returns The resource with hidden fields removed.
    */
-  removeHiddenFields<T extends Resource>(input: T): T {
-    const policy = satisfiedAccessPolicy(input, AccessPolicyInteraction.READ, this.context.accessPolicy);
+  removeHiddenFields<T extends Resource>(
+    input: T,
+    interaction: AccessPolicyInteraction = AccessPolicyInteraction.READ,
+    extendedMode = this.context.extendedMode
+  ): T {
+    const policy = satisfiedAccessPolicy(input, interaction, this.context.accessPolicy);
     for (const field of policy?.hiddenFields ?? EMPTY) {
       removeField(input, field);
     }
-    if (!this.context.extendedMode && input.meta) {
+    if (!extendedMode && input.meta) {
       const meta = input.meta;
       meta.author = undefined;
       meta.project = undefined;
@@ -2276,6 +2483,31 @@ export class Repository extends FhirRepository implements Disposable {
       meta.deleted = undefined;
     }
     return input;
+  }
+
+  /**
+   * Diagnostic logging for access policy entry selection on create.
+   * Logs the fields listed by the entry that matches the resource with server metadata assigned,
+   * when those fields are present in the resource.
+   * @param updated - The resource before server metadata is assigned.
+   * @param result - The resource with server metadata assigned.
+   */
+  private logPostMetadataFieldMatch(updated: Resource, result: Resource): void {
+    const policy = satisfiedAccessPolicy(result, AccessPolicyInteraction.CREATE, this.context.accessPolicy);
+    const fields = [...(policy?.readonlyFields ?? []), ...(policy?.hiddenFields ?? [])];
+    const present = fields.filter((field) => {
+      const copy = deepClone(updated);
+      removeField(copy, field);
+      return !deepEquals(copy, updated);
+    });
+    if (present.length > 0) {
+      getLogger().warn('Access policy field match after metadata', {
+        resourceType: result.resourceType,
+        projectId: result.meta?.project,
+        criteria: policy?.criteria,
+        fields: present,
+      });
+    }
   }
 
   /**
@@ -2384,7 +2616,7 @@ export class Repository extends FhirRepository implements Disposable {
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       subtype,
-      this.context.projects?.[0]?.id as string,
+      this.context.projects?.[0],
       this.context.author,
       this.context.remoteAddress,
       outcome,
@@ -2548,7 +2780,8 @@ export class Repository extends FhirRepository implements Disposable {
       return undefined;
     }
     this.recordCacheAccess('read', resourceType, 'repo.getCacheEntry');
-    return getResourceCacheEntry<T>(resourceType, id);
+    const entry = await getResourceCacheEntry<T>(resourceType, id);
+    return this.cacheEntryOnShard(entry);
   }
 
   /**
@@ -2556,14 +2789,31 @@ export class Repository extends FhirRepository implements Disposable {
    * @param references - Array of FHIR references.
    * @returns Array of cache entries or undefined.
    */
-  private async getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+  private async getCacheEntries(references: readonly Reference[]): Promise<(CacheEntry | undefined)[]> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       return new Array(references.length);
     }
 
     this.recordCacheAccess('read', getResourceTypesFromReferences(references), 'repo.getCacheEntries');
-    return getResourceCacheEntries(references);
+    const entries = await getResourceCacheEntries(references);
+    for (let i = 0; i < entries.length; i++) {
+      entries[i] = this.cacheEntryOnShard(entries[i]);
+    }
+    return entries;
+  }
+
+  /**
+   * An entry cached by a repository on another shard is a copy this repository's database may not hold,
+   * so reads treat it as a miss.
+   * @param entry - The cache entry.
+   * @returns The entry if it was cached from the shard this repository reads its resource type from.
+   */
+  private cacheEntryOnShard<T extends Resource>(entry: CacheEntry<T> | undefined): CacheEntry<T> | undefined {
+    if (entry) {
+      return entry.shardId === getResourceTypeShardId(this.shardId, entry.resource.resourceType) ? entry : undefined;
+    }
+    return undefined;
   }
 
   /**
@@ -2583,7 +2833,7 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource, options);
+    await setResourceCacheEntry(resource, getResourceTypeShardId(this.shardId, resource.resourceType), options);
   }
 
   /**
@@ -2877,3 +3127,58 @@ const patchOperationDefinition: OperationDefinition = {
 };
 
 const SuperAdminProjectIdEditableResourceTypes = ['User', 'Subscription'];
+
+/**
+ * Returns true if an archived version belongs to the project being restored.
+ * Besides meta.project, checks the fields that login and access control use to resolve a project,
+ * so a crafted archive cannot grant itself access to another project.
+ * @param resource - The archived version.
+ * @param projectId - The project being restored.
+ * @returns True if the version belongs to the project.
+ */
+function isRestorableToProject(resource: Resource, projectId: string): boolean {
+  if (resource.meta?.deleted) {
+    // Older tombstones have no meta.project; the conflict check still protects other projects
+    return (resource.meta.project ?? projectId) === projectId;
+  }
+  if (resource.meta?.project !== projectId) {
+    return false;
+  }
+  switch (resource.resourceType) {
+    case 'Project':
+      return resource.id === projectId;
+    case 'ProjectMembership':
+    case 'User':
+      return resolveId(resource.project) === projectId;
+    default:
+      return true;
+  }
+}
+
+const superAdminProjectFields = [
+  'active',
+  'superAdmin',
+  'features',
+  'link',
+  'systemSetting',
+  'systemSecret',
+  'strictMode',
+] as const;
+
+/**
+ * Replaces the Project fields that only super admins can set with the target's current values.
+ * @param project - The archived Project version.
+ * @param existing - The target's current Project, if any.
+ * @returns The Project with the target's super admin fields.
+ */
+function replaceSuperAdminProjectFields(project: Project, existing: Project | undefined): Project {
+  const result = { ...project };
+  for (const field of superAdminProjectFields) {
+    if (existing?.[field] === undefined) {
+      delete result[field];
+    } else {
+      Object.assign(result, { [field]: existing[field] });
+    }
+  }
+  return result;
+}

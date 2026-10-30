@@ -205,7 +205,7 @@ export interface Media {
   /**
    * The device used to collect the media.
    */
-  device?: Reference<Device | DeviceMetric | Device>;
+  device?: Reference<Device | DeviceMetric>;
 
   /**
    * Height of the image in pixels (photo/video).

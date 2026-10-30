@@ -33,11 +33,15 @@ import { Modal, ResourceInput, useMedplum, useMedplumProfile, useResource, useSe
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useEligibilityServiceTypes } from '../../hooks/useEligibilityServiceTypes';
 import { BILLING_ORGANIZATION_IDENTIFIER } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
+import type { ServiceType } from '../../utils/eligibility';
+import { buildEligibilityServiceTypeItems, pickServiceTypes } from '../../utils/eligibility';
 import { showErrorNotification } from '../../utils/notifications';
 import { BillingOrganizationOption } from '../billing/BillingOrganizationOption';
 import { BenefitsTable } from '../insurance/BenefitsTable';
+import { EligibilityServiceTypeSelect } from '../insurance/EligibilityServiceTypeSelect';
 
 interface EncounterCoverageEligibilityModalProps {
   patient: Reference<Patient> | Patient;
@@ -48,7 +52,8 @@ interface EncounterCoverageEligibilityModalProps {
 /**
  * Shows the patient's active insurance coverages on a visit and runs eligibility checks against them.
  * The Check Eligibility button opens a picker for the billing organization the check runs under, preselecting
- * the one on the signed-in practitioner's active PractitionerRole; cleared, the check runs as the practitioner.
+ * the one on the signed-in practitioner's active PractitionerRole; cleared, the check runs as the practitioner. Each
+ * check asks about the service types saved in Billing Settings.
  * @param props - The EncounterCoverageEligibilityModal React props.
  * @returns The EncounterCoverageEligibilityModal React node.
  */
@@ -73,6 +78,13 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
       : undefined,
     { enabled: opened && !!practitioner }
   );
+  const { serviceTypes, loading: serviceTypesLoading, error: serviceTypesError } = useEligibilityServiceTypes(opened);
+
+  useEffect(() => {
+    if (serviceTypesError) {
+      showErrorNotification(serviceTypesError);
+    }
+  }, [serviceTypesError]);
 
   useEffect(() => {
     if (!opened || !patient?.id) {
@@ -120,7 +132,8 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
                 patient={patient}
                 practitioner={practitioner}
                 defaultBillingOrganization={practitionerRole?.organization}
-                providerLoading={practitionerRoleLoading}
+                optionsLoading={practitionerRoleLoading || serviceTypesLoading}
+                serviceTypes={serviceTypes}
               />
             ))}
         </Stack>
@@ -135,18 +148,27 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
  * @param patient - The patient the coverage belongs to.
  * @param practitioner - The signed-in practitioner the check runs as when no billing organization is picked.
  * @param defaultBillingOrganization - The billing organization on the practitioner's role, preselected in the picker.
- * @param providerLoading - Whether the practitioner's role is still being resolved.
+ * @param optionsLoading - Whether the practitioner's role or the saved service types are still loading.
+ * @param serviceTypes - The X12 service types recorded in Billing Settings, offered for each check.
  */
 interface CoverageCardProps {
   coverage: Coverage;
   patient: Reference<Patient> | Patient;
   practitioner: Practitioner | undefined;
   defaultBillingOrganization: Reference<Organization> | undefined;
-  providerLoading: boolean;
+  optionsLoading: boolean;
+  serviceTypes: readonly ServiceType[];
 }
 
 function CoverageCard(props: CoverageCardProps): JSX.Element {
-  const { coverage, patient: patientRef, practitioner, defaultBillingOrganization, providerLoading } = props;
+  const {
+    coverage,
+    patient: patientRef,
+    practitioner,
+    defaultBillingOrganization,
+    optionsLoading,
+    serviceTypes,
+  } = props;
   const patient = useResource(patientRef);
   const medplum = useMedplum();
   const [benefitsOpened, { toggle: toggleBenefits }] = useDisclosure(false);
@@ -188,7 +210,10 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
     fetchLatestRequestAndResponse().catch(showErrorNotification);
   }, [fetchLatestRequestAndResponse]);
 
-  const handleCheckEligibility = async (billingOrganization: Reference<Organization> | undefined): Promise<void> => {
+  const handleCheckEligibility = async (
+    billingOrganization: Reference<Organization> | undefined,
+    picked: readonly ServiceType[]
+  ): Promise<void> => {
     if (!practitioner || !coverage || !patient) {
       return;
     }
@@ -204,6 +229,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         insurer: coverage.payor?.[0] as Reference<Organization>,
         provider,
         insurance: [{ focal: true, coverage: createReference(coverage) }],
+        item: buildEligibilityServiceTypeItems(picked),
       };
       const savedRequest = await medplum.createResource(requestBody);
       setLatestRequest(savedRequest);
@@ -232,10 +258,13 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         <Group gap="xs" style={{ flexShrink: 0 }}>
           <CheckEligibilityButton
             loading={checkingEligibility}
-            disabled={providerLoading || !practitioner}
+            disabled={optionsLoading || !practitioner}
             practitionerName={practitioner ? getDisplayString(practitioner) : undefined}
             defaultBillingOrganization={defaultBillingOrganization}
-            onCheck={(billingOrganization) => handleCheckEligibility(billingOrganization).catch(showErrorNotification)}
+            serviceTypes={serviceTypes}
+            onCheck={(billingOrganization, picked) =>
+              handleCheckEligibility(billingOrganization, picked).catch(showErrorNotification)
+            }
           />
           <Badge color={getStatusColor(coverage.status)} variant="light">
             {capitalize(coverage.status ?? 'unknown')}
@@ -309,19 +338,23 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
  * @param disabled - Whether the button is disabled.
  * @param practitionerName - The signed-in practitioner's name, shown as the alternative to an organization.
  * @param defaultBillingOrganization - The billing organization preselected each time the picker opens.
- * @param onCheck - Runs the check under the given billing organization, or the practitioner when undefined.
+ * @param serviceTypes - The recorded X12 service types, all preselected each time the picker opens.
+ * @param onCheck - Runs the check under the given billing organization, or the practitioner when undefined, asking
+ * about the given service types.
  */
 interface CheckEligibilityButtonProps {
   loading: boolean;
   disabled: boolean;
   practitionerName: string | undefined;
   defaultBillingOrganization: Reference<Organization> | undefined;
-  onCheck: (billingOrganization: Reference<Organization> | undefined) => void;
+  serviceTypes: readonly ServiceType[];
+  onCheck: (billingOrganization: Reference<Organization> | undefined, serviceTypes: readonly ServiceType[]) => void;
 }
 
 /**
- * The Check Eligibility action. It opens a popover to pick the billing organization first, preselecting the
- * default every time; running with the picker cleared bills under the practitioner themselves. The button stays
+ * The Check Eligibility action. It opens a popover to pick the billing organization and the service types first,
+ * preselecting the default organization and every recorded service type each time; running with the organization
+ * cleared bills under the practitioner themselves. The button stays
  * disabled while the default organization is still loading so the picker never opens empty by accident; a default
  * that fails to load is dropped. The popover ignores outside clicks because the organization dropdown renders in a
  * portal; Cancel or Escape dismisses it.
@@ -329,15 +362,17 @@ interface CheckEligibilityButtonProps {
  * @returns The CheckEligibilityButton React node.
  */
 function CheckEligibilityButton(props: CheckEligibilityButtonProps): JSX.Element {
-  const { loading, disabled, practitionerName, defaultBillingOrganization, onCheck } = props;
+  const { loading, disabled, practitionerName, defaultBillingOrganization, serviceTypes, onCheck } = props;
   const [defaultOutcome, setDefaultOutcome] = useState<OperationOutcome>();
   const defaultOrganization = useResource(defaultBillingOrganization, setDefaultOutcome);
   const resolvingDefault = !!defaultBillingOrganization && !defaultOrganization && !defaultOutcome;
   const [pickerOpened, setPickerOpened] = useState(false);
   const [chosenOrganization, setChosenOrganization] = useState<Organization>();
+  const [chosenCodes, setChosenCodes] = useState<string[]>([]);
 
   const openPicker = (): void => {
     setChosenOrganization(defaultOrganization);
+    setChosenCodes(serviceTypes.map((serviceType) => serviceType.code));
     setPickerOpened(true);
   };
 
@@ -383,15 +418,22 @@ function CheckEligibilityButton(props: CheckEligibilityButtonProps): JSX.Element
                 : `Leave empty to run the check as ${practitionerName ?? 'the practitioner'}.`}
             </Text>
           </Box>
+          <EligibilityServiceTypeSelect
+            size="xs"
+            serviceTypes={serviceTypes}
+            value={chosenCodes}
+            onChange={setChosenCodes}
+          />
           <Group justify="flex-end" gap="xs">
             <Button size="xs" variant="subtle" color="gray" onClick={() => setPickerOpened(false)}>
               Cancel
             </Button>
             <Button
               size="xs"
+              disabled={chosenCodes.length === 0}
               onClick={() => {
                 setPickerOpened(false);
-                onCheck(toReference(chosenOrganization));
+                onCheck(toReference(chosenOrganization), pickServiceTypes(serviceTypes, chosenCodes));
               }}
             >
               {chosenOrganization ? 'Run as Organization' : 'Run as Practitioner'}

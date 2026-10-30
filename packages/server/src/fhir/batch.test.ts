@@ -35,6 +35,7 @@ import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup'
 import type { BatchJobData } from '../workers/batch';
 import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
+import { normalizeShardId, TODO_SHARD_ID } from './sharding';
 import { PostgresError } from './sql';
 
 /**
@@ -927,6 +928,54 @@ describe('Batch and Transaction processing', () => {
     expect((reread.body as Patient).gender).toBeUndefined();
   });
 
+  test('Batch DELETE with ifMatch', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const deleteBatch = (versionId: string | undefined): Bundle => ({
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [{ request: { method: 'DELETE', url: 'Patient/' + patient.id, ifMatch: `W/"${versionId}"` } }],
+    });
+
+    // A stale version leaves the resource in place
+    const res1 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(deleteBatch(patient.meta?.versionId));
+    expect(res1).toHaveStatus(200);
+    expect((res1.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('412');
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(deleteBatch((updated.body as Patient).meta?.versionId));
+    expect(res2).toHaveStatus(200);
+    expect((res2.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('200');
+    const gone = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(gone).toHaveStatus(410);
+  });
+
   test('Batch FHIRPath PATCH with current ifMatch succeeds and persists', async () => {
     const created = await request(app)
       .post('/fhir/R4/Patient')
@@ -1355,6 +1404,28 @@ describe('Batch and Transaction processing', () => {
     const bundle = res.body as Bundle;
     expect(bundle.entry).toHaveLength(1);
     expect(bundle.entry?.[0]?.response?.status).toStrictEqual('400');
+  });
+
+  test('Batch create as update with client-assigned ID', async () => {
+    const { accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+    const id = randomUUID();
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [{ request: { method: 'PUT', url: 'Patient' }, resource: { resourceType: 'Patient', id } }],
+      });
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('400');
+
+    const read = await request(app)
+      .get(`/fhir/R4/Patient/${id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(read).toHaveStatus(404);
   });
 
   test('Repeated batch of related upserts', async () => {
@@ -2041,6 +2112,7 @@ describe('Batch and Transaction processing', () => {
 
 describe('Transaction bundle SERIALIZABLE retry', () => {
   const app = express();
+  let shardId: string;
   let accessToken: string;
 
   beforeAll(async () => {
@@ -2050,6 +2122,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
       project: { features: ['transaction-bundles'] },
       withAccessToken: true,
     }));
+    shardId = normalizeShardId(TODO_SHARD_ID); // get via the project returned from createTestProject
   });
 
   afterEach(() => {
@@ -2065,7 +2138,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
     // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
     // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
     // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, shardId);
     const originalConnect = writerPool.connect.bind(writerPool);
 
     let serializableBegins = 0;

@@ -101,97 +101,101 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
       {recentLogins.length > 0 && (
         <>
           <HeaderDropdownDivider />
-          {recentLogins.map((login) => (
-            <Menu.Item
-              key={getLoginKey(login)}
-              className={classes.recentProjectItem}
-              onClick={() => switchLogin(login)}
-            >
-              <Box className={classes.projectOption}>
-                <ProjectLoginOption projectDisplay={login.project.display} profileDisplay={login.profile.display} />
-              </Box>
-            </Menu.Item>
-          ))}
+          <Box className={classes.projectList} role="group" aria-label="Projects">
+            {recentLogins.map((login) => (
+              <Menu.Item
+                key={getLoginKey(login)}
+                className={classes.recentProjectItem}
+                onClick={() => switchLogin(login)}
+              >
+                <Box className={classes.projectOption}>
+                  <ProjectLoginOption projectDisplay={login.project.display} profileDisplay={login.profile.display} />
+                </Box>
+              </Menu.Item>
+            ))}
+          </Box>
         </>
       )}
-      <HeaderDropdownDivider />
-      <Menu.Item
-        leftSection={<IconSwitchHorizontal size={16} color={MENU_ICON_COLOR} />}
-        onClick={() => navigate('/signin')}
-      >
-        <Text size="sm" fw={450}>
-          Switch to another project
-        </Text>
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconSettings size={16} color={MENU_ICON_COLOR} />}
-        onClick={() => navigate(props.settingsHref ?? `/${getReferenceString(profile as ProfileResource)}`)}
-      >
-        <Text size="sm" fw={450}>
-          {props.settingsHref ? 'Settings' : 'Account settings'}
-        </Text>
-      </Menu.Item>
-
-      <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
-        <Flex align="center" gap="xs">
-          <IconPalette size={16} color={MENU_ICON_COLOR} />
+      <Box className={classes.menuFooter}>
+        <HeaderDropdownDivider />
+        <Menu.Item
+          leftSection={<IconSwitchHorizontal size={16} color={MENU_ICON_COLOR} />}
+          onClick={() => navigate('/signin')}
+        >
           <Text size="sm" fw={450}>
-            Appearance
+            Switch to another project
           </Text>
-        </Flex>
-        <Box className={classes.settingsControlWrapper}>
-          <SegmentedControl
-            classNames={{ root: cx(classes.segmentedControl, classes.appearanceControl) }}
-            size="xs"
-            radius="xl"
-            withItemsBorders={false}
-            value={colorScheme}
-            onChange={(newValue) => setColorScheme(newValue as MantineColorScheme)}
-            data={THEME_OPTIONS}
-            aria-label="Color scheme"
-          />
-        </Box>
-      </Flex>
-      {showLayoutToggle && (
+        </Menu.Item>
+        <Menu.Item
+          leftSection={<IconSettings size={16} color={MENU_ICON_COLOR} />}
+          onClick={() => navigate(props.settingsHref ?? `/${getReferenceString(profile as ProfileResource)}`)}
+        >
+          <Text size="sm" fw={450}>
+            {props.settingsHref ? 'Settings' : 'Account settings'}
+          </Text>
+        </Menu.Item>
+
         <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
           <Flex align="center" gap="xs">
-            <IconTable size={16} color={MENU_ICON_COLOR} />
+            <IconPalette size={16} color={MENU_ICON_COLOR} />
             <Text size="sm" fw={450}>
-              Layout
+              Appearance
             </Text>
           </Flex>
           <Box className={classes.settingsControlWrapper}>
             <SegmentedControl
-              classNames={{ root: cx(classes.segmentedControl, classes.layoutControl) }}
+              classNames={{ root: cx(classes.segmentedControl, classes.appearanceControl) }}
               size="xs"
               radius="xl"
               withItemsBorders={false}
-              value={layoutVersion}
-              onChange={(newValue) => {
-                localStorage['appShellLayoutVersion'] = newValue;
-                locationUtils.reload();
-              }}
-              data={LAYOUT_OPTIONS}
-              aria-label="App shell layout version"
+              value={colorScheme}
+              onChange={(newValue) => setColorScheme(newValue as MantineColorScheme)}
+              data={THEME_OPTIONS}
+              aria-label="Color scheme"
             />
           </Box>
         </Flex>
-      )}
-      <Menu.Item
-        leftSection={<IconLogout size={16} color={MENU_ICON_COLOR} />}
-        onClick={async () => {
-          await medplum.signOut();
-          navigate('/signin');
-        }}
-      >
-        <Text size="sm" fw={450}>
-          Sign out
+        {showLayoutToggle && (
+          <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
+            <Flex align="center" gap="xs">
+              <IconTable size={16} color={MENU_ICON_COLOR} />
+              <Text size="sm" fw={450}>
+                Layout
+              </Text>
+            </Flex>
+            <Box className={classes.settingsControlWrapper}>
+              <SegmentedControl
+                classNames={{ root: cx(classes.segmentedControl, classes.layoutControl) }}
+                size="xs"
+                radius="xl"
+                withItemsBorders={false}
+                value={layoutVersion}
+                onChange={(newValue) => {
+                  localStorage['appShellLayoutVersion'] = newValue;
+                  locationUtils.reload();
+                }}
+                data={LAYOUT_OPTIONS}
+                aria-label="App shell layout version"
+              />
+            </Box>
+          </Flex>
+        )}
+        <Menu.Item
+          leftSection={<IconLogout size={16} color={MENU_ICON_COLOR} />}
+          onClick={async () => {
+            await medplum.signOut();
+            navigate('/signin');
+          }}
+        >
+          <Text size="sm" fw={450}>
+            Sign out
+          </Text>
+        </Menu.Item>
+        <HeaderDropdownDivider />
+        <Text size="xs" c="dimmed" fw={500} my="sm" ta="center">
+          {getAppName()} {props.version}
         </Text>
-      </Menu.Item>
-      <HeaderDropdownDivider />
-      <Text size="xs" c="dimmed" fw={500} my="sm" ta="center">
-        {getAppName()} {props.version}
-      </Text>
+      </Box>
     </>
   );
 }

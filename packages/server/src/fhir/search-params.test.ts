@@ -3,6 +3,8 @@
 import { createReference, getReferenceString, Operator } from '@medplum/core';
 import type {
   Appointment,
+  Coverage,
+  CoverageEligibilityRequest,
   DiagnosticReport,
   Flag,
   Login,
@@ -455,5 +457,53 @@ describe('Medplum Custom Search Parameters', () => {
 
       expect(result.entry).toHaveLength(1);
       expect(result.entry?.[0]?.resource?.id).toBe(login1.id);
+    }));
+
+  test('Search for CoverageEligibilityRequest by coverage', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const insurer = await repo.createResource<Organization>({ resourceType: 'Organization', name: 'Insurer' });
+      const coverage1 = await repo.createResource<Coverage>({
+        resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: createReference(patient),
+        payor: [createReference(insurer)],
+      });
+      const coverage2 = await repo.createResource<Coverage>({
+        resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: createReference(patient),
+        payor: [createReference(insurer)],
+      });
+
+      const baseRequest: CoverageEligibilityRequest = {
+        resourceType: 'CoverageEligibilityRequest',
+        status: 'active',
+        purpose: ['validation'],
+        patient: createReference(patient),
+        created: new Date().toISOString(),
+        insurer: createReference(insurer),
+      };
+      const request1 = await repo.createResource<CoverageEligibilityRequest>({
+        ...baseRequest,
+        insurance: [{ coverage: createReference(coverage1) }],
+      });
+      const request2 = await repo.createResource<CoverageEligibilityRequest>({
+        ...baseRequest,
+        insurance: [{ coverage: createReference(coverage2) }],
+      });
+      const request3 = await repo.createResource<CoverageEligibilityRequest>({
+        ...baseRequest,
+        insurance: [{ coverage: createReference(coverage1) }, { coverage: createReference(coverage2) }],
+      });
+      expect(request2).toBeDefined();
+
+      const result = await repo.search<CoverageEligibilityRequest>({
+        resourceType: 'CoverageEligibilityRequest',
+        filters: [{ code: 'coverage', operator: Operator.EQUALS, value: getReferenceString(coverage1) }],
+      });
+
+      expect(result.entry).toHaveLength(2);
+      expect(result.entry?.map((e) => e.resource?.id).sort()).toStrictEqual([request1.id, request3.id].sort());
     }));
 });

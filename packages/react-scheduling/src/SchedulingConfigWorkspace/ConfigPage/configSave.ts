@@ -10,6 +10,10 @@ export interface ConfigChange<T extends Resource = Resource> {
   readonly stored?: WithId<T>;
   /** The resource as the page wants it stored. */
   readonly draft: T;
+  /** For one being created, a search that finds it if it was created elsewhere meanwhile, which is then left alone. */
+  readonly ifNoneExist?: string;
+  /** For one being created, the `urn:uuid` that other changes in the same save reference it by. */
+  readonly fullUrl?: string;
 }
 
 export interface ConfigSaveFailure {
@@ -25,6 +29,7 @@ export interface ConfigSaveResult {
   readonly failures: ConfigSaveFailure[];
 }
 
+const OK = 200;
 const PRECONDITION_FAILED = 412;
 
 /**
@@ -63,6 +68,11 @@ export async function saveConfigChanges(
   pending.forEach((change, index) => {
     const entry = response.entry?.[index];
     const status = Number.parseInt(entry?.response?.status ?? '', 10);
+    // A create that found one already there stored nothing.
+    if (!change.stored && change.ifNoneExist && status === OK) {
+      failures.push({ change, conflict: true, message: 'It was created somewhere else after this page opened.' });
+      return;
+    }
     if (status >= 200 && status < 300 && entry?.resource?.id) {
       saved.push({ change, resource: entry.resource as WithId<Resource> });
       return;
@@ -82,9 +92,13 @@ export async function saveConfigChanges(
 }
 
 function toEntry(change: ConfigChange): BundleEntry {
-  const { stored, draft } = change;
+  const { stored, draft, ifNoneExist, fullUrl } = change;
   if (!stored) {
-    return { resource: draft, request: { method: 'POST', url: draft.resourceType } };
+    return {
+      ...(fullUrl && { fullUrl }),
+      resource: draft,
+      request: { method: 'POST', url: draft.resourceType, ...(ifNoneExist && { ifNoneExist }) },
+    };
   }
   return {
     resource: draft,

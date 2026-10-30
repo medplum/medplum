@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MantineThemeColors } from '@mantine/core';
 import { Box, Divider, Stack, Text } from '@mantine/core';
 import { IconCalculatorFilled, IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -12,7 +11,6 @@ import { SectionHeader } from './SectionHeader';
 export interface CalendarsPanelItem {
   readonly id: string;
   readonly label: string;
-  readonly color: keyof MantineThemeColors;
   readonly imageUrl?: string;
   /** Defaults to true (selected/visible) when omitted. */
   readonly selected?: boolean;
@@ -69,7 +67,7 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
   const { items, candidatesLoading, filters, onToggle, className } = props;
 
   return (
-    <Stack gap="xs" className={className}>
+    <Stack gap="xs" w={300} className={className}>
       <Text fz="lg" fw={800} py="xs">
         Calendars
       </Text>
@@ -99,7 +97,6 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
                     <CalendarRow
                       key={item.id}
                       item={item}
-                      color={item.color}
                       onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
                       icon={section.icon}
                     />

@@ -20,11 +20,10 @@ import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor
 import type { SystemRepository } from '../fhir/repo';
 import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
-import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
-import { isFirstBootMode } from '../migrations/migration-utils';
-import { getAsyncJobTracking, getJobSystemRepo, getTrackingAsyncJobExecutor } from './base';
+import type { PostDeployJobData, PostDeployMigration, PrepareJobDataContext } from '../migrations/data/types';
+import { completePostDeployMigration, isFirstBootMode } from '../migrations/migration-utils';
+import { getAsyncJobTracking, getJobSystemRepo, getTrackingAsyncJobExecutor, normalizeJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -151,7 +150,8 @@ export class ReindexJob {
     };
   }
 
-  static async create(jobData: ReindexJobData): Promise<ReindexJob> {
+  static async create(dequeuedJobData: ReindexJobData): Promise<ReindexJob> {
+    const jobData = normalizeJobTarget(dequeuedJobData);
     const [systemRepo, asyncJobExecutor] = await Promise.all([
       getJobSystemRepo(jobData.target),
       getTrackingAsyncJobExecutor(jobData.tracking),
@@ -161,18 +161,25 @@ export class ReindexJob {
 
   private async maybeSkipJob(): Promise<boolean> {
     const asyncJob = this.asyncJobExecutor.getAsyncJob();
-    if (Boolean(asyncJob.dataVersion) && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+    if (
+      Boolean(asyncJob.dataVersion) &&
+      (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER, this.systemRepo.shardId)))
+    ) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,
       });
-      await this.asyncJobExecutor.completeJob({
+      await this.completeJob({
         resourceType: 'Parameters',
         parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
       });
       return true;
     }
     return false;
+  }
+
+  private completeJob(output?: Parameters): Promise<WithId<AsyncJob>> {
+    return completePostDeployMigration(this.asyncJobExecutor, this.jobData.target.shardId, output);
   }
 
   private async checkForQueueClosing(job: Job<ReindexJobData> | undefined, nextJobData: ReindexJobData): Promise<void> {
@@ -232,7 +239,7 @@ export class ReindexJob {
       const finishedOrNextIterationData = this.nextIterationData(result, nextJobData);
       nextJobData = undefined;
       if (finishedOrNextIterationData === true) {
-        await this.asyncJobExecutor.completeJob(output);
+        await this.completeJob(output);
       } else if (finishedOrNextIterationData === false) {
         await this.asyncJobExecutor.failJob();
       } else {
@@ -568,34 +575,35 @@ export interface ReindexJobOptions {
 }
 
 export async function addReindexJob(
+  shardId: string,
   resourceTypes: ResourceType[],
   asyncJob: WithId<AsyncJob>,
   options?: ReindexJobOptions
 ): Promise<Job<ReindexJobData>> {
-  const jobData = prepareReindexJobData(resourceTypes, asyncJob, options);
+  const jobData = prepareReindexJobData({ shardId, asyncJob }, resourceTypes, options);
   return addReindexJobData(jobData);
 }
 
 /**
  * Prepares a current reindex payload.
+ * @param context - The job context
  * @param resourceTypes - The resource types to reindex.
- * @param asyncJob - The tracking AsyncJob.
  * @param options - Optional reindex tuning parameters.
  * @returns The durable reindex job payload.
  */
 export function prepareReindexJobData(
+  context: PrepareJobDataContext,
   resourceTypes: ResourceType[],
-  asyncJob: WithId<AsyncJob>,
   options?: ReindexJobOptions
 ): ReindexJobData {
-  const ctx = tryGetRequestContext();
+  const requestContext = tryGetRequestContext();
   const startTime = Date.now();
   const endTimestampBufferMinutes = options?.endTimestampBufferMinutes ?? 5;
   const endTimestamp = new Date(startTime + 1000 * 60 * endTimestampBufferMinutes).toISOString();
 
   return {
-    target: { kind: 'shard', shardId: TODO_SHARD_ID }, // Will be an input to this function
-    tracking: getAsyncJobTracking(asyncJob),
+    target: { kind: 'shard', shardId: context.shardId },
+    tracking: getAsyncJobTracking(context.asyncJob),
     type: 'reindex',
     minReindexWorkerVersion: REINDEX_WORKER_VERSION,
     resourceTypes,
@@ -610,7 +618,7 @@ export function prepareReindexJobData(
     progressLogThreshold: options?.progressLogThreshold,
     maxIterationAttempts: options?.maxIterationAttempts,
     results: Object.create(null),
-    requestId: ctx?.requestId,
-    traceId: ctx?.traceId,
+    requestId: requestContext?.requestId,
+    traceId: requestContext?.traceId,
   };
 }

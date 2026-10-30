@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { InviteRequest, LoginState, MedplumClient } from '@medplum/core';
 import { Option } from 'commander';
+import { projectArchiveCommand, projectDeployBotsCommand, projectRestoreCommand } from './project-archive';
 import { createMedplumClient } from './util/client';
 import { addSubcommand, MedplumCommand } from './utils';
 
@@ -15,6 +16,9 @@ addSubcommand(project, projectListCommand);
 addSubcommand(project, projectCurrentCommand);
 addSubcommand(project, projectSwitchCommand);
 addSubcommand(project, projectInviteCommand);
+addSubcommand(project, projectArchiveCommand);
+addSubcommand(project, projectRestoreCommand);
+addSubcommand(project, projectDeployBotsCommand);
 
 projectListCommand.description('List of current projects').action(async (options) => {
   const medplum = await createMedplumClient(options);

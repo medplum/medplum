@@ -32,6 +32,9 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
 export default defineConfig({
   envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
   plugins: [react()],
+  build: {
+    cssTarget: ['chrome123', 'edge123', 'firefox120', 'safari17.5', 'ios17.5'], // Native `light-dark()` support
+  },
   server: {
     host: 'localhost',
     port: 3001,
@@ -44,6 +47,7 @@ export default defineConfig({
     alias,
   },
   test: {
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test.setup.ts',

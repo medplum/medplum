@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { createReference } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -7,7 +8,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { tryLogin } from '../oauth/utils';
+import { getAuthTokens, tryLogin } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
@@ -33,7 +34,7 @@ describe('Revoke', () => {
     const email = `alex${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { login, accessToken } = await withTestContext(() =>
+    const { login, accessToken, user, profile } = await withTestContext(() =>
       registerNew({
         firstName: 'Alexander',
         lastName: 'Hamilton',
@@ -51,7 +52,8 @@ describe('Revoke', () => {
     expect(res1).toHaveStatus(200);
     expect(res1.body.security.sessions.map((s: any) => s.id)).toContainExactly([login.id]);
 
-    // Sign in again
+    // Sign in again, and redeem the login
+    // Only a granted login is a session
     const login2 = await withTestContext(() =>
       tryLogin({
         authMethod: 'password',
@@ -62,6 +64,7 @@ describe('Revoke', () => {
       })
     );
     expect(login2).toBeDefined();
+    await withTestContext(() => getAuthTokens(user, login2, createReference(profile)));
 
     // Get sessions 2nd time
     // Should be 2 sessions

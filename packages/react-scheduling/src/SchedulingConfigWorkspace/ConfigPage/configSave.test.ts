@@ -69,6 +69,23 @@ describe('saveConfigChanges', () => {
     expect(found).toHaveLength(1);
   });
 
+  test('a conditional create that finds one already there stores nothing and reports a conflict', async () => {
+    const { medplum, service } = await setup();
+    const draft: HealthcareService = { resourceType: 'HealthcareService', name: 'Consult', active: true };
+
+    const result = await saveConfigChanges(medplum, [{ draft, ifNoneExist: 'name=Consult' }]);
+
+    expect(sentBundle(medplum).entry?.[0].request).toEqual({
+      method: 'POST',
+      url: 'HealthcareService',
+      ifNoneExist: 'name=Consult',
+    });
+    expect(result.saved).toEqual([]);
+    expect(result.failures.map(({ conflict }) => conflict)).toEqual([true]);
+    const found = await medplum.searchResources('HealthcareService', { name: 'Consult' }, { cache: 'no-cache' });
+    expect(found.map(({ id, active }) => [id, active])).toEqual([[service.id, undefined]]);
+  });
+
   test('reports a conflict, and writes nothing over, a resource another system changed since it was loaded', async () => {
     const { medplum, service } = await setup();
     await medplum.updateResource({ ...service, name: 'Renamed elsewhere' });

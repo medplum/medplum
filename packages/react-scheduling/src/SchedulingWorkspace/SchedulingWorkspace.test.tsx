@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { DEFAULT_THEME } from '@mantine/core';
+import { SchedulingColorURI } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SinonFakeTimers } from 'sinon';
 import { useFakeTimers } from 'sinon';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
-import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
+import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures, TelehealthService } from '../stories/scheduling';
 import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
-import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { act, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 /**
@@ -23,7 +25,8 @@ import { SchedulingWorkspace } from './SchedulingWorkspace';
  */
 async function chooseFilter(placeholder: string, option: string | RegExp): Promise<void> {
   await userEvent.click(screen.getByPlaceholderText(placeholder));
-  await userEvent.click(await screen.findByText(option));
+  // Scoped to the dropdown, since the calendar's events are titled with the visit type too.
+  await userEvent.click(await within(await screen.findByRole('listbox')).findByText(option));
 }
 
 /**
@@ -46,22 +49,56 @@ async function setupClient(resources: readonly Resource[] = SchedulingFixtures):
 }
 
 /**
- * The Mantine color a calendar's row is drawn in, read off the swatch Mantine styles inline.
- *
- * No fixture Schedule names a color, so every row is on the cycled fallback palette — which
- * is the palette a filter can shift a calendar along.
+ * A calendar's row in the sidebar, picked out from the slots on the calendar, which name whose
+ * time they hold too.
  *
  * @param label - The calendar's row label.
- * @returns The Mantine color name.
+ * @returns The row's button.
  */
-function calendarColor(label: string): string {
-  const row = screen.getByText(label).closest('button') as HTMLElement;
-  const swatch = row.querySelector('[style*="-bg"]');
-  const color = /--(?:avatar|ti)-bg: var\(--mantine-color-([a-z]+)-/.exec(swatch?.getAttribute('style') ?? '')?.[1];
-  if (!color) {
-    throw new Error(`No color on the row for ${label}`);
+function calendarRow(label: string): HTMLElement {
+  const row = screen
+    .getAllByText(label)
+    .map((element) => element.closest('button'))
+    .find(Boolean);
+  if (!row) {
+    throw new Error(`No sidebar row for ${label}`);
   }
-  return color;
+  return row;
+}
+
+const FILTERED_NOTICE = 'The calendar filters hide this appointment.';
+
+/**
+ * The appointment events on the calendar for a patient.
+ *
+ * @param patient - The patient's name, which is what an appointment event is titled.
+ * @returns The events.
+ */
+function appointmentEvents(patient: string): Element[] {
+  return [...document.querySelectorAll('.appointment')].filter((event) => event.textContent?.includes(patient));
+}
+
+/**
+ * The color a patient's one appointment event is drawn in.
+ *
+ * @param patient - The patient's name.
+ * @returns The color FullCalendar was handed.
+ */
+function eventColor(patient: string): string | undefined {
+  return (appointmentEvents(patient)[0] as HTMLElement | undefined)?.style.getPropertyValue('--fc-event-color');
+}
+
+/**
+ * The color a service type is keyed in, in the legend below the calendar.
+ *
+ * @param label - The service type's name.
+ * @returns The color its swatch shows, as FullCalendar is handed an event's color.
+ */
+async function serviceTypeColor(label: string): Promise<string | undefined> {
+  await userEvent.hover(screen.getByRole('button', { name: 'Legend' }));
+  const row = (await within(await screen.findByRole('dialog')).findByText(label)).closest('.mantine-Group-root');
+  const color = /--mantine-color-([a-z]+)-7/.exec(row?.innerHTML ?? '')?.[1];
+  return color && DEFAULT_THEME.colors[color][7];
 }
 
 describe('SchedulingWorkspace', () => {
@@ -104,6 +141,25 @@ describe('SchedulingWorkspace', () => {
     expect(roomRow).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('collapsing the sidebar hides it, and expanding it keeps what was deselected', async () => {
+    const medplum = await setupClient();
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+    const providerRow = calendarRow('Dr. Maya Rivera');
+    await userEvent.click(providerRow);
+
+    const toggle = screen.getByRole('button', { name: 'Hide calendars' });
+    expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).toContainElement(providerRow);
+    await userEvent.click(toggle);
+    expect(providerRow).not.toBeVisible();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));
+    expect(providerRow).toBeVisible();
+    expect(providerRow).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('button', { name: 'Show calendars' })).toBeNull();
+  });
+
   test('shows the empty state for sections with no schedules', async () => {
     // A fresh MockClient always seeds its own default provider (Dr. Alice Smith)
     // and its Schedule, but no devices or rooms, so those two sections stay empty
@@ -115,45 +171,26 @@ describe('SchedulingWorkspace', () => {
     expect(screen.getByText('No rooms found')).toBeInTheDocument();
   });
 
-  test('a calendar keeps its color when a filter drops the ones listed before it', async () => {
-    const medplum = await setupClient();
-    renderWithMedplum(<SchedulingWorkspace />, medplum);
-
-    await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
-    const color = calendarColor('Satellite Exam Room');
-
-    // The satellite keeps its own room and drops both main campus rooms listed above it,
-    // which is what would shift the satellite room onto another color if the palette were
-    // picked by position in the narrowed list.
-    await chooseFilter('All locations', 'Uro Associates - Satellite');
-    await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
-    expect(calendarColor('Satellite Exam Room')).toBe(color);
-
-    await clearFilter('Uro Associates - Satellite');
-    await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
-    expect(calendarColor('Satellite Exam Room')).toBe(color);
-  });
-
-  describe('Location filter', () => {
+  describe('Service facility filter', () => {
     test('choosing a site narrows the calendars to the ones held there', async () => {
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
       await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
 
-      await chooseFilter('All locations', 'Uro Associates - Satellite');
+      await chooseFilter('All service facilities', 'Uro Associates - Satellite');
 
       // Exam Room A sits under the main clinic, two `partOf` hops from the satellite.
       await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
       expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument();
     });
 
-    test('going back to All locations restores the calendars a site hid', async () => {
+    test('going back to All service facilities restores the calendars a site hid', async () => {
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
       await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
-      await chooseFilter('All locations', 'Uro Associates - Satellite');
+      await chooseFilter('All service facilities', 'Uro Associates - Satellite');
       await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
 
       await clearFilter('Uro Associates - Satellite');
@@ -178,8 +215,8 @@ describe('SchedulingWorkspace', () => {
       await waitFor(() => expect(screen.getByText('No providers or staff found')).toBeInTheDocument());
 
       search.mockClear();
-      await chooseFilter('All locations', 'Uro Associates - Satellite');
-      await waitFor(() => expect(screen.queryByPlaceholderText('All locations')).not.toBeInTheDocument());
+      await chooseFilter('All service facilities', 'Uro Associates - Satellite');
+      await waitFor(() => expect(screen.queryByPlaceholderText('All service facilities')).not.toBeInTheDocument());
       await waitFor(() => expect(screen.queryByLabelText(/^Loading /)).not.toBeInTheDocument());
 
       // The visit type still stands, so this is one site change and nothing else.
@@ -188,45 +225,6 @@ describe('SchedulingWorkspace', () => {
       expect(search.mock.calls.filter(([resourceType]) => resourceType === 'Schedule')).toHaveLength(
         BOOKABLE_ACTOR_TYPES.length
       );
-    });
-  });
-
-  describe('starting on a site the host chose', () => {
-    test.each([
-      ['the Location', SatelliteClinic],
-      ['a reference to it', { reference: 'Location/satellite-clinic' }],
-    ])('given %s, lists only the calendars held there', async (_, defaultLocation) => {
-      const medplum = await setupClient();
-      renderWithMedplum(<SchedulingWorkspace defaultLocation={defaultLocation} />, medplum);
-
-      await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
-      expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
-      expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
-      expect(screen.queryByPlaceholderText('All locations')).not.toBeInTheDocument();
-    });
-
-    // Not once on every site and again on the host's once the filter catches up.
-    test('searches the calendars only once', async () => {
-      const medplum = await setupClient();
-      const search = vi.spyOn(medplum, 'search');
-      renderWithMedplum(<SchedulingWorkspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />, medplum);
-
-      await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
-      await waitFor(() => expect(screen.queryByLabelText(/^Loading /)).not.toBeInTheDocument());
-
-      expect(search.mock.calls.filter(([resourceType]) => resourceType === 'Schedule')).toHaveLength(
-        BOOKABLE_ACTOR_TYPES.length
-      );
-    });
-
-    test('is only where the filter starts: taking the pill off shows every site', async () => {
-      const medplum = await setupClient();
-      renderWithMedplum(<SchedulingWorkspace defaultLocation={SatelliteClinic} />, medplum);
-      await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
-
-      await clearFilter('Uro Associates - Satellite');
-
-      await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
     });
   });
 
@@ -340,9 +338,93 @@ describe('SchedulingWorkspace', () => {
       clock = undefined;
     });
 
-    test(`shows the fixtures' booked appointments and free/blocked slots on the pinned "today"`, async () => {
-      // The same frozen "today" Storybook's `MockDateWrapper` uses, so `timeGridWeek`
-      // renders the same Sun May 3 – Sat May 9 2020 week the fixtures are dated within.
+    test('the filters narrow the appointments drawn on the calendars they leave listed', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+
+      const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);
+      renderWithMedplum(<SchedulingWorkspace />, medplum);
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
+      expect(appointmentEvents('Jordan Reyes')).toHaveLength(2);
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
+
+      // Dr. Chen's infusion calendar is the one left listed, and of the two visits on it, Jordan
+      // Reyes's naming no service type goes.
+      await chooseFilter('All visit types', 'Infusion Therapy');
+      await waitFor(() => expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument());
+      expect(calendarRow('Dr. Wei Chen')).toHaveAttribute('aria-pressed', 'true');
+      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(1));
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(0);
+      await userEvent.click(screen.getByText('Blocked'));
+      const details = screen.getByRole('region', { name: 'Blocked time details' });
+      expect(within(details).getByText('buffer after appointment')).toBeInTheDocument();
+      await userEvent.click(within(details).getByRole('button', { name: 'Close blocked time details' }));
+
+      await clearFilter('Infusion Therapy');
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
+      await userEvent.click(appointmentEvents('Liam Jones')[0]);
+      const appointmentDetails = screen.getByRole('region', { name: 'Appointment details' });
+      expect(within(appointmentDetails).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
+
+      // Dr. Brown names no site and Exam Room A is at the main clinic, so both stay listed. Liam
+      // Jones's visit records no site, and no visit drawn holds Exam Room A's maintenance, so the one
+      // block left is the buffer of Dr. Chen's infusion, at the main clinic.
+      await chooseFilter('All service facilities', 'Uro Associates - Main Clinic');
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(0));
+      expect(within(appointmentDetails).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
+      expect(screen.getAllByText('Blocked')).toHaveLength(1);
+      expect(calendarRow('Dr. Olivia Brown')).toHaveAttribute('aria-pressed', 'true');
+      expect(calendarRow('Exam Room A')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    test.each([
+      ['the Location', SatelliteClinic],
+      ['a reference to it', { reference: 'Location/satellite-clinic' }],
+    ])(
+      'started on a site given %s, lists only the calendars and appointments held there',
+      async (_, defaultServiceFacility) => {
+        clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+
+        const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);
+        const search = vi.spyOn(medplum, 'search');
+        const searchResources = vi.spyOn(medplum, 'searchResources');
+        const readReference = vi.spyOn(medplum, 'readReference');
+        renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={defaultServiceFacility} />, medplum);
+
+        // An appointment is held back until its service is read, so wait for both before asserting
+        // one isn't drawn.
+        await waitFor(() => expect(searchResources.mock.calls.some(([type]) => type === 'Appointment')).toBe(true));
+        await act(() => Promise.all(searchResources.mock.results.map((result) => result.value)));
+        await waitFor(() =>
+          expect(readReference.mock.calls.some(([ref]) => ref.reference?.startsWith('HealthcareService/'))).toBe(true)
+        );
+        await act(() => Promise.allSettled(readReference.mock.results.map((result) => result.value)));
+        expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('All service facilities')).not.toBeInTheDocument();
+        expect(calendarRow('Satellite Exam Room')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
+        // Dr. Rivera names no site, so stays listed, but Miles Cooper's visit with her records the main
+        // clinic.
+        expect(calendarRow('Dr. Maya Rivera')).toHaveAttribute('aria-pressed', 'true');
+        expect(appointmentEvents('Miles Cooper')).toHaveLength(0);
+        expect(appointmentEvents('Priya Shah')).toHaveLength(1);
+        expect(search.mock.calls.filter(([resourceType]) => resourceType === 'Schedule')).toHaveLength(
+          BOOKABLE_ACTOR_TYPES.length
+        );
+
+        // It is only where the filter starts.
+        await clearFilter('Uro Associates - Satellite');
+        await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+        expect(calendarRow('Exam Room A')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getAllByText('Blocked')).toHaveLength(2);
+      }
+    );
+
+    test(`shows the fixtures' booked appointments and blocked slots on the pinned "today"`, async () => {
+      // The same frozen "today" Storybook's `MockDateWrapper` uses, so the calendar opens on
+      // the same Mon May 4 – Thu May 7 2020 the fixtures are dated within.
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
 
       const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);
@@ -357,40 +439,104 @@ describe('SchedulingWorkspace', () => {
       // rather than asserting on a single match.
       await waitFor(() => expect(screen.getAllByText('Miles Cooper').length).toBeGreaterThan(0));
       expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Available').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
+      // Dr. Rivera's free Slot is not drawn: it would read as the only time open for booking.
+      expect(screen.queryByText('Available')).not.toBeInTheDocument();
     });
 
-    test('a source only shows appointments booked on its own schedule', async () => {
+    test("an appointment is drawn once, in its service type's color, while any of its calendars is on show", async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+
+      // Telehealth names its color; imaging is left to the one picked for it.
+      const telehealth = {
+        ...TelehealthService,
+        extension: [...(TelehealthService.extension ?? []), { url: SchedulingColorURI, valueString: 'grape' }],
+      };
+      const fixtures = SchedulingFixtures.map((resource) => (resource === TelehealthService ? telehealth : resource));
+      renderWithMedplum(<SchedulingWorkspace />, await setupClient([...fixtures, ...CalendarWeekFixtures]));
+
+      // Liam Jones's telehealth visit is drawn in grape from the first, never in the color
+      // Telehealth would otherwise be given.
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+      expect(eventColor('Liam Jones')).toBe(DEFAULT_THEME.colors.grape[7]);
+
+      // Miles Cooper's visit is held on Dr. Rivera, Ultrasound 1 and Exam Room A, and is
+      // still one event, titled and colored by its imaging service type.
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      const imaging = eventColor('Miles Cooper');
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')[0]).toHaveTextContent('Ultrasound Imaging'));
+      // The card marks Dr. Rivera as the visit's primary provider.
+      const title = within(appointmentEvents('Miles Cooper')[0] as HTMLElement).getByText('Miles Cooper');
+      await userEvent.hover(title);
+      const card = await waitFor(() => {
+        const dropdown = screen
+          .getAllByText('Miles Cooper')
+          .map((element) => element.closest<HTMLElement>('.mantine-Popover-dropdown'))
+          .find(Boolean);
+        expect(dropdown).toBeDefined();
+        return within(dropdown as HTMLElement);
+      });
+      expect(await card.findByText('Dr. Maya Rivera')).toBeInTheDocument();
+      expect(card.getByText('Primary').closest('.mantine-Group-root')).toHaveTextContent('Dr. Maya Rivera');
+      // It names the visit as the event is titled.
+      expect((await card.findByText('Ultrasound Imaging')).parentElement).toHaveTextContent(/^Ultrasound Imaging · /);
+      await userEvent.unhover(title);
+      expect(eventColor('Renee Alvarez')).toBe(imaging);
+      expect(imaging).not.toBe(DEFAULT_THEME.colors.grape[7]);
+      // The legend keys those colors by service type.
+      expect(await serviceTypeColor('Ultrasound Imaging')).toBe(imaging);
+      expect(await serviceTypeColor('Telehealth Consult')).toBe(eventColor('Liam Jones'));
+      await userEvent.unhover(screen.getByRole('button', { name: 'Legend' }));
+      // The Slots it holds are not drawn as blocked time either; the blocks on show are
+      // Exam Room A's maintenance and the buffer after Dr. Chen's infusion.
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
+
+      // Hiding a calendar the visit is not held on leaves it alone.
+      await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
+      await waitFor(() => expect(appointmentEvents('Renee Alvarez')).toHaveLength(1));
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
+
+      // Hiding the provider leaves it too: it is still held on the device and the room.
+      await userEvent.click(calendarRow('Dr. Maya Rivera'));
+      await waitFor(() => expect(calendarRow('Dr. Maya Rivera')).toHaveAttribute('aria-pressed', 'false'));
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
+      expect(eventColor('Miles Cooper')).toBe(imaging);
+
+      // Hiding the rest takes it off the calendar.
+      for (const label of ['Ultrasound 1 (Main Campus)', 'Exam Room A']) {
+        await userEvent.click(calendarRow(label));
+      }
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(0));
+      expect(appointmentEvents('Renee Alvarez')).toHaveLength(1);
+    });
+
+    test('a service type still being read holds back only its own appointments, whose time shows as blocked', async () => {
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
 
       const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);
+      medplum.invalidateAll();
+      // Telehealth's read waits until the test lets it through.
+      let releaseTelehealth = (): void => undefined;
+      const readResource = medplum.readResource.bind(medplum);
+      vi.spyOn(medplum, 'readResource').mockImplementation(((resourceType, id, options) => {
+        if (resourceType === 'HealthcareService' && id === TelehealthService.id) {
+          return new Promise((resolve) => {
+            releaseTelehealth = () => resolve(readResource(resourceType, id, options));
+          });
+        }
+        return readResource(resourceType, id, options);
+      }) as typeof medplum.readResource);
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
-      await waitFor(() => expect(screen.getAllByText('Miles Cooper').length).toBeGreaterThan(0));
-      const milesCountBefore = screen.getAllByText('Miles Cooper').length;
+      // Imaging is drawn without waiting on Telehealth.
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      expect(appointmentEvents('Liam Jones')).toHaveLength(0);
+      // Dr. Brown's five telehealth Slots show as blocked beside the two blocks always on show.
+      await waitFor(() => expect(screen.getAllByText('Blocked')).toHaveLength(7));
 
-      // Dr. Okafor's schedule is not one of Miles Cooper's participants (that
-      // appointment is Dr. Rivera's), so deselecting it must leave the Miles Cooper
-      // count exactly unchanged. If sources ever stopped filtering by their own
-      // schedule's actor — e.g. handing every source every appointment — removing
-      // Okafor's source would *also* drop a Miles Cooper copy, since that source
-      // would incorrectly be carrying one. An unrelated toggle changing an
-      // unrelated appointment's count is exactly the bug this guards against.
-      await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
-      await waitFor(() => expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0));
-      expect(screen.getAllByText('Miles Cooper').length).toBe(milesCountBefore);
-
-      // Deselecting every schedule actually tied to Miles Cooper's appointment
-      // (provider, device, and room) must clear it entirely, while the still
-      // partly-selected Okafor/Renee appointment (device + room still selected)
-      // stays visible.
-      for (const label of ['Dr. Maya Rivera', 'Ultrasound 1 (Main Campus)', 'Exam Room A']) {
-        await userEvent.click(screen.getByText(label).closest('button') as HTMLElement);
-      }
-
-      await waitFor(() => expect(screen.queryByText('Miles Cooper')).not.toBeInTheDocument());
-      expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0);
+      releaseTelehealth();
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
     });
   });
 

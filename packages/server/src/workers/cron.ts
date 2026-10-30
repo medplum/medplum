@@ -16,10 +16,10 @@ import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
-import { getAllowedProjects } from '../fhir/accesspolicy';
-import { findProjectMembership } from '../fhir/projectmembership';
+import { canProjectReadBot } from '../bots/utils';
+import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
-import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import type { ProjectJobTarget } from './base';
 import { getJobSystemRepo, getProjectJobTarget } from './base';
@@ -206,29 +206,6 @@ function isPastEndTime(cron: Cron): boolean {
   return cron.endTime !== undefined && Date.parse(cron.endTime) <= Date.now();
 }
 
-/**
- * Returns whether a Cron's project may still run the target bot.
- *
- * A bot is code, not authority, so the target may live in a linked project. The link is what makes
- * that safe, and it is checked here because the worker reads on an unscoped system repo, which
- * would otherwise reach a bot in any project at all.
- * @param cronProject - The project owning the Cron that names the bot.
- * @param bot - The bot the Cron targets.
- * @returns True if the bot's project is the Cron's own or a link that exports Bot.
- */
-async function canCronReadBot(cronProject: WithId<Project>, bot: Bot): Promise<boolean> {
-  const botProjectId = bot.meta?.project;
-  if (!botProjectId) {
-    return false;
-  }
-  if (botProjectId === cronProject.id) {
-    return true;
-  }
-
-  const permitted = getPermittedProjectIds(await getAllowedProjects(cronProject), 'Bot');
-  return !permitted || permitted.includes(botProjectId);
-}
-
 function getCronStringForBot(bot: Bot | undefined): string | undefined {
   if (bot?.cronTiming) {
     const timingStr = convertTimingToCron(bot.cronTiming);
@@ -327,7 +304,9 @@ async function unregisterCronJob(cron: WithId<Cron>, reason: string): Promise<vo
 async function resolveCronJob(
   systemRepo: Repository,
   cronId: string
-): Promise<{ bot: WithId<Bot>; runAs: WithId<ProjectMembership>; cron: WithId<Cron> } | undefined> {
+): Promise<
+  { bot: WithId<Bot>; runAs: WithId<ProjectMembership>; project: WithId<Project>; cron: WithId<Cron> } | undefined
+> {
   const cron = await systemRepo.readResource<Cron>('Cron', cronId);
 
   if (!getCronStringForCron(cron)) {
@@ -344,11 +323,11 @@ async function resolveCronJob(
     return undefined;
   }
 
-  if (!project.features?.includes('cron')) {
+  if (!project.features?.includes('cron') || getInactiveReason(project)) {
     // addCronJobs refuses to register without the feature, so a job that outlived it must not run.
-    // The schedule stays registered: the feature can come back, and nothing re-registers a dropped
-    // job, so unregistering would strand the Cron.
-    getLogger().info('Skipping cron job, project does not have the cron feature', {
+    // The schedule stays registered: the feature or the project can come back, and nothing
+    // re-registers a dropped job, so unregistering would strand the Cron.
+    getLogger().info('Skipping cron job, project is inactive or does not have the cron feature', {
       cronId: cron.id,
       projectId: project.id,
     });
@@ -361,8 +340,9 @@ async function resolveCronJob(
     return undefined;
   }
 
-  if (!(await canCronReadBot(project, bot))) {
-    // The write path authorized this target, so the link must have been revoked or narrowed since.
+  if (!(await canProjectReadBot(project, bot))) {
+    // The worker reads on an unscoped system repo, so the link is re-checked here. The write path
+    // authorized this target, so the link must have been revoked or narrowed since.
     await unregisterCronJob(cron, 'its target bot is no longer readable');
     return undefined;
   }
@@ -380,7 +360,7 @@ async function resolveCronJob(
     throw new Error('Cron onBehalfOf membership belongs to a different project');
   }
 
-  return { bot, runAs, cron };
+  return { bot, runAs, project, cron };
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
@@ -389,6 +369,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   let bot: WithId<Bot>;
   let runAs: WithId<ProjectMembership> | undefined;
   let input: unknown;
+  let project: WithId<Project> | undefined;
   let cron: WithId<Cron> | undefined;
 
   if (job.data.resourceType === 'Cron') {
@@ -398,6 +379,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     }
     bot = resolved.bot;
     runAs = resolved.runAs;
+    project = resolved.project;
     cron = resolved.cron;
     // The whole Cron goes to the target, so a bot reads its parameters alongside the schedule
     input = resolved.cron;
@@ -411,7 +393,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     throw new Error('Could not find project membership for bot');
   }
 
-  await executeBot({ bot, runAs, input, cron, contentType: ContentType.FHIR_JSON });
+  await executeBot({ bot, runAs, runAsProject: project, input, cron, contentType: ContentType.FHIR_JSON });
 }
 
 export async function removeBullMQJobByKey(schedulerId: string): Promise<void> {

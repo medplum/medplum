@@ -2612,6 +2612,24 @@
         "type": "reference",
         "expression": "Cron.targetReference"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/CoverageEligibilityRequest-coverage",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "CoverageEligibilityRequest-coverage",
+        "url": "https://medplum.com/fhir/SearchParameter/CoverageEligibilityRequest-coverage",
+        "version": "4.0.1",
+        "name": "coverage",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The insurance coverage being checked for eligibility",
+        "code": "coverage",
+        "base": ["CoverageEligibilityRequest"],
+        "type": "reference",
+        "target": ["Coverage"],
+        "expression": "CoverageEligibilityRequest.insurance.coverage"
+      }
     }
   ]
 }

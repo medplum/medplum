@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { TimezoneExtensionURI } from '@medplum/core';
-import type { Practitioner, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, Practitioner, Schedule } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
-import { getCalendarTimezones } from './SchedulingWorkspace.utils';
+import { formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
+import { formatWhen, getCalendarTimezones, isPastEditWindow } from './SchedulingWorkspace.utils';
 
 const EASTERN = 'America/New_York';
 
@@ -54,5 +55,43 @@ describe('getCalendarTimezones', () => {
 
   test('Reads nothing off no calendars', () => {
     expect(getCalendarTimezones([])).toStrictEqual({ timezones: [], anyUnknown: false });
+  });
+});
+
+describe('formatWhen', () => {
+  test('Names the day once for a period within it, and both days for one running past it', () => {
+    const mondayNine = new Date(2020, 4, 4, 9);
+    const mondayFive = new Date(2020, 4, 4, 17);
+    const fridayFive = new Date(2020, 4, 8, 17);
+
+    expect(formatWhen({ start: mondayNine.toISOString(), end: mondayFive.toISOString() })).toBe(
+      `Monday, May 4 · ${formatZonedTime(mondayNine)} – ${formatZonedTime(mondayFive)}`
+    );
+    expect(formatWhen({ start: mondayNine.toISOString(), end: fridayFive.toISOString() })).toBe(
+      `Monday, May 4 · ${formatZonedTime(mondayNine)} – Friday, May 8 · ${formatZonedTime(fridayFive)}`
+    );
+    expect(formatWhen({})).toBeUndefined();
+  });
+});
+
+describe('isPastEditWindow', () => {
+  const visit: Appointment = {
+    resourceType: 'Appointment',
+    status: 'booked',
+    participant: [],
+    start: '2020-05-04T09:00:00Z',
+    end: '2020-05-04T10:00:00Z',
+  };
+
+  test('Stays open for 12 hours after the visit ends, and closes then', () => {
+    expect(isPastEditWindow(visit, new Date('2020-05-04T21:59:59Z'))).toBe(false);
+    expect(isPastEditWindow(visit, new Date('2020-05-04T22:00:00Z'))).toBe(true);
+  });
+
+  test('Judges a visit with no end by its start, and one with neither as open', () => {
+    expect(isPastEditWindow({ ...visit, end: undefined }, new Date('2020-05-04T21:00:00Z'))).toBe(true);
+    expect(isPastEditWindow({ ...visit, start: undefined, end: undefined }, new Date('2020-05-05T09:00:00Z'))).toBe(
+      false
+    );
   });
 });

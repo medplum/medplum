@@ -9,6 +9,7 @@ import {
   IconBuildingBank,
   IconBuildingHospital,
   IconCalendarCog,
+  IconListCheck,
   IconReceipt2,
   IconShieldLock,
   IconStethoscope,
@@ -76,6 +77,7 @@ export function getSettingsMenus(options: SettingsMenuOptions): NavbarMenu[] {
               },
               { icon: <IconStethoscope />, label: 'Practitioners', href: `${SETTINGS_PATH}/billing/practitioners` },
               { icon: <IconBuildingBank />, label: 'Payers', href: `${SETTINGS_PATH}/billing/payers` },
+              { icon: <IconListCheck />, label: 'Eligibility', href: `${SETTINGS_PATH}/billing/eligibility` },
             ]
           : []),
         { icon: <IconReceipt2 />, label: 'Charge Items', href: `${SETTINGS_PATH}/billing/charge-items` },

@@ -4,10 +4,11 @@ import type { WithId } from '@medplum/core';
 import { getExtensionValue, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
-import type { JSX } from 'react';
-import { useEffect } from 'react';
+import type { JSX, ReactNode, Ref } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
+import type { CalendarHandle } from '../MultiCalendar/MultiCalendar';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
 import { installValueSetStub } from '../stories/mockValueSet';
@@ -20,6 +21,8 @@ import {
   MilesCooperPatient,
   PROCEDURE_VALUE_SET,
   ProcedureCodes,
+  RiveraImagingAppointment,
+  RiveraImagingHeldSlots,
   SatelliteClinic,
 } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
@@ -31,6 +34,7 @@ import {
   choosePatient,
   chooseRepeat,
   chooseSecondOfferedTime,
+  chosenTimeField,
   clickBook,
   codePill,
   dragDays,
@@ -104,20 +108,28 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
  * workspace either way.
  */
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
-  MultiCalendar: (props: {
-    sources?: { appointments: Appointment[] }[];
-    onSelectInterval?: (interval: { start: Date; end: Date }) => void;
-    onSelectAppointment?: (appointment: Appointment) => void;
-    onRangeChange?: (range: { start: Date; end: Date }) => void;
-    selection?: { start: Date; end: Date };
-  }): JSX.Element => {
+  MultiCalendar: forwardRef(function MultiCalendar(
+    props: {
+      sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean; label?: string }[];
+      onSelectInterval?: (interval: { start: Date; end: Date }) => void;
+      onSelectAppointment?: (appointment: Appointment) => void;
+      onRangeChange?: (range: { start: Date; end: Date }) => void;
+      selection?: { start: Date; end: Date };
+      selectedId?: string;
+      toolbarEnd?: ReactNode;
+    },
+    ref: Ref<CalendarHandle>
+  ): JSX.Element {
     // The real grid announces the week it opened on, and nothing is loaded onto the
     // calendar until it does. Announced once, as a grid that is never paged announces it.
     const { onRangeChange } = props;
     useEffect(() => onRangeChange?.(CALENDAR_WEEK), [onRangeChange]);
+    const [pagedTo, setPagedTo] = useState<Date>();
+    useImperativeHandle(ref, () => ({ gotoDate: setPagedTo }), []);
 
     return (
       <div>
+        {props.toolbarEnd}
         {Object.entries(CLICK_TARGETS).map(([name, target]) => (
           <button
             key={name}
@@ -131,6 +143,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
           </button>
         ))}
         {(props.sources ?? [])
+          .filter((source) => source.interactive !== false)
           .flatMap((source) => source.appointments)
           .map((appointment) => (
             <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
@@ -139,9 +152,26 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
           ))}
         {/* Stands in for the highlight the real grid draws over the interval it is given. */}
         <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
+        <div data-testid="selected-id">{props.selectedId ?? 'none'}</div>
+        {/* Stands in for the real grid paging to the day it is given. */}
+        <div data-testid="paged-to">{pagedTo?.toISOString() ?? 'none'}</div>
+        {/* Stands in for the events the real grid draws for appointments not yet booked. */}
+        <div
+          data-testid="proposed-time"
+          data-label={(props.sources ?? [])
+            .filter((source) => source.draft)
+            .map((source) => source.label)
+            .join(',')}
+        >
+          {(props.sources ?? [])
+            .filter((source) => source.draft)
+            .flatMap((source) => source.appointments)
+            .map((appointment) => new Date(appointment.start as string).toISOString())
+            .join(',') || 'none'}
+        </div>
       </div>
     );
-  },
+  }),
 }));
 
 /**
@@ -155,7 +185,7 @@ async function clickCalendar(target: ClickTarget = 'tuesday morning'): Promise<v
 }
 
 function bookingPaneHeading(): HTMLElement | null {
-  return screen.queryByRole('heading', { name: /book appointment/i });
+  return screen.queryByRole('tab', { name: 'Book Appointment' });
 }
 
 /**
@@ -190,6 +220,14 @@ function bookedProposal(post: MockInstance<MockClient['post']>): Appointment {
  */
 function markedTime(): string {
   return screen.getByTestId('marked-time').textContent ?? '';
+}
+
+/**
+ * What the calendar draws as not yet booked.
+ * @returns The proposed appointments' starts, or 'none' while there are none.
+ */
+function proposedTime(): string {
+  return screen.getByTestId('proposed-time').textContent ?? '';
 }
 
 describe('SchedulingWorkspace booking', () => {
@@ -227,6 +265,28 @@ describe('SchedulingWorkspace booking', () => {
     );
   }
 
+  test.each([false, true])(
+    'forwards manual rescheduling permission through appointment details (%s)',
+    async (canBypassSchedulingRules) => {
+      for (const slot of RiveraImagingHeldSlots) {
+        await medplum.updateResource(slot);
+      }
+      const appointment = await medplum.updateResource({
+        ...RiveraImagingAppointment,
+        start: BOOKED_VISIT.start,
+        end: BOOKED_VISIT.end,
+      });
+      renderWithMedplum(<SchedulingWorkspace canBypassSchedulingRules={canBypassSchedulingRules} />, medplum);
+      await settleAutocomplete();
+      // The visit is on several calendars, so the stand-in grid draws it once per calendar.
+      fireEvent.click(screen.getAllByRole('button', { name: `click appointment ${appointment.id}` })[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
+      await settleAutocomplete();
+      await openTimeFinder();
+      expect(screen.queryByText('Or enter a time') !== null).toBe(canBypassSchedulingRules);
+    }
+  );
+
   test('Offers no booking form until the calendar is clicked', () => {
     setup();
 
@@ -242,8 +302,30 @@ describe('SchedulingWorkspace booking', () => {
     expect(field(/visit type/i)).toBeInTheDocument();
   });
 
+  test('Opens the booking form from the toolbar, on the next half hour', async () => {
+    setup();
+    await clickCalendar();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+    });
+
+    vi.setSystemTime(new Date(2026, 7, 17, 9, 10));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
+    });
+    expect(screen.getByRole('tab', { name: 'Book Appointment' })).toHaveAttribute('aria-selected', 'true');
+    expect(markedTime()).toBe(new Date(2026, 7, 17, 9, 30).toISOString());
+    expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 17, 9, 30).toISOString());
+
+    vi.setSystemTime(new Date(2026, 7, 17, 9, 30));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
+    });
+    expect(markedTime()).toBe(new Date(2026, 7, 17, 10, 0).toISOString());
+  });
+
   test('Starts on the site the workspace was opened on', async () => {
-    renderWithMedplum(<SchedulingWorkspace defaultLocation={SatelliteClinic} />, medplum);
+    renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={SatelliteClinic} />, medplum);
     await clickCalendar();
 
     const pane = screen.getByRole('region', { name: 'Book appointment' });
@@ -296,18 +378,23 @@ describe('SchedulingWorkspace booking', () => {
     expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
   });
 
-  test('Books the appointment and closes the form', async () => {
+  test('Books the appointment and opens it in place of the form', async () => {
     const post = vi.spyOn(medplum, 'post');
-    setup();
+    const onBooked = vi.fn();
+    setup(onBooked);
     await clickCalendar();
 
     await fillBooking();
     await clickBook();
 
     expect(post.mock.calls.some(([url]) => String(url).includes('Appointment/$book'))).toBe(true);
-    // The calendar refreshes itself from the booking's own announcement, so there is
-    // nothing left for the pane to show.
     expect(bookingPaneHeading()).not.toBeInTheDocument();
+    // Selected and brought on screen, so it isn't lost among the week's other visits or
+    // left in a week off screen.
+    const [booked] = (onBooked.mock.calls[0][0] as AppointmentBooking).appointments;
+    expect(within(detailsPane() as HTMLElement).getByText('Jordan Reyes')).toBeInTheDocument();
+    expect(screen.getByTestId('selected-id')).toHaveTextContent(booked.id);
+    expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(booked.start as string).toISOString());
   });
 
   test('Reports the booking it wrote to the host', async () => {
@@ -318,7 +405,7 @@ describe('SchedulingWorkspace booking', () => {
     await fillBooking();
     await clickBook();
 
-    // The pane closes on success, and the appointment does not always turn up on the
+    // The form closes on success, and the appointment does not always turn up on the
     // calendar to speak for itself — it may fall outside the visible range, or onto a
     // schedule that is deselected. So the host is told what was booked, and announces
     // it however it announces things.
@@ -341,28 +428,32 @@ describe('SchedulingWorkspace booking', () => {
     expect(markedTime()).toBe('none');
   });
 
-  test('Re-opens on a different day, clearing what was answered for the old one', async () => {
+  test('Keeps what was answered, and searches the new day, when a different day is clicked', async () => {
+    const get = vi.spyOn(medplum, 'get');
     setup();
     await clickCalendar('tuesday morning');
     await chooseImagingService();
-    expect(hasPill('Ultrasound Imaging')).toBe(true);
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
 
     await clickCalendar('thursday');
 
-    // A different day is a different visit, and the answers were for the old one.
-    expect(hasPill('Ultrasound Imaging')).toBe(false);
+    expect(hasPill('Ultrasound Imaging')).toBe(true);
+    expect(new Date(lastFindStart(get) as string).getDate()).toBe(THURSDAY_MORNING.getDate());
   });
 
-  test('Keeps what was answered when the same day is clicked again', async () => {
+  test('Keeps the time chosen when the day already searched is clicked again', async () => {
     setup();
     await clickCalendar('tuesday morning');
     await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    await chooseSecondOfferedTime();
 
     await clickCalendar('tuesday afternoon');
 
-    // Clicking around inside the day being booked is not a change of mind about which
-    // day it is, and must not take the answers away.
     expect(hasPill('Ultrasound Imaging')).toBe(true);
+    expect(chosenTimeField()).toBeInTheDocument();
   });
 
   describe('Marking the time being booked', () => {
@@ -375,41 +466,80 @@ describe('SchedulingWorkspace booking', () => {
       expect(markedTime()).toBe(TUESDAY_MORNING.toISOString());
     });
 
-    test('Moves the mark to the time chosen in the form', async () => {
+    test('Draws the time chosen in the form as a proposal, leaving the mark on the click', async () => {
       const post = vi.spyOn(medplum, 'post');
       setup();
       await clickCalendar('tuesday morning');
+      expect(proposedTime()).toBe('none');
 
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
-      // The second time on offer, because the first is the very time that was
-      // clicked: a mark that never moved would pass for one that followed.
+      // The second time on offer, because the first is the very time that was clicked.
       await chooseSecondOfferedTime();
-      const marked = markedTime();
+      const proposed = proposedTime();
+      expect(markedTime()).toBe(TUESDAY_MORNING.toISOString());
 
       await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
       await clickBook();
 
-      // Marked to the instant that got booked, not merely somewhere else.
-      expect(marked).toBe(new Date(bookedProposal(post).start as string).toISOString());
+      // Drawn at the instant that got booked, not merely somewhere else.
+      expect(proposed).toBe(new Date(bookedProposal(post).start as string).toISOString());
+      expect(proposedTime()).toBe('none');
     });
 
-    test('Takes the mark down when the form drops the time', async () => {
+    test('Takes the proposal down when the form drops the time', async () => {
       setup();
       await clickCalendar('tuesday morning');
-
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseSecondOfferedTime();
-      expect(markedTime()).not.toBe('none');
+      expect(proposedTime()).not.toBe('none');
 
-      // Searching another day drops the time, and a mark left on the old one would
+      // Searching another day drops the time, and a proposal left on the old one would
       // be pointing at a time nobody has chosen.
       await chooseDay('19');
 
-      expect(markedTime()).toBe('none');
+      expect(proposedTime()).toBe('none');
+    });
+
+    test('Hides the proposal on the Block Time tab, and draws it again on coming back', async () => {
+      setup();
+      await clickCalendar('tuesday morning');
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseSecondOfferedTime();
+      const proposed = proposedTime();
+      expect(screen.getByTestId('proposed-time')).toHaveAttribute('data-label', 'Draft New Appointment');
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+      expect(proposedTime()).toBe('none');
+
+      // The form stays mounted behind the Block Time tab, so its time is still there to draw.
+      fireEvent.click(screen.getByRole('tab', { name: 'Book Appointment' }));
+      expect(proposedTime()).toBe(proposed);
+    });
+
+    test('Moves the mark to each new click, and the proposal only where Book would book', async () => {
+      setup();
+      await clickCalendar('tuesday morning');
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseSecondOfferedTime();
+      const proposed = proposedTime();
+
+      // The day is already searched, so the time chosen is kept, and stays drawn.
+      await clickCalendar('tuesday afternoon');
+      expect(markedTime()).toBe(TUESDAY_AFTERNOON.toISOString());
+      expect(proposedTime()).toBe(proposed);
+
+      // Another day drops it.
+      await clickCalendar('thursday');
+      expect(markedTime()).toBe(THURSDAY_MORNING.toISOString());
+      expect(proposedTime()).toBe('none');
     });
   });
 

@@ -5,6 +5,8 @@ import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import {
   createPharmaciesSection,
   getDefaultSections,
+  LabOrderDetails,
+  LabResultDetails,
   PatientSummary,
   ResourceTable,
   useResource,
@@ -12,8 +14,6 @@ import {
 import type { JSX } from 'react';
 import { usePatientActionsMenu } from '../../pages/patient/usePatientActionsMenu';
 import { EncounterChart } from '../encounter/EncounterChart';
-import { LabOrderDetails } from '../labs/LabOrderDetails';
-import { LabResultDetails } from '../labs/LabResultDetails';
 import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
 import { TaskDetailPanel } from '../tasks/TaskDetailPanel';
 

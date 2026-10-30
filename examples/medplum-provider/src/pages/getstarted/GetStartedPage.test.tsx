@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { ActivityDefinition, Bundle, Parameters, PlanDefinition, ValueSet } from '@medplum/fhirtypes';
+import type { ActivityDefinition, Bundle, CodeSystem, Parameters, PlanDefinition, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -80,6 +80,7 @@ describe('GetStartedPage', () => {
       expect(screen.getByText('David James Williams')).toBeInTheDocument();
       expect(screen.getByText('Simple Initial Visit + Billing')).toBeInTheDocument();
       expect(screen.getByText('ICD-10-CM Billable Codes')).toBeInTheDocument();
+      expect(screen.getByText('Procedure Modifiers')).toBeInTheDocument();
       expect(screen.getByText('Geriatric T2DM Starter')).toBeInTheDocument();
     });
 
@@ -229,30 +230,126 @@ describe('GetStartedPage', () => {
     });
   });
 
+  // The server only honors a ValueSet's term-type filter when the CodeSystem declares the `tty` property.
+  function loadCodeSystem(url: string, withTermTypes: boolean): Promise<WithId<CodeSystem>> {
+    return medplum.createResource<CodeSystem>({
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'example',
+      url,
+      property: withTermTypes ? [{ code: 'tty', type: 'code' }] : undefined,
+    });
+  }
+
+  function registerStaleValueSet(url: string): Promise<WithId<ValueSet>> {
+    return medplum.createResource<ValueSet>({ resourceType: 'ValueSet', status: 'draft', url, name: 'stale' });
+  }
+
+  function findValueSets(url: string): Promise<WithId<ValueSet>[]> {
+    return medplum.searchResources('ValueSet', { url }, { cache: 'no-cache' });
+  }
+
   describe('ICD-10 ValueSet', () => {
-    test('Upserts the billable codes ValueSet by url', async () => {
-      const upsertResource = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as WithId<ValueSet>);
+    const ICD10_URL = 'http://hl7.org/fhir/sid/icd-10-cm';
+    const ICD10_BILLABLE_URL = 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable';
+
+    test('Disables the import until an ICD-10-CM CodeSystem declaring term types is loaded', async () => {
+      await loadCodeSystem(ICD10_URL, false);
       setup();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Import ValueSet' }));
+      const button = await screen.findByRole('button', { name: 'ICD-10 codes not installed' });
+      expect(button).toBeDisabled();
 
-      expect(await screen.findByText('ICD-10-CM Billable Codes ValueSet ready')).toBeInTheDocument();
-      // Upserting by url keeps a second import from creating a duplicate ValueSet.
-      const [valueSet, search] = upsertResource.mock.calls[0];
-      expect((valueSet as ValueSet).url).toBe('http://hl7.org/fhir/sid/icd-10-cm/vs/billable');
-      expect((valueSet as ValueSet).compose?.include[0].filter?.[0]).toEqual({
-        property: 'tty',
-        op: '=',
-        value: 'PT',
-      });
-      expect(search).toEqual({ url: 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable' });
+      await userEvent.hover(button.parentElement as HTMLElement);
+      expect(await screen.findByText(`CodeSystem ${ICD10_URL} required`)).toBeInTheDocument();
     });
 
-    test('Reports a failed upsert', async () => {
-      vi.spyOn(medplum, 'upsertResource').mockRejectedValue(new Error('ValueSet not permitted on this plan'));
+    test('Replaces every ValueSet already registered under the billable codes url', async () => {
+      await loadCodeSystem(ICD10_URL, true);
+      await registerStaleValueSet(ICD10_BILLABLE_URL);
+      await registerStaleValueSet(ICD10_BILLABLE_URL);
       setup();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Import ValueSet' }));
+      const button = screen.getByRole('button', { name: 'Import ValueSet' });
+      await waitFor(() => expect(button).toBeEnabled());
+      await userEvent.click(button);
+
+      expect(await screen.findByText('ICD-10-CM Billable Codes ValueSet ready')).toBeInTheDocument();
+      const valueSets = await findValueSets(ICD10_BILLABLE_URL);
+      expect(valueSets).toHaveLength(1);
+      expect(valueSets[0].name).toBe('icd10cm-billable');
+      expect(valueSets[0].compose?.include[0].filter?.[0]).toEqual({ property: 'tty', op: '=', value: 'PT' });
+    });
+
+    test('Reports a failed install', async () => {
+      await loadCodeSystem(ICD10_URL, true);
+      vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('ValueSet not permitted on this plan'));
+      setup();
+
+      const button = screen.getByRole('button', { name: 'Import ValueSet' });
+      await waitFor(() => expect(button).toBeEnabled());
+      await userEvent.click(button);
+
+      expect(await screen.findByText('ValueSet not permitted on this plan')).toBeInTheDocument();
+    });
+  });
+
+  describe('Procedure modifiers ValueSet', () => {
+    const CPT_URL = 'http://www.ama-assn.org/go/cpt';
+    const PROCEDURE_MODIFIERS_URL = 'https://medplum.com/fhir/ValueSet/procedure-modifiers';
+
+    test('Disables the import until a CPT CodeSystem declaring term types is loaded', async () => {
+      await loadCodeSystem(CPT_URL, false);
+      setup();
+
+      const button = await screen.findByRole('button', { name: 'Procedure codes not installed' });
+      expect(button).toBeDisabled();
+
+      await userEvent.hover(button.parentElement as HTMLElement);
+      expect(await screen.findByText(`CodeSystem ${CPT_URL} required`)).toBeInTheDocument();
+    });
+
+    test('Installs the modifiers ValueSet selecting CPT modifier concepts when none is registered', async () => {
+      await loadCodeSystem(CPT_URL, true);
+      setup();
+
+      const button = screen.getByRole('button', { name: 'Import Modifiers' });
+      await waitFor(() => expect(button).toBeEnabled());
+      await userEvent.click(button);
+
+      expect(await screen.findByText('Procedure Modifiers ValueSet ready')).toBeInTheDocument();
+      const valueSets = await findValueSets(PROCEDURE_MODIFIERS_URL);
+      expect(valueSets).toHaveLength(1);
+      expect(valueSets[0].compose?.include[0]).toEqual({
+        system: CPT_URL,
+        filter: [{ property: 'tty', op: '=', value: 'MP' }],
+      });
+    });
+
+    test('Replaces a ValueSet already registered under the modifiers url', async () => {
+      await loadCodeSystem(CPT_URL, true);
+      const stale = await registerStaleValueSet(PROCEDURE_MODIFIERS_URL);
+      setup();
+
+      const button = screen.getByRole('button', { name: 'Import Modifiers' });
+      await waitFor(() => expect(button).toBeEnabled());
+      await userEvent.click(button);
+
+      expect(await screen.findByText('Procedure Modifiers ValueSet ready')).toBeInTheDocument();
+      const valueSets = await findValueSets(PROCEDURE_MODIFIERS_URL);
+      expect(valueSets).toHaveLength(1);
+      expect(valueSets[0].id).not.toBe(stale.id);
+      expect(valueSets[0].name).toBe('procedure-modifiers');
+    });
+
+    test('Reports a failed install', async () => {
+      await loadCodeSystem(CPT_URL, true);
+      vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('ValueSet not permitted on this plan'));
+      setup();
+
+      const button = screen.getByRole('button', { name: 'Import Modifiers' });
+      await waitFor(() => expect(button).toBeEnabled());
+      await userEvent.click(button);
 
       expect(await screen.findByText('ValueSet not permitted on this plan')).toBeInTheDocument();
     });

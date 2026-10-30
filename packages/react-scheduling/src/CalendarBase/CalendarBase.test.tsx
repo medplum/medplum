@@ -3,10 +3,11 @@
 import type { WithId } from '@medplum/core';
 import { createReference, sleep } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
-import { DrAliceSmith, DrAliceSmithSchedule } from '@medplum/mock';
+import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
+import { createRef } from 'react';
 import { describe, expect, test, vi } from 'vitest';
-import { render, screen, userEvent } from '../test-utils/render';
-import type { CalendarBaseProps } from './CalendarBase';
+import { act, renderWithMedplum, screen, userEvent } from '../test-utils/render';
+import type { CalendarBaseProps, CalendarHandle } from './CalendarBase';
 import { CalendarBase } from './CalendarBase';
 
 describe('CalendarBase', () => {
@@ -22,10 +23,7 @@ describe('CalendarBase', () => {
     end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
     participant: [
       {
-        actor: {
-          reference: 'Patient/123',
-          display: 'John Doe',
-        },
+        actor: createReference(HomerSimpson),
         status: 'accepted',
       },
       {
@@ -46,8 +44,8 @@ describe('CalendarBase', () => {
     ...overrides,
   });
 
-  const setup = (props: CalendarBaseProps): ReturnType<typeof render> => {
-    return render(<CalendarBase {...props} />);
+  const setup = (props: CalendarBaseProps): ReturnType<typeof renderWithMedplum> => {
+    return renderWithMedplum(<CalendarBase {...props} />, new MockClient());
   };
 
   describe('eventSources', () => {
@@ -58,7 +56,33 @@ describe('CalendarBase', () => {
         slots: [],
       };
       setup({ eventSources: [source] });
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
+    });
+
+    test("titles an appointment with the patient's own name, not the reference's display", async () => {
+      const appointment = createAppointment({
+        participant: [{ actor: { reference: 'Patient/123', display: 'Old Name' }, status: 'accepted' }],
+      });
+      setup({ eventSources: [{ appointments: [appointment], slots: [] }] });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.queryByText('Old Name')).not.toBeInTheDocument();
+    });
+
+    test('says the patient is loading when the reference has no display', async () => {
+      const appointment = createAppointment({
+        participant: [{ actor: { reference: 'Patient/123' }, status: 'accepted' }],
+      });
+      setup({ eventSources: [{ appointments: [appointment], slots: [] }] });
+      expect(screen.getByText('Loading…')).toBeInTheDocument();
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+    });
+
+    test("shows the read's error when the patient can't be read and the reference has no display", async () => {
+      const appointment = createAppointment({
+        participant: [{ actor: { reference: 'Patient/missing' }, status: 'accepted' }],
+      });
+      setup({ eventSources: [{ appointments: [appointment], slots: [] }] });
+      expect(await screen.findByText('[Not found]')).toBeInTheDocument();
     });
 
     test('renders appointments without a patient', async () => {
@@ -105,6 +129,61 @@ describe('CalendarBase', () => {
       expect(screen.getByText(/Bob Jones/)).toBeInTheDocument();
     });
 
+    test('marks events that have ended as past', async () => {
+      const ended = createAppointment({
+        id: 'apt-ended',
+        start: new Date(baseDate.getTime() - 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() - 30 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
+      });
+      // Under way: it started at `baseDate`, but has yet to end.
+      const current = createAppointment({
+        id: 'apt-current',
+        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
+      });
+      vi.useFakeTimers({ toFake: ['Date'], now: baseDate.getTime() + 15 * 60 * 1000 });
+      try {
+        setup({ eventSources: [{ appointments: [ended, current], slots: [] }] });
+        expect(screen.getByText(/Homer Simpson/).closest('.appointment')).toHaveClass('past');
+        expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('past');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    test('marks the selected appointment or slot', async () => {
+      const homer = createAppointment({
+        id: 'apt-homer',
+        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
+      });
+      const bob = createAppointment({
+        id: 'apt-bob',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
+      });
+      const slot = createSlot({
+        start: new Date(baseDate.getTime() + 120 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 150 * 60 * 1000).toISOString(),
+      });
+      const eventSources = [{ schedule: DrAliceSmithSchedule, appointments: [homer, bob], slots: [slot] }];
+
+      const { container, rerender } = setup({ eventSources, selectedId: 'apt-homer' });
+      expect(screen.getByText(/Homer Simpson/).closest('.appointment')).toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} selectedId="apt-bob" />);
+      expect(screen.getByText(/Homer Simpson/).closest('.appointment')).not.toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} selectedId={slot.id} />);
+      expect(container.querySelector('.slot')).toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} />);
+      expect(container.querySelector('.selected')).toBeNull();
+    });
+
     test('renders "free" slots', async () => {
       const source = {
         schedule: DrAliceSmithSchedule,
@@ -125,6 +204,45 @@ describe('CalendarBase', () => {
       expect(screen.getByText(/Blocked/)).toBeInTheDocument();
     });
 
+    test("circles today's date in the day headers and in month view", async () => {
+      setup({ eventSources: [] });
+      const today = String(new Date().getDate());
+
+      const headers = document.querySelectorAll('[aria-current=date] .dayNumber');
+      expect(headers).toHaveLength(1);
+      expect(headers[0]).toHaveTextContent(today);
+
+      await userEvent.click(screen.getByText('Month'));
+      const cells = document.querySelectorAll('[aria-current=date] .dayCellTopInner');
+      expect(cells).toHaveLength(1);
+      expect(cells[0]).toHaveTextContent(today);
+
+      const weekdays = document.querySelectorAll('.todayWeekday');
+      expect(weekdays).toHaveLength(1);
+      expect(weekdays[0]).toHaveTextContent(new Date().toLocaleDateString('en-US', { weekday: 'short' }));
+
+      await userEvent.click(screen.getByLabelText('Next'));
+      expect(document.querySelectorAll('.todayWeekday')).toHaveLength(0);
+    });
+
+    test('hides slots in the month view', async () => {
+      const source = {
+        schedule: DrAliceSmithSchedule,
+        appointments: [createAppointment()],
+        slots: [createSlot()],
+      };
+      setup({ eventSources: [source] });
+      expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
+      expect(screen.getByText(/Available/)).toBeInTheDocument();
+
+      await userEvent.click(screen.getByText('Month'));
+      expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
+      expect(screen.queryByText(/Available/)).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByText('Week'));
+      expect(screen.getByText(/Available/)).toBeInTheDocument();
+    });
+
     test('filters out slots backing rendered appointmenst', () => {
       const appointment = createAppointment({ slot: [{ reference: 'Slot/slot-1' }] });
       const source = {
@@ -133,7 +251,7 @@ describe('CalendarBase', () => {
         slots: [createSlot({ id: 'slot-1', status: 'busy', start: appointment.start, end: appointment.end })],
       };
       setup({ eventSources: [source] });
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
       expect(screen.queryAllByText(/Blocked/)).toHaveLength(0);
     });
   });
@@ -141,7 +259,7 @@ describe('CalendarBase', () => {
   // Week view always lays out columns Sun..Sat regardless of which week is showing,
   // so day-of-week behavior can be asserted by position without depending on "today".
   const getWeekGridCells = (container: HTMLElement): Element[] =>
-    Array.from(container.querySelectorAll('[role="gridcell"][data-date]'));
+    Array.from(container.querySelectorAll('[role="cell"][data-date]'));
 
   describe('CalendarToolbar', () => {
     test('renders toolbar with navigation buttons', async () => {
@@ -296,7 +414,7 @@ describe('CalendarBase', () => {
         onSelectAppointment,
         onSelectSlot,
       });
-      await userEvent.click(screen.getByText('John Doe'));
+      await userEvent.click(screen.getByText('Homer Simpson'));
       expect(onSelectAppointment).toHaveBeenCalled();
       expect(onSelectSlot).not.toHaveBeenCalled();
     });
@@ -319,7 +437,7 @@ describe('CalendarBase', () => {
         onDoubleClickSlot,
       });
 
-      await userEvent.dblClick(screen.getByText('John Doe'));
+      await userEvent.dblClick(screen.getByText('Homer Simpson'));
       expect(onDoubleClickAppointment).toHaveBeenCalled();
       expect(onDoubleClickSlot).not.toHaveBeenCalled();
       expect(onSelectAppointment).not.toHaveBeenCalled();
@@ -559,6 +677,21 @@ describe('CalendarBase', () => {
       // A `selection` prop should be respected on its own — the host isn't required
       // to also wire up click-to-select just to get a highlight rendered.
       expect(highlightedDays(container)).toEqual([3]);
+    });
+  });
+
+  describe('gotoDate', () => {
+    test('pages to the week holding the date it is given', async () => {
+      const onRangeChange = vi.fn();
+      const ref = createRef<CalendarHandle>();
+      renderWithMedplum(<CalendarBase ref={ref} eventSources={[]} onRangeChange={onRangeChange} />, new MockClient());
+      const threeWeeksOut = new Date(baseDate.getTime() + 21 * 24 * 60 * 60 * 1000);
+
+      act(() => ref.current?.gotoDate(threeWeeksOut));
+
+      const range = onRangeChange.mock.lastCall?.[0];
+      expect(range.start.getTime()).toBeLessThanOrEqual(threeWeeksOut.getTime());
+      expect(range.end.getTime()).toBeGreaterThan(threeWeeksOut.getTime());
     });
   });
 });

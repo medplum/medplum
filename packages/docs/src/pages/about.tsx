@@ -132,7 +132,7 @@ export default function AboutPage(): JSX.Element {
             />
             <ProfileCard
               name="Finn Bergquist"
-              title="Forward Deployed Engineer"
+              title="Lead Forward Deployed Engineer"
               imgUrl="/img/people/finn.webp"
               linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
               githubUrl="https://github.com/finnbergquist"
@@ -141,7 +141,7 @@ export default function AboutPage(): JSX.Element {
           <CardContainer>
             <ProfileCard
               name="Maddy Li"
-              title="Forward Deployed Engineer"
+              title="Lead Forward Deployed Engineer"
               imgUrl="/img/people/maddy.webp"
               linkedInUrl="https://www.linkedin.com/in/maddy-li/"
               githubUrl="https://github.com/maddyli"

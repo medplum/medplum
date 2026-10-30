@@ -6,6 +6,7 @@ import {
   badRequest,
   conflict,
   createReference,
+  escapeSearchValue,
   getReferenceString,
   isCreated,
   isNotFound,
@@ -132,7 +133,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
         resourceType: 'ProjectMembership',
         filters: [
-          { code: 'user:User.email', operator: Operator.EXACT, value: email },
+          { code: 'user:User.email', operator: Operator.EXACT, value: escapeSearchValue(email) },
           { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
           projectFilter,
         ],
@@ -149,7 +150,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
         {
           code: 'email',
           operator: Operator.EXACT,
-          value: email,
+          value: escapeSearchValue(email),
         },
         userResource.project
           ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
@@ -274,7 +275,7 @@ async function upsertProfileResource(
         {
           code: 'email',
           operator: Operator.EQUALS,
-          value: email,
+          value: escapeSearchValue(email),
         },
       ];
 
@@ -350,6 +351,10 @@ async function validateAccessPolicies(
         references.push(access.policy);
       }
     }
+  }
+
+  if (request.membership?.accessPolicy) {
+    references.push(request.membership.accessPolicy);
   }
 
   if (Array.isArray(request.membership?.access)) {
@@ -577,6 +582,7 @@ async function sendInviteEmail(
   try {
     await sendEmail(systemRepo, options, request.project);
   } catch (err) {
+    getLogger().warn('Invite email failed', { projectId: request.project.id, err: normalizeErrorString(err) });
     // A common error for new self-hosted Medplum servers is that SES is not configured.
     // A long time ago, we made the mistake of establishing a convention of HTTP 200 + OperationOutcome for this case.
     // To preserve this behavior, we throw an OperationOutcomeError with allOk ID.
@@ -590,7 +596,6 @@ async function sendInviteEmail(
           details: {
             text: 'Could not send email. Make sure you have AWS SES set up.',
           },
-          diagnostics: normalizeErrorString(err),
         },
       ],
     });
