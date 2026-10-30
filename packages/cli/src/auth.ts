@@ -1,11 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import { ContentType, getDisplayString, MEDPLUM_CLI_CLIENT_ID, normalizeErrorString } from '@medplum/core';
+import type { LoginState, MedplumClient } from '@medplum/core';
+import {
+  ClientStorage,
+  ContentType,
+  getDisplayString,
+  MEDPLUM_CLI_CLIENT_ID,
+  MemoryStorage,
+  normalizeErrorString,
+} from '@medplum/core';
 import { exec } from 'node:child_process';
 import { createServer } from 'node:http';
 import { platform } from 'node:os';
 import { promisify } from 'node:util';
+import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 import type { Profile } from './utils';
 import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, saveProfile } from './utils';
@@ -16,6 +24,7 @@ const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';
 
 export const login = new MedplumCommand('login');
+export const logout = new MedplumCommand('logout');
 export const whoami = new MedplumCommand('whoami');
 export const token = new MedplumCommand('token');
 
@@ -27,6 +36,56 @@ login.action(async (options) => {
 
   const medplum = await createMedplumClient(options, false);
   await startLogin(medplum, profile);
+});
+
+logout.action(async (options) => {
+  const storage = new FileSystemStorage(options.profile ?? 'default');
+  const logins = getStoredLogins(storage);
+  if (logins.length === 0) {
+    console.log('Not logged in');
+    return;
+  }
+
+  // Revoke through an in-memory client: a rejected token makes MedplumClient clear its storage,
+  // which would otherwise erase the saved profile settings along with the tokens.
+  let rejected = false;
+  const medplum = await createMedplumClient(
+    {
+      ...options,
+      storage: new ClientStorage(new MemoryStorage()),
+      onUnauthenticated: () => {
+        rejected = true;
+      },
+    },
+    false
+  );
+
+  const errors: Error[] = [];
+  for (const login of logins) {
+    const display = `${login.profile.display} (${login.profile.reference})`;
+    rejected = false;
+    try {
+      // Server-side logout revokes the Login, invalidating both the access token and the refresh token
+      medplum.setAccessToken(login.accessToken, login.refreshToken);
+      await medplum.signOut();
+      console.log(`Revoked session: ${display}`);
+    } catch (err) {
+      if (rejected) {
+        console.log(`Session already invalid: ${display}`);
+      } else {
+        errors.push(new Error(`Failed to revoke session ${display}: ${normalizeErrorString(err)}`));
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    // Keep the stored tokens so the user can retry
+    throw new Error('Logout failed; stored credentials were kept', { cause: errors });
+  }
+
+  storage.setObject('activeLogin', undefined);
+  storage.setObject('logins', undefined);
+  console.log('Logged out');
 });
 
 whoami.action(async (options) => {
@@ -43,6 +102,16 @@ token.action(async (options) => {
   }
   console.log(token);
 });
+
+function getStoredLogins(storage: FileSystemStorage): LoginState[] {
+  const activeLogin = storage.getObject<LoginState>('activeLogin');
+  const logins = storage.getObject<LoginState[]>('logins') ?? [];
+  const result = new Map<string, LoginState>();
+  for (const login of activeLogin ? [activeLogin, ...logins] : logins) {
+    result.set(login.accessToken, login);
+  }
+  return Array.from(result.values());
+}
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const authType = profile?.authType ?? 'authorization-code';
