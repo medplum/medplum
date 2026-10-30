@@ -225,11 +225,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<unknown>();
 
-  const patientLine = (
-    <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
-  );
-  const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
-
   const innerOnCancelled = useCallback(
     (appointment: WithId<Appointment>) => {
       setCancelling(false);
@@ -286,18 +281,63 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     return onRescheduled?.(reschedule);
   }
 
+  const cancelable = isCancelable(appointment);
+  const locked = isPastEditWindow(appointment);
+  const reschedulable = isReschedulable(appointment);
+  const externalUrl = getExternalUrl(appointment);
+  const { visitType, procedures } = partitionServiceTypes(appointment);
+  const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
+  const site = getAppointmentSite(appointment);
+  const { primary, providers, rooms, devices, others } = partitionActors(appointment);
+  const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
+
+  const summary = (
+    <>
+      <Detail label="Status" value={<AppointmentStatusBadge status={appointment.status} />} />
+      <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
+      <Detail label="MRN" value={mrn} />
+      <Detail label="When" value={formatWhen(appointment)} />
+      <Detail label="Repeats" value={formatSeries(appointment)} />
+      <Detail label="Visit type" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
+      <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
+      <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
+      <Detail label="Rooms" value={listActors(rooms)} />
+      <Detail label="Devices" value={listActors(devices)} />
+      <Detail label="With" value={listActors(others)} />
+      <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
+      {!editing && <Detail label="Notes" value={appointment.comment} />}
+      <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
+    </>
+  );
+  const codes = (
+    <>
+      <Detail label="Procedure codes" value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')} />
+      <Detail
+        label="Diagnosis codes"
+        value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
+      />
+      <Detail
+        label="Medical necessity"
+        value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
+      />
+    </>
+  );
+
+  // The whole visit stays in view under the cancellation, to check it is the one to call off.
   if (cancelling) {
     return (
       <Stack gap="sm" className={classes.details}>
-        {patientLine}
-        {whenLine}
         <AppointmentCancelForm
           appointment={appointment}
           onCancelled={innerOnCancelled}
           cancellationReasonValueSet={props.cancellationReasonValueSet}
         />
+        <Divider />
+        {summary}
+        {codes}
         <Stack gap="sm" className={classes.actions}>
-          <Button onClick={() => setCancelling(false)} variant="outline">
+          <Divider />
+          <Button onClick={() => setCancelling(false)} variant="default">
             Back to Appointment Details
           </Button>
         </Stack>
@@ -331,34 +371,11 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     );
   }
 
-  const cancelable = isCancelable(appointment);
-  const locked = isPastEditWindow(appointment);
-  const reschedulable = isReschedulable(appointment);
-  const externalUrl = getExternalUrl(appointment);
-  const { visitType, procedures } = partitionServiceTypes(appointment);
-  const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
-  const site = getAppointmentSite(appointment);
-  const { primary, providers, rooms, devices, others } = partitionActors(appointment);
-  const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
-
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
   return (
     <Stack gap="sm" className={classes.details}>
-      <Detail label="Status" value={<AppointmentStatusBadge status={appointment.status} />} />
-      {patientLine}
-      <Detail label="MRN" value={mrn} />
-      {whenLine}
-      <Detail label="Repeats" value={formatSeries(appointment)} />
-      <Detail label="Visit type" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
-      <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
-      <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
-      <Detail label="Rooms" value={listActors(rooms)} />
-      <Detail label="Devices" value={listActors(devices)} />
-      <Detail label="With" value={listActors(others)} />
-      <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
-      {!editing && <Detail label="Notes" value={appointment.comment} />}
-      <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
+      {summary}
       {editing ? (
         <AppointmentDetailsForm
           appointment={appointment}
@@ -372,20 +389,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           onCancel={() => setEditing(false)}
         />
       ) : (
-        <>
-          <Detail
-            label="Procedure codes"
-            value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')}
-          />
-          <Detail
-            label="Diagnosis codes"
-            value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
-          />
-          <Detail
-            label="Medical necessity"
-            value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
-          />
-        </>
+        codes
       )}
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
