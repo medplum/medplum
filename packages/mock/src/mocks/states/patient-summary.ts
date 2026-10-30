@@ -6,6 +6,7 @@ import { createReference } from '@medplum/core';
 import type { CodeableConcept, Observation, Patient, Quantity, Resource } from '@medplum/fhirtypes';
 import { generateMockResources } from '../../generate-mock';
 import { createMockState } from '../../mock-state';
+import { mockPatientProfile } from './mock-patient-profile';
 
 const loinc = (code: string, text: string): CodeableConcept => ({
   coding: [{ system: 'http://loinc.org', code, display: text }],
@@ -195,7 +196,7 @@ export const twoPatients = createMockState(
 );
 
 const generatedPatients = generateMockResources('Patient', 6, {
-  fields: ['name.given', 'birthDate'],
+  profile: mockPatientProfile,
   values: { name: [{ family: 'Demo' }] },
 });
 const generatedObservations = generateMockResources('Observation', 6, {

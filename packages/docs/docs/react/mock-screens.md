@@ -6,21 +6,48 @@ Use `generateMockResources`, `createMockState`, and `createMockClient` from `@me
 to preview a screen without a Medplum backend. A Mock State contains the resources the screen uses and named entry points.
 You can reuse it in an app, a demo, a test, or Storybook.
 
-## Generate data from StructureDefinitions
+## Generate required fields from a profile
 
-Generate a batch, request optional fields, and supply the values that matter to your screen:
+The generator fills missing required fields from a base FHIR StructureDefinition or a supplied
+profile. Base Patient has no required demographic fields, so this produces only resource types
+and stable IDs:
+
+```ts
+const patients = generateMockResources('Patient', 6);
+```
+
+To generate names and birth dates, make those fields required in a profile. For example, this
+[FHIR Shorthand profile](/docs/fhir-datastore/profiles) requires a name, a given name within it,
+and a birth date:
+
+```fsh
+Profile: MockPatient
+Parent: Patient
+Id: mock-patient
+* name 1..*
+* name.given 1..*
+* birthDate 1..1
+```
+
+Generate the profile's resolved snapshot with your profile tooling, then pass its
+StructureDefinition to the generator. A differential alone is not supported. The snapshot must
+include inherited elements and base cardinalities; a field that repeats in base FHIR remains a
+JSON array even if the profile limits it to one entry.
 
 ```ts
 import { createReference } from '@medplum/core';
+import type { StructureDefinition } from '@medplum/fhirtypes';
 import { generateMockResources, createMockState, createMockClient } from '@medplum/mock';
+import patientProfile from './StructureDefinition-mock-patient.json';
 
 const patients = generateMockResources('Patient', 6, {
-  fields: ['name.given', 'birthDate'],
+  profile: patientProfile as StructureDefinition,
   values: { name: [{ family: 'Demo' }] },
 });
 
 const observations = generateMockResources('Observation', 6, {
   values: (index) => ({
+    status: 'final',
     subject: createReference(patients[index]),
     code: { text: 'Example measurement' },
     valueInteger: index + 1,
@@ -31,33 +58,52 @@ const state = createMockState([...patients, ...observations], { firstPatient: pa
 const medplum = await createMockClient(state);
 ```
 
-The patients receive unique IDs, generated given names and birth dates, and the family name
-`Demo`. Other optional fields remain absent. The Observations receive required status values
-from the bundled code lists; their subjects and measurements come from the callback.
+Each patient receives a generated given name and birth date, and keeps the authored family name
+`Demo`. No gender or address is added. The observations use explicit patient references and
+authored measurements; generation does not create or select related resources.
 
-Generation uses the base StructureDefinitions bundled with the mock package. It fills required
-fields and optional paths listed in `fields`. Base Patient has no required demographic fields,
-so generating Patients without `fields` produces resources with only a resource type and ID.
-Nested paths such as `name.given` fill that field in each array entry. Requesting a whole name
-with `fields: ['name']` generates its display text. For complex structures without a display or
-value field, request the child paths you need.
+`values` accepts a typed partial resource or a callback receiving a zero-based index. The generator
+copies the inputs, preserves supplied values including zero and false, and fills required children
+in supplied objects. Required arrays are padded to their minimum, including when supplied as `[]`.
+An absent optional parent stays absent even if its children would be required when present.
+`mustSupport` does not make a field required. Omit optional empty arrays and objects.
 
-`values` accepts a typed partial resource or a callback receiving a zero-based index. Supplied
-values are preserved, including nested fields, zero and false. An authored choice such as
-`medicationReference` prevents generation of `medicationCodeableConcept`. Supplying both causes
-an error. Generated reference placeholders contain display text only: supply actual references
-when the screen searches for or follows related resources.
+Required fixed or pattern values come from the profile. Their contents may include children
+that are individually optional but necessary to satisfy that constraint. Supplied values must
+match a fixed value or include a pattern; conflicts fail with the resource index and field path.
+The generator does not merge a pattern into an incompatible authored value. An absent optional
+field stays absent even if it has a fixed or pattern constraint.
+
+Requiring `name` alone does not select `given`, `family`, or `text`. Supply a name or require a
+child field in the profile. Likewise, supply references explicitly. If a required choice such as
+`medication[x]` permits multiple types, supply one variant or narrow the profile to one type.
+Multiple or disallowed variants fail with an error. Optional values can still be supplied
+in `values`.
 
 The same arguments produce the same fixture values and IDs. Dates use a fixed UTC baseline of
 May 4, 2020. Use `idPrefix` when combining multiple batches of the same resource type, or supply
 IDs in `values`. Loading data into MockClient still generates version metadata and timestamps;
 that metadata is not deterministic unless controlled separately.
 
-The generator supports bundled base definitions, including the twelve resource types used in
-the patient overview. Unknown types or field paths, unavailable code lists, and unsupported
-required structures fail with an error. Profile generation and clinical realism are outside
-this API's guarantees. Generated statuses can affect screen filters: supply a status explicitly
-when the screen requires one. Clinical codes and meaningful measurements belong to the author.
+## Supported profile features
+
+The helper supports resolved resource snapshots, nested required fields, array cardinalities,
+fixed and pattern values, and restricted choice types. Base definitions and datatype schemas
+come from the existing Medplum packages. Parsing a profile does not register it globally or add
+`meta.profile` to generated resources.
+
+Missing required primitive `code` values use bundled code lists. An explicit profile binding
+wins over the base binding. A versioned binding needs that exact local version; an unversioned
+binding can use an exact entry or a single available version. Missing or ambiguous lists require
+an authored value. Clinical codes and meaningful measurements belong to the author.
+
+Required slices, supplied sliced fields, and fields that need dependent datatype or reference
+target profiles are not supported. Absent optional fields with those features remain absent.
+The parser can reject unsupported slicing discriminators before generation. Forward or external
+content references are rejected, and excessive recursion fails with the field path. Supply a
+fully authored resource directly to `createMockState` when its profile is outside this subset.
+The generator does not fetch profiles or terminology, expand differentials, evaluate FHIRPath
+invariants, or guarantee clinical realism.
 
 ## Define data explicitly
 
@@ -144,12 +190,15 @@ add them to `packages/generator/src/mockclient.ts` and run `npm run mockclient -
 
 ## Typing and validation
 
-The generator reuses Medplum's StructureDefinition parser, datatype schemas and defaults helper.
+The generator reuses Medplum's StructureDefinition parser, datatype schemas, element contexts,
+and value comparison helpers.
 Its primitive code choices come from the bundled definitions through the existing ValueSet
 helper. It runs in the browser and in Node. Contributors regenerate the metadata with
 `npm run mockclient --workspace @medplum/generator`; screen authors do not need a build step.
 
-Use `@medplum/fhirtypes` to check authored resource fields and values. `values` is typed and
-`fields` paths are checked at runtime. Required generated values are structural examples,
-not clinically meaningful defaults. The helpers do not validate FHIRPath rules, terminology
-membership, or profile conformance. Use separate validation when those guarantees matter.
+Use `@medplum/fhirtypes` to check authored resource fields and values. `values` and the returned
+resources use the base resource type; supplying a runtime profile does not narrow that TypeScript
+type. Required generated values are structural examples, not clinically meaningful defaults.
+The helpers do not validate FHIRPath rules, terminology membership, or full profile conformance.
+Use separate validation when those guarantees matter; see [profiles](/docs/fhir-datastore/profiles)
+for profile validation and generated TypeScript types.

@@ -7,7 +7,7 @@ import { expectTypeOf } from 'vitest';
 import { withMockState } from '../stories/decorators';
 import { render, screen, waitFor, within } from '../test-utils/render';
 import { PatientSummary } from './PatientSummary';
-import { BusyPatient, NewPatient, TwoPatients } from './PatientSummary.stories';
+import { BusyPatient, NewPatient, SixGeneratedPatients, TwoPatients } from './PatientSummary.stories';
 
 async function show(state: MockStateJson): Promise<void> {
   const client = await createMockClient(state);
@@ -95,6 +95,7 @@ test('Storybook stories use the shared typed fixtures', () => {
   expect(BusyPatient.parameters.mockState).toBe(PatientSummaryStates.busyPatient);
   expect(NewPatient.parameters.mockState).toBe(PatientSummaryStates.newPatient);
   expect(TwoPatients.parameters.mockState).toBe(PatientSummaryStates.twoPatients);
+  expect(SixGeneratedPatients.parameters.mockState).toBe(PatientSummaryStates.sixPatients);
 });
 
 test('the decorator reports invalid data and switches states without leaking records', async () => {

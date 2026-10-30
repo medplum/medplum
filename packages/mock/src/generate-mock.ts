@@ -1,33 +1,36 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { InternalSchemaElement, InternalTypeSchema, WithId } from '@medplum/core';
+import type { ElementsContextType, InternalSchemaElement, InternalTypeSchema, WithId } from '@medplum/core';
 import {
-  applyDefaultValuesToResource,
+  buildElementsContext,
   capitalize,
   deepClone,
-  getDataType,
+  deepEquals,
+  deepIncludes,
+  isEmpty,
   isPrimitiveType,
   parseStructureDefinition,
+  tryGetDataType,
 } from '@medplum/core';
-import type { ExtractResource, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import type { ExtractResource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import generationCodes from './mocks/generation-codes.json';
 import definitions from './mocks/structuredefinitions.json';
 
-/** Values to preserve and optional field paths to fill, such as `name.given` or `birthDate`. */
+/** A resolved profile and typed values to use when generating required fields. */
 export interface MockGenerationOptions<K extends ResourceType> {
-  readonly fields?: readonly string[];
+  readonly profile?: StructureDefinition;
   readonly values?: Partial<ExtractResource<K>> | ((index: number) => Partial<ExtractResource<K>>);
   /** Use a distinct prefix when combining batches of the same resource type. */
   readonly idPrefix?: string;
 }
 
 /**
- * Generates deterministic screen data from bundled base FHIR StructureDefinitions.
- * Required fields and requested optional fields are filled; authored values are preserved.
- * Reference placeholders do not create links. Clinical values and links belong to the author.
- * @param type - A resource type included in the mock package's bundled definitions.
+ * Generates deterministic mock resources, filling only missing required fields.
+ * Profiles must include a resolved snapshot. References and ambiguous choices need authored values.
+ * This helper does not guarantee full FHIR or profile conformance.
+ * @param type - The resource type to generate.
  * @param count - Number of resources to generate.
- * @param options - Requested fields, authored values and a stable ID prefix.
+ * @param options - Profile, authored values and a stable ID prefix.
  * @returns Typed resources with stable IDs, ready for createMockState.
  */
 export function generateMockResources<K extends ResourceType>(
@@ -38,96 +41,166 @@ export function generateMockResources<K extends ResourceType>(
   if (!Number.isSafeInteger(count) || count < 0) {
     throw new Error('Mock resource count must be a nonnegative integer');
   }
-  const definition = (definitions as StructureDefinition[]).find((sd) => sd.type === type);
+  const bundled = (definitions as StructureDefinition[]).find((sd) => sd.type === type);
+  const definition = options.profile ?? bundled;
   if (!definition) {
     throw new Error(`No bundled mock StructureDefinition for ${type}`);
   }
+  if (options.profile && (definition.kind !== 'resource' || definition.type !== type)) {
+    throw new Error(`Mock profile ${definition.url ?? definition.name} must describe resource type ${type}`);
+  }
+  if (!definition.snapshot?.element.length || definition.snapshot.element[0].path !== type) {
+    throw new Error(`Mock ${type} profile needs a resolved snapshot rooted at ${type}`);
+  }
+  // The parser stops at unresolved content references; reject them rather than lose later fields.
+  const seenPaths = new Set<string>();
+  for (const element of definition.snapshot.element) {
+    if (element.contentReference && !seenPaths.has(element.contentReference.replace(/^#/, ''))) {
+      throw new Error(`Mock ${type} ${element.path}: unsupported forward or external content reference`);
+    }
+    seenPaths.add(element.path);
+  }
   const schema = parseStructureDefinition(definition);
+  const baseSchema = bundled && options.profile ? parseStructureDefinition(bundled) : schema;
+  const requiredSlices = new Set(
+    definition.snapshot.element.filter((ed) => ed.sliceName && (ed.min ?? 0) > 0).map((ed) => ed.path)
+  );
   const bindings: Record<string, string> = generationCodes.bindings;
   const valueSets: Record<string, string[]> = generationCodes.valueSets;
+
   return Array.from({ length: count }, (_, index) => {
-    const values = deepClone(typeof options.values === 'function' ? options.values(index) : (options.values ?? {}));
-    const resource = applyDefaultValuesToResource({ ...values, resourceType: type } as Resource, schema);
-    resource.id ??= `${options.idPrefix ?? type.toLowerCase()}-${index + 1}`;
-    const unmatched = new Set(options.fields ?? []);
-    fill(resource as unknown as Record<string, unknown>, schema, '', 0);
-    if (unmatched.size) {
-      throw new Error(`Unknown or unsupported mock field: ${[...unmatched].join(', ')}`);
-    }
-    // The schema determines the output shape; tests check required fields and choice handling.
+    const values = typeof options.values === 'function' ? options.values(index) : options.values;
+    const resource = {
+      ...deepClone(values ?? {}),
+      resourceType: type,
+      id: values?.id ?? `${options.idPrefix ?? type.toLowerCase()}-${index + 1}`,
+    };
+    fill(resource, schema, baseSchema, type);
     return resource as WithId<ExtractResource<K>>;
 
-    function fill(object: Record<string, unknown>, current: InternalTypeSchema, parent: string, depth: number): void {
+    function fail(path: string, message: string): never {
+      throw new Error(`Mock ${type}[${index}] ${path}: ${message}`);
+    }
+
+    function fill(
+      object: Record<string, unknown>,
+      current: InternalTypeSchema,
+      base: InternalTypeSchema,
+      path: string,
+      parentContext?: ElementsContextType,
+      depth = 0
+    ): void {
       if (depth > 8) {
-        throw new Error(`Required mock structure is recursive at ${current.path}; supply a value`);
+        fail(path, 'required structure is recursive or too deep');
       }
-      for (const [key, element] of Object.entries(current.elements)) {
-        if (key.includes('.') || element.max === 0) {
+      const context = buildElementsContext({ parentContext, path, elements: current.elements }) as ElementsContextType;
+      for (const [key, element] of Object.entries(context.elements)) {
+        if (key.includes('.')) {
           continue;
         }
+        const fieldPath = `${path}.${key}`;
+        const baseElement = base.elements[key];
         const variants = element.type.map((t) => key.replace('[x]', capitalize(t.code)));
-        const present = [...new Set(variants)].filter((prop) => object[prop] !== undefined);
-        if (present.length > 1) {
-          throw new Error(`Multiple choice values at ${element.path}`);
+        const allVariants = new Set([
+          ...variants,
+          ...(baseElement?.type ?? []).map((t) => key.replace('[x]', capitalize(t.code))),
+        ]);
+        const present = [...allVariants].filter((prop) => object[prop] !== undefined);
+        if (present.length > 1 || present.some((prop) => !variants.includes(prop))) {
+          fail(fieldPath, 'supply exactly one allowed choice variant');
         }
-        const selected = present[0] ?? variants.find((prop) => requested(join(parent, prop))) ?? variants[0];
-        const path = join(parent, selected);
-        const wanted = requested(path);
-        if (object[selected] === undefined && element.min === 0 && !wanted) {
+        if (requiredSlices.has(fieldPath) || element.slicing?.slices.some((slice) => slice.min > 0)) {
+          fail(fieldPath, 'required slices are not supported');
+        }
+        if (!present.length && element.min === 0) {
           continue;
         }
-        unmatched.delete(path);
-        const fieldType = element.type[variants.indexOf(selected)];
-        if (!fieldType || element.slicing || fieldType.profile?.length) {
-          throw new Error(`Unsupported mock structure at ${element.path}; supply this resource explicitly`);
+        if (element.max === 0) {
+          fail(fieldPath, 'the profile prohibits this field');
         }
-        const generated = object[selected] === undefined;
-        if (generated) {
-          const make = (): unknown => sample(fieldType.code, element, path);
-          object[selected] = element.isArray ? Array.from({ length: Math.max(1, element.min) }, make) : make();
+        if (!present.length && key.includes('[x]') && variants.length !== 1) {
+          fail(fieldPath, `supply a choice value or narrow its type in the profile (${variants.join(', ')})`);
         }
-        if (!isPrimitiveType(fieldType.code)) {
-          const child = schema.innerTypes.find((inner) => inner.name === fieldType.code) ?? getDataType(fieldType.code);
-          const children = element.isArray ? (object[selected] as unknown[]) : [object[selected]];
-          for (const value of children) {
-            fill(value as Record<string, unknown>, child, path, depth + 1);
-            if (generated && Object.keys(value as object).length === 0) {
-              throw new Error(`No generated value at ${path}; request its child fields or supply a value`);
+        const prop = present[0] ?? variants[0];
+        const fieldType = element.type[variants.indexOf(prop)];
+        if (
+          !fieldType ||
+          element.slicing ||
+          fieldType.profile?.length ||
+          fieldType.targetProfile?.some(
+            (url) => !/^http:\/\/hl7.org\/fhir\/StructureDefinition\/[A-Z][A-Za-z]+$/.test(url)
+          )
+        ) {
+          fail(fieldPath, 'slices and dependent profiles are not supported');
+        }
+        // Profile max=1 does not change the JSON representation of a base repeating field.
+        const isArray = baseElement?.isArray ?? element.isArray;
+        const make = (): unknown => sample(fieldType.code, element, fieldPath, `${base.type}.${key}`);
+        if (object[prop] === undefined) {
+          object[prop] = isArray ? [] : make();
+        }
+        if (Array.isArray(object[prop]) !== Boolean(isArray)) {
+          fail(fieldPath, isArray ? 'expected an array' : 'expected a single value');
+        }
+        const items = isArray ? (object[prop] as unknown[]) : [object[prop]];
+        if (items.length > element.max) {
+          fail(fieldPath, `expected at most ${element.max} entries`);
+        }
+        while (items.length < element.min) {
+          items.push(make());
+        }
+        if (items.length === 0) {
+          fail(fieldPath, 'omit an optional empty array or supply a value');
+        }
+        for (const item of items) {
+          if (!isPrimitiveType(fieldType.code)) {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) {
+              fail(fieldPath, 'expected an object');
             }
+            const child =
+              schema.innerTypes.find((inner) => inner.name === fieldType.code) ?? tryGetDataType(fieldType.code);
+            if (!child) {
+              fail(fieldPath, `unsupported datatype ${fieldType.code}`);
+            }
+            const baseChild = baseSchema.innerTypes.find((inner) => inner.name === fieldType.code) ?? child;
+            // Context paths retain [x]; only the JSON property uses the concrete variant name.
+            fill(item as Record<string, unknown>, child, baseChild, fieldPath, context, depth + 1);
+          }
+          if (isEmpty(item)) {
+            fail(fieldPath, 'supply a value or require a child field in the profile');
+          }
+          const typed = { type: fieldType.code, value: item };
+          if (element.fixed && !deepEquals(typed, element.fixed)) {
+            fail(fieldPath, 'value conflicts with fixed value');
+          }
+          if (element.pattern && !deepIncludes(typed, element.pattern)) {
+            fail(fieldPath, 'value does not include the required pattern');
           }
         }
       }
     }
 
-    function requested(path: string): boolean {
-      return (options.fields ?? []).some((field) => field === path || field.startsWith(path + '.'));
-    }
-
-    function sample(code: string, element: InternalSchemaElement, path: string): unknown {
-      if (code === 'Reference') {
-        return { display: `Example ${path} ${index + 1}` };
+    function sample(code: string, element: InternalSchemaElement, path: string, basePath: string): unknown {
+      const specified = element.fixed ?? element.pattern;
+      if (specified) {
+        return deepClone(specified.value);
       }
-      if (code === 'CodeableConcept') {
-        return { text: `Example ${path} ${index + 1}` };
+      if (code === 'Reference') {
+        return fail(path, 'supply an explicit reference in values');
       }
       if (!isPrimitiveType(code)) {
-        const child = schema.innerTypes.find((inner) => inner.name === code) ?? getDataType(code);
-        // A requested whole datatype gets its ordinary display/value field. Nested paths
-        // remain precise: requesting name.given does not also generate name.family.
-        if (options.fields?.includes(path)) {
-          const property = ['text', 'display', 'value'].find((name) => child.elements[name]);
-          if (property) {
-            const field = child.elements[property];
-            return { [property]: sample(field.type[0].code, field, join(path, property)) };
-          }
-        }
         return {};
       }
       switch (code) {
         case 'code': {
-          const choices = valueSets[bindings[element.path]];
+          const canonical = element.binding?.valueSet ?? bindings[element.path] ?? bindings[basePath];
+          const matches =
+            canonical && !canonical.includes('|')
+              ? Object.keys(valueSets).filter((url) => url.split('|')[0] === canonical)
+              : [];
+          const choices = valueSets[canonical] ?? (matches.length === 1 ? valueSets[matches[0]] : undefined);
           if (!choices?.length) {
-            throw new Error(`No bundled code choices for ${element.path}; supply its value`);
+            return fail(path, 'no unambiguous local code list; supply its value');
           }
           return choices[index % choices.length];
         }
@@ -153,14 +226,10 @@ export function generateMockResources<K extends ResourceType>(
           return `https://example.com/${index + 1}`;
         case 'string':
         case 'markdown':
-          return `Example ${path} ${index + 1}`;
+          return `Example ${path.slice(type.length + 1).replaceAll('[x]', '')} ${index + 1}`;
         default:
-          throw new Error(`Unsupported mock primitive ${code} at ${element.path}; supply its value`);
+          return fail(path, `unsupported primitive ${code}; supply its value`);
       }
     }
   });
-}
-
-function join(parent: string, property: string): string {
-  return parent ? `${parent}.${property}` : property;
 }
