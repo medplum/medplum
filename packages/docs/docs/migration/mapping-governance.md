@@ -18,7 +18,7 @@ This page covers:
 
 :::tip[Planning the mapping work?]
 
-Use the [Data Migration Decision Guide](/docs/decision-guides/data-migration#33-mapping--terminology-governance) to identify the participants and decisions before completing the register on this page.
+Use the [Data Migration Decision Guide](/docs/decision-guides/data-migration#how-will-fhir-mappings-and-terminology-be-governed) to identify the participants and decisions before completing the register on this page.
 
 :::
 
@@ -86,7 +86,7 @@ Before defining a custom extension:
 
 Do not combine unrelated source fields under one generic extension URL. If a field has no approved FHIR representation, mark it as unsupported or out of scope rather than hiding it in an extension. Changing an extension URL or meaning after applications depend on it can require both a data migration and an application migration.
 
-See [Profiles](/docs/fhir-datastore/profiles) and [Mapping and Terminology Governance](/docs/decision-guides/data-migration#33-mapping--terminology-governance) for the design and approval process.
+See [Profiles](/docs/fhir-datastore/profiles) and [Mapping and Terminology Governance](/docs/decision-guides/data-migration#how-will-fhir-mappings-and-terminology-be-governed) for the design and approval process.
 
 ## Choose How Profiles Apply
 
