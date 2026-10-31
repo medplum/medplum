@@ -149,7 +149,7 @@ describe('install-google-calendar', () => {
 
     // MockClient seeds sample resources of these types, so only ours are counted.
     const subscriptions = await ours('Subscription');
-    expect(subscriptions).toHaveLength(6);
+    expect(subscriptions).toHaveLength(8);
     expect(
       subscriptions
         .filter((s) => ['Appointment', 'Slot'].includes(s.criteria))
@@ -186,7 +186,7 @@ describe('install-google-calendar', () => {
     const rotated = await medplum.readResource('Project', project.id as string);
     expect(rotated.secret?.find((s) => s.name === 'GOOGLE_CALENDAR_CLIENT_SECRET')?.valueString).toBe('secret-2');
     expect(rotated.secret).toHaveLength(4);
-    expect(await ours('Subscription')).toHaveLength(6);
+    expect(await ours('Subscription')).toHaveLength(8);
     expect(await ours('ProjectMembership')).toHaveLength(8);
     expect(await ours('Cron')).toHaveLength(2);
   });

@@ -13,6 +13,11 @@ import { projectQuery } from './project';
 
 export const CREDENTIAL_SEARCH = `code=${N}|calendar-credential`;
 export const TOKEN_URL = `${N}/refresh-token`;
+export class MissingCalendarCredentialError extends Error {
+  constructor() {
+    super('Calendar credential is missing; reconnect required');
+  }
+}
 const SYSTEM = `${N}/credential`;
 
 async function credential(medplum: MedplumClient, id: string): Promise<WithId<Basic> | undefined> {
@@ -67,7 +72,7 @@ export async function readCredential(medplum: MedplumClient, connection: Calenda
   // Transitional worker-only read permits an interrupted install to resume migration.
   const token = getExtensionValue(saved ?? connection.basic, TOKEN_URL);
   if (typeof token !== 'string' || !token) {
-    throw new Error('Calendar credential is missing; reconnect required');
+    throw new MissingCalendarCredentialError();
   }
   return token;
 }

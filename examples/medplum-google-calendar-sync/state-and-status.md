@@ -24,7 +24,7 @@ Mirror receipts use Basic code `N|calendar-mirror`, subject `Basic/<connection-i
 
 ## Public status summary
 
-The worker connection is private. A separate `calendar-public-status` Basic has the same practitioner subject and identifier `N/public-status|Basic/<connection-id>`. Workers publish an allowlisted summary under the connection lease. It holds status, email, detail level, freshness, pending flags, diagnostic categories and conflict revision. It contains no refresh token, Google account subject, raw conflicts, watch-channel identifiers, lease or outbound cursor. Failed publication leaves work retryable; status may show the previous summary until a retry succeeds.
+The worker connection is private. A separate `calendar-public-status` Basic has the same practitioner subject and identifier `N/public-status|Basic/<connection-id>`. Workers publish an allowlisted summary under the connection lease. It holds status, email, detail level, freshness, pending flags, diagnostic categories and conflict revision. It contains no refresh token, Google account subject, raw conflicts, watch-channel identifiers, lease or outbound cursor. Failed publication records a private statusPublishPending flag and releases the lease. Minute recovery retries publication, including paused connections. Status may show the previous summary until that retry succeeds.
 
 ## Durable sync state
 
@@ -39,6 +39,7 @@ All names below are relative child-extension URLs under `N/sync-state`. Optional
 | staleReason, inboundError, outboundError | string | Stable diagnostic category, without vendor event content |
 | privacyPending | boolean | All-owned-mirror scrub has not completed for the current request/configuration |
 | projectDetailLevel | code | Last ceiling read by an outbound worker |
+| statusPublishPending | boolean | Public summary publication needs a retry |
 | conflictsRevision | string | New UUID when the conflict set opens, changes, or resolves |
 | forgetRevoked | boolean | Explicit consent to leave residual Google events when access is revoked |
 | googleCleaned, slotsCleaned, credentialRevoked | boolean | Disconnect cleanup checkpoints |
@@ -56,7 +57,7 @@ An outboundWork record has `start`/`end` valueInstant, `phase` valueCode (`disco
 
 ## Status Parameters
 
-`Practitioner/$google-calendar-status` resolves the caller from the authenticated requester. It accepts no input parameters and performs no writes. Change `eventDetailLevel` through `Practitioner/$google-calendar-settings`. Status derives conflicts from caller-visible imported Slots and Appointments, then checks referenced-resource read permissions. Retained Slots still show stale busy-time overlaps after revocation. Status returns a Parameters resource; `connected` is always present. Other fields appear when a connection exists.
+`Practitioner/$google-calendar-status` resolves the caller from the authenticated requester. It accepts no input parameters and performs no writes. Change `eventDetailLevel` through `Practitioner/$google-calendar-settings`. Status derives conflicts within the next 90 days from caller-visible imported Slots and eligible Appointments, then checks referenced-resource read permissions. Retained Slots still show stale busy-time overlaps after revocation. Status returns a Parameters resource; `connected` is always present. Other fields appear when a connection exists.
 
 | Parameter | Type | Meaning |
 | --- | --- | --- |
@@ -76,7 +77,7 @@ An outboundWork record has `start`/`end` valueInstant, `phase` valueCode (`disco
 
 Each conflict part contains `key` valueString (SHA-256 of the internal key), `appointment` valueReference, `start`/`end` valueInstant, and zero or more authorized `schedule` valueReferences. A denied or deleted reference is omitted; a transient authorization/read failure fails the operation instead of claiming resolution.
 
-Current stale reasons include `awaiting-initial-import`, `import-overdue` (more than two hours since success), `inbound-pending`, `inbound-error`, `outbound-error`, `outbound-incomplete`, `outbound-quota`, `reauth-required`, `disconnecting`, `imported-slot-repair-required`, and `legacy-mirror-repair-required`. The two-hour threshold is a UI freshness threshold, not a sync SLA. Retained conflicts are last-known information while stale.
+Current stale reasons include `awaiting-initial-import`, `import-overdue` (more than two hours since success), `inbound-pending`, `inbound-error`, `outbound-error`, `outbound-incomplete`, `outbound-quota`, `reauth-required`, `disconnecting`, `legacy-mirror-repair-required`. The two-hour threshold is a UI freshness threshold, not a sync SLA. Retained conflicts are last-known information while stale.
 
 ## Customer workflows
 
@@ -119,3 +120,5 @@ Restrict ordinary Slot writers with these rules, preserving any existing Schedul
 ```
 
 The importer uses the positive identifier criterion with write access. It has no Appointment or Schedule write grant. Core matcher tests cover allowed imported Slot CRUD, denied ordinary Slot writes, denied Appointment/Schedule writes, and ordinary-writer denial of a forged reserved identifier. Server tests must also prove that removing or changing an existing identifier cannot bypass the old-resource check. Check all effective policy entries and administrative memberships; an identifier alone is not authorization.
+
+Malformed imported identifiers produce Bot-log warnings only. The uncertain Slots remain blocked until an administrator repairs them; no connection is blamed for an unassignable row. A durable project-wide repair queue is not implemented. Ownership receipts are retained across disconnect for recovery; receipt-retention policy remains a release item.

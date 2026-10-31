@@ -162,6 +162,28 @@ describe('google-calendar-connect-bot', () => {
     expect(await findConnection(medplum, `Practitioner/${practitioner.id}`)).toBeUndefined();
   });
 
+  test('revokes a failed first-connect grant when the placeholder exists but the credential is absent', async () => {
+    const create = vi.mocked(medplum.createResourceIfNoneExist).getMockImplementation()?.bind(medplum);
+    if (!create) {
+      throw new Error('Missing project-stamping adapter');
+    }
+    vi.spyOn(medplum, 'createResourceIfNoneExist').mockImplementation(async (resource, query, options) => {
+      if (resource.resourceType === 'Basic' && resource.code.coding?.some((c) => c.code === 'calendar-credential')) {
+        throw new Error('credential write failed');
+      }
+      return create(resource, query, options);
+    });
+    const fetch = mockGoogle({
+      access_token: 'at',
+      refresh_token: 'unused',
+      scope: SCOPE,
+      id_token: idToken({ sub: 'sub' }),
+    });
+    await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('credential write failed');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(String(fetch.mock.calls[1][0])).toContain('/revoke');
+  });
+
   test('requires the code parameters and a Practitioner requester', async () => {
     await expect(handler(medplum, event(params({ code: 'c' })))).rejects.toThrow('Required parameters missing');
     await expect(handler(medplum, { ...event(CODE_PARAMS), requester: { reference: 'Patient/x' } })).rejects.toThrow(
@@ -178,9 +200,8 @@ describe('google-calendar-connect-bot', () => {
       scope: SCOPE,
       id_token: idToken({ sub: 'new-sub', email: 'new@clinic.example' }),
     });
-    await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('Disconnect');
+    await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('existing credentials were preserved');
     expect((await requireConnection(medplum, practitionerRef)).accountSub).toBe('old-sub');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(String(fetchMock.mock.calls[1][0])).toContain('/revoke');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -118,12 +118,14 @@ export async function practitionerSchedules(
 export async function importedSlots(
   medplum: MedplumClient,
   connectionId: string,
-  onMalformed?: (slot: WithId<Slot>) => void
+  onMalformed?: (slot: WithId<Slot>) => void,
+  filters: Record<string, string> = {}
 ): Promise<WithId<Slot>[]> {
   const slots: WithId<Slot>[] = [];
   for await (const page of medplum.searchResourcePages(
     'Slot',
     await projectQuery(medplum, {
+      ...filters,
       identifier: `${IMPORT_IDENTIFIER_SYSTEM}|`,
       _count: '200',
     })
@@ -147,7 +149,6 @@ export interface ImportResult {
   schedules: WithId<Schedule>[];
   createdOrUpdated: number;
   removed: number;
-  malformedSlots: number;
 }
 
 /**
@@ -173,7 +174,6 @@ export async function importBusyTime(
   }
   const snapshot = await calendar.listBusyEvents(range.start.toISOString(), range.end.toISOString());
   const schedules = await practitionerSchedules(medplum, connection.practitionerRef);
-  const malformedSlots = 0;
   const previous = await importedSlots(medplum, connection.basic.id);
   // Invalid identities are project-level diagnostics, not attributed to every connection.
   const intervals = snapshot.events
@@ -254,7 +254,7 @@ export async function importBusyTime(
     await medplum.deleteResource('Slot', old.id, { headers: { 'If-Match': `W/"${old.meta?.versionId}"` } });
     removed++;
   }
-  return { calendarId: snapshot.calendarId, intervals, schedules, createdOrUpdated, removed, malformedSlots };
+  return { calendarId: snapshot.calendarId, intervals, schedules, createdOrUpdated, removed };
 }
 
 function sameBlock(a: Slot, b: Slot): boolean {

@@ -192,15 +192,20 @@ export async function ensureBotMembership(
  * the sync Bot. The endpoint must be the literal `Bot/<id>`; an identifier isn't accepted.
  * @param medplum - The client.
  * @param syncBot - The shared sync Bot.
- * @param criteria - `Appointment` or `Slot`.
+ * @param criteria - Scheduling resource type.
+ * @param deleteOnly - Separate deletion delivery without a transition expression.
  * @returns The Subscription.
  */
 export async function ensureSyncSubscription(
   medplum: MedplumClient,
   syncBot: WithId<Bot>,
-  criteria: 'Appointment' | 'Slot' | 'Schedule' | 'PractitionerRole'
+  criteria: 'Appointment' | 'Slot' | 'Schedule' | 'PractitionerRole',
+  deleteOnly = false
 ): Promise<WithId<Subscription>> {
-  const tag = { system: INSTALL_SYSTEM, code: `subscription-${criteria.toLowerCase()}` };
+  const tag = { system: INSTALL_SYSTEM, code: `subscription-${criteria.toLowerCase()}${deleteOnly ? '-delete' : ''}` };
+  const normalInteractions = ['Schedule', 'PractitionerRole'].includes(criteria)
+    ? ['create', 'update']
+    : ['create', 'update', 'delete'];
   const desired: Subscription = {
     resourceType: 'Subscription',
     meta: { tag: [tag] },
@@ -209,7 +214,7 @@ export async function ensureSyncSubscription(
     criteria,
     channel: { type: 'rest-hook', endpoint: getReferenceString(syncBot) },
     extension: [
-      ...(['Schedule', 'PractitionerRole'].includes(criteria)
+      ...(!deleteOnly && ['Schedule', 'PractitionerRole'].includes(criteria)
         ? [
             {
               url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
@@ -217,7 +222,7 @@ export async function ensureSyncSubscription(
             },
           ]
         : []),
-      ...['create', 'update', 'delete'].map((valueCode) => ({
+      ...(deleteOnly ? ['delete'] : normalInteractions).map((valueCode) => ({
         url: SUBSCRIPTION_INTERACTION_EXTENSION_URL,
         valueCode,
       })),
@@ -402,7 +407,11 @@ export async function ensureOperationPolicy(
   return medplum.updateResource({ ...desired, id: saved.id, meta: { ...saved.meta, ...desired.meta } }, ifMatch(saved));
 }
 
-export async function auditPolicyGrants(medplum: MedplumClient, projectId: string): Promise<string[]> {
+export async function auditPolicyGrants(
+  medplum: MedplumClient,
+  projectId: string,
+  expectedWorkers: string[] = []
+): Promise<string[]> {
   const policies: WithId<AccessPolicy>[] = [];
   for await (const page of medplum.searchResourcePages(
     'AccessPolicy',
@@ -447,6 +456,48 @@ export async function auditPolicyGrants(medplum: MedplumClient, projectId: strin
         member.accessPolicy?.reference,
         ...(member.access ?? []).map((a) => a.policy?.reference),
       ].filter(Boolean);
+      const policy = policies.find((p) => member.accessPolicy?.reference === `AccessPolicy/${p.id}`);
+      const knownPolicy = policy?.meta?.tag?.some(
+        (tag) =>
+          tag.system === INSTALL_SYSTEM &&
+          ['sync-policy', 'import-policy', 'webhook-policy', 'connect-policy', 'operation-policy'].includes(
+            tag.code ?? ''
+          )
+      );
+      const boundedWorkerPolicy = policy?.resource?.every((r) => {
+        if (r.resourceType === '*') {
+          return false;
+        }
+        if (r.resourceType === 'Basic') {
+          return [CONNECTION_SEARCH, PUBLIC_STATUS_SEARCH, CREDENTIAL_SEARCH, MIRROR_SEARCH, CONFIG_SEARCH].some(
+            (query) => r.criteria === `Basic?${query}`
+          );
+        }
+        if (r.resourceType === 'Slot' && !r.readonly) {
+          return r.criteria === `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|`;
+        }
+        return r.readonly === true;
+      });
+      if (
+        !member.admin &&
+        !member.access?.length &&
+        member.profile?.reference?.startsWith('Bot/') &&
+        knownPolicy &&
+        boundedWorkerPolicy
+      ) {
+        const bot = await medplum.readReference(member.profile);
+        if (
+          bot.resourceType === 'Bot' &&
+          bot.identifier?.some(
+            (i) =>
+              i.system === BOT_IDENTIFIER_SYSTEM &&
+              Object.values(BOT_IDENTIFIER_VALUE).includes(i.value as typeof BOT_IDENTIFIER_VALUE.sync)
+          )
+        ) {
+          expectedWorkers.push(`ProjectMembership/${member.id}`);
+          continue;
+        }
+      }
       if (
         member.admin ||
         !references.length ||

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { PROFILES } from './profiles';
-import type { MedplumClient, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
 import { GOOGLE_CALENDAR_NAMESPACE as N, EVENT_PROPERTY } from './constants';
@@ -107,15 +107,4 @@ export function ownershipStore(lease: ConnectionLease, connection: CalendarConne
       return receipt?.subject?.reference === `Basic/${connection.basic.id}` || (await receipts(event)).length > 0;
     },
   };
-}
-export async function deleteOwnershipReceipts(medplum: MedplumClient, lease: ConnectionLease): Promise<void> {
-  for await (const page of medplum.searchResourcePages(
-    'Basic',
-    await projectQuery(medplum, `${MIRROR_SEARCH}&subject=Basic/${lease.id}`)
-  )) {
-    for (const receipt of page) {
-      await lease.check();
-      await medplum.deleteResource('Basic', receipt.id, ifMatch(receipt));
-    }
-  }
 }

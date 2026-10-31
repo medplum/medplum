@@ -106,7 +106,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
         state.conflicts = conflicts;
         state.lastInbound = new Date().toISOString();
         state.inboundCompleted = inboundRequestAtStart;
-        state.inboundError = result.malformedSlots ? 'imported-slot-repair-required' : undefined;
+        state.inboundError = undefined;
         state.inboundRetryAt = undefined;
         state.staleReason = undefined;
         return withState(basic, state);

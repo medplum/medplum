@@ -12,6 +12,7 @@ import { projectQuery } from './project';
 import { ifMatch } from './lease';
 import { PROFILES } from './profiles';
 import { importedSlots, findConflicts, readImportedIdentity } from './import';
+import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { connectionStatusParameters } from './operations';
 import { readProjectCeiling } from './configuration';
 import { createHash } from 'node:crypto';
@@ -100,33 +101,43 @@ export async function callerStatus(medplum: MedplumClient, practitionerRef: stri
       actors.add(`PractitionerRole/${role.id}`);
     }
   }
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 90 * 24 * 60 * 60_000);
   const appointments: Appointment[] = [];
   for await (const page of medplum.searchResourcePages(
     'Appointment',
-    await projectQuery(medplum, { actor: [...actors].join(','), _count: '200' })
+    await projectQuery(medplum, {
+      actor: [...actors].join(','),
+      status: [...MIRRORED_APPOINTMENT_STATUSES].join(','),
+      end: `gt${now.toISOString()}`,
+      date: `lt${horizon.toISOString()}`,
+      _count: '200',
+    })
   )) {
     appointments.push(...page);
   }
   const conflicts = new Map<string, ReturnType<typeof findConflicts>[number]>();
+  const permissions = new Map<string, boolean>();
   const readable = async (reference: string): Promise<boolean> => {
+    if (permissions.has(reference)) {
+      return permissions.get(reference) as boolean;
+    }
     try {
       await medplum.readReference({ reference }, { cache: 'no-cache' });
+      permissions.set(reference, true);
       return true;
     } catch (err) {
       if (err instanceof OperationOutcomeError && [403, 404, 410].includes(getStatus(err.outcome))) {
+        permissions.set(reference, false);
         return false;
       }
       throw err;
     }
   };
-  const visibleAppointments: Appointment[] = [];
-  for (const appointment of appointments) {
-    if (appointment.id && (await readable(`Appointment/${appointment.id}`))) {
-      visibleAppointments.push(appointment);
-    }
-  }
-
-  for (const slot of await importedSlots(medplum, id)) {
+  for (const slot of await importedSlots(medplum, id, undefined, {
+    end: `gt${now.toISOString()}`,
+    start: `lt${horizon.toISOString()}`,
+  })) {
     const identity = readImportedIdentity(slot);
     if (!identity) {
       continue;
@@ -135,11 +146,17 @@ export async function callerStatus(medplum: MedplumClient, practitionerRef: stri
       id,
       identity.calendarId,
       [{ eventId: identity.eventId, start: slot.start, end: slot.end }],
-      (await readable(slot.schedule.reference as string)) ? [slot.schedule.reference as string] : [],
-      visibleAppointments,
+      [],
+      appointments,
       actors,
-      new Date()
+      now
     )) {
+      if (!(await readable(conflict.appointment))) {
+        continue;
+      }
+      conflict.schedules = (await readable(slot.schedule.reference as string))
+        ? [slot.schedule.reference as string]
+        : [];
       const key = createHash('sha256').update(conflict.key).digest('hex');
       const previous = conflicts.get(key);
       conflicts.set(key, {

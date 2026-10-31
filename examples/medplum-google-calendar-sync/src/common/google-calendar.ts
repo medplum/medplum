@@ -229,7 +229,15 @@ export class GoogleCalendarClient {
     if (!existing || existing.status === 'cancelled') {
       return;
     }
-    assertEventOwnership(existing, owner);
+    const props = existing.extendedProperties?.private;
+    const predecessor = props?.[EVENT_PROPERTY.connection];
+    const sameIdentity =
+      props?.[EVENT_PROPERTY.project] === owner[EVENT_PROPERTY.project] &&
+      props?.[EVENT_PROPERTY.source] === owner[EVENT_PROPERTY.source];
+    const desiredIdentity = { ...existing, extendedProperties: { private: owner } };
+    if (!(predecessor && sameIdentity && (await this.ownership?.ownsPrevious?.(desiredIdentity, predecessor)))) {
+      assertEventOwnership(existing, owner);
+    }
     await this.deleteEvent(eventId, requireEtag(existing));
   }
 

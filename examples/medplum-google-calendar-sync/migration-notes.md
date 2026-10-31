@@ -11,3 +11,5 @@
 These changes do not alter scheduling authority: Google maintains only imported Slots, and Medplum owns Appointments and native blocks. Both directions remain in release scope.
 
 The example uses the repository root lockfile and examples pipeline. There is no separate example lockfile or installation workflow. The credential profile and token extension remain draft until the encrypted-storage migration has a verified contract.
+
+Schedule and PractitionerRole delivery now uses separate delete-only Subscriptions; reinstallation adds them and removes delete from the filtered update Subscriptions. Public-status publication failures queue a retry without holding the connection lease. Malformed Slot diagnostics are Bot-log warnings only.

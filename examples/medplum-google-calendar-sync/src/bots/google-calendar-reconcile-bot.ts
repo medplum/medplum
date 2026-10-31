@@ -108,6 +108,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           const state = readState(basic);
           const directions: ('inbound' | 'outbound')[] = [];
           if (
+            state.statusPublishPending ||
             connection.status === 'disconnecting' ||
             (connection.status === 'active' && state.inboundRequest !== state.inboundCompleted)
           ) {
@@ -117,7 +118,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
             directions.push('outbound');
           }
           for (const direction of directions) {
-            if (Date.parse(state[`${direction}RetryAt`] ?? '') > Date.now()) {
+            if (
+              Date.parse(state[`${direction}RetryAt`] ?? '') > Date.now() &&
+              !(direction === 'inbound' && state.statusPublishPending)
+            ) {
               continue;
             }
             await medplum.executeBot(
@@ -151,7 +155,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     await projectQuery(medplum, `${CONNECTION_SEARCH}&_count=100`)
   )) {
     const ids = page
-      .filter((b) => ['active', 'disconnecting'].includes(readConnection(b)?.status ?? ''))
+      .filter(
+        (b) =>
+          ['active', 'disconnecting'].includes(readConnection(b)?.status ?? '') || readState(b).statusPublishPending
+      )
       .map((b) => b.id);
     if (ids.length) {
       await medplum.executeBot(

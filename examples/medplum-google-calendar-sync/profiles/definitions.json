@@ -924,6 +924,12 @@
               "key": "gcal-connection-28",
               "severity": "error",
               "human": "Google Calendar connection constraint 29",
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').all(value is boolean)"
+            },
+            {
+              "key": "gcal-connection-29",
+              "severity": "error",
+              "human": "Google Calendar connection constraint 30",
               "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))"
             },
             {

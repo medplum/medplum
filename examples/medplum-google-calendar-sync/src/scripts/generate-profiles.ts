@@ -64,9 +64,14 @@ const stateConstraints = [
     'requestedRangeStart',
     'requestedRangeEnd',
   ].map((name) => stateField(name, 'Instant')),
-  ...['privacyPending', 'forgetRevoked', 'googleCleaned', 'slotsCleaned', 'credentialRevoked'].map((name) =>
-    stateField(name, 'Boolean')
-  ),
+  ...[
+    'privacyPending',
+    'forgetRevoked',
+    'googleCleaned',
+    'slotsCleaned',
+    'credentialRevoked',
+    'statusPublishPending',
+  ].map((name) => stateField(name, 'Boolean')),
   `${ext('sync-state')}.extension.where(url='projectDetailLevel').count() <= 1 and ${ext('sync-state')}.extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))`,
 ];
 const specs: [string, 'Basic' | 'Slot', string[]][] = [
@@ -219,7 +224,9 @@ for (const [name, type] of extensions) {
 mkdirSync('profiles', { recursive: true });
 const serialized = JSON.stringify(files, null, 2) + '\n';
 if (process.argv.includes('--check')) {
-  if (readFileSync('profiles/definitions.json', 'utf8') !== serialized) { throw new Error('Profile definitions are stale; run npm run profiles'); }
+  if (readFileSync('profiles/definitions.json', 'utf8') !== serialized) {
+    throw new Error('Profile definitions are stale; run npm run profiles');
+  }
 } else {
   writeFileSync('profiles/definitions.json', serialized);
 }

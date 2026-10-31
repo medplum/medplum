@@ -15,7 +15,7 @@ import { GOOGLE_CALENDAR_SCOPE, GOOGLE_CALENDAR_METADATA_SCOPE, BOT_IDENTIFIER_V
 import { withConnectionLease } from '../common/lease';
 import type { ConnectionLease } from '../common/lease';
 import { readProjectCeiling } from '../common/configuration';
-import { readCredential } from '../common/credentials';
+import { readCredential, MissingCalendarCredentialError } from '../common/credentials';
 import { findConnection, saveConnection } from '../common/connection';
 import { exchangeCode, revokeToken, getOAuthClient, hasImportScopes, readIdToken } from '../common/google-oauth';
 import { requireOperationBot } from '../common/authorization';
@@ -73,12 +73,23 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       // Do not revoke a grant that a partially successful save already made durable.
       const current = await findConnection(medplum, practitionerRef);
       let persisted = false;
+      let storedCredentialExists = false;
       if (current) {
         try {
           persisted = (await readCredential(medplum, current)) === tokens.refresh_token;
-        } catch {
-          throw err;
+          storedCredentialExists = true;
+        } catch (readError) {
+          if (!(readError instanceof MissingCalendarCredentialError)) {
+            throw err;
+          }
         } // An unreadable store is not evidence that the grant is unused.
+      }
+      // Revocation may invalidate other tokens for the same client/account. Do not revoke
+      // automatically when this practitioner already has a stored grant.
+      if (!persisted && storedCredentialExists) {
+        throw new Error(
+          'Google reconnect failed; existing credentials were preserved. Use explicit disconnect before switching accounts. Remove application access in Google only if you intend to revoke all grants, then reconnect'
+        );
       }
       if (!persisted && (tokens.refresh_token || tokens.access_token)) {
         try {

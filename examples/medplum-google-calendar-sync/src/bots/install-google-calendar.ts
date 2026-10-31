@@ -110,6 +110,8 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   await ensureSyncSubscription(medplum, syncBot, 'Slot');
   await ensureSyncSubscription(medplum, reconcileBot, 'Schedule');
   await ensureSyncSubscription(medplum, reconcileBot, 'PractitionerRole');
+  await ensureSyncSubscription(medplum, reconcileBot, 'Schedule', true);
+  await ensureSyncSubscription(medplum, reconcileBot, 'PractitionerRole', true);
   await ensureWorkSubscription(medplum, importBot, 'inbound');
   await ensureWorkSubscription(medplum, reconcileBot, 'outbound');
   const reconcileMembership = await ensureBotMembership(medplum, projectId, reconcileBot, policy);
@@ -130,7 +132,8 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     ? `Reconcile runs hourly (${cron.cronString}); unfinished work is retried each minute. `
     : 'Reconcile is not scheduled until a Medplum super admin enables the "cron" feature on this project. ';
 
-  const broadGrants = await auditPolicyGrants(medplum, projectId);
+  const expectedWorkers: string[] = [];
+  const broadGrants = await auditPolicyGrants(medplum, projectId, expectedWorkers);
   const outcome: OperationOutcome = {
     ...allOk,
     issue: [
@@ -146,13 +149,24 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
             JSON.stringify(ORDINARY_SLOT_POLICY_SNIPPET),
         },
       },
+      ...(expectedWorkers.length
+        ? [
+            {
+              severity: 'information' as const,
+              code: 'informational' as const,
+              details: {
+                text: `Expected restricted integration memberships: ${expectedWorkers.join(', ')}. These are listed separately from customer grants requiring review.`,
+              },
+            },
+          ]
+        : []),
       ...(broadGrants.length
         ? [
             {
               severity: 'warning' as const,
               code: 'security' as const,
               details: {
-                text: `Review broad Slot/Basic access for ${broadGrants.join(', ')}. This conservative scan includes broad reads/writes, custom criteria, unresolved references and admin memberships, including expected worker grants. Review effective policies and rule ordering; a clean report is not proof of isolation.`,
+                text: `Review broad Slot/Basic access for ${broadGrants.join(', ')}. This conservative scan includes broad reads/writes, custom criteria, unresolved references and admin memberships. Review effective policies and rule ordering; a clean report is not proof of isolation.`,
               },
             },
           ]

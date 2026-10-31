@@ -102,6 +102,7 @@ const botDefinitions: BotDefinition[] = [
     name: 'Google Calendar Status Bot',
     description: 'Read caller-authorized connection status and conflicts',
     runAsUser: true,
+    timeout: 120,
   },
   {
     identifier: BOT_IDENTIFIER_VALUE.disconnect,

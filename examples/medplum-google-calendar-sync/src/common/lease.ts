@@ -5,6 +5,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getStatus, isGone, isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import { assertCurrentProject } from './project';
+import { readState, withState } from './state';
 import { publishStatus } from './public-status';
 import { randomUUID } from 'node:crypto';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
@@ -111,7 +112,7 @@ export async function withConnectionLease<T>(
   try {
     const result = await work(lease);
     try {
-      await publishStatus(medplum, await lease.read(true));
+      await lease.read(true);
     } catch (err) {
       if (!(err instanceof OperationOutcomeError && (isNotFound(err.outcome) || isGone(err.outcome)))) {
         throw err;
@@ -125,14 +126,26 @@ export async function withConnectionLease<T>(
         const owner = current.extension
           ?.find((e) => e.url === LEASE_URL)
           ?.extension?.find((e) => e.url === 'owner')?.valueString;
-        if (owner !== token) {
+        const expiry = current.extension
+          ?.find((e) => e.url === LEASE_URL)
+          ?.extension?.find((e) => e.url === 'expires')?.valueInstant;
+        if (owner !== token || Date.parse(expiry ?? '') <= now()) {
           break;
         }
         try {
           // Publish before releasing the lock so an older worker cannot overwrite a newer summary.
-          await publishStatus(medplum, current);
+          let pending = false;
+          try {
+            await publishStatus(medplum, current);
+          } catch {
+            pending = true;
+            console.warn('Calendar status publication failed; retry queued without holding the lease');
+          }
           await medplum.updateResource(
-            { ...current, extension: current.extension?.filter((e) => e.url !== LEASE_URL) },
+            withState(
+              { ...current, extension: current.extension?.filter((e) => e.url !== LEASE_URL) },
+              { ...readState(current), statusPublishPending: pending || undefined }
+            ),
             ifMatch(current)
           );
           break;

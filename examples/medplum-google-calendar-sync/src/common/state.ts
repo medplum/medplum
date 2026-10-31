@@ -53,6 +53,7 @@ export interface SyncState {
   cleanupIssue?: string;
   slotsCleaned?: boolean;
   conflictsRevision?: string;
+  statusPublishPending?: boolean;
 }
 
 const STRINGS = [
@@ -74,7 +75,14 @@ const INSTANTS = [
   'requestedRangeStart',
   'requestedRangeEnd',
 ] as const;
-const BOOLEANS = ['privacyPending', 'forgetRevoked', 'googleCleaned', 'slotsCleaned', 'credentialRevoked'] as const;
+const BOOLEANS = [
+  'privacyPending',
+  'forgetRevoked',
+  'googleCleaned',
+  'slotsCleaned',
+  'credentialRevoked',
+  'statusPublishPending',
+] as const;
 
 export function readState(basic: Basic): SyncState {
   const fields = basic.extension?.find((e) => e.url === STATE_URL)?.extension ?? [];
