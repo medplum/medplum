@@ -29,6 +29,7 @@
     "test:seed": "vitest run --config vite.seed.config.ts --testTimeout=400000"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "3.1156.0",
     "@aws-sdk/client-comprehendmedical": "3.1156.0",
     "@aws-sdk/client-guardduty": "3.1156.0",
     "@aws-sdk/client-lambda": "3.1156.0",

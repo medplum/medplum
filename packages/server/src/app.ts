@@ -18,6 +18,7 @@ import http from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { adminRouter } from './admin/routes';
+import { ANTHROPIC_GATEWAY_PATHS, apiKeyAsBearer, createAnthropicGatewayRouter } from './ai/anthropic/gateway';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { cdsRouter } from './cds/routes';
@@ -212,6 +213,7 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
   if (config.logRequests) {
     app.use(loggingMiddleware);
   }
+  app.use(ANTHROPIC_GATEWAY_PATHS, apiKeyAsBearer);
   app.use(attachRequestContext);
 
   app.use(rateLimitHandler(config));
@@ -233,6 +235,8 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
     ['/storage', '/api/storage', '/projects/:projectId/storage', '/api/projects/:projectId/storage'],
     storageRouter
   );
+  // The AI gateway parses its own bodies, which are often larger than maxJsonSize
+  app.use(ANTHROPIC_GATEWAY_PATHS, createAnthropicGatewayRouter(config.awsRegion));
 
   // Handle async batch by enqueueing job
   app.post(
