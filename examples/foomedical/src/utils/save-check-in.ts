@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { ContentType, createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  formatHumanName,
+  getQuestionnaireAnswers,
+  normalizeErrorString,
+} from '@medplum/core';
 import type {
   DocumentReference,
   Identifier,
@@ -236,10 +242,11 @@ function getFormScores(response: CheckinResponse): string[] {
     const scoredQuestions = (questionnaire.item ?? []).filter((q) =>
       q.answerOption?.some((o) => getScore(o) !== undefined)
     );
+    const answersByLinkId = getQuestionnaireAnswers(answers);
     let total = 0;
     let answered = 0;
     for (const question of scoredQuestions) {
-      const answer = answers.item?.find((a) => a.linkId === question.linkId)?.answer?.[0]?.valueCoding;
+      const answer = answersByLinkId[question.linkId]?.valueCoding;
       const option = question.answerOption?.find(
         (o) => answer && o.valueCoding?.system === answer.system && o.valueCoding?.code === answer.code
       );

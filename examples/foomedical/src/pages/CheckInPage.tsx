@@ -20,7 +20,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getDisplayString, normalizeErrorString } from '@medplum/core';
+import { getAllQuestionnaireAnswers, getDisplayString, normalizeErrorString } from '@medplum/core';
 import type { Patient, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { CheckinResponse, ItemStatus, Wallet } from '@smart-health-checkin/client';
@@ -436,13 +436,14 @@ function FormAnswers({
   if (!qr) {
     return <Text c="dimmed">No answers.</Text>;
   }
+  const answersByLinkId = getAllQuestionnaireAnswers(qr);
   return (
     <Table mt="sm">
       <Table.Tbody>
         {questionnaire?.item
           ?.filter((q) => q.type !== 'display')
           .map((q) => {
-            const answers = qr.item?.find((a) => a.linkId === q.linkId)?.answer ?? [];
+            const answers = answersByLinkId[q.linkId] ?? [];
             return (
               <Table.Tr key={q.linkId}>
                 <Table.Td>
