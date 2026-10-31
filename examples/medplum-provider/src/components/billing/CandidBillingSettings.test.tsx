@@ -19,7 +19,8 @@ import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
+import type { JSX } from 'react';
+import { createMemoryRouter, RouterProvider, useNavigate, useParams } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
@@ -54,7 +55,21 @@ import {
   ELIGIBILITY_SERVICE_TYPES_VALUESET_URL,
   X12_SERVICE_TYPE_CODE_SYSTEM,
 } from '../../utils/eligibility';
-import { BillingSetupPage } from './BillingSetupPage';
+import { CandidBillingSettings } from './CandidBillingSettings';
+
+const BASE_URL = '/Billing/Settings';
+
+function SettingsRoute(): JSX.Element {
+  const { '*': path } = useParams();
+  const navigate = useNavigate();
+  return (
+    <CandidBillingSettings
+      baseUrl={BASE_URL}
+      path={path}
+      onNavigate={(nextPath) => navigate(`${BASE_URL}/${nextPath}`)}
+    />
+  );
+}
 
 const MENTAL_HEALTH: ServiceType = { code: 'MH', display: 'Mental Health' };
 
@@ -244,7 +259,7 @@ function searchQueries(searchSpy: ReturnType<typeof vi.spyOn>, identifierSystem:
     .filter((params: URLSearchParams) => (params.get('identifier') ?? '').startsWith(identifierSystem));
 }
 
-describe('BillingSetupPage', () => {
+describe('CandidBillingSettings', () => {
   let medplum: MockClient;
 
   const mockSearches = (
@@ -337,6 +352,11 @@ describe('BillingSetupPage', () => {
     mockSearches();
   });
 
+  const openPayerDirectory = async (user: UserEvent): Promise<void> => {
+    await user.click(screen.getByRole('tab', { name: 'Enrolled Payers' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+  };
+
   const fillPhoneAndAddress = async (user: UserEvent, dialog: HTMLElement, phone = '6175550142'): Promise<void> => {
     await user.type(within(dialog).getByLabelText(/Phone/), phone);
     await user.type(within(dialog).getByPlaceholderText('Line 1'), '456 Medical Center Drive');
@@ -356,8 +376,8 @@ describe('BillingSetupPage', () => {
   const setup = (
     tab = 'Organizations'
   ): ReturnType<typeof render> & { router: ReturnType<typeof createMemoryRouter> } => {
-    const router = createMemoryRouter([{ path: '/Settings/Billing/*', element: <BillingSetupPage /> }], {
-      initialEntries: [`/Settings/Billing/${tab}`],
+    const router = createMemoryRouter([{ path: `${BASE_URL}/*`, element: <SettingsRoute /> }], {
+      initialEntries: [`${BASE_URL}/${tab}`],
     });
     const result = render(
       <MedplumProvider medplum={medplum} navigate={router.navigate}>
@@ -369,28 +389,62 @@ describe('BillingSetupPage', () => {
     return { ...result, router };
   };
 
-  test('renders the five billing tabs, billing organizations first', async () => {
+  test('renders the five billing tabs, organizations first', async () => {
     const user = userEvent.setup();
     mockBots();
 
     setup();
 
-    expect(screen.getByText('Billing Settings')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Billing Organizations' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('link', { name: 'Enrolled Payers' })).toHaveAttribute(
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Organizations',
+      'Practitioners',
+      'Enrolled Payers',
+      'Charge Items',
+      'Eligibility',
+    ]);
+    expect(screen.getByRole('tablist')).toHaveAttribute('aria-orientation', 'vertical');
+    expect(screen.getByRole('tab', { name: 'Organizations' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Enrolled Payers' })).toHaveAttribute(
       'href',
-      '/Settings/Billing/Payers/Organization'
+      '/Billing/Settings/Payers/Organization'
     );
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Enrolled Payers' }));
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
+    await openPayerDirectory(user);
     expect(await screen.findByText(/payer directory bot is not deployed/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Eligibility' }));
     expect(await screen.findByRole('textbox', { name: 'Service types' })).toBeInTheDocument();
+  });
+
+  test('opens the payer directory in a modal from the add button', async () => {
+    const user = userEvent.setup();
+    mockBots({ payers: true });
+    const { router } = setup('Payers/Organization');
+
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Payers/Organization/new');
+    const dialog = await screen.findByRole('dialog', { name: 'Import Payers from Directory' });
+    const searchBox = await within(dialog).findByLabelText('Search the Payer Directory');
+    await waitFor(() => expect(searchBox).toHaveFocus());
+    expect(within(screen.getByRole('tabpanel')).getByTestId('search-control')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /Import selected/ })).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Payers/Organization');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  test('deep links to the payer directory modal', async () => {
+    mockBots({ payers: true });
+    setup('Payers/Organization/new');
+
+    expect(screen.getByRole('tab', { name: 'Enrolled Payers' })).toHaveAttribute('aria-selected', 'true');
+    const dialog = await screen.findByRole('dialog', { name: 'Import Payers from Directory' });
+    expect(await within(dialog).findByLabelText('Search the Payer Directory')).toBeInTheDocument();
   });
 
   test('syncs the selected tab with navigation and browser history', async () => {
@@ -398,14 +452,14 @@ describe('BillingSetupPage', () => {
     mockBots();
     const { router } = setup('Practitioners');
 
-    expect(screen.getByRole('tab', { name: 'Billing Practitioners' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Practitioners' })).toHaveAttribute('aria-selected', 'true');
 
     await user.click(screen.getByRole('tab', { name: 'Enrolled Payers' }));
-    expect(router.state.location.pathname).toBe('/Settings/Billing/Payers/Organization');
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Payers/Organization');
     expect(screen.getByRole('tab', { name: 'Enrolled Payers' })).toHaveAttribute('aria-selected', 'true');
 
     await act(async () => router.navigate(-1));
-    expect(screen.getByRole('tab', { name: 'Billing Practitioners' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Practitioners' })).toHaveAttribute('aria-selected', 'true');
 
     await act(async () => router.navigate(1));
     expect(screen.getByRole('tab', { name: 'Enrolled Payers' })).toHaveAttribute('aria-selected', 'true');
@@ -415,7 +469,7 @@ describe('BillingSetupPage', () => {
     mockBots();
     setup(tab);
 
-    expect(screen.getByRole('tab', { name: 'Billing Organizations' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Organizations' })).toHaveAttribute('aria-selected', 'true');
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
   });
 
@@ -428,20 +482,20 @@ describe('BillingSetupPage', () => {
     await user.click(await screen.findByText('Test Medical Practice LLC'));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'Edit billing organization' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/org-practice');
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations/org-practice');
 
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations');
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations');
 
     await act(async () => router.navigate(-1));
     expect(await screen.findByRole('heading', { name: 'Edit billing organization' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await user.click(screen.getByRole('button', { name: 'New...' }));
-    expect(await screen.findByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/new');
+    await user.click(screen.getByRole('button', { name: 'New Organization' }));
+    expect(await screen.findByRole('heading', { name: 'Add billing organization' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations/new');
   });
 
   test('opens the organization from a direct link, reading it by ID', async () => {
@@ -472,7 +526,7 @@ describe('BillingSetupPage', () => {
     await user.type(nameInput, 'Renamed Practice LLC');
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations');
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations');
 
     await act(async () => router.navigate(-1));
     const reopened = await screen.findByRole('dialog');
@@ -486,7 +540,7 @@ describe('BillingSetupPage', () => {
     const showSpy = vi.spyOn(notifications, 'show');
     const { router } = setup('Organizations/missing');
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations'));
     expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'Not found' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -497,7 +551,7 @@ describe('BillingSetupPage', () => {
     setup('Organizations/new');
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Add billing organization' })).toBeInTheDocument();
   });
 
   test('lists billing organizations, filtering on the provider-app marker identifier', async () => {
@@ -548,7 +602,7 @@ describe('BillingSetupPage', () => {
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
     mockSearches({ organizations: [billingOrg] });
-    await user.click(screen.getByRole('button', { name: 'New...' }));
+    await user.click(screen.getByRole('button', { name: 'New Organization' }));
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
     await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
@@ -575,7 +629,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
@@ -609,7 +663,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Bad Org');
@@ -674,9 +728,9 @@ describe('BillingSetupPage', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'New...' }));
+    await user.click(screen.getByRole('button', { name: 'New Organization' }));
     dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Add billing organization' })).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/^Name/)).toHaveValue('');
     expect(within(dialog).getByLabelText(/NPI/)).toHaveValue('');
     expect(within(dialog).getByPlaceholderText('City')).toHaveValue('');
@@ -689,16 +743,26 @@ describe('BillingSetupPage', () => {
      * @returns The picker dialog, with the clinic selected.
      */
     const pickClinic = async (user: UserEvent): Promise<HTMLElement> => {
-      await user.click(await screen.findByRole('button', { name: 'Add existing...' }));
-      const dialog = await screen.findByRole('dialog');
+      const dialog = await openExistingTab(user);
       await user.type(within(dialog).getByRole('searchbox'), 'Down');
       await user.click(await screen.findByRole('option', { name: /Downtown Clinic/, hidden: true }));
       return dialog;
     };
 
     /**
-     * The picker is still closing while the set-up modal opens, so two dialogs overlap for a moment; find the
-     * set-up modal by its heading.
+     * Opens the add organization modal from the list and switches it to the Add Existing tab.
+     * @param user - The user event instance.
+     * @returns The add organization dialog.
+     */
+    const openExistingTab = async (user: UserEvent): Promise<HTMLElement> => {
+      await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByRole('tab', { name: 'Add Existing' }));
+      return dialog;
+    };
+
+    /**
+     * Finds the set-up modal by its heading, once the picked organization has opened in it.
      * @returns The set-up dialog.
      */
     const findSetupDialog = async (): Promise<HTMLElement> => {
@@ -713,10 +777,10 @@ describe('BillingSetupPage', () => {
       mockBots({ createProvider: true });
       const { router } = setup();
 
-      await user.click(await screen.findByRole('button', { name: 'Add existing...' }));
-      const dialog = await screen.findByRole('dialog');
-      expect(within(dialog).getByRole('heading', { name: 'Add existing organization' })).toBeInTheDocument();
-      expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/existing');
+      const dialog = await openExistingTab(user);
+      expect(within(dialog).getByRole('heading', { name: 'Add billing organization' })).toBeInTheDocument();
+      expect(within(dialog).getByRole('tab', { name: 'Add Existing' })).toHaveAttribute('aria-selected', 'true');
+      expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations/existing');
       expect(within(dialog).getByRole('button', { name: 'Continue' })).toBeDisabled();
 
       await user.type(within(dialog).getByRole('searchbox'), 'Down');
@@ -737,11 +801,62 @@ describe('BillingSetupPage', () => {
       const { router } = setup('Organizations/existing');
 
       const dialog = await screen.findByRole('dialog');
-      expect(within(dialog).getByRole('heading', { name: 'Add existing organization' })).toBeInTheDocument();
+      expect(within(dialog).getByRole('tab', { name: 'Add Existing' })).toHaveAttribute('aria-selected', 'true');
 
       await user.click(within(dialog).getByRole('button', { name: 'Close' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-      expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations');
+      expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations');
+    });
+
+    test('switches between a new and an existing organization with tabs in one modal', async () => {
+      const user = userEvent.setup();
+      mockSearches({ otherOrganizations: [clinicOrg] });
+      mockBots({ createProvider: true });
+      const { router } = setup();
+
+      await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByRole('tab', { name: 'New' })).toHaveAttribute('aria-selected', 'true');
+      expect(within(dialog).getByLabelText(/^Name/)).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: 'Save' })).toBeInTheDocument();
+
+      const bodyHeight = (): string | undefined =>
+        dialog
+          .closest<HTMLElement>('[style*="--medplum-modal-body-height"]')
+          ?.style.getPropertyValue('--medplum-modal-body-height');
+      expect(bodyHeight()).toBe('70vh');
+
+      await user.click(within(dialog).getByRole('tab', { name: 'Add Existing' }));
+      expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations/existing');
+      expect(bodyHeight()).toBe('70vh');
+      expect(within(dialog).getByRole('searchbox')).toBeInTheDocument();
+      expect(within(dialog).queryByLabelText(/^Name/)).not.toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: 'Continue' })).toBeDisabled();
+
+      await user.type(within(dialog).getByRole('searchbox'), 'Down');
+      await user.click(await screen.findByRole('option', { name: /Downtown Clinic/, hidden: true }));
+      expect(within(dialog).getByRole('button', { name: 'Continue' })).toBeEnabled();
+
+      await user.click(within(dialog).getByRole('tab', { name: 'New' }));
+      expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations/new');
+      expect(within(dialog).getByLabelText(/^Name/)).toHaveValue('');
+
+      await user.click(within(dialog).getByRole('tab', { name: 'Add Existing' }));
+      expect(within(dialog).getByRole('button', { name: 'Continue' })).toBeDisabled();
+    });
+
+    test('opens the picked organization for set-up in the same modal, without the tabs', async () => {
+      const user = userEvent.setup();
+      mockSearches({ otherOrganizations: [clinicOrg] });
+      mockBots({ createProvider: true });
+      setup();
+
+      const picker = await pickClinic(user);
+      await user.click(within(picker).getByRole('button', { name: 'Continue' }));
+
+      const dialog = await findSetupDialog();
+      expect(dialog).toBe(picker);
+      expect(within(dialog).queryByRole('tab')).not.toBeInTheDocument();
     });
 
     test('warns instead of opening the picker when the create-provider bot is not deployed', async () => {
@@ -749,7 +864,7 @@ describe('BillingSetupPage', () => {
       const showSpy = vi.spyOn(notifications, 'show');
       const { router } = setup('Organizations/existing');
 
-      await waitFor(() => expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations'));
+      await waitFor(() => expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations'));
       expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Cannot set up a billing organization' }));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
@@ -765,7 +880,7 @@ describe('BillingSetupPage', () => {
       await user.click(within(picker).getByRole('button', { name: 'Continue' }));
 
       const dialog = await findSetupDialog();
-      expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/org-clinic');
+      expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations/org-clinic');
       expect(readSpy).not.toHaveBeenCalled();
       expect(within(dialog).getByLabelText(/^Name/)).toHaveValue('Downtown Clinic');
       expect(within(dialog).getByPlaceholderText('City')).toHaveValue('Boston');
@@ -829,8 +944,7 @@ describe('BillingSetupPage', () => {
       await user.click(within(picker).getByRole('button', { name: 'Close' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: 'Add existing...' }));
-      const reopened = await screen.findByRole('dialog');
+      const reopened = await openExistingTab(user);
       expect(within(reopened).queryByText('Downtown Clinic')).not.toBeInTheDocument();
       expect(within(reopened).getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
@@ -899,11 +1013,11 @@ describe('BillingSetupPage', () => {
     await user.click(await screen.findByText('AETNA'));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'AETNA' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/Settings/Billing/Payers/Organization/org-aetna');
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Payers/Organization/org-aetna');
 
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(router.state.location.pathname).toBe('/Settings/Billing/Payers/Organization');
+    expect(router.state.location.pathname).toBe('/Billing/Settings/Payers/Organization');
   });
 
   test.each(['Payers/Organization/org-aetna', 'Payers/org-aetna'])(
@@ -943,7 +1057,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
@@ -993,7 +1107,7 @@ describe('BillingSetupPage', () => {
     const showSpy = vi.spyOn(notifications, 'show');
     const { router } = setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     await waitFor(() =>
       expect(showSpy).toHaveBeenCalledWith(
@@ -1001,7 +1115,7 @@ describe('BillingSetupPage', () => {
       )
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await waitFor(() => expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/Billing/Settings/Organizations'));
   });
 
   test('keeps the organization when Candid registration fails', async () => {
@@ -1013,7 +1127,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
@@ -1091,10 +1205,10 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
+    await openPayerDirectory(user);
 
     expect(await screen.findByText(/payer directory bot is not deployed/)).toBeInTheDocument();
-    expect(screen.queryByLabelText('Search the payer directory')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Search the Payer Directory')).not.toBeInTheDocument();
     expect(searchOneSpy).toHaveBeenCalledWith(
       'Bot',
       expect.objectContaining({
@@ -1118,8 +1232,8 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
-    await user.type(await screen.findByLabelText('Search the payer directory'), 'cigna');
+    await openPayerDirectory(user);
+    await user.type(await screen.findByLabelText('Search the Payer Directory'), 'cigna');
     await user.click(screen.getByRole('button', { name: /Search/ }));
 
     expect(await screen.findByText('CIGNA')).toBeInTheDocument();
@@ -1149,7 +1263,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
+    await openPayerDirectory(user);
     await user.click(await screen.findByRole('button', { name: /Search/ }));
 
     expect(await screen.findByLabelText('Imported')).toBeInTheDocument();
@@ -1175,7 +1289,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
+    await openPayerDirectory(user);
     await user.click(await screen.findByRole('button', { name: /Search/ }));
 
     expect(await screen.findByText('MEDICARE OF TEXAS')).toBeInTheDocument();
@@ -1210,11 +1324,11 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
+    await openPayerDirectory(user);
     await user.click(await screen.findByRole('button', { name: /Search/ }));
     await user.click(await screen.findByText('AETNA'));
 
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('dialog', { name: 'AETNA' });
     expect(within(dialog).getByText('60054')).toBeInTheDocument();
     expect(within(dialog).getByText('Aetna Affiliated')).toBeInTheDocument();
     expect(within(dialog).getByText('PO BOX 981106, EL PASO, TX 79998-1106')).toBeInTheDocument();
@@ -1238,7 +1352,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
+    await openPayerDirectory(user);
     const searchButton = await screen.findByRole('button', { name: /Search/ });
 
     await user.click(searchButton);
@@ -1260,38 +1374,13 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
-    const input = await screen.findByLabelText('Search the payer directory');
+    await openPayerDirectory(user);
+    const input = await screen.findByLabelText('Search the Payer Directory');
 
     await user.type(input, 'cigna{Enter}');
     await user.type(input, '{Enter}');
 
     expect(executeSpy).toHaveBeenCalledTimes(1);
-  });
-
-  test('retires the extra page when the directory has no further results', async () => {
-    const user = userEvent.setup();
-    mockBots({ payers: true });
-    const firstBatch = Array.from({ length: 20 }, (_, i) =>
-      makeDirectoryPayer(`uuid-${i}`, `${i}`, `PAYER ${String(i).padStart(2, '0')}`)
-    );
-    vi.spyOn(medplum, 'executeBot')
-      .mockResolvedValueOnce(makeSearchResult(firstBatch, 'tok-2'))
-      .mockResolvedValue(makeSearchResult([], 'tok-3'));
-
-    setup();
-
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
-    await user.click(await screen.findByRole('button', { name: /Search/ }));
-    expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '2' }));
-
-    // Nothing came back, so the page-2 button is gone instead of repeating the empty fetch
-    await waitFor(() => {
-      expect(screen.queryByRole('button', { name: '2' })).not.toBeInTheDocument();
-    });
-    expect(screen.getByText('PAYER 00')).toBeInTheDocument();
   });
 
   test('clears the search input, results, and selection with the in-field clear button', async () => {
@@ -1303,8 +1392,8 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
-    const input = await screen.findByLabelText('Search the payer directory');
+    await openPayerDirectory(user);
+    const input = await screen.findByLabelText('Search the Payer Directory');
     // No clear button until there is something to clear
     expect(screen.queryByRole('button', { name: 'Clear search' })).not.toBeInTheDocument();
 
@@ -1400,46 +1489,78 @@ describe('BillingSetupPage', () => {
     expect(screen.queryByText('PAYER 00')).not.toBeInTheDocument();
   });
 
-  test('navigates result pages with the pagination control, fetching new batches only when needed', async () => {
+  test('loads every match before showing results, so the page count is exact from the first page', async () => {
     const user = userEvent.setup();
     mockBots({ payers: true });
-    // 20 results fill display page 1; the next-page token makes page 2 reachable
-    const firstBatch = Array.from({ length: 20 }, (_, i) =>
+    const payers = Array.from({ length: 45 }, (_, i) =>
       makeDirectoryPayer(`uuid-${i}`, `${i}`, `PAYER ${String(i).padStart(2, '0')}`)
     );
     const executeSpy = vi
       .spyOn(medplum, 'executeBot')
-      .mockResolvedValueOnce(makeSearchResult(firstBatch, 'tok-2'))
-      .mockResolvedValueOnce(makeSearchResult([makeDirectoryPayer('uuid-20', '20', 'PAYER 20')]));
+      .mockResolvedValueOnce(makeSearchResult(payers.slice(0, 30), 'tok-2'))
+      .mockResolvedValueOnce(makeSearchResult(payers.slice(30)));
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
+    await openPayerDirectory(user);
     await user.click(await screen.findByRole('button', { name: /Search/ }));
     expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
-    // One loaded page plus one reachable via the next-page token
-    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '2' }));
-
-    expect(await screen.findByText('PAYER 20')).toBeInTheDocument();
-    // The table shows one page at a time
-    expect(screen.queryByText('PAYER 00')).not.toBeInTheDocument();
-    expect(executeSpy).toHaveBeenLastCalledWith(
+    expect(executeSpy).toHaveBeenNthCalledWith(1, 'bot-payers', { searchTerm: '', limit: 100 }, 'application/json');
+    expect(executeSpy).toHaveBeenNthCalledWith(
+      2,
       'bot-payers',
-      expect.objectContaining({ pageToken: 'tok-2' }),
+      { searchTerm: '', limit: 70, pageToken: 'tok-2' },
       'application/json'
     );
-    // No further pages beyond the loaded ones
-    expect(screen.queryByRole('button', { name: '3' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '4' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Showing the first 100 matches/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '3' }));
+    expect(await screen.findByText('PAYER 40')).toBeInTheDocument();
+    expect(screen.queryByText('PAYER 00')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '4' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '1' }));
     expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '2' }));
-    expect(await screen.findByText('PAYER 20')).toBeInTheDocument();
-    // Loaded pages are not refetched: one search call + one batch fetch total
     expect(executeSpy).toHaveBeenCalledTimes(2);
+  });
+
+  test('caps a search at 100 matches and says so', async () => {
+    const user = userEvent.setup();
+    mockBots({ payers: true });
+    const payers = Array.from({ length: 100 }, (_, i) =>
+      makeDirectoryPayer(`uuid-${i}`, `${i}`, `PAYER ${String(i).padStart(3, '0')}`)
+    );
+    const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValueOnce(makeSearchResult(payers, 'tok-2'));
+
+    setup();
+
+    await openPayerDirectory(user);
+    await user.click(await screen.findByRole('button', { name: /Search/ }));
+    expect(await screen.findByText('PAYER 000')).toBeInTheDocument();
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/Showing the first 100 matches/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '5' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '6' })).not.toBeInTheDocument();
+  });
+
+  test('stops loading when the directory returns an empty page with a cursor', async () => {
+    const user = userEvent.setup();
+    mockBots({ payers: true });
+    const executeSpy = vi
+      .spyOn(medplum, 'executeBot')
+      .mockResolvedValueOnce(makeSearchResult([makeDirectoryPayer('uuid-cigna', '62308', 'CIGNA')], 'tok-2'))
+      .mockResolvedValue(makeSearchResult([], 'tok-3'));
+
+    setup();
+
+    await openPayerDirectory(user);
+    await user.click(await screen.findByRole('button', { name: /Search/ }));
+    expect(await screen.findByText('CIGNA')).toBeInTheDocument();
+    expect(executeSpy).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(/Showing the first 100 matches/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '2' })).not.toBeInTheDocument();
   });
 
   describe('billing practitioners', () => {
@@ -1464,11 +1585,11 @@ describe('BillingSetupPage', () => {
       await user.click(await screen.findByText('Alice Smith'));
       const dialog = await screen.findByRole('dialog');
       expect(within(dialog).getByLabelText(/NPI/)).toHaveValue('1234567893');
-      expect(router.state.location.pathname).toBe('/Settings/Billing/Practitioners/prac-smith');
+      expect(router.state.location.pathname).toBe('/Billing/Settings/Practitioners/prac-smith');
 
       await user.click(within(dialog).getByRole('button', { name: 'Close' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-      expect(router.state.location.pathname).toBe('/Settings/Billing/Practitioners');
+      expect(router.state.location.pathname).toBe('/Billing/Settings/Practitioners');
     });
 
     test('opens the practitioner from a direct link, reading them and their active roles', async () => {

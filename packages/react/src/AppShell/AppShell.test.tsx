@@ -10,7 +10,11 @@ import { AppShell } from './AppShell';
 const medplum = new MockClient();
 const navigateMock = vi.fn();
 
-async function setup(layoutVersion: 'v1' | 'v2' = 'v1', announcements?: AppShellAnnouncement[]): Promise<void> {
+async function setup(
+  layoutVersion: 'v1' | 'v2' = 'v1',
+  announcements?: AppShellAnnouncement[],
+  extraProps?: { logo?: null; spotlightDisabled?: boolean }
+): Promise<void> {
   // Reset localStorage before each test
   localStorage.clear();
 
@@ -18,7 +22,8 @@ async function setup(layoutVersion: 'v1' | 'v2' = 'v1', announcements?: AppShell
     render(
       <MedplumProvider medplum={medplum} navigate={navigateMock}>
         <AppShell
-          logo={<Logo size={24} />}
+          logo={extraProps?.logo === null ? null : <Logo size={24} />}
+          spotlightDisabled={extraProps?.spotlightDisabled}
           version="test.version"
           layoutVersion={layoutVersion}
           announcements={announcements}
@@ -195,6 +200,13 @@ describe('AppShell v2', () => {
 
     expect(screen.getByLabelText('Open Sidebar')).toHaveAttribute('aria-expanded', 'false');
     expect(menuTitle.getAttribute('data-opened')).toBeNull();
+  });
+
+  test('Hides logo and search for a settings-style navbar', async () => {
+    await setup('v2', undefined, { logo: null, spotlightDisabled: true });
+    expect(screen.queryByLabelText('Medplum Logo')).not.toBeInTheDocument();
+    expect(screen.queryByText('Search')).not.toBeInTheDocument();
+    expect(screen.getByText('Link 1')).toBeInTheDocument();
   });
 
   test('Spotlight search', async () => {

@@ -1,0 +1,59 @@
+.page {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: calc(100vh - var(--app-shell-header-height, 0px));
+  overflow: hidden;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-body));
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    overflow: visible;
+  }
+}
+
+.sidebar {
+  border-inline-end: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    border-inline-end: 0;
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  }
+}
+
+.sidebarHeader {
+  height: 64px;
+  flex: none;
+  padding: var(--mantine-spacing-md);
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.sidebarNav {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--mantine-spacing-xs);
+}
+
+.content {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    overflow-y: visible;
+  }
+}
+
+.padded {
+  padding: var(--mantine-spacing-md);
+
+  @mixin smaller-than $mantine-breakpoint-sm {
+    padding: var(--mantine-spacing-xs);
+  }
+}

@@ -142,15 +142,15 @@ Conditional create returns the existing Organization if one matches; it does not
 
 ## Medplum Provider App
 
-The [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app includes React components for the payer directory. Add `billing` to your [Project](/docs/access/projects#settings) `features` to enable them. The app then shows a **Candid Billing Setup** page under Settings, at `/Settings/Billing`.
-
-The **Payer Directory** tab renders the `PayerDirectorySearch` component. It searches the directory through the `candid-get-payers` bot and lists each payer's name, claims payer ID, and Candid category. Select payers and click **Import selected** to save them as Organizations with the identifiers described above. Payers that are already imported show a check mark.
-
-![Payer Directory tab with Aetna search results](/img/integrations/candid/payer-directory-search.png)
+The [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app includes React components for the payer directory. Add `billing` to your [Project](/docs/access/projects#settings) `features` to enable them. The app then shows a **Billing** page in the navbar, at `/Billing`, with the billing settings behind the **Configuration** gear at the top of its left column.
 
 The **Enrolled Payers** tab renders the `ImportedPayerList` component, which lists the payer Organizations saved in your project. Open a payer to view its identifiers and clearinghouse support, or refresh it to re-sync from the directory. A payer that has been removed from the directory is marked inactive rather than deleted.
 
 ![Enrolled Payers tab listing imported payers](/img/integrations/candid/enrolled-payers.png)
+
+The tab's **+** button opens the **Import Payers from Directory** modal, which renders the `PayerDirectorySearch` component. It searches the directory through the `candid-get-payers` bot and lists each payer's name, claims payer ID, and Candid category. Select payers and click **Import selected** to save them as Organizations with the identifiers described above. Payers that are already imported show a check mark.
+
+![Import Payers from Directory modal with Aetna search results](/img/integrations/candid/payer-directory-search.png)
 
 ## Errors
 
