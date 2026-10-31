@@ -1,0 +1,154 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import { AccessPolicyInteraction, satisfiedAccessPolicy } from '@medplum/core';
+import type { BotEvent } from '@medplum/core';
+import type { Basic, Parameters, Slot } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { beforeEach, expect, test, vi } from 'vitest';
+import { saveConnection, findConnection } from './connection';
+import { TOKEN_URL, CREDENTIAL_SEARCH, migrateCredential, readCredential } from './credentials';
+import { readProjectCeiling, writeProjectCeiling } from './configuration';
+import { ensureInboundPolicy, PRACTITIONER_POLICY_SNIPPET, ORDINARY_SLOT_POLICY_SNIPPET } from './install';
+import { withConnectionLease } from './lease';
+import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_NAMESPACE as N, IMPORT_IDENTIFIER_SYSTEM } from './constants';
+import { requireOperationBot } from './authorization';
+import { operationIdentity } from '../test-auth';
+import { importedSlots } from './import';
+let medplum: MockClient;
+beforeEach(() => {
+  medplum = new MockClient({ project: { resourceType: 'Project', id: 'customer-a', name: 'a' } });
+});
+const args = { practitionerRef: 'Practitioner/doctor', accountSub: 'sub', refreshToken: 'private-token' };
+
+test('moves credentials under a lease, preserves identity and can resume after a connection-write failure', async () => {
+  const connection = await saveConnection(medplum, args);
+  expect(JSON.stringify(connection.basic)).not.toContain('private-token');
+  expect(await readCredential(medplum, connection)).toBe('private-token');
+  await medplum.updateResource({
+    ...connection.basic,
+    extension: [...(connection.basic.extension ?? []), { url: TOKEN_URL, valueString: 'legacy-token' }],
+  });
+  const update = medplum.updateResource.bind(medplum);
+  let fail = true;
+  vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource, options) => {
+    if (
+      fail &&
+      resource.resourceType === 'Basic' &&
+      resource.id === connection.basic.id &&
+      !resource.extension?.some((e) => e.url === TOKEN_URL)
+    ) {
+      fail = false;
+      throw new Error('injected interruption');
+    }
+    return update(resource, options);
+  });
+  await expect(withConnectionLease(medplum, connection.basic.id, migrateCredential)).rejects.toThrow('interruption');
+  await withConnectionLease(medplum, connection.basic.id, migrateCredential);
+  const migrated = await findConnection(medplum, args.practitionerRef);
+  expect(migrated?.basic.id).toBe(connection.basic.id);
+  expect(JSON.stringify(migrated?.basic)).not.toContain('legacy-token');
+  expect(migrated && (await readCredential(medplum, migrated))).toBe('legacy-token');
+  expect(await medplum.searchResources('Basic', CREDENTIAL_SEARCH)).toHaveLength(1);
+});
+test('practitioner and webhook policies deny credential and historical-token access', async () => {
+  const connection = await saveConnection(medplum, args);
+  const [credential] = await medplum.searchResources('Basic', CREDENTIAL_SEARCH);
+  const practitionerPolicy = {
+    resourceType: 'AccessPolicy' as const,
+    resource: PRACTITIONER_POLICY_SNIPPET.map((r) => ({
+      ...r,
+      criteria: r.criteria?.replace('%profile', args.practitionerRef),
+    })),
+  };
+  const webhook = await ensureInboundPolicy(medplum, true);
+  for (const action of [
+    AccessPolicyInteraction.READ,
+    AccessPolicyInteraction.UPDATE,
+    AccessPolicyInteraction.DELETE,
+    AccessPolicyInteraction.HISTORY,
+    AccessPolicyInteraction.VREAD,
+  ]) {
+    expect(satisfiedAccessPolicy(credential, action, practitionerPolicy)).toBeUndefined();
+    expect(satisfiedAccessPolicy(credential, action, webhook)).toBeUndefined();
+  }
+  for (const action of [
+    AccessPolicyInteraction.UPDATE,
+    AccessPolicyInteraction.DELETE,
+    AccessPolicyInteraction.HISTORY,
+    AccessPolicyInteraction.VREAD,
+  ]) {
+    expect(satisfiedAccessPolicy(connection.basic, action, practitionerPolicy)).toBeUndefined();
+  }
+  expect(satisfiedAccessPolicy(connection.basic, AccessPolicyInteraction.READ, practitionerPolicy)).toBeDefined();
+  expect(satisfiedAccessPolicy(connection.basic, AccessPolicyInteraction.HISTORY, webhook)).toBeUndefined();
+});
+test('linked Basic visibility cannot select foreign settings or connections', async () => {
+  const foreign: Basic = {
+    resourceType: 'Basic',
+    meta: { project: 'shared' },
+    code: { coding: [{ system: N, code: 'calendar-settings' }] },
+    identifier: [{ system: `${N}/settings`, value: 'project' }],
+    extension: [{ url: `${N}/project-detail-level`, valueCode: 'full' }],
+  };
+  const shared = await medplum.createResource(foreign);
+  await writeProjectCeiling(medplum, 'initials');
+  await writeProjectCeiling(medplum, 'busy-only');
+  expect(await readProjectCeiling(medplum)).toBe('busy-only');
+  expect((await medplum.readResource('Basic', shared.id)).extension).toEqual(foreign.extension);
+  expect(await medplum.searchResources('Basic', `code=${N}|calendar-settings`)).toHaveLength(2);
+  const connection = await saveConnection(medplum, args);
+  medplum.mock.setProject({ resourceType: 'Project', id: 'customer-b', name: 'b' });
+  expect(await findConnection(medplum, args.practitionerRef)).toBeUndefined();
+  await expect(withConnectionLease(medplum, connection.basic.id, async () => undefined)).rejects.toThrow(
+    'different project'
+  );
+});
+test('a broad Slot grant preceding the snippet defeats it and must be replaced', () => {
+  const slot: Slot = {
+    resourceType: 'Slot',
+    status: 'busy-unavailable',
+    schedule: { reference: 'Schedule/s' },
+    start: '2026-11-01T10:00:00Z',
+    end: '2026-11-01T11:00:00Z',
+    identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'forged' }],
+  };
+  const policy = {
+    resourceType: 'AccessPolicy' as const,
+    resource: [{ resourceType: 'Slot' as const }, ...(ORDINARY_SLOT_POLICY_SNIPPET ?? [])],
+  };
+  expect(satisfiedAccessPolicy(slot, AccessPolicyInteraction.CREATE, policy)).toBeDefined();
+});
+test('malformed identifiers are retained and reported without aborting unrelated scans', async () => {
+  const slot = await medplum.createResource<Slot>({
+    resourceType: 'Slot',
+    status: 'busy-unavailable',
+    schedule: { reference: 'Schedule/s' },
+    start: '2026-11-01T10:00:00Z',
+    end: '2026-11-01T11:00:00Z',
+    identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'broken' }],
+  });
+  const repair = vi.fn();
+  expect(await importedSlots(medplum, 'unrelated', repair)).toEqual([]);
+  expect(repair).toHaveBeenCalledWith(slot);
+  expect(await medplum.readResource('Slot', slot.id)).toBeDefined();
+});
+test('mutations reject caller fallback, missing membership, and cross-project practitioner', async () => {
+  const event: BotEvent<Parameters> = {
+    bot: { reference: 'Bot/connect' },
+    requester: { reference: args.practitionerRef },
+    contentType: 'application/fhir+json',
+    input: { resourceType: 'Parameters' },
+    secrets: {},
+  };
+  await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow(
+    'restricted Bot membership'
+  );
+  await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.connect);
+  expect(await requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).toBe(args.practitionerRef);
+  await medplum.updateResource({
+    ...(await medplum.readResource('Practitioner', 'doctor')),
+    meta: { project: 'other' },
+  });
+  await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow('different project');
+});

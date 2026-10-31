@@ -1,0 +1,137 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import { operationIdentity } from '../test-auth';
+import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+
+import type { BotEvent } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import type { Bundle, Parameters, Practitioner, SearchParameter } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { CalendarConnection } from '../common/connection';
+import { findConnection, saveConnection, updateConnection } from '../common/connection';
+import { runInbound } from '../common/inbound';
+import { handler } from './google-calendar-disconnect-bot';
+
+const PROJECT_ID = 'proj-1';
+const secrets: BotEvent['secrets'] = {
+  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
+  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
+};
+
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+}
+
+describe('google-calendar-disconnect-bot', () => {
+  let medplum: MockClient;
+  let practitionerRef: string;
+  let event: BotEvent<Parameters>;
+  const originalFetch = globalThis.fetch;
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
+  });
+
+  beforeEach(async () => {
+    medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
+    const practitioner = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: PROJECT_ID },
+    });
+    practitionerRef = `Practitioner/${practitioner.id}`;
+    event = {
+      bot: { reference: 'Bot/disconnect' },
+      contentType: 'application/fhir+json',
+      input: { resourceType: 'Parameters' },
+      secrets,
+      requester: { reference: practitionerRef },
+    };
+    await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.disconnect);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  // The server stamps meta.project on the Basic; MockClient doesn't, so the test does.
+  async function connected(): Promise<CalendarConnection> {
+    const saved = await saveConnection(medplum, {
+      practitionerRef,
+      accountSub: 'sub',
+      refreshToken: 'rt',
+    });
+    const basic = await medplum.updateResource({ ...saved.basic, meta: { ...saved.basic.meta, project: PROJECT_ID } });
+    return { ...saved, basic };
+  }
+
+  test('nothing to do when not connected', async () => {
+    expect((await handler(medplum, event)).parameter).toEqual([{ name: 'connected', valueBoolean: false }]);
+  });
+
+  test('deletes this project’s events, revokes, and removes the record', async () => {
+    const connection = await connected();
+    const mirrored = ['e0001', 'e0002', 'e0003'].map((id) => ({
+      id,
+      etag: '"version1"',
+      extendedProperties: {
+        private: {
+          medplumProject: PROJECT_ID,
+          medplumSource: `Appointment/${id}`,
+          medplumConnection: connection.basic.id,
+        },
+      },
+    }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(200, { access_token: 'at', expires_in: 1, scope: 's', token_type: 'Bearer' }))
+      .mockResolvedValueOnce(json(200, { items: mirrored.slice(0, 2), nextPageToken: 'p2' }))
+      .mockResolvedValueOnce(json(200, { items: mirrored.slice(2) }));
+    for (const mirror of mirrored) {
+      fetchMock.mockResolvedValueOnce(json(200, mirror)).mockResolvedValueOnce(new Response(null, { status: 204 }));
+    }
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    globalThis.fetch = fetchMock;
+
+    const result = await handler(medplum, event);
+
+    expect(result.parameter).toContainEqual({ name: 'status', valueCode: 'disconnecting' });
+    await runInbound(medplum, event, connection.basic.id);
+    const urls = fetchMock.mock.calls.map(([url]) => url as string);
+    expect(urls.filter((u) => u.includes('/events/') && u.includes('sendUpdates=none'))).toHaveLength(3);
+    expect(urls.at(-1)).toBe('https://oauth2.googleapis.com/revoke');
+    expect(await findConnection(medplum, practitionerRef)).toBeUndefined();
+  });
+
+  test('keeps the record when the calendar sweep fails, so it can be retried', async () => {
+    const connection = await connected();
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(json(200, { access_token: 'at', expires_in: 1, scope: 's', token_type: 'Bearer' }))
+      .mockResolvedValue(json(401, { error: { code: 401, message: 'nope', errors: [{ reason: 'authError' }] } }));
+
+    await handler(medplum, event);
+    await expect(runInbound(medplum, event, connection.basic.id)).rejects.toMatchObject({ status: 401 });
+    expect(await findConnection(medplum, practitionerRef)).toBeDefined();
+  });
+
+  test('requires an explicit acknowledgement before forgetting a revoked connection', async () => {
+    const connection = await connected();
+    await updateConnection(medplum, connection, { status: 'reauth-required' });
+    globalThis.fetch = vi.fn().mockImplementation(async () => json(400, { error: 'invalid_grant' }));
+
+    await expect(handler(medplum, event)).rejects.toThrow('forgetRevoked=true');
+    expect(await findConnection(medplum, practitionerRef)).toBeDefined();
+    event.input.parameter = [{ name: 'forgetRevoked', valueBoolean: true }];
+    await handler(medplum, event);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await findConnection(medplum, practitionerRef)).toBeUndefined();
+  });
+});
