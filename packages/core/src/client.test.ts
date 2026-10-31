@@ -4767,6 +4767,47 @@ describe('Client', () => {
     await expect(getPromise2).resolves.toEqual(patient);
   });
 
+  test('Aborting after a request settles keeps the cached result', async () => {
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const fetch = mockFetch(200, () => patient);
+    const client = new MedplumClient({ fetch });
+    const controller = new AbortController();
+
+    await expect(client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal })).resolves.toEqual(patient);
+    controller.abort();
+
+    await expect(client.get(client.fhirUrl('Patient', '123'))).resolves.toEqual(patient);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  test('Aborting a replaced request keeps the newer cache entry', async () => {
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const fetch = vi
+      .fn()
+      .mockImplementationOnce((async (_url: string, options?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          options?.signal?.addEventListener('abort', () => {
+            const abortError = new Error('Request aborted');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          });
+        });
+      }) satisfies FetchLike)
+      .mockImplementation(async () => mockFetchResponse(200, patient));
+
+    const client = new MedplumClient({ fetch });
+    const controller = new AbortController();
+
+    const getPromise1 = client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal });
+    await expect(client.get(client.fhirUrl('Patient', '123'), { cache: 'reload' })).resolves.toEqual(patient);
+
+    controller.abort();
+    await expect(getPromise1).rejects.toThrow('Request aborted');
+
+    await expect(client.get(client.fhirUrl('Patient', '123'))).resolves.toEqual(patient);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('Requests sent with an already-aborted signal are not cached', async () => {
     const patient: Patient = { resourceType: 'Patient', id: '123' };
     const fetch = vi.fn((async (_url: string, options?: RequestInit) => {
