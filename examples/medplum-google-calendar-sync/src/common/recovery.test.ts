@@ -184,8 +184,14 @@ test('same account can reclaim a predecessor mirror, but another account or prac
       );
       expect(fetch.mock.calls[2][1].headers['If-Match']).toBe(remote.etag);
     }
-    const deletion = vi.fn().mockResolvedValueOnce(response(200, previous)).mockResolvedValueOnce(new Response(null, { status: 204 }));
-    await new GoogleCalendarClient('token', { fetch: deletion, ownership: store }).deleteOwnedEvent(event.id, desired.extendedProperties.private);
+    const deletion = vi
+      .fn()
+      .mockResolvedValueOnce(response(200, previous))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await new GoogleCalendarClient('token', { fetch: deletion, ownership: store }).deleteOwnedEvent(
+      event.id,
+      desired.extendedProperties.private
+    );
     expect(deletion.mock.calls[1][1].headers['If-Match']).toBe('previous');
   });
 });

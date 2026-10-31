@@ -8,7 +8,7 @@
  */
 
 import type { MedplumClient, WithId } from '@medplum/core';
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, getStatus, OperationOutcomeError } from '@medplum/core';
 import type { AccessPolicy, Bot, Cron, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
 import { PUBLIC_STATUS_SEARCH } from './public-status';
@@ -485,16 +485,24 @@ export async function auditPolicyGrants(
         knownPolicy &&
         boundedWorkerPolicy
       ) {
-        const bot = await medplum.readReference(member.profile);
-        if (
-          bot.resourceType === 'Bot' &&
-          bot.identifier?.some(
-            (i) =>
-              i.system === BOT_IDENTIFIER_SYSTEM &&
-              Object.values(BOT_IDENTIFIER_VALUE).includes(i.value as typeof BOT_IDENTIFIER_VALUE.sync)
-          )
-        ) {
-          expectedWorkers.push(`ProjectMembership/${member.id}`);
+        try {
+          const bot = await medplum.readReference(member.profile);
+          if (
+            bot.resourceType === 'Bot' &&
+            bot.identifier?.some(
+              (i) =>
+                i.system === BOT_IDENTIFIER_SYSTEM &&
+                Object.values(BOT_IDENTIFIER_VALUE).includes(i.value as typeof BOT_IDENTIFIER_VALUE.sync)
+            )
+          ) {
+            expectedWorkers.push(`ProjectMembership/${member.id}`);
+            continue;
+          }
+        } catch (err) {
+          if (!(err instanceof OperationOutcomeError && [403, 404, 410].includes(getStatus(err.outcome)))) {
+            throw err;
+          }
+          warnings.push(`ProjectMembership/${member.id}`);
           continue;
         }
       }

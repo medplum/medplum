@@ -149,4 +149,32 @@ describe('google-calendar-reconcile-bot', () => {
     await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });
     expect(medplum.executeBot).not.toHaveBeenCalled();
   });
+  test.each(['active', 'reauth-required'] as const)(
+    'summary retry dispatches %s connections even during Google backoff',
+    async (status) => {
+      const connection = await connected('Practitioner/a');
+      if (status === 'reauth-required') {
+        await updateConnection(medplum, connection, { status });
+      }
+      const basic = await medplum.readResource('Basic', connection.basic.id);
+      const state = readState(basic);
+      await medplum.updateResource(
+        withState(basic, {
+          ...state,
+          inboundCompleted: state.inboundRequest,
+          outboundCompleted: state.outboundRequest,
+          statusPublishPending: true,
+          inboundRetryAt: new Date(Date.now() + 3600_000).toISOString(),
+        })
+      );
+      await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });
+      expect(medplum.executeBot).toHaveBeenCalledTimes(1);
+      expect(medplum.executeBot).toHaveBeenCalledWith(
+        expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.inbound }),
+        { resourceType: 'Basic', id: connection.basic.id },
+        expect.anything(),
+        expect.anything()
+      );
+    }
+  );
 });

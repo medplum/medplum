@@ -88,7 +88,8 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       // automatically when this practitioner already has a stored grant.
       if (!persisted && storedCredentialExists) {
         throw new Error(
-          'Google reconnect failed; existing credentials were preserved. Use explicit disconnect before switching accounts. Remove application access in Google only if you intend to revoke all grants, then reconnect'
+          'Google reconnect failed; existing credentials were preserved. Use explicit disconnect before switching accounts. Remove application access in Google only if you intend to revoke all grants, then reconnect',
+          { cause: err }
         );
       }
       if (!persisted && (tokens.refresh_token || tokens.access_token)) {

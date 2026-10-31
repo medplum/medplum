@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isFhirCriteriaMet } from '@medplum/core';
+import { isFhirCriteriaMet, resourceMatchesSubscriptionCriteria } from '@medplum/core';
 import type { Schedule, PractitionerRole, Appointment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { ensureSyncSubscription } from './install';
+import { auditPolicyGrants, ensureBotMembership, ensureOperationPolicy, ensureSyncSubscription } from './install';
 import { saveConnection } from './connection';
 import { LEASE_URL, withConnectionLease } from './lease';
-import { readState } from './state';
+import { runInbound } from './inbound';
+import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from './constants';
+import { readState, withState } from './state';
 import { callerStatus } from './public-status';
 let medplum: MockClient;
 beforeEach(() => {
@@ -31,7 +33,19 @@ test.each(['Schedule', 'PractitionerRole'] as const)(
     expect(await isFhirCriteriaMet(updates, before, async () => undefined)).toBe(true);
     expect(await isFhirCriteriaMet(updates, after, async () => before)).toBe(true);
     expect(await isFhirCriteriaMet(updates, { ...before, meta: { versionId: 'new' } }, async () => before)).toBe(false);
-    expect(await isFhirCriteriaMet(deletes, before, async () => before)).toBe(true);
+    for (const [subscription, expected] of [
+      [updates, false],
+      [deletes, true],
+    ] as const) {
+      expect(
+        await resourceMatchesSubscriptionCriteria({
+          resource: before,
+          subscription,
+          context: { interaction: 'delete' },
+          getPreviousResource: async () => before,
+        })
+      ).toBe(expected);
+    }
     expect(deletes.extension?.filter((e) => e.valueCode).map((e) => e.valueCode)).toEqual(['delete']);
     expect(updates.extension?.filter((e) => e.valueCode).map((e) => e.valueCode)).toEqual(['create', 'update']);
   }
@@ -87,4 +101,43 @@ test('status never reads historical appointments one at a time', async () => {
   expect(query).toContain('end=gt');
   expect(query).toContain('date=lt');
   expect(query).toContain('status=');
+});
+
+test('summary-only retries publish without any Google request', async () => {
+  const connection = await saveConnection(medplum, {
+    practitionerRef: 'Practitioner/p',
+    accountSub: 'sub',
+    refreshToken: 'token',
+  });
+  const state = readState(connection.basic);
+  await medplum.updateResource(
+    withState(connection.basic, { ...state, inboundCompleted: state.inboundRequest, statusPublishPending: true })
+  );
+  const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected Google request'));
+  await expect(
+    runInbound(
+      medplum,
+      { bot: { reference: 'Bot/import' }, input: {}, contentType: 'application/fhir+json', secrets: {} },
+      connection.basic.id
+    )
+  ).resolves.toBeUndefined();
+  expect(fetch).not.toHaveBeenCalled();
+  expect(readState(await medplum.readResource('Basic', connection.basic.id)).statusPublishPending).toBeUndefined();
+  fetch.mockRestore();
+});
+
+test('audit separates expected workers and warns when their Bot has been deleted', async () => {
+  const bot = await medplum.createResource({
+    resourceType: 'Bot',
+    identifier: [{ system: BOT_IDENTIFIER_SYSTEM, value: BOT_IDENTIFIER_VALUE.connect }],
+  });
+  const policy = await ensureOperationPolicy(medplum, true);
+  const membership = await ensureBotMembership(medplum, 'p', bot, policy);
+  const expected: string[] = [];
+  expect(await auditPolicyGrants(medplum, 'p', expected)).toEqual([]);
+  expect(expected).toEqual([`ProjectMembership/${membership.id}`]);
+  await medplum.deleteResource('Bot', bot.id);
+  const after: string[] = [];
+  expect(await auditPolicyGrants(medplum, 'p', after)).toEqual([`ProjectMembership/${membership.id}`]);
+  expect(after).toEqual([]);
 });

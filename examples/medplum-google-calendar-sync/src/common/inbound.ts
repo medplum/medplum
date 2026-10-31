@@ -42,6 +42,15 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
     if (connection.status === 'reauth-required') {
       return;
     }
+    const state = readState(connection.basic);
+    if (
+      connection.status === 'active' &&
+      state.statusPublishPending &&
+      state.inboundRequest === state.inboundCompleted
+    ) {
+      // Lease release republishes the summary; no Google work is outstanding.
+      return;
+    }
     if (Date.parse(readState(connection.basic).inboundRetryAt ?? '') > Date.now()) {
       return;
     }
