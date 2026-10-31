@@ -6,10 +6,11 @@ import type { HealthcareService, Practitioner, Project, Schedule, Slot } from '@
 import type { Interval } from '../../../util/date';
 import { LayeredDict } from '../../../util/layereddict';
 import { withPath } from '../../../util/withpath';
-import type { Repository } from '../../repo';
+import { Repository } from '../../repo';
 import {
   applyExistingSlots,
   eachDayOfInterval,
+  getSlotWriterRepo,
   intersectIntervals,
   intervalsExceedingCapacity,
   isAlignedToGrid,
@@ -1111,5 +1112,42 @@ describe('isAlignedToGrid', () => {
     // (0 min since Dec 2 midnight; 0 % 50 = 0).
     const firstSlotDec2 = new Date('2025-12-02T06:00:00Z');
     expect(isAlignedToGrid(firstSlotDec2, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(true);
+  });
+});
+
+describe('getSlotWriterRepo', () => {
+  test('hides only Patient identities when a client acts on behalf of a user', () => {
+    const client = { reference: 'ClientApplication/client' };
+    const patient = { reference: 'Patient/patient' };
+    const onBehalfOfPatient = getSlotWriterRepo(
+      new Repository({
+        routing: { kind: 'global-only' },
+        author: client,
+        onBehalfOf: patient,
+        accessPolicy: { resourceType: 'AccessPolicy', compartment: patient },
+      })
+    ).getConfig();
+    expect(onBehalfOfPatient.author).toStrictEqual(client);
+    expect(onBehalfOfPatient.onBehalfOf).toBeUndefined();
+    expect(onBehalfOfPatient.accessPolicy?.compartment).toBeUndefined();
+
+    const practitioner = { reference: 'Practitioner/practitioner' };
+    const onBehalfOfPractitioner = getSlotWriterRepo(
+      new Repository({ routing: { kind: 'global-only' }, author: client, onBehalfOf: practitioner })
+    ).getConfig();
+    expect(onBehalfOfPractitioner.onBehalfOf).toStrictEqual(practitioner);
+  });
+
+  test('hides a RelatedPerson booking for a patient', () => {
+    const relatedPerson = { reference: 'RelatedPerson/caregiver' };
+    const config = getSlotWriterRepo(
+      new Repository({
+        routing: { kind: 'global-only' },
+        author: relatedPerson,
+        accessPolicy: { resourceType: 'AccessPolicy', compartment: relatedPerson },
+      })
+    ).getConfig();
+    expect(config.author).toStrictEqual({ reference: 'system' });
+    expect(config.accessPolicy?.compartment).toBeUndefined();
   });
 });
