@@ -5,6 +5,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getStatus, isGone, isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import { assertCurrentProject } from './project';
+import { publishStatus } from './public-status';
 import { randomUUID } from 'node:crypto';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
 
@@ -38,13 +39,16 @@ export class ConnectionLease {
     this.deadline = now() + WORK_MS;
   }
 
-  async read(): Promise<WithId<Basic>> {
-    if (this.now() >= this.deadline) {
+  async read(completing = false): Promise<WithId<Basic>> {
+    if (!completing && this.now() >= this.deadline) {
       throw new Error('Calendar worker deadline reached; retry from durable state');
     }
     const basic = await this.medplum.readResource('Basic', this.id, { cache: 'no-cache' });
     const lease = basic.extension?.find((e) => e.url === LEASE_URL);
-    if (lease?.extension?.find((e) => e.url === 'owner')?.valueString !== this.token) {
+    if (
+      lease?.extension?.find((e) => e.url === 'owner')?.valueString !== this.token ||
+      Date.parse(lease?.extension?.find((e) => e.url === 'expires')?.valueInstant ?? '') <= this.now()
+    ) {
       throw new Error('Calendar worker lost its connection lease');
     }
     return basic;
@@ -105,7 +109,15 @@ export async function withConnectionLease<T>(
   );
   const lease = new ConnectionLease(medplum, id, token, basic.meta?.versionId as string, now);
   try {
-    return await work(lease);
+    const result = await work(lease);
+    try {
+      await publishStatus(medplum, await lease.read(true));
+    } catch (err) {
+      if (!(err instanceof OperationOutcomeError && (isNotFound(err.outcome) || isGone(err.outcome)))) {
+        throw err;
+      }
+    }
+    return result;
   } finally {
     const release = async (): Promise<void> => {
       for (let attempt = 0; attempt < 5; attempt++) {
@@ -117,6 +129,8 @@ export async function withConnectionLease<T>(
           break;
         }
         try {
+          // Publish before releasing the lock so an older worker cannot overwrite a newer summary.
+          await publishStatus(medplum, current);
           await medplum.updateResource(
             { ...current, extension: current.extension?.filter((e) => e.url !== LEASE_URL) },
             ifMatch(current)

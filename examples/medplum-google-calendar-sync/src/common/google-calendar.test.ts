@@ -144,12 +144,12 @@ describe('GoogleCalendarClient', () => {
     }
   );
 
-  test('uses If-Match for owned deletions, and refuses stripped tombstones', async () => {
+  test('uses If-Match for owned deletions, and treats cancelled events as already deleted', async () => {
     fetchMock.mockResolvedValueOnce(reply(200, event)).mockResolvedValueOnce(reply(204));
     await client.deleteOwnedEvent(event.id, event.extendedProperties.private);
     expect(fetchMock.mock.calls[1][1].headers).toMatchObject({ 'If-Match': event.etag });
     fetchMock.mockReset().mockResolvedValueOnce(reply(200, { id: event.id, status: 'cancelled' }));
-    await expect(client.deleteOwnedEvent(event.id, event.extendedProperties.private)).rejects.toThrow('ownership');
+    await expect(client.deleteOwnedEvent(event.id, event.extendedProperties.private)).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

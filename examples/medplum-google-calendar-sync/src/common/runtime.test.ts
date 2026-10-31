@@ -333,23 +333,25 @@ describe('calendar runtime', () => {
 
   test('expired workers cannot write after a replacement takes the lease', async () => {
     let time = Date.now();
-    await withConnectionLease(
-      medplum,
-      connection.basic.id,
-      async (old) => {
-        time += LEASE_MS + 1;
-        await withConnectionLease(
-          medplum,
-          connection.basic.id,
-          async (replacement) => {
-            await expect(old.check()).rejects.toThrow('deadline');
-            await replacement.check();
-          },
-          () => time
-        );
-      },
-      () => time
-    );
+    await expect(
+      withConnectionLease(
+        medplum,
+        connection.basic.id,
+        async (old) => {
+          time += LEASE_MS + 1;
+          await withConnectionLease(
+            medplum,
+            connection.basic.id,
+            async (replacement) => {
+              await expect(old.check()).rejects.toThrow('deadline');
+              await replacement.check();
+            },
+            () => time
+          );
+        },
+        () => time
+      )
+    ).rejects.toThrow('lost its connection lease');
   });
 
   test('status omits credentials and filters references through the caller’s permissions', async () => {
@@ -496,6 +498,25 @@ describe('calendar runtime', () => {
     expect(final.some((s) => s.id === first[0].id)).toBe(true);
     expect(readState(await current()).inboundError).toBeUndefined();
     expect(readState(await current()).lastInbound).toBeTruthy();
+  });
+
+  test('an unassignable Slot does not hold unrelated disconnects or credentials hostage', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const broken = await medplum.createResource<Slot>({
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: { reference: 'Schedule/unknown-owner' },
+      start: appointment.start as string,
+      end: appointment.end as string,
+      identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'broken' }],
+    });
+    const latest = (await findConnection(medplum, PRACTITIONER)) as CalendarConnection;
+    await updateConnection(medplum, latest, { status: 'disconnecting' });
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await findConnection(medplum, PRACTITIONER)).toBeUndefined();
+    expect(await importedSlots(medplum, connection.basic.id)).toEqual([]);
+    expect(await medplum.readResource('Slot', broken.id)).toBeDefined();
+    expect(requests.some((r) => r.url.includes('/revoke'))).toBe(true);
   });
 
   test('a late notification after disconnect cannot revive the connection', async () => {

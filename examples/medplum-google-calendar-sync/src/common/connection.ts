@@ -3,8 +3,8 @@
 
 import { PROFILES } from './profiles';
 
-/* Connection state is practitioner-readable. Credentials are stored separately and only
- * workers/connect can read them; the parser never returns a refresh token. */
+/* Connection state is worker-only. Practitioners read an allowlisted public summary.
+ * Credentials are stored separately; this parser never returns a refresh token. */
 
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getExtensionValue, getIdentifier } from '@medplum/core';
@@ -130,12 +130,14 @@ export async function listActiveConnections(medplum: MedplumClient): Promise<Cal
  * @param medplum - The client.
  * @param input - The connection fields.
  * @param projectDetailLevel - Current project ceiling, when connecting through the operation.
+ * @param heldLease - Existing lease held while exchanging a reconnect grant.
  * @returns The saved connection.
  */
 export async function saveConnection(
   medplum: MedplumClient,
   input: CalendarConnectionInput,
-  projectDetailLevel?: EventDetailLevel
+  projectDetailLevel?: EventDetailLevel,
+  heldLease?: ConnectionLease
 ): Promise<CalendarConnection> {
   const existing = await medplum.searchOne(
     'Basic',
@@ -175,7 +177,10 @@ export async function saveConnection(
   if (getIdentifier(current, ACCOUNT_IDENTIFIER_SYSTEM) !== input.accountSub) {
     throw new Error('Disconnect the existing Google account before switching accounts');
   }
-  await withConnectionLease(medplum, current.id, async (lease) => {
+  const persist = async (lease: ConnectionLease): Promise<void> => {
+    if (lease.id !== current.id) {
+      throw new Error('Connection lease mismatch');
+    }
     await writeCredential(lease, input.refreshToken, input.accountSub);
     await lease.mutate((latest) => {
       if (getIdentifier(latest, ACCOUNT_IDENTIFIER_SYSTEM) !== input.accountSub) {
@@ -184,6 +189,9 @@ export async function saveConnection(
       const disconnecting = readConnection(latest)?.status === 'disconnecting';
       const changedUrls = new Set(extension.map((e) => e.url));
       const state = readState(latest);
+      // A replacement grant must be revoked during any still-pending disconnect.
+      state.credentialRevoked = false;
+      state.inboundRetryAt = undefined;
       state.inboundRequest = randomUUID();
       state.outboundRequest = randomUUID();
       state.privacyPending = true;
@@ -210,7 +218,12 @@ export async function saveConnection(
         state
       );
     });
-  });
+  };
+  if (heldLease) {
+    await persist(heldLease);
+  } else {
+    await withConnectionLease(medplum, current.id, persist);
+  }
   const connection = readConnection(await medplum.readResource('Basic', current.id, { cache: 'no-cache' }));
   if (!connection) {
     throw new Error('Saved connection is unreadable');

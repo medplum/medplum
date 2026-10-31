@@ -91,7 +91,14 @@ describe('google-calendar-connect-bot', () => {
   });
 
   function mockGoogle(tokenBody: unknown, ...rest: Response[]): ReturnType<typeof vi.fn> {
-    const fetchMock = vi.fn().mockResolvedValueOnce(json(200, tokenBody));
+    const fetchMock = vi
+      .fn(async (url: RequestInfo | URL) => {
+        if ((url instanceof Request ? url.url : String(url)).includes('/revoke')) {
+          return json(200, {});
+        }
+        throw new Error('Unexpected Google request');
+      })
+      .mockResolvedValueOnce(json(200, tokenBody));
     for (const response of rest) {
       fetchMock.mockResolvedValueOnce(response);
     }
@@ -173,6 +180,7 @@ describe('google-calendar-connect-bot', () => {
     });
     await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('Disconnect');
     expect((await requireConnection(medplum, practitionerRef)).accountSub).toBe('old-sub');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/revoke');
   });
 });

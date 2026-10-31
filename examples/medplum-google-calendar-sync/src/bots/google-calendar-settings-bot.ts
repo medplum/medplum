@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { readProjectCeiling } from '../common/configuration';
 import { operationHandler } from '../common/contracts';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
@@ -16,7 +17,10 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     throw new Error('Google Calendar is not connected');
   }
   const level = parseDetailLevel(getParam(event.input, 'eventDetailLevel'));
-  return mutationStatus(await updateConnection(medplum, connection, { eventDetailLevel: level }));
+  return mutationStatus(
+    await updateConnection(medplum, connection, { eventDetailLevel: level }),
+    await readProjectCeiling(medplum)
+  );
 }
 
 export const handler = operationHandler('settings', execute);

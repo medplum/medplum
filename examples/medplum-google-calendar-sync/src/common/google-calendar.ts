@@ -203,11 +203,19 @@ export class GoogleCalendarClient {
     const properties = existing?.extendedProperties?.private;
     const strippedTombstone =
       existing?.status === 'cancelled' && !Object.values(EVENT_PROPERTY).some((key) => properties?.[key] !== undefined);
-    if (!(strippedTombstone && (await this.ownership?.has(event)))) {
+    const expected = event.extendedProperties.private;
+    const previous = properties?.[EVENT_PROPERTY.connection];
+    const verifiedPredecessor =
+      previous &&
+      previous !== expected[EVENT_PROPERTY.connection] &&
+      properties?.[EVENT_PROPERTY.project] === expected[EVENT_PROPERTY.project] &&
+      properties?.[EVENT_PROPERTY.source] === expected[EVENT_PROPERTY.source] &&
+      (await this.ownership?.ownsPrevious?.(event, previous));
+    if (!(strippedTombstone && (await this.ownership?.has(event))) && !verifiedPredecessor) {
       assertEventOwnership(existing, event.extendedProperties.private);
     }
-    await this.ownership?.remember(event);
     await this.updateEvent(event.id, event, requireEtag(existing));
+    await this.ownership?.remember(event);
     return 'replaced';
   }
 
@@ -218,7 +226,7 @@ export class GoogleCalendarClient {
    */
   async deleteOwnedEvent(eventId: string, owner: Record<string, string>): Promise<void> {
     const existing = await this.getEvent(eventId);
-    if (!existing) {
+    if (!existing || existing.status === 'cancelled') {
       return;
     }
     assertEventOwnership(existing, owner);

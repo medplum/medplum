@@ -7,9 +7,11 @@ Local tests and builds establish the covered code paths. They do not establish l
 - Complete Workspace Internal consent with both Calendar scopes. Test real watch callbacks, renewal, replay rejection, missed notifications and scheduled catch-up.
 - Test timed Busy events, recurrence exceptions, cancellations, declined invitations, all-day/free exclusions and a newly added Schedule. Verify actual booking availability after creation, update, removal and disconnect.
 - Test outbound create/update/removal, reassignment, a missed cancellation, native block deletion, and historical detail scrubs. No patient attendees should remain on migrated mirrors.
-- Probe cancelled Google tombstones with and without properties. Restoration must require an ownership receipt and ETag. A crash after Google insertion but before receipt storage may require manual repair if the event is deleted before retry; do not infer ownership.
+- Probe cancelled Google tombstones with and without properties. Restoration must require account/practitioner/project/source-bound ownership evidence and an ETag. Disconnect then reconnect to the same and different Google accounts; only a verified predecessor may be reclaimed. A crash after Google insertion but before receipt storage may require manual repair if the event is deleted before retry; do not infer ownership.
 - Test dry-run and applied legacy migration, unreadable/deleted sources, partial disconnect, credential revocation, retained stale blocks, and explicit forgetting of revoked access. Use isolated accounts/grants for revocation and cleanup tests.
-- Verify caller-filtered conflicts and customer notification deduplication, including stale conflict retention and permission failures.
+- Verify caller-filtered conflicts, denied direct reads of private connection state, public-summary refresh and customer notification deduplication, including stale conflict retention and permission failures.
 - Measure large paginated calendars, quota backoff, concurrent deliveries and continuation near the eight-minute budget. Record limits rather than extrapolating from a small calendar.
 
 A public draft may identify these as unfinished. Production release requires passing the agreed Workspace/linked-project scenarios. The example's directory and profile canonical namespace remain subject to maintainer review.
+
+Upgrade only after removing legacy caller connection grants. Confirm malformed imported Slots remain visible in administrator diagnostics without preventing other disconnects. History-based Schedule dispatch must include prior actors and reject cross-project histories. Test failures during initial OAuth persistence and grant cleanup; never log tokens.

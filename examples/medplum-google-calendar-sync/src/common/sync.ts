@@ -8,7 +8,7 @@
  * practitioner.
  */
 
-import { assertCurrentProject } from './project';
+import { assertCurrentProject, projectQuery } from './project';
 import { ownershipStore } from './ownership';
 import type { OwnershipStore } from './ownership';
 import { readCredential } from './credentials';
@@ -371,7 +371,18 @@ export class SyncSession {
       try {
         const owner = event.extendedProperties?.private;
         if (owner?.[EVENT_PROPERTY.connection] && owner[EVENT_PROPERTY.connection] !== connection.basic.id) {
-          continue;
+          const desiredIdentity = {
+            ...event,
+            extendedProperties: { private: { ...owner, [EVENT_PROPERTY.connection]: connection.basic.id } },
+          };
+          if (
+            !(await ownershipStore(this.requireLease(), connection).ownsPrevious?.(
+              desiredIdentity,
+              owner[EVENT_PROPERTY.connection]
+            ))
+          ) {
+            continue;
+          }
         }
         if (!owner?.[EVENT_PROPERTY.connection]) {
           throw new Error('Legacy mirror requires connection ownership migration');
@@ -498,7 +509,10 @@ export class SyncSession {
     if (isImportedSlot(resource) || resource.status !== 'busy-unavailable' || resource.serviceType?.length) {
       return false;
     }
-    return (await this.medplum.searchOne('Appointment', `slot=Slot/${resource.id}`)) === undefined;
+    return (
+      (await this.medplum.searchOne('Appointment', await projectQuery(this.medplum, `slot=Slot/${resource.id}`))) ===
+      undefined
+    );
   }
 
   /**

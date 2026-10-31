@@ -8,6 +8,7 @@ import { projectQuery } from './project';
 import { ifMatch } from './lease';
 export const PROFILE_ROOT = 'https://medplum.com/profiles/integrations/google-calendar';
 export const PROFILES = {
+  publicStatus: `${PROFILE_ROOT}/public-status`,
   connection: `${PROFILE_ROOT}/connection`,
   credential: `${PROFILE_ROOT}/credential`,
   settings: `${PROFILE_ROOT}/settings`,

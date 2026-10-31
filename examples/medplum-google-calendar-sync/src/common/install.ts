@@ -11,6 +11,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type { AccessPolicy, Bot, Cron, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
+import { PUBLIC_STATUS_SEARCH } from './public-status';
 import { MIRROR_SEARCH } from './ownership';
 import { CREDENTIAL_SEARCH } from './credentials';
 import { projectQuery } from './project';
@@ -44,7 +45,11 @@ export const INSTALL_SECRETS: { name: string; required: boolean }[] = [
  * Connection and nothing else under `Basic`. The connection carries reauthentication state.
  */
 export const PRACTITIONER_POLICY_SNIPPET: NonNullable<AccessPolicy['resource']> = [
-  { resourceType: 'Basic', criteria: `Basic?${CONNECTION_SEARCH}&subject=%profile`, interaction: ['read', 'search'] },
+  {
+    resourceType: 'Basic',
+    criteria: `Basic?${PUBLIC_STATUS_SEARCH}&subject=%profile`,
+    interaction: ['read', 'search'],
+  },
   { resourceType: 'Basic', criteria: `Basic?${CONFIG_SEARCH}`, readonly: true },
 ];
 
@@ -121,6 +126,7 @@ export async function ensureSyncAccessPolicy(medplum: MedplumClient): Promise<Wi
       { resourceType: 'PractitionerRole', readonly: true },
       { resourceType: 'HealthcareService', readonly: true },
       { resourceType: 'Basic', criteria: `Basic?${CONNECTION_SEARCH}` },
+      { resourceType: 'Basic', criteria: `Basic?${PUBLIC_STATUS_SEARCH}` },
       { resourceType: 'Basic', criteria: `Basic?${CREDENTIAL_SEARCH}` },
       { resourceType: 'Basic', criteria: `Basic?${MIRROR_SEARCH}` },
       { resourceType: 'Basic', criteria: `Basic?${CONFIG_SEARCH}`, readonly: true },
@@ -203,6 +209,14 @@ export async function ensureSyncSubscription(
     criteria,
     channel: { type: 'rest-hook', endpoint: getReferenceString(syncBot) },
     extension: [
+      ...(['Schedule', 'PractitionerRole'].includes(criteria)
+        ? [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+              valueString: `%previous.empty() or %current.empty() or (%previous.active ~ %current.active).not() or (%previous.${criteria === 'Schedule' ? 'actor' : 'practitioner'} ~ %current.${criteria === 'Schedule' ? 'actor' : 'practitioner'}).not()`,
+            },
+          ]
+        : []),
       ...['create', 'update', 'delete'].map((valueCode) => ({
         url: SUBSCRIPTION_INTERACTION_EXTENSION_URL,
         valueCode,
@@ -281,6 +295,7 @@ export async function ensureInboundPolicy(medplum: MedplumClient, webhookOnly = 
   ];
   if (!webhookOnly) {
     resource.push(
+      { resourceType: 'Basic', criteria: `Basic?${PUBLIC_STATUS_SEARCH}` },
       { resourceType: 'Basic', criteria: `Basic?${CREDENTIAL_SEARCH}` },
       { resourceType: 'Basic', criteria: `Basic?${MIRROR_SEARCH}` },
       { resourceType: 'Slot', criteria: `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|` },
@@ -353,7 +368,7 @@ export function notificationSubscription(botReference: string, signal: 'reauth' 
     resourceType: 'Subscription',
     status: 'active',
     reason: `Customer workflow for Google Calendar ${signal}`,
-    criteria: `Basic?${CONNECTION_SEARCH}`,
+    criteria: `Basic?${PUBLIC_STATUS_SEARCH}`,
     channel: { type: 'rest-hook', endpoint: botReference },
     extension: [
       { url: SUBSCRIPTION_INTERACTION_EXTENSION_URL, valueCode: 'create' },
@@ -375,6 +390,7 @@ export async function ensureOperationPolicy(
     resource: [
       { resourceType: 'Practitioner', readonly: true },
       { resourceType: 'Basic', criteria: `Basic?${CONNECTION_SEARCH}` },
+      { resourceType: 'Basic', criteria: `Basic?${PUBLIC_STATUS_SEARCH}` },
       { resourceType: 'Basic', criteria: `Basic?${CONFIG_SEARCH}`, readonly: true },
       ...(credentials ? [{ resourceType: 'Basic' as const, criteria: `Basic?${CREDENTIAL_SEARCH}` }] : []),
     ],
@@ -394,18 +410,32 @@ export async function auditPolicyGrants(medplum: MedplumClient, projectId: strin
   )) {
     policies.push(...page);
   }
+  // Conservative structural audit: arbitrary criteria, parameters and compartments cannot
+  // be proved safe from a handful of synthetic fixtures. Warn unless a grant is known safe.
   const risky = new Set(
     policies
-      .filter((p) =>
-        p.resource?.some(
-          (r) =>
-            ['*', 'Basic', 'Slot'].includes(r.resourceType) &&
-            !r.criteria &&
-            !r.readonly &&
-            (!r.interaction || r.interaction.some((i) => ['create', 'update', 'delete'].includes(i)))
-        )
+      .filter((policy) =>
+        policy.resource?.some((r) => {
+          if (!['*', 'Basic', 'Slot'].includes(r.resourceType)) {
+            return false;
+          }
+          const writes =
+            !r.readonly && (!r.interaction || r.interaction.some((i) => ['create', 'update', 'delete'].includes(i)));
+          if (r.resourceType === 'Slot') {
+            return writes && r.criteria !== `Slot?identifier:not=${IMPORT_IDENTIFIER_SYSTEM}|`;
+          }
+          if (r.resourceType === 'Basic') {
+            const safeRead =
+              !writes &&
+              (r.criteria === `Basic?${CONFIG_SEARCH}` ||
+                (r.criteria === `Basic?${PUBLIC_STATUS_SEARCH}&subject=%profile` &&
+                  r.interaction?.every((i) => ['read', 'search'].includes(i))));
+            return !safeRead;
+          }
+          return true;
+        })
       )
-      .map((p) => `AccessPolicy/${p.id}`)
+      .map((policy) => `AccessPolicy/${policy.id}`)
   );
   const warnings: string[] = [];
   for await (const page of medplum.searchResourcePages('ProjectMembership', {
@@ -417,7 +447,11 @@ export async function auditPolicyGrants(medplum: MedplumClient, projectId: strin
         member.accessPolicy?.reference,
         ...(member.access ?? []).map((a) => a.policy?.reference),
       ].filter(Boolean);
-      if (!references.length || references.some((ref) => risky.has(ref as string))) {
+      if (
+        member.admin ||
+        !references.length ||
+        references.some((ref) => risky.has(ref as string) || !policies.some((p) => ref === `AccessPolicy/${p.id}`))
+      ) {
         warnings.push(`ProjectMembership/${member.id}`);
       }
     }

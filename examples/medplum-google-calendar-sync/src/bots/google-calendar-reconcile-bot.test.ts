@@ -109,6 +109,29 @@ describe('google-calendar-reconcile-bot', () => {
     await expect(handler(medplum, { ...event, input: b.basic })).rejects.toThrow('incomplete');
     expect(syncRange).toHaveBeenCalledTimes(2);
   });
+  test('Schedule reassignment queues current and former practitioners, not unrelated connections', async () => {
+    const a = await connected('Practitioner/a');
+    const b = await connected('Practitioner/b');
+    const c = await connected('Practitioner/c');
+    const first = await medplum.createResource({ resourceType: 'Schedule', actor: [{ reference: 'Practitioner/a' }] });
+    const next = await medplum.updateResource({ ...first, actor: [{ reference: 'Practitioner/b' }] });
+    vi.spyOn(medplum, 'readHistory').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'history',
+      entry: [{ resource: next }, { resource: first }],
+    });
+    await handler(medplum, { ...event, input: next });
+    for (const connection of [a, b]) {
+      expect(readState(await medplum.readResource('Basic', connection.basic.id)).inboundRequest).not.toBe(
+        readState(connection.basic).inboundRequest
+      );
+    }
+    expect(readState(await medplum.readResource('Basic', c.basic.id)).inboundRequest).toBe(
+      readState(c.basic).inboundRequest
+    );
+    expect(medplum.executeBot).not.toHaveBeenCalled();
+  });
+
   test('minute recovery requeues incomplete directions without changing checkpoint generations', async () => {
     const connection = await connected('Practitioner/a');
     const before = readState(connection.basic);

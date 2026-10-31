@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { deletePublicStatus } from './public-status';
 import { projectQuery } from './project';
-import { deleteOwnershipReceipts } from './ownership';
+import { ownershipStore } from './ownership';
 import { deleteCredential, readCredential } from './credentials';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
@@ -178,16 +179,27 @@ export async function cleanupConnection(
           continue;
         }
         if (props[EVENT_PROPERTY.connection] !== connection.basic.id) {
-          continue;
+          const desiredIdentity = {
+            ...event,
+            extendedProperties: { private: { ...props, [EVENT_PROPERTY.connection]: connection.basic.id } },
+          };
+          if (
+            !(await ownershipStore(lease, connection).ownsPrevious?.(desiredIdentity, props[EVENT_PROPERTY.connection]))
+          ) {
+            continue;
+          }
         }
         const source = props[EVENT_PROPERTY.source]?.match(/^(Appointment|Slot)\/([A-Za-z0-9.-]+)$/);
         if (!source || toGoogleEventId(source[2]) !== event.id) {
           throw new Error('Invalid mirror identity');
         }
+        if (props[EVENT_PROPERTY.connection] === connection.basic.id) {
+          await ownershipStore(lease, connection).remember(event);
+        }
         await calendar.deleteOwnedEvent(event.id, {
           ...props,
           [EVENT_PROPERTY.project]: project,
-          [EVENT_PROPERTY.connection]: connection.basic.id,
+          [EVENT_PROPERTY.connection]: props[EVENT_PROPERTY.connection],
         });
       }
     }
@@ -201,16 +213,17 @@ export async function cleanupConnection(
     );
   }
   state = readState(await lease.read());
+  if (state.googleCleaned && !state.credentialRevoked) {
+    await revokeToken(await readCredential(medplum, connection));
+    await lease.mutate((basic) => withState(basic, { ...readState(basic), credentialRevoked: true }));
+    state = readState(await lease.read());
+  }
   if (!state.slotsCleaned) {
-    let malformed = false;
-    for (const slot of await importedSlots(medplum, connection.basic.id, () => {
-      malformed = true;
-    })) {
+    // Unassignable rows remain in place with a project-level repair diagnostic.
+    // Guessing ownership from a Schedule would be unsafe after reassignment.
+    for (const slot of await importedSlots(medplum, connection.basic.id)) {
       await beforeInboundWrite(lease);
       await medplum.deleteResource('Slot', slot.id, ifMatch(slot));
-    }
-    if (malformed) {
-      throw new Error('Imported Slot identities require administrator repair before completing disconnect');
     }
     await lease.mutate((basic) => withState(basic, { ...readState(basic), slotsCleaned: true }));
   }
@@ -222,8 +235,9 @@ export async function cleanupConnection(
     await revokeToken(await readCredential(medplum, connection));
     await lease.mutate((basic) => withState(basic, { ...readState(basic), credentialRevoked: true }));
   }
-  await deleteOwnershipReceipts(medplum, lease);
+  // Retain account-bound ownership evidence across disconnect; it contains no token or event content.
   await deleteCredential(lease);
+  await deletePublicStatus(medplum, lease.id);
   // If revocation succeeded but deletion fails, cleanup checkpoints allow retry without an access token.
   const current = await lease.read();
   await medplum.deleteResource('Basic', current.id, ifMatch(current));

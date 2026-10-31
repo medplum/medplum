@@ -173,10 +173,9 @@ export async function importBusyTime(
   }
   const snapshot = await calendar.listBusyEvents(range.start.toISOString(), range.end.toISOString());
   const schedules = await practitionerSchedules(medplum, connection.practitionerRef);
-  let malformedSlots = 0;
-  const previous = await importedSlots(medplum, connection.basic.id, () => {
-    malformedSlots++;
-  });
+  const malformedSlots = 0;
+  const previous = await importedSlots(medplum, connection.basic.id);
+  // Invalid identities are project-level diagnostics, not attributed to every connection.
   const intervals = snapshot.events
     .map(busyInterval)
     .filter((i): i is BusyInterval => Boolean(i))

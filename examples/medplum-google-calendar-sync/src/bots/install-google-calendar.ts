@@ -152,7 +152,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
               severity: 'warning' as const,
               code: 'security' as const,
               details: {
-                text: `Review broad Slot/Basic access for ${broadGrants.join(', ')}. This scan covers direct unrestricted grants; inspect inherited policies and rule ordering too.`,
+                text: `Review broad Slot/Basic access for ${broadGrants.join(', ')}. This conservative scan includes broad reads/writes, custom criteria, unresolved references and admin memberships, including expected worker grants. Review effective policies and rule ordering; a clean report is not proof of isolation.`,
               },
             },
           ]

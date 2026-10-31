@@ -3,7 +3,7 @@
 
 import { readJson } from '@medplum/definitions';
 import type { Bundle, CodeSystem, StructureDefinition, ValueSet } from '@medplum/fhirtypes';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { GOOGLE_CALENDAR_NAMESPACE as N, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
 const base = 'https://medplum.com/profiles/integrations/google-calendar';
 const bundle = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
@@ -70,6 +70,18 @@ const stateConstraints = [
   `${ext('sync-state')}.extension.where(url='projectDetailLevel').count() <= 1 and ${ext('sync-state')}.extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))`,
 ];
 const specs: [string, 'Basic' | 'Slot', string[]][] = [
+  [
+    'public-status',
+    'Basic',
+    [
+      "subject.reference.startsWith('Practitioner/')",
+      identity(`${N}/public-status`),
+      code('status', statuses),
+      `${ext('refresh-token')}.empty()`,
+      `${ext('worker-lease')}.empty()`,
+      `${ext('sync-state')}.extension.where(url='conflict' or url='channel' or url='outboundWork').empty()`,
+    ],
+  ],
   [
     'connection',
     'Basic',
@@ -141,7 +153,7 @@ for (const [name, type, constraints] of specs) {
     resourceType: 'StructureDefinition',
     url: `${base}/${name}`,
     name: `GoogleCalendar${name.replaceAll('-', '')}`,
-    status: 'active',
+    status: name === 'credential' || name === 'refresh-token' ? 'draft' : 'active',
     fhirVersion: '4.0.1',
     kind: 'resource',
     abstract: false,
@@ -193,7 +205,7 @@ for (const [name, type] of extensions) {
     resourceType: 'StructureDefinition',
     url: `${N}/${name}`,
     name: `GoogleCalendar${name.replaceAll('-', '')}Extension`,
-    status: 'active',
+    status: name === 'refresh-token' ? 'draft' : 'active',
     fhirVersion: '4.0.1',
     kind: 'complex-type',
     abstract: false,
@@ -205,4 +217,9 @@ for (const [name, type] of extensions) {
   });
 }
 mkdirSync('profiles', { recursive: true });
-writeFileSync('profiles/definitions.json', JSON.stringify(files, null, 2) + '\n');
+const serialized = JSON.stringify(files, null, 2) + '\n';
+if (process.argv.includes('--check')) {
+  if (readFileSync('profiles/definitions.json', 'utf8') !== serialized) { throw new Error('Profile definitions are stale; run npm run profiles'); }
+} else {
+  writeFileSync('profiles/definitions.json', serialized);
+}

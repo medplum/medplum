@@ -9,7 +9,12 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { saveConnection, findConnection } from './connection';
 import { TOKEN_URL, CREDENTIAL_SEARCH, migrateCredential, readCredential } from './credentials';
 import { readProjectCeiling, writeProjectCeiling } from './configuration';
-import { ensureInboundPolicy, PRACTITIONER_POLICY_SNIPPET, ORDINARY_SLOT_POLICY_SNIPPET } from './install';
+import {
+  auditPolicyGrants,
+  ensureInboundPolicy,
+  PRACTITIONER_POLICY_SNIPPET,
+  ORDINARY_SLOT_POLICY_SNIPPET,
+} from './install';
 import { withConnectionLease } from './lease';
 import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_NAMESPACE as N, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import { requireOperationBot } from './authorization';
@@ -80,7 +85,7 @@ test('practitioner and webhook policies deny credential and historical-token acc
   ]) {
     expect(satisfiedAccessPolicy(connection.basic, action, practitionerPolicy)).toBeUndefined();
   }
-  expect(satisfiedAccessPolicy(connection.basic, AccessPolicyInteraction.READ, practitionerPolicy)).toBeDefined();
+  expect(satisfiedAccessPolicy(connection.basic, AccessPolicyInteraction.READ, practitionerPolicy)).toBeUndefined();
   expect(satisfiedAccessPolicy(connection.basic, AccessPolicyInteraction.HISTORY, webhook)).toBeUndefined();
 });
 test('linked Basic visibility cannot select foreign settings or connections', async () => {
@@ -151,4 +156,36 @@ test('mutations reject caller fallback, missing membership, and cross-project pr
     meta: { project: 'other' },
   });
   await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow('different project');
+});
+
+test.each([
+  { resourceType: 'Basic' as const, readonly: true },
+  { resourceType: '*' as const, readonly: true },
+  { resourceType: 'Slot' as const, criteria: 'Slot?status=busy-unavailable' },
+  { resourceType: 'Basic' as const, criteria: 'Basic?_compartment=Patient/x', readonly: true },
+])('audit warns about grants that could bypass ownership or credential boundaries: %j', async (entry) => {
+  const policy = await medplum.createResource({ resourceType: 'AccessPolicy', resource: [entry] });
+  const member = await medplum.createResource({
+    resourceType: 'ProjectMembership',
+    user: { reference: 'User/u' },
+    project: { reference: 'Project/customer-a' },
+    profile: { reference: 'Practitioner/p' },
+    accessPolicy: { reference: `AccessPolicy/${policy.id}` },
+  });
+  expect(await auditPolicyGrants(medplum, 'customer-a')).toContain(`ProjectMembership/${member.id}`);
+});
+
+test('audit accepts only the published restricted caller snippets without warning', async () => {
+  const policy = await medplum.createResource({
+    resourceType: 'AccessPolicy',
+    resource: [...PRACTITIONER_POLICY_SNIPPET, ...(ORDINARY_SLOT_POLICY_SNIPPET ?? [])],
+  });
+  const member = await medplum.createResource({
+    resourceType: 'ProjectMembership',
+    user: { reference: 'User/u' },
+    project: { reference: 'Project/customer-a' },
+    profile: { reference: 'Practitioner/p' },
+    accessPolicy: { reference: `AccessPolicy/${policy.id}` },
+  });
+  expect(await auditPolicyGrants(medplum, 'customer-a')).not.toContain(`ProjectMembership/${member.id}`);
 });

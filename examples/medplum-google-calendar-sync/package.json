@@ -5,7 +5,7 @@
   "description": "Medplum Google Calendar sync with outbound mirrors and inbound busy-time Slots",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && npm run lint && tsc && node esbuild.mjs",
+    "build": "npm run clean && npm run lint && npm run profiles:check && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "connect-local": "tsx src/scripts/connect-local.ts",
     "deploy": "npm run build && tsx src/scripts/deploy-bots.ts",
@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "profiles": "tsx src/scripts/generate-profiles.ts",
-    "migrate-mirrors": "tsx src/scripts/migrate-mirrors.ts"
+    "migrate-mirrors": "tsx src/scripts/migrate-mirrors.ts",
+    "profiles:check": "tsx src/scripts/generate-profiles.ts --check"
   },
   "prettier": {
     "printWidth": 120,

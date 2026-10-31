@@ -20,7 +20,11 @@ The project settings Basic has code `N|calendar-settings`, identifier `N/setting
 
 Credentials use Basic code `N|calendar-credential`, identifier `N/credential|Basic/<connection-id>`, the same practitioner subject and Google account identifier, and `N/refresh-token` valueString. Only authorized workers and connect can read them. Migration removes the token from the connection's current version; history/vread must remain denied to practitioner and webhook memberships.
 
-Mirror receipts use Basic code `N|calendar-mirror`, subject `Basic/<connection-id>` and identifier `N/mirror|<sha256>`. The hash covers project, connection, Google account subject, event ID and Medplum source reference. Only workers write receipts after verified ownership. They are not a fallback based solely on an event ID.
+Mirror receipts use Basic code `N|calendar-mirror`, subject `Basic/<connection-id>` and identifier `N/mirror|<sha256>`. The hash covers project, connection, Google account subject, event ID and Medplum source reference. Only workers write receipts after verified ownership. An additional `N/mirror-account` hash covers project, Google account, practitioner, event and source without the connection ID. Receipts retain their predecessor connection subject across disconnect; reconnect requires that evidence when replacing an old connection marker. They are not a fallback based solely on an event ID.
+
+## Public status summary
+
+The worker connection is private. A separate `calendar-public-status` Basic has the same practitioner subject and identifier `N/public-status|Basic/<connection-id>`. Workers publish an allowlisted summary under the connection lease. It holds status, email, detail level, freshness, pending flags, diagnostic categories and conflict revision. It contains no refresh token, Google account subject, raw conflicts, watch-channel identifiers, lease or outbound cursor. Failed publication leaves work retryable; status may show the previous summary until a retry succeeds.
 
 ## Durable sync state
 
@@ -52,7 +56,7 @@ An outboundWork record has `start`/`end` valueInstant, `phase` valueCode (`disco
 
 ## Status Parameters
 
-`Practitioner/$google-calendar-status` resolves the caller from the authenticated requester. It accepts no input parameters and performs no writes. Change `eventDetailLevel` through `Practitioner/$google-calendar-settings`. Status returns a Parameters resource; `connected` is always present. Other fields appear when a connection exists.
+`Practitioner/$google-calendar-status` resolves the caller from the authenticated requester. It accepts no input parameters and performs no writes. Change `eventDetailLevel` through `Practitioner/$google-calendar-settings`. Status derives conflicts from caller-visible imported Slots and Appointments, then checks referenced-resource read permissions. Retained Slots still show stale busy-time overlaps after revocation. Status returns a Parameters resource; `connected` is always present. Other fields appear when a connection exists.
 
 | Parameter | Type | Meaning |
 | --- | --- | --- |
@@ -76,7 +80,7 @@ Current stale reasons include `awaiting-initial-import`, `import-overdue` (more 
 
 ## Customer workflows
 
-`notificationSubscription('Bot/<customer-workflow-id>', 'reauth' | 'conflicts')` in `src/common/install.ts` returns an installable Subscription. The integration does not install a customer notification workflow automatically. Both recipes select `Basic?code=N|calendar-connection`, with `N` expanded, and use create/update interaction extensions plus `https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression`.
+`notificationSubscription('Bot/<customer-workflow-id>', 'reauth' | 'conflicts')` in `src/common/install.ts` returns an installable Subscription. The integration does not install a customer notification workflow automatically. Both recipes select `Basic?code=N|calendar-public-status`, with `N` expanded, and use create/update interaction extensions plus `https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression`.
 
 The reauthentication expression is:
 
@@ -92,15 +96,15 @@ The conflict expression is:
 
 Runtime tests evaluate opening, resolution, and unrelated writes with Medplum's FHIRPath evaluator. A customer workflow must deduplicate by connection/version or conflict revision, reread current state, authorize each recipient's references, and persist its own delivery checkpoint. Neither recipe guarantees exactly-once or automatic Bot retry. The customer owns notification delivery and retry behavior.
 
-Use a restricted customer Bot as the endpoint. New connection payloads omit refresh tokens, but legacy queued deliveries may contain them. Never forward raw connection payloads to email, Slack, or general external webhooks. Build a minimal authorized notification from the state. The caller-facing status operation cannot be used to impersonate a practitioner from a Bot; it always uses the authenticated requester.
+Use a restricted customer Bot as the endpoint. New public-status payloads omit private state and tokens, but legacy queued connection deliveries may contain them. Never forward raw connection payloads to email, Slack, or general external webhooks. Build a minimal authorized notification from the state. The caller-facing status operation cannot be used to impersonate a practitioner from a Bot; it always uses the authenticated requester.
 
 ## Permission requirements
 
-The installer returns these own-connection entries. Apply them within existing policies; replace broader Basic grants that permit direct connection writes or credential/history reads.
+The installer returns these own-summary entries; the private connection is not caller-readable. Apply them within existing policies; replace broader Basic grants that permit direct connection writes or credential/history reads.
 
 ```json
 [
-  { "resourceType": "Basic", "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-connection&subject=%profile", "interaction": ["read", "search"] },
+  { "resourceType": "Basic", "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-public-status&subject=%profile", "interaction": ["read", "search"] },
   { "resourceType": "Basic", "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-settings", "readonly": true }
 ]
 ```

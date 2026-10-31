@@ -4,9 +4,9 @@
 import { requireBotMembership } from '../common/authorization';
 import { projectQuery, assertCurrentProject } from '../common/project';
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Resource } from '@medplum/fhirtypes';
+import type { Resource, Schedule, PractitionerRole } from '@medplum/fhirtypes';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
-import { CONNECTION_SEARCH, readConnection } from '../common/connection';
+import { CONNECTION_SEARCH, readConnection, findConnection } from '../common/connection';
 import { parseSyncRange, syncRange } from '../common/range-sync';
 import { readState, requestSync } from '../common/state';
 import { LEASE_URL } from '../common/lease';
@@ -16,6 +16,53 @@ import { getProjectId, SyncSession } from '../common/sync';
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
   await requireBotMembership(medplum, event, BOT_IDENTIFIER_VALUE.reconcile);
   const input = event.input as Resource | undefined;
+  const delivered = (event.input as { deletedResource?: Resource } | undefined)?.deletedResource ?? input;
+  if (delivered?.resourceType === 'Schedule' || delivered?.resourceType === 'PractitionerRole') {
+    if (!delivered.id) {
+      throw new Error('Missing scheduling resource ID');
+    }
+    const practitioners = new Set<string>();
+    const roles = new Set<string>();
+    const collect = (resource: Schedule | PractitionerRole): void => {
+      const refs = resource.resourceType === 'Schedule' ? resource.actor : [resource.practitioner];
+      for (const ref of refs) {
+        if (ref?.reference?.startsWith('Practitioner/')) {
+          practitioners.add(ref.reference);
+        }
+        if (ref?.reference?.startsWith('PractitionerRole/')) {
+          roles.add(ref.reference.slice('PractitionerRole/'.length));
+        }
+      }
+    };
+    // Read authoritative history so reassignment includes former actors, even after a delete.
+    const history = async (type: 'Schedule' | 'PractitionerRole', id: string): Promise<void> => {
+      for (let offset = 0; ; offset += 100) {
+        const page = await medplum.readHistory(type, id, { count: 100, offset });
+        const entries = page.entry ?? [];
+        for (const entry of entries) {
+          if (entry.resource) {
+            await assertCurrentProject(medplum, entry.resource);
+            collect(entry.resource);
+          }
+        }
+        if (entries.length < 100) {
+          break;
+        }
+      }
+    };
+    await history(delivered.resourceType, delivered.id);
+    for (const role of roles) {
+      await history('PractitionerRole', role);
+    }
+    for (const practitioner of practitioners) {
+      const connection = await findConnection(medplum, practitioner);
+      if (connection?.status === 'active') {
+        await requestSync(medplum, connection.basic.id, ['inbound', 'outbound']);
+      }
+    }
+    return;
+  }
+
   if (input?.resourceType === 'Basic' && input.id) {
     const connection = readConnection(await medplum.readResource('Basic', input.id, { cache: 'no-cache' }));
     if (connection?.status !== 'active') {

@@ -12,8 +12,12 @@ import { operationHandler } from '../common/contracts';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import { GOOGLE_CALENDAR_SCOPE, GOOGLE_CALENDAR_METADATA_SCOPE, BOT_IDENTIFIER_VALUE } from '../common/constants';
+import { withConnectionLease } from '../common/lease';
+import type { ConnectionLease } from '../common/lease';
+import { readProjectCeiling } from '../common/configuration';
+import { readCredential } from '../common/credentials';
 import { findConnection, saveConnection } from '../common/connection';
-import { exchangeCode, getOAuthClient, hasImportScopes, readIdToken } from '../common/google-oauth';
+import { exchangeCode, revokeToken, getOAuthClient, hasImportScopes, readIdToken } from '../common/google-oauth';
 import { requireOperationBot } from '../common/authorization';
 import { mutationStatus, getParam, parseDetailLevel } from '../common/operations';
 
@@ -27,35 +31,68 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   }
   const eventDetailLevel = parseDetailLevel(getParam(event.input, 'eventDetailLevel'));
 
-  const tokens = await exchangeCode(getOAuthClient(event.secrets), { code, codeVerifier, redirectUri });
-  if (!tokens.refresh_token) {
-    throw new Error('Google returned no refresh token; authorize with access_type=offline and prompt=consent');
-  }
-  if (!hasImportScopes(tokens.scope)) {
-    throw new Error(
-      `Google did not grant ${GOOGLE_CALENDAR_SCOPE} and ${GOOGLE_CALENDAR_METADATA_SCOPE}; approve calendar access and try again`
-    );
-  }
-  if (!tokens.id_token) {
-    throw new Error('Google returned no id_token; include the openid scope');
-  }
-  const account = readIdToken(tokens.id_token);
+  const prior = await findConnection(medplum, practitionerRef);
+  const connect = async (lease?: ConnectionLease): Promise<Parameters> => {
+    const tokens = await exchangeCode(getOAuthClient(event.secrets), { code, codeVerifier, redirectUri });
+    try {
+      if (!tokens.refresh_token) {
+        throw new Error('Google returned no refresh token; authorize with access_type=offline and prompt=consent');
+      }
+      if (!hasImportScopes(tokens.scope)) {
+        throw new Error(
+          `Google did not grant ${GOOGLE_CALENDAR_SCOPE} and ${GOOGLE_CALENDAR_METADATA_SCOPE}; approve calendar access and try again`
+        );
+      }
+      if (!tokens.id_token) {
+        throw new Error('Google returned no id_token; include the openid scope');
+      }
+      const account = readIdToken(tokens.id_token);
 
-  // Account switching requires a separate, explicit disconnect.
-  const existing = await findConnection(medplum, practitionerRef);
-  if (existing && existing.accountSub !== account.sub) {
-    throw new Error('Disconnect the existing Google account before switching accounts');
-  }
+      // Account switching requires a separate, explicit disconnect.
+      const existing = await findConnection(medplum, practitionerRef);
+      if (existing && existing.accountSub !== account.sub) {
+        throw new Error('Disconnect the existing Google account before switching accounts');
+      }
 
-  const connection = await saveConnection(medplum, {
-    practitionerRef,
-    accountSub: account.sub,
-    accountEmail: account.email,
-    refreshToken: tokens.refresh_token,
-    eventDetailLevel: eventDetailLevel ?? existing?.eventDetailLevel,
-  });
+      const ceiling = await readProjectCeiling(medplum);
+      const connection = await saveConnection(
+        medplum,
+        {
+          practitionerRef,
+          accountSub: account.sub,
+          accountEmail: account.email,
+          refreshToken: tokens.refresh_token,
+          eventDetailLevel: eventDetailLevel ?? existing?.eventDetailLevel,
+        },
+        ceiling,
+        lease
+      );
 
-  return mutationStatus(connection);
+      return mutationStatus(connection, ceiling);
+    } catch (err) {
+      // Do not revoke a grant that a partially successful save already made durable.
+      const current = await findConnection(medplum, practitionerRef);
+      let persisted = false;
+      if (current) {
+        try {
+          persisted = (await readCredential(medplum, current)) === tokens.refresh_token;
+        } catch {
+          throw err;
+        } // An unreadable store is not evidence that the grant is unused.
+      }
+      if (!persisted && (tokens.refresh_token || tokens.access_token)) {
+        try {
+          await revokeToken(tokens.refresh_token ?? tokens.access_token);
+        } catch {
+          throw new Error(
+            'Google connection failed and the unused grant could not be revoked; remove application access in Google before retrying'
+          );
+        }
+      }
+      throw err;
+    }
+  };
+  return prior ? withConnectionLease(medplum, prior.basic.id, connect) : connect();
 }
 
 export const handler = operationHandler('connect', execute);
