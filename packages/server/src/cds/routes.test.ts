@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType } from '@medplum/core';
-import type { Bot } from '@medplum/fhirtypes';
+import { ContentType, parseJWTPayload } from '@medplum/core';
+import type { Bot, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { createTestProject } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 describe('CDS Hooks', () => {
   let app: express.Express;
+  let project: WithId<Project>;
   let accessToken: string;
   let cdsHookBot: WithId<Bot>;
   let normalBot: WithId<Bot>;
@@ -25,6 +26,7 @@ describe('CDS Hooks', () => {
       withAccessToken: true,
       membership: { admin: true },
     });
+    project = testSetup.project;
     accessToken = testSetup.accessToken;
 
     const res1 = await request(app)
@@ -159,6 +161,38 @@ describe('CDS Hooks', () => {
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.body).toBeDefined();
     expect(res.body.cards).toBeDefined();
+  });
+
+  test('CDS hook bot runs with the SMART scopes of the caller', async () => {
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'CDS Hook Scope Bot',
+        runtimeVersion: 'vmcontext',
+        cdsService: { hook: 'patient-view', title: 'CDS Hook Scope Bot', description: 'Returns its access token' },
+      });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `exports.handler = async (medplum) => ({ cards: [{ summary: medplum.getAccessToken() }] });` });
+    expect(res2).toHaveStatus(200);
+
+    const scope = 'openid user/Bot.rs';
+    const user = await withTestContext(() => addTestUser(project, { scope }));
+    const res3 = await request(app)
+      .post(`/cds-services/${bot.id}`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + user.accessToken)
+      .send({ hookInstance: 'd1577c69-dfbe-44ad-ba6d-3e05e953b2ea', hook: 'patient-view', context: {} });
+    expect(res3).toHaveStatus(200);
+    expect(parseJWTPayload(res3.body.cards[0].summary).scope).toBe(scope);
   });
 
   test('Cannot call normal bot as CDS service', async () => {

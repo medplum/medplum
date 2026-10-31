@@ -307,24 +307,34 @@ export function clearBotAccessTokenCache(): void {
   botAccessTokenInFlight.clear();
 }
 
-export function getBotAccessToken(bot: WithId<Bot>, runAs: WithId<ProjectMembership>): Promise<string> {
+export function getBotAccessToken(
+  bot: WithId<Bot>,
+  runAs: WithId<ProjectMembership>,
+  callerLogin?: BotExecutionRequest['callerLogin']
+): Promise<string> {
   const versionId = runAs.meta?.versionId;
   if (!versionId) {
     // Without a versionId, changes to the membership can't be detected, so the token is never cached
-    return ensureBotAccessToken(runAs, undefined);
+    return ensureBotAccessToken(runAs, callerLogin, undefined);
   }
 
-  const cacheKey = `${bot.id}:${runAs.id}:${versionId}`;
+  // Scope is last because it is the only segment that may contain ':'
+  const cacheKey = `${bot.id}:${runAs.id}:${versionId}:${callerLogin?.launch?.reference ?? ''}:${callerLogin?.scope ?? ''}`;
   let pending = botAccessTokenInFlight.get(cacheKey);
   if (!pending) {
-    pending = ensureBotAccessToken(runAs, cacheKey).finally(() => botAccessTokenInFlight.delete(cacheKey));
+    pending = ensureBotAccessToken(runAs, callerLogin, cacheKey).finally(() => botAccessTokenInFlight.delete(cacheKey));
     botAccessTokenInFlight.set(cacheKey, pending);
   }
   return pending;
 }
 
-async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: string | undefined): Promise<string> {
+async function ensureBotAccessToken(
+  runAs: WithId<ProjectMembership>,
+  callerLogin: BotExecutionRequest['callerLogin'],
+  cacheKey: string | undefined
+): Promise<string> {
   const systemRepo = getGlobalSystemRepo();
+  const scope = callerLogin?.scope ?? 'openid';
   if (cacheKey) {
     const cached = botAccessTokenCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt && (await isLoginValid(systemRepo, cached.loginId))) {
@@ -341,7 +351,8 @@ async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: 
     user: runAs.user,
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
-    scope: 'openid',
+    scope,
+    launch: callerLogin?.launch,
     granted: true,
   });
 
@@ -351,7 +362,7 @@ async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: 
     sub: resolveId(runAs.user?.reference as Reference),
     username: resolveId(runAs.user?.reference as Reference) as string,
     profile: runAs.profile?.reference as string,
-    scope: 'openid',
+    scope,
   });
 
   if (cacheKey) {

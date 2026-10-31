@@ -88,6 +88,7 @@ Cards can also include `suggestions` and `actions` where supported by the client
 
 - Use authenticated requests to discovery and invocation endpoints.
 - Scope access using [Access Policies](/docs/access/access-policies).
+- The Bot runs with the caller's access, including the AccessPolicy and any [SMART scopes](/docs/access/smart-scopes) of the calling access token.
 - Follow least-privilege practices for both the calling client and the Bot runtime.
 
 ## Quick Test

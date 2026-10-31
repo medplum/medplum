@@ -46,7 +46,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
     const context: BotExecutionContext = {
       ...request,
-      accessToken: await getBotAccessToken(bot, runAs),
+      accessToken: await getBotAccessToken(bot, runAs, request.callerLogin),
       secrets: await getBotSecrets(bot, runAs),
     };
 

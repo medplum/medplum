@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, parseJWTPayload } from '@medplum/core';
-import type { Bot, Login, ProjectMembership } from '@medplum/fhirtypes';
+import { allOk, badRequest, createReference, parseJWTPayload, resolveId } from '@medplum/core';
+import type { Bot, Login, ProjectMembership, SmartAppLaunch } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, Repository } from '../fhir/repo';
@@ -119,6 +120,27 @@ describe('getBotAccessToken', () => {
 
       const authState = (await getLoginForAccessToken(undefined, token2))?.authState;
       expect(authState?.membership.id).toBe(membership.id);
+    }));
+
+  test('Token carries the SMART scopes and launch context of the caller', () =>
+    withTestContext(async () => {
+      const launch = await getGlobalSystemRepo().createResource<SmartAppLaunch>({
+        resourceType: 'SmartAppLaunch',
+        meta: { project: resolveId(membership.project) },
+        patient: { reference: 'Patient/' + randomUUID() },
+      });
+      const callerLogin = { scope: 'openid patient/Observation.rs', launch: createReference(launch) };
+
+      const token1 = await getBotAccessToken(bot, membership);
+      const token2 = await getBotAccessToken(bot, membership, callerLogin);
+      expect(token2).not.toBe(token1);
+      expect(await getBotAccessToken(bot, membership, callerLogin)).toBe(token2);
+      expect(parseJWTPayload(token1).scope).toBe('openid');
+      expect(parseJWTPayload(token2).scope).toBe(callerLogin.scope);
+
+      const authState = (await getLoginForAccessToken(undefined, token2))?.authState;
+      expect(authState?.login.scope).toBe(callerLogin.scope);
+      expect(authState?.smartAppLaunch?.id).toBe(launch.id);
     }));
 
   test('New token when membership changes', () =>

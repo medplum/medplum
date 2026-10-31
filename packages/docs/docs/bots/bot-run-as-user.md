@@ -20,4 +20,6 @@ const Bot = await medplum.createResource({
 
 Then, when you execute the Bot, it will inherit the access of the User who triggered it instead of the Bot. For example, if [client credentials auth](/docs/auth/client-credentials) are used to generate the access token that is used to execute the Bot, then the Bot's access will be defined by the AccessPolicy on the ProjectMembership for that Client Application that was used to trigger the Bot.
 
+If the access token that triggered the Bot is limited by [SMART scopes](/docs/access/smart-scopes), the Bot is limited by the same scopes and SMART App Launch context.
+
 
