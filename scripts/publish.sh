@@ -2,6 +2,12 @@
 
 set -xe
 
+# Optional npm dist-tag; a backport must not take "latest" from a newer release
+PUBLISH_ARGS=(--provenance --access public)
+if [ -n "$1" ]; then
+  PUBLISH_ARGS+=(--tag "$1")
+fi
+
 PACKAGES=(
   "agent"
   "app"
@@ -41,7 +47,7 @@ for package in "${PACKAGES[@]}"; do
     echo "$NAME@$VERSION already published; skipping"
   else
     for attempt in 1 2 3; do
-      npm publish --provenance --access public && break
+      npm publish "${PUBLISH_ARGS[@]}" && break
 
       if npm view --prefer-online "$NAME@$VERSION" version >/dev/null 2>&1; then
         echo "$NAME@$VERSION is published despite the error; continuing"
