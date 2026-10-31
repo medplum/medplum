@@ -8,19 +8,18 @@ toc_max_heading_level: 2
 
 # Scheduling Decision Guide
 
-Use this guide to decide what can be booked, who can book it, and how appointments move through your workflow.
+Use this guide to decide who books, which scheduling interfaces they use, what can be booked, and how appointments move through your workflow.
 
 _Companion to the [Scheduling](/docs/scheduling) docs._
 
-Medplum provides availability calculation and atomic booking operations. Your application supplies business rules such as licensure checks, patient preferences, approval workflows, and integrations. The scheduling APIs are in [beta](/docs/compliance/alpha-beta); check the [beta changelog](/docs/scheduling/beta-changelog) when upgrading an existing implementation.
+This guide covers six areas:
 
-This guide covers five areas:
-
-1. **[Define what can be booked and by whom](#services-and-availability).** Choose services, schedulable resources, availability rules, and booking permissions.
-2. **[Decide how resources are selected](#resource-selection-and-capacity).** Define eligibility and preferences; address resource combinations, shared capacity, and group visits where needed.
-3. **[Define the booking lifecycle](#booking-and-changes).** Choose immediate booking versus holds or approval, then define conflicts, cancellations, and rescheduling.
-4. **[Plan recurring visits, waitlists, and reminders](#recurring-visits-waitlists-and-reminders)** if your workflow needs them.
-5. **[Define external-system responsibilities](#external-systems)** if you use telehealth, synchronize calendars, or work alongside another scheduler.
+1. **[Decide whether to use Medplum's scheduling UI](#scheduling-interfaces).** Use complete React workspaces, use individual React components, or build your own UI on the scheduling backend.
+2. **[Define what can be booked and by whom](#services-and-availability).** Choose services, schedulable resources, availability rules, and booking permissions.
+3. **[Decide how resources are selected](#resource-selection-and-capacity).** Define eligibility and preferences; address resource combinations, shared capacity, and group visits where needed.
+4. **[Define the booking lifecycle](#booking-and-changes).** Choose immediate booking versus holds or approval, then define conflicts, cancellations, and rescheduling.
+5. **[Plan recurring visits, waitlists, and reminders](#recurring-visits-waitlists-and-reminders)** if your workflow needs them.
+6. **[Define external-system responsibilities](#external-systems)** if you use telehealth, synchronize calendars, or work alongside another scheduler.
 
 Use the [questions below](#before-you-start) to establish your use case, then follow the relevant sections. Add requirements beyond these examples where needed.
 
@@ -98,6 +97,36 @@ _Why: identifies configuration owners, administrative permissions, and change-ma
 
 <div id="decisions"></div>
 
+<div id="choose-your-scheduling-interface"></div>
+
+<div id="reference-implementation"></div>
+
+<div id="react-components-to-use"></div>
+
+## Scheduling interfaces
+
+### Will you use Medplum's scheduling UI?
+
+Choose one of three approaches: use the complete workspaces, use individual React components in your own screens, or use none of Medplum's UI and build your own. All three use Medplum's scheduling backend.
+
+**Questions:**
+
+- Do the complete workspaces fit your required booking and configuration workflows?
+- If you need custom screens, do you want to reuse Medplum's React forms, calendars, and editors?
+- Do you need full control of the UI or a different frontend framework, using only the scheduling backend?
+
+| Option | What you use and build |
+| :--- | :--- |
+| **1. Use the complete React workspaces** | Embed `SchedulingWorkspace` for calendars, booking, blocked time, and appointment management, and `SchedulingConfigWorkspace` for visit types, providers, rooms, devices, and availability configuration. Medplum supplies the complete scheduling screens; you integrate them into your application and connect your business workflows. |
+| **2. Use individual React components** | Build your own screens using Medplum's booking and rescheduling forms, calendars, and availability editor. You control the layout and workflow and supply the data and handlers required by each component. For example, `AppointmentBookingForm` books directly, while `AppointmentProposalForm` lets you control submission. |
+| **3. Use the backend only; build your own UI** | Use none of Medplum's scheduling UI. Build all screens and interactions yourself in your chosen frontend framework, calling the [scheduling APIs](/docs/scheduling) for availability and booking operations. Manage configuration through the FHIR resources described in [Defining Availability](/docs/scheduling/defining-availability). You own the UI, data loading, validation, and orchestration. |
+
+You can make this choice separately for booking and configuration. For example, build your own patient booking UI while staff use the complete `SchedulingConfigWorkspace` for administration.
+
+Check the interface choice against the remaining decisions. For example, the standard booking workspace books immediately; a workflow requiring approval or a hold needs application-controlled submission. See [Booking and holds](#should-the-workflow-book-immediately-hold-time-or-await-approval). Every approach still needs access policies, eligibility rules, and owners for custom workflows and integrations.
+
+See the [`@medplum/react-scheduling` public exports](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/index.ts) for available components, or explore the interfaces in [Storybook](https://storybook.medplum.com/). The React package is [Alpha](/docs/compliance/alpha-beta) and the scheduling APIs are Beta; review the [beta changelog](/docs/scheduling/beta-changelog) when upgrading.
+
 <div id="decision-1"></div>
 
 <div id="decision-1-what-defines-a-bookable-service"></div>
@@ -123,7 +152,10 @@ Decide what each bookable service means and which settings are shared versus act
 | Situation | Approach |
 | :--- | :--- |
 | Shared visit configuration | Put common parameters on HealthcareService. Put shared weekly hours in its native `availableTime` field. |
+| Required booking details | Configure procedure codes, diagnosis codes, or medical-necessity attestation on the visit type in `SchedulingConfigWorkspace`. The supplied forms collect these details; approval and enforcement across other write paths remain application responsibilities. Use `getSchedulingRequirements` and the requirement constants in [`@medplum/core`](https://github.com/medplum/medplum/blob/main/packages/core/src/scheduling.ts) when reading or setting these requirements in code. |
+| Service facilities offering the visit type | Associate the visit type with its facilities using `HealthcareService.location`. In the React selectors, an empty list makes the visit type available at every facility. Adding the first or removing the last facility changes this scope. |
 | Per-actor differences | Set only the differing Schedule parameters, with a `service` reference to the HealthcareService. Unset fields inherit. |
+| Change the visit types an actor offers | Use the configuration workspace to offer or stop offering visit types on the actor's Schedule. Stopping an offering also removes its per-service overrides; existing Appointments are not rewritten. Review outstanding appointments and holds separately. |
 | Schedule offers every service | Explicitly opt in with the [all-service marker](/docs/scheduling/defining-availability#offering-all-service-types). It includes future services; empty `serviceType` offers none. Keep the specific HealthcareService on each Appointment |
 | Different hours by site | Consider location-specific HealthcareService offerings and per-service Schedule overrides. Separate services by location only when the distinction matters to scheduling. |
 | Multiple resources booked together | Keep effective duration, alignment interval, offset, and alignment timezone equal across the required Schedules. Buffers, hours, and capacity can vary. |
@@ -152,10 +184,12 @@ Decide which resources consume time and which merely describe eligibility or loc
 | :--- | :--- |
 | Clinician availability | Use a Practitioner actor. Use PractitionerRole for service/jurisdiction eligibility rather than splitting the person's calendar by license. |
 | Individually bookable room or device | Give the Location or Device its own Schedule and include it in the appointment search and booking. |
-| Facility or jurisdiction used for filtering | Model the association for candidate selection; do not assume a Location reference reserves time or checks capacity. |
-| Record the appointment's site | Store a Location reference in `Appointment.supportingInformation` using `toAppointmentSiteReference` from `@medplum/core`; read it with `getAppointmentSite`. This identifies the site separately from a booked room and does not reserve capacity. |
+| Service facility or jurisdiction used for filtering | Keep physical facility assignments distinct from licensure jurisdictions. The React facility filter reads Locations from active PractitionerRoles; it does not evaluate service-specific licensure. Neither a facility nor a jurisdiction reference reserves time or checks capacity. |
+| Record the appointment's service facility | Store a Location reference in `Appointment.supportingInformation` using `toAppointmentSiteReference` from `@medplum/core`; read it with `getAppointmentSite`. The extension remains named `SchedulingSite`. This identifies the service facility separately from a booked room and does not reserve capacity. |
 | Same person at several sites | Keep the actor consistent and vary service-specific availability. Separate calendars can otherwise permit conflicting bookings. |
 | Resources needed for different phases | Define a separate orchestration design. A concurrent multi-Schedule appointment uses a common booking interval, not independently timed resource phases. |
+
+The React interface calls the place a visit is booked at a **service facility**. Rooms use `Location.partOf` and devices use `Device.location` to associate with it. The [React actor filter](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/AppointmentFinder/AppointmentFinder.schedules.ts) checks room and device Location ancestry, while provider facility references must match exactly. A billing workflow may reuse the same Location as `Claim.facility` when it represents the required billing facility; a booked room or scheduling association does not automatically determine that reference. See the [RCM & Billing Decision Guide](/docs/decision-guides/rcm-billing).
 
 <div id="33-availability-time-zones-and-blocks"></div>
 
@@ -179,6 +213,7 @@ Decide when booking is allowed and how exceptions are maintained. Use implicit a
 | Fixed appointment grid | Set alignment interval and offset deliberately. The default is 60 minutes with offset zero, not automatic back-to-back placement. |
 | Local hours and daylight saving time | Resolve availability timezone from Schedule parameters, then service parameters, then the actor extension. Configure `alignmentTimezone` separately if the grid must follow local midnight; its default is `Etc/UTC`. Test relevant DST transitions. |
 | One-off absence or holiday | Create `busy-unavailable` Slots on affected Schedules. Omit Slot `serviceType` to block all services; set it only for an intentionally service-specific block. |
+| Staff maintain blocked time in the calendar | `SchedulingWorkspace` can block several calendars in one action and edit or delete individual blocks. Appointment-owned Slots, including buffers, must be changed by rescheduling or cancelling the appointment. Enable transaction support for all-or-none multi-calendar writes. |
 | Facility closure | Include the facility as a required schedulable resource, or apply blocks to each affected Schedule. A facility block does not automatically propagate to practitioners. |
 | Maximum booking window | Use `Schedule.planningHorizon`. A rolling horizon requires application maintenance. |
 | Minimum lead time or daily/weekly caps | The scheduling server does not enforce these policies. Implement and validate them in the application's controlled booking path, not just search filters. |
@@ -208,6 +243,8 @@ Decide who may see schedules and patient details, book for someone else, change 
 | Sensitive group or cross-team appointments | Review resource-level visibility before putting multiple patients or teams on a shared Appointment. |
 
 Candidate filtering and hidden UI controls are not authorization. Do not assume permissions on a Schedule automatically confer the intended permissions on its Slots or Appointments. A post-write Subscription Bot can trigger follow-up work, but cannot serve as a pre-commit rejection of the original write.
+
+The configuration workspace can pause a provider's Schedule while leaving their Practitioner active for other workflows. Providers created there can have no NPI; a scheduling provider is not automatically ready to serve as a billing provider. UI ownership markers preserve externally managed fields, but do not replace access policies.
 
 <div id="decision-2"></div>
 
@@ -244,6 +281,8 @@ Decide which actors are eligible before searching, then how to rank acceptable r
 
 `$find` accepts explicit Schedules, not a patient-preference or ranking specification. Its search window is limited to 31 days per request; larger horizons require multiple requests. Result limits and candidate-combination limits must also be considered when defining first-available behavior.
 
+If you use the React components, evaluate the supplied facility filters against your eligibility model. The [provider facility filter](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/AppointmentFinder/AppointmentFinder.schedules.ts) reads locations across active PractitionerRoles without checking their HealthcareService. A jurisdiction-only role does not place a provider at each clinic within that jurisdiction, and missing or unreadable associations may leave candidates on offer. These filters do not enforce licensure.
+
 <div id="36-multi-resource-combinations"></div>
 
 <div id="decision-2b-which-resources-must-be-available-together"></div>
@@ -261,6 +300,7 @@ Decide which resources are required together and where alternatives are allowed.
 | Situation | Approach |
 | :--- | :--- |
 | Named clinician and named room | Send both Schedules in one `$find` call. Book the resulting proposal with one `$book` or `$hold` operation. |
+| Room or device without a clinician | Supported by the React booking forms. Choose at least one room or device Schedule offering the visit type; a Practitioner is not required. |
 | Either clinician A or B, plus one room | Search each eligible clinician/room combination, then merge options. Passing both clinicians together would reserve both. |
 | Two clinicians required | Include both Schedules in the same search and booking. Each must support the service and compatible common parameters. |
 | Large pools | Narrow eligibility before enumerating combinations, bound the search, and define how partial results are displayed. |
@@ -317,12 +357,15 @@ Decide whether to consume capacity immediately, reserve it temporarily, or keep 
 | Situation | Approach |
 | :--- | :--- |
 | Immediate booking | `$find` → [`$book`](/docs/scheduling/appointment-book). Creates a booked Appointment and its busy/buffer Slots atomically. |
+| Capture details before booking | Use the visit type's booking requirements in the React forms. Code entry and medical-necessity attestation collect data; they do not perform clinical review, payer authorization, or server-side eligibility enforcement. |
 | Reserve while awaiting approval | `$find` → [`$hold`](/docs/scheduling/appointment-hold) → [`$confirm`](/docs/scheduling/appointment-confirm). A hold creates a pending Appointment and busy-tentative Slots that consume capacity. |
 | Rejected or expired hold | Use [`$cancel`](/docs/scheduling/appointment-cancel) to release it. Define expiry tracking and cleanup in the application; `$hold` has no built-in TTL. |
 | Request without reserving time | Track the request separately, such as in a Task. Search and book when ready; availability may have changed. |
 | Participant acceptance required | Capture responses and implement the rule that permits confirmation. An AppointmentResponse does not automatically confirm a hold. |
 
 For a patient appointment, add the selected Patient to the proposal's participants before booking or holding; `$find` supplies the scheduled actors, not the patient. Do not call `$book` to confirm an existing hold. Do not use `tentative` as an Appointment status; it is a participant status. Make confirmation and expiry processing coordinate so an approval cannot race an independent cleanup workflow unnoticed.
+
+`SchedulingWorkspace` and `AppointmentBookingForm` book directly through `$book` in their standard flow. Use `AppointmentProposalForm` with an application-owned `onSubmit` when submission must go through approval checks or `$hold`. The booking form's `onBooked` callback runs after the write and cannot reject the booking. Confirming a pending appointment from the details pane calls `$confirm`; it does not run an approval workflow.
 
 <div id="39-conflicts-refresh-and-controlled-overrides"></div>
 
@@ -366,6 +409,8 @@ Decide which changes are allowed after booking, how reasons are recorded, and wh
 | Situation | Approach |
 | :--- | :--- |
 | Cancel a booked or pending appointment | Use `$cancel`, optionally with a structured `cancelationReason`. It preserves the cancelled Appointment and deletes its linked Slots, including buffers, atomically. |
+| Edit appointment details | The workspace details pane edits notes and the procedure codes, diagnosis codes, and medical-necessity attestation currently required by the visit type. It does not edit the Patient participant. These updates do not move time or change Slots. |
+| Limit changes after a visit | The workspace shows appointments read-only 12 hours after their end, falling back to start when no end is recorded. This is a UI rule, not a server-wide lock. Define and enforce any required correction window in the application's controlled write path. |
 | Find a replacement time or resource | Pass `ignore-appointment=Appointment/{id}` to `$find` to exclude this appointment's Slots, including buffers, from availability calculations. Other appointments still block. Commit the move with `$reschedule`; `$book` and `$hold` do not ignore the original Slots. |
 | Move time or resources | Use [`$reschedule`](/docs/scheduling/appointment-reschedule) for a booked or pending Appointment. Supply the new `start` and the complete set of destination Schedules. It preserves Appointment identity and status, reconciles scheduled participants, and replaces Slots atomically. If the new time is unavailable, the original booking remains intact. |
 | Change visit type | `$reschedule` retains the original service type and requires exactly one HealthcareService reference on the stored Appointment. Changing visit type requires cancel-and-book, with explicit failure/recovery handling and a new Appointment identity. |
@@ -374,7 +419,7 @@ Decide which changes are allowed after booking, how reasons are recorded, and wh
 | Participant accept/decline | Use `Appointment.participant.status` and, where needed, AppointmentResponse. Keep response handling distinct from the overall Appointment status. |
 | No-show or completion | Define the operational rule and accountable actor. `$book` does not automatically manage later clinical states. |
 
-Confirm that your server version supports `$reschedule` before choosing this workflow. It derives duration and buffers from the scheduling configuration; omitted Schedules are removed from the appointment. Patients and other non-scheduled participants are preserved. Slot IDs change, so integrations must handle Slot deletion and creation. Site metadata in `supportingInformation` stays unchanged; a move to another site needs an explicit metadata update in the application's workflow.
+Confirm that your server version supports `$reschedule` before choosing this workflow. It derives duration and buffers from the scheduling configuration; omitted Schedules are removed from the appointment. Patients and other non-scheduled participants are preserved. Slot IDs change, so integrations must handle Slot deletion and creation. Service facility metadata in `supportingInformation` stays unchanged by the operation. The React reschedule form saves a changed facility before calling `$reschedule`, in a separate write; if the move fails, the facility change can remain. Plan recovery for a move between facilities. See the [reschedule form implementation](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/AppointmentFinder/AppointmentRescheduleForm.tsx).
 
 Do not equate an SMS acknowledgment with confirmation of a held booking, or mutate only `Appointment.start`/`end` to reschedule while leaving its Slots behind. Notify dependent systems whenever the time, actors, or status changes.
 
@@ -500,20 +545,20 @@ Decide whether the integration exports appointments, imports busy time, or permi
 | Situation | Approach |
 | :--- | :--- |
 | Outbound appointment mirror | Publish selected appointment details and retain external identifiers. Minimize patient information exposed to personal calendars. |
+| Open the appointment in another system | Set the `SchedulingExternalUrlURI` extension from `@medplum/core` with a `valueUrl`. The workspace details pane displays a valid HTTPS link. This provides navigation; it does not synchronize records or establish write authority. |
 | External busy-time import | Maintain `busy-unavailable` Slots for relevant events in the booking horizon. Handle updates and deletion as well as creation, with stable external identifiers and conditional writes. |
 | Bidirectional appointment editing | Specify conflict ownership, echo suppression, and reconciliation. Route accepted changes through the controlled scheduling workflow. |
 | Patient calendar feed | Provide a patient-scoped, revocable access mechanism and a clear policy for sensitive details. |
 
 An external calendar event does not automatically create a Medplum conflict. Imports and reconciliation must maintain the blocking Slots. Use the [Data Migration Decision Guide](/docs/decision-guides/data-migration) when replacing or running alongside another scheduler.
 
-## Reference Implementation
-
-For a reference implementation of a complex scheduling interface, see [`@medplum/react-scheduling`](https://github.com/medplum/medplum/tree/main/packages/react-scheduling), including SchedulingWorkspace, appointment search/booking components, MultiCalendar, and ScheduleAvailabilityEditor. The package is currently Alpha and subject to breaking changes; host applications supply business rules, authorization, and integrations. Explore the components in [Storybook](https://storybook.medplum.com/).
-
 ## Before You Implement
 
+- Record your interface choices for booking and configuration, including any individual components you will compose.
 - Record the chosen service, actor, availability, and access models, with an owner for each.
 - Separate server-supported behavior from custom workflows and unresolved product requirements.
+- Verify that required checks happen before writes rather than in post-save callbacks.
+- Test facility filtering with missing associations and jurisdiction roles, and recovery when a facility update succeeds but rescheduling fails.
 - Test booking conflicts, capacity and buffers, time zones, expiry/cancellation races, and denied access using representative user roles.
 - Define recovery for partial series bookings, failed integrations, and ambiguous responses.
 - Confirm the server/package versions in use and review the scheduling beta changelog before launch or upgrade.
