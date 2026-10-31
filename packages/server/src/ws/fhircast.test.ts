@@ -237,8 +237,36 @@ describe('FHIRcast WebSocket', () => {
             'hub.lease_seconds': 3600,
             'hub.mode': 'subscribe',
             'hub.secret': '',
-            'hub.subscriber': '',
+            'hub.subscriber': 'Test Client Application',
             'hub.topic': topic,
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    // STU3 has no field to carry it, so the name a subscriber gave only comes back on STU2
+    test('STU2 connection verification names the subscriber', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res = await request(server)
+          .post('/fhircast/STU2')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+              subscriberName: 'Acme Viewer',
+            })
+          );
+
+        await request(server)
+          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .expectJson((obj: Record<string, unknown>) => {
+            expect(obj['hub.subscriber']).toStrictEqual('Acme Viewer');
           })
           .close()
           .expectClosed();
