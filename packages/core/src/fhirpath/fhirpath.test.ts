@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import type { Bundle, Practitioner } from '@medplum/fhirtypes';
+import type { Bundle, Patient, Practitioner } from '@medplum/fhirtypes';
 import { HTTP_HL7_ORG, LOINC, SNOMED, UCUM } from '../constants';
 import type { TypedValue } from '../types';
 import { PropertyType } from '../types';
@@ -3580,6 +3580,105 @@ describe('FHIRPath Test Suite', () => {
           practitioner
         )
       ).toStrictEqual(['CA', 'MA', 'TX']);
+    });
+  });
+
+  describe('primitive extensions do not change evaluation', () => {
+    // A primitive that carries a `_property` sibling must evaluate exactly like one that does not.
+    const ext = { url: 'http://example.com/note', valueString: 'note' };
+    const withExt = {
+      resourceType: 'Patient',
+      id: '123',
+      birthDate: '1974-12-25',
+      _birthDate: { extension: [ext] },
+      active: false,
+      _active: { id: 'act1' },
+      multipleBirthInteger: 0,
+      _multipleBirthInteger: { id: 'mb1' },
+      name: [
+        {
+          given: ['Jane', 'Jayne'],
+          _given: [null, { id: 'giv1' }],
+          family: 'Smith',
+          _family: { id: 'fam1' },
+        },
+      ],
+    } as unknown as Patient;
+    const plain = {
+      resourceType: 'Patient',
+      id: '123',
+      birthDate: '1974-12-25',
+      active: false,
+      multipleBirthInteger: 0,
+      name: [{ given: ['Jane', 'Jayne'], family: 'Smith' }],
+    } as unknown as Patient;
+
+    test.each([
+      ['birthDate', ['1974-12-25']],
+      ["birthDate.startsWith('1974')", [true]],
+      ['birthDate.substring(0,4)', ['1974']],
+      ["birthDate.matches('^1974')", [true]],
+      ['birthDate.convertsToDate()', [true]],
+      ['birthDate.toDate()', ['1974-12-25']],
+      ["('1974-12-25' | 'x') contains birthDate", [true]],
+      ['name.family.length()', [5]],
+      ["name.family.indexOf('mi')", [1]],
+      ["name.family.replace('S','Z')", ['Zmith']],
+      ['name.family.upper()', ['SMITH']],
+      ['active.not()', [true]],
+      ['where(active).exists()', [false]],
+      ["iif(active, 'yes', 'no')", ['no']],
+      ['multipleBirth + 1', [1]],
+      ['multipleBirth > -1', [true]],
+      ['name.given[0] & name.given[1]', ['JaneJayne']],
+    ])('%s', (expr, expected) => {
+      // Sanity check: the expression means the same thing without the primitive extensions.
+      expect(evalFhirPath(expr, plain)).toStrictEqual(expected);
+      expect(evalFhirPath(expr, withExt)).toStrictEqual(expected);
+    });
+
+    test('extension() reads the primitive extension', () => {
+      expect(evalFhirPath("birthDate.extension('http://example.com/note').exists()", withExt)).toStrictEqual([true]);
+      expect(evalFhirPath("birthDate.extension('http://example.com/other').exists()", withExt)).toStrictEqual([false]);
+    });
+
+    test('evalFhirPathTyped exposes the primitive extension', () => {
+      expect(evalFhirPathTyped('birthDate', [toTypedValue(withExt)])).toStrictEqual([
+        { type: 'date', value: '1974-12-25', primitiveExtension: { extension: [ext] }, path: 'birthDate' },
+      ]);
+      expect(evalFhirPathTyped('birthDate', [toTypedValue(plain)])).toStrictEqual([
+        { type: 'date', value: '1974-12-25', path: 'birthDate' },
+      ]);
+    });
+
+    test('does not mutate the input resource', () => {
+      const input = JSON.parse(JSON.stringify(withExt));
+      const before = JSON.stringify(input);
+      evalFhirPath('birthDate | name.family | active | multipleBirth', input);
+      expect(JSON.stringify(input)).toStrictEqual(before);
+      expect(typeof input.birthDate).toStrictEqual('string');
+      expect(input.name[0].given.every((g: unknown) => typeof g === 'string')).toBe(true);
+    });
+
+    test('extension-only element is still present', () => {
+      const extensionOnly = {
+        resourceType: 'Patient',
+        _birthDate: { extension: [ext] },
+        name: [{ given: ['Alice', 'Brittany', null], _given: [null, { id: 'g1' }, { id: 'g2' }] }],
+      } as unknown as Patient;
+      expect(evalFhirPath('birthDate.exists()', extensionOnly)).toStrictEqual([true]);
+      expect(evalFhirPath('birthDate.empty()', extensionOnly)).toStrictEqual([false]);
+      expect(evalFhirPath("birthDate.extension('http://example.com/note').exists()", extensionOnly)).toStrictEqual([
+        true,
+      ]);
+      // No value, so a string function yields the empty collection rather than throwing.
+      expect(evalFhirPath("birthDate.startsWith('1974')", extensionOnly)).toStrictEqual([]);
+      // Array containing some extended elements and some extended nulls
+      expect(evalFhirPath('name.given.count() = 3', extensionOnly)).toStrictEqual([true]);
+      expect(evalFhirPath('name.given[0].id', extensionOnly)).toStrictEqual([]);
+      expect(evalFhirPath('name.given[1].id', extensionOnly)).toStrictEqual(['g1']);
+      expect(evalFhirPath('name.given[2]', extensionOnly)).toStrictEqual([]);
+      expect(evalFhirPath('name.given[2].id', extensionOnly)).toStrictEqual(['g2']);
     });
   });
 
