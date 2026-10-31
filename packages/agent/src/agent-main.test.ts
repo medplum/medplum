@@ -142,6 +142,7 @@ describe('Main', () => {
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       method: 'POST',
+      signal: expect.any(AbortSignal),
     });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
