@@ -12,7 +12,7 @@ import { saveCheckIn } from './save-check-in';
 
 const phq2Canonical = 'https://smart-health-checkin.org/connectathon/Questionnaire/phq-2.json';
 
-function buildResponse(options: { walletName?: string; phq2?: boolean } = {}): CheckinResponse {
+function buildResponse(options: { walletName?: string; phq2?: boolean; phq2Partial?: boolean } = {}): CheckinResponse {
   const request = checkinRequest(checkInRequest);
   const json: SmartCheckinResponse = {
     type: 'smart-health-checkin-response',
@@ -27,7 +27,7 @@ function buildResponse(options: { walletName?: string; phq2?: boolean } = {}): C
         value: {
           resourceType: 'Patient',
           id: 'wallet-patient',
-          name: [{ given: [options.walletName ?? 'Aria'], family: 'Test' }],
+          name: [{ given: [options.walletName ?? 'Aria', 'Quinn'], family: 'Test' }],
           birthDate: '1981-02-03',
         },
       },
@@ -45,9 +45,17 @@ function buildResponse(options: { walletName?: string; phq2?: boolean } = {}): C
                 status: 'completed',
                 questionnaire: phq2Canonical,
                 subject: { reference: 'Patient/wallet-patient' },
+                encounter: { reference: 'Encounter/wallet-encounter' },
                 item: [
                   { linkId: 'phq2-1', answer: [{ valueCoding: { system: 'http://loinc.org', code: 'LA6569-3' } }] },
-                  { linkId: 'phq2-2', answer: [{ valueCoding: { system: 'http://loinc.org', code: 'LA6570-1' } }] },
+                  ...(options.phq2Partial
+                    ? []
+                    : [
+                        {
+                          linkId: 'phq2-2',
+                          answer: [{ valueCoding: { system: 'http://loinc.org', code: 'LA6570-1' } }],
+                        },
+                      ]),
                 ],
               },
             },
@@ -89,6 +97,7 @@ describe('saveCheckIn', () => {
     const qr = await medplum.readReference<QuestionnaireResponse>(qrRef as { reference: string });
     expect(qr.subject?.reference).toBe(getReferenceString(patient));
     expect(qr.questionnaire).toBe(phq2Canonical);
+    expect(qr.encounter).toBeUndefined();
 
     expect(task.focus?.reference).toBe(getReferenceString(patient));
     expect(task.description).toContain('shared 6 of 7');
@@ -105,7 +114,21 @@ describe('saveCheckIn', () => {
 
   test('Flags a wallet patient that does not match the account', async () => {
     const { task } = await saveCheckIn(medplum, patient, buildResponse({ walletName: 'Bob' }), 'Test Wallet');
-    expect(task.note?.[0].text).toContain('Bob Test, born 1981-02-03');
+    expect(task.note?.[0].text).toContain('Bob Quinn Test, born 1981-02-03');
+  });
+
+  test('Says when a scored form is only partly answered', async () => {
+    const { task } = await saveCheckIn(medplum, patient, buildResponse({ phq2Partial: true }), 'Test Wallet');
+    expect(task.description).toContain('total score: 1 (1 of 2 answered).');
+  });
+
+  test('Notes form answers that could not be saved instead of failing', async () => {
+    const create = medplum.createResourceIfNoneExist.bind(medplum);
+    vi.spyOn(medplum, 'createResourceIfNoneExist').mockImplementation((resource, query) =>
+      resource.resourceType === 'QuestionnaireResponse' ? Promise.reject(new Error('Invalid')) : create(resource, query)
+    );
+    const { task } = await saveCheckIn(medplum, patient, buildResponse(), 'Test Wallet');
+    expect(task.note?.[0].text).toContain("Two questions about your mood: answers couldn't be saved");
   });
 
   test('Saves without form answers', async () => {

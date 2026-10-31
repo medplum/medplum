@@ -7,6 +7,7 @@ import type {
   Identifier,
   Patient,
   Questionnaire,
+  QuestionnaireItemAnswerOption,
   QuestionnaireResponse,
   Reference,
   Task,
@@ -26,8 +27,8 @@ export interface SavedCheckIn {
  * Stages a check-in for care team review: the response as received (DocumentReference + Binary), each form's
  * QuestionnaireResponse, a "Review check-in" Task, and a Provenance. Nothing is written into the chart itself.
  *
- * Safe to call again after a failure: the DocumentReference, QuestionnaireResponses, and Task are keyed by the
- * check-in request id, so a retry finds what an earlier attempt created.
+ * A retry after a failure doesn't duplicate the DocumentReference, QuestionnaireResponses, or Task: they're keyed by
+ * the check-in request id, so a retry finds what an earlier attempt created.
  * @param medplum - The Medplum client, signed in as the patient.
  * @param patient - The signed-in patient.
  * @param response - The validated check-in response.
@@ -90,14 +91,17 @@ export async function saveCheckIn(
     if (!answers) {
       continue;
     }
-    // The wallet's QuestionnaireResponse names its own copy of the patient, so point it at ours
-    const { id: _id, meta: _meta, ...rest } = answers as unknown as QuestionnaireResponse;
+    // Copy only the answers: the wallet's other references (subject, encounter, ...) point at resources only it has
+    const { questionnaire, status, authored, item: answerItems } = answers as unknown as QuestionnaireResponse;
     const formId = identifier('/' + item.id);
     try {
       const qr = await medplum.createResourceIfNoneExist<QuestionnaireResponse>(
         {
-          ...rest,
           resourceType: 'QuestionnaireResponse',
+          questionnaire,
+          status,
+          authored,
+          item: answerItems,
           identifier: formId,
           subject: patientRef,
           source: patientRef,
@@ -183,14 +187,10 @@ export async function saveCheckIn(
 function getReviewNotes(response: CheckinResponse, patient: Patient): string[] {
   const notes: string[] = [];
   const walletPatient = response.resources('patient', { type: 'Patient' })[0] as Patient | undefined;
-  if (walletPatient) {
-    const shared = describePatient(walletPatient);
-    const account = describePatient(patient);
-    if (shared.toLowerCase() !== account.toLowerCase()) {
-      notes.push(
-        `The app shared records for ${shared}, but this account is ${account}. Confirm identity before using them.`
-      );
-    }
+  if (walletPatient && identityKey(walletPatient) !== identityKey(patient)) {
+    notes.push(
+      `The app shared records for ${describePatient(walletPatient)}, but this account is ${describePatient(patient)}. Confirm identity before using them.`
+    );
   }
   for (const item of response.request.items) {
     for (const card of response.healthCards(item.id).filter((c) => !c.accepted)) {
@@ -207,6 +207,11 @@ function getReviewNotes(response: CheckinResponse, patient: Patient): string[] {
   return notes;
 }
 
+function identityKey(patient: Patient): string {
+  const name = patient.name?.[0];
+  return [name?.given?.[0], name?.family, patient.birthDate].join('|').toLowerCase();
+}
+
 function describePatient(patient: Patient): string {
   const name = patient.name?.[0] ? formatHumanName(patient.name[0]) : 'unknown name';
   return patient.birthDate ? `${name}, born ${patient.birthDate}` : name;
@@ -215,7 +220,7 @@ function describePatient(patient: Patient): string {
 /**
  * Totals for forms whose answer options carry scores, such as PHQ-2. The patient picks answers; the receiver sums them.
  * @param response - The validated check-in response.
- * @returns One sentence per scored form, such as "PHQ-2 depression screen total score: 3."
+ * @returns One sentence per scored form, such as "PHQ-2 depression screen total score: 3.", noting unanswered questions.
  */
 function getFormScores(response: CheckinResponse): string[] {
   const scores: string[] = [];
@@ -228,24 +233,30 @@ function getFormScores(response: CheckinResponse): string[] {
     if (!questionnaire || !answers) {
       continue;
     }
+    const scoredQuestions = (questionnaire.item ?? []).filter((q) =>
+      q.answerOption?.some((o) => getScore(o) !== undefined)
+    );
     let total = 0;
-    let scored = false;
-    for (const question of questionnaire.item ?? []) {
+    let answered = 0;
+    for (const question of scoredQuestions) {
       const answer = answers.item?.find((a) => a.linkId === question.linkId)?.answer?.[0]?.valueCoding;
       const option = question.answerOption?.find(
         (o) => answer && o.valueCoding?.system === answer.system && o.valueCoding?.code === answer.code
       );
-      const score = option?.extension?.find(
-        (e) => e.url === 'http://hl7.org/fhir/StructureDefinition/ordinalValue'
-      )?.valueDecimal;
+      const score = option && getScore(option);
       if (score !== undefined) {
         total += score;
-        scored = true;
+        answered++;
       }
     }
-    if (scored) {
-      scores.push(`${questionnaire.title ?? item.title} total score: ${total}.`);
+    if (answered > 0) {
+      const partial = answered < scoredQuestions.length ? ` (${answered} of ${scoredQuestions.length} answered)` : '';
+      scores.push(`${questionnaire.title ?? item.title} total score: ${total}${partial}.`);
     }
   }
   return scores;
+}
+
+function getScore(option: QuestionnaireItemAnswerOption): number | undefined {
+  return option.extension?.find((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/ordinalValue')?.valueDecimal;
 }

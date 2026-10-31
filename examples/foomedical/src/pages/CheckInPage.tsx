@@ -100,10 +100,17 @@ export function CheckInPage(): JSX.Element {
     if (current?.status !== 'completed') {
       return;
     }
+    const patient = medplum.getProfile();
+    if (patient?.resourceType !== 'Patient') {
+      setSend({ state: 'error', message: 'Sign in as a patient to send a check-in.' });
+      return;
+    }
     setSend({ state: 'sending' });
     try {
-      const patient = medplum.getProfile() as WithId<Patient>;
-      setSend({ state: 'sent', saved: await saveCheckIn(medplum, patient, current.response, current.wallet.name) });
+      setSend({
+        state: 'sent',
+        saved: await saveCheckIn(medplum, patient as WithId<Patient>, current.response, current.wallet.name),
+      });
     } catch (err) {
       setSend({ state: 'error', message: normalizeErrorString(err) });
     }
@@ -113,10 +120,6 @@ export function CheckInPage(): JSX.Element {
     setStartingOver(true);
     setSend({ state: 'idle' });
   };
-
-  const actions = current?.status === 'completed' && (
-    <ReviewActions send={send} onSend={sendToCareTeam} onDiscard={startOver} />
-  );
 
   return (
     <Container py="xl">
@@ -129,8 +132,6 @@ export function CheckInPage(): JSX.Element {
               : 'Share your records and answer a short form from your health app before your visit.'}
           </Text>
         </div>
-
-        {actions}
 
         {status === 'waiting' && (
           <Card withBorder radius="md" p="lg">
@@ -165,7 +166,7 @@ export function CheckInPage(): JSX.Element {
               </Alert>
             )}
             <CheckInResult response={current.response} />
-            {send.state !== 'sent' && actions}
+            <ReviewActions send={send} onSend={sendToCareTeam} onDiscard={startOver} />
           </>
         ) : (
           <Grid align="stretch">
@@ -359,7 +360,7 @@ function CheckInResult({ response }: { readonly response: CheckinResponse }): JS
               {p.message} ({p.rule})
             </Text>
           ))}
-          {item.id === 'phq2' ? (
+          {response.request.items.find((i) => i.id === item.id)?.content.kind === 'form.fhir' ? (
             <FormAnswers response={response} itemId={item.id} />
           ) : (
             <ItemResources response={response} itemId={item.id} />
@@ -384,7 +385,7 @@ function CheckInResult({ response }: { readonly response: CheckinResponse }): JS
               autosize
               minRows={8}
               maxRows={30}
-              value={JSON.stringify(response, undefined, 2)}
+              value={JSON.stringify(response.json, undefined, 2)}
               readOnly
             />
           </Accordion.Panel>
