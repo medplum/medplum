@@ -161,7 +161,6 @@ describe('PatientPage.utils', () => {
         'message',
         'dosespot',
         'scriptsure',
-        'export',
       ];
       for (const tabId of tabIds) {
         const tab = getPatientPageTabOrThrow(tabId);
@@ -191,7 +190,7 @@ describe('PatientPage.utils', () => {
       expect(tabIds).toContain('message');
       expect(tabIds).toContain('dosespot');
       expect(tabIds).toContain('scriptsure');
-      expect(tabIds).toContain('export');
+      expect(tabIds).not.toContain('export');
     });
 
     test('all tabs have required properties', () => {
