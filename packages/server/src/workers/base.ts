@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Resource } from '@medplum/fhirtypes';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
@@ -93,4 +94,18 @@ export async function getTrackingAsyncJobExecutor(tracking: AsyncJobTracking): P
   const asyncJob = await asyncJobSystemRepo.readResource<AsyncJob>('AsyncJob', tracking.asyncJobId);
 
   return new AsyncJobExecutor(asyncJobSystemRepo, asyncJob);
+}
+
+/**
+ * Fails the tracking AsyncJob and throws unless it is system-owned. Workers for server-wide
+ * maintenance only run under AsyncJobs created by the system repository.
+ * @param exec - The executor bound to the tracking AsyncJob.
+ */
+export async function requireSystemAsyncJob(exec: AsyncJobExecutor): Promise<void> {
+  const asyncJob = exec.getAsyncJob();
+  if (asyncJob.meta?.project) {
+    const err = new Error(`Unexpected AsyncJob owner for ${getReferenceString(asyncJob)}`);
+    await exec.failJob(err);
+    throw err;
+  }
 }

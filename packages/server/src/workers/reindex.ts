@@ -23,7 +23,13 @@ import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
 import type { PostDeployJobData, PostDeployMigration, PrepareJobDataContext } from '../migrations/data/types';
 import { completePostDeployMigration, isFirstBootMode } from '../migrations/migration-utils';
-import { getAsyncJobTracking, getJobSystemRepo, getTrackingAsyncJobExecutor, normalizeJobTarget } from './base';
+import {
+  getAsyncJobTracking,
+  getJobSystemRepo,
+  getTrackingAsyncJobExecutor,
+  normalizeJobTarget,
+  requireSystemAsyncJob,
+} from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -201,6 +207,7 @@ export class ReindexJob {
   async execute(job: Job<ReindexJobData> | undefined): Promise<ReindexExecuteResult> {
     const inputJobData = this.jobData;
     const asyncJob = this.asyncJobExecutor.getAsyncJob();
+    await requireSystemAsyncJob(this.asyncJobExecutor);
 
     if (inputJobData.minReindexWorkerVersion && inputJobData.minReindexWorkerVersion > REINDEX_WORKER_VERSION) {
       return 'ineligible';
