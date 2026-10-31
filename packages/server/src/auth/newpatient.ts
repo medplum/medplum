@@ -84,6 +84,7 @@ async function createPatient(
 
   await systemRepo.updateResource<Login>({
     ...login,
+    project: createReference(project),
     membership: createReference(membership),
   });
   return membership;

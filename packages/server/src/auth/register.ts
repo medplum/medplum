@@ -76,6 +76,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     {
       ...login,
+      project: createReference(project),
       membership: createReference(membership),
     },
     createReference(profile as ProfileResource),
