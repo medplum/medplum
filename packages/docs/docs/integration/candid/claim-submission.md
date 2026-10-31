@@ -61,7 +61,7 @@ flowchart TD
 | `provider` | Reference to the billing provider: an Organization for organization billing (the common case), or a Practitioner for individual billing | Yes |
 | `careTeam` | Care team member with role `primary` (system: `http://terminology.hl7.org/CodeSystem/claimcareteamrole`) referencing the rendering Practitioner | Yes* |
 | `careTeam` | Optional: care team member with role `referral` referencing the referring Practitioner. Required by some payers (e.g. Medicare MNT). The Practitioner can be a contained resource with just a name and NPI — no stored resource needed for external referrers. | No |
-| `facility` | Optional: reference to the service facility Location (see below). When absent, the billing Organization is the service facility, or the billing Practitioner for individual billing. | No |
+| `facility` | Reference to the service facility Location (see below). When absent, the integration uses the billing Organization. Individual billing requires an explicit facility for a non-telehealth claim. | Conditional |
 | `billablePeriod.start` | Preferred date of service when service lines carry no individual `servicedDate` | No |
 | `created` | Fallback date of service when `billablePeriod.start` is also absent | No |
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
@@ -116,7 +116,9 @@ The billing provider Organization is referenced directly from `Claim.provider`. 
 
 ### Location (Service Facility)
 
-Candid requires a service facility (CMS-1500 box 32) on every non-telehealth claim. Set `Claim.facility` to a Location to name where the service was rendered; otherwise the billing Organization's name, NPI and address are used, or the billing Practitioner's for individual billing. The Location can be a contained resource.
+Candid requires a service facility (CMS-1500 box 32) on every non-telehealth claim. Set `Claim.facility` to a Location to name where the service was rendered; otherwise the integration uses the billing Organization's name, NPI, and address. When there is no billing Organization, the current implementation requires `Claim.facility` for non-telehealth claims and permits omission for its supported telehealth place-of-service values. It does not use the individual billing Practitioner as the facility fallback. The Location can be a contained resource.
+
+See [Organizations and Locations](/docs/administration/locations-and-facilities#billing-facility-and-place-of-service) for how the billing facility relates to the scheduled facility, reserved room, actual encounter location, and place-of-service classification.
 
 | Field | Description | Required |
 |-------|-------------|----------|
