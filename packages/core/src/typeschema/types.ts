@@ -425,7 +425,10 @@ class StructureDefinitionParser {
   private peek(): ElementDefinition | undefined {
     const element = this.elements[this.index];
     if (element) {
-      this.elementIndex[element.path ?? ''] = element;
+      // Slices share their path with the unsliced element; don't let them overwrite it as a contentReference target
+      if (!element.sliceName && !element.id?.includes(':')) {
+        this.elementIndex[element.path ?? ''] = element;
+      }
       if (element.contentReference) {
         const contentRefPath = element.contentReference.slice(element.contentReference.indexOf('#') + 1);
         const ref = this.elementIndex[contentRefPath];
