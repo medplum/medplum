@@ -48,7 +48,7 @@ export interface ExternalAuthState {
 type IdentitySource = NonNullable<IdentityProvider['identitySource']>;
 type IdentityMappingMode = NonNullable<IdentityProvider['identityMappingMode']>;
 
-interface ExternalLoginIdentity {
+export interface ExternalLoginIdentity {
   email?: string;
   externalId?: string;
 }
@@ -263,7 +263,14 @@ function logExternalCallback(
   });
 }
 
-async function resolveExternalLoginIdentity(
+/**
+ * Maps the claims from an external identity provider to the identity used to look up the Medplum user.
+ * Every flow that signs in a user from external claims must use this, so that they agree on who the user is.
+ * @param idp - The identity provider configuration.
+ * @param userInfo - The claims from the external identity provider.
+ * @returns The email or external ID to log in with.
+ */
+export async function resolveExternalLoginIdentity(
   idp: IdentityProvider,
   userInfo: Record<string, unknown>
 ): Promise<ExternalLoginIdentity> {
