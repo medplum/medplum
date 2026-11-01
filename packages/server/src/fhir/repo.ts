@@ -1072,11 +1072,12 @@ export class Repository extends FhirRepository implements Disposable {
       resultMeta.project = projectId;
     }
     const accounts = await this.getAccounts(existing, updated);
-    if (accounts) {
-      resultMeta.account = accounts[0];
-      resultMeta.accounts = accounts;
-    }
+    resultMeta.account = accounts?.[0];
+    resultMeta.accounts = accounts;
     resultMeta.compartment = this.getCompartments(result);
+    if (!existing && !this.isSuperAdmin() && !this.isProjectAdmin()) {
+      this.addRequestedAccounts(result, extractAccountReferences(updated.meta));
+    }
 
     // Validate resource after all modifications and touchups above are done
     await validateRepositoryResource(this, result);
@@ -2253,9 +2254,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Returns the author reference string (resourceType/id).
-   * If the current context is a ClientApplication, handles "on behalf of".
-   * Otherwise uses the current context profile.
+   * Returns the accounts to store in `meta.accounts` for a write.
    * @param existing - Current (soon to be previous) resource, if one exists.
    * @param updated - The incoming updated resource.
    * @returns The account values.
@@ -2278,14 +2277,14 @@ export class Repository extends FhirRepository implements Disposable {
       accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
-    if (updated.resourceType === 'Patient') {
-      // When examining a Patient resource, we only look at the individual patient
-      // We should not call `getPatients` and `readReference`
-      const existingAccounts = extractAccountReferences(existing?.meta);
-      for (const account of existingAccounts ?? EMPTY) {
-        accounts.add(account.reference as string);
+    for (const account of extractAccountReferences(existing?.meta) ?? EMPTY) {
+      if (account.reference) {
+        accounts.add(account.reference);
       }
-    } else {
+    }
+
+    // A Patient's accounts come only from the Patient itself; other resources inherit the accounts of the Patients they reference
+    if (updated.resourceType !== 'Patient') {
       const systemRepo = this.getSystemRepo();
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
@@ -2294,7 +2293,6 @@ export class Repository extends FhirRepository implements Disposable {
           continue;
         }
 
-        // If the patient has an account, then use it as the resource account.
         const patientAccounts = extractAccountReferences(patient.meta);
         for (const account of patientAccounts ?? EMPTY) {
           if (account.reference) {
@@ -2309,6 +2307,64 @@ export class Repository extends FhirRepository implements Disposable {
       result = append(result, { reference });
     }
     return result;
+  }
+
+  /**
+   * On create, adds the accounts the writer requested beyond those the server assigned.
+   * Each must be in the `allowedAccounts` of an access policy rule that permits creating this exact resource.
+   * @param result - The resource about to be written; its meta is updated in place.
+   * @param requested - The accounts requested in the incoming resource.
+   */
+  private addRequestedAccounts(result: WithId<Resource> & { meta: Meta }, requested: Reference[] | undefined): void {
+    const assigned = new Set(result.meta.accounts?.map((account) => account.reference));
+    const additions = new Set<string>();
+    for (const { reference } of requested ?? EMPTY) {
+      if (reference && !assigned.has(reference)) {
+        additions.add(reference);
+      }
+    }
+    if (!additions.size) {
+      return;
+    }
+
+    result.meta.accounts = [
+      ...(result.meta.accounts ?? EMPTY),
+      ...Array.from(additions, (reference) => ({ reference })),
+    ];
+    result.meta.account = result.meta.accounts[0];
+    // Recompute so that rule criteria on `_compartment` see the requested accounts
+    result.meta.compartment = this.getCompartments(result);
+
+    for (const reference of additions) {
+      const id = resolveId({ reference });
+      const allowed =
+        !reference.startsWith('Project/') && // Only accounts that become compartments can be assigned
+        id &&
+        isUUID(id) &&
+        (this.context.accessPolicy?.resource ?? EMPTY).some(
+          (policy) =>
+            policy.allowedAccounts?.some((account) => account.reference === reference) &&
+            satisfiedAccessPolicy(result, AccessPolicyInteraction.CREATE, {
+              resourceType: 'AccessPolicy',
+              resource: [policy],
+            }) &&
+            this.satisfiesWriteConstraints(policy, undefined, result)
+        );
+      if (!allowed) {
+        throw new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          id: 'forbidden',
+          issue: [
+            {
+              severity: 'error',
+              code: 'forbidden',
+              details: { text: `Not allowed to assign account ${reference}` },
+              expression: ['meta.accounts'],
+            },
+          ],
+        });
+      }
+    }
   }
 
   /**
@@ -2442,11 +2498,22 @@ export class Repository extends FhirRepository implements Disposable {
     if (!matchingPolicy) {
       return false;
     }
-    if (!matchingPolicy.writeConstraint) {
-      return true;
-    }
+    return this.satisfiesWriteConstraints(matchingPolicy, previous, current);
+  }
 
-    return matchingPolicy.writeConstraint.every((constraint) => {
+  /**
+   * Checks that a resource satisfies the write constraints of an access policy rule.
+   * @param policy - The access policy rule.
+   * @param previous - The resource before updates were applied.
+   * @param current - The resource as it will be written.
+   * @returns True if every write constraint evaluates to true.
+   */
+  private satisfiesWriteConstraints(
+    policy: AccessPolicyResource,
+    previous: Resource | undefined,
+    current: Resource
+  ): boolean {
+    return (policy.writeConstraint ?? EMPTY).every((constraint) => {
       const invariant = evalFhirPathTyped(
         constraint.expression as string,
         [{ type: current.resourceType, value: current }],

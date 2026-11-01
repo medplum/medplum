@@ -560,7 +560,8 @@ describe('On Behalf Of', () => {
       expect(patient2.meta?.accounts?.[0]?.reference).toStrictEqual(account);
 
       // Try to manually set the meta.account
-      // This should be ignored, because the on-behalf-of user is not a project admin
+      // This should be rejected, because the on-behalf-of user's access policy does not allow the account
+      const forged = 'Organization/' + randomUUID();
       const res3 = await request(app)
         .post(`/fhir/R4/Patient`)
         .set('Authorization', basicAuth)
@@ -570,19 +571,10 @@ describe('On Behalf Of', () => {
         .send({
           resourceType: 'Patient',
           meta: {
-            account: { reference: 'Organization/' + randomUUID() },
+            account: { reference: forged },
           },
         });
-      expect(res3).toHaveStatus(201);
-      expect(res3.body.resourceType).toStrictEqual('Patient');
-
-      const patient3 = res3.body as Patient;
-      expect(patient3.resourceType).toBe('Patient');
-      expect(patient3.id).not.toBe(patient1.id);
-      expect(patient3.meta?.author?.reference).toStrictEqual(getReferenceString(adminAccount.client));
-      expect(patient3.meta?.onBehalfOf?.reference).toStrictEqual(getReferenceString(testAccount.profile));
-      expect(patient3.meta?.account?.reference).toStrictEqual(account);
-      expect(patient3.meta?.accounts?.length).toStrictEqual(1);
-      expect(patient3.meta?.accounts?.[0]?.reference).toStrictEqual(account);
+      expect(res3).toHaveStatus(403);
+      expect(res3.body.issue?.[0]?.details?.text).toStrictEqual('Not allowed to assign account ' + forged);
     }));
 });

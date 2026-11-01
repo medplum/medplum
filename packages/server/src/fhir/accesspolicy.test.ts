@@ -29,8 +29,10 @@ import type {
   Practitioner,
   Project,
   ProjectMembership,
+  ProjectMembershipAccess,
   Quantity,
   Questionnaire,
+  Reference,
   ServiceRequest,
   SmartAppLaunch,
   StructureDefinition,
@@ -302,22 +304,301 @@ describe('AccessPolicy', () => {
         accessPolicy,
       });
 
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        birthDate: '1970-01-01',
-        meta: {
-          account: {
-            reference: 'Organization/' + randomUUID(), // naughty!
-          },
+      const forged = 'Organization/' + randomUUID(); // naughty!
+      await expect(
+        repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+          birthDate: '1970-01-01',
+          meta: { account: { reference: forged } },
+        })
+      ).rejects.toMatchObject({
+        outcome: { id: 'forbidden', issue: [{ details: { text: 'Not allowed to assign account ' + forged } }] },
+      });
+    }));
+
+  test.each<Patient | Questionnaire>([
+    { resourceType: 'Patient' },
+    { resourceType: 'Questionnaire', status: 'active' },
+  ])('Non-admin without account compartment cannot forge accounts on $resourceType create or update', (input) =>
+    withTestContext(async () => {
+      const account = { reference: 'Organization/' + randomUUID() };
+      const forged = { reference: 'Organization/' + randomUUID() };
+      const adminRepo = getRepository({ extendedMode: true, projectAdmin: true });
+      const repo = getRepository({ extendedMode: true });
+
+      await expect(
+        repo.createResource<Patient | Questionnaire>({ ...input, meta: { account: forged, accounts: [forged] } })
+      ).rejects.toMatchObject({
+        outcome: {
+          id: 'forbidden',
+          issue: [{ details: { text: 'Not allowed to assign account ' + forged.reference } }],
         },
       });
-      expect(patient.meta?.account?.reference).toStrictEqual('Organization/' + orgId);
-      expect(patient.meta?.accounts).toContainExactly([{ reference: 'Organization/' + orgId }]);
 
-      const readPatient = await repo.readResource('Patient', patient.id);
-      expect(readPatient.meta?.account?.reference).toStrictEqual('Organization/' + orgId);
-      expect(readPatient.meta?.accounts).toContainExactly([{ reference: 'Organization/' + orgId }]);
+      const resource = await adminRepo.createResource<Patient | Questionnaire>({
+        ...input,
+        meta: { accounts: [account] },
+      });
+      const forgedUpdate = await repo.updateResource<Patient | Questionnaire>({
+        ...resource,
+        meta: { account: forged, accounts: [forged] },
+      });
+      expect(forgedUpdate.meta?.accounts).toStrictEqual([account]);
+      expect(forgedUpdate.meta?.compartment).toContainEqual(account);
+      expect(forgedUpdate.meta?.compartment).not.toContainEqual(forged);
+
+      // Non-extended reads omit meta.accounts, so a read-modify-write must not drop them
+      await getRepository({}).updateResource<Patient | Questionnaire>({ ...input, id: resource.id });
+      const stored = await adminRepo.readResource<Patient | Questionnaire>(input.resourceType, resource.id);
+      expect(stored.meta?.accounts).toStrictEqual([account]);
+      expect(stored.meta?.compartment).toContainEqual(account);
+    })
+  );
+
+  test('Edits do not remove accounts inherited from the creator or the Patient', () =>
+    withTestContext(async () => {
+      const accountA = { reference: 'Organization/' + randomUUID() };
+      const accountB = { reference: 'Organization/' + randomUUID() };
+      const scopedTo = (account: Reference): AccessPolicy => ({
+        resourceType: 'AccessPolicy',
+        compartment: account,
+        resource: [{ resourceType: 'Observation', compartment: account }],
+      });
+      const repoA = getRepository({ extendedMode: true, accessPolicy: scopedTo(accountA) });
+      const repoB = getRepository({ extendedMode: true, accessPolicy: scopedTo(accountB) });
+      const adminRepo = getRepository({ extendedMode: true, projectAdmin: true });
+      const patientB = await adminRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [accountB] },
+      });
+
+      const observation = await repoA.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patientB),
+      });
+      expect(observation.meta?.accounts).toStrictEqual([accountA, accountB]);
+
+      // The creator's account must survive both its own edits and edits from the Patient's account
+      const editedByA = await repoA.updateResource<Observation>({ ...observation, valueString: 'A' });
+      expect(editedByA.meta?.accounts).toStrictEqual([accountA, accountB]);
+      const editedByB = await repoB.updateResource<Observation>({ ...editedByA, valueString: 'B' });
+      expect(editedByB.meta?.accounts).toStrictEqual([accountA, accountB]);
+      await expect(repoA.readResource('Observation', observation.id)).resolves.toMatchObject({ valueString: 'B' });
+    }));
+
+  test('Moving a resource to another Patient keeps the old account until an admin removes it', () =>
+    withTestContext(async () => {
+      const accountA = { reference: 'Organization/' + randomUUID() };
+      const accountB = { reference: 'Organization/' + randomUUID() };
+      const adminRepo = getRepository({ extendedMode: true, projectAdmin: true });
+      const patientA = await adminRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [accountA] },
+      });
+      const patientB = await adminRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [accountB] },
+      });
+
+      const repo = getRepository({ extendedMode: true });
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patientA),
+      });
+      const moved = await repo.updateResource<Observation>({ ...observation, subject: createReference(patientB) });
+      expect(moved.meta?.accounts).toStrictEqual([accountA, accountB]);
+
+      const cleaned = await adminRepo.updateResource<Observation>({ ...moved, meta: { accounts: [accountB] } });
+      expect(cleaned.meta?.accounts).toStrictEqual([accountB]);
+      expect(cleaned.meta?.compartment).not.toContainEqual(accountA);
+
+      // Once the subject points at the new Patient, later edits do not bring the old account back
+      const edited = await repo.updateResource<Observation>({ ...cleaned, valueString: 'later' });
+      expect(edited.meta?.accounts).toStrictEqual([accountB]);
+    }));
+
+  async function getOrganizationRepo(
+    access: { policy: Omit<AccessPolicy, 'resourceType'>; organization?: string }[]
+  ): Promise<Repository> {
+    const memberAccess: ProjectMembershipAccess[] = [];
+    for (const { policy, organization } of access) {
+      const created = await systemRepo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy', ...policy });
+      memberAccess.push({
+        policy: createReference(created),
+        parameter: organization ? [{ name: 'organization', valueReference: { reference: organization } }] : [],
+      });
+    }
+    const accessPolicy = await buildAccessPolicy({
+      resourceType: 'ProjectMembership',
+      project: createReference(testProject),
+      user: { reference: 'User/' + randomUUID() },
+      profile: { reference: 'Practitioner/' + randomUUID() },
+      access: memberAccess,
+    });
+    return getRepository({ extendedMode: true, projects: [testProject], accessPolicy });
+  }
+
+  const tenantPatientRule: AccessPolicyResource = {
+    resourceType: 'Patient',
+    criteria: 'Patient?_compartment=%organization',
+    allowedAccounts: [{ reference: '%organization' }],
+  };
+  const tenantPolicy: Omit<AccessPolicy, 'resourceType'> = {
+    resource: [tenantPatientRule, { resourceType: 'Observation', criteria: 'Observation?_compartment=%organization' }],
+  };
+
+  test('Member of multiple Organizations chooses the account on create', () =>
+    withTestContext(async () => {
+      const orgA = 'Organization/' + randomUUID();
+      const orgB = 'Organization/' + randomUUID();
+      const repo = await getOrganizationRepo([
+        { policy: tenantPolicy, organization: orgA },
+        { policy: tenantPolicy, organization: orgB },
+      ]);
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+        meta: { accounts: [{ reference: orgB }] },
+      });
+      expect(patient.meta?.accounts).toStrictEqual([{ reference: orgB }]);
+      expect(patient.meta?.compartment).toContainEqual({ reference: orgB });
+      expect(patient.meta?.compartment).not.toContainEqual({ reference: orgA });
+
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+      expect(observation.meta?.accounts).toStrictEqual([{ reference: orgB }]);
+
+      const shared = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+        meta: { accounts: [{ reference: orgA }, { reference: orgB }] },
+      });
+      expect(shared.meta?.accounts).toStrictEqual([{ reference: orgA }, { reference: orgB }]);
+    }));
+
+  // 'A' and 'C' stand for random Organization references; other values are used as-is
+  test.each<{
+    name: string;
+    access: { policy: Omit<AccessPolicy, 'resourceType'>; organization?: 'A' | 'C' }[];
+    requested: string[];
+    rejected: string;
+  }>([
+    {
+      name: 'Organization outside the membership',
+      access: [{ policy: tenantPolicy, organization: 'A' }],
+      requested: ['A', 'C'],
+      rejected: 'C',
+    },
+    {
+      name: 'read-only access',
+      access: [
+        { policy: tenantPolicy, organization: 'A' },
+        { policy: { resource: [{ ...tenantPatientRule, interaction: ['read', 'search'] }] }, organization: 'C' },
+      ],
+      requested: ['A', 'C'],
+      rejected: 'C',
+    },
+    {
+      name: 'rule criteria do not match',
+      access: [
+        {
+          policy: {
+            resource: [
+              { resourceType: 'Patient' },
+              {
+                resourceType: 'Patient',
+                criteria: 'Patient?name=Other',
+                allowedAccounts: [{ reference: '%organization' }],
+              },
+            ],
+          },
+          organization: 'A',
+        },
+      ],
+      requested: ['A'],
+      rejected: 'A',
+    },
+    {
+      name: 'write constraint fails',
+      access: [
+        {
+          policy: {
+            resource: [
+              { resourceType: 'Patient' },
+              {
+                resourceType: 'Patient',
+                allowedAccounts: [{ reference: '%organization' }],
+                writeConstraint: [{ language: 'text/fhirpath', expression: 'active = true' }],
+              },
+            ],
+          },
+          organization: 'A',
+        },
+      ],
+      requested: ['A'],
+      rejected: 'A',
+    },
+    {
+      name: 'parameter missing',
+      access: [
+        { policy: { resource: [{ resourceType: 'Patient', allowedAccounts: [{ reference: '%organization' }] }] } },
+      ],
+      requested: ['%organization'],
+      rejected: '%organization',
+    },
+  ])('Rejects requested account on create: $name', ({ access, requested, rejected }) =>
+    withTestContext(async () => {
+      const orgs: Record<string, string> = { A: 'Organization/' + randomUUID(), C: 'Organization/' + randomUUID() };
+      const resolve = (key: string): string => orgs[key] ?? key;
+      const repo = await getOrganizationRepo(
+        access.map(({ policy, organization }) => ({ policy, organization: organization && resolve(organization) }))
+      );
+
+      await expect(
+        repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ family: 'Test' }],
+          meta: { accounts: requested.map((key) => ({ reference: resolve(key) })) },
+        })
+      ).rejects.toMatchObject({
+        outcome: {
+          id: 'forbidden',
+          issue: [{ details: { text: 'Not allowed to assign account ' + resolve(rejected) } }],
+        },
+      });
+    })
+  );
+
+  test('Updates ignore requested accounts', () =>
+    withTestContext(async () => {
+      const orgA = 'Organization/' + randomUUID();
+      const orgB = 'Organization/' + randomUUID();
+      const adminRepo = getRepository({ extendedMode: true, projectAdmin: true, projects: [testProject] });
+      const patient = await adminRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+        meta: { accounts: [{ reference: orgA }] },
+      });
+
+      const repo = await getOrganizationRepo([
+        { policy: tenantPolicy, organization: orgA },
+        { policy: tenantPolicy, organization: orgB },
+      ]);
+      const updated = await repo.updateResource<Patient>({
+        ...patient,
+        meta: { ...patient.meta, accounts: [{ reference: orgA }, { reference: orgB }] },
+      });
+      expect(updated.meta?.accounts).toStrictEqual([{ reference: orgA }]);
     }));
 
   test.each<'resource.compartment' | 'resource.criteria'>(['resource.compartment', 'resource.criteria'])(

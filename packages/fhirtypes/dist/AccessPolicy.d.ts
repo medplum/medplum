@@ -198,4 +198,11 @@ export interface AccessPolicyResource {
    * before and after the updates are applied.
    */
   writeConstraint?: Expression[];
+
+  /**
+   * Accounts that a user may request in meta.accounts when creating a
+   * resource that this rule permits. Values may use access policy
+   * parameters, e.g. %organization. Not applied to updates.
+   */
+  allowedAccounts?: Reference[];
 }
