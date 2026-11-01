@@ -466,6 +466,21 @@ export class BackEnd extends Construct {
       );
     }
 
+    if (config.aiGatewayBedrockEnabled) {
+      // AI gateway: invoke Anthropic models, directly or through cross-region inference profiles
+      // https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-prereq.html
+      this.taskRolePolicies.addStatements(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+          resources: [
+            'arn:aws:bedrock:*::foundation-model/anthropic.*',
+            `arn:aws:bedrock:*:${accountNumber}:inference-profile/*`,
+          ],
+        })
+      );
+    }
+
     // Task Role
     this.taskRole = new iam.Role(this, 'TaskExecutionRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
