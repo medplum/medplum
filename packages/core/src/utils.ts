@@ -11,6 +11,8 @@ import type {
   ExtensionValue,
   Identifier,
   Medication,
+  MedicationAdministration,
+  MedicationDispense,
   MedicationRequest,
   MedicationStatement,
   Meta,
@@ -228,13 +230,18 @@ export function getDisplayString(resource: Resource): string {
       return coverageName;
     }
   }
-  if (resource.resourceType === 'Immunization' && resource.vaccineCode) {
+  if (resource.resourceType === 'Immunization') {
     const vaccineName = formatCodeableConcept(resource.vaccineCode);
     if (vaccineName) {
       return vaccineName;
     }
   }
-  if (resource.resourceType === 'MedicationRequest' || resource.resourceType === 'MedicationStatement') {
+  if (
+    resource.resourceType === 'MedicationAdministration' ||
+    resource.resourceType === 'MedicationDispense' ||
+    resource.resourceType === 'MedicationRequest' ||
+    resource.resourceType === 'MedicationStatement'
+  ) {
     const medicationName = getMedicationDisplayString(resource);
     if (medicationName) {
       return medicationName;
@@ -294,21 +301,27 @@ function getDeviceDisplayString(device: Device): string | undefined {
 }
 
 /**
- * Returns a display string for a coverage: the payor's display name, or else the coverage type.
+ * Returns a display string for a coverage: the payor organization's display name, or else the coverage type.
+ * Self-pay payors (Patient or RelatedPerson) are skipped, so a coverage doesn't display as a person's name.
  * @param coverage - The coverage resource.
  * @returns The display string if one is found.
  */
 function getCoverageDisplayString(coverage: Coverage): string | undefined {
-  return coverage.payor?.find((p) => p.display)?.display || formatCodeableConcept(coverage.type) || undefined;
+  const payor = coverage.payor?.find(
+    (p) => p.display && !p.reference?.startsWith('Patient/') && !p.reference?.startsWith('RelatedPerson/')
+  );
+  return payor?.display || formatCodeableConcept(coverage.type) || undefined;
 }
 
 /**
- * Returns a display string for the medication in a medication request or statement: the medication code,
- * the reference display, or the code of a contained Medication.
- * @param resource - The medication request or statement.
+ * Returns a display string for the medication in a medication resource: the medication code, the reference
+ * display, or the code of a contained Medication.
+ * @param resource - The medication administration, dispense, request, or statement.
  * @returns The display string if one is found.
  */
-function getMedicationDisplayString(resource: MedicationRequest | MedicationStatement): string | undefined {
+function getMedicationDisplayString(
+  resource: MedicationAdministration | MedicationDispense | MedicationRequest | MedicationStatement
+): string | undefined {
   if (resource.medicationCodeableConcept) {
     return formatCodeableConcept(resource.medicationCodeableConcept) || undefined;
   }

@@ -403,6 +403,15 @@ describe('Core Utils', () => {
     expect(
       getDisplayString({
         resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [{ reference: 'Patient/123', display: 'John Smith' }],
+        type: plan,
+      })
+    ).toStrictEqual('health insurance plan policy');
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
         id: '123',
         status: 'active',
         beneficiary: { reference: 'Patient/123' },
@@ -490,6 +499,22 @@ describe('Core Utils', () => {
         medicationReference: { reference: '#Medication-Tylenol-1' },
       })
     ).toStrictEqual('Tylenol 650mg');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationDispense',
+        status: 'completed',
+        medicationCodeableConcept: { text: 'Amoxicillin 500 MG' },
+      })
+    ).toStrictEqual('Amoxicillin 500 MG');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationAdministration',
+        status: 'completed',
+        subject: { reference: 'Patient/123' },
+        effectiveDateTime: '2024-10-01T08:00:00Z',
+        medicationReference: { reference: 'Medication/456', display: 'Ondansetron 4 MG' },
+      })
+    ).toStrictEqual('Ondansetron 4 MG');
   });
 
   test('getImageSrc', () => {
