@@ -6,39 +6,21 @@
  * for the customer app's callback page. Runs the consent flow on a loopback port, then calls
  * `Practitioner/$google-calendar-connect` with the code, so the Bot does the exchange and
  * stores the connection. Needs a Desktop-type OAuth client (loopback redirects) and a Medplum
- * session: `MEDPLUM_ACCESS_TOKEN`, or the `medplum login` profile in ~/.medplum.
+ * session: `MEDPLUM_ACCESS_TOKEN`, or the selected `medplum login` profile. PROJECT_ID must match the authenticated project.
  *
- *   GOOGLE_CLIENT_ID=… npx tsx src/scripts/connect-local.ts [eventDetailLevel]
+ *   PROJECT_ID=… GOOGLE_CALENDAR_CLIENT_ID=… npx tsx src/scripts/connect-local.ts [eventDetailLevel]
  */
 
 import { MedplumClient } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { createHash, randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
 import { GOOGLE_CALENDAR_SCOPE, GOOGLE_CALENDAR_METADATA_SCOPE } from '../common/constants';
 
 const PORT = 8765;
 const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`;
-const BASE_URL = process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com/';
-
-function loadAccessToken(): string {
-  if (process.env.MEDPLUM_ACCESS_TOKEN) {
-    return process.env.MEDPLUM_ACCESS_TOKEN;
-  }
-  const profile = process.env.MEDPLUM_PROFILE ?? 'default';
-  const stored = JSON.parse(readFileSync(join(homedir(), '.medplum', `${profile}.json`), 'utf8')) as {
-    logins?: string;
-  };
-  const logins = JSON.parse(stored.logins ?? '[]') as { accessToken?: string }[];
-  const token = logins[0]?.accessToken;
-  if (!token) {
-    throw new Error('Not logged in: run `npx medplum login` or set MEDPLUM_ACCESS_TOKEN');
-  }
-  return token;
-}
+const BASE_URL = process.env.BASE_URL ?? process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com/';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -84,7 +66,7 @@ async function authorize(clientId: string): Promise<{ code: string; codeVerifier
       server.close();
       resolve(received);
     });
-    server.listen(PORT, () => {
+    server.listen(PORT, '127.0.0.1', () => {
       console.log(`\nOpen this URL in a browser signed in to the Google account to connect:\n\n${url.toString()}\n`);
     });
   });
@@ -92,10 +74,17 @@ async function authorize(clientId: string): Promise<{ code: string; codeVerifier
 }
 
 async function main(): Promise<void> {
-  const clientId = requireEnv('GOOGLE_CLIENT_ID');
+  const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID ?? requireEnv('GOOGLE_CLIENT_ID');
   const eventDetailLevel = process.argv[2];
-  const medplum = new MedplumClient({ baseUrl: BASE_URL, accessToken: loadAccessToken() });
+  const medplum = new MedplumClient({
+    baseUrl: BASE_URL,
+    accessToken: process.env.MEDPLUM_ACCESS_TOKEN ?? cliAccessToken(BASE_URL, process.env.MEDPLUM_PROFILE),
+  });
+  await assertDeploymentProject(medplum, requireEnv('PROJECT_ID'));
   const profile = await medplum.getProfileAsync();
+  if (profile?.resourceType !== 'Practitioner') {
+    throw new Error('Use a practitioner login to connect Google');
+  }
   console.log(`Connecting ${profile?.resourceType}/${profile?.id} on ${BASE_URL}`);
 
   const { code, codeVerifier } = await authorize(clientId);
@@ -118,6 +107,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(err instanceof Error ? err.message : 'Google connection failed');
   process.exit(1);
 });

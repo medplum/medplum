@@ -2,6 +2,14 @@
 
 This example mirrors Medplum Appointments and independent blocks to a practitioner's primary Google Calendar, and imports Google Busy time into Medplum Slots. The target deployment is Google Workspace Internal consent with shared Bots and a linked customer project. The current implementation requires live acceptance before production use; see [acceptance](acceptance.md).
 
+This is a source example in the Medplum npm workspace, not a published npm package or a hosted connector with a bundled user interface. It follows the separate-example layout used by the [Healthie importer](../medplum-healthie-importer) and [Photon integration](../medplum-photon-integration).
+
+- [Setup](setup.md): prerequisites, credentials, deploy, install, connect and test.
+- [Architecture](architecture.md): Bot responsibilities, permissions and package layout.
+- [State and operations](state-and-status.md): status fields and notification recipes.
+- [Migration](migration-notes.md): existing installations and rollback constraints.
+- [Acceptance](acceptance.md): live checks required before production use.
+
 ## Scheduling behavior
 
 Medplum owns Appointments and native blocks. Google imports write only integration-owned `busy-unavailable` Slots on every active Schedule associated with the practitioner, including PractitionerRole associations and newly created Schedules. Imported Slots never become outbound sources.
@@ -23,52 +31,13 @@ npm run profiles --workspace=medplum-google-calendar-sync
 npm test --workspace=medplum-google-calendar-sync
 ```
 
-Build runs ESLint, TypeScript and Bot bundling. Tests mock Google and use Medplum's FHIRPath evaluator and policy matcher. They do not deploy or call Google. The example also participates in the repository's npm workspace. Generated FHIR artifacts are committed in `profiles/definitions.json`; `src/scripts/generate-profiles.ts` is their source.
+Build runs ESLint, TypeScript and Bot bundling. Default unit tests mock Google and use Medplum's FHIRPath evaluator and policy matcher. They do not deploy or call Google. The example also participates in the repository's npm workspace. Generated FHIR artifacts are committed in `profiles/definitions.json`; `src/scripts/generate-profiles.ts` is their source.
 
 ## Deployment and installation
 
-1. Create a customer-owned Google Workspace OAuth client with an Internal consent screen. Register the consuming application's callback URL. Request `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned`, and `https://www.googleapis.com/auth/calendar.calendars.readonly`.
-2. Enable the Medplum `bots` and `cron` project features. Scheduled repair is unavailable without `cron`; installation reports that condition.
-3. Set `BASE_URL`, `PROJECT_ID`, `CLIENT_ID`, and `CLIENT_SECRET` for the **shared deployment project** in your environment, then run `npm run deploy`. Alternatively, use an authenticated Medplum CLI profile as described below. The client needs permission to create/deploy Bots and OperationDefinitions. Run one deployment at a time; the administrative Bot-create endpoint has no conditional-create parameter. Deployment reads environment variables; no local credential file is bundled.
-4. Link each customer project to the shared project and export the Bots and OperationDefinitions needed for invocation. Do not export customer Basic resources or Slots. A single-project development setup can use the same project for both roles. Multiple visible Bots with the same integration identifier cause installation to fail.
-5. As a customer-project administrator, call type-level `Project/$google-calendar-install` with the Google client parameters below. The installer uploads profiles into that customer project, so validation does not depend on profile resolution through a link.
-6. Apply the returned practitioner and ordinary Slot policy entries within the customer's existing access scopes. Replace broader Basic/Slot grants; appending these entries to an unrestricted grant does not restrict it. Remove history/vread access to old token-bearing connection versions. Review the installer report for broad reads, writes, arbitrary criteria, unresolved policy references and administrative memberships. Expected restricted integration memberships appear separately. The audit is conservative: custom criteria can produce warnings even when safe. It is not proof of effective server permissions. Stop old workers and remove the former caller connection grant before upgrading; apply the new public-status grant after installation.
-7. Give practitioners read access to the public operation Bots and OperationDefinitions. Keep clinical read access consistent with the application's existing policy. Only install runs as the administrator; status runs as the practitioner; connect, settings, disconnect and range requests use restricted Bot memberships. Worker and mutation Bots reject a missing or incorrect membership instead of accepting caller fallback.
-8. Implement OAuth state verification and PKCE in the consuming application. Send the authorization code, verifier and registered redirect URI to the connect operation as the practitioner. The application must explain that disconnect removes imported blocks and makes that time bookable, subject to other scheduling constraints.
+Follow [setup.md](setup.md). Deployment uploads ten Bots and six operation definitions; `setup:project` invokes the installer in the selected customer project. The installer creates or adopts eight restricted Bot memberships, five policies, eight Subscriptions, two Crons, and the profile definitions. Applying practitioner access rules and connecting Google are separate setup steps.
 
-Install input:
-
-```json
-{
-  "resourceType": "Parameters",
-  "parameter": [
-    { "name": "GOOGLE_CALENDAR_CLIENT_ID", "valueString": "YOUR_GOOGLE_CLIENT_ID" },
-    { "name": "GOOGLE_CALENDAR_CLIENT_SECRET", "valueString": "YOUR_GOOGLE_CLIENT_SECRET" },
-    { "name": "GOOGLE_CALENDAR_DETAIL_LEVEL", "valueString": "busy-only" }
-  ]
-}
-```
-
-`GOOGLE_CALENDAR_APPOINTMENT_URL` is optional. The project detail level defaults to `busy-only`. Reinstall to change that ceiling or rotate the Google client secret. If Bot input storage is enabled, install input can persist the client secret in Bot-input storage; restrict that storage and use a dedicated client. Installation derives the webhook URL from the customer webhook membership and API base URL. It returns policy instructions and warnings inside an `outcome` Parameters resource; inspect those even when `installed=true`.
-
-Deployment creates ten Bots. Installation creates or adopts eight Bot memberships, five policies, eight Subscriptions and two Crons. It preserves the IDs of existing memberships and settings, and migrates legacy connection credentials under a lease. It does not change practitioner policies automatically. Installation is resumable; retry after resolving a reported prerequisite or active lease.
-
-## Deploy with a Medplum CLI login
-
-The deploy script supports the installed `medplum` CLI. Use a dedicated profile to avoid changing the project selected by other CLI work:
-
-```sh
-medplum --profile gcal-sandbox login
-medplum --profile gcal-sandbox project switch YOUR_PROJECT_ID
-export MEDPLUM_PROFILE=gcal-sandbox
-export PROJECT_ID=YOUR_PROJECT_ID
-npm run deploy --workspace=medplum-google-calendar-sync -- --cli --check
-npm run deploy --workspace=medplum-google-calendar-sync -- --cli
-```
-
-Run the npm commands from the repository root. For a self-hosted API, set `MEDPLUM_BASE_URL` before login and deployment; `BASE_URL` takes precedence in the deploy script. The CLI handles authentication and token renewal. The script captures its access token in memory without printing it, and rejects a session whose project differs from `PROJECT_ID` before any deployment writes.
-
-`--check` builds the example, verifies the authenticated project and reads all ten bundles; it makes no resource changes. It does not prove write permissions or Google authorization. Actual deployment creates or updates the Bots and six OperationDefinitions. The customer installation in step 5 is still required to configure profiles, memberships, policies, Subscriptions and Crons. Google consent and the [acceptance checks](acceptance.md) follow installation.
+All commands run from the repository root. CLI deployment requires the installed `medplum` command, an authenticated profile and an explicit `PROJECT_ID`. `--check` verifies the authenticated project and reads the local bundles without changing resources. Installation requires a project administrator. Neither a successful deploy nor installer response proves live synchronization; run the smoke tests and review the acceptance checklist.
 
 ## Live deployment smoke tests
 
@@ -125,8 +94,8 @@ Disconnect removes verified Google mirrors, revokes the credential after remote 
 Before upgrading an installation with old mirrors, use the migration command with a dedicated test account first. Set the Medplum service credentials, `CONNECTION_ID`, `GOOGLE_CALENDAR_CLIENT_ID`, and `GOOGLE_CALENDAR_CLIENT_SECRET` in the environment:
 
 ```sh
-npm run migrate-mirrors
-npm run migrate-mirrors -- --apply
+npm run migrate-mirrors --workspace=medplum-google-calendar-sync
+npm run migrate-mirrors --workspace=medplum-google-calendar-sync -- --apply
 ```
 
 The first command reports candidates without changing Google events; it takes a connection lease. Apply verifies project, source participation, connection/account and ETag, adds the connection marker, and replaces legacy details with Busy-only content and no attendees. Ambiguous or deleted sources require administrator repair; the command will not adopt them based on event ID alone. Retry interrupted migrations. Receipts written after verified Google writes support later tombstone recovery.
@@ -134,3 +103,7 @@ The first command reports candidates without changing Google events; it takes a 
 For rollback, stop delivery to the new workers before changing bundles. Do not restore the old caller-write policy or token-bearing connection shape. Older workers cannot read split credentials. Correct forward or use a reviewed storage migration; merely redeploying the old bundle is not a safe rollback.
 
 `connect-local` provides a loopback OAuth helper for development. `live-api-probe` creates and deletes Google test events without revoking existing grants; use an isolated account and dedicated OAuth client. Neither script is part of build or unit tests.
+
+## License and contributions
+
+[Apache-2.0](LICENSE.txt), like the Medplum repository. Follow the repository's [contribution guide](../../packages/docs/docs/contributing/index.md). Keep credentials, project-specific configuration, live test manifests and deployment reports out of commits. Local `.env` files and test outputs are ignored; `.env.example` contains placeholders only. Build and unit tests run through the existing workspace pipeline; deployment and live tests are explicit commands.

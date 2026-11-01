@@ -18,7 +18,8 @@
     "profiles:check": "tsx src/scripts/generate-profiles.ts --check",
     "test:e2e": "tsx src/scripts/e2e.ts",
     "test:e2e:cleanup": "tsx src/scripts/e2e.ts --cleanup",
-    "live-api-probe": "tsx src/scripts/live-google-test.ts"
+    "live-api-probe": "tsx src/scripts/live-google-test.ts",
+    "setup:project": "tsx src/scripts/install-project.ts"
   },
   "prettier": {
     "printWidth": 120,
@@ -43,5 +44,11 @@
   },
   "engines": {
     "node": ">=22.22.0 <23.0.0 || >=24.2.0 <25.0.0"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "examples/medplum-google-calendar-sync"
   }
 }
