@@ -74,8 +74,8 @@ with web access. For one workflow, use the **Plan with this guide** prompt on it
 
 1. Give your AI tools access to Medplum: clone the repo and link it in (preferred), give
    the agent docs and GitHub search, or connect the MCP server.
-2. Plan with Medplum's decision guides: have the agent interview you about your requirements,
-   explain the tradeoffs, and save the decisions in your application's repo before implementation.
+2. Plan with Medplum's decision guides: have the agent research technical questions, ask you
+   about missing requirements, explain the tradeoffs, and save the decisions in your repo before implementation.
 3. Keep conversations short and re-anchor on the docs: context decays over long sessions,
    so scope one task per thread and re-check work at checkpoints.
 4. Verify and validate the output: check generated code against the type system and tests,
@@ -136,8 +136,10 @@ data-access caveats live.
 
 Use the [Decision Guides](/docs/decision-guides) to work through application design before
 writing features. Each guide connects discovery questions to Medplum patterns and technical
-docs. Your agent should ask you about missing requirements, explain the tradeoffs, and
-save the answers for later coding tasks.
+docs. Have the agent research technical questions in the Medplum docs and reference code,
+then ask you about missing requirements and explain the tradeoffs. Clarify ambiguous terms
+as you go, and save the agreed meanings and decisions for later coding tasks. If the docs
+leave a technical question unresolved, the agent should flag it.
 
 Use the [starting prompt](#plan-your-application) to begin. The examples below show what
 the agent saves and how to use it in later development.
@@ -169,14 +171,23 @@ Consulted: [date]
 Status: confirmed
 Decision: The first release supports an initial visit and a follow-up visit.
 Reason: Clinical operations confirmed these are the launch workflows.
-Implementation: Define a Visit Template for each visit type.
+Implementation: Define a Visit Template for each visit type. Start with the initial visit's vital-signs form.
+
+## 2.2 How structured should the chart be?
+
+Status: confirmed
+Decision: Require blood pressure and heart rate; make weight optional. Save the measurements as Observations linked to the patient and encounter.
+Meaning: Completing the vital-signs form means saving the required measurements; signing the visit chart is a separate step.
+Implementation: Store each measurement with its agreed unit. Reuse applicable Observation profiles and add application constraints only where needed.
+Checks: Verify the saved values, units, patient, and encounter against the submitted form.
 
 ## 2.3 How will form responses be parsed into queryable data?
 
 Status: proposed
-Proposal: Use SDC extraction for the initial visit's structured form.
+Proposal: Use SDC extraction for the initial visit's vital-signs form.
 Reason: The described mappings appear straightforward; scoring or external lookups would change this choice.
 Pending: Confirm the form's processing requirements with the application owner before implementing extraction.
+Checks: Test extracted Observations against the selected profiles and expected values. Omitting the optional weight must not produce an empty weight Observation.
 
 ## 2.4 What are the signing requirements?
 
@@ -192,9 +203,11 @@ Reason: Clinical operations expects infrequent template changes in the first rel
 Implementation: Keep templates under code review; a custom template editor is out of scope.
 ```
 
-A later request to add a template editor changes the saved ownership decision. The agent
-should identify any remaining questions, such as who can publish template changes, and
-update the record alongside the implementation.
+A later request to require weight changes the saved charting decision. The agent should ask
+about anything the request leaves open, such as whether it applies to existing visits, then
+update the decision, form, and tests alongside the implementation. If a change also affects
+a profile, regenerate its types if you use them and consider whether existing data needs
+migrating; follow the [profile update guidance](/docs/fhir-datastore/profiles#updating-profiles).
 
 </details>
 
@@ -202,14 +215,24 @@ When choosing implementations, have the agent inspect Medplum's reusable compone
 examples. [Medplum Provider](/docs/provider) is a useful reference for clinical workflows;
 you can also build a custom app with the [React components](/docs/api/react).
 
+Before asking the agent to build a feature that stores data, agree on the FHIR resources
+it will use, the constraints those resources need to meet, and who can read or write them.
+Reuse existing profiles where
+they fit. Where your application needs additional constraints, capture them in
+[StructureDefinitions](/docs/fhir-datastore/profiles) so generated types and profile
+validation can help check the agent's work. Model what the feature needs; you do not need
+to model the entire application before starting.
+
 ### Implement from the Saved Decisions
 
 For the next coding task, give your agent a specific feature and the saved context.
-For example, after agreeing on your charting plan:
+In the example above, extraction is still proposed and access rules need to be agreed.
+Resolve those decisions with the owner and update the saved record before asking the agent
+to implement the vital-signs form:
 
 ```text
-Implement [the next charting feature]. Read my project instructions, application
-plan if present, and docs/decisions/charting.md. Follow the implementation steps in
+Implement the initial visit's vital-signs form. Read my project instructions,
+application plan if present, and docs/decisions/charting.md. Follow the implementation steps in
 medplum-link/packages/docs/static/ai/planning.md (or https://www.medplum.com/ai/planning.md)
 and the relevant technical docs. Ask about missing requirements; do not invent answers.
 Check the result against the saved decisions and agreed acceptance criteria.
@@ -246,15 +269,14 @@ Practical habits that keep the agent grounded:
 - Watch for drift. If the agent stops citing real Medplum snippets and starts producing
   plausible-but-generic FHIR, that's your signal to reset.
 
-Keep a pointer to the saved decisions in your project's rule file, and make sure new tasks
-load the relevant records. Instruction-loading behavior varies by tool; explicitly reload
-the relevant docs and decisions after compaction. See
+Instruction-loading behavior varies by tool; explicitly reload the relevant docs and
+decisions after compaction. See
 [section 5](#5-encode-your-conventions-in-a-rule-file).
 
 ## 4. Verify and Validate the Output
 
-An agent's confidence is not a measure of correctness. Build verification into your
-workflow so mistakes are caught by tooling and review, not in production.
+An agent's confidence is not a measure of correctness. Agree on checks while planning and
+run them as the agent builds, so mistakes are caught by tooling and review, not in production.
 
 ### Easy Checks (No Data Access Needed)
 
@@ -263,10 +285,14 @@ These run against your own project and the cloned repo, with no server or live d
 - Type-check and compile. The single best check, and one the agent can run itself if it
   has terminal access: build the agent's code against the `@medplum/fhirtypes` types and
   run `tsc`. The types are strict, so a hallucinated field on a _typed_ FHIR resource
-  (e.g. `const patient: Patient = { ... }`) is a compile error rather than a runtime
-  surprise. The check only bites when the agent actually annotates its resources;
-  untyped object literals slip through.
-- Run the existing tests, lint, and build. Regressions and bad search params fail loudly.
+  (e.g. `const observation: Observation = { ... }`) is a compile error rather than a runtime
+  surprise. [Generated profile types](/docs/fhir-datastore/profiles#typescript-types-for-profiles)
+  extend this to some profile constraints, such as required elements. These checks only bite
+  when the code uses those types; untyped object literals slip through.
+- Check profile constraints locally with [`validateResource`](/docs/sdk/core.validateresource),
+  passing the profile's StructureDefinition as the `profile` option once the required
+  definitions are loaded.
+- Run the existing tests, lint, and build, plus any local checks agreed during planning.
 - Self-review against the docs. Have the agent re-read the relevant doc or example and
   compare its output before you accept it.
 - Mind the FHIR version. Medplum uses FHIR R4; LLMs readily mix in R5 fields or deprecated
@@ -279,15 +305,29 @@ These run against your own project and the cloned repo, with no server or live d
 
 ### Going Further (Requires a Server)
 
-Full FHIR validation runs server-side. Submit resources to the FHIR
+Use server-side validation to check the generated resources. Submit resources to the FHIR
 [`$validate`](/docs/api/fhir/operations/validate-a-resource) operation, validate codes
 against a ValueSet with
 [`$validate-code`](/docs/api/fhir/operations/valueset-validate-code), or round-trip
 resources through a `MedplumClient`; these check against the real FHIR and profile
 definitions, catching structural and terminology errors the type system can't (hallucinated
-LOINC, SNOMED, and ICD codes are a common failure mode). They need either a local dev
-server (synthetic data, no BAA required) or a token against a live server; see
-[Direct Data Access](#direct-data-access-advanced) for the caveats.
+LOINC, SNOMED, and ICD codes are a common failure mode). For profile checks, include the agreed
+profile URL in the resource's `meta.profile` and confirm the matching StructureDefinition is
+available in the test project. Passing validation does not show that a measurement is correct
+or belongs to the right patient; check those behaviors separately.
+
+For the vital-signs form, test the extracted Observations explicitly if you use
+[SDC extraction](/docs/questionnaires/parsing-questionnaire-responses): TypeScript does not
+check the mapping expressions inside the Questionnaire. Validate the extracted resources
+before saving them, then run the saved-value checks from the decision record.
+
+Run API access checks as restricted users with synthetic records. Test allowed actions,
+denied reads and writes, and exclusion from
+search results against the agreed [access rules](/docs/access/access-policies). If a write is denied,
+check the request and intended permissions before broadening access.
+
+Server checks need either a local dev server or a scoped token against a test project; see
+[Direct Data Access](#direct-data-access-advanced) for data-access precautions.
 
 ## 5. Encode Your Conventions in a Rule File
 
@@ -326,19 +366,25 @@ you can refresh it when updating Medplum.
 After plans and decisions are saved, the agent can propose adding their actual paths to
 your project instructions, using the same review and permission process. If you declined
 setup in this session, it should include those paths in its handoff without repeating the
-offer. Reference only files that exist; keep the full plan and guides in their source files.
+offer. Reference only files that exist.
 
 Check your tool's instruction-loading behavior: see [Codex's AGENTS.md guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
 or [Claude Code's project instructions](https://code.claude.com/docs/en/memory). After setup,
 start a fresh session and ask the agent to read the project's Medplum rules and identify
-the saved planning files, if present. Check the paths and its file reads. If references are
-not followed reliably, include the rules below directly in the loaded project instructions.
+the saved planning files, if present. Check the paths and confirm that the agent reads the
+references. If references are not followed reliably, include the rules below directly in the
+loaded project instructions.
+
+Keep project instructions short and point to the full guides and saved decisions, as in the
+`AGENTS.md` map [OpenAI describes](https://openai.com/index/harness-engineering/#we-made-repository-knowledge-the-system-of-record).
+In [Vercel's Next.js 16 evaluation](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals),
+a documentation index in `AGENTS.md` outperformed the skill-based setups they tested;
+agents did not reliably invoke the documentation skill without explicit instructions.
 
 The example below is rendered directly from the reusable [medplum-rules.md](pathname:///ai/medplum-rules.md)
 file, also available at `medplum-link/packages/docs/static/ai/medplum-rules.md` in the clone.
 For agents using web access, the public URL is `https://www.medplum.com/ai/medplum-rules.md`.
-The rules prefer the local clone and fall back to the public docs. Keep the full guides and
-planning procedure in their source files so the agent can read them when needed.
+The rules prefer the local clone and fall back to the public docs.
 
 <MedplumRules />
 
@@ -360,7 +406,8 @@ define their _shape_ but hold no sensitive data
 ([workflow patterns](/blog/fhir-workflow-patterns-to-simplify-your-life)). Scope the token
 via an [access policy](/docs/access/access-policies), typically on its
 [ProjectMembership](/docs/api/fhir/medplum/projectmembership), and, per the caution at
-the top of this page, review that policy by hand before you trust it.
+the top of this page, review that policy by hand before you trust it. Consider using synthetic
+data and scoped test credentials that cannot change access policies or memberships.
 
 ## See Also
 
