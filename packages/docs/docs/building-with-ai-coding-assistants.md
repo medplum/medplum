@@ -364,9 +364,9 @@ offer. Reference only files that exist.
 Check your tool's instruction-loading behavior: see [Codex's AGENTS.md guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
 or [Claude Code's project instructions](https://code.claude.com/docs/en/memory). After setup,
 start a fresh session and ask the agent to read the project's Medplum rules and identify
-the saved planning files, if present. Check the paths and confirm that the agent reads the
-references. If references are not followed reliably, include the rules below directly in the
-loaded project instructions.
+the saved planning files, if present. Check the paths and confirm that the agent reads the references.
+If it does not, clarify when it should read them and test again in a fresh session. If that
+still fails, include the rules below directly in the loaded project instructions.
 
 Keep project instructions short and point to the full guides and saved decisions, as in the
 `AGENTS.md` map [OpenAI describes](https://openai.com/index/harness-engineering/#we-made-repository-knowledge-the-system-of-record).
