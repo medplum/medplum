@@ -801,4 +801,59 @@ describe('Infra', () => {
       0
     );
   });
+
+  // https://github.com/medplum/medplum/issues/6303: bot Lambdas can write CloudWatch Logs only when
+  // botLambdaLoggingEnabled is set. Otherwise the role stays permission-less, because bots may be untrusted code.
+  async function synthBotLambdaRole(
+    overrides: Record<string, unknown>
+  ): Promise<{ id: string; role: Record<string, any>; template: Template }> {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumBotLambdaLogsStack',
+      ...overrides,
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+    const roles = Object.entries(template.findResources('AWS::IAM::Role')).filter(([id]) =>
+      id.startsWith('BackEndBotLambdaRole')
+    );
+    expect(roles).toHaveLength(1);
+    const [id, role] = roles[0];
+    expect(role.Properties.AssumeRolePolicyDocument.Statement).toEqual([
+      expect.objectContaining({ Principal: { Service: 'lambda.amazonaws.com' } }),
+    ]);
+    return { id, role, template };
+  }
+
+  test.each([
+    ['absent', {}],
+    ['false', { botLambdaLoggingEnabled: false }],
+  ])('Bot Lambda role has no permissions when botLambdaLoggingEnabled is %s', async (_label, overrides) => {
+    const { id, role, template } = await synthBotLambdaRole(overrides);
+    expect(role.Properties.Policies).toBeUndefined();
+    expect(role.Properties.ManagedPolicyArns).toBeUndefined();
+    const attachedPolicies = Object.values(template.findResources('AWS::IAM::Policy')).filter((policy) =>
+      JSON.stringify(policy.Properties.Roles ?? []).includes(id)
+    );
+    expect(attachedPolicies).toHaveLength(0);
+  });
+
+  test('Bot Lambda role can write CloudWatch Logs when botLambdaLoggingEnabled is true', async () => {
+    const { role } = await synthBotLambdaRole({ botLambdaLoggingEnabled: true });
+    expect(role.Properties.Policies).toEqual([
+      {
+        PolicyName: 'BotLambdaPolicies',
+        PolicyDocument: {
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              Effect: 'Allow',
+              Resource: 'arn:aws:logs:us-east-1:647991932601:log-group:/aws/lambda/medplum-bot-lambda-*',
+            },
+          ],
+        },
+      },
+    ]);
+  });
 });
