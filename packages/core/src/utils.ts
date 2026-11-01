@@ -308,7 +308,11 @@ function getDeviceDisplayString(device: Device): string | undefined {
  */
 function getCoverageDisplayString(coverage: Coverage): string | undefined {
   const payor = coverage.payor?.find(
-    (p) => p.display && !p.reference?.startsWith('Patient/') && !p.reference?.startsWith('RelatedPerson/')
+    (p) =>
+      p.display &&
+      p.type !== 'Patient' &&
+      p.type !== 'RelatedPerson' &&
+      !/(^|\/)(Patient|RelatedPerson)\//.test(p.reference ?? '')
   );
   return payor?.display || formatCodeableConcept(coverage.type) || undefined;
 }

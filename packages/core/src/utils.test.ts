@@ -405,7 +405,11 @@ describe('Core Utils', () => {
         resourceType: 'Coverage',
         status: 'active',
         beneficiary: { reference: 'Patient/123' },
-        payor: [{ reference: 'Patient/123', display: 'John Smith' }],
+        payor: [
+          { reference: 'Patient/123', display: 'John Smith' },
+          { type: 'RelatedPerson', display: 'Jane Smith' },
+          { reference: 'https://example.org/fhir/Patient/456', display: 'Jim Smith' },
+        ],
         type: plan,
       })
     ).toStrictEqual('health insurance plan policy');
