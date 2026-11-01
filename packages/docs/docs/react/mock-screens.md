@@ -81,10 +81,62 @@ child field in the profile. Likewise, supply references explicitly. If a require
 Multiple or disallowed variants fail with an error. Optional values can still be supplied
 in `values`.
 
-The same arguments produce the same fixture values and IDs. Dates use a fixed UTC baseline of
-May 4, 2020. Use `idPrefix` when combining multiple batches of the same resource type, or supply
-IDs in `values`. Loading data into MockClient still generates version metadata and timestamps;
+The built-in samples and IDs are deterministic. A `values` callback must also return repeatable
+values if you need a deterministic fixture. Generated dates use a fixed UTC baseline of May 4, 2020. Use `idPrefix` when combining multiple batches of the same resource type, or supply IDs in
+`values`. Loading data into MockClient still generates version metadata and timestamps;
 that metadata is not deterministic unless controlled separately.
+
+## Add project-specific examples with an agent
+
+Use `values` to extend your fixtures without changing the generator. An agent can add reusable
+functions in your application's fixture directory, selecting values for the scenarios you want
+to review. Keep the agreed profile as the source of required fields, and supply optional scenario
+fields through `values`. The generator does not choose demographics or clinical scenarios for you.
+
+The built-in values are structural placeholders, such as `Example name.given 1` and the fixed
+date `2020-05-04`. You can supply hand-written examples, use a library such as
+[Faker](https://fakerjs.dev/guide/usage), or combine both through the same callback. Faker is an
+optional dependency of your demo project, not a dependency of `@medplum/mock`.
+
+For example, after adding `@faker-js/faker` to your demo project, this function supplies names and
+birth dates for the Patient profile above. The locale, seed, and date range are choices for this
+example, not generator defaults:
+
+```ts
+import { Faker, en } from '@faker-js/faker';
+import type { StructureDefinition } from '@medplum/fhirtypes';
+import { generateMockResources } from '@medplum/mock';
+
+export function createDemoPatients(profile: StructureDefinition, count = 6) {
+  const faker = new Faker({ locale: [en] });
+  faker.seed(42);
+
+  return generateMockResources('Patient', count, {
+    profile,
+    idPrefix: 'demo-patient',
+    values: () => ({
+      name: [{ given: [faker.person.firstName()] }],
+      birthDate: faker.date
+        .between({ from: '1940-01-01T00:00:00.000Z', to: '2010-12-31T00:00:00.000Z' })
+        .toISOString()
+        .slice(0, 10),
+    }),
+  });
+}
+```
+
+A fresh Faker instance and seed restart the sequence for each call. Keep the dependency version
+locked and use fixed date bounds or a fixed reference date for repeatable results; a seed alone
+does not stabilize date methods relative to today. Faker upgrades can change the generated
+values. See [Faker's reproducibility guidance](https://fakerjs.dev/guide/usage#reproducible-results).
+Use a distinct `idPrefix` if you adapt this function to combine multiple batches.
+
+Ask the agent to add new scenarios beside existing fixtures, document what each is testing,
+and reuse them in stories and tests. Keep important edge cases, such as a specific long name,
+explicit rather than hoping random sampling produces them. Supply resource references and
+clinical codes deliberately; Faker does not establish clinical consistency or FHIR conformance.
+Use Medplum's existing `validateResource` in fixture tests, plus assertions for the relationships
+and behavior your screen depends on. Do not weaken a profile to make generation succeed.
 
 ## Supported profile features
 
