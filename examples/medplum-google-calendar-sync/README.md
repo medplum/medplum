@@ -29,7 +29,7 @@ Build runs ESLint, TypeScript and Bot bundling. Tests mock Google and use Medplu
 
 1. Create a customer-owned Google Workspace OAuth client with an Internal consent screen. Register the consuming application's callback URL. Request `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned`, and `https://www.googleapis.com/auth/calendar.calendars.readonly`.
 2. Enable the Medplum `bots` and `cron` project features. Scheduled repair is unavailable without `cron`; installation reports that condition.
-3. Set `BASE_URL`, `PROJECT_ID`, `CLIENT_ID`, and `CLIENT_SECRET` for the **shared deployment project** in your environment, then run `npm run deploy`. The client needs permission to create/deploy Bots and OperationDefinitions. Run one deployment at a time; the administrative Bot-create endpoint has no conditional-create parameter. Deployment reads environment variables; no local credential file is bundled.
+3. Set `BASE_URL`, `PROJECT_ID`, `CLIENT_ID`, and `CLIENT_SECRET` for the **shared deployment project** in your environment, then run `npm run deploy`. Alternatively, use an authenticated Medplum CLI profile as described below. The client needs permission to create/deploy Bots and OperationDefinitions. Run one deployment at a time; the administrative Bot-create endpoint has no conditional-create parameter. Deployment reads environment variables; no local credential file is bundled.
 4. Link each customer project to the shared project and export the Bots and OperationDefinitions needed for invocation. Do not export customer Basic resources or Slots. A single-project development setup can use the same project for both roles. Multiple visible Bots with the same integration identifier cause installation to fail.
 5. As a customer-project administrator, call type-level `Project/$google-calendar-install` with the Google client parameters below. The installer uploads profiles into that customer project, so validation does not depend on profile resolution through a link.
 6. Apply the returned practitioner and ordinary Slot policy entries within the customer's existing access scopes. Replace broader Basic/Slot grants; appending these entries to an unrestricted grant does not restrict it. Remove history/vread access to old token-bearing connection versions. Review the installer report for broad reads, writes, arbitrary criteria, unresolved policy references and administrative memberships. Expected restricted integration memberships appear separately. The audit is conservative: custom criteria can produce warnings even when safe. It is not proof of effective server permissions. Stop old workers and remove the former caller connection grant before upgrading; apply the new public-status grant after installation.
@@ -52,6 +52,23 @@ Install input:
 `GOOGLE_CALENDAR_APPOINTMENT_URL` is optional. The project detail level defaults to `busy-only`. Reinstall to change that ceiling or rotate the Google client secret. If Bot input storage is enabled, install input can persist the client secret in Bot-input storage; restrict that storage and use a dedicated client. Installation derives the webhook URL from the customer webhook membership and API base URL. It returns policy instructions and warnings inside an `outcome` Parameters resource; inspect those even when `installed=true`.
 
 Deployment creates ten Bots. Installation creates or adopts eight Bot memberships, five policies, eight Subscriptions and two Crons. It preserves the IDs of existing memberships and settings, and migrates legacy connection credentials under a lease. It does not change practitioner policies automatically. Installation is resumable; retry after resolving a reported prerequisite or active lease.
+
+## Deploy with a Medplum CLI login
+
+The deploy script supports the installed `medplum` CLI. Use a dedicated profile to avoid changing the project selected by other CLI work:
+
+```sh
+medplum --profile gcal-sandbox login
+medplum --profile gcal-sandbox project switch YOUR_PROJECT_ID
+export MEDPLUM_PROFILE=gcal-sandbox
+export PROJECT_ID=YOUR_PROJECT_ID
+npm run deploy --workspace=medplum-google-calendar-sync -- --cli --check
+npm run deploy --workspace=medplum-google-calendar-sync -- --cli
+```
+
+Run the npm commands from the repository root. For a self-hosted API, set `MEDPLUM_BASE_URL` before login and deployment; `BASE_URL` takes precedence in the deploy script. The CLI handles authentication and token renewal. The script captures its access token in memory without printing it, and rejects a session whose project differs from `PROJECT_ID` before any deployment writes.
+
+`--check` builds the example, verifies the authenticated project and reads all ten bundles; it makes no resource changes. It does not prove write permissions or Google authorization. Actual deployment creates or updates the Bots and six OperationDefinitions. The customer installation in step 5 is still required to configure profiles, memberships, policies, Subscriptions and Crons. Google consent and the [acceptance checks](acceptance.md) follow installation.
 
 ## Public operations
 

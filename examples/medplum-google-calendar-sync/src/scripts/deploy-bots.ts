@@ -11,11 +11,12 @@ import type { Bot, OperationDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
 
-import { currentProjectId, projectQuery } from '../common/project';
+import { projectQuery } from '../common/project';
+import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
 import { ifMatch } from '../common/lease';
 import { CONTRACTS } from '../common/contracts';
 
-const BASE_URL = process.env.BASE_URL ?? 'https://api.medplum.com/';
+const BASE_URL = process.env.BASE_URL ?? process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com/';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -26,8 +27,12 @@ function requireEnv(name: string): string {
 }
 
 const PROJECT_ID = requireEnv('PROJECT_ID');
-const CLIENT_ID = requireEnv('CLIENT_ID');
-const CLIENT_SECRET = requireEnv('CLIENT_SECRET');
+const args = new Set(process.argv.slice(2));
+for (const arg of args) {
+  if (arg !== '--cli' && arg !== '--check') {
+    throw new Error(`Unknown deployment option: ${arg}`);
+  }
+}
 
 const OPERATION_DEFINITION_IMPLEMENTATION_URL =
   'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation';
@@ -121,18 +126,38 @@ const botDefinitions: BotDefinition[] = [
 ];
 
 async function main(): Promise<void> {
-  console.log('Installing Google Calendar bots and OperationDefinitions...');
-
-  const medplum = new MedplumClient({ baseUrl: BASE_URL, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
-
-  if ((await currentProjectId(medplum)) !== PROJECT_ID) {
-    throw new Error('Authenticated project differs from PROJECT_ID');
+  const medplum = args.has('--cli')
+    ? new MedplumClient({ baseUrl: BASE_URL })
+    : new MedplumClient({
+        baseUrl: BASE_URL,
+        clientId: requireEnv('CLIENT_ID'),
+        clientSecret: requireEnv('CLIENT_SECRET'),
+      });
+  if (args.has('--cli')) {
+    medplum.setAccessToken(cliAccessToken(BASE_URL, process.env.MEDPLUM_PROFILE));
   }
+  await assertDeploymentProject(medplum, PROJECT_ID);
+  // Check all local artifacts before the first remote write.
+  const bundles = new Map(
+    botDefinitions.map((definition) => [
+      definition.identifier,
+      readFileSync(`dist/bots/${definition.identifier}.js`, 'utf8'),
+    ])
+  );
+  console.log(`Target: ${BASE_URL} Project/${PROJECT_ID}`);
+  if (args.has('--check')) {
+    console.log(
+      `Preflight passed: authenticated project and ${bundles.size} local bundles checked. No resources changed.`
+    );
+    console.log('Write permissions, installation and Google authorization still require live verification.');
+    return;
+  }
+  console.log('Installing Google Calendar bots and OperationDefinitions...');
   const botMap = new Map<string, Bot>();
   for (const definition of botDefinitions) {
     const bot = await createOrUpdateBot(medplum, definition);
     console.log(`${definition.name}: ${bot.id}`);
-    await deployBot(medplum, bot, definition.identifier);
+    await deployBot(medplum, bot, definition.identifier, bundles.get(definition.identifier) as string);
     botMap.set(definition.identifier, bot);
   }
 
@@ -173,8 +198,7 @@ async function createOrUpdateBot(medplum: MedplumClient, definition: BotDefiniti
   });
 }
 
-async function deployBot(medplum: MedplumClient, bot: Bot, baseFilename: string): Promise<void> {
-  const code = readFileSync(`dist/bots/${baseFilename}.js`, 'utf8');
+async function deployBot(medplum: MedplumClient, bot: Bot, baseFilename: string, code: string): Promise<void> {
   await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), { code, filename: `${baseFilename}.js` });
 }
 
