@@ -217,7 +217,7 @@ export function generateMockResources<K extends ResourceType>(
       if (code === 'Resource') {
         return fail(path, 'supply a resource in values');
       }
-      if (code === 'Reference') {
+      if (code === 'Reference' || basePath === 'Reference.reference') {
         return fail(path, 'supply an explicit reference in values');
       }
       if (!isPrimitiveType(code)) {

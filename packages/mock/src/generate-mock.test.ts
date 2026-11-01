@@ -185,6 +185,22 @@ test('requires authored references and never creates or guesses target resources
   expect((await second.readResource('Observation', observations[0].id)).valueInteger).toBe(0);
 });
 
+test('requires an authored reference string when a profile requires Reference.reference', () => {
+  const sd = profile('Condition', [
+    { path: 'Condition.subject.reference', min: 1, max: '1', type: [{ code: 'string' }] },
+  ]);
+  const subject = { display: 'Synthetic patient' };
+  expect(() => generateMockResources('Condition', 1, { profile: sd, values: { subject } })).toThrow(
+    'Condition.subject.reference: supply an explicit reference'
+  );
+  expect(subject).toEqual({ display: 'Synthetic patient' });
+  const reference = { ...subject, reference: 'Patient/one' };
+  expect(generateMockResources('Condition', 1, { profile: sd, values: { subject: reference } })[0].subject).toEqual(
+    reference
+  );
+  expect(generateMockResources('Condition', 1, { values: { subject } })[0].subject).toEqual(subject);
+});
+
 test('uses allowed authored choices and rejects ambiguous or forbidden variants', () => {
   const values = { patient: { reference: 'Patient/one' }, vaccineCode: { text: 'Example vaccine' } };
   expect(() => generateMockResources('Immunization', 1, { values })).toThrow('supply a choice value');
