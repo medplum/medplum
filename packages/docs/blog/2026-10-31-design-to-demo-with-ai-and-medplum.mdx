@@ -1,0 +1,50 @@
+---
+slug: design-to-demo-with-ai-and-medplum
+title: 'From design to demo with AI and Medplum'
+authors:
+  - name: Aanish Sachdev
+    url: https://github.com/aanishs
+tags: [ai]
+draft: true
+---
+
+# From design to demo with AI and Medplum
+
+In [Vibe Coding on Medplum](/blog/building-on-medplum-with-ai), we recommend giving your coding agent Medplum's docs and code before asking it to build. The same approach works for design prototypes and quick demos. With `@medplum/mock`, designers can work on interactive screens using the team's agreed [data model](/blog/traditional-fhir) while engineers build the backend.
+
+{/* truncate */}
+
+Say you're designing a patient summary. Ask the agent to use [Medplum components](/docs/react) to show an empty clinical record, a long patient history, and a name that wraps onto two lines. Click between patients during a design review, then reuse those synthetic records for a demo without a Medplum backend.
+
+The prototype and application can share a [FHIR profile](/docs/fhir-datastore/profiles). `generateMockResources` fills missing required fields from a supported, resolved profile snapshot. Base FHIR Patient requires no demographics. A profile requiring `name`, `name.given`, and `birthDate`, for example, gives the generator those requirements. You or your agent supply references, clinical values, and optional details for each scenario.
+
+The agent packages the records with `createMockState` and loads them into an isolated in-memory client with `createMockClient`. Keep that fixture separate from the screen. Engineering can reuse it in Storybook and tests, along with the profile and decisions behind the design.
+
+You can also ask the agent to add examples for your project through the `values` callback. Use hand-written values or a library such as [Faker](https://fakerjs.dev/guide/usage). Keep those choices in your fixtures. Medplum's generator fills required structure. For repeatable Faker examples, lock the version, seed it, and fix the date bounds.
+
+Try this prompt:
+
+```text
+Build a patient-summary prototype for design review and demos.
+
+Read https://www.medplum.com/docs/building-with-ai-coding-assistants,
+https://www.medplum.com/docs/react/mock-screens, and our saved decisions.
+Check package and helper availability.
+
+Use our agreed data model and Medplum components. Ask about missing requirements.
+
+Create six synthetic patients using our profile's resolved snapshot.
+For unsupported profiles, author resources directly with createMockState;
+do not weaken the requirements. Include empty and populated clinical records,
+a long name, and patient switching. Supply references and clinical values.
+Do not invent clinical codes.
+
+Add reusable examples in our fixture directory through the values callback.
+Faker is optional. Keep library choices and scenario defaults out of the generator.
+
+Keep fixtures separate. Type-check, test, and inspect the screens.
+Check that each patient shows the right records. Mock tests do not prove
+full profile conformance or access control. Save decisions and open questions.
+```
+
+The generator supports a [subset of profile features](/docs/react/mock-screens#supported-profile-features) and does not guarantee clinical realism or full FHIR conformance. Before production use, validate resources and queries against the intended server and review access control. The [full coding-agent guide](/docs/building-with-ai-coding-assistants) covers setup, planning, and verification in more detail.

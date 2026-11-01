@@ -5,7 +5,7 @@ import type { WithId } from '@medplum/core';
 import type { Bot, ClaimResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
@@ -182,10 +182,10 @@ describe('ClaimSubmittedPanel', () => {
   });
 
   test('hides View Claim on Candid button when the bot returns no URL', async () => {
-    await deployCandidBot(undefined);
+    await deployCandidBot('');
     setup();
-    // Give the bot lookup/execution a chance to resolve before asserting absence.
-    await waitFor(() => expect(screen.getByText('Claim Status:')).toBeInTheDocument());
+    await waitFor(() => expect(medplum.executeBot).toHaveBeenCalledOnce());
+    await act(async () => {});
     expect(screen.queryByText('View Claim on Candid')).not.toBeInTheDocument();
   });
 
