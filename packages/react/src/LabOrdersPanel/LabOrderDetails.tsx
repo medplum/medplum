@@ -18,7 +18,11 @@ import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } f
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import classes from '../ListWithDetailPane/ListWithDetailPane.module.css';
-import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
+import {
+  fetchLabOrderAbnDocuments,
+  fetchLabOrderRequisitionDocuments,
+  getHealthGorillaRequisitionId,
+} from './documentReference';
 import { LabDetailLayout } from './LabDetailLayout';
 import { LabDocumentSection } from './LabDocumentSection';
 import {
@@ -56,6 +60,8 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
+  const [abnDocs, setAbnDocs] = useState<DocumentReference[]>([]);
+  const [loadingAbnDocs, setLoadingAbnDocs] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
@@ -261,6 +267,37 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     return () => {
       setSpecimenLabelDocs([]);
       setLoadingSpecimenDocs(false);
+    };
+  }, [medplum, order]);
+
+  // Fetch the ABN (Advance Beneficiary Notice) when order changes - only present for Medicare
+  // orders once Health Gorilla has generated one
+  useEffect(() => {
+    const fetchAbnDocuments = async (): Promise<void> => {
+      if (!order.id) {
+        setAbnDocs([]);
+        return;
+      }
+      setLoadingAbnDocs(true);
+      setAbnDocs([]); // Clear previous documents immediately
+
+      try {
+        const docs = await fetchLabOrderAbnDocuments(medplum, order);
+        setAbnDocs(docs);
+      } catch (error) {
+        console.error('Error fetching ABN documents:', error);
+        setAbnDocs([]);
+      } finally {
+        setLoadingAbnDocs(false);
+      }
+    };
+
+    fetchAbnDocuments().catch(console.error);
+
+    // Cleanup function to clear documents when component unmounts or order changes
+    return () => {
+      setAbnDocs([]);
+      setLoadingAbnDocs(false);
     };
   }, [medplum, order]);
 
@@ -579,6 +616,19 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             emptyText="No specimen label documents found."
             docs={specimenLabelDocs}
           />
+
+          {abnDocs.length > 0 && (
+            <>
+              <Divider />
+              <LabDocumentSection
+                title="Advance Beneficiary Notice (ABN)"
+                loading={loadingAbnDocs}
+                loadingText="Loading ABN documents..."
+                emptyText="No ABN documents found."
+                docs={abnDocs}
+              />
+            </>
+          )}
         </Stack>
       )}
 
