@@ -9,6 +9,7 @@
 import { createReference, MedplumClient } from '@medplum/core';
 import type { Bot, OperationDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
+import { execFileSync } from 'node:child_process';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
 
 import { projectQuery } from '../common/project';
@@ -29,7 +30,7 @@ function requireEnv(name: string): string {
 const PROJECT_ID = requireEnv('PROJECT_ID');
 const args = new Set(process.argv.slice(2));
 for (const arg of args) {
-  if (arg !== '--cli' && arg !== '--check') {
+  if (arg !== '--cli' && arg !== '--check' && arg !== '--e2e') {
     throw new Error(`Unknown deployment option: ${arg}`);
   }
 }
@@ -126,6 +127,12 @@ const botDefinitions: BotDefinition[] = [
 ];
 
 async function main(): Promise<void> {
+  if (args.has('--e2e')) {
+    if (!args.has('--cli') || args.has('--check')) {
+      throw new Error('--e2e requires --cli and cannot be combined with --check');
+    }
+    requireEnv('E2E_MANIFEST');
+  }
   const medplum = args.has('--cli')
     ? new MedplumClient({ baseUrl: BASE_URL })
     : new MedplumClient({
@@ -171,7 +178,10 @@ async function main(): Promise<void> {
     await upsertOperationDefinition(medplum, opDef, bot);
   }
 
-  console.log('\nDone!');
+  console.log('\nDeployment complete.');
+  if (args.has('--e2e')) {
+    execFileSync(process.execPath, ['--import', 'tsx', 'src/scripts/e2e.ts'], { stdio: 'inherit' });
+  }
 }
 
 async function createOrUpdateBot(medplum: MedplumClient, definition: BotDefinition): Promise<Bot> {

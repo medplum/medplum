@@ -11,12 +11,14 @@
     "deploy": "npm run build && tsx src/scripts/deploy-bots.ts",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix && prettier --write src",
-    "live-test": "tsx src/scripts/live-google-test.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "profiles": "tsx src/scripts/generate-profiles.ts",
     "migrate-mirrors": "tsx src/scripts/migrate-mirrors.ts",
-    "profiles:check": "tsx src/scripts/generate-profiles.ts --check"
+    "profiles:check": "tsx src/scripts/generate-profiles.ts --check",
+    "test:e2e": "tsx src/scripts/e2e.ts",
+    "test:e2e:cleanup": "tsx src/scripts/e2e.ts --cleanup",
+    "live-api-probe": "tsx src/scripts/live-google-test.ts"
   },
   "prettier": {
     "printWidth": 120,

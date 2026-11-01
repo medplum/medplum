@@ -70,6 +70,27 @@ Run the npm commands from the repository root. For a self-hosted API, set `MEDPL
 
 `--check` builds the example, verifies the authenticated project and reads all ten bundles; it makes no resource changes. It does not prove write permissions or Google authorization. Actual deployment creates or updates the Bots and six OperationDefinitions. The customer installation in step 5 is still required to configure profiles, memberships, policies, Subscriptions and Crons. Google consent and the [acceptance checks](acceptance.md) follow installation.
 
+## Live deployment smoke tests
+
+After customer installation and Google consent, use a practitioner CLI login with sandbox administrator access. The runner reads the installed Google client and connection credential in memory. It requires at least one active practitioner Schedule. It creates a synthetic Appointment and a marked Google event, then verifies create, update and removal in both directions through the deployed workers. It does not invoke the worker implementation locally or manually queue imports. These checks observe delivery, but do not distinguish a webhook from scheduled recovery.
+
+From the repository root, with `PROJECT_ID` and optional `MEDPLUM_PROFILE` set:
+
+```sh
+export E2E_MANIFEST="$PWD/test-results/gcal-e2e-$(date +%s).json"
+npm run deploy --workspace=medplum-google-calendar-sync -- --cli --e2e
+# Or test an already deployed and installed integration:
+npm run test:e2e --workspace=medplum-google-calendar-sync
+# Retry cleanup after failure or interruption, using the SAME manifest path:
+npm run test:e2e:cleanup --workspace=medplum-google-calendar-sync
+```
+
+Choose a new manifest path for each new run; existing files are never overwritten when starting a test. The manifest records fixture identities before creation, with restricted file permissions and no tokens. Cleanup runs after success, failure, SIGINT or SIGTERM. After a killed process or machine restart, rerun cleanup with the saved manifest. Each asynchronous assertion has a three-minute deadline. Tests temporarily block ten minutes one week ahead, then move that block forward an hour.
+
+Cleanup removes only the marked Google fixture, its exact imported Slots, and mirrors of the test Appointment. It checks ownership and versions, and uses the connection lease to avoid racing workers. It cancels the synthetic Appointment and retains it for audit; it does not delete Appointments. It does not disconnect, revoke Google access, change detail settings, or touch unrelated events. If access is lost or the worker lease is busy, cleanup fails visibly and the manifest remains available for retry. A run exits unsuccessfully if either a check or cleanup fails.
+
+This smoke test does not establish booking-operation availability, privacy-mode changes, recurrence, Workspace/linked-project isolation, or all release criteria in [acceptance](acceptance.md). Those need additional isolated fixtures. The older `live-api-probe` command tests Google API behavior only; it is not the deployment test and has no persistent recovery manifest. It now cleans up in `finally`, uses no guest addresses and preserves existing grants.
+
 ## Public operations
 
 All operations are type-level and use FHIR Parameters. Definitions and explicit input/output validation come from `src/common/contracts.ts`; server dispatch alone is not contract validation.
@@ -112,4 +133,4 @@ The first command reports candidates without changing Google events; it takes a 
 
 For rollback, stop delivery to the new workers before changing bundles. Do not restore the old caller-write policy or token-bearing connection shape. Older workers cannot read split credentials. Correct forward or use a reviewed storage migration; merely redeploying the old bundle is not a safe rollback.
 
-`connect-local` provides a loopback OAuth helper for development. `live-test` creates and deletes Google test events and revokes its grant; use an isolated account and dedicated OAuth client. Neither script is part of build or unit tests.
+`connect-local` provides a loopback OAuth helper for development. `live-api-probe` creates and deletes Google test events without revoking existing grants; use an isolated account and dedicated OAuth client. Neither script is part of build or unit tests.

@@ -9,8 +9,8 @@
  *
  * Use a Desktop-type client: it accepts any loopback port without registration. The
  * script opens a consent URL, receives the code on that port, then creates and deletes a
- * few test events on the primary calendar (all tagged, all removed at the end) and revokes
- * the token. Nothing is written to Medplum.
+ * few test events on the primary calendar (all tagged, all removed at the end) without revoking
+ * the account grant. Nothing is written to Medplum.
  */
 
 import { createHash, randomBytes } from 'node:crypto';
@@ -18,8 +18,9 @@ import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { GOOGLE_CALENDAR_SCOPE } from '../common/constants';
 import { GoogleApiError, GoogleCalendarClient } from '../common/google-calendar';
-import { exchangeCode, hasCalendarScope, readIdToken, refreshAccessToken, revokeToken } from '../common/google-oauth';
+import { exchangeCode, hasCalendarScope, readIdToken, refreshAccessToken } from '../common/google-oauth';
 import type { GoogleCalendarEvent } from '../common/mapping';
+import { removeTestEvent } from './e2e-fixtures';
 
 const PORT = 8765;
 // Google's loopback rule for Desktop clients wants the IP form; the `localhost` hostname is rejected.
@@ -37,7 +38,6 @@ interface Check {
   detail: string;
 }
 const checks: Check[] = [];
-let refreshTokenToRevoke: string | undefined;
 function record(name: string, result: Check['result'], detail: string): void {
   checks.push({ name, result, detail });
   console.log(`${result.padEnd(4)} ${name}: ${detail}`);
@@ -112,7 +112,6 @@ async function authorize(client: { clientId: string; clientSecret: string }): Pr
 
   const refreshed = await refreshAccessToken(client, tokens.refresh_token as string);
   record('refresh token exchange', 'PASS', `expires_in=${refreshed.expires_in}`);
-  refreshTokenToRevoke = tokens.refresh_token;
   return refreshed.access_token;
 }
 
@@ -149,94 +148,98 @@ async function main(): Promise<void> {
   const calendar = new GoogleCalendarClient(accessToken);
   const id = `a${randomBytes(15).toString('hex')}`; // 31 chars in [a-f0-9]
 
-  // 1. The write scope covers the primary calendar.
-  await calendar.insertEvent(testEvent(id, 'Medplum live test'));
-  record('insert on primary with calendar.events.owned', 'PASS', id);
-
-  // 2. Legacy attendee fixture: full replace clears attendees. This does not prove email suppression.
-  const withGuest = {
-    ...testEvent(id, 'Medplum live test'),
-    location: 'Test Clinic',
-    attendees: [{ email: 'guest@example.com' }],
-  };
-  await calendar.updateEvent(id, withGuest);
-  let stored = await calendar.getEvent(id);
-  record(
-    'owner auto-added as attendee',
-    'INFO',
-    JSON.stringify(guests(stored).map((a) => ({ email: a.email, self: a.self, organizer: a.organizer })))
-  );
-  await calendar.updateEvent(id, testEvent(id, 'Medplum live test'));
-  stored = await calendar.getEvent(id);
-  record('replace clears location', !stored?.location ? 'PASS' : 'FAIL', `location=${stored?.location ?? '(none)'}`);
-  record(
-    'replace clears guests',
-    !guests(stored).some((a) => !a.self) ? 'PASS' : 'FAIL',
-    JSON.stringify(stored?.attendees ?? [])
-  );
-
-  // 3. List by private property.
-  const listed = await calendar.listEvents([`medplumProject=${TAG}`]);
-  record(
-    'list by privateExtendedProperty',
-    listed.some((e) => e.id === id) ? 'PASS' : 'FAIL',
-    `${listed.length} event(s)`
-  );
-
-  // 4. Delete, then what does get return, and do the tags survive on the tombstone?
-  await calendar.deleteEvent(id);
-  const afterDelete = await status(calendar, id);
-  record('get after delete', 'INFO', afterDelete);
   try {
-    const tombstone = await calendar.getEvent(id);
-    record(
-      'tags survive on tombstone',
-      tombstone?.extendedProperties?.private?.medplumSource ? 'PASS' : 'FAIL',
-      JSON.stringify(tombstone?.extendedProperties ?? null)
-    );
-  } catch {
-    record('tags survive on tombstone', 'INFO', 'tombstone not readable');
-  }
+    // 1. The write scope covers the primary calendar.
+    await calendar.insertEvent(testEvent(id, 'Medplum live test'));
+    record('insert on primary with calendar.events.owned', 'PASS', id);
 
-  // 5. Reinsert the same id: 409?
-  try {
-    await calendar.insertEvent(testEvent(id, 'Medplum live test (reinsert)'));
-    record('reinsert deleted id', 'INFO', 'insert succeeded (no 409)');
-  } catch (err) {
+    // 2. Full replace clears location. Attendees stay empty; invitation delivery is not tested.
+    const withGuest = {
+      ...testEvent(id, 'Medplum live test'),
+      location: 'Test Clinic',
+      attendees: [],
+    };
+    await calendar.updateEvent(id, withGuest);
+    let stored = await calendar.getEvent(id);
     record(
-      'reinsert deleted id',
+      'owner auto-added as attendee',
       'INFO',
-      err instanceof GoogleApiError ? `${err.status} ${err.reason ?? ''}` : String(err)
+      JSON.stringify(guests(stored).map((a) => ({ email: a.email, self: a.self, organizer: a.organizer })))
     );
-  }
-
-  // 6. Restore via full replace with status confirmed.
-  try {
-    await calendar.updateEvent(id, testEvent(id, 'Medplum live test (restored)'));
-    const restored = await calendar.getEvent(id);
+    await calendar.updateEvent(id, testEvent(id, 'Medplum live test'));
+    stored = await calendar.getEvent(id);
+    record('replace clears location', !stored?.location ? 'PASS' : 'FAIL', `location=${stored?.location ?? '(none)'}`);
     record(
-      'replace restores tombstone',
-      restored?.status === 'confirmed' ? 'PASS' : 'FAIL',
-      `status=${restored?.status ?? '?'}`
+      'replace clears guests',
+      !guests(stored).some((a) => !a.self) ? 'PASS' : 'FAIL',
+      JSON.stringify(stored?.attendees ?? [])
     );
-  } catch (err) {
+
+    // 3. List by private property.
+    const listed = await calendar.listEvents([`medplumProject=${TAG}`]);
     record(
-      'replace restores tombstone',
-      'FAIL',
-      err instanceof GoogleApiError ? `${err.status} ${err.reason ?? ''}` : String(err)
+      'list by privateExtendedProperty',
+      listed.some((e) => e.id === id) ? 'PASS' : 'FAIL',
+      `${listed.length} event(s)`
     );
-  }
 
-  // 7. Cleanup, and confirm the client's own upsert behaves end to end.
-  await calendar.deleteEvent(id);
-  const outcome = await calendar.upsertEvent(testEvent(id, 'Medplum live test (upsert)'));
-  record('upsert on a deleted id', 'INFO', outcome);
-  await calendar.deleteEvent(id);
-  if (refreshTokenToRevoke) {
-    await revokeToken(refreshTokenToRevoke);
-  }
-  record('cleanup', 'PASS', 'test events deleted; refresh token revoked');
+    // 4. Delete, then what does get return, and do the tags survive on the tombstone?
+    await calendar.deleteEvent(id);
+    const afterDelete = await status(calendar, id);
+    record('get after delete', 'INFO', afterDelete);
+    try {
+      const tombstone = await calendar.getEvent(id);
+      record(
+        'tags survive on tombstone',
+        tombstone?.extendedProperties?.private?.medplumSource ? 'PASS' : 'FAIL',
+        JSON.stringify(tombstone?.extendedProperties ?? null)
+      );
+    } catch {
+      record('tags survive on tombstone', 'INFO', 'tombstone not readable');
+    }
 
+    // 5. Reinsert the same id: 409?
+    try {
+      await calendar.insertEvent(testEvent(id, 'Medplum live test (reinsert)'));
+      record('reinsert deleted id', 'INFO', 'insert succeeded (no 409)');
+    } catch (err) {
+      record(
+        'reinsert deleted id',
+        'INFO',
+        err instanceof GoogleApiError ? `${err.status} ${err.reason ?? ''}` : String(err)
+      );
+    }
+
+    // 6. Restore via full replace with status confirmed.
+    try {
+      await calendar.updateEvent(id, testEvent(id, 'Medplum live test (restored)'));
+      const restored = await calendar.getEvent(id);
+      record(
+        'replace restores tombstone',
+        restored?.status === 'confirmed' ? 'PASS' : 'FAIL',
+        `status=${restored?.status ?? '?'}`
+      );
+    } catch (err) {
+      record(
+        'replace restores tombstone',
+        'FAIL',
+        err instanceof GoogleApiError ? `${err.status} ${err.reason ?? ''}` : String(err)
+      );
+    }
+
+    // 7. Cleanup, and confirm the client's own upsert behaves end to end.
+    await calendar.deleteEvent(id);
+    const outcome = await calendar.upsertEvent(testEvent(id, 'Medplum live test (upsert)'));
+    record('upsert on a deleted id', 'INFO', outcome);
+    await calendar.deleteEvent(id);
+  } finally {
+    await removeTestEvent(calendar, id, { medplumProject: TAG, medplumSource: `Appointment/${id}` });
+  }
+  record('cleanup', 'PASS', 'test event removed; existing grants preserved');
+
+  if (checks.some((check) => check.result === 'FAIL')) {
+    throw new Error('Google API probe failed');
+  }
   console.log('\nSummary');
   for (const check of checks) {
     console.log(`  ${check.result.padEnd(4)} ${check.name}: ${check.detail}`);

@@ -1,5 +1,7 @@
 # Acceptance before release
 
+The optional deployment smoke test (`npm run deploy -- --cli --e2e` from this example) covers deployed create/update/removal in both directions and fixture cleanup. It does not replace the acceptance scenarios below; see the README for manifest-based recovery.
+
 Local tests and builds establish the covered code paths. They do not establish live Google behavior or the permissions of a customer deployment. Record the revision, deployment, grant, outcomes and fixture cleanup for each acceptance run.
 
 - Prove practitioner REST create/update/delete cannot bypass connection operations; credential read/search/history/vread and webhook credential access are denied. Check legacy connection history, broad grants, inherited policies and default memberships.
