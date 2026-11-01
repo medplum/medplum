@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClientOptions } from '@medplum/core';
-import { MEDPLUM_VERSION } from '@medplum/core';
+import { ClientStorage, MEDPLUM_VERSION, MemoryStorage } from '@medplum/core';
 import type * as NodeFs from 'node:fs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
@@ -183,6 +183,26 @@ describe('createMedplumClient', () => {
     await expect(
       createMedplumClient({ fetch, profile: testProfile, baseUrl: 'https://typo.example.com/' }, false)
     ).rejects.toThrow('Failed to validate base URL');
+    expect(storage.getObject('activeLogin')).toEqual(activeLogin);
+  });
+
+  test('Custom storage keeps the stored active login', async () => {
+    const testProfile = 'customStorageProfile';
+    const storage = new FileSystemStorage(testProfile);
+    const activeLogin = {
+      accessToken: 'test-access-token',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    };
+    storage.setObject('options', { name: testProfile });
+    storage.setObject('activeLogin', activeLogin);
+
+    const medplumClient = await createMedplumClient(
+      { profile: testProfile, storage: new ClientStorage(new MemoryStorage()) },
+      false
+    );
+
+    expect(medplumClient.getActiveLogin()).toBeUndefined();
     expect(storage.getObject('activeLogin')).toEqual(activeLogin);
   });
 

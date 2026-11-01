@@ -80,6 +80,18 @@ Example:
 medplum login
 ```
 
+#### `logout`
+
+The `logout` command signs out of every session stored in the current profile. Each session is revoked on the server, which invalidates both its access token and its refresh token, and the tokens are then removed from disk. Other profile settings, such as the base URL, are kept.
+
+```bash
+medplum logout
+```
+
+If a session cannot be revoked (for example, because the server is unreachable), the stored tokens are kept so you can run `medplum logout` again.
+
+Client credentials stored in a profile are not tokens and are not removed by `logout`. To delete them, use `medplum profile remove`.
+
 #### `whoami`
 
 The `whoami` command displays whether the client is authenticated, and, if so, the name of the current user and current Medplum project.
