@@ -28,6 +28,7 @@ search params, or operations.
 
 ## Common Mistakes
 
+- Profiles: when a task targets an agreed profile, use that version and validate output resources against it. For server validation, include its URL in `meta.profile` and confirm the definition is available in the project. Generated types catch some constraints; passing `tsc` does not establish profile conformance. [fhir-datastore/profiles]
 - Messaging: thread header carries no payload; `recipient` = ALL participants incl. the sender/creator. [communications/messaging-data-model]
 - Scheduling: availability is implicit – create `Slot`s only for booked/blocked time, never for open availability. [scheduling/defining-availability]
 - Bundles: entries that cross-reference need `type: transaction` + `urn:uuid` fullUrls (or `reorderBundle()`), not batch. [fhir-datastore/fhir-batch-requests]
@@ -36,7 +37,7 @@ search params, or operations.
 - Access: patient-compartment access comes from a resource's OWN compartment references (e.g. `subject`); it does NOT propagate through links like `Communication.partOf`. Enforce via `AccessPolicy` + `ProjectMembership` (`%patient`/`%org` variables), never app-layer filtering. [access/access-policies]
 - Licensing: model a practitioner's role per `HealthcareService` or service line, with licensed jurisdictions in `PractitionerRole.location` (multiple states may share one role). One role per state is not a scheduling requirement. Scheduling operations do not enforce licensure; validate eligibility in the application's controlled booking path. Enforce data access with `AccessPolicy`. [scheduling/state-by-state-licensure]
 - Subscriptions: scope `criteria` tightly; create/update-only firing and `%previous`/`%current` transition criteria exist as Medplum extensions. [subscriptions/subscription-extensions]
-- Form extraction: SDC `templateExtract` or a Bot – one strategy per form. [questionnaires/parsing-questionnaire-responses]
+- Form extraction: choose SDC `templateExtract` or a Bot according to the mapping and workflow. If combining them, define which outputs each produces to avoid duplicate writes. [questionnaires/parsing-questionnaire-responses]
 - Codes: agents routinely hallucinate SNOMED/LOINC/ICD-10 codes; don't invent them or pull them from the internet (unreliable). When unsure, use a clearly-marked placeholder and flag it for human verification rather than shipping a made-up code. [terminology/common-terminologies]
 
-Before finishing: re-check your code against the list above; verify with `tsc` and tests.
+Before finishing: re-check your code against these rules and the agreed acceptance criteria; run the project's type check and relevant tests. Fix implementation failures and rerun affected checks without weakening agreed requirements, profile constraints, or access rules. Report what passed, failed, or could not run.

@@ -21,9 +21,10 @@ Keep the work proportional to the change. A single feature may only need an upda
 
 ## 2. Interview the user
 
-- Use the guide's own questions and section headings. Ask a small batch of consequential questions at a time, explaining the tradeoffs in plain language.
+- Use the guide's own questions and section headings. Research technical questions in the Medplum docs and reference code before asking the user. Ask a small batch of consequential questions about missing requirements at a time, explaining tradeoffs in plain language; flag technical questions the sources do not resolve. Clarify ambiguous terms and save their agreed meanings alongside the decisions.
 - Do not answer discovery questions from a vague app description. A guide's recommendation is a candidate approach, not evidence that the user has chosen it.
 - Give each decision one of three statuses: `confirmed` for an explicit user requirement or agreed choice, `proposed` for a recommendation awaiting a decision, or `open` for an unanswered question. Include the reason and source for the answer.
+- For features that store data, agree on the relevant FHIR resources, constraints, and access rules. Reuse existing profiles where they fit; capture additional data constraints in StructureDefinitions where needed. Define behavior and access checks alongside the requirements. For generated types and validation, follow `medplum-link/packages/docs/docs/fhir-datastore/profiles.md` (or https://www.medplum.com/docs/fhir-datastore/profiles).
 - Record consequential product and architecture choices, not every implementation detail. Make routine technical choices consistent with confirmed requirements and the Medplum docs without asking for approval of each one. A guide section can contain several decisions with different statuses.
 - For each open question, name the work it blocks, or state that it blocks none. If a human is unavailable, leave the question open and continue work that does not depend on the answer.
 
@@ -44,7 +45,8 @@ Summarize the proposed plan for the user, clearly separating confirmed decisions
 
 - At the start of each implementation task, read the application plan, the relevant decision records, and their technical references. After context compaction, reload the relevant files.
 - Implement against confirmed decisions. If a proposed or open decision affects the task, get the missing answer before implementing the affected behavior; continue independent work where possible.
-- Reuse Medplum examples and components where appropriate. Translate the decisions into task-specific acceptance checks, then type-check, test, and review the work against those checks and the technical docs.
-- If a feature request conflicts with a saved decision, explain what changes and ask only about requirements that remain unclear. A clear new user instruction can supersede an earlier choice; do not ask for the same approval again. Update the decision record and affected plan alongside the implementation for review.
+- Reuse Medplum examples and components where appropriate. Implement the agreed acceptance checks, then type-check, test, and review the work against those checks and the technical docs. Where profiles apply, use generated types where available and validate against the intended profile with its definitions available. Test behavior and access separately from validation.
+- Follow the completion checks in `medplum-rules.md`. Report what changed and explain proposed changes to confirmed decisions. Treat unavailable profiles, validators, or test identities as checks that could not run. If repairs repeat the same failure without new evidence, report the blocker and request guidance; continue independent work.
+- If a feature request conflicts with a saved decision, explain what changes and ask only about requirements that remain unclear. A clear new user instruction can supersede an earlier choice; do not ask for the same approval again. Update the decision record, affected plan, profiles, generated types, and tests as applicable alongside the implementation for review. Follow the Updating Profiles section of the profiles doc linked above when existing data may need migration.
 
 For an automated coding system, provide these instructions, the relevant guides and technical docs at a pinned revision, and the current application plan and decision records to each planning, implementation, or review job. Return blocking questions to the person responsible for the application; never treat an unanswered question as approval.
