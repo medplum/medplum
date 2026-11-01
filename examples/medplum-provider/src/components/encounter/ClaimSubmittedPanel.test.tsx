@@ -5,7 +5,7 @@ import type { WithId } from '@medplum/core';
 import type { Bot, ClaimResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
@@ -185,6 +185,7 @@ describe('ClaimSubmittedPanel', () => {
     await deployCandidBot('');
     setup();
     await waitFor(() => expect(medplum.executeBot).toHaveBeenCalledOnce());
+    await act(async () => {});
     expect(screen.queryByText('View Claim on Candid')).not.toBeInTheDocument();
   });
 
