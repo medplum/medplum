@@ -4,7 +4,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 # Scheduling
 
 :::tip[Planning this workflow?]
-The [Scheduling Decision Guide](/docs/decision-guides/scheduling) walks through requirements questions and FHIR modeling decisions for scheduling; use it alongside these docs.
+The [Scheduling Decision Guide](/docs/decision-guides/scheduling) walks through scheduling requirements, interface choices, and FHIR modeling decisions; use it alongside these docs.
 :::
 
 :::info[Beta]
@@ -14,6 +14,10 @@ Medplum Scheduling is currently in [beta](/docs/compliance/alpha-beta).
 :::
 
 Welcome to the Medplum Scheduling documentation. We currently support a range of scheduling operations that are available via the FHIR API. The following sections walk through the FHIR resources that are used to model scheduling and how the operations interact with them.
+
+For an application interface, start with the [React Scheduling Components](/docs/scheduling/react-components): `SchedulingWorkspace` for booking and calendar management, and `SchedulingConfigWorkspace` for visit types, actors, and availability. Smaller components support custom booking and administration screens.
+
+See [Organizations and Locations](/docs/administration/locations-and-facilities) for how a service facility relates to a reserved room, an encounter location, and a billing facility.
 
 **We like to separate scheduling into four main steps:**
 
