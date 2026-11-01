@@ -32,11 +32,6 @@
   text-decoration: underline;
 }
 
-.sectionIcon {
-  background-color: var(--mantine-color-yellow-8);
-  border: none;
-}
-
 .flexOne {
   flex: 1;
 }
