@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatAddress } from '@medplum/core';
+import { createReference, formatAddress } from '@medplum/core';
 import type { Patient, Resource } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { forwardRef } from 'react';
 import type { AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { act, clickAutocompleteOption, fireEvent, render, screen, typeInAutocomplete } from '../test-utils/render';
@@ -182,5 +183,18 @@ describe('ResourceInput', () => {
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(await screen.findByText('742 Evergreen Terrace, Springfield, IL, 12345')).toBeInTheDocument();
     expect((await screen.findAllByText('extra text'))?.[0]).toBeInTheDocument();
+  });
+
+  test('Follows controlled value, with null for none', async () => {
+    const ui = (value: ResourceInputProps<Patient>['value']): JSX.Element => (
+      <MedplumProvider medplum={medplum}>
+        <ResourceInput<Patient> resourceType="Patient" name="foo" value={value} />
+      </MedplumProvider>
+    );
+    const { rerender } = render(ui(createReference(HomerSimpson)));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => rerender(ui(null)));
+    expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
   });
 });
