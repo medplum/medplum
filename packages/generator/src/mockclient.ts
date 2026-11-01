@@ -52,6 +52,7 @@ const properties = [
   'type',
   'code',
   'targetProfile',
+  'target',
   'valueSet',
   'address',
   'city',

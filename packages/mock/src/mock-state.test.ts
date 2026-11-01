@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Observation, Patient } from '@medplum/fhirtypes';
+import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { expectTypeOf } from 'vitest';
 import { createMockClient, createMockState } from './mock-state';
 import searchParameters from './mocks/searchparameters.json';
@@ -75,4 +75,19 @@ test('bundled search parameters cover patient screens and existing lab filters',
   for (const id of ['ServiceRequest-status', 'ServiceRequest-based-on', 'DiagnosticReport-status']) {
     expect(searchParameters.some((parameter) => parameter.id === id)).toBe(true);
   }
+});
+
+test('patient searches accept bare IDs and typed references without crossing patients', async () => {
+  const encounter: WithId<Encounter> = {
+    resourceType: 'Encounter',
+    id: 'visit',
+    status: 'in-progress',
+    class: { code: 'AMB' },
+    subject: createReference(patient),
+  };
+  const client = await createMockClient(createMockState([patient, other, encounter], { patient }));
+  for (const value of [patient.id, `Patient/${patient.id}`]) {
+    expect((await client.searchResources('Encounter', { patient: value })).map((r) => r.id)).toEqual(['visit']);
+  }
+  expect(await client.searchResources('Encounter', { patient: other.id })).toHaveLength(0);
 });
