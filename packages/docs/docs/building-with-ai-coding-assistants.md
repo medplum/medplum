@@ -217,8 +217,7 @@ you can also build a custom app with the [React components](/docs/api/react).
 
 Before asking the agent to build a feature that stores data, agree on the FHIR resources
 it will use, the constraints those resources need to meet, and who can read or write them.
-Reuse existing profiles where
-they fit. Where your application needs additional constraints, capture them in
+Reuse existing profiles where they fit. Where your application needs additional constraints, capture them in
 [StructureDefinitions](/docs/fhir-datastore/profiles) so generated types and profile
 validation can help check the agent's work. Model what the feature needs; you do not need
 to model the entire application before starting.
@@ -311,15 +310,9 @@ against a ValueSet with
 [`$validate-code`](/docs/api/fhir/operations/valueset-validate-code), or round-trip
 resources through a `MedplumClient`; these check against the real FHIR and profile
 definitions, catching structural and terminology errors the type system can't (hallucinated
-LOINC, SNOMED, and ICD codes are a common failure mode). For profile checks, include the agreed
-profile URL in the resource's `meta.profile` and confirm the matching StructureDefinition is
-available in the test project. Passing validation does not show that a measurement is correct
-or belongs to the right patient; check those behaviors separately.
-
-For the vital-signs form, test the extracted Observations explicitly if you use
-[SDC extraction](/docs/questionnaires/parsing-questionnaire-responses): TypeScript does not
-check the mapping expressions inside the Questionnaire. Validate the extracted resources
-before saving them, then run the saved-value checks from the decision record.
+LOINC, SNOMED, and ICD codes are a common failure mode). For profile checks, include the agreed 
+URL in `meta.profile` and make sure the matching StructureDefinition is available in the test project. 
+Passing validation does not prove that the values or patient references are correct.
 
 Run API access checks as restricted users with synthetic records. Test allowed actions,
 denied reads and writes, and exclusion from
