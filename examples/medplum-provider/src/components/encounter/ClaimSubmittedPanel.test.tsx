@@ -182,10 +182,9 @@ describe('ClaimSubmittedPanel', () => {
   });
 
   test('hides View Claim on Candid button when the bot returns no URL', async () => {
-    await deployCandidBot(undefined);
+    await deployCandidBot('');
     setup();
-    // Give the bot lookup/execution a chance to resolve before asserting absence.
-    await waitFor(() => expect(screen.getByText('Claim Status:')).toBeInTheDocument());
+    await waitFor(() => expect(medplum.executeBot).toHaveBeenCalledOnce());
     expect(screen.queryByText('View Claim on Candid')).not.toBeInTheDocument();
   });
 
