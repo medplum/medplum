@@ -302,7 +302,7 @@ export function addDescendants(
   const limit = query.limit_;
   query.limit(0);
   const offset = query.offset_;
-  query.offset(0);
+  query.offset(undefined);
 
   return new SelectQuery(recursiveCTE)
     .addColumns(base.columns)
