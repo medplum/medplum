@@ -1,10 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { IconBook, IconChevronDown, IconCopy, IconTerminal2 } from '@tabler/icons-react';
+import { IconBook, IconChevronDown, IconCodeAi, IconCopy, IconTerminal2 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import styles from './BuildDropdown.module.css';
 import { landingButtonClass } from './landingButtonClass';
+
+const AI_CODING_GUIDE = '/docs/building-with-ai-coding-assistants';
+const AI_START_PROMPT =
+  `Read https://www.medplum.com${AI_CODING_GUIDE}#plan-your-application. ` +
+  'Ask me what I want to build, then follow the linked setup and planning instructions. ' +
+  'Carry out the setup in my workspace, reusing anything already configured.';
 
 interface CopyRowProps {
   value: string;
@@ -91,6 +97,17 @@ export function BuildDropdown({
           </div>
           <CopyRow value="npm init medplum" />
           <CopyRow value="git clone https://github.com/medplum/medplum.git" />
+        </div>
+
+        <div className={styles.divider} />
+
+        <div className={styles.copyItem}>
+          <div className={styles.itemHeader}>
+            <IconCodeAi size={16} />
+            <span>Start with your agent</span>
+          </div>
+          <CopyRow value={AI_START_PROMPT} />
+          <p className={styles.itemDescription}>Paste this prompt into your coding agent to get started.</p>
         </div>
 
         <div className={styles.divider} />
