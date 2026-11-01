@@ -111,6 +111,8 @@ export interface MedplumServerConfig {
   asyncDelayScaling?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */
   defaultMaxUserWebSocketSubscriptions?: number;
+  /** Optional global default for `chainedSearchOnReader`; overridable by Project setting: `chainedSearchOnReader` */
+  defaultChainedSearchOnReader?: boolean;
 
   /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
   maxBotLogLengthForResource?: number;
