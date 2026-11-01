@@ -83,30 +83,39 @@ describe('Project $init', () => {
     );
     expect(updatedProject.defaultPatientAccessPolicy).toBeUndefined();
 
-    // Verify defaultAccessPolicies array is provisioned with Patient, RelatedPerson, Admin, and Practitioner entries
-    expect(updatedProject.defaultAccessPolicies).toHaveLength(4);
+    // Verify defaultAccessPolicies array is provisioned with Patient, RelatedPerson, Admin, Practitioner, and Bot entries
+    expect(updatedProject.defaultAccessPolicies).toHaveLength(5);
     const patientEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
     const relatedPersonEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
     const adminEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Admin');
     const practitionerEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Practitioner');
+    const botEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Bot');
     expect(patientEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     expect(relatedPersonEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     expect(adminEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     expect(practitionerEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    expect(botEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     // Each role gets a separate policy instance
     const references = [
       patientEntry?.accessPolicy.reference,
       relatedPersonEntry?.accessPolicy.reference,
       adminEntry?.accessPolicy.reference,
       practitionerEntry?.accessPolicy.reference,
+      botEntry?.accessPolicy.reference,
     ];
-    expect(new Set(references).size).toBe(4);
+    expect(new Set(references).size).toBe(5);
 
     // Verify the Admin default policy grants full read/write to everything
     const adminPolicy = await withTestContext(() =>
       getGlobalSystemRepo().readReference<AccessPolicy>(adminEntry?.accessPolicy as Reference<AccessPolicy>)
     );
     expect(adminPolicy.resource).toStrictEqual([{ resourceType: '*' }]);
+
+    // Verify the Bot default policy grants full read/write to everything
+    const botPolicy = await withTestContext(() =>
+      getGlobalSystemRepo().readReference<AccessPolicy>(botEntry?.accessPolicy as Reference<AccessPolicy>)
+    );
+    expect(botPolicy.resource).toStrictEqual([{ resourceType: '*' }]);
 
     // Verify the Practitioner default policy is read-all + write-all-except-knowledge-resources
     const practitionerPolicy = await withTestContext(() =>

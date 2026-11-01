@@ -663,8 +663,9 @@ New projects are created with a set of **default access policies**, one per prof
 | `Admin`         | Full read/write access to all resource types (equivalent to having no access policy).                                                            |
 | `Patient`       | Access scoped to the patient's own compartment.                                                                                                  |
 | `RelatedPerson` | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                               |
+| `Bot`           | Full read/write access to all resource types (equivalent to having no access policy).                                                            |
 
-When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default.
+When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a Bot](/docs/bots/bot-basics) without specifying an access policy, it receives the `Bot` default.
 
 ### Switching a user to (or from) admin
 

@@ -381,6 +381,11 @@
             "code": "Admin",
             "display": "Admin",
             "definition": "Project administrator"
+          },
+          {
+            "code": "Bot",
+            "display": "Bot",
+            "definition": "Bot"
           }
         ]
       }
