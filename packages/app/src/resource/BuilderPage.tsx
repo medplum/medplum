@@ -3,7 +3,7 @@
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, PlanDefinitionBuilder, QuestionnaireBuilder, useMedplum } from '@medplum/react';
+import { ConceptMapBuilder, Document, PlanDefinitionBuilder, QuestionnaireBuilder, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import { useParams } from 'react-router';
@@ -39,6 +39,12 @@ export function BuilderPage(): JSX.Element | null {
       return (
         <Document>
           <QuestionnaireBuilder questionnaire={reference} onSubmit={handleSubmit} />
+        </Document>
+      );
+    case 'ConceptMap':
+      return (
+        <Document>
+          <ConceptMapBuilder value={reference} onSubmit={handleSubmit} />
         </Document>
       );
     default:
