@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "medplum.fullname" . }}
-  namespace: {{ include "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
@@ -20,11 +19,8 @@ spec:
       {{- end }}
       labels:
         {{- include "medplum.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-        {{- if (eq .Values.global.cloudProvider "azure") }}
-        azure.workload.identity/use: "true"
+        {{- with include "medplum.podLabels" . | trim }}
+        {{- . | nindent 8 }}
         {{- end }}
     spec:
       {{- with .Values.deployment.imagePullSecrets }}
@@ -74,12 +70,12 @@ spec:
                 name: {{ include "medplum.fullname" . }}-secrets
             {{- with .Values.deployment.envFrom }}
             # Source 3: User-defined envFrom sources
-            {{- toYaml . | nindent 6 }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           env:
             {{- with .Values.deployment.env }}
             # Source 4: User-defined env vars
-            {{- toYaml . | nindent 6 }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           resources:
             {{- toYaml .Values.deployment.resources | nindent 12 }}
