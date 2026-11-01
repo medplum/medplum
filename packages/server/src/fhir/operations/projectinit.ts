@@ -265,7 +265,8 @@ async function createAdminAccessPolicy(
 /**
  * Resource types that non-admin Practitioners can read but not edit. These are curated knowledge,
  * terminology, and conformance resources typically managed at the project/admin level rather than
- * by front-line users.
+ * by front-line users, plus Bot: read access lets Practitioners `$execute` Bots, while saving and
+ * `$deploy` (which requires update access) stay with project admins.
  */
 export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'MedicationKnowledge',
@@ -275,6 +276,7 @@ export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'ValueSet',
   'StructureDefinition',
   'CodeSystem',
+  'Bot',
 ];
 
 async function createPractitionerAccessPolicy(
