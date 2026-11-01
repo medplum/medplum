@@ -5,10 +5,14 @@ import type {
   Bundle,
   CodeableConcept,
   Coding,
+  Coverage,
   Device,
   Extension,
   ExtensionValue,
   Identifier,
+  Medication,
+  MedicationRequest,
+  MedicationStatement,
   Meta,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
@@ -218,11 +222,23 @@ export function getDisplayString(resource: Resource): string {
       return formatCodeableConcept(resource.type);
     }
   }
-  if (resource.resourceType === 'MedicationRequest' && resource.medicationCodeableConcept) {
-    return formatCodeableConcept(resource.medicationCodeableConcept);
+  if (resource.resourceType === 'Coverage') {
+    const coverageName = getCoverageDisplayString(resource);
+    if (coverageName) {
+      return coverageName;
+    }
   }
-  if (resource.resourceType === 'MedicationStatement' && resource.medicationCodeableConcept) {
-    return formatCodeableConcept(resource.medicationCodeableConcept);
+  if (resource.resourceType === 'Immunization' && resource.vaccineCode) {
+    const vaccineName = formatCodeableConcept(resource.vaccineCode);
+    if (vaccineName) {
+      return vaccineName;
+    }
+  }
+  if (resource.resourceType === 'MedicationRequest' || resource.resourceType === 'MedicationStatement') {
+    const medicationName = getMedicationDisplayString(resource);
+    if (medicationName) {
+      return medicationName;
+    }
   }
   if (resource.resourceType === 'Slot' && (resource.start || resource.end)) {
     return `${formatDateTime(resource.start)} - ${formatDateTime(resource.end)}`;
@@ -273,6 +289,37 @@ function getDeviceDisplayString(device: Device): string | undefined {
   const names = device.deviceName;
   if (names && names.length > 0) {
     return names[0].name;
+  }
+  return undefined;
+}
+
+/**
+ * Returns a display string for a coverage: the payor's display name, or else the coverage type.
+ * @param coverage - The coverage resource.
+ * @returns The display string if one is found.
+ */
+function getCoverageDisplayString(coverage: Coverage): string | undefined {
+  return coverage.payor?.find((p) => p.display)?.display || formatCodeableConcept(coverage.type) || undefined;
+}
+
+/**
+ * Returns a display string for the medication in a medication request or statement: the medication code,
+ * the reference display, or the code of a contained Medication.
+ * @param resource - The medication request or statement.
+ * @returns The display string if one is found.
+ */
+function getMedicationDisplayString(resource: MedicationRequest | MedicationStatement): string | undefined {
+  if (resource.medicationCodeableConcept) {
+    return formatCodeableConcept(resource.medicationCodeableConcept) || undefined;
+  }
+  const reference = resource.medicationReference;
+  if (reference?.display) {
+    return reference.display;
+  }
+  if (reference?.reference?.startsWith('#')) {
+    const id = reference.reference.slice(1);
+    const medication = resource.contained?.find((r): r is Medication => r.resourceType === 'Medication' && r.id === id);
+    return formatCodeableConcept(medication?.code) || undefined;
   }
   return undefined;
 }

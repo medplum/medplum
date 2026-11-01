@@ -380,6 +380,118 @@ describe('Core Utils', () => {
     expect(trimTrailingEmptyElements([1, null, 2, null])).toStrictEqual([1, null, 2]);
   });
 
+  test('getDisplayString for Coverage', () => {
+    const plan: CodeableConcept = { coding: [{ code: 'HIP' }], text: 'health insurance plan policy' };
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [{ reference: 'Organization/1' }, { reference: 'Organization/2', display: 'Medicare Part B' }],
+        type: plan,
+      })
+    ).toStrictEqual('Medicare Part B');
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [{ reference: 'Organization/1' }],
+        type: plan,
+      })
+    ).toStrictEqual('health insurance plan policy');
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
+        id: '123',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [{ reference: 'Organization/1' }],
+      })
+    ).toStrictEqual('Coverage/123');
+  });
+
+  test('getDisplayString for Immunization', () => {
+    expect(
+      getDisplayString({
+        resourceType: 'Immunization',
+        status: 'completed',
+        patient: { reference: 'Patient/123' },
+        occurrenceDateTime: '2024-10-01',
+        vaccineCode: {
+          coding: [{ system: 'http://hl7.org/fhir/sid/cvx', code: '150', display: 'Influenza, injectable' }],
+        },
+      })
+    ).toStrictEqual('Influenza, injectable');
+    expect(
+      getDisplayString({
+        resourceType: 'Immunization',
+        id: '123',
+        status: 'completed',
+        patient: { reference: 'Patient/123' },
+        occurrenceDateTime: '2024-10-01',
+        vaccineCode: {},
+      })
+    ).toStrictEqual('Immunization/123');
+  });
+
+  test('getDisplayString for medications', () => {
+    const base = {
+      resourceType: 'MedicationRequest',
+      id: '123',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/123' },
+    } as const;
+    expect(getDisplayString({ ...base, medicationCodeableConcept: { text: 'Lisinopril 10 MG' } })).toStrictEqual(
+      'Lisinopril 10 MG'
+    );
+    expect(
+      getDisplayString({ ...base, medicationReference: { reference: 'Medication/456', display: 'Metformin 500 MG' } })
+    ).toStrictEqual('Metformin 500 MG');
+    expect(
+      getDisplayString({
+        ...base,
+        contained: [{ resourceType: 'Medication', id: 'med1', code: { text: 'Atorvastatin 20 MG' } }],
+        medicationReference: { reference: '#med1' },
+      })
+    ).toStrictEqual('Atorvastatin 20 MG');
+    expect(
+      getDisplayString({
+        ...base,
+        contained: [{ resourceType: 'Medication', id: 'other', code: { text: 'Atorvastatin 20 MG' } }],
+        medicationReference: { reference: '#med1' },
+      })
+    ).toStrictEqual('MedicationRequest/123');
+    expect(getDisplayString({ ...base, medicationReference: { reference: 'Medication/456' } })).toStrictEqual(
+      'MedicationRequest/123'
+    );
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationStatement',
+        status: 'active',
+        subject: { reference: 'Patient/123' },
+        contained: [
+          {
+            resourceType: 'Medication',
+            id: 'Medication-Tylenol-1',
+            code: {
+              text: 'Tylenol 650mg',
+              coding: [
+                {
+                  system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                  code: '313782',
+                  display: 'Acetaminophen 325 MG Oral Tablet',
+                },
+              ],
+            },
+          },
+        ],
+        medicationReference: { reference: '#Medication-Tylenol-1' },
+      })
+    ).toStrictEqual('Tylenol 650mg');
+  });
+
   test('getImageSrc', () => {
     expect(getImageSrc({ resourceType: 'Observation' } as Observation)).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Patient' })).toBeUndefined();
