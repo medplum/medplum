@@ -6,7 +6,9 @@ This package defines the packages in the default AWS Lambda Layer.
 
 Current packages:
 
+- [`@medplum/ccda`](https://www.npmjs.com/package/@medplum/ccda)
 - [`@medplum/core`](https://www.npmjs.com/package/@medplum/core)
+- [`@medplum/definitions`](https://www.npmjs.com/package/@medplum/definitions)
 - [`fast-xml-parser`](https://www.npmjs.com/package/fast-xml-parser)
 - [`form-data`](https://www.npmjs.com/package/form-data)
 - [`jose`](https://www.npmjs.com/package/jose)
@@ -16,6 +18,7 @@ Current packages:
 - [`ssh2`](https://www.npmjs.com/package/ssh2)
 - [`ssh2-sftp-client`](https://www.npmjs.com/package/ssh2-sftp-client)
 - [`twilio`](https://www.npmjs.com/package/twilio)
+- [`undici`](https://www.npmjs.com/package/undici)
 
 ## Usage
 

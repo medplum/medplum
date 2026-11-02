@@ -58,27 +58,27 @@
     "@medplum/react": "5.2.13",
     "@medplum/react-hooks": "5.2.13",
     "@medplum/react-scheduling": "5.2.13",
-    "@storybook/addon-docs": "10.6.3",
-    "@storybook/addon-links": "10.6.3",
-    "@storybook/builder-vite": "10.6.3",
-    "@storybook/react": "10.6.3",
-    "@storybook/react-vite": "10.6.3",
+    "@storybook/addon-docs": "10.6.5",
+    "@storybook/addon-links": "10.6.5",
+    "@storybook/builder-vite": "10.6.5",
+    "@storybook/react": "10.6.5",
+    "@storybook/react-vite": "10.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vueless/storybook-dark-mode": "10.0.8",
-    "chromatic": "18.13.3",
-    "postcss": "8.5.31",
+    "chromatic": "18.13.6",
+    "postcss": "8.5.32",
     "postcss-preset-mantine": "1.18.0",
     "postcss-simple-vars": "7.0.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-router": "8.3.0",
+    "react-router": "8.5.1",
     "sinon": "22.1.0",
-    "storybook": "10.6.3",
+    "storybook": "10.6.5",
     "typescript": "6.0.3",
     "vite": "8.3.5"
   },
   "engines": {
-    "node": "^22.18.0 || >=24.2.0"
+    "node": "^22.22.2 || >=24.15.0"
   }
 }
