@@ -503,7 +503,7 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
   if (textStr) {
     return textStr;
   }
-  if (codeableConcept.coding) {
+  if (Array.isArray(codeableConcept.coding)) {
     return codeableConcept.coding.map((c) => formatCoding(c)).join(', ');
   }
   return '';
