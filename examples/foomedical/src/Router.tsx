@@ -9,6 +9,7 @@ import { Provider } from './pages/account/Provider';
 import { CarePlanPage } from './pages/care-plan';
 import { ActionItem } from './pages/care-plan/ActionItem';
 import { ActionItems } from './pages/care-plan/ActionItems';
+import { CheckInPage } from './pages/CheckInPage';
 import { GetCare } from './pages/GetCarePage';
 import { HealthRecord } from './pages/health-record';
 import { LabResult } from './pages/health-record/LabResult';
@@ -60,6 +61,7 @@ export function Router(): JSX.Element {
         <Route path="action-items/:itemId" element={<ActionItem />} />
       </Route>
       <Route path="get-care" element={<GetCare />} />
+      <Route path="check-in" element={<CheckInPage />} />
       <Route path="smart-health-links" element={<SmartHealthLinksPage />} />
       <Route path="account" element={<AccountPage />}>
         <Route index element={<Navigate replace to="/account/profile" />} />

@@ -30,6 +30,7 @@ import {
   addRow,
   chooseActor,
   chooseDay,
+  chooseFirstOfferedTime,
   chooseImagingService,
   choosePatient,
   chooseRepeat,
@@ -428,6 +429,34 @@ describe('SchedulingWorkspace booking', () => {
     expect(markedTime()).toBe('none');
   });
 
+  test('Stays wide while the time search slides back, until the slide ends', async () => {
+    setup();
+    await clickCalendar();
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    const pane = screen.getByRole('region', { name: 'Book appointment' });
+    expect(pane.className).toMatch(/paneWide/);
+
+    // jsdom runs no animations, so each one's end is fired by hand. Closing while the pane is
+    // still sliding open cuts that slide short, which doesn't end the slide back.
+    await chooseFirstOfferedTime();
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+    fireEvent(pane, new AnimationEvent('animationcancel', { animationName: 'paneSlideIn' }));
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+
+    // A slide back that's cancelled, as when the pane is hidden mid-slide, does.
+    fireEvent(pane, new AnimationEvent('animationcancel', { animationName: 'paneSlideOut' }));
+    expect(pane.className).not.toMatch(/paneWide|paneClosing/);
+
+    await openTimeFinder();
+    fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+
+    fireEvent.animationEnd(pane, { animationName: 'paneSlideOut' });
+    expect(pane.className).not.toMatch(/paneWide|paneClosing/);
+  });
+
   test('Keeps what was answered, and searches the new day, when a different day is clicked', async () => {
     const get = vi.spyOn(medplum, 'get');
     setup();
@@ -496,6 +525,7 @@ describe('SchedulingWorkspace booking', () => {
       await openTimeFinder();
       await chooseSecondOfferedTime();
       expect(proposedTime()).not.toBe('none');
+      await openTimeFinder();
 
       // Searching another day drops the time, and a proposal left on the old one would
       // be pointing at a time nobody has chosen.

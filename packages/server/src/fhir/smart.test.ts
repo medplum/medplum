@@ -141,6 +141,28 @@ describe('SMART on FHIR', () => {
       });
     });
 
+    test('Project admin resource types are only covered by scopes that name them', () => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: '*' },
+          { resourceType: 'ProjectMembership', criteria: 'ProjectMembership?_project=' + project.id },
+        ],
+      };
+      const applyScope = (scope: string): PopulatedAccessPolicy['resource'] =>
+        applySmartScopes(startAccessPolicy, {
+          login: { ...login, scope },
+          membership,
+          project,
+          userConfig: { resourceType: 'UserConfiguration' },
+        }).resource;
+
+      expect(applyScope('user/*.rs').map((r) => r.resourceType)).toStrictEqual(['*']);
+      expect(applyScope('user/ProjectMembership.rs')).toMatchObject([
+        { resourceType: 'ProjectMembership', criteria: 'ProjectMembership?_project=' + project.id },
+      ]);
+    });
+
     test('Generate access policy', () => {
       const compartment = `Patient/${randomUUID()}`;
       const authState: AuthState = {
