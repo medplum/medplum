@@ -50,7 +50,7 @@ import { SearchSortEditor } from '../SearchSortEditor/SearchSortEditor';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import { getPaginationControlProps } from '../utils/pagination';
 import classes from './SearchControl.module.css';
-import { getFieldDefinitions } from './SearchControlField';
+import { getFieldDefinitions, getFieldElements } from './SearchControlField';
 import { addFilter, buildFieldNameString, DEFAULT_SORT_RULES, getOpString, renderValue, setPage } from './SearchUtils';
 
 export class SearchChangeEvent extends Event {
@@ -101,6 +101,7 @@ export interface SearchControlProps {
   readonly hideToolbar?: boolean;
   /** Hides the per-column filter description row under the column headers. */
   readonly hideFilters?: boolean;
+  readonly elements?: readonly string[];
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
   readonly onClick?: (e: SearchClickEvent) => void;
@@ -158,6 +159,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const [activeRowId, setActiveRowId] = useState<string>();
 
   const total = memoizedSearch.total ?? 'accurate';
+  const elementsKey = props.elements?.join(',');
 
   const loadResults = useCallback(
     (options?: RequestInit) => {
@@ -167,7 +169,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         .then(() =>
           medplum.search(
             memoizedSearch.resourceType,
-            formatSearchQuery({ ...memoizedSearch, total, fields: undefined }),
+            formatSearchQuery({
+              ...memoizedSearch,
+              total,
+              fields: getRequestElements(memoizedSearch, elementsKey),
+            }),
             options
           )
         )
@@ -182,7 +188,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(normalizeOperationOutcome(reason));
         });
     },
-    [medplum, memoizedSearch, total, onLoad]
+    [medplum, memoizedSearch, total, elementsKey, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -723,4 +729,23 @@ function getTotal(search: SearchRequest, lastResult: Bundle): number {
       (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
   }
   return total;
+}
+
+/**
+ * Returns the elements to request: the elements behind the visible columns plus the caller's extra
+ * elements. Full resources are fetched when the caller sets no elements, or a column can't be mapped.
+ * @param search - The search request.
+ * @param elementsKey - The caller's extra elements, comma-separated, or undefined to fetch full resources.
+ * @returns The elements to request, or undefined to fetch full resources.
+ */
+function getRequestElements(search: SearchRequest, elementsKey: string | undefined): string[] | undefined {
+  if (elementsKey === undefined) {
+    return undefined;
+  }
+  const columnElements = getFieldElements(search.resourceType, getFieldDefinitions(search));
+  if (!columnElements) {
+    return undefined;
+  }
+  const extraElements = elementsKey ? elementsKey.split(',') : [];
+  return Array.from(new Set([...columnElements, ...extraElements]));
 }

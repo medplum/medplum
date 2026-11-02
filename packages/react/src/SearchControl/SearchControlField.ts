@@ -57,6 +57,50 @@ export function getFieldDefinitions(search: SearchRequest): SearchControlField[]
   return fields;
 }
 
+const META_FIELDS = ['id', '_lastUpdated', 'meta.versionId'];
+const PROFILE_RESOURCE_TYPES = ['Patient', 'Practitioner', 'RelatedPerson'];
+
+/**
+ * Returns the top-level elements needed to render the given fields, for use as `_elements`.
+ * `id` and `meta` are always returned by the server, so the meta columns contribute nothing.
+ * @param resourceType - The resource type.
+ * @param fields - The field definitions.
+ * @returns The top-level element names, or undefined if any field cannot be mapped to an element.
+ */
+export function getFieldElements(resourceType: string, fields: SearchControlField[]): string[] | undefined {
+  const elements = new Set<string>();
+  for (const field of fields) {
+    if (META_FIELDS.includes(field.name)) {
+      continue;
+    }
+
+    const paths: string[] = [];
+    if (field.elementDefinition?.path === `${resourceType}.${field.name}`) {
+      paths.push(field.elementDefinition.path);
+    } else if (field.searchParams?.length === 1 && field.searchParams[0].code === field.name) {
+      const details = getSearchParameterDetails(resourceType, field.searchParams[0]);
+      for (const elementDefinition of details.elementDefinitions ?? []) {
+        paths.push(elementDefinition.path);
+      }
+    }
+    if (paths.length === 0) {
+      return undefined;
+    }
+
+    for (const path of paths) {
+      const topLevel = path.split('.')[1];
+      if (!topLevel) {
+        return undefined;
+      }
+      elements.add(topLevel.replace('[x]', ''));
+    }
+    if (field.name === 'name' && PROFILE_RESOURCE_TYPES.includes(resourceType)) {
+      elements.add('photo');
+    }
+  }
+  return elements.size > 0 ? Array.from(elements) : ['id'];
+}
+
 /**
  * Return the field definition for a given field name.
  * Field names can be either property names or search parameter codes.
