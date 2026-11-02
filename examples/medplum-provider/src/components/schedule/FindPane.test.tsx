@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import {
@@ -23,12 +22,13 @@ import type {
 } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { createEncounter } from '../../utils/encounter';
 import { FindPane } from './FindPane';
 
@@ -155,12 +155,10 @@ describe('FindPane', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <div data-testid="FindPaneTestWrapper">
-              <FindPaneHarness schedule={schedule} range={range} onSuccess={onSuccess} />
-            </div>
-          </MantineProvider>
+          <Notifications />
+          <div data-testid="FindPaneTestWrapper">
+            <FindPaneHarness schedule={schedule} range={range} onSuccess={onSuccess} />
+          </div>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -468,19 +466,14 @@ describe('FindPane', () => {
       render(
         <MemoryRouter initialEntries={['/find']}>
           <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              <Routes>
-                <Route
-                  path="/find"
-                  element={<FindPaneHarness schedule={schedule} range={defaultRange} onSuccess={onSuccess} />}
-                />
-                <Route
-                  path="/Patient/:patientId/Encounter/:encounterId"
-                  element={<div data-testid="encounter-page" />}
-                />
-              </Routes>
-            </MantineProvider>
+            <Notifications />
+            <Routes>
+              <Route
+                path="/find"
+                element={<FindPaneHarness schedule={schedule} range={defaultRange} onSuccess={onSuccess} />}
+              />
+              <Route path="/Patient/:patientId/Encounter/:encounterId" element={<div data-testid="encounter-page" />} />
+            </Routes>
           </MedplumProvider>
         </MemoryRouter>
       );

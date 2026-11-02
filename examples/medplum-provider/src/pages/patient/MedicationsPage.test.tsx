@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { cleanNotifications, Notifications } from '@mantine/notifications';
 import type {
   MedicationCartManageResponse,
@@ -13,11 +12,12 @@ import type { Bundle, MedicationRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { MedicationsPage } from './MedicationsPage';
 
 const checkoutMock = vi.fn<(input: MedicationCheckoutRequest) => Promise<MedicationCheckoutResponse>>();
@@ -139,14 +139,12 @@ async function setup(url: string, medplum = new MockClient()): Promise<SetupHand
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <RouterMedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <LocationCapture sink={location} />
-            <Routes>
-              <Route path="/Patient/:patientId/MedicationRequest" element={<MedicationsPage />} />
-              <Route path="/Patient/:patientId/MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <LocationCapture sink={location} />
+          <Routes>
+            <Route path="/Patient/:patientId/MedicationRequest" element={<MedicationsPage />} />
+            <Route path="/Patient/:patientId/MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
+          </Routes>
         </RouterMedplumProvider>
       </MemoryRouter>
     );
@@ -374,12 +372,10 @@ describe('MedicationsPage', () => {
       const view = render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]} initialIndex={0}>
-            <MantineProvider>
-              <Notifications />
-              <Routes>
-                <Route path="/Patient/:patientId/MedicationRequest" element={<MedicationsPage />} />
-              </Routes>
-            </MantineProvider>
+            <Notifications />
+            <Routes>
+              <Route path="/Patient/:patientId/MedicationRequest" element={<MedicationsPage />} />
+            </Routes>
           </MemoryRouter>
         </MedplumProvider>
       );

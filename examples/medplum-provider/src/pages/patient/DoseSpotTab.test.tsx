@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { DoseSpotTab } from './DoseSpotTab';
 
 // Mock useDoseSpotIFrame
@@ -30,12 +30,10 @@ describe('DoseSpotTab', () => {
     return render(
       <MemoryRouter initialEntries={[url]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Patient/:patientId/dosespot" element={<DoseSpotTab />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Patient/:patientId/dosespot" element={<DoseSpotTab />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

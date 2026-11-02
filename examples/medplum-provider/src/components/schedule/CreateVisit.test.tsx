@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
@@ -8,11 +7,12 @@ import type { Appointment, Patient, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type { DateTimeRange } from '@medplum/react-scheduling';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { createAppointment, createEncounter } from '../../utils/encounter';
 import { CreateVisit } from './CreateVisit';
 
@@ -60,18 +60,16 @@ describe('CreateVisit', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} practitioner={practitioner} />
-                }
-              />
-              <Route path="/Patient/:patientId/Encounter/:encounterId" element={<div>Encounter Page</div>} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} practitioner={practitioner} />
+              }
+            />
+            <Route path="/Patient/:patientId/Encounter/:encounterId" element={<div>Encounter Page</div>} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -199,10 +197,8 @@ describe('CreateVisit', () => {
         rerender(
           <MemoryRouter>
             <MedplumProvider medplum={medplum}>
-              <MantineProvider>
-                <Notifications />
-                <CreateVisit appointmentSlot={newSlot} practitioner={createReference(DrAliceSmith)} />
-              </MantineProvider>
+              <Notifications />
+              <CreateVisit appointmentSlot={newSlot} practitioner={createReference(DrAliceSmith)} />
             </MedplumProvider>
           </MemoryRouter>
         );

@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { PatientSearchPage } from './PatientSearchPage';
 
 async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -14,14 +14,12 @@ async function setup(url: string, medplum = new MockClient()): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Patient/:patientId/:resourceType" element={<PatientSearchPage />} />
-              <Route path="/Patient/:patientId/:resourceType/:resourceId" element={<div>Resource Detail</div>} />
-              <Route path="/Patient/:patientId/:resourceType/new" element={<div>New Resource</div>} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Patient/:patientId/:resourceType" element={<PatientSearchPage />} />
+            <Route path="/Patient/:patientId/:resourceType/:resourceId" element={<div>Resource Detail</div>} />
+            <Route path="/Patient/:patientId/:resourceType/new" element={<div>New Resource</div>} />
+          </Routes>
         </MemoryRouter>
       </MedplumProvider>
     );
