@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import dns from 'node:dns';
-import { createServer } from 'node:http';
+import { once } from 'node:events';
+import { createServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
-import { fetch } from 'undici';
+import tls from 'node:tls';
 import { vi } from 'vitest';
+import { loadTestConfig } from '../config/loader';
+import { generateSelfSignedCert } from '../test.setup';
 import {
   createSafeConnect,
   getNormalizedPath,
@@ -13,7 +16,7 @@ import {
   isAllowedOutboundUrlForQueue,
   isUnsafeHostname,
   isUnsafeIpAddress,
-  safeAgent,
+  safeFetch,
   validateOutboundUrl,
 } from './url';
 
@@ -188,44 +191,55 @@ describe('createSafeConnect', () => {
   });
 });
 
-describe('safeAgent', () => {
-  test('requires HTTPS', async () => {
-    await expect(fetch('http://example.com/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
+describe('safeFetch', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
   });
 
-  test('blocks localhost fetches before opening a socket', async () => {
-    const server = createServer((_req, res) => res.end('ok'));
-    await listen(server);
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('fetches public HTTPS hosts', async () => {
+    const { cert, privateKey } = generateSelfSignedCert('CN=example.com');
+    const server = createServer({ cert, key: privateKey }, (_req, res) => res.end('ok'));
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    mockDnsLookup(null, [{ address: '93.184.216.34', family: 4 }]);
+
+    // Route the TLS connection for the public address to the local server and trust its certificate
+    const tlsConnect = tls.connect;
+    vi.spyOn(tls, 'connect').mockImplementation(((options: tls.ConnectionOptions) =>
+      tlsConnect({ ...options, host: '127.0.0.1', ca: cert })) as typeof tls.connect);
 
     try {
-      await expect(fetch(`https://localhost:${getPort(server)}`, { dispatcher: safeAgent })).rejects.toThrow(
-        'fetch failed'
-      );
+      const response = await safeFetch(`https://example.com:${(server.address() as AddressInfo).port}/`);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('ok');
     } finally {
-      await close(server);
+      server.close();
+      await once(server, 'close');
     }
   });
 
+  test('requires HTTPS', async () => {
+    await expect(safeFetch('http://example.com/')).rejects.toMatchObject({
+      cause: { message: 'Outbound request blocked: HTTPS is required' },
+    });
+  });
+
+  test('blocks localhost', async () => {
+    await expect(safeFetch('https://localhost/')).rejects.toMatchObject({
+      cause: { message: 'Outbound request to unsafe hostname localhost is blocked' },
+    });
+  });
+
   test('blocks private literal targets', async () => {
-    await expect(fetch('https://127.0.0.1/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
+    await expect(safeFetch('https://127.0.0.1/')).rejects.toMatchObject({
+      cause: { message: 'Outbound request to unsafe hostname 127.0.0.1 is blocked' },
+    });
   });
 });
-
-function getPort(server: ReturnType<typeof createServer>): number {
-  return (server.address() as AddressInfo).port;
-}
-
-function listen(server: ReturnType<typeof createServer>): Promise<void> {
-  return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', resolve);
-  });
-}
-
-function close(server: ReturnType<typeof createServer>): Promise<void> {
-  return new Promise((resolve, reject) => {
-    server.close((err) => (err ? reject(err) : resolve()));
-  });
-}
 
 function callConnect(
   connect: ReturnType<typeof createSafeConnect>,
