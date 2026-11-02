@@ -51,7 +51,7 @@ Credentials remain in an access-controlled Basic extension as an interim storage
 
 ## Delivery and recovery
 
-Medplum Subscriptions handle outbound changes and work requests. Google watch notifications queue inbound snapshots. Hourly reconciliation repairs missed creates, updates and removals, and the minute Cron retries unfinished work. Scheduled dispatch requires the project Cron feature.
+Medplum Subscriptions handle outbound changes and work requests. Google watch notifications queue inbound snapshots. Hourly reconciliation repairs missed creates, updates and removals, and the minute Cron retries unfinished work. Scheduled dispatch requires the project Cron feature. The installer grants dispatchers create-only access to AsyncJob, which the server needs for asynchronous Bot calls; it does not grant job read, update or delete access.
 
 Versioned connection leases serialize workers. Google writes verify ownership and use ETags. Conditional FHIR creates use stable identities; imported Slot keys include connection, calendar, event occurrence and Schedule. Readable but malformed imported identities remain blocked with a Bot-log warning, rather than being guessed or removed.
 

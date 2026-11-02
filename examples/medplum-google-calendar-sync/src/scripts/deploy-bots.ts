@@ -30,7 +30,7 @@ function requireEnv(name: string): string {
 const PROJECT_ID = requireEnv('PROJECT_ID');
 const args = new Set(process.argv.slice(2));
 for (const arg of args) {
-  if (arg !== '--cli' && arg !== '--check' && arg !== '--e2e') {
+  if (arg !== '--cli' && arg !== '--check' && arg !== '--e2e' && arg !== '--extended') {
     throw new Error(`Unknown deployment option: ${arg}`);
   }
 }
@@ -127,6 +127,9 @@ const botDefinitions: BotDefinition[] = [
 ];
 
 async function main(): Promise<void> {
+  if (args.has('--extended') && !args.has('--e2e')) {
+    throw new Error('--extended requires --e2e');
+  }
   if (args.has('--e2e')) {
     if (!args.has('--cli') || args.has('--check')) {
       throw new Error('--e2e requires --cli and cannot be combined with --check');
@@ -180,7 +183,11 @@ async function main(): Promise<void> {
 
   console.log('\nDeployment complete.');
   if (args.has('--e2e')) {
-    execFileSync(process.execPath, ['--import', 'tsx', 'src/scripts/e2e.ts'], { stdio: 'inherit' });
+    execFileSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/scripts/e2e.ts', ...(args.has('--extended') ? ['--extended'] : [])],
+      { stdio: 'inherit' }
+    );
   }
 }
 

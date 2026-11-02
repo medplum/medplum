@@ -113,6 +113,8 @@ export async function ensureSyncAccessPolicy(medplum: MedplumClient): Promise<Wi
     meta: { tag: [tag] },
     name: 'Google Calendar Sync Bot',
     resource: [
+      // Prefer: respond-async creates a job through the caller's repository.
+      { resourceType: 'AsyncJob', interaction: ['create'] },
       {
         resourceType: 'Bot',
         criteria: `Bot?identifier=${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.reconcile},${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.inbound}`,

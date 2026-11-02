@@ -12,6 +12,7 @@ import { readProjectCeiling, writeProjectCeiling } from './configuration';
 import {
   auditPolicyGrants,
   ensureInboundPolicy,
+  ensureSyncAccessPolicy,
   PRACTITIONER_POLICY_SNIPPET,
   ORDINARY_SLOT_POLICY_SNIPPET,
 } from './install';
@@ -206,13 +207,32 @@ test('credential migration adds the missing legacy connection identity without r
 
 test('operation authorization accepts the server session summary and rejects a missing effective policy', async () => {
   const event = {
-    bot: { reference: 'Bot/connect' }, requester: { reference: args.practitionerRef },
-    input: { resourceType: 'Parameters' }, contentType: 'application/fhir+json', secrets: {},
+    bot: { reference: 'Bot/connect' },
+    requester: { reference: args.practitionerRef },
+    input: { resourceType: 'Parameters' },
+    contentType: 'application/fhir+json',
+    secrets: {},
   } as BotEvent;
   await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.connect);
   expect(medplum.getProjectMembership()?.project).toBeUndefined();
   expect(medplum.getProjectMembership()?.accessPolicy).toBeUndefined();
   await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).resolves.toBe(args.practitionerRef);
   vi.mocked(medplum.getAccessPolicy).mockReturnValue(undefined);
-  await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow('restricted Bot membership');
+  await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow(
+    'restricted Bot membership'
+  );
+});
+
+test('dispatcher can create async jobs without reading or changing other jobs', async () => {
+  const policy = await ensureSyncAccessPolicy(medplum);
+  const job = {
+    resourceType: 'AsyncJob' as const,
+    status: 'accepted' as const,
+    request: 'https://example.com/fhir/R4/Bot/$execute',
+    requestTime: '2026-01-01T00:00:00Z',
+  };
+  expect(satisfiedAccessPolicy(job, AccessPolicyInteraction.CREATE, policy)).toBeDefined();
+  for (const action of [AccessPolicyInteraction.READ, AccessPolicyInteraction.UPDATE, AccessPolicyInteraction.DELETE]) {
+    expect(satisfiedAccessPolicy(job, action, policy)).toBeUndefined();
+  }
 });

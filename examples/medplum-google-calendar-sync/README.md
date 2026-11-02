@@ -2,12 +2,14 @@
 
 This example mirrors Medplum Appointments and independent blocks to a practitioner's primary Google Calendar, and imports Google Busy time into Medplum Slots. The target deployment is Google Workspace Internal consent with shared Bots and a linked customer project. The current implementation requires live acceptance before production use; see [acceptance](acceptance.md).
 
+Fresh installations use only this directory, the public repository workspace dependencies, a Medplum project and a Google OAuth client. There is no enterprise-package or previous-installation dependency.
+
 This is a source example in the Medplum npm workspace, not a published npm package or a hosted connector with a bundled user interface. It follows the separate-example layout used by the [Healthie importer](../medplum-healthie-importer) and [Photon integration](../medplum-photon-integration).
 
 - [Setup](setup.md): prerequisites, credentials, deploy, install, connect and test.
 - [Architecture](architecture.md): Bot responsibilities, permissions and package layout.
 - [State and operations](state-and-status.md): status fields and notification recipes.
-- [Migration](migration-notes.md): existing installations and rollback constraints.
+- [Historical sandbox migration](migration-notes.md): optional notes for earlier prototypes; not needed for a fresh install.
 - [Acceptance](acceptance.md): live checks required before production use.
 
 ## Scheduling behavior
@@ -50,15 +52,21 @@ export E2E_MANIFEST="$PWD/test-results/gcal-e2e-$(date +%s).json"
 npm run deploy --workspace=medplum-google-calendar-sync -- --cli --e2e
 # Or test an already deployed and installed integration:
 npm run test:e2e --workspace=medplum-google-calendar-sync
+# Include filtering, new Schedule, conflicts and recurrence checks:
+npm run test:e2e --workspace=medplum-google-calendar-sync -- --extended
+# Or run those checks after deployment:
+npm run deploy --workspace=medplum-google-calendar-sync -- --cli --e2e --extended
 # Retry cleanup after failure or interruption, using the SAME manifest path:
 npm run test:e2e:cleanup --workspace=medplum-google-calendar-sync
 ```
 
-Choose a new manifest path for each new run; existing files are never overwritten when starting a test. The manifest records fixture identities before creation, with restricted file permissions and no tokens. Cleanup runs after success, failure, SIGINT or SIGTERM. After a killed process or machine restart, rerun cleanup with the saved manifest. Each asynchronous assertion has a three-minute deadline. Tests temporarily block ten minutes one week ahead, then move that block forward an hour.
+Choose a new manifest path for each new run; existing files are never overwritten when starting a test. The manifest records fixture identities before creation, with restricted file permissions and no tokens. Cleanup runs after success, failure, SIGINT or SIGTERM. After a killed process or machine restart, rerun cleanup with the saved manifest. Each asynchronous assertion has a three-minute deadline. Tests temporarily block ten minutes one week ahead, then move that block forward an hour. Extended runs also create a second ten-minute recurrence on the following day and briefly convert the marked Google fixture to an all-day event.
 
-Cleanup removes only the marked Google fixture, its exact imported Slots, and mirrors of the test Appointment. It checks ownership and versions, and uses the connection lease to avoid racing workers. It cancels the synthetic Appointment and retains it for audit; it does not delete Appointments. It does not disconnect, revoke Google access, change detail settings, or touch unrelated events. If access is lost or the worker lease is busy, cleanup fails visibly and the manifest remains available for retry. A run exits unsuccessfully if either a check or cleanup fails.
+Cleanup removes only the marked Google fixture, its recorded recurring occurrences, their imported Slots, and mirrors of the test Appointment. Extended tests also create a marked Schedule; cleanup removes that Schedule and its integration-owned imported blocks, preserving existing Schedules. It checks ownership and versions, and uses the connection lease to avoid racing workers. It cancels the synthetic Appointment and retains it for audit; it does not delete Appointments. It does not disconnect, revoke Google access, change detail settings, or touch unrelated events. Cleanup retries worker-lease contention for up to 28 seconds. If access is lost or the lease remains busy, cleanup fails visibly and the manifest remains available for retry. A run exits unsuccessfully if either a check or cleanup fails.
 
-This smoke test does not establish booking-operation availability, privacy-mode changes, recurrence, Workspace/linked-project isolation, or all release criteria in [acceptance](acceptance.md). Those need additional isolated fixtures. The older `live-api-probe` command tests Google API behavior only; it is not the deployment test and has no persistent recovery manifest. It now cleans up in `finally`, uses no guest addresses and preserves existing grants.
+The `--extended` suite checks transparent and all-day exclusions by converting an existing busy event and observing block removal, restores timed Busy events, adds a Schedule after import, verifies that conflict detection leaves the Appointment unchanged, and expands a two-occurrence series. Recurrence identities are saved before deleting the series so cleanup can resume after interruption.
+
+These tests do not establish booking-operation availability, privacy-mode changes, declined invitations, recurrence exceptions, Workspace/linked-project isolation, or all release criteria in [acceptance](acceptance.md). Those need additional isolated fixtures. The older `live-api-probe` command tests Google API behavior only; it is not the deployment test and has no persistent recovery manifest. It now cleans up in `finally`, uses no guest addresses and preserves existing grants.
 
 ## Public operations
 
@@ -91,16 +99,7 @@ A version-guarded lease serializes connection changes and workers. Workers have 
 
 Disconnect removes verified Google mirrors, revokes the credential after remote cleanup, removes verified imported Slots, and deletes connection/credential/public-status records. Account-bound ownership receipts remain for safe reconnect recovery. Malformed Slot identities remain in place with Bot-log warnings for administrator repair; they do not block unrelated disconnects or cause uncertain Slots to be deleted. Remote outages retain blocks. If Google is reachable but a legacy mirror lacks ownership evidence, cleanup removes verified data, retains the connection in `disconnecting`, and reports `legacy-mirror-repair-required`. Reconnect during disconnect continues cleanup. For revoked grants, `forgetRevoked=true` explicitly accepts residual Google events while removing local blocks. Switching accounts requires completing disconnect first.
 
-Before upgrading an installation with old mirrors, use the migration command with a dedicated test account first. Set the Medplum service credentials, `CONNECTION_ID`, `GOOGLE_CALENDAR_CLIENT_ID`, and `GOOGLE_CALENDAR_CLIENT_SECRET` in the environment:
-
-```sh
-npm run migrate-mirrors --workspace=medplum-google-calendar-sync
-npm run migrate-mirrors --workspace=medplum-google-calendar-sync -- --apply
-```
-
-The first command reports candidates without changing Google events; it takes a connection lease. Apply verifies project, source participation, connection/account and ETag, adds the connection marker, and replaces legacy details with Busy-only content and no attendees. Ambiguous or deleted sources require administrator repair; the command will not adopt them based on event ID alone. Retry interrupted migrations. Receipts written after verified Google writes support later tombstone recovery.
-
-For rollback, stop delivery to the new workers before changing bundles. Do not restore the old caller-write policy or token-bearing connection shape. Older workers cannot read split credentials. Correct forward or use a reviewed storage migration; merely redeploying the old bundle is not a safe rollback.
+Fresh installs need no legacy mirror migration. Earlier development sandboxes may contain prototype records; optional repair and rollback notes are in [migration-notes.md](migration-notes.md). They are outside the fresh-install acceptance scope.
 
 `connect-local` provides a loopback OAuth helper for development. `live-api-probe` creates and deletes Google test events without revoking existing grants; use an isolated account and dedicated OAuth client. Neither script is part of build or unit tests.
 

@@ -5,11 +5,12 @@ import { expect, test, vi } from 'vitest';
 import { MockClient } from '@medplum/mock';
 import type { WithId } from '@medplum/core';
 import type { Slot } from '@medplum/fhirtypes';
-import { cleanupFixtures, removeTestEvent, runWithCleanup, TEST_SYSTEM } from './e2e-fixtures';
+import { cleanupFixtures, removeTestEvent, runWithCleanup, retryBusyCleanup, TEST_SYSTEM } from './e2e-fixtures';
 import type { TestManifest } from './e2e-fixtures';
 import { importIdentifier } from '../common/import';
 import { IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
 import { saveConnection } from '../common/connection';
+import { ConnectionBusyError } from '../common/lease';
 
 const liveEvent = {
   id: 'test-event',
@@ -92,7 +93,7 @@ test('recovery discovers a lost create response, cancels its Appointment, and de
     participant: [{ actor: { reference: 'Practitioner/p' }, status: 'accepted' }],
   });
   const slots: WithId<Slot>[] = [];
-  for (const eventId of ['test-event', 'unrelated-event']) {
+  for (const eventId of ['test-event', 'test-event-occurrence', 'unrelated-event']) {
     slots.push(
       await medplum.createResource({
         resourceType: 'Slot',
@@ -115,11 +116,33 @@ test('recovery discovers a lost create response, cancels its Appointment, and de
     );
   }
   const before = (await medplum.searchResources('Slot')).map((slot) => slot.id);
-  const calendar = { getEvent: vi.fn().mockResolvedValue(undefined), deleteEvent: vi.fn() };
-  await cleanupFixtures(medplum, calendar, manifest);
+  const calendar = {
+    getEvent: vi.fn().mockResolvedValue(undefined),
+    deleteEvent: vi.fn(),
+    listBusyEvents: vi.fn().mockResolvedValue({
+      calendarId: 'calendar',
+      events: [
+        {
+          id: 'test-event-occurrence',
+          extendedProperties: { private: { medplumE2ERun: manifest.run, medplumE2EProject: manifest.projectId } },
+        },
+        {
+          id: 'unrelated-event',
+          extendedProperties: { private: { medplumE2ERun: 'other', medplumE2EProject: manifest.projectId } },
+        },
+      ],
+    }),
+  };
+  const save = vi.fn();
+  await cleanupFixtures(medplum, calendar, manifest, save);
+  expect(manifest.googleOccurrenceIds).toEqual(['test-event-occurrence']);
+  expect(save).toHaveBeenCalledOnce();
+  expect(save.mock.invocationCallOrder[0]).toBeLessThan(calendar.getEvent.mock.invocationCallOrder[0]);
   expect((await medplum.readResource('Appointment', appointment.id)).status).toBe('cancelled');
   const remaining = await medplum.searchResources('Slot');
-  expect(remaining.map((s) => s.id).sort()).toEqual(before.filter((id) => id !== slots[0].id).sort());
+  expect(remaining.map((s) => s.id).sort()).toEqual(
+    before.filter((id) => id !== slots[0].id && id !== slots[1].id).sort()
+  );
   // Retrying the same manifest is safe after successful cleanup.
   await cleanupFixtures(medplum, calendar, manifest);
   expect(calendar.deleteEvent).not.toHaveBeenCalled();
@@ -156,4 +179,76 @@ test('a Google cleanup failure still attempts Medplum cancellation', async () =>
   const calendar = { getEvent: vi.fn().mockRejectedValue(new Error('offline')), deleteEvent: vi.fn() };
   await expect(cleanupFixtures(medplum, calendar, manifest)).rejects.toThrow('Cleanup incomplete');
   expect((await medplum.readResource('Appointment', appointment.id)).status).toBe('cancelled');
+});
+
+test('cleanup recovers a lost Schedule response by identifier and removes only its owned imported blocks', async () => {
+  const medplum = new MockClient();
+  const connection = await saveConnection(medplum, {
+    practitionerRef: 'Practitioner/p',
+    accountSub: 'account',
+    refreshToken: 'test-token',
+  });
+  const schedule = await medplum.createResource({
+    resourceType: 'Schedule',
+    identifier: [{ system: TEST_SYSTEM, value: 'run' }],
+    actor: [{ reference: 'Practitioner/p' }],
+    active: true,
+  });
+  const manifest: TestManifest = {
+    version: 1,
+    run: 'run',
+    baseUrl: 'https://example.com/',
+    projectId: medplum.getProject()?.id as string,
+    practitionerRef: 'Practitioner/p',
+    connectionId: connection.basic.id,
+    accountSub: 'account',
+    calendarId: 'calendar',
+    googleEventId: 'fixture',
+    start: liveEvent.start.dateTime,
+    end: liveEvent.end.dateTime,
+    checks: [],
+    cleanupComplete: false,
+    testScheduleId: 'pending-write',
+  };
+  for (const scheduleRef of [`Schedule/${schedule.id}`, 'Schedule/real']) {
+    await medplum.createResource({
+      resourceType: 'Slot',
+      schedule: { reference: scheduleRef },
+      status: 'busy-unavailable',
+      start: manifest.start,
+      end: manifest.end,
+      identifier: [
+        {
+          system: IMPORT_IDENTIFIER_SYSTEM,
+          value: importIdentifier({
+            connectionId: connection.basic.id,
+            calendarId: 'calendar',
+            eventId: 'ordinary-google-event',
+            scheduleRef,
+          }),
+        },
+      ],
+    });
+  }
+  await cleanupFixtures(medplum, { getEvent: vi.fn().mockResolvedValue(undefined), deleteEvent: vi.fn() }, manifest);
+  expect(await medplum.searchResources('Schedule', { identifier: `${TEST_SYSTEM}|run` })).toHaveLength(0);
+  const slots = (await medplum.searchResources('Slot')).filter((slot) =>
+    [`Schedule/${schedule.id}`, 'Schedule/real'].includes(slot.schedule.reference ?? '')
+  );
+  expect(slots).toHaveLength(1);
+  expect(slots[0].schedule.reference).toBe('Schedule/real');
+});
+
+test('cleanup retries temporary lease contention but preserves permanent errors and has a limit', async () => {
+  const pause = vi.fn().mockResolvedValue(undefined);
+  const work = vi.fn().mockRejectedValueOnce(new ConnectionBusyError()).mockResolvedValue(undefined);
+  await retryBusyCleanup(work, pause);
+  expect(work).toHaveBeenCalledTimes(2);
+  expect(pause).toHaveBeenCalledTimes(1);
+  const failed = vi.fn().mockRejectedValue(new Error('ownership mismatch'));
+  await expect(retryBusyCleanup(failed, pause)).rejects.toThrow('ownership mismatch');
+  expect(failed).toHaveBeenCalledOnce();
+  const busy = vi.fn().mockRejectedValue(new ConnectionBusyError());
+  await expect(retryBusyCleanup(busy, pause)).rejects.toThrow('busy');
+  expect(busy).toHaveBeenCalledTimes(15);
 });

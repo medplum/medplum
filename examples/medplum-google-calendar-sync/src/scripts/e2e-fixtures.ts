@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumClient, WithId } from '@medplum/core';
+import { sleep } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { GoogleCalendarClient } from '../common/google-calendar';
 import { GOOGLE_CALENDAR_NAMESPACE as N, EVENT_PROPERTY } from '../common/constants';
 import { importedSlots, readImportedIdentity } from '../common/import';
-import { ifMatch, withConnectionLease } from '../common/lease';
+import { ConnectionBusyError, ifMatch, withConnectionLease } from '../common/lease';
 import { projectQuery } from '../common/project';
 import { toGoogleEventId } from '../common/mapping';
 
@@ -25,8 +26,11 @@ export interface TestManifest {
   end: string;
   checks: string[];
   cleanupComplete: boolean;
+  googleOccurrenceIds?: string[];
+  testScheduleId?: string;
 }
-export type TestCalendar = Pick<GoogleCalendarClient, 'getEvent' | 'deleteEvent'>;
+export type TestCalendar = Pick<GoogleCalendarClient, 'getEvent' | 'deleteEvent'> &
+  Partial<Pick<GoogleCalendarClient, 'listBusyEvents'>>;
 
 export async function fixtureAppointments(
   medplum: MedplumClient,
@@ -80,7 +84,8 @@ export async function removeTestEvent(
 export async function cleanupFixtures(
   medplum: MedplumClient,
   calendar: TestCalendar,
-  manifest: TestManifest
+  manifest: TestManifest,
+  save: () => void = () => {}
 ): Promise<void> {
   const failures: string[] = [];
   const attempt = async (name: string, work: () => Promise<void>): Promise<void> => {
@@ -90,6 +95,27 @@ export async function cleanupFixtures(
       failures.push(name);
     }
   };
+  // Persist recurrence identities from Google-owned fixture markers before removing the series.
+  // This also recovers a lost insert/update response or interruption before the runner saved them.
+  if (calendar.listBusyEvents) {
+    const snapshot = await calendar.listBusyEvents(
+      manifest.start,
+      new Date(Date.parse(manifest.end) + 3 * 86400_000).toISOString()
+    );
+    manifest.googleOccurrenceIds = [
+      ...new Set([
+        ...(manifest.googleOccurrenceIds ?? []),
+        ...snapshot.events
+          .filter(
+            (event) =>
+              event.extendedProperties?.private?.medplumE2ERun === manifest.run &&
+              event.extendedProperties?.private?.medplumE2EProject === manifest.projectId
+          )
+          .map((event) => event.id),
+      ]),
+    ];
+    save();
+  }
   // Remove upstream sources first, even if a worker currently holds the lease.
   await attempt('Google source', () =>
     removeTestEvent(calendar, manifest.googleEventId, {
@@ -106,38 +132,62 @@ export async function cleanupFixtures(
   });
   // Do not race an importer or outbound worker; a busy lease leaves recovery pending.
   await attempt('Worker-serialized cleanup', async () => {
-    await withConnectionLease(medplum, manifest.connectionId, async (lease) => {
-      for (const appointment of await fixtureAppointments(medplum, manifest)) {
-        if (appointment.status !== 'cancelled') {
-          throw new Error('Fixture still active');
+    await retryBusyCleanup(() =>
+      withConnectionLease(medplum, manifest.connectionId, async (lease) => {
+        for (const appointment of await fixtureAppointments(medplum, manifest)) {
+          if (appointment.status !== 'cancelled') {
+            throw new Error('Fixture still active');
+          }
+          const id = toGoogleEventId(appointment.id);
+          if (!id) {
+            throw new Error('Invalid fixture event identity');
+          }
+          await lease.check();
+          await removeTestEvent(calendar, id, {
+            [EVENT_PROPERTY.project]: manifest.projectId,
+            [EVENT_PROPERTY.source]: `Appointment/${appointment.id}`,
+            [EVENT_PROPERTY.connection]: manifest.connectionId,
+          });
         }
-        const id = toGoogleEventId(appointment.id);
-        if (!id) {
-          throw new Error('Invalid fixture event identity');
+        const source = await calendar.getEvent(manifest.googleEventId);
+        if (source && source.status !== 'cancelled') {
+          throw new Error('Google source still active');
         }
-        await lease.check();
-        await removeTestEvent(calendar, id, {
-          [EVENT_PROPERTY.project]: manifest.projectId,
-          [EVENT_PROPERTY.source]: `Appointment/${appointment.id}`,
-          [EVENT_PROPERTY.connection]: manifest.connectionId,
-        });
-      }
-      const source = await calendar.getEvent(manifest.googleEventId);
-      if (source && source.status !== 'cancelled') {
-        throw new Error('Google source still active');
-      }
-      for (const slot of await importedSlots(medplum, manifest.connectionId)) {
-        const identity = readImportedIdentity(slot);
-        if (identity?.eventId !== manifest.googleEventId || identity.calendarId !== manifest.calendarId) {
-          continue;
+        const testSchedule = manifest.testScheduleId
+          ? await medplum.searchOne(
+              'Schedule',
+              await projectQuery(medplum, { identifier: `${TEST_SYSTEM}|${manifest.run}` })
+            )
+          : undefined;
+        if (
+          testSchedule &&
+          (testSchedule.meta?.project !== manifest.projectId ||
+            !testSchedule.actor.some((actor) => actor.reference === manifest.practitionerRef))
+        ) {
+          throw new Error('Test Schedule ownership mismatch');
         }
-        if (slot.meta?.project !== manifest.projectId) {
-          throw new Error('Foreign Slot');
+        for (const slot of await importedSlots(medplum, manifest.connectionId)) {
+          const identity = readImportedIdentity(slot);
+          if (
+            !identity ||
+            ((!testSchedule || identity.scheduleRef !== `Schedule/${testSchedule.id}`) &&
+              ![manifest.googleEventId, ...(manifest.googleOccurrenceIds ?? [])].includes(identity.eventId)) ||
+            identity.calendarId !== manifest.calendarId
+          ) {
+            continue;
+          }
+          if (slot.meta?.project !== manifest.projectId) {
+            throw new Error('Foreign Slot');
+          }
+          await lease.check();
+          await medplum.deleteResource('Slot', slot.id, ifMatch(slot));
         }
-        await lease.check();
-        await medplum.deleteResource('Slot', slot.id, ifMatch(slot));
-      }
-    });
+        if (testSchedule) {
+          await lease.check();
+          await medplum.deleteResource('Schedule', testSchedule.id, ifMatch(testSchedule));
+        }
+      })
+    );
   });
   if (failures.length) {
     throw new Error(`Cleanup incomplete: ${failures.join(', ')}. Retry with the saved manifest.`);
@@ -160,5 +210,20 @@ export async function runWithCleanup(work: () => Promise<void>, cleanup: () => P
   }
   if (errors.length) {
     throw new AggregateError(errors, 'Live checks or cleanup failed');
+  }
+}
+
+// Worker contention is expected after cancellation; keep retries bounded and preserve other errors.
+export async function retryBusyCleanup(work: () => Promise<void>, pause = sleep): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await work();
+      return;
+    } catch (error) {
+      if (!(error instanceof ConnectionBusyError) || attempt >= 14) {
+        throw error;
+      }
+      await pause(2000);
+    }
   }
 }

@@ -73,7 +73,7 @@ This invokes `Project/$google-calendar-install` using FHIR Parameters. It instal
 
 Read the returned `outcome`, including warnings, even when `installed=true`. Apply the practitioner and ordinary Slot policy entries within the application's existing scopes. Replace broader grants: appending restrictive entries does not remove permissions granted elsewhere. Give practitioners access to the public operation Bots and OperationDefinitions. The installer reports broad access conservatively and does not rewrite practitioner policies. See [policy examples](state-and-status.md#permission-requirements).
 
-The project defaults to `busy-only` on first install. Re-run installation to rotate the Google client secret, change the ceiling, or repair configuration. For an existing integration, first follow [migration-notes.md](migration-notes.md); a raw redeploy is not a storage rollback strategy.
+The project defaults to `busy-only` on first install. Re-run installation to rotate the Google client secret, change the ceiling, or repair configuration. New projects need no migration or earlier integration. [Historical migration notes](migration-notes.md) apply only to prototype sandboxes.
 
 ## 4. Connect a practitioner
 
@@ -107,7 +107,9 @@ Read `Practitioner/$google-calendar-status` with empty Parameters to observe pro
 
 Use the [live smoke-test commands](README.md#live-deployment-smoke-tests) after installation and connection. They create temporary Google events and Medplum busy time, so use a test project and account. `deploy -- --cli --e2e` runs the smoke test after deployment; it does not run customer installation or Google consent for you.
 
-If a test fails or is interrupted, keep its manifest and run `test:e2e:cleanup` with the same path. Resolve authentication or lease errors and retry. A cleanup failure is a failed test, not a successful deployment check. Cancelled synthetic Appointments remain for audit.
+Add `-- --extended` to `test:e2e`, or `--extended` alongside `deploy -- --cli --e2e`, to include filtering, a new Schedule, conflicts and recurrence. Choose a new manifest for each run. The extended run uses synthetic resources and does not change privacy settings, revoke access, or disconnect the account.
+
+If a test fails or is interrupted, keep its manifest and run `test:e2e:cleanup` with the same path. Cleanup automatically retries temporary lease contention for up to 28 seconds; resolve remaining authentication or lease errors and retry. A cleanup failure is a failed test, not a successful deployment check. Cancelled synthetic Appointments remain for audit.
 
 ## Troubleshooting
 
