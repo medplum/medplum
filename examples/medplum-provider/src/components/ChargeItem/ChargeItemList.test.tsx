@@ -311,28 +311,48 @@ describe('ChargeItemList', () => {
       fireEvent.keyDown(definitionInput, { key: 'Enter', code: 'Enter' });
     });
 
-    // Wait for the definition to be selected and the modal's submit button to be enabled
-    const submitButton = within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Charge Item' });
-    await waitFor(() => expect(submitButton).toBeEnabled(), { timeout: 5000 });
-    await user.click(submitButton);
+    // Wait for definition to be selected and button to be enabled
+    await waitFor(
+      () => {
+        const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
+        const submitButton = addButtons.find((btn) => {
+          const htmlBtn = btn as HTMLButtonElement;
+          return htmlBtn.type === 'button' && !htmlBtn.disabled;
+        });
+        return submitButton !== undefined;
+      },
+      { timeout: 5000 }
+    );
 
-    // Verify charge item was created
-    await waitFor(() => {
-      expect(medplum.createResource).toHaveBeenCalledWith(
-        expect.objectContaining({
-          resourceType: 'ChargeItem',
-          status: 'planned',
-          code: mockCptCode,
-          definitionCanonical: ['http://example.com/charge-item-def'],
-        })
-      );
-      expect(chargeItemsUtils.applyChargeItemDefinition).toHaveBeenCalled();
-      expect(updateChargeItems).toHaveBeenCalledWith([appliedChargeItem]);
+    // Submit the form
+    const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
+    const submitButton = addButtons.find((btn) => {
+      const htmlBtn = btn as HTMLButtonElement;
+      return htmlBtn.type === 'button' && !htmlBtn.disabled;
     });
 
-    // Verify modal closed
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
+    expect(submitButton).toBeDefined();
+    if (submitButton) {
+      await user.click(submitButton);
+
+      // Verify charge item was created
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'ChargeItem',
+            status: 'planned',
+            code: mockCptCode,
+            definitionCanonical: ['http://example.com/charge-item-def'],
+          })
+        );
+        expect(chargeItemsUtils.applyChargeItemDefinition).toHaveBeenCalled();
+        expect(updateChargeItems).toHaveBeenCalledWith([appliedChargeItem]);
+      });
+
+      // Verify modal closed
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    }
   });
 });

@@ -4,7 +4,6 @@
 import eslint from '@eslint/js';
 import headerPlugin from 'eslint-plugin-header';
 import importPlugin from 'eslint-plugin-import';
-// eslint-disable-next-line import/no-unresolved -- Node resolves this package export; eslint-plugin-import does not.
 import jsdoc from 'eslint-plugin-jsdoc';
 import noOnlyTestsPlugin from 'eslint-plugin-no-only-tests';
 import reactHooks from 'eslint-plugin-react-hooks';

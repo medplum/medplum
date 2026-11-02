@@ -19,7 +19,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -591,32 +591,52 @@ describe('BillingTab', () => {
       fireEvent.keyDown(definitionInput, { key: 'Enter', code: 'Enter' });
     });
 
-    // Wait for the definition to be selected and the modal's submit button to be enabled
-    const submitButton = within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Charge Item' });
-    await waitFor(() => expect(submitButton).toBeEnabled(), { timeout: 5000 });
-    await user.click(submitButton);
+    // Wait for definition to be selected and button to be enabled
+    await waitFor(
+      () => {
+        const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
+        const submitButton = addButtons.find((btn) => {
+          const htmlBtn = btn as HTMLButtonElement;
+          return htmlBtn.type === 'button' && !htmlBtn.disabled;
+        });
+        return submitButton !== undefined;
+      },
+      { timeout: 5000 }
+    );
 
-    // Verify charge item was created and the list (now BillingTab-local state) was updated.
-    await waitFor(() => {
-      expect(medplum.createResource).toHaveBeenCalledWith(
-        expect.objectContaining({
-          resourceType: 'ChargeItem',
-          status: 'planned',
-          code: mockCptCode,
-          definitionCanonical: ['http://example.com/charge-item-def'],
-        })
-      );
-      expect(chargeItemsUtils.applyChargeItemDefinition).toHaveBeenCalled();
+    // Submit the form
+    const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
+    const submitButton = addButtons.find((btn) => {
+      const htmlBtn = btn as HTMLButtonElement;
+      return htmlBtn.type === 'button' && !htmlBtn.disabled;
     });
 
-    // The added charge item appears in the list, so the totals card renders (it only shows when
-    // there is at least one charge item).
-    await waitFor(() => {
-      expect(screen.getByText('Total Calculated Price to Bill')).toBeInTheDocument();
-    });
+    expect(submitButton).toBeDefined();
+    if (submitButton) {
+      await user.click(submitButton);
 
-    // The claim is no longer created or updated when a charge item is added; it is only
-    // persisted at export/submit time.
+      // Verify charge item was created and the list (now BillingTab-local state) was updated.
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'ChargeItem',
+            status: 'planned',
+            code: mockCptCode,
+            definitionCanonical: ['http://example.com/charge-item-def'],
+          })
+        );
+        expect(chargeItemsUtils.applyChargeItemDefinition).toHaveBeenCalled();
+      });
+
+      // The added charge item appears in the list, so the totals card renders (it only shows when
+      // there is at least one charge item).
+      await waitFor(() => {
+        expect(screen.getByText('Total Calculated Price to Bill')).toBeInTheDocument();
+      });
+
+      // The claim is no longer created or updated when a charge item is added; it is only
+      // persisted at export/submit time.
+    }
   });
 
   test('updates the encounter and resolves the practitioner when the practitioner is changed', async () => {
