@@ -732,14 +732,14 @@ function getTotal(search: SearchRequest, lastResult: Bundle): number {
 }
 
 /**
- * Returns the elements to request: the elements behind the visible columns plus the caller's extra
- * elements. Full resources are fetched when the caller sets no elements, or a column can't be mapped.
+ * Returns the elements to request: the elements behind the search's fields plus the caller's extra
+ * elements. Full resources are fetched when the search has no fields, or a field can't be mapped.
  * @param search - The search request.
- * @param elementsKey - The caller's extra elements, comma-separated, or undefined to fetch full resources.
+ * @param elementsKey - The caller's extra elements, comma-separated.
  * @returns The elements to request, or undefined to fetch full resources.
  */
 function getRequestElements(search: SearchRequest, elementsKey: string | undefined): string[] | undefined {
-  if (elementsKey === undefined) {
+  if (!search.fields?.length) {
     return undefined;
   }
   const columnElements = getFieldElements(search.resourceType, getFieldDefinitions(search));

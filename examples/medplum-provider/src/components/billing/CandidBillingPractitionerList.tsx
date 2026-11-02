@@ -111,6 +111,7 @@ export function CandidBillingPractitionerList(props: CandidBillingPractitionerLi
       <SearchControl
         key={savedVersion}
         search={search}
+        elements={['identifier']}
         additionalColumns={additionalColumns}
         hideFilters
         onLoad={handleLoad}

@@ -5,6 +5,7 @@ import type { Practitioner } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne, useStabilizedCallback } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { isSubsetted } from '../../utils/billing';
 import {
   CANDID_CREATE_PROVIDER_BOT_IDENTIFIER,
   CANDID_EDIT_PROVIDER_BOT_IDENTIFIER,
@@ -69,7 +70,9 @@ export function CandidBillingPractitioners(props: BillingPractitionersTabProps):
       <CandidBillingPractitionerList
         savedVersion={savedVersion}
         onSelectPractitioner={(practitioner) => {
-          setEditing(practitioner);
+          if (!isSubsetted(practitioner)) {
+            setEditing(practitioner);
+          }
           onNavigate(practitioner.id);
         }}
       />

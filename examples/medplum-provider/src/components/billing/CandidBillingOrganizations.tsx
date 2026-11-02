@@ -6,7 +6,7 @@ import type { Organization } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne, useStabilizedCallback } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { EXISTING_BILLING_ORGANIZATION_ID, NEW_BILLING_ORGANIZATION_ID } from '../../utils/billing';
+import { EXISTING_BILLING_ORGANIZATION_ID, isSubsetted, NEW_BILLING_ORGANIZATION_ID } from '../../utils/billing';
 import { CANDID_CREATE_PROVIDER_BOT_IDENTIFIER, CANDID_EDIT_PROVIDER_BOT_IDENTIFIER } from '../../utils/candid';
 import { showErrorNotification } from '../../utils/notifications';
 import { CandidBillingOrganizationList } from './CandidBillingOrganizationList';
@@ -85,7 +85,9 @@ export function CandidBillingOrganizations(props: BillingOrganizationsTabProps):
         onNewOrganization={() => onNavigate(NEW_BILLING_ORGANIZATION_ID)}
         onAddExisting={() => onNavigate(EXISTING_BILLING_ORGANIZATION_ID)}
         onSelectOrganization={(organization) => {
-          setEditing(organization);
+          if (!isSubsetted(organization)) {
+            setEditing(organization);
+          }
           onNavigate(organization.id);
         }}
       />

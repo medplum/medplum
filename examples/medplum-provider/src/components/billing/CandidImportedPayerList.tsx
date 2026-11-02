@@ -41,6 +41,7 @@ export function CandidImportedPayerList(props: CandidImportedPayerListProps): JS
       <SearchControl
         key={directory.payersVersion}
         search={search}
+        elements={['identifier', 'type', 'active']}
         additionalColumns={additionalColumns}
         hideFilters
         onChange={(e) => setSearch(e.definition)}

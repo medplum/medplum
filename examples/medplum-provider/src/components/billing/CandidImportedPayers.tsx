@@ -5,6 +5,7 @@ import { useMedplum, useStabilizedCallback } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
+import { isSubsetted } from '../../utils/billing';
 import { showErrorNotification } from '../../utils/notifications';
 import { CandidImportedPayerList } from './CandidImportedPayerList';
 import { CandidPayerDetailsModal } from './CandidPayerDetailsModal';
@@ -55,7 +56,9 @@ export function CandidImportedPayers(props: ImportedPayersTabProps): JSX.Element
       <CandidImportedPayerList
         directory={directory}
         onSelectPayer={(selected) => {
-          setPayer(selected);
+          if (!isSubsetted(selected)) {
+            setPayer(selected);
+          }
           onNavigate(selected.id);
         }}
       />
