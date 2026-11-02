@@ -203,3 +203,16 @@ test('credential migration adds the missing legacy connection identity without r
   expect(saved.identifier).toContainEqual({ system: `${N}/connection`, value: args.practitionerRef });
   expect(saved.extension?.some((e) => e.url === TOKEN_URL)).toBe(false);
 });
+
+test('operation authorization accepts the server session summary and rejects a missing effective policy', async () => {
+  const event = {
+    bot: { reference: 'Bot/connect' }, requester: { reference: args.practitionerRef },
+    input: { resourceType: 'Parameters' }, contentType: 'application/fhir+json', secrets: {},
+  } as BotEvent;
+  await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.connect);
+  expect(medplum.getProjectMembership()?.project).toBeUndefined();
+  expect(medplum.getProjectMembership()?.accessPolicy).toBeUndefined();
+  await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).resolves.toBe(args.practitionerRef);
+  vi.mocked(medplum.getAccessPolicy).mockReturnValue(undefined);
+  await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow('restricted Bot membership');
+});

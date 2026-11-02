@@ -21,12 +21,13 @@ export async function operationIdentity(medplum: MockClient, event: BotEvent, id
   vi.spyOn(medplum, 'getProjectMembership').mockReturnValue({
     resourceType: 'ProjectMembership',
     id: 'membership',
-    project: { reference: `Project/${medplum.getProject()?.id}` },
     user: { reference: `Bot/${id}` },
     profile: { reference: `Bot/${id}` },
-    active: true,
     admin: false,
-    accessPolicy: { reference: 'AccessPolicy/operation' },
+  } as NonNullable<ReturnType<MockClient['getProjectMembership']>>);
+  vi.spyOn(medplum, 'getAccessPolicy').mockReturnValue({
+    resourceType: 'AccessPolicy',
+    resource: [{ resourceType: 'Practitioner', readonly: true }],
   });
   const requester = event.requester?.reference?.split('/')[1];
   if (requester) {

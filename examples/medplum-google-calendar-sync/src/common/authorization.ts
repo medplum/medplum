@@ -11,15 +11,18 @@ export async function requireBotMembership(medplum: MedplumClient, event: BotEve
   const profile = (await medplum.getProfileAsync()) as Resource | undefined;
   const membership = medplum.getProjectMembership();
   const project = await currentProjectId(medplum);
+  // /auth/me returns a membership summary without project or accessPolicy references.
+  // Its separate authenticated project and evaluated access policy carry that context.
+  const accessPolicy = medplum.getAccessPolicy();
   if (
     profile?.resourceType !== 'Bot' ||
-    event.bot.reference !== `Bot/${profile.id}` ||
+    event.bot?.reference !== `Bot/${profile.id}` ||
     !profile.identifier?.some((i) => i.system === BOT_IDENTIFIER_SYSTEM && i.value === identifier) ||
     membership?.profile?.reference !== `Bot/${profile.id}` ||
-    membership.project.reference !== `Project/${project}` ||
+    (membership?.project && membership.project.reference !== `Project/${project}`) ||
     membership.active === false ||
     membership.admin ||
-    !membership.accessPolicy
+    !accessPolicy?.resource?.length
   ) {
     throw new Error('Calendar operation requires its restricted Bot membership; reinstall the integration');
   }
