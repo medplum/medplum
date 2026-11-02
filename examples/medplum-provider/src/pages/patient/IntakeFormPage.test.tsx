@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { badRequest, OperationOutcomeError, serverError } from '@medplum/core';
 import type { Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, screen, waitFor } from '@testing-library/react';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { IntakeFormPage } from './IntakeFormPage';
 
 const simpleQuestionnaire: Questionnaire = {
@@ -102,15 +102,13 @@ describe('IntakeFormPage', () => {
       render(
         <MemoryRouter initialEntries={['/onboarding']}>
           <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              <Routes>
-                <Route
-                  path="/onboarding"
-                  element={<IntakeFormPage skipValueSetCheck={skipValueSetCheck} questionnaire={questionnaire} />}
-                />
-              </Routes>
-            </MantineProvider>
+            <Notifications />
+            <Routes>
+              <Route
+                path="/onboarding"
+                element={<IntakeFormPage skipValueSetCheck={skipValueSetCheck} questionnaire={questionnaire} />}
+              />
+            </Routes>
           </MedplumProvider>
         </MemoryRouter>
       );

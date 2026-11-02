@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Questionnaire } from '@medplum/fhirtypes';
 import type { LabOrderInputErrors, TestCoding } from '@medplum/health-gorilla-core';
 import type { TestMetadata } from '@medplum/health-gorilla-react';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TestMetadataCardInput } from './TestMetadataCardInput';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
@@ -109,11 +109,9 @@ describe('TestMetadataCardInput', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
-              <TestMetadataCardInput test={props.test || mockTest} metadata={props.metadata} error={props.error} />
-            </HealthGorillaLabOrderProvider>
-          </MantineProvider>
+          <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
+            <TestMetadataCardInput test={props.test || mockTest} metadata={props.metadata} error={props.error} />
+          </HealthGorillaLabOrderProvider>
         </MedplumProvider>
       </MemoryRouter>
     );

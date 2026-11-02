@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type {
   DiagnosticReport,
@@ -13,10 +12,11 @@ import type {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../test-utils/render';
 import { LabOrderDetails } from './LabOrderDetails';
 
 // Mock the documentReference utility
@@ -276,9 +276,7 @@ describe('LabOrderDetails', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <LabOrderDetails order={mockActiveServiceRequest} {...props} />
-          </MantineProvider>
+          <LabOrderDetails order={mockActiveServiceRequest} {...props} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -986,9 +984,7 @@ describe('LabOrderDetails', () => {
         rerender(
           <MemoryRouter>
             <MedplumProvider medplum={medplum}>
-              <MantineProvider>
-                <LabOrderDetails order={newOrder} />
-              </MantineProvider>
+              <LabOrderDetails order={newOrder} />
             </MedplumProvider>
           </MemoryRouter>
         );
