@@ -56,7 +56,8 @@ async function main(): Promise<void> {
   const secrets = Object.fromEntries((project.secret ?? []).map((s) => [s.name, s]));
   const token = await refreshAccessToken(getOAuthClient(secrets), await readCredential(medplum, connection));
   const calendar = new GoogleCalendarClient(token.access_token);
-  const start = new Date(Date.now() + 7 * 86400_000).toISOString();
+  // Google Calendar drops fractional seconds when storing event times.
+  const start = new Date(Math.floor(Date.now() / 1000) * 1000 + 7 * 86400_000).toISOString();
   const end = new Date(Date.parse(start) + 10 * 60_000).toISOString();
   const calendarId = (await calendar.listBusyEvents(start, end)).calendarId;
   const manifest: TestManifest = cleanupOnly
