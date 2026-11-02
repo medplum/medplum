@@ -1,17 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { BotEvent } from '@medplum/core';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { saveConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { LEASE_URL } from '../common/lease';
 import { readState, withState } from '../common/state';
 import type * as SyncModule from '../common/sync';
 import { operationIdentity } from '../test-auth';
-
-import type { BotEvent } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { SyncBotInput } from './google-calendar-sync-bot';
 import { handler, resolveSource } from './google-calendar-sync-bot';
 

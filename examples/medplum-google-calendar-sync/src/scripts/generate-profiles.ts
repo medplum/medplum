@@ -6,6 +6,7 @@ import type { Bundle, CodeSystem, StructureDefinition, ValueSet } from '@medplum
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { format, resolveConfig } from 'prettier';
 import { IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from '../common/constants';
+
 const base = 'https://medplum.com/profiles/integrations/google-calendar';
 const bundle = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
 const types = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;

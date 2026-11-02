@@ -7,7 +7,7 @@ import type { Bot, ExtractResource, OperationOutcome, Parameters, Project } from
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { saveConnection } from '../common/connection';
-import { INSTALL_SYSTEM } from '../common/install';
+import { INSTALL_SYSTEM } from '../common/constants';
 import { LEASE_URL } from '../common/lease';
 import { readState } from '../common/state';
 import { handler } from './install-google-calendar';

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type * as CoreModule from '@medplum/core';
-
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
 import type { GoogleCalendarEvent } from './mapping';

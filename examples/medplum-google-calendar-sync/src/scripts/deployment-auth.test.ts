@@ -5,6 +5,7 @@ import { MockClient } from '@medplum/mock';
 import { execFileSync } from 'node:child_process';
 import { expect, test, vi } from 'vitest';
 import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
+
 vi.mock('node:child_process', () => ({ execFileSync: vi.fn() }));
 
 test('CLI authentication captures tokens and selects the requested profile and server', () => {

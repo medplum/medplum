@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+
 import { isFhirCriteriaMet, resourceMatchesSubscriptionCriteria } from '@medplum/core';
 import type { Appointment, PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -7,10 +8,13 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { saveConnection } from './connection';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from './constants';
 import { runInbound } from './inbound';
-import { auditPolicyGrants, ensureBotMembership, ensureOperationPolicy, ensureSyncSubscription } from './install';
+import { ensureBotMembership } from './install';
 import { LEASE_URL, withConnectionLease } from './lease';
+import { auditPolicyGrants, ensureOperationPolicy } from './policies';
 import { callerStatus } from './public-status';
 import { readState, withState } from './state';
+import { ensureSyncSubscription } from './subscriptions';
+
 let medplum: MockClient;
 beforeEach(() => {
   medplum = new MockClient({ project: { resourceType: 'Project', id: 'p', name: 'p' } });

@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { MedplumClient } from '@medplum/core';
+import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { createHash, randomBytes } from 'node:crypto';
+import { createServer } from 'node:http';
+import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
+import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
+
 /*
  * Connects the signed-in practitioner's Google Calendar from a developer machine, standing in
  * for the customer app's callback page. Runs the consent flow on a loopback port, then calls
@@ -10,13 +17,6 @@
  *
  *   PROJECT_ID=… GOOGLE_CALENDAR_CLIENT_ID=… npx tsx src/scripts/connect-local.ts [eventDetailLevel]
  */
-
-import { MedplumClient } from '@medplum/core';
-import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { createHash, randomBytes } from 'node:crypto';
-import { createServer } from 'node:http';
-import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
-import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
 
 const PORT = 8765;
 const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`;

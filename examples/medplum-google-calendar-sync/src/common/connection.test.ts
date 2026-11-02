@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { readCredential } from './credentials';
-
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { findConnection, readConnection, saveConnection, updateConnection } from './connection';
+import { readCredential } from './credentials';
 
 const PRACTITIONER = 'Practitioner/dr-rivera';
 

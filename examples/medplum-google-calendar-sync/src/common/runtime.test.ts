@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { operationIdentity } from '../test-auth';
-import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
-
 import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
@@ -16,20 +13,18 @@ import type { Appointment, Basic, Resource, Schedule, Slot } from '@medplum/fhir
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler as disconnect } from '../bots/google-calendar-disconnect-bot';
+import { operationIdentity } from '../test-auth';
 import * as conflicts from './conflicts';
 import type { CalendarConnection } from './connection';
 import { findConnection, saveConnection, updateConnection } from './connection';
+import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import { importedSlots } from './import';
 import { runInbound } from './inbound';
-import {
-  ensureInboundPolicy,
-  notificationSubscription,
-  ORDINARY_SLOT_POLICY_SNIPPET,
-  transitionExpression,
-} from './install';
 import { ConnectionBusyError, LEASE_MS, LEASE_URL, withConnectionLease } from './lease';
+import { ensureInboundPolicy, ORDINARY_SLOT_POLICY_SNIPPET } from './policies';
 import { callerStatus } from './public-status';
 import { readState, requestSync, withState } from './state';
+import { notificationSubscription, transitionExpression } from './subscriptions';
 import { ensureWatch, receiveNotification } from './watch';
 
 const PRACTITIONER = 'Practitioner/test-practitioner';

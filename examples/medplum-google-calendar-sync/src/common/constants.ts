@@ -4,6 +4,9 @@
 /** Code system and extension namespace for everything this integration writes to FHIR. */
 export const GOOGLE_CALENDAR_NAMESPACE = 'https://www.medplum.com/integrations/google-calendar';
 
+/** Memberships are keyed by an identifier, and AccessPolicy and Subscription (which have none) by a tag, in this system. */
+export const INSTALL_SYSTEM = `${GOOGLE_CALENDAR_NAMESPACE}/install`;
+
 /** Project secrets written by `$google-calendar-install`. */
 export const SECRET = {
   clientId: 'GOOGLE_CALENDAR_CLIENT_ID',

@@ -1,42 +1,41 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { operationHandler } from '../common/contracts';
-
-/*
- * `Project/$google-calendar-install`, run once by a customer project admin. Stores the
- * Google OAuth client and settings, and wires the shared Bots into this project: a policy
- * and memberships for the sync and reconcile Bots, Subscriptions on Appointment and Slot,
- * and the hourly reconcile Cron. Idempotent; re-run it to rotate the client secret or repair
- * the wiring.
- */
-
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import { allOk } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { writeProjectCeiling } from '../common/configuration';
 import { CONNECTION_SEARCH, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, SECRET } from '../common/constants';
+import { operationHandler } from '../common/contracts';
 import {
-  auditPolicyGrants,
   ensureBotMembership,
-  ensureInboundPolicy,
-  ensureOperationPolicy,
   ensureReconcileCron,
-  ensureSyncAccessPolicy,
-  ensureSyncSubscription,
-  ensureWorkSubscription,
   INSTALL_SECRETS,
-  ORDINARY_SLOT_POLICY_SNIPPET,
-  PRACTITIONER_POLICY_SNIPPET,
   requireSharedBot,
   writeProjectSecrets,
 } from '../common/install';
 import { resolveDetailLevel } from '../common/mapping';
 import { getParam, parseDetailLevel } from '../common/operations';
+import {
+  auditPolicyGrants,
+  ensureInboundPolicy,
+  ensureOperationPolicy,
+  ensureSyncAccessPolicy,
+  ORDINARY_SLOT_POLICY_SNIPPET,
+  PRACTITIONER_POLICY_SNIPPET,
+} from '../common/policies';
 import { installProfiles } from '../common/profiles';
 import { currentProjectId, projectQuery } from '../common/project';
 import { requestSync } from '../common/state';
+import { ensureSyncSubscription, ensureWorkSubscription } from '../common/subscriptions';
+
+/*
+ * `Project/$google-calendar-install`, run once by a customer project admin. Stores the
+ * Google OAuth client and settings, then creates restricted Bot memberships, policies,
+ * scheduling and work-request Subscriptions, and hourly/minute Crons. Re-run installation
+ * to rotate the client secret or repair configuration.
+ */
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
   const secrets: Record<string, string> = {};

@@ -1,19 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
-import { importIdentifier } from '../common/import';
-import { LEASE_URL } from '../common/lease';
-import { readState } from '../common/state';
-import { operationIdentity } from '../test-auth';
-
 import type { BotEvent } from '@medplum/core';
 import type { Parameters, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
+import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
+import { importIdentifier } from '../common/import';
 import { runInbound } from '../common/inbound';
+import { LEASE_URL } from '../common/lease';
+import { readState } from '../common/state';
+import { operationIdentity } from '../test-auth';
 import { handler } from './google-calendar-disconnect-bot';
 
 const PROJECT_ID = 'proj-1';

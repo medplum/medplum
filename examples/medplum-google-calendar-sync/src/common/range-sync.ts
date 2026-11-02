@@ -1,21 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { normalizeErrorString } from '@medplum/core';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { CalendarConnection } from './connection';
+import { GoogleApiError } from './google-calendar';
+import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { projectQuery } from './project';
+import type { SyncSession, SyncSource } from './sync';
+import { isResourceGone } from './sync';
 
 /*
  * Pushes everything a practitioner should have on their calendar within a date range:
  * the backfill on connect, and `Practitioner/$google-calendar-sync` on demand.
  * Then verifies every existing owned mirror, independently of the discovery horizon.
  */
-
-import { normalizeErrorString } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
-import type { CalendarConnection } from './connection';
-import { GoogleApiError } from './google-calendar';
-import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
-import type { SyncSession, SyncSource } from './sync';
-import { isResourceGone } from './sync';
 
 /** How far ahead the backfill on connect, and `$google-calendar-sync` by default, push. */
 const DEFAULT_SYNC_DAYS = 90;

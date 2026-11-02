@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { formatHumanName } from '@medplum/core';
+import type { Appointment, HealthcareService, HumanName, Patient, Slot } from '@medplum/fhirtypes';
+import type { EventDetailLevel } from './constants';
+import { DEFAULT_EVENT_DETAIL_LEVEL, EVENT_DETAIL_LEVELS, EVENT_PROPERTY } from './constants';
+
 /*
  * Pure functions from Medplum resources to Google Calendar event bodies. Nothing here talks
  * to Medplum or Google: callers resolve the Patient and HealthcareService first and pass
  * them in.
  */
-
-import { formatHumanName } from '@medplum/core';
-import type { Appointment, HealthcareService, HumanName, Patient, Slot } from '@medplum/fhirtypes';
-import type { EventDetailLevel } from './constants';
-import { DEFAULT_EVENT_DETAIL_LEVEL, EVENT_DETAIL_LEVELS, EVENT_PROPERTY } from './constants';
 
 const DEFAULT_APPOINTMENT_URL_TEMPLATE = 'https://app.medplum.com/Appointment/{id}';
 

@@ -13,14 +13,15 @@ import { findConnection, saveConnection } from './connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import { CREDENTIAL_SEARCH, migrateCredential, readCredential, TOKEN_URL } from './credentials';
 import { importedSlots } from './import';
+import { withConnectionLease } from './lease';
 import {
   auditPolicyGrants,
   ensureInboundPolicy,
   ensureSyncAccessPolicy,
   ORDINARY_SLOT_POLICY_SNIPPET,
   PRACTITIONER_POLICY_SNIPPET,
-} from './install';
-import { withConnectionLease } from './lease';
+} from './policies';
+
 let medplum: MockClient;
 beforeEach(() => {
   medplum = new MockClient({ project: { resourceType: 'Project', id: 'customer-a', name: 'a' } });

@@ -3,6 +3,7 @@
 
 import { expect, test } from 'vitest';
 import { installationInput } from './install-input';
+
 const credentials = { GOOGLE_CALENDAR_CLIENT_ID: 'test-client', GOOGLE_CALENDAR_CLIENT_SECRET: 'test-secret' };
 
 test('installation forwards only declared inputs and preserves an omitted project ceiling', () => {

@@ -82,7 +82,7 @@ Current stale reasons include `awaiting-initial-import`, `import-overdue` (more 
 
 ## Customer workflows
 
-`notificationSubscription('Bot/<customer-workflow-id>', 'reauth' | 'conflicts')` in `src/common/install.ts` returns an installable Subscription. The integration does not install a customer notification workflow automatically. Both recipes select `Basic?code=N|calendar-public-status`, with `N` expanded, and use create/update interaction extensions plus `https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression`.
+`notificationSubscription('Bot/<customer-workflow-id>', 'reauth' | 'conflicts')` in `src/common/subscriptions.ts` returns an installable Subscription. The integration does not install a customer notification workflow automatically. Both recipes select `Basic?code=N|calendar-public-status`, with `N` expanded, and use create/update interaction extensions plus `https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression`.
 
 The reauthentication expression is:
 

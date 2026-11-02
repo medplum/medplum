@@ -6,6 +6,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, vi } from 'vitest';
+
 const create = MockClient.prototype.createResource;
 const conditional = MockClient.prototype.createResourceIfNoneExist;
 beforeEach(() => {

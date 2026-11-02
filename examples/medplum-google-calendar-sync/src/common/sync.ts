@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/*
- * Mirrors one Appointment or Slot to every connected practitioner it concerns. Shared by the
- * sync Bot (one source per Subscription delivery) and the range sync (many sources per run),
- * so a `SyncSession` caches per-run state: the OAuth client and one access token per
- * practitioner.
- */
-
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -51,6 +44,13 @@ import { assertCurrentProject, projectQuery } from './project';
 import type { SyncRange } from './range-sync';
 import type { OutboundWork } from './state';
 import { readState, withState } from './state';
+
+/*
+ * Mirrors one Appointment or Slot to every connected practitioner it concerns. Shared by the
+ * sync Bot (one source per Subscription delivery) and the range sync (many sources per run),
+ * so a `SyncSession` caches per-run state: the OAuth client and one access token per
+ * practitioner.
+ */
 
 /** The Appointment or Slot to mirror. `deleted` means the event must go for everyone. */
 export interface SyncSource {

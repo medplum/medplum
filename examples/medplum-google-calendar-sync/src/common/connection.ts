@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { PROFILES } from './profiles';
-
-/* Connection state is worker-only. Practitioners read an allowlisted public summary.
- * Credentials are stored separately; this parser never returns a refresh token. */
-
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getExtensionValue, getIdentifier } from '@medplum/core';
 import type { Basic, Extension } from '@medplum/fhirtypes';
@@ -15,8 +10,12 @@ import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE } from './constants';
 import { TOKEN_URL, writeCredential } from './credentials';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
+import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import { readState, withState } from './state';
+
+/* Connection state is worker-only. Practitioners read an allowlisted public summary.
+ * Credentials are stored separately; this parser never returns a refresh token. */
 
 /** `Basic.code` for a Calendar Connection. */
 export const CALENDAR_CONNECTION_CODE = 'calendar-connection';

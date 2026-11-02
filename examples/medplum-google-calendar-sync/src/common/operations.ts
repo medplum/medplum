@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/*
- * Shared pieces of the practitioner-facing operations (`Practitioner/$google-calendar-*`).
- * They are type-level operations (an instance-level custom operation would receive the
- * resource instead of the request body), and the practitioner is always `event.requester`,
- * which the server sets to the caller's own profile. Nobody can act on someone else's calendar.
- */
-
 import type { BotEvent } from '@medplum/core';
 import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { CalendarConnection } from './connection';
@@ -16,6 +9,13 @@ import { EVENT_DETAIL_LEVELS } from './constants';
 import type { CalendarConflict } from './import';
 import { resolveDetailLevel } from './mapping';
 import { readState } from './state';
+
+/*
+ * Shared pieces of the practitioner-facing operations (`Practitioner/$google-calendar-*`).
+ * They are type-level operations (an instance-level custom operation would receive the
+ * resource instead of the request body), and the practitioner is always `event.requester`,
+ * which the server sets to the caller's own profile. Nobody can act on someone else's calendar.
+ */
 
 /**
  * The calling practitioner. Only a Practitioner may hold a Calendar Connection.

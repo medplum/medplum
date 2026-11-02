@@ -18,6 +18,8 @@ acceptance.md             Remaining live release checks
 
 Build checks the committed profile artifact against `src/scripts/generate-profiles.ts`. Run `npm run profiles --workspace=medplum-google-calendar-sync` after changing the generator. Profiles describe six resource shapes plus their supporting terminology/extensions. They do not authorize access or replace explicit operation validation.
 
+Shared modules separate installation concerns: `install.ts` manages Bot lookup, memberships, secrets and Crons; `policies.ts` defines permissions and audits existing grants; `subscriptions.ts` defines scheduling delivery, work requests and notification recipes. Runtime modules import these responsibilities directly.
+
 ## Bot responsibilities
 
 | Bot identifier | Entry point | Execution context |

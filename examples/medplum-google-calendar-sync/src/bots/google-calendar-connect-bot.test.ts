@@ -1,17 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import { readCredential } from '../common/credentials';
-import { empty, operationIdentity } from '../test-auth';
-
 import type { BotEvent } from '@medplum/core';
 import type { Parameters, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
+import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import { readCredential } from '../common/credentials';
 import { readState } from '../common/state';
+import { empty, operationIdentity } from '../test-auth';
 import { handler } from './google-calendar-connect-bot';
 
 const PROJECT_ID = 'proj-1';

@@ -8,6 +8,7 @@ import { IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './cons
 import { importIdentifier, readImportedIdentity } from './import';
 import { DEFINITIONS, PROFILES } from './profiles';
 import { withState } from './state';
+
 const profile = (url: string): StructureDefinition => DEFINITIONS.find((d) => d.url === url) as StructureDefinition;
 const connection: Basic = {
   resourceType: 'Basic',

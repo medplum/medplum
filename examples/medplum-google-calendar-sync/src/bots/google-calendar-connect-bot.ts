@@ -1,25 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { operationHandler } from '../common/contracts';
-
-/*
- * `Practitioner/$google-calendar-connect`. The callback page in the customer's app has
- * already checked `state`; it sends the authorization code and PKCE verifier here. Runs under
- * its restricted Bot membership; event.requester identifies the practitioner.
- */
-
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import { requireOperationBot } from '../common/authorization';
 import { readProjectCeiling } from '../common/configuration';
 import { findConnection, saveConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
+import { operationHandler } from '../common/contracts';
 import { MissingCalendarCredentialError, readCredential } from '../common/credentials';
 import { exchangeCode, getOAuthClient, hasImportScopes, readIdToken, revokeToken } from '../common/google-oauth';
 import type { ConnectionLease } from '../common/lease';
 import { withConnectionLease } from '../common/lease';
 import { getParam, mutationStatus, parseDetailLevel } from '../common/operations';
+
+/*
+ * `Practitioner/$google-calendar-connect`. The callback page in the customer's app has
+ * already checked `state`; it sends the authorization code and PKCE verifier here. Runs under
+ * its restricted Bot membership; event.requester identifies the practitioner.
+ */
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
   const practitionerRef = await requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect);

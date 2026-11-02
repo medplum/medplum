@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { projectQuery } from './project';
-
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -10,6 +8,7 @@ import { CONNECTION_SEARCH, readConnection } from './connection';
 import type { GoogleCalendarClient } from './google-calendar';
 import type { ConnectionLease } from './lease';
 import { ifMatch, isVersionConflict } from './lease';
+import { projectQuery } from './project';
 import { CHANNEL_IDENTIFIER_SYSTEM, readState, repairCheckpoint, withState } from './state';
 
 export function channelTokenHash(token: string): string {

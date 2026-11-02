@@ -1,16 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import type * as RangeSyncModule from '../common/range-sync';
-import { operationIdentity } from '../test-auth';
-
 import type { BotEvent } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
 import { saveConnection, updateConnection } from '../common/connection';
+import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import type * as RangeSyncModule from '../common/range-sync';
 import { readState, withState } from '../common/state';
+import { operationIdentity } from '../test-auth';
 import { handler } from './google-calendar-reconcile-bot';
 
 const { syncRange } = vi.hoisted(() => ({

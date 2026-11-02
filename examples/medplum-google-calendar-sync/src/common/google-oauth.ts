@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { BotEvent } from '@medplum/core';
+import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE, SECRET } from './constants';
+
 /*
  * Google OAuth for one practitioner: the authorization-code exchange at connect, the
  * refresh-token exchange every Bot run, and revocation at disconnect.
  */
-
-import type { BotEvent } from '@medplum/core';
-import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE, SECRET } from './constants';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';

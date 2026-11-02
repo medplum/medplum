@@ -6,6 +6,7 @@ import type { CodeSystem, StructureDefinition, ValueSet } from '@medplum/fhirtyp
 import definitions from '../../profiles/definitions.json';
 import { ifMatch } from './lease';
 import { projectQuery } from './project';
+
 export const PROFILE_ROOT = 'https://medplum.com/profiles/integrations/google-calendar';
 export const PROFILES = {
   publicStatus: `${PROFILE_ROOT}/public-status`,

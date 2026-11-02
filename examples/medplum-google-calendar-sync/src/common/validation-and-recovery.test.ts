@@ -9,10 +9,11 @@ import { ConflictRefreshPending, refreshConflicts } from './conflicts';
 import { saveConnection } from './connection';
 import { IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import { busyInterval, importIdentifier } from './import';
-import { ensureSyncSubscription } from './install';
 import { ConnectionBusyError, LEASE_URL, withConnectionLease } from './lease';
 import { DEFINITIONS, PROFILES } from './profiles';
 import { readState, repairCheckpoint, requestSync, STATE_URL, withState } from './state';
+import { ensureSyncSubscription } from './subscriptions';
+
 const profile = (name: keyof typeof PROFILES): { profile: StructureDefinition } => ({
   profile: DEFINITIONS.find((d) => d.url === PROFILES[name]) as StructureDefinition,
 });

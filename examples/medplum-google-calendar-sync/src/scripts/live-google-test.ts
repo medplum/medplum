@@ -1,6 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { createHash, randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
+import { GoogleApiError, GoogleCalendarClient } from '../common/google-calendar';
+import { exchangeCode, hasImportScopes, readIdToken, refreshAccessToken } from '../common/google-oauth';
+import type { GoogleCalendarEvent } from '../common/mapping';
+import { removeTestEvent } from './e2e-fixtures';
+
 /*
  * Checks, against a real Google account, the Calendar API behaviours the sync relies on
  * but Google doesn't document. Run once per Google Cloud client before trusting the design:
@@ -12,15 +21,6 @@
  * few test events on the primary calendar (all tagged, all removed at the end) without revoking
  * the account grant. Nothing is written to Medplum.
  */
-
-import { createHash, randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
-import { GoogleApiError, GoogleCalendarClient } from '../common/google-calendar';
-import { exchangeCode, hasImportScopes, readIdToken, refreshAccessToken } from '../common/google-oauth';
-import type { GoogleCalendarEvent } from '../common/mapping';
-import { removeTestEvent } from './e2e-fixtures';
 
 const PORT = 8765;
 // Google's loopback rule for Desktop clients wants the IP form; the `localhost` hostname is rejected.

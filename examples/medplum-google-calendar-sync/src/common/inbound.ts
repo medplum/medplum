@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ConflictRefreshPending, refreshConflicts } from './conflicts';
-
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
+import { ConflictRefreshPending, refreshConflicts } from './conflicts';
 import type { CalendarConnection } from './connection';
 import { readConnection, updateConnection } from './connection';
 import { EVENT_PROPERTY, SECRET } from './constants';

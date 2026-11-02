@@ -1,21 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/*
- * Deploys the Google Calendar Bots and their OperationDefinitions into the shared Medplum
- * project that customers link to.
- */
-
 import { createReference, MedplumClient } from '@medplum/core';
 import type { Bot, OperationDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { execFileSync } from 'node:child_process';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
-
 import { CONTRACTS } from '../common/contracts';
 import { ifMatch } from '../common/lease';
 import { projectQuery } from '../common/project';
 import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
+
+/*
+ * Deploys the Google Calendar Bots and their OperationDefinitions into the shared Medplum
+ * project that customers link to.
+ */
 
 const BASE_URL = process.env.BASE_URL ?? process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com/';
 

@@ -1,11 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { refreshConflicts } from '../common/conflicts';
-import { withConnectionLease } from '../common/lease';
-
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { requireBotMembership } from '../common/authorization';
+import { refreshConflicts } from '../common/conflicts';
+import { findConnection, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import { withConnectionLease } from '../common/lease';
+import { requestSync } from '../common/state';
+import type { SyncSource } from '../common/sync';
+import { getProjectId, isResourceGone, SyncSession } from '../common/sync';
 
 /*
  * Subscription handler for `Appointment` and `Slot`. Deliveries aren't ordered and the
@@ -14,13 +19,6 @@ import { BOT_IDENTIFIER_VALUE } from '../common/constants';
  * only a resource Medplum no longer has is treated as deleted, so neither a transient read
  * failure nor a forged `{ deletedResource }` can remove a live event.
  */
-
-import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
-import { findConnection, readConnection } from '../common/connection';
-import { requestSync } from '../common/state';
-import type { SyncSource } from '../common/sync';
-import { getProjectId, isResourceGone, SyncSession } from '../common/sync';
 
 type SyncResource = Appointment | Slot;
 export type SyncBotInput = SyncResource | { deletedResource: SyncResource };

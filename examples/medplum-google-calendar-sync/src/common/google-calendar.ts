@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { sleep } from '@medplum/core';
+import { EVENT_PROPERTY } from './constants';
+import type { GoogleCalendarEvent } from './mapping';
+import type { OwnershipStore } from './ownership';
+
 /*
  * A thin client for the Google Calendar events API on the practitioner's primary calendar:
  * plain `fetch`, no SDK, so Bots bundle nothing extra. Every write passes `sendUpdates=none`;
@@ -8,11 +13,6 @@
  * omitted fields, which would let a location or description linger after a detail-level
  * downgrade.
  */
-
-import { sleep } from '@medplum/core';
-import { EVENT_PROPERTY } from './constants';
-import type { GoogleCalendarEvent } from './mapping';
-import type { OwnershipStore } from './ownership';
 
 const EVENTS_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 /** Statuses retried with backoff: quota (Google uses 403 for some quota errors), rate limit, and server errors. */
