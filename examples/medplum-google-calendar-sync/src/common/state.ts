@@ -207,7 +207,10 @@ export function withState(basic: Basic, state: SyncState): Basic {
       ...(basic.identifier ?? []).filter((i) => i.system !== CHANNEL_IDENTIFIER_SYSTEM),
       ...state.channels.map((c) => ({ system: CHANNEL_IDENTIFIER_SYSTEM, value: c.id })),
     ],
-    extension: [...(basic.extension ?? []).filter((e) => e.url !== STATE_URL), { url: STATE_URL, extension: fields }],
+    extension: [
+      ...(basic.extension ?? []).filter((e) => e.url !== STATE_URL),
+      ...(fields.length ? [{ url: STATE_URL, extension: fields }] : []),
+    ],
   };
 }
 

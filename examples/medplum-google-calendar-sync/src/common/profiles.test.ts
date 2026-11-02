@@ -5,6 +5,7 @@ import { validateResource } from '@medplum/core';
 import type { Basic, Slot, StructureDefinition } from '@medplum/fhirtypes';
 import { expect, test } from 'vitest';
 import { DEFINITIONS, PROFILES } from './profiles';
+import { withState } from './state';
 import { GOOGLE_CALENDAR_NAMESPACE as N, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 const profile = (url: string): StructureDefinition => DEFINITIONS.find((d) => d.url === url) as StructureDefinition;
 const connection: Basic = {
@@ -79,4 +80,10 @@ test.each(['credential', 'settings', 'mirror'] as const)('%s profile validates i
   const options = { profile: profile(PROFILES[name]) };
   expect(() => validateResource(resource, options)).not.toThrow();
   expect(() => validateResource({ ...resource, identifier: [] }, options)).toThrow();
+});
+
+test('empty sync state omits the invalid empty FHIR extension', () => {
+  const resource = withState(connection, { channels: [], conflicts: [] });
+  expect(resource.extension?.some((e) => e.url === `${N}/sync-state`)).toBe(false);
+  expect(() => validateResource(resource, { profile: profile(PROFILES.connection) })).not.toThrow();
 });

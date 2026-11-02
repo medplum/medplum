@@ -7,6 +7,7 @@ import { getExtensionValue, getIdentifier } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import type { CalendarConnection } from './connection';
+import { CONNECTION_IDENTIFIER_SYSTEM } from './connection';
 import type { ConnectionLease } from './lease';
 import { ifMatch } from './lease';
 import { projectQuery } from './project';
@@ -87,10 +88,29 @@ export async function migrateCredential(lease: ConnectionLease): Promise<void> {
   if (!sub) {
     throw new Error('Legacy credential has no account identity');
   }
+  const practitionerRef = basic.subject?.reference;
+  if (!practitionerRef?.startsWith('Practitioner/')) {
+    throw new Error('Legacy connection has no practitioner identity');
+  }
+  const matches = await lease.medplum.searchResources(
+    'Basic',
+    await projectQuery(lease.medplum, { identifier: `${CONNECTION_IDENTIFIER_SYSTEM}|${practitionerRef}` })
+  );
+  if (matches.some((match) => match.id !== basic.id)) {
+    throw new Error('Ambiguous legacy connection identity');
+  }
+  const existingIdentity = getIdentifier(basic, CONNECTION_IDENTIFIER_SYSTEM);
+  if (existingIdentity && existingIdentity !== practitionerRef) {
+    throw new Error('Legacy connection identity mismatch');
+  }
   await writeCredential(lease, token, sub);
   await lease.mutate((current) => ({
     ...current,
     meta: { ...current.meta, profile: [PROFILES.connection] },
+    identifier: [
+      ...(current.identifier ?? []).filter((i) => i.system !== CONNECTION_IDENTIFIER_SYSTEM),
+      { system: CONNECTION_IDENTIFIER_SYSTEM, value: practitionerRef },
+    ],
     extension: current.extension?.filter((e) => e.url !== TOKEN_URL),
   }));
 }

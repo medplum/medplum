@@ -189,3 +189,17 @@ test('audit accepts only the published restricted caller snippets without warnin
   });
   expect(await auditPolicyGrants(medplum, 'customer-a')).not.toContain(`ProjectMembership/${member.id}`);
 });
+
+test('credential migration adds the missing legacy connection identity without replacing its resource', async () => {
+  const connection = await saveConnection(medplum, args);
+  await medplum.updateResource({
+    ...connection.basic,
+    meta: { ...connection.basic.meta, profile: [] },
+    identifier: connection.basic.identifier?.filter((i) => i.system !== `${N}/connection`),
+    extension: [...(connection.basic.extension ?? []), { url: TOKEN_URL, valueString: 'legacy-token' }],
+  });
+  await withConnectionLease(medplum, connection.basic.id, migrateCredential);
+  const saved = await medplum.readResource('Basic', connection.basic.id);
+  expect(saved.identifier).toContainEqual({ system: `${N}/connection`, value: args.practitionerRef });
+  expect(saved.extension?.some((e) => e.url === TOKEN_URL)).toBe(false);
+});
