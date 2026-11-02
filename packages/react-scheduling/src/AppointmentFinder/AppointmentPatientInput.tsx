@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { formatDate, getDisplayString, getReferenceString, isReference } from '@medplum/core';
-import type { OperationOutcome, Patient, Reference } from '@medplum/fhirtypes';
+import { formatDate, getDisplayString, getReferenceString } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete } from '@medplum/react';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { getMedicalRecordNumber, hasMedicalRecordNumber } from '../patients';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 
@@ -22,7 +22,7 @@ const IDENTIFIER_SEARCH_CRITERIA = { _count: '10' };
 
 export interface AppointmentPatientInputProps {
   /** Read once, at mount. */
-  readonly defaultValue?: WithId<Patient> | Reference<Patient>;
+  readonly defaultValue?: WithId<Patient>;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
   readonly required?: boolean;
@@ -36,13 +36,9 @@ export interface AppointmentPatientInputProps {
  * @param props - The React props.
  * @returns The field.
  */
-export function AppointmentPatientInput(props: AppointmentPatientInputProps): JSX.Element | null {
-  const { mrnSystem, required, onChange, error } = props;
+export function AppointmentPatientInput(props: AppointmentPatientInputProps): JSX.Element {
+  const { defaultValue, mrnSystem, required, onChange, error } = props;
   const medplum = useMedplum();
-
-  const [initialValue] = useState(props.defaultValue);
-  const [defaultOutcome, setDefaultOutcome] = useState<OperationOutcome>();
-  const defaultPatient = useResource(initialValue, setDefaultOutcome);
 
   const loadPatients = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<Patient>[]> => {
@@ -72,11 +68,6 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
 
   const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
 
-  if (isReference(initialValue) && !defaultPatient && !defaultOutcome) {
-    // AsyncAutocomplete reads its default selection once, so wait for the reference to resolve.
-    return null;
-  }
-
   return (
     <AsyncAutocomplete<WithId<Patient>>
       name="patient"
@@ -84,7 +75,7 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
       placeholder="Search patients by name or MRN"
       required={required}
       error={error}
-      defaultValue={defaultPatient}
+      defaultValue={defaultValue}
       toOption={toPatientOption}
       loadOptions={loadPatients}
       itemComponent={patientItem}
