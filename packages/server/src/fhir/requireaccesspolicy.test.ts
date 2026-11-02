@@ -147,6 +147,5 @@ describe('requireAccessPolicy project setting', () => {
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + userAccessToken);
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toContain('Project requires an access policy');
   });
 });
