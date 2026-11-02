@@ -307,12 +307,14 @@ function getDeviceDisplayString(device: Device): string | undefined {
  * @returns The display string if one is found.
  */
 function getCoverageDisplayString(coverage: Coverage): string | undefined {
-  const payor = coverage.payor?.find(
+  const payors = Array.isArray(coverage.payor) ? coverage.payor : [];
+  const payor = payors.find(
     (p) =>
+      typeof p?.display === 'string' &&
       p.display &&
       p.type !== 'Patient' &&
       p.type !== 'RelatedPerson' &&
-      !/(^|\/)(Patient|RelatedPerson)\//.test(p.reference ?? '')
+      !/(^|\/)(Patient|RelatedPerson)\//.test(typeof p.reference === 'string' ? p.reference : '')
   );
   return payor?.display || formatCodeableConcept(coverage.type) || undefined;
 }
@@ -330,12 +332,14 @@ function getMedicationDisplayString(
     return formatCodeableConcept(resource.medicationCodeableConcept) || undefined;
   }
   const reference = resource.medicationReference;
-  if (reference?.display) {
+  if (typeof reference?.display === 'string' && reference.display) {
     return reference.display;
   }
-  if (reference?.reference?.startsWith('#')) {
-    const id = reference.reference.slice(1);
-    const medication = resource.contained?.find((r): r is Medication => r.resourceType === 'Medication' && r.id === id);
+  const referenceString = reference?.reference;
+  if (typeof referenceString === 'string' && referenceString.startsWith('#')) {
+    const id = referenceString.slice(1);
+    const contained = Array.isArray(resource.contained) ? resource.contained : [];
+    const medication = contained.find((r): r is Medication => r?.resourceType === 'Medication' && r.id === id);
     return formatCodeableConcept(medication?.code) || undefined;
   }
   return undefined;

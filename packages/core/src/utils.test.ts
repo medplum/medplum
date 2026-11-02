@@ -521,6 +521,23 @@ describe('Core Utils', () => {
     ).toStrictEqual('Ondansetron 4 MG');
   });
 
+  test('getDisplayString does not throw on malformed input', () => {
+    const malformed = [
+      { resourceType: 'Coverage', id: '123', payor: [null] },
+      { resourceType: 'Coverage', id: '123', payor: { display: 'Acme' } },
+      { resourceType: 'Coverage', id: '123', payor: [{ display: 123, reference: 456 }] },
+      { resourceType: 'Coverage', id: '123', type: { coding: { code: 'x' } } },
+      { resourceType: 'Immunization', id: '123', vaccineCode: { coding: 'x' } },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { reference: 123 } },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { display: { text: 'x' } } },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { reference: '#med1' }, contained: [null] },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { reference: '#med1' }, contained: {} },
+    ] as unknown as Resource[];
+    for (const resource of malformed) {
+      expect(getDisplayString(resource)).toStrictEqual(`${resource.resourceType}/123`);
+    }
+  });
+
   test('getImageSrc', () => {
     expect(getImageSrc({ resourceType: 'Observation' } as Observation)).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Patient' })).toBeUndefined();
