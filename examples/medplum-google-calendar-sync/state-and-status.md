@@ -33,14 +33,15 @@ All names below are relative child-extension URLs under `N/sync-state`. Optional
 | Field | FHIR value type | Meaning |
 | --- | --- | --- |
 | inboundRequest, outboundRequest | string | UUID identifying requested work |
-| inboundCompleted, outboundCompleted | string | Request generation covered by the last successful full run |
-| lastInbound, lastOutbound | instant | Last successful full-direction run, not a single-event acknowledgement |
-| inboundRetryAt, outboundRetryAt | instant | Google Retry-After deadline; no worker request before it |
+| inboundCompleted, outboundCompleted | string | Request generation covered by a completed Google import or outbound repair, respectively; conflict refresh is tracked separately |
+| lastInbound, lastOutbound | instant | Last completed Google import or outbound repair, respectively; not a single-event acknowledgement |
+| inboundRetryAt, outboundRetryAt | instant | Retry deadline for Google throttling or disconnect ownership repair; no Google work before it |
 | staleReason, inboundError, outboundError | string | Stable diagnostic category, without vendor event content |
 | privacyPending | boolean | All-owned-mirror scrub has not completed for the current request/configuration |
 | projectDetailLevel | code | Last ceiling read by an outbound worker |
 | statusPublishPending | boolean | Public summary publication needs a retry |
 | conflictsRevision | string | New UUID when the conflict set opens, changes, or resolves |
+| conflictsPending | boolean | Local conflict refresh remains incomplete after the Google import |
 | forgetRevoked | boolean | Explicit consent to leave residual Google events when access is revoked |
 | googleCleaned, slotsCleaned, credentialRevoked | boolean | Disconnect cleanup checkpoints |
 | cleanupIssue | string | Unresolved cleanup category, including legacy ownership |
@@ -130,3 +131,5 @@ Workers preserve the latest invalid outbound checkpoint or requested range in th
 Appointment changes recompute conflicts from current imported Slots in Medplum. Each conflict names only Schedules that contain the overlapping block. A busy lease or failed local refresh queues inbound work for that practitioner and does not prevent later recipients from refreshing. Google webhooks and scheduled reconciliation still refresh the source events.
 
 If disconnect finds a mirror whose ownership needs repair, it retains the remote event, removes verified imported Slots, and records a cleanup issue. Automatic retries wait an hour between Google sweeps while the issue remains.
+
+A completed Google import records its generation and freshness before conflict calculation. If local conflict calculation fails or reaches its time budget, the private `conflictsPending` flag keeps the inbound status pending. The minute recovery job retries conflicts from Medplum Slots without downloading Google again, unless a new inbound request has arrived. Successful imports calculate conflicts from the intervals and Schedules just imported; Appointment-triggered refreshes search only the practitioner's active Schedules within the 90-day window. This narrows the scan but does not replace the large-calendar acceptance test.

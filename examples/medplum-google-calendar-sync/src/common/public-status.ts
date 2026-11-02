@@ -50,7 +50,7 @@ export async function publishStatus(medplum: MedplumClient, basic: WithId<Basic>
       privacyPending: state.privacyPending,
       projectDetailLevel: state.projectDetailLevel,
       conflictsRevision: state.conflictsRevision,
-      inboundRequest: state.inboundRequest !== state.inboundCompleted ? 'pending' : undefined,
+      inboundRequest: state.inboundRequest !== state.inboundCompleted || state.conflictsPending ? 'pending' : undefined,
       outboundRequest: state.outboundRequest !== state.outboundCompleted || state.outboundWork ? 'pending' : undefined,
     }
   );

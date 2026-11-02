@@ -16,6 +16,7 @@ import type { Appointment, Basic, Resource, Schedule, Slot } from '@medplum/fhir
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler as disconnect } from '../bots/google-calendar-disconnect-bot';
+import * as conflicts from './conflicts';
 import type { CalendarConnection } from './connection';
 import { findConnection, saveConnection, updateConnection } from './connection';
 import { importedSlots } from './import';
@@ -176,6 +177,37 @@ describe('calendar runtime', () => {
     expect(readState(await current()).conflictsRevision).toBe(revision);
     expect(await medplum.searchResources('Task')).toEqual(tasks);
     expect(await medplum.searchResources('DetectedIssue')).toHaveLength(0);
+  });
+
+  test.each([false, true])('finished Google import survives local conflict failure (deadline=%s)', async (deadline) => {
+    const failure = deadline ? new conflicts.ConflictRefreshPending('budget') : new Error('local read failed');
+    const refresh = vi.spyOn(conflicts, 'refreshConflicts').mockRejectedValueOnce(failure);
+    const searches = vi.spyOn(medplum, 'searchResourcePages');
+    const run = runInbound(medplum, event, connection.basic.id);
+    if (deadline) {
+      await expect(run).resolves.toBeUndefined();
+    } else {
+      await expect(run).rejects.toThrow('local read failed');
+    }
+    expect(searches.mock.calls.filter(([type]) => type === 'Slot')).toHaveLength(1);
+    const afterImport = readState(await current());
+    expect(afterImport.inboundCompleted).toBe(afterImport.inboundRequest);
+    expect(afterImport.conflictsPending).toBe(true);
+    expect(afterImport.lastInbound).toBeTruthy();
+    expect((await callerStatus(medplum, PRACTITIONER)).parameter).toContainEqual({
+      name: 'inboundPending',
+      valueBoolean: true,
+    });
+    expect(refresh.mock.calls[0][2]?.intervals).toHaveLength(1);
+    const googleRequests = requests.length;
+    refresh.mockRestore();
+    await runInbound(medplum, event, connection.basic.id);
+    expect(requests).toHaveLength(googleRequests);
+    expect(readState(await current()).conflictsPending).toBeUndefined();
+    expect(readState(await current()).conflicts).toHaveLength(1);
+    await requestSync(medplum, connection.basic.id, ['inbound']);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(requests.length).toBeGreaterThan(googleRequests);
   });
 
   test('headers authenticate routing; duplicate and out-of-order notifications do not queue again', async () => {

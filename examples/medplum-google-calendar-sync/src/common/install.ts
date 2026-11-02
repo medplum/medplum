@@ -41,8 +41,8 @@ export const INSTALL_SECRETS: { name: string; required: boolean }[] = [
 ];
 
 /**
- * The AccessPolicy entries a customer adds to their practitioner policy: their own Calendar
- * Connection and nothing else under `Basic`. The connection carries reauthentication state.
+ * AccessPolicy entries for practitioners to read their own public calendar status and the
+ * project settings. Private connections, credentials and worker state are not included.
  */
 export const PRACTITIONER_POLICY_SNIPPET: NonNullable<AccessPolicy['resource']> = [
   {

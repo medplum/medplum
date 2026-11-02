@@ -121,7 +121,8 @@ export async function importedSlots(
   medplum: MedplumClient,
   connectionId: string,
   onMalformed?: (slot: WithId<Slot>) => void,
-  filters: Record<string, string> = {}
+  filters: Record<string, string> = {},
+  onPage?: () => Promise<void>
 ): Promise<WithId<Slot>[]> {
   const slots: WithId<Slot>[] = [];
   for await (const page of medplum.searchResourcePages(
@@ -132,6 +133,7 @@ export async function importedSlots(
       _count: '200',
     })
   )) {
+    await onPage?.();
     for (const slot of page) {
       const identity = readImportedIdentity(slot);
       if (identity?.connectionId === connectionId) {

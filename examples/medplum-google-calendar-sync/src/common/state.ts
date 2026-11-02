@@ -54,6 +54,7 @@ export interface SyncState {
   slotsCleaned?: boolean;
   conflictsRevision?: string;
   statusPublishPending?: boolean;
+  conflictsPending?: boolean;
 }
 
 const STRINGS = [
@@ -82,6 +83,7 @@ const BOOLEANS = [
   'slotsCleaned',
   'credentialRevoked',
   'statusPublishPending',
+  'conflictsPending',
 ] as const;
 
 export class InvalidCheckpointError extends Error {

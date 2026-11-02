@@ -96,7 +96,10 @@ export function connectionStatusParameters(
         name: 'outboundPending',
         valueBoolean: Boolean(state.outboundWork) || state.outboundRequest !== state.outboundCompleted,
       },
-      { name: 'inboundPending', valueBoolean: state.inboundRequest !== state.inboundCompleted },
+      {
+        name: 'inboundPending',
+        valueBoolean: state.inboundRequest !== state.inboundCompleted || state.conflictsPending === true,
+      },
       { name: 'stale', valueBoolean: Boolean(staleReason) },
       { name: 'activeConflictCount', valueInteger: conflicts.length },
       {

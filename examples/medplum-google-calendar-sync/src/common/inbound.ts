@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { refreshConflicts } from './conflicts';
+import { ConflictRefreshPending, refreshConflicts } from './conflicts';
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
@@ -11,6 +11,7 @@ import { EVENT_PROPERTY, SECRET } from './constants';
 import { deleteCredential, readCredential } from './credentials';
 import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
 import { getOAuthClient, GoogleOAuthError, refreshAccessToken, revokeToken } from './google-oauth';
+import type { ImportResult } from './import';
 import { importBusyTime, importedSlots } from './import';
 import type { ConnectionLease } from './lease';
 import { ifMatch, withConnectionLease } from './lease';
@@ -46,6 +47,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
     if (
       connection.status === 'active' &&
       state.statusPublishPending &&
+      !state.conflictsPending &&
       state.inboundRequest === state.inboundCompleted
     ) {
       // Lease release republishes the summary; no Google work is outstanding.
@@ -60,27 +62,44 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
         await cleanupConnection(lease, event.secrets, connection);
         return;
       }
-      const access = await refreshAccessToken(getOAuthClient(event.secrets), await readCredential(medplum, connection));
-      const calendar = new GoogleCalendarClient(access.access_token, { beforeRequest: () => lease.check() });
-      const address = event.secrets?.[SECRET.webhookUrl]?.valueString;
-      if (!address) {
-        throw new Error('Missing installed Google Calendar webhook address');
+      let imported: ImportResult | undefined;
+      if (!state.conflictsPending || state.inboundRequest !== state.inboundCompleted) {
+        const access = await refreshAccessToken(
+          getOAuthClient(event.secrets),
+          await readCredential(medplum, connection)
+        );
+        const calendar = new GoogleCalendarClient(access.access_token, { beforeRequest: () => lease.check() });
+        const address = event.secrets?.[SECRET.webhookUrl]?.valueString;
+        if (!address) {
+          throw new Error('Missing installed Google Calendar webhook address');
+        }
+        await ensureWatch(lease, calendar, address);
+        const range = parseSyncRange(undefined, undefined, new Date());
+        imported = await importBusyTime(medplum, calendar, connection, range, () => beforeInboundWrite(lease));
+        // Commit the successful snapshot before local conflict work. Its retry does not need Google.
+        await lease.mutate((basic) =>
+          withState(basic, {
+            ...readState(basic),
+            lastInbound: new Date().toISOString(),
+            inboundCompleted: inboundRequestAtStart,
+            conflictsPending: true,
+          })
+        );
       }
-      await ensureWatch(lease, calendar, address);
-      const now = new Date();
-      const range = parseSyncRange(undefined, undefined, now);
-      await importBusyTime(medplum, calendar, connection, range, () => beforeInboundWrite(lease));
-      await refreshConflicts(lease, connection);
+      await refreshConflicts(lease, connection, imported);
       await lease.mutate((basic) => {
         const state = readState(basic);
-        state.lastInbound = new Date().toISOString();
-        state.inboundCompleted = inboundRequestAtStart;
+        state.conflictsPending = undefined;
         state.inboundError = undefined;
         state.inboundRetryAt = undefined;
         state.staleReason = undefined;
         return withState(basic, state);
       });
     } catch (err) {
+      if (err instanceof ConflictRefreshPending) {
+        await lease.mutate((basic) => withState(basic, { ...readState(basic), inboundError: 'inbound-pending' }));
+        return;
+      }
       if (err instanceof InboundPending) {
         return;
       }
@@ -164,7 +183,7 @@ export async function cleanupConnection(
         }
         const source = props[EVENT_PROPERTY.source]?.match(/^(Appointment|Slot)\/([A-Za-z0-9.-]+)$/);
         if (!source || toGoogleEventId(source[2]) !== event.id) {
-          cleanupIssue = 'mirror-identity-repair-required';
+          cleanupIssue ??= 'mirror-identity-repair-required';
           continue;
         }
         if (props[EVENT_PROPERTY.connection] === connection.basic.id) {

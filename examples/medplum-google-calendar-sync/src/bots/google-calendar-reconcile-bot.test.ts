@@ -169,6 +169,27 @@ describe('google-calendar-reconcile-bot', () => {
     }
   });
 
+  test('minute recovery dispatches pending conflicts even after the Google generation completed', async () => {
+    const connection = await connected('Practitioner/a');
+    const state = readState(connection.basic);
+    await medplum.updateResource(
+      withState(connection.basic, {
+        ...state,
+        inboundCompleted: state.inboundRequest,
+        outboundCompleted: state.outboundRequest,
+        conflictsPending: true,
+      })
+    );
+    await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });
+    expect(medplum.executeBot).toHaveBeenCalledTimes(1);
+    expect(medplum.executeBot).toHaveBeenCalledWith(
+      expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.inbound }),
+      { resourceType: 'Basic', id: connection.basic.id },
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
   test.each(['active', 'reauth-required'] as const)(
     'summary retry dispatches %s connections even during Google backoff',
     async (status) => {

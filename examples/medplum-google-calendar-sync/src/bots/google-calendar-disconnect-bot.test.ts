@@ -102,61 +102,74 @@ describe('google-calendar-disconnect-bot', () => {
     expect(await findConnection(medplum, practitionerRef)).toBeUndefined();
   });
 
-  test('uncertain mirror identity keeps the remote event and records repair while freeing owned Slots', async () => {
-    const connection = await connected();
-    const slot = await medplum.createResource({
-      resourceType: 'Slot',
-      status: 'busy-unavailable',
-      schedule: { reference: 'Schedule/synthetic' },
-      start: '2026-11-01T10:00:00.000Z',
-      end: '2026-11-01T11:00:00.000Z',
-      identifier: [
-        {
-          system: IMPORT_IDENTIFIER_SYSTEM,
-          value: importIdentifier({
-            connectionId: connection.basic.id,
-            calendarId: 'synthetic',
-            eventId: 'event',
-            scheduleRef: 'Schedule/synthetic',
-          }),
-        },
-      ],
-    });
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce(json(200, { access_token: 'at' }))
-      .mockResolvedValueOnce(
-        json(200, {
-          items: [
-            {
-              id: 'unrelated-id',
-              extendedProperties: {
-                private: {
-                  medplumProject: PROJECT_ID,
-                  medplumConnection: connection.basic.id,
-                  medplumSource: 'Appointment/different',
+  test.each([false, true])(
+    'uncertain mirrors keep the first repair reason while freeing owned Slots (legacy first=%s)',
+    async (legacyFirst) => {
+      const connection = await connected();
+      const slot = await medplum.createResource({
+        resourceType: 'Slot',
+        status: 'busy-unavailable',
+        schedule: { reference: 'Schedule/synthetic' },
+        start: '2026-11-01T10:00:00.000Z',
+        end: '2026-11-01T11:00:00.000Z',
+        identifier: [
+          {
+            system: IMPORT_IDENTIFIER_SYSTEM,
+            value: importIdentifier({
+              connectionId: connection.basic.id,
+              calendarId: 'synthetic',
+              eventId: 'event',
+              scheduleRef: 'Schedule/synthetic',
+            }),
+          },
+        ],
+      });
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(json(200, { access_token: 'at' }))
+        .mockResolvedValueOnce(
+          json(200, {
+            items: [
+              ...(legacyFirst
+                ? [
+                    {
+                      id: 'legacy-id',
+                      extendedProperties: {
+                        private: { medplumProject: PROJECT_ID, medplumSource: 'Appointment/legacy' },
+                      },
+                    },
+                  ]
+                : []),
+              {
+                id: 'unrelated-id',
+                extendedProperties: {
+                  private: {
+                    medplumProject: PROJECT_ID,
+                    medplumConnection: connection.basic.id,
+                    medplumSource: 'Appointment/different',
+                  },
                 },
               },
-            },
-          ],
-        })
-      );
-    globalThis.fetch = fetch;
-    await handler(medplum, event);
-    await expect(runInbound(medplum, event, connection.basic.id)).rejects.toThrow('Uncertain mirrors');
-    const basic = await medplum.readResource('Basic', connection.basic.id);
-    expect(readState(basic)).toMatchObject({
-      googleCleaned: false,
-      slotsCleaned: true,
-      cleanupIssue: 'mirror-identity-repair-required',
-    });
-    expect(basic.extension?.some((e) => e.url === LEASE_URL)).toBe(false);
-    await expect(medplum.readResource('Slot', slot.id)).rejects.toThrow();
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(Date.parse(readState(basic).inboundRetryAt ?? '')).toBeGreaterThan(Date.now() + 59 * 60_000);
-    await runInbound(medplum, event, connection.basic.id);
-    expect(fetch).toHaveBeenCalledTimes(2);
-  });
+            ],
+          })
+        );
+      globalThis.fetch = fetch;
+      await handler(medplum, event);
+      await expect(runInbound(medplum, event, connection.basic.id)).rejects.toThrow('Uncertain mirrors');
+      const basic = await medplum.readResource('Basic', connection.basic.id);
+      expect(readState(basic)).toMatchObject({
+        googleCleaned: false,
+        slotsCleaned: true,
+        cleanupIssue: legacyFirst ? 'legacy-mirror-repair-required' : 'mirror-identity-repair-required',
+      });
+      expect(basic.extension?.some((e) => e.url === LEASE_URL)).toBe(false);
+      await expect(medplum.readResource('Slot', slot.id)).rejects.toThrow();
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(Date.parse(readState(basic).inboundRetryAt ?? '')).toBeGreaterThan(Date.now() + 59 * 60_000);
+      await runInbound(medplum, event, connection.basic.id);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    }
+  );
 
   test('keeps the record when the calendar sweep fails, so it can be retried', async () => {
     const connection = await connected();

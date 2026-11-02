@@ -72,6 +72,7 @@ const stateConstraints = [
     'slotsCleaned',
     'credentialRevoked',
     'statusPublishPending',
+    'conflictsPending',
   ].map((name) => stateField(name, 'Boolean')),
   `${ext('sync-state')}.extension.where(url='projectDetailLevel').count() <= 1 and ${ext('sync-state')}.extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))`,
 ];
