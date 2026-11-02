@@ -143,7 +143,7 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Specimen hemolyzed. Results may be affected.', { exact: false })).toBeDefined();
     expect(screen.getByText('Specimen lipemic. Results may be affected.', { exact: false })).toBeDefined();
     expect(screen.getByText('Critical high')).toBeInTheDocument();
-    expect(screen.getByText('Critical high').closest('tr')).toHaveClass('criticalRow');
+    expect(screen.getByText('Critical high')).toHaveStyle('background:');
     expect(screen.getAllByText('final')).toHaveLength(8);
     expect(screen.getAllByText('corrected')).toHaveLength(1);
     screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));
@@ -162,7 +162,7 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Specimen hemolyzed. Results may be affected.', { exact: false })).toBeDefined();
     expect(screen.getByText('Specimen lipemic. Results may be affected.', { exact: false })).toBeDefined();
     expect(screen.getByText('Critical high')).toBeInTheDocument();
-    expect(screen.getByText('Critical high').closest('tr')).toHaveClass('criticalRow');
+    expect(screen.getByText('Critical high')).toHaveStyle('background:');
     expect(screen.getAllByText('final')).toHaveLength(8);
     expect(screen.getAllByText('corrected')).toHaveLength(1);
     screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));

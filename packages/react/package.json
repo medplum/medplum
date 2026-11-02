@@ -75,8 +75,8 @@
     "@medplum/fhirtypes": "5.2.13",
     "@medplum/mock": "5.2.13",
     "@medplum/react-hooks": "5.2.13",
-    "@storybook/react": "10.6.5",
-    "@tabler/icons-react": "3.50.0",
+    "@storybook/react": "10.6.3",
+    "@tabler/icons-react": "3.49.0",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
@@ -87,10 +87,10 @@
     "jsqr": "1.4.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-router": "8.5.1",
+    "react-router": "8.3.0",
     "signature_pad": "5.1.4",
     "sinon": "22.1.0",
-    "storybook": "10.6.5",
+    "storybook": "10.6.3",
     "typescript": "6.0.3"
   },
   "peerDependencies": {
@@ -123,6 +123,6 @@
     }
   },
   "engines": {
-    "node": "^22.22.2 || >=24.15.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

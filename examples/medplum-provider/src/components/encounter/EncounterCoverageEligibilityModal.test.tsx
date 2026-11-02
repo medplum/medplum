@@ -154,7 +154,7 @@ describe('EncounterCoverageEligibilityModal', () => {
 
   const renderModal = (props: Partial<ModalProps>): JSX.Element => (
     <MedplumProvider medplum={medplum}>
-      <MantineProvider env="test">
+      <MantineProvider>
         <EncounterCoverageEligibilityModal patient={HomerSimpson} opened={true} onClose={vi.fn()} {...props} />
       </MantineProvider>
     </MedplumProvider>

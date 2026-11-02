@@ -11,7 +11,7 @@ import type {
   UserConfiguration,
   UserConfigurationMenu,
 } from '@medplum/fhirtypes';
-import { getParser } from 'bowser';
+import Bowser from 'bowser';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
@@ -227,7 +227,7 @@ async function getSessions(
     }
 
     // Previously used ua-parser, but ultimately replaced due to incompatible licence
-    const browser = login.userAgent ? getParser(login.userAgent) : undefined;
+    const browser = login.userAgent ? Bowser.getParser(login.userAgent) : undefined;
 
     result.push({
       id: login.id,

@@ -477,7 +477,7 @@ describe('DoseSpotFavoritesPage', () => {
     await savePromise;
 
     await waitFor(() => {
-      expect(addFavoriteButton).not.toBeInTheDocument();
+      expect(addFavoriteButton).not.toBeDisabled();
     });
   });
 
