@@ -88,14 +88,18 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
       if (revoked && connection.status === 'active') {
         await updateConnection(medplum, connection, { status: 'reauth-required' }, lease);
       }
-      await lease.mutate((basic) =>
-        withState(basic, {
-          ...readState(basic),
+      await lease.mutate((basic) => {
+        const current = readState(basic);
+        let retryAt = err instanceof GoogleApiError ? err.retryAt : undefined;
+        if (!retryAt && connection.status === 'disconnecting' && current.cleanupIssue) {
+          retryAt = Date.now() + 60 * 60_000;
+        }
+        return withState(basic, {
+          ...current,
           inboundError: revoked ? 'reauth-required' : 'inbound-error',
-          inboundRetryAt:
-            err instanceof GoogleApiError && err.retryAt ? new Date(err.retryAt).toISOString() : undefined,
-        })
-      );
+          inboundRetryAt: retryAt ? new Date(retryAt).toISOString() : undefined,
+        });
+      });
       // Revocation is durable state; do not retry the same invalid credential indefinitely.
       if (!revoked) {
         throw err;

@@ -70,7 +70,7 @@ export async function readCredential(medplum: MedplumClient, connection: Calenda
   if (saved && getIdentifier(saved, 'https://accounts.google.com') !== connection.accountSub) {
     throw new Error('Credential account mismatch');
   }
-  // Transitional worker-only read permits an interrupted install to resume migration.
+  // Worker-only fallback supports the optional prototype migration; installation does not migrate tokens.
   const token = getExtensionValue(saved ?? connection.basic, TOKEN_URL);
   if (typeof token !== 'string' || !token) {
     throw new MissingCalendarCredentialError();

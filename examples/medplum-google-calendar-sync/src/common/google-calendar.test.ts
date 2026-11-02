@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type * as ImportedModule0 from '@medplum/core';
+import type * as CoreModule from '@medplum/core';
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
 import type { GoogleCalendarEvent } from './mapping';
 
 vi.mock('@medplum/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof ImportedModule0>()),
+  ...(await importOriginal<typeof CoreModule>()),
   sleep: vi.fn(async () => undefined),
 }));
 

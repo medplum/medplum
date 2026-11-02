@@ -71,9 +71,11 @@ export async function refreshConflicts(lease: ConnectionLease, connection: Calen
         schedules: [...new Set([...(previous?.schedules ?? []), identity.scheduleRef])].sort(),
       });
     }
-    await lease.check();
   }
   const values = [...conflicts.values()].sort((a, b) => a.key.localeCompare(b.key));
+  if (JSON.stringify(readState(await lease.read()).conflicts) === JSON.stringify(values)) {
+    return;
+  }
   await lease.mutate((basic) => {
     const state = readState(basic);
     if (JSON.stringify(state.conflicts) !== JSON.stringify(values)) {

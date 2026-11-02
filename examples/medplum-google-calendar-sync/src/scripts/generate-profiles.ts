@@ -98,6 +98,11 @@ const work = `${ext('sync-state')}.extension.where(url='outboundWork')`;
 stateConstraints.push(
   `${work}.count() <= 1 and ${work}.all(value.empty() and extension.where(url='phase').count() = 1 and extension.where(url='phase').all((value is code) and (valueCode = 'discover' or valueCode = 'repair')) and extension.where(url='start').count() = 1 and extension.where(url='start').all(value is instant) and extension.where(url='end').count() = 1 and extension.where(url='end').all(value is instant) and ${utc("extension.where(url='start').value")} and ${utc("extension.where(url='end').value")} and extension.where(url='start').value < extension.where(url='end').value)`
 );
+const requestedStart = `${ext('sync-state')}.extension.where(url='requestedRangeStart').value`;
+const requestedEnd = `${ext('sync-state')}.extension.where(url='requestedRangeEnd').value`;
+stateConstraints.push(
+  `(${requestedStart}.empty() and ${requestedEnd}.empty()) or (${requestedStart}.exists() and ${requestedEnd}.exists() and ${utc(requestedStart)} and ${utc(requestedEnd)} and ${requestedStart} < ${requestedEnd})`
+);
 const specs: [string, 'Basic' | 'Slot', string[]][] = [
   [
     'public-status',

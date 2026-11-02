@@ -81,12 +81,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SyncBotInp
     for (const result of results) {
       const connection = await findConnection(medplum, result.practitionerRef);
       if (connection?.status === 'active') {
-        await withConnectionLease(medplum, connection.basic.id, async (lease) => {
-          const current = readConnection(await lease.read());
-          if (current?.status === 'active') {
-            await refreshConflicts(lease, current);
-          }
-        });
+        try {
+          await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+            const current = readConnection(await lease.read());
+            if (current?.status === 'active') {
+              await refreshConflicts(lease, current);
+            }
+          });
+        } catch {
+          // A busy worker or failed local refresh must leave durable work for this recipient.
+          await requestSync(medplum, connection.basic.id, ['inbound']);
+        }
       }
     }
   }

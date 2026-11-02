@@ -153,6 +153,9 @@ describe('google-calendar-disconnect-bot', () => {
     expect(basic.extension?.some((e) => e.url === LEASE_URL)).toBe(false);
     await expect(medplum.readResource('Slot', slot.id)).rejects.toThrow();
     expect(fetch).toHaveBeenCalledTimes(2);
+    expect(Date.parse(readState(basic).inboundRetryAt ?? '')).toBeGreaterThan(Date.now() + 59 * 60_000);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   test('keeps the record when the calendar sweep fails, so it can be retried', async () => {

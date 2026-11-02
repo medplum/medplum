@@ -96,9 +96,20 @@ export class InvalidCheckpointError extends Error {
  * @returns The original record or a repaired copy with the corrupt checkpoint preserved.
  */
 export function repairCheckpoint<T extends Basic>(basic: T): T {
+  const fields = basic.extension?.find((e) => e.url === STATE_URL)?.extension ?? [];
+  const rangeFields = fields.filter((e) => ['requestedRangeStart', 'requestedRangeEnd'].includes(e.url));
+  const start = rangeFields.find((e) => e.url === 'requestedRangeStart')?.valueInstant;
+  const end = rangeFields.find((e) => e.url === 'requestedRangeEnd')?.valueInstant;
+  const canonicalInstant = (value: string | undefined): boolean =>
+    !!value && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+  const invalidRange =
+    rangeFields.length > 0 &&
+    (rangeFields.length !== 2 || !canonicalInstant(start) || !canonicalInstant(end) || !(start && end && start < end));
   try {
     readState(basic);
-    return basic;
+    if (!invalidRange) {
+      return basic;
+    }
   } catch (err) {
     if (!(err instanceof InvalidCheckpointError)) {
       throw err;
@@ -106,16 +117,28 @@ export function repairCheckpoint<T extends Basic>(basic: T): T {
   }
   const checkpoints =
     basic.extension?.find((e) => e.url === STATE_URL)?.extension?.filter((e) => e.url === 'outboundWork') ?? [];
+  const quarantineUrl = `${GOOGLE_CALENDAR_NAMESPACE}/invalid-outbound-checkpoint`;
   const repaired = {
     ...basic,
     extension: [
-      ...(basic.extension ?? []).map((e) =>
-        e.url === STATE_URL ? { ...e, extension: e.extension?.filter((f) => f.url !== 'outboundWork') } : e
-      ),
-      ...checkpoints.map((checkpoint) => ({
-        ...checkpoint,
-        url: `${GOOGLE_CALENDAR_NAMESPACE}/invalid-outbound-checkpoint`,
-      })),
+      ...(basic.extension ?? [])
+        .filter((e) => e.url !== quarantineUrl)
+        .map((e) =>
+          e.url === STATE_URL
+            ? {
+                ...e,
+                extension: e.extension?.filter(
+                  (f) =>
+                    f.url !== 'outboundWork' &&
+                    !(invalidRange && ['requestedRangeStart', 'requestedRangeEnd'].includes(f.url))
+                ),
+              }
+            : e
+        ),
+      {
+        url: quarantineUrl,
+        extension: [...(checkpoints[0]?.extension ?? []), ...(invalidRange ? rangeFields : [])],
+      },
     ],
   };
   return withState(repaired, {

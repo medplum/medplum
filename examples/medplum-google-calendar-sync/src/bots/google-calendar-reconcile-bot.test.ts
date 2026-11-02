@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import type * as ImportedModule0 from '../common/range-sync';
+import type * as RangeSyncModule from '../common/range-sync';
 import { operationIdentity } from '../test-auth';
 
 import type { BotEvent } from '@medplum/core';
@@ -19,13 +19,13 @@ const { syncRange } = vi.hoisted(() => ({
       (
         session: unknown,
         connection: CalendarConnection,
-        range: ImportedModule0.SyncRange
+        range: RangeSyncModule.SyncRange
       ) => Promise<Record<string, number>>
     >(),
 }));
 
 vi.mock('../common/range-sync', async (importOriginal) => {
-  const original = await importOriginal<typeof ImportedModule0>();
+  const original = await importOriginal<typeof RangeSyncModule>();
   return { ...original, syncRange };
 });
 
@@ -137,6 +137,38 @@ describe('google-calendar-reconcile-bot', () => {
     await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });
     expect(medplum.executeBot).not.toHaveBeenCalled();
   });
+  test('minute recovery dispatches corrupt checkpoints without skipping other connections', async () => {
+    const a = await connected('Practitioner/a');
+    const b = await connected('Practitioner/b');
+    await medplum.updateResource({
+      ...a.basic,
+      extension: a.basic.extension?.map((e) =>
+        e.url.endsWith('/sync-state')
+          ? {
+              ...e,
+              extension: [
+                ...(e.extension ?? []),
+                {
+                  url: 'outboundWork',
+                  extension: [{ url: 'phase', valueCode: 'invalid' }],
+                },
+              ],
+            }
+          : e
+      ),
+    });
+    await handler(medplum, { ...event, input: { connectionIds: [a.basic.id, b.basic.id], retry: true } });
+    expect(medplum.executeBot).toHaveBeenCalledTimes(4);
+    for (const connection of [a, b]) {
+      expect(medplum.executeBot).toHaveBeenCalledWith(
+        expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.reconcile }),
+        { resourceType: 'Basic', id: connection.basic.id },
+        expect.anything(),
+        expect.anything()
+      );
+    }
+  });
+
   test.each(['active', 'reauth-required'] as const)(
     'summary retry dispatches %s connections even during Google backoff',
     async (status) => {

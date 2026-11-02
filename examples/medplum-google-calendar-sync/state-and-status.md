@@ -125,6 +125,8 @@ Malformed imported identifiers produce Bot-log warnings only. The uncertain Slot
 
 ## Corrupt checkpoint recovery
 
-Workers preserve an invalid outbound checkpoint in the private connection's `invalid-outbound-checkpoint` extension, remove it from active state, and request fresh outbound discovery. The saved cursor is never trusted. Lease acquisition and release use the repaired state so corruption cannot retain the worker lock. This diagnostic extension is never copied into public status. An administrator can inspect it after recovery.
+Workers preserve the latest invalid outbound checkpoint or requested range in the private connection's `invalid-outbound-checkpoint` extension, remove it from active state, and request fresh outbound discovery. Invalid requested ranges are cleared rather than copied into new work. Requested ranges must contain both endpoints in UTC millisecond format, with the start before the end. The saved cursor is never trusted. Lease acquisition and release use the repaired state so corruption cannot retain the worker lock. This diagnostic extension is never copied into public status. An administrator can inspect it after recovery. A later corrupt value replaces this diagnostic instead of growing the resource indefinitely.
 
-Appointment changes recompute conflicts from current imported Slots in Medplum. Each conflict names only Schedules that contain the overlapping block. Google webhooks and scheduled reconciliation still refresh the source events.
+Appointment changes recompute conflicts from current imported Slots in Medplum. Each conflict names only Schedules that contain the overlapping block. A busy lease or failed local refresh queues inbound work for that practitioner and does not prevent later recipients from refreshing. Google webhooks and scheduled reconciliation still refresh the source events.
+
+If disconnect finds a mirror whose ownership needs repair, it retains the remote event, removes verified imported Slots, and records a cleanup issue. Automatic retries wait an hour between Google sweeps while the issue remains.

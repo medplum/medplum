@@ -10,7 +10,7 @@ import { CONNECTION_SEARCH, readConnection } from './connection';
 import type { GoogleCalendarClient } from './google-calendar';
 import type { ConnectionLease } from './lease';
 import { ifMatch, isVersionConflict } from './lease';
-import { CHANNEL_IDENTIFIER_SYSTEM, readState, withState } from './state';
+import { CHANNEL_IDENTIFIER_SYSTEM, readState, repairCheckpoint, withState } from './state';
 
 export function channelTokenHash(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -118,7 +118,7 @@ export async function receiveNotification(
     return denied();
   }
   for (let attempt = 0; ; attempt++) {
-    const basic = await medplum.readResource('Basic', found.id, { cache: 'no-cache' });
+    const basic = repairCheckpoint(await medplum.readResource('Basic', found.id, { cache: 'no-cache' }));
     const connection = readConnection(basic);
     const state = readState(basic);
     const channel = state.channels.find((c) => c.id === id);

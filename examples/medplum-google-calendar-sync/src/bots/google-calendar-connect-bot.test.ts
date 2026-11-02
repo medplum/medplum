@@ -193,5 +193,6 @@ describe('google-calendar-connect-bot', () => {
     expect((await requireConnection(medplum, practitionerRef)).accountSub).toBe('old-sub');
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[1][0])).toContain('/revoke');
+    expect(new URLSearchParams(fetchMock.mock.calls[1][1]?.body as string).get('token')).toBe('rt-new');
   });
 });

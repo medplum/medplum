@@ -117,7 +117,7 @@ export async function migrateMirrors(
       attendees: [],
       reminders: { useDefault: false },
       extendedProperties: {
-        private: { ...props, [EVENT_PROPERTY.connection]: connection.basic.id, medplumDetail: 'busy-only' },
+        private: { ...props, [EVENT_PROPERTY.connection]: connection.basic.id, [EVENT_PROPERTY.detail]: 'busy-only' },
       },
     };
     await lease.check();

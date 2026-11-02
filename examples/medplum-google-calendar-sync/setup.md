@@ -118,7 +118,7 @@ If a test fails or is interrupted, keep its manifest and run `test:e2e:cleanup` 
 | `Authenticated project differs from PROJECT_ID` | Select the intended CLI project and correct `PROJECT_ID`; do not remove the guard |
 | CLI authentication fails | Renew the selected profile with `medplum --profile NAME login`, then reselect the project |
 | Missing Bot or operation | Deploy all ten Bots and six operations; in linked mode inspect exported types and duplicate identifiers |
-| Installation cannot finish | Check admin rights, required features, active worker leases and the returned outcome; installation can be retried |
+| Installation cannot finish | Check admin rights, required features and the returned outcome; installation can be retried |
 | Google connection requires reauthorization | Repeat consent with all required scopes and offline access; confirm the client matches the installed client |
 | No inbound updates | Check connection status, Google watch registration/callback delivery, importer logs and the minute/hourly Crons |
 | Private-data or imported-Slot access is broader than expected | Review all matching AccessPolicy grants and legacy history access; profiles are not authorization |

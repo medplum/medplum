@@ -200,6 +200,37 @@ describe('calendar runtime', () => {
     expect(requests.some((r) => r.url.includes('untrusted'))).toBe(false);
   });
 
+  test('authenticated webhook repairs a corrupt checkpoint while invalid tokens cannot write it', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const basic = await current();
+    await medplum.updateResource({
+      ...basic,
+      extension: basic.extension?.map((e) =>
+        e.url.endsWith('/sync-state')
+          ? {
+              ...e,
+              extension: [
+                ...(e.extension ?? []),
+                {
+                  url: 'outboundWork',
+                  extension: [{ url: 'phase', valueCode: 'invalid' }],
+                },
+              ],
+            }
+          : e
+      ),
+    });
+    const writes = vi.spyOn(medplum, 'updateResource').mockClear();
+    expect(await receiveNotification(medplum, { ...headers(), 'x-goog-channel-token': 'wrong' })).toBeDefined();
+    expect(writes).not.toHaveBeenCalled();
+    await expect(receiveNotification(medplum, headers('11'))).resolves.toBeUndefined();
+    const repaired = await current();
+    expect(readState(repaired).outboundWork).toBeUndefined();
+    expect(readState(repaired).outboundError).toBe('checkpoint-repair-required');
+    expect(readState(repaired).inboundRequest).not.toBe(readState(basic).inboundRequest);
+    expect(repaired.extension?.filter((e) => e.url.endsWith('/invalid-outbound-checkpoint'))).toHaveLength(1);
+  });
+
   test('the authenticated initial callback may arrive before watch registration returns', async () => {
     await withConnectionLease(medplum, connection.basic.id, async (lease) => {
       await ensureWatch(

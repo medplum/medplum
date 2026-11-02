@@ -3,7 +3,7 @@
 
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import type * as ImportedModule0 from '../common/range-sync';
+import type * as RangeSyncModule from '../common/range-sync';
 import { readState } from '../common/state';
 import { empty, operationIdentity } from '../test-auth';
 
@@ -17,12 +17,12 @@ import { handler } from './google-calendar-sync-range-bot';
 const { syncRange } = vi.hoisted(() => ({
   syncRange:
     vi.fn<
-      (session: unknown, connection: unknown, range: ImportedModule0.SyncRange) => Promise<Record<string, number>>
+      (session: unknown, connection: unknown, range: RangeSyncModule.SyncRange) => Promise<Record<string, number>>
     >(),
 }));
 
 vi.mock('../common/range-sync', async (importOriginal) => {
-  const original = await importOriginal<typeof ImportedModule0>();
+  const original = await importOriginal<typeof RangeSyncModule>();
   return { ...original, syncRange };
 });
 

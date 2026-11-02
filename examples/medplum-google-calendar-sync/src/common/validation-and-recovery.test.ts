@@ -12,7 +12,7 @@ import { busyInterval, importIdentifier } from './import';
 import { ensureSyncSubscription } from './install';
 import { ConnectionBusyError, LEASE_URL, withConnectionLease } from './lease';
 import { DEFINITIONS, PROFILES } from './profiles';
-import { readState, repairCheckpoint, STATE_URL } from './state';
+import { readState, repairCheckpoint, requestSync, STATE_URL, withState } from './state';
 const profile = (name: keyof typeof PROFILES): { profile: StructureDefinition } => ({
   profile: DEFINITIONS.find((d) => d.url === PROFILES[name]) as StructureDefinition,
 });
@@ -191,7 +191,17 @@ test('local conflict refresh attributes only the Schedule carrying the block and
   });
   const fetch = vi.spyOn(globalThis, 'fetch');
   try {
-    await withConnectionLease(medplum, connection.basic.id, (lease) => refreshConflicts(lease, connection));
+    await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+      await refreshConflicts(lease, connection);
+      const reads = vi.spyOn(lease, 'read');
+      const writes = vi.spyOn(lease, 'mutate');
+      await refreshConflicts(lease, connection);
+      expect(writes).not.toHaveBeenCalled();
+      // One Appointment page check and one final freshness check, independent of Slot count.
+      expect(reads.mock.calls.length).toBeLessThanOrEqual(2);
+      reads.mockRestore();
+      writes.mockRestore();
+    });
     const state = readState(await medplum.readResource('Basic', connection.basic.id));
     expect(state.conflicts).toHaveLength(1);
     expect(state.conflicts[0].schedules).toEqual([`Schedule/${a.id}`]);
@@ -199,4 +209,61 @@ test('local conflict refresh attributes only the Schedule carrying the block and
   } finally {
     fetch.mockRestore();
   }
+});
+
+test.each([
+  ['2026-11-02T11:00:00.000Z', '2026-11-02T10:00:00.000Z'],
+  ['2026-11-02T10:00:00.000Z', undefined],
+  ['2026-11-02T10:00:00Z', '2026-11-02T11:00:00.000Z'],
+])('invalid requested range %s / %s is rejected and repaired once', async (start, end) => {
+  const medplum = new MockClient();
+  const connection = await saveConnection(medplum, {
+    practitionerRef: 'Practitioner/p',
+    accountSub: 'sub',
+    refreshToken: 'synthetic',
+  });
+  const broken = withState(connection.basic, {
+    ...readState(connection.basic),
+    requestedRangeStart: start,
+    requestedRangeEnd: end,
+  });
+  expect(() => validateResource(broken, profile('connection'))).toThrow();
+  const repaired = repairCheckpoint(broken);
+  expect(() => validateResource(repaired, profile('connection'))).not.toThrow();
+  expect(readState(repaired).requestedRangeStart).toBeUndefined();
+  expect(readState(repaired).requestedRangeEnd).toBeUndefined();
+  expect(readState(repaired).outboundError).toBe('checkpoint-repair-required');
+  expect(repairCheckpoint(repaired)).toBe(repaired);
+  const corruptedAgain = repairCheckpoint(corrupt(repaired));
+  expect(corruptedAgain.extension?.filter((e) => e.url === `${N}/invalid-outbound-checkpoint`)).toHaveLength(1);
+});
+
+test('connection identifier must equal its practitioner subject', async () => {
+  const medplum = new MockClient();
+  const { basic } = await saveConnection(medplum, {
+    practitionerRef: 'Practitioner/p',
+    accountSub: 'sub',
+    refreshToken: 'synthetic',
+  });
+  expect(() => validateResource(basic, profile('connection'))).not.toThrow();
+  expect(() =>
+    validateResource({ ...basic, subject: { reference: 'Practitioner/other' } }, profile('connection'))
+  ).toThrow();
+});
+
+test('request marking repairs corrupt work and persists both requested directions', async () => {
+  const medplum = new MockClient();
+  const { basic } = await saveConnection(medplum, {
+    practitionerRef: 'Practitioner/p',
+    accountSub: 'sub',
+    refreshToken: 'synthetic',
+  });
+  await medplum.updateResource(corrupt(basic));
+  await requestSync(medplum, basic.id, ['inbound', 'outbound']);
+  const saved = await medplum.readResource('Basic', basic.id);
+  expect(readState(saved).outboundWork).toBeUndefined();
+  expect(readState(saved).outboundError).toBe('checkpoint-repair-required');
+  expect(readState(saved).inboundRequest).toBeTruthy();
+  expect(readState(saved).outboundRequest).toBeTruthy();
+  expect(() => validateResource(saved, profile('connection'))).not.toThrow();
 });
