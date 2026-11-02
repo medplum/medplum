@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CPT_COPYRIGHT_NOTICE } from '../../config/constants';
+import { render } from '../../test-utils/render';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { ChargeItemList } from './ChargeItemList';
 
@@ -70,15 +70,13 @@ describe('ChargeItemList', () => {
   const setup = (props: Partial<Parameters<typeof ChargeItemList>[0]> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <ChargeItemList
-            patient={mockPatient}
-            encounter={mockEncounter}
-            chargeItems={[]}
-            updateChargeItems={vi.fn()}
-            {...props}
-          />
-        </MantineProvider>
+        <ChargeItemList
+          patient={mockPatient}
+          encounter={mockEncounter}
+          chargeItems={[]}
+          updateChargeItems={vi.fn()}
+          {...props}
+        />
       </MedplumProvider>
     );
   };

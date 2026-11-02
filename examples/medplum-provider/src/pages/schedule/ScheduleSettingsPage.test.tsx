@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import {
@@ -12,10 +11,11 @@ import {
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ScheduleSettings, ScheduleSettingsPage } from './ScheduleSettingsPage';
 
 describe('ScheduleSettings', () => {
@@ -58,10 +58,8 @@ describe('ScheduleSettings', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <ScheduleSettings schedule={schedule} />
-          </MantineProvider>
+          <Notifications />
+          <ScheduleSettings schedule={schedule} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -273,12 +271,10 @@ describe('ScheduleSettingsPage', () => {
     return render(
       <MemoryRouter initialEntries={[path]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -304,12 +300,10 @@ describe('ScheduleSettingsPage', () => {
     render(
       <MemoryRouter initialEntries={[`/Calendar/Schedule/unknown-id/settings`]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

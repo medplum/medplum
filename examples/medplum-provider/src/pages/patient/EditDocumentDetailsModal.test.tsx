@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { DocumentReference } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 import { EditDocumentDetailsModal } from './EditDocumentDetailsModal';
 
@@ -39,15 +39,13 @@ describe('EditDocumentDetailsModal', () => {
   const setup = (item: WithId<DocumentReference>, opened = true): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <EditDocumentDetailsModal
-            item={item}
-            opened={opened}
-            onClose={onClose}
-            onSaved={onSaved}
-            onDeleted={onDeleted}
-          />
-        </MantineProvider>
+        <EditDocumentDetailsModal
+          item={item}
+          opened={opened}
+          onClose={onClose}
+          onSaved={onSaved}
+          onDeleted={onDeleted}
+        />
       </MedplumProvider>
     );
   };
@@ -221,15 +219,13 @@ describe('EditDocumentDetailsModal', () => {
 
     const view = (opened: boolean): JSX.Element => (
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <EditDocumentDetailsModal
-            item={item}
-            opened={opened}
-            onClose={onClose}
-            onSaved={onSaved}
-            onDeleted={onDeleted}
-          />
-        </MantineProvider>
+        <EditDocumentDetailsModal
+          item={item}
+          opened={opened}
+          onClose={onClose}
+          onSaved={onSaved}
+          onDeleted={onDeleted}
+        />
       </MedplumProvider>
     );
 

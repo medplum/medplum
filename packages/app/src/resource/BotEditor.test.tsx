@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, badRequest } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
@@ -22,10 +21,8 @@ describe('BotEditor', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <MantineProvider>
-              <Notifications />
-              <AppRoutes />
-            </MantineProvider>
+            <Notifications />
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );

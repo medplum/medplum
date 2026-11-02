@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type {
   DiagnosticReport,
@@ -13,10 +12,11 @@ import type {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ResourcePanel } from './ResourcePanel';
 
 describe('ResourcePanel', () => {
@@ -31,12 +31,10 @@ describe('ResourcePanel', () => {
     render(
       <MemoryRouter initialEntries={['/spaces']}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/spaces" element={<ResourcePanel resource={resource as any} />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/spaces" element={<ResourcePanel resource={resource} />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

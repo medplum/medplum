@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { AssignPatientModal } from './AssignPatientModal';
 
 // A name no MockClient fixture shares, so the autocomplete offers exactly one option.
@@ -36,17 +36,15 @@ describe('AssignPatientModal', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <AssignPatientModal
-              opened={props.opened ?? true}
-              onClose={onClose}
-              resourceType="Communication"
-              resourceId="fax-1"
-              onAssigned={onAssigned}
-              defaultPatient={props.defaultPatient}
-            />
-          </MantineProvider>
+          <Notifications />
+          <AssignPatientModal
+            opened={props.opened ?? true}
+            onClose={onClose}
+            resourceType="Communication"
+            resourceId="fax-1"
+            onAssigned={onAssigned}
+            defaultPatient={props.defaultPatient}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );

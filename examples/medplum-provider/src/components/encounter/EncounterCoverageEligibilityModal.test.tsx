@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type {
@@ -14,10 +13,11 @@ import type {
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import type { ServiceType } from '../../utils/eligibility';
 import {
@@ -154,9 +154,7 @@ describe('EncounterCoverageEligibilityModal', () => {
 
   const renderModal = (props: Partial<ModalProps>): JSX.Element => (
     <MedplumProvider medplum={medplum}>
-      <MantineProvider env="test">
-        <EncounterCoverageEligibilityModal patient={HomerSimpson} opened={true} onClose={vi.fn()} {...props} />
-      </MantineProvider>
+      <EncounterCoverageEligibilityModal patient={HomerSimpson} opened={true} onClose={vi.fn()} {...props} />
     </MedplumProvider>
   );
 
