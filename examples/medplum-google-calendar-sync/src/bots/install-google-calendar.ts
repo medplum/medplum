@@ -51,9 +51,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
 
   // The install runs as the calling admin, so their profile names the customer project.
   const projectId = await currentProjectId(medplum);
-  if (!projectId) {
-    throw new Error('Cannot resolve the customer Project: the caller has no project context');
-  }
   const project = await medplum.readResource('Project', projectId);
   if (!project.features?.includes('bots')) {
     throw new Error('This project needs the "bots" feature; ask a Medplum super admin to enable it');

@@ -7,9 +7,10 @@ import type { Appointment } from '@medplum/fhirtypes';
 import { EVENT_PROPERTY, GOOGLE_CALENDAR_NAMESPACE as N } from '../common/constants';
 import type { GoogleCalendarClient } from '../common/google-calendar';
 import { importedSlots, readImportedIdentity } from '../common/import';
-import { ConnectionBusyError, ifMatch, withConnectionLease } from '../common/lease';
+import { ConnectionBusyError, withConnectionLease } from '../common/lease';
 import { toGoogleEventId } from '../common/mapping';
 import { projectQuery } from '../common/project';
+import { ifMatch } from '../common/versioning';
 
 export const TEST_SYSTEM = `${N}/e2e-run`;
 export interface TestManifest {

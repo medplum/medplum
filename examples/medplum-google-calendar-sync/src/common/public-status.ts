@@ -10,12 +10,12 @@ import type { CalendarConnection } from './connection';
 import { readConnection } from './connection';
 import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import { findConflicts, importedSlots, readImportedIdentity } from './import';
-import { ifMatch } from './lease';
 import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { connectionStatusParameters } from './operations';
 import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import { readState, withState } from './state';
+import { ifMatch } from './versioning';
 
 export const PUBLIC_STATUS_SEARCH = `code=${N}|calendar-public-status`;
 const SYSTEM = `${N}/public-status`;

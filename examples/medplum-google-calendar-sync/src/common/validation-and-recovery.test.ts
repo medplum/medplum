@@ -11,6 +11,7 @@ import { IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './cons
 import { busyInterval, importIdentifier } from './import';
 import { ConnectionBusyError, LEASE_URL, withConnectionLease } from './lease';
 import { DEFINITIONS, PROFILES } from './profiles';
+import { callerStatus } from './public-status';
 import { readState, repairCheckpoint, requestSync, STATE_URL, withState } from './state';
 import { ensureSyncSubscription } from './subscriptions';
 
@@ -297,4 +298,46 @@ test('conflict refresh stops before its budget expires and scopes Slot reads by 
   const slotQueries = queries.mock.calls.filter(([type]) => type === 'Slot');
   expect(slotQueries).toHaveLength(1);
   expect(new URLSearchParams(slotQueries[0][1] as string).get('schedule')).toBe(`Schedule/${schedule.id}`);
+});
+
+test('imports and local refreshes keep conflicts stable when no active Schedule can receive busy time', async () => {
+  const medplum = new MockClient();
+  const practitionerRef = 'Practitioner/p';
+  const connection = await saveConnection(medplum, {
+    practitionerRef,
+    accountSub: 'sub',
+    refreshToken: 'synthetic',
+  });
+  await medplum.createResource({
+    resourceType: 'Schedule',
+    active: false,
+    actor: [{ reference: practitionerRef }],
+  });
+  const start = new Date(Date.now() + 3600_000).toISOString();
+  const end = new Date(Date.now() + 7200_000).toISOString();
+  await medplum.createResource({
+    resourceType: 'Appointment',
+    status: 'booked',
+    start,
+    end,
+    participant: [{ actor: { reference: practitionerRef }, status: 'accepted' }],
+  });
+  const imported = {
+    calendarId: 'synthetic',
+    intervals: [{ eventId: 'busy-event', start, end }],
+    schedules: [],
+    createdOrUpdated: 0,
+    removed: 0,
+  };
+  const before = readState(connection.basic);
+  for (const snapshot of [imported, undefined, imported]) {
+    await withConnectionLease(medplum, connection.basic.id, (lease) => refreshConflicts(lease, connection, snapshot));
+    const state = readState(await medplum.readResource('Basic', connection.basic.id));
+    expect(state.conflicts).toEqual([]);
+    expect(state.conflictsRevision).toBe(before.conflictsRevision);
+    expect((await callerStatus(medplum, practitionerRef)).parameter).toContainEqual({
+      name: 'activeConflictCount',
+      valueInteger: 0,
+    });
+  }
 });

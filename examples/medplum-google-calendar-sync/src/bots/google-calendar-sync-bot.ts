@@ -87,6 +87,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SyncBotInp
             }
           });
         } catch {
+          // Do not log the exception: provider errors may contain private event data.
+          console.warn('Calendar conflict refresh deferred; queuing an inbound retry');
           // A busy worker or failed local refresh must leave durable work for this recipient.
           await requestSync(medplum, connection.basic.id, ['inbound']);
         }

@@ -11,7 +11,7 @@ import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/consta
 import { importIdentifier } from '../common/import';
 import { runInbound } from '../common/inbound';
 import { LEASE_URL } from '../common/lease';
-import { readState } from '../common/state';
+import { readState, withState } from '../common/state';
 import { operationIdentity } from '../test-auth';
 import { handler } from './google-calendar-disconnect-bot';
 
@@ -167,8 +167,33 @@ describe('google-calendar-disconnect-bot', () => {
       expect(Date.parse(readState(basic).inboundRetryAt ?? '')).toBeGreaterThan(Date.now() + 59 * 60_000);
       await runInbound(medplum, event, connection.basic.id);
       expect(fetch).toHaveBeenCalledTimes(2);
+
+      // The administrator has removed the uncertain mirrors and explicitly retries cleanup.
+      fetch
+        .mockResolvedValueOnce(json(200, { access_token: 'at' }))
+        .mockResolvedValueOnce(json(200, { items: [] }))
+        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      await handler(medplum, event);
+      expect(readState(await medplum.readResource('Basic', connection.basic.id)).inboundRetryAt).toBeUndefined();
+      await runInbound(medplum, event, connection.basic.id);
+      expect(fetch).toHaveBeenCalledTimes(5);
+      expect(await findConnection(medplum, practitionerRef)).toBeUndefined();
     }
   );
+
+  test('an explicit disconnect preserves Google retry deadlines without a mirror repair issue', async () => {
+    const connection = await connected();
+    const retryAt = new Date(Date.now() + 60_000).toISOString();
+    await medplum.updateResource(
+      withState(connection.basic, { ...readState(connection.basic), inboundRetryAt: retryAt })
+    );
+    const fetch = vi.fn();
+    globalThis.fetch = fetch;
+    await handler(medplum, event);
+    expect(readState(await medplum.readResource('Basic', connection.basic.id)).inboundRetryAt).toBe(retryAt);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(fetch).not.toHaveBeenCalled();
+  });
 
   test('keeps the record when the calendar sweep fails, so it can be retried', async () => {
     const connection = await connected();

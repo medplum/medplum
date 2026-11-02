@@ -7,8 +7,8 @@ import { readFileSync } from 'fs';
 import { execFileSync } from 'node:child_process';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { CONTRACTS } from '../common/contracts';
-import { ifMatch } from '../common/lease';
 import { projectQuery } from '../common/project';
+import { ifMatch } from '../common/versioning';
 import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
 
 /*
@@ -37,7 +37,7 @@ for (const arg of args) {
 const OPERATION_DEFINITION_IMPLEMENTATION_URL =
   'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation';
 
-/** A range sync or reconcile walks every appointment in range, and disconnect every event; the default 10-second Bot timeout covers ~25 calls. */
+/** Workers scan bounded calendar windows and perform remote cleanup within the hosted 600-second limit. */
 const LONG_TIMEOUT_SECONDS = 600;
 
 interface BotDefinition {
@@ -83,7 +83,7 @@ const botDefinitions: BotDefinition[] = [
   {
     identifier: BOT_IDENTIFIER_VALUE.syncRange,
     name: 'Google Calendar Sync Range Bot',
-    description: 'Push a practitioner’s appointments and blocked time within a date range to their calendar',
+    description: 'Queue outbound repair of a practitioner’s appointments and blocked time within a date range',
     runAsUser: false,
     timeout: LONG_TIMEOUT_SECONDS,
   },
@@ -112,7 +112,7 @@ const botDefinitions: BotDefinition[] = [
   {
     identifier: BOT_IDENTIFIER_VALUE.disconnect,
     name: 'Google Calendar Disconnect Bot',
-    description: 'Remove mirrored events, revoke access and delete the Calendar Connection',
+    description: 'Queue disconnect cleanup of owned mirrors, imported Slots and credentials',
     runAsUser: false,
     timeout: LONG_TIMEOUT_SECONDS,
   },

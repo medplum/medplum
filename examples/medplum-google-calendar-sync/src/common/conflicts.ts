@@ -74,7 +74,7 @@ export async function refreshConflicts(
       });
     }
   };
-  if (imported) {
+  if (imported && schedules.size > 0) {
     add(
       findConflicts(
         connection.basic.id,

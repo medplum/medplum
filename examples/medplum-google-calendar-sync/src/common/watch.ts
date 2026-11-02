@@ -7,9 +7,9 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 import { CONNECTION_SEARCH, readConnection } from './connection';
 import type { GoogleCalendarClient } from './google-calendar';
 import type { ConnectionLease } from './lease';
-import { ifMatch, isVersionConflict } from './lease';
 import { projectQuery } from './project';
 import { CHANNEL_IDENTIFIER_SYSTEM, readState, repairCheckpoint, withState } from './state';
+import { ifMatch, isVersionConflict } from './versioning';
 
 export function channelTokenHash(token: string): string {
   return createHash('sha256').update(token).digest('hex');

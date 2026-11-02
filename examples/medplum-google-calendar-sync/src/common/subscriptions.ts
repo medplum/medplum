@@ -6,10 +6,10 @@ import { getReferenceString } from '@medplum/core';
 import type { Bot, Subscription } from '@medplum/fhirtypes';
 import { CONNECTION_SEARCH } from './connection';
 import { GOOGLE_CALENDAR_NAMESPACE, IMPORT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM } from './constants';
-import { ifMatch } from './lease';
 import { projectQuery } from './project';
 import { PUBLIC_STATUS_SEARCH } from './public-status';
 import { STATE_URL } from './state';
+import { ifMatch } from './versioning';
 
 const SUBSCRIPTION_INTERACTION_EXTENSION_URL =
   'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction';

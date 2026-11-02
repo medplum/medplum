@@ -30,6 +30,10 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       }
       state.forgetRevoked = forget;
       state.inboundRequest = randomUUID();
+      if (state.cleanupIssue) {
+        // An explicit retry follows an ownership repair; keep unrelated Google quota backoff.
+        state.inboundRetryAt = undefined;
+      }
       const statusUrl = `${GOOGLE_CALENDAR_NAMESPACE}/status`;
       return withState(
         {

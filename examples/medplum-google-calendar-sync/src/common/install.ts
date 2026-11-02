@@ -6,8 +6,8 @@ import { getReferenceString } from '@medplum/core';
 import type { AccessPolicy, Bot, Cron, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
 import { BOT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM, SECRET } from './constants';
-import { ifMatch } from './lease';
 import { projectQuery } from './project';
+import { ifMatch } from './versioning';
 
 /*
  * What `Project/$google-calendar-install` creates in a customer project, each piece

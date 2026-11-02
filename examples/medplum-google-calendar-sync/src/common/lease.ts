@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumClient, WithId } from '@medplum/core';
-import { getStatus, isGone, isNotFound, OperationOutcomeError } from '@medplum/core';
+import { isGone, isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
 import { assertCurrentProject } from './project';
 import { publishStatus } from './public-status';
 import { readState, repairCheckpoint, withState } from './state';
+import { ifMatch, isVersionConflict } from './versioning';
 
 export const LEASE_URL = `${GOOGLE_CALENDAR_NAMESPACE}/worker-lease`;
 // Hosted worker Bots are limited to 600 seconds; leave five minutes for termination/in-flight requests.
@@ -19,13 +20,6 @@ export class ConnectionBusyError extends Error {
   constructor() {
     super('Calendar connection is busy; retry this delivery');
   }
-}
-
-export function ifMatch(basic: { meta?: { versionId?: string } }): { headers: Record<string, string> } {
-  if (!basic.meta?.versionId) {
-    throw new Error('A version is required for a calendar state write');
-  }
-  return { headers: { 'If-Match': `W/"${basic.meta.versionId}"` } };
 }
 
 export class ConnectionLease {
@@ -72,10 +66,6 @@ export class ConnectionLease {
       }
     }
   }
-}
-
-export function isVersionConflict(err: unknown): boolean {
-  return err instanceof OperationOutcomeError && [409, 412].includes(getStatus(err.outcome));
 }
 
 export async function withConnectionLease<T>(

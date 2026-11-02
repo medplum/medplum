@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import type { EventDetailLevel } from './constants';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
 import type { CalendarConflict } from './import';
-import { ifMatch, isVersionConflict } from './lease';
+import { ifMatch, isVersionConflict } from './versioning';
 
 export const STATE_URL = `${GOOGLE_CALENDAR_NAMESPACE}/sync-state`;
 export const CHANNEL_IDENTIFIER_SYSTEM = `${GOOGLE_CALENDAR_NAMESPACE}/watch-channel`;

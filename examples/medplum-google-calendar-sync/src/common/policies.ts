@@ -8,10 +8,10 @@ import { CONFIG_SEARCH } from './configuration';
 import { CONNECTION_SEARCH } from './connection';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM } from './constants';
 import { CREDENTIAL_SEARCH } from './credentials';
-import { ifMatch } from './lease';
 import { MIRROR_SEARCH } from './ownership';
 import { projectQuery } from './project';
 import { PUBLIC_STATUS_SEARCH } from './public-status';
+import { ifMatch } from './versioning';
 
 /**
  * AccessPolicy entries for practitioners to read their own public calendar status and the

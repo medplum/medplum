@@ -6,10 +6,10 @@ import { getExtensionValue } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import type { EventDetailLevel } from './constants';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
-import { ifMatch } from './lease';
 import { resolveDetailLevel } from './mapping';
 import { PROFILES } from './profiles';
 import { currentProjectId, projectQuery } from './project';
+import { ifMatch } from './versioning';
 
 export const CONFIG_SEARCH = `code=${GOOGLE_CALENDAR_NAMESPACE}|calendar-settings`;
 const LEVEL_URL = `${GOOGLE_CALENDAR_NAMESPACE}/project-detail-level`;

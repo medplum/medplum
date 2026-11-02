@@ -13,12 +13,13 @@ import { getOAuthClient, GoogleOAuthError, refreshAccessToken, revokeToken } fro
 import type { ImportResult } from './import';
 import { importBusyTime, importedSlots } from './import';
 import type { ConnectionLease } from './lease';
-import { ifMatch, withConnectionLease } from './lease';
+import { withConnectionLease } from './lease';
 import { toGoogleEventId } from './mapping';
 import { ownershipStore } from './ownership';
 import { deletePublicStatus } from './public-status';
 import { parseSyncRange } from './range-sync';
 import { readState, withState } from './state';
+import { ifMatch } from './versioning';
 import { ensureWatch } from './watch';
 
 class InboundPending extends Error {}
@@ -52,10 +53,10 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
       // Lease release republishes the summary; no Google work is outstanding.
       return;
     }
-    if (Date.parse(readState(connection.basic).inboundRetryAt ?? '') > Date.now()) {
+    if (Date.parse(state.inboundRetryAt ?? '') > Date.now()) {
       return;
     }
-    const inboundRequestAtStart = readState(connection.basic).inboundRequest;
+    const inboundRequestAtStart = state.inboundRequest;
     try {
       if (connection.status === 'disconnecting') {
         await cleanupConnection(lease, event.secrets, connection);
@@ -223,10 +224,6 @@ export async function cleanupConnection(
     throw new Error('Uncertain mirrors remain; repair their ownership before completing disconnect');
   }
   await lease.check();
-  if (!state.credentialRevoked) {
-    await revokeToken(await readCredential(medplum, connection));
-    await lease.mutate((basic) => withState(basic, { ...readState(basic), credentialRevoked: true }));
-  }
   // Retain account-bound ownership evidence across disconnect; it contains no token or event content.
   await deleteCredential(lease);
   await deletePublicStatus(medplum, lease.id);
