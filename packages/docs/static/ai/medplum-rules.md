@@ -28,7 +28,7 @@ search params, or operations.
 
 ## Common Mistakes
 
-- Profiles: when a task targets an agreed profile, use that version and validate output resources against it. For server validation, include its URL in `meta.profile` and confirm the definition is available in the project. Generated types catch some constraints; passing `tsc` does not establish profile conformance. [fhir-datastore/profiles]
+- Profiles: follow the agreed profile strategy, either explicit `meta.profile` per resource or `Project.defaultProfile`. Any `meta.profile` on a resource turns off the project's default profiles for that resource. `$validate` checks only the profiles listed in `meta.profile`. To test default profiles, create the resource in a test project and read back its stored `meta.profile`. Confirm conformance by validating against resolvable profiles; generated types and `tsc` catch only some constraints. [fhir-datastore/profiles] [access/projects#default-profiles]
 - Messaging: thread header carries no payload; `recipient` = ALL participants incl. the sender/creator. [communications/messaging-data-model]
 - Scheduling: availability is implicit – create `Slot`s only for booked/blocked time, never for open availability. [scheduling/defining-availability]
 - Bundles: entries that cross-reference need `type: transaction` + `urn:uuid` fullUrls (or `reorderBundle()`), not batch. [fhir-datastore/fhir-batch-requests]

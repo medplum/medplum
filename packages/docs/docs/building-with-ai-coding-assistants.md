@@ -310,8 +310,12 @@ against a ValueSet with
 [`$validate-code`](/docs/api/fhir/operations/valueset-validate-code), or round-trip
 resources through a `MedplumClient`; these check against the real FHIR and profile
 definitions, catching structural and terminology errors the type system can't (hallucinated
-LOINC, SNOMED, and ICD codes are a common failure mode). For profile checks, include the agreed 
-URL in `meta.profile` and make sure the matching StructureDefinition is available in the test project. 
+LOINC, SNOMED, and ICD codes are a common failure mode). `$validate` checks a resource against
+the profiles listed in its `meta.profile`.
+[Project default profiles](/docs/access/projects#default-profiles) apply only on create and
+update. If your project uses them, put the default profile URL in the `$validate` payload. Then
+create a test resource without `meta.profile` and confirm the stored resource has the expected
+profile. Both checks need the profile's StructureDefinition in the test project.
 Passing validation does not prove that the values or patient references are correct.
 
 Run API access checks as restricted users with synthetic records. Test allowed actions,
