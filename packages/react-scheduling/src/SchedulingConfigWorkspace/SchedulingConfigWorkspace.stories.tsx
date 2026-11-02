@@ -46,9 +46,9 @@ function Workspace(): JSX.Element {
  * are hidden until **Show inactive** is ticked under the filters button. So is Dr. Sofia Reyes, who is on leave:
  * still active, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
  *
- * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
- * types, Rooms, or Devices starts a new one, which is listed once it is saved. Providers can't be created here,
- * only edited: set a time zone for Dr. Anika Patel, who has none. A visit type's page lists the Schedules offering
+ * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside each
+ * section starts a new one, which is listed once it is saved. A new provider has no NPI, and only providers
+ * created here have editable names and statuses: set a time zone for Dr. Anika Patel, who has none. A visit type's page lists the Schedules offering
  * it, each opening its provider's, room's, or device's page.
  *
  * @returns The story.

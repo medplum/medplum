@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import type { Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';

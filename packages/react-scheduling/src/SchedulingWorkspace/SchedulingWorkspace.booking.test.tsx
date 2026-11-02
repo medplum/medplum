@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { getExtensionValue, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
-import type { JSX, Ref } from 'react';
+import type { JSX, ReactNode, Ref } from 'react';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -30,6 +30,7 @@ import {
   addRow,
   chooseActor,
   chooseDay,
+  chooseFirstOfferedTime,
   chooseImagingService,
   choosePatient,
   chooseRepeat,
@@ -116,6 +117,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
       onRangeChange?: (range: { start: Date; end: Date }) => void;
       selection?: { start: Date; end: Date };
       selectedId?: string;
+      toolbarEnd?: ReactNode;
     },
     ref: Ref<CalendarHandle>
   ): JSX.Element {
@@ -128,6 +130,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
 
     return (
       <div>
+        {props.toolbarEnd}
         {Object.entries(CLICK_TARGETS).map(([name, target]) => (
           <button
             key={name}
@@ -183,7 +186,7 @@ async function clickCalendar(target: ClickTarget = 'tuesday morning'): Promise<v
 }
 
 function bookingPaneHeading(): HTMLElement | null {
-  return screen.queryByRole('heading', { name: /book appointment/i });
+  return screen.queryByRole('tab', { name: 'Book Appointment' });
 }
 
 /**
@@ -300,6 +303,28 @@ describe('SchedulingWorkspace booking', () => {
     expect(field(/visit type/i)).toBeInTheDocument();
   });
 
+  test('Opens the booking form from the toolbar, on the next half hour', async () => {
+    setup();
+    await clickCalendar();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+    });
+
+    vi.setSystemTime(new Date(2026, 7, 17, 9, 10));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
+    });
+    expect(screen.getByRole('tab', { name: 'Book Appointment' })).toHaveAttribute('aria-selected', 'true');
+    expect(markedTime()).toBe(new Date(2026, 7, 17, 9, 30).toISOString());
+    expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 17, 9, 30).toISOString());
+
+    vi.setSystemTime(new Date(2026, 7, 17, 9, 30));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'New appointment' }));
+    });
+    expect(markedTime()).toBe(new Date(2026, 7, 17, 10, 0).toISOString());
+  });
+
   test('Starts on the site the workspace was opened on', async () => {
     renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={SatelliteClinic} />, medplum);
     await clickCalendar();
@@ -404,6 +429,34 @@ describe('SchedulingWorkspace booking', () => {
     expect(markedTime()).toBe('none');
   });
 
+  test('Stays wide while the time search slides back, until the slide ends', async () => {
+    setup();
+    await clickCalendar();
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    const pane = screen.getByRole('region', { name: 'Book appointment' });
+    expect(pane.className).toMatch(/paneWide/);
+
+    // jsdom runs no animations, so each one's end is fired by hand. Closing while the pane is
+    // still sliding open cuts that slide short, which doesn't end the slide back.
+    await chooseFirstOfferedTime();
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+    fireEvent(pane, new AnimationEvent('animationcancel', { animationName: 'paneSlideIn' }));
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+
+    // A slide back that's cancelled, as when the pane is hidden mid-slide, does.
+    fireEvent(pane, new AnimationEvent('animationcancel', { animationName: 'paneSlideOut' }));
+    expect(pane.className).not.toMatch(/paneWide|paneClosing/);
+
+    await openTimeFinder();
+    fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+    expect(pane.className).toMatch(/paneWide.*paneClosing/);
+
+    fireEvent.animationEnd(pane, { animationName: 'paneSlideOut' });
+    expect(pane.className).not.toMatch(/paneWide|paneClosing/);
+  });
+
   test('Keeps what was answered, and searches the new day, when a different day is clicked', async () => {
     const get = vi.spyOn(medplum, 'get');
     setup();
@@ -472,6 +525,7 @@ describe('SchedulingWorkspace booking', () => {
       await openTimeFinder();
       await chooseSecondOfferedTime();
       expect(proposedTime()).not.toBe('none');
+      await openTimeFinder();
 
       // Searching another day drops the time, and a proposal left on the old one would
       // be pointing at a time nobody has chosen.
@@ -480,7 +534,7 @@ describe('SchedulingWorkspace booking', () => {
       expect(proposedTime()).toBe('none');
     });
 
-    test('Hides the proposal on the Block tab, and draws it again on coming back', async () => {
+    test('Hides the proposal on the Block Time tab, and draws it again on coming back', async () => {
       setup();
       await clickCalendar('tuesday morning');
       await chooseImagingService();
@@ -490,11 +544,11 @@ describe('SchedulingWorkspace booking', () => {
       const proposed = proposedTime();
       expect(screen.getByTestId('proposed-time')).toHaveAttribute('data-label', 'Draft New Appointment');
 
-      fireEvent.click(screen.getByRole('tab', { name: 'Block' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
       expect(proposedTime()).toBe('none');
 
-      // The form stays mounted behind the Block tab, so its time is still there to draw.
-      fireEvent.click(screen.getByRole('tab', { name: 'Appointment' }));
+      // The form stays mounted behind the Block Time tab, so its time is still there to draw.
+      fireEvent.click(screen.getByRole('tab', { name: 'Book Appointment' }));
       expect(proposedTime()).toBe(proposed);
     });
 

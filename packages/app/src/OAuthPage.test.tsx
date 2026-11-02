@@ -142,11 +142,29 @@ describe('OAuthPage', () => {
     expect(screen.getByText('Missing or invalid client ID or redirect URI')).toBeInTheDocument();
   });
 
-  test('Script redirect URI', async () => {
-    await setup('/oauth?client_id=123&redirect_uri=javascript:alert(1)');
+  test.each([
+    'javascript:alert(1)',
+    'JaVaScRiPt:alert(1)',
+    'java\tscript:alert(1)',
+    ' javascript:alert(1)',
+    'DATA:text/html,<script>alert(1)</script>',
+    'vbscript:msgbox(1)',
+  ])('Script redirect URI %j', async (redirectUri) => {
+    await setup(`/oauth?client_id=123&redirect_uri=${encodeURIComponent(redirectUri)}`);
     expect(medplum.get).not.toHaveBeenCalled();
     expect(screen.queryByLabelText('Email *')).toBeNull();
     expect(screen.getByText('Missing or invalid client ID or redirect URI')).toBeInTheDocument();
+  });
+
+  test('Native app redirect URI', async () => {
+    locationUtils.assign = vi.fn();
+    vi.spyOn(medplum, 'get').mockResolvedValue({ showScopeSelection: false });
+
+    const user = await setup('/oauth?client_id=123&redirect_uri=com.example.app%3A%2Fcallback&scope=openid');
+    await signIn(user);
+
+    await waitFor(() => expect(locationUtils.assign).toHaveBeenCalled());
+    expect(new URL(vi.mocked(locationUtils.assign).mock.calls[0][0]).protocol).toBe('com.example.app:');
   });
 
   test('Client info failure', async () => {

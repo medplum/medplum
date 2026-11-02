@@ -67,7 +67,8 @@ export interface AppointmentDetailsProps {
    */
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /**
-   * Called when the reschedule form's time search opens or closes.
+   * Called when the reschedule form's time search opens or closes, including when
+   * picking an offered time closes it.
    *
    * The times render beside that form rather than under it, so a host showing this in a
    * drawer or a panel has to widen it to fit them — under the width they need they wrap,
@@ -85,7 +86,7 @@ export interface AppointmentDetailsProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
-  /** Called with the appointment as written, after the patient or the visit type's codes are saved. */
+  /** Called with the appointment as written, after the visit type's codes or the notes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
 
@@ -334,25 +335,24 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   return (
     <Stack gap="sm" className={classes.details}>
       <AppointmentStatusBadge status={appointment.status} />
-      {!editing && patientLine}
-      {!editing && <Detail label="MRN" value={mrn} />}
+      {patientLine}
+      <Detail label="MRN" value={mrn} />
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
-      <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
+      <Detail label="Visit type" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
       <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
       <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
       <Detail label="Rooms" value={listActors(rooms)} />
       <Detail label="Devices" value={listActors(devices)} />
       <Detail label="With" value={listActors(others)} />
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
-      <Detail label="Notes" value={appointment.comment ?? appointment.description} />
+      {!editing && <Detail label="Notes" value={appointment.comment} />}
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
       {editing ? (
         <AppointmentDetailsForm
           appointment={appointment}
           procedureBinding={procedureBinding}
           diagnosisBinding={diagnosisBinding}
-          mrnSystem={mrnSystem}
           onUpdated={(updated) => {
             setEditing(false);
             return onUpdated?.(updated);

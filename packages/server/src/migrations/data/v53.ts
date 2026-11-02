@@ -13,11 +13,11 @@ import type { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
-  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+  prepareJobData: prepareCustomMigrationJobData,
   run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 
 // prettier-ignore
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
-  await fns.idempotentCreateIndex(client, results, 'AsyncJob_requester_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "AsyncJob_requester_idx" ON "AsyncJob" ("requester")`);
+  await fns.idempotentCreateIndex(client, results, 'Task_projectId_status____tag___code_not_completed_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Task_projectId_status____tag___code_not_completed_idx" ON "Task" USING gin ("projectId", "status", "___tag", "__code") WITH (fastupdate = off) WHERE ((deleted = false) AND (status <> 'completed'::text))`);
 }

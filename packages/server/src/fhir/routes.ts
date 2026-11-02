@@ -507,6 +507,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
         ?.valueInteger,
       graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
       graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+      readonlyBatchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'readonlyBatchOnReader')?.valueBoolean,
       searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
       transactions: ctx.project.features?.includes('transaction-bundles'),
     },
@@ -515,7 +516,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
   if (isNotFound(result[0])) {
-    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo, res.locals.rawBody);
     if (customOperationResponse) {
       result = customOperationResponse;
     }

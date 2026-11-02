@@ -63,7 +63,7 @@ import { getRepoForLogin } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
-import { getResourceCacheEntry } from './repository/resource-cache';
+import { deleteResourceCacheEntry, getResourceCacheEntry } from './repository/resource-cache';
 import { ExpungedHistoryTag } from './repository/row-builder';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
@@ -333,6 +333,20 @@ describe('FHIR Repo', () => {
     expect(updatedEvent.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
   });
 
+  test('Does not cache reads from the reader', () =>
+    withTestContext(async () => {
+      const patient = await testProjectRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await deleteResourceCacheEntry('Patient', patient.id);
+
+      const repo = testProjectRepo.clone();
+      repo.setMode(RepositoryMode.READER);
+      await repo.readResource('Patient', patient.id);
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeUndefined();
+
+      await testProjectRepo.readResource('Patient', patient.id);
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeDefined();
+    }));
+
   test('Only caches on read when cacheResourcesOnWrite is disabled', async () => {
     const prevCacheResourcesOnWrite = getConfig().cacheResourcesOnWrite;
     getConfig().cacheResourcesOnWrite = false;
@@ -595,6 +609,8 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
+      const upperId = patient1.id.toUpperCase();
+      await systemRepo.updateResource<Patient>({ ...patient1, id: upperId, gender: 'unknown' });
 
       const patient2 = await systemRepo.updateResource<Patient>({
         ...(patient1 as Patient),
@@ -603,6 +619,9 @@ describe('FHIR Repo', () => {
 
       expect(patient2.id).toStrictEqual(patient1.id);
       expect(patient2.meta?.versionId).not.toStrictEqual(patient1.meta?.versionId);
+      await expect(systemRepo.readResource<Patient>('Patient', upperId)).resolves.toMatchObject({
+        meta: { versionId: patient2.meta?.versionId },
+      });
     }));
 
   test('Update patient remove meta.profile', () =>

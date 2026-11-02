@@ -348,13 +348,19 @@ describe('SchedulingConfigWorkspace', () => {
     ).toBeInTheDocument();
   });
 
-  test('offers to create visit types, rooms, and devices, and never providers', async () => {
+  test('a new provider is listed under Providers and selected once created, and can then offer visit types', async () => {
     await setup();
 
-    expect(within(section('Visit types')).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
-    expect(within(section('Rooms')).getByRole('button', { name: 'New room' })).toBeInTheDocument();
-    expect(within(section('Devices')).getByRole('button', { name: 'New device' })).toBeInTheDocument();
-    expect(within(section('Providers')).queryByRole('button', { name: /^New/ })).not.toBeInTheDocument();
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New provider' }));
+    await userEvent.type(within(details()).getByLabelText(/First name/), 'Mary');
+    await userEvent.type(within(details()).getByLabelText(/Last name/), 'Lee');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Mary Lee')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Providers')).getByText('Mary Lee')).toBeInTheDocument();
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeChecked();
+    expect(within(details()).getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
+    expect(await within(details()).findByRole('searchbox', { name: 'Service facilities' })).toBeInTheDocument();
   });
 
   test('a new room is listed under Rooms and selected once created, with its Schedule, and can then offer visit types', async () => {

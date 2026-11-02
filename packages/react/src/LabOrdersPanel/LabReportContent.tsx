@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Text } from '@mantine/core';
 import type { Attachment, DiagnosticReport } from '@medplum/fhirtypes';
-import { AttachmentDisplay, DiagnosticReportDisplay, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { resolveDerivedFromAttachments, resolvePresentedFormAttachments } from '../../utils/documentReference';
+import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
+import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import { resolveDerivedFromAttachments, resolvePresentedFormAttachments } from './documentReference';
 import classes from './LabReportContent.module.css';
 
 interface LabReportContentProps {

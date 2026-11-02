@@ -9,6 +9,12 @@ Digital health companies often build custom UIs on top of the Medplum platform t
 
 Hello World is built with Medplum's [React Component](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) library, which is a great resource for rapid prototyping and building internal tools.
 
+:::tip[Plan your application with AI]
+
+Before extending this starter, [use Medplum's decision guides with your AI agent](/docs/building-with-ai-coding-assistants#plan-your-application) to choose your workflows and architecture. Save the decisions in your application's repo so later coding tasks build on the same plan.
+
+:::
+
 ## Clone and Run the App
 
 This tutorial assumes you have already:

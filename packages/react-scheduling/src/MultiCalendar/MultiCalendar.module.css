@@ -68,10 +68,6 @@
     }
   }
 
-  :global(.dayGridMonth) :global(.appointment) .eventTime {
-    padding-top: 1px;
-  }
-
   /* In light mode, Mantine's named colors are tinted with their lightest shade and written in their
    * darkest, darkened further where that is hard to read on the tint. */
   :global([data-color-scheme='light']) {
@@ -228,12 +224,18 @@
     }
 
     .eventInner {
-      padding: 4px 4px 0;
+      padding-inline: 4px;
       color: inherit;
     }
 
-    .eventTitle {
-      padding-block: 0;
+    &:not(:global(.busy), :global(.busy-unavailable), :global(.busy-tentative)) {
+      .eventInner {
+        padding: 4px 4px 0;
+      }
+
+      .eventTitle {
+        padding-block: 0;
+      }
     }
   }
 }

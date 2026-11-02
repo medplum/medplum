@@ -51,7 +51,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
-import { parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
+import { getPartialPermissionScopes, parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import {
@@ -741,6 +741,23 @@ export async function getAuthTokens(
     throw new OperationOutcomeError(badRequest('Login missing profile'));
   }
 
+  const partialPermissionScopes = getPartialPermissionScopes(login.scope);
+  if (partialPermissionScopes.length > 0) {
+    let projectId = resolveId(login.project);
+    if (!projectId) {
+      // A logging lookup must not prevent token issuance.
+      const membership = await getGlobalSystemRepo()
+        .readReference(login.membership)
+        .catch(() => undefined);
+      projectId = resolveId(membership?.project);
+    }
+    getLogger().warn('SMART scopes with partial permissions', {
+      clientId,
+      projectId,
+      scopes: partialPermissionScopes,
+    });
+  }
+
   if (!login.granted) {
     const systemRepo = getGlobalSystemRepo();
     await systemRepo.updateResource<Login>({
@@ -1291,9 +1308,21 @@ async function makeAuthResult(
   // Resolve "on behalf of" before building the repository, so that the access policy is built from
   // the effective membership.  Resolving it afterwards would require a repository to already exist,
   // which cannot be built for a login whose scopes depend on the on-behalf-of membership.
-  await tryAddOnBehalfOf(systemRepo, req, authState);
-  const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  return { authState, repo };
+  try {
+    await tryAddOnBehalfOf(systemRepo, req, authState);
+    const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
+    return { authState, repo };
+  } catch (err) {
+    // The caller is known here, but the "Authentication error" log line does not include it
+    getLogger().warn('Authentication failed for known caller', {
+      login: login.id,
+      project: project.id,
+      membership: membership.id,
+      profile: membership.profile?.reference,
+      onBehalfOf: req?.headers?.['x-medplum-on-behalf-of'],
+    });
+    throw err;
+  }
 }
 
 /**

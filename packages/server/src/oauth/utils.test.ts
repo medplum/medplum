@@ -577,6 +577,54 @@ describe('OAuth utils', () => {
       });
     });
 
+    test.each(['login', 'membership', 'unavailable'])(
+      'Logs partial SMART permissions with project %s',
+      async (source) => {
+        const { user, login, patient } = await withTestContext(async () => {
+          const user = await systemRepo.createResource<User>({
+            resourceType: 'User',
+            firstName: 'Test',
+            lastName: 'User',
+          });
+          const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+          const membership = await systemRepo.createResource<ProjectMembership>({
+            resourceType: 'ProjectMembership',
+            user: createReference(user),
+            profile: createReference(patient),
+            project: createReference(project),
+          });
+          const login = await systemRepo.createResource<Login>({
+            resourceType: 'Login',
+            authMethod: 'password',
+            user: createReference(user),
+            membership: createReference(membership),
+            project: source === 'login' ? createReference(project) : undefined,
+            scope: 'openid user/Patient.c',
+            granted: true,
+            authTime: new Date().toISOString(),
+            nonce: randomUUID(),
+          });
+          return { user, login, patient };
+        });
+
+        if (source === 'unavailable') {
+          login.membership = { reference: `ProjectMembership/${randomUUID()}` };
+        }
+        const warnSpy = vi.spyOn(globalLogger, 'warn');
+        try {
+          const tokens = await getAuthTokens(user, login, createReference(patient));
+          expect((await verifyJwt(tokens.accessToken)).payload.scope).toBe(login.scope);
+          expect(warnSpy).toHaveBeenCalledWith('SMART scopes with partial permissions', {
+            clientId: undefined,
+            projectId: source === 'unavailable' ? undefined : project.id,
+            scopes: ['user/Patient.c'],
+          });
+        } finally {
+          warnSpy.mockRestore();
+        }
+      }
+    );
+
     test('Access token includes email when email scope is requested for User', async () => {
       await withTestContext(async () => {
         // Create a User with email

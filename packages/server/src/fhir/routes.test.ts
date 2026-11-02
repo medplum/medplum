@@ -726,6 +726,69 @@ describe('FHIR Routes', () => {
     }
   });
 
+  test('readonlyBatchOnReader only routes read-only batches to reader', async () => {
+    const token = await initTestAuth({
+      project: { systemSetting: [{ name: 'readonlyBatchOnReader', valueBoolean: true }] },
+    });
+
+    const search = { request: { method: 'GET', url: 'Patient?name=Alice' } };
+    const create = { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } };
+    const nested = {
+      request: { method: 'POST', url: '/' },
+      resource: { resourceType: 'Bundle', type: 'batch', entry: [search] },
+    };
+    for (const [type, entry, expectReader] of [
+      ['batch', [search, search], true],
+      ['batch', [search, create], false],
+      ['transaction', [search, search], false],
+      ['batch', [nested, search], false],
+    ] as const) {
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
+      try {
+        const res = await request(app)
+          .post('/fhir/R4')
+          .set('Authorization', 'Bearer ' + token)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send({ resourceType: 'Bundle', type, entry });
+        expect(res).toHaveStatus(200);
+        expect(readerSpy.mock.calls.length > 0).toBe(expectReader);
+        expect(writerSpy.mock.calls.length > 0).toBe(!expectReader);
+      } finally {
+        restore();
+      }
+    }
+  });
+
+  test('readonlyBatchOnReader does not break a nested read-only batch inside a transaction', async () => {
+    const token = await initTestAuth({
+      project: {
+        features: ['transaction-bundles'],
+        systemSetting: [{ name: 'readonlyBatchOnReader', valueBoolean: true }],
+      },
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4')
+      .set('Authorization', 'Bearer ' + token)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+          {
+            request: { method: 'POST', url: '/' },
+            resource: {
+              resourceType: 'Bundle',
+              type: 'batch',
+              entry: [{ request: { method: 'GET', url: 'Patient?name=Alice' } }],
+            },
+          },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+  });
+
   test('Search invalid resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patientx`)

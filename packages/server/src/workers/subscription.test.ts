@@ -17,6 +17,7 @@ import type {
   Binary,
   Bot,
   DocumentReference,
+  Login,
   Observation,
   Patient,
   Practitioner,
@@ -218,6 +219,36 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionsEnabled = false;
       await addSubscriptionJobs(patient, undefined, { project: repo.currentProject(), interaction: 'create' });
 
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
+  test('Does not send subscriptions for Login', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Login',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const project = repo.currentProject() as WithId<Project>;
+      const login: WithId<Login> = {
+        resourceType: 'Login',
+        id: randomUUID(),
+        meta: { project: project.id },
+        user: { reference: 'User/' + randomUUID() },
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        refreshSecret: randomUUID(),
+      };
+
+      const subscriptionQueue = getSubscriptionQueue();
+      (subscriptionQueue?.add as Mock).mockClear();
+      await addSubscriptionJobs(login, undefined, { project, interaction: 'create' });
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
     }));
 
@@ -2746,6 +2777,11 @@ describe('Subscription Worker', () => {
           { includeResource: true },
         ]);
 
+        const differentCase = await wsSubRepo.updateResource<Subscription>({
+          ...subscription,
+          id: subscription.id.toUpperCase(),
+        });
+
         // Delete the patient
         nextArgsPromise = waitForNextSubNotification<Patient>();
         await wsSubRepo.deleteResource('Patient', updatedPatient.id);
@@ -2754,7 +2790,7 @@ describe('Subscription Worker', () => {
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(updatedPatient),
-          subscription.id,
+          differentCase.id,
           { includeResource: true },
         ]);
       }));
@@ -2781,7 +2817,7 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
 
-        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Not found');
+        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Job not found');
 
         // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
         // if the job had made its way to the queue previously under different logic

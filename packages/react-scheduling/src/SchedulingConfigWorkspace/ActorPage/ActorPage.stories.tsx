@@ -23,6 +23,7 @@ import {
   ManyVisitTypesFixtures,
 } from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
+import type { NewActorType } from './actorDraft';
 
 export default {
   title: 'Medplum/SchedulingConfigWorkspace/ActorPage',
@@ -34,6 +35,32 @@ export default {
 interface Loaded {
   readonly actor: ConfigurableActor;
   readonly services: WithId<HealthcareService>[];
+}
+
+// Creates a new actor of the type given, once the visit types it could offer are loaded.
+function NewActor(props: { readonly newActorType: NewActorType }): JSX.Element {
+  const medplum = useMedplum();
+  const [services, setServices] = useState<WithId<HealthcareService>[]>();
+
+  useEffect(() => {
+    searchConfigurableServices(medplum, {})
+      .then((result) => setServices(result.services))
+      .catch(console.error);
+  }, [medplum]);
+
+  if (!services) {
+    return <Text c="dimmed">Loading…</Text>;
+  }
+  return (
+    <Box p="md">
+      <ActorPage
+        newActorType={props.newActorType}
+        services={services}
+        onSynced={() => undefined}
+        onDiscardNew={() => undefined}
+      />
+    </Box>
+  );
 }
 
 /**
@@ -133,30 +160,15 @@ export const ProviderServiceFacilities = (): JSX.Element => (
  * booking filters by. Its Schedule is created with it, and visit types can be offered once it is created.
  * @returns The story.
  */
-export const CreateRoom = (): JSX.Element => {
-  const medplum = useMedplum();
-  const [services, setServices] = useState<WithId<HealthcareService>[]>();
+export const CreateRoom = (): JSX.Element => <NewActor newActorType="Location" />;
 
-  useEffect(() => {
-    searchConfigurableServices(medplum, {})
-      .then((result) => setServices(result.services))
-      .catch(console.error);
-  }, [medplum]);
-
-  if (!services) {
-    return <Text c="dimmed">Loading…</Text>;
-  }
-  return (
-    <Box p="md">
-      <ActorPage
-        newActorType="Location"
-        services={services}
-        onSynced={() => undefined}
-        onDiscardNew={() => undefined}
-      />
-    </Box>
-  );
-};
+/**
+ * A provider being created. They get no NPI, since providers with one come from elsewhere, and Create is refused
+ * until they have a first and last name. Unlike providers from elsewhere, their status and names stay editable once
+ * created. Visit types and service facilities can be set once they are created.
+ * @returns The story.
+ */
+export const CreateProvider = (): JSX.Element => <NewActor newActorType="Practitioner" />;
 
 /**
  * Dr. Elin Lindqvist offers 70 visit types, listed twenty at a time. Filter them by name, tick several, or tick the

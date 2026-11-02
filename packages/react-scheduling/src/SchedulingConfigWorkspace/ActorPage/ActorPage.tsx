@@ -30,7 +30,7 @@ import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
 import type { ActorGeneralFields, ActorResource, NewActorType } from './actorDraft';
-import { actorGeneralFieldsOf, buildActorResource, hasEditableName, newActorResource } from './actorDraft';
+import { actorGeneralFieldsOf, buildActorResource, getNameErrors, newActorResource } from './actorDraft';
 import { ActorGeneral } from './ActorGeneral';
 import { OfferAllSwitch } from './OfferAllSwitch';
 import { OfferingEditor, OfferingSummary } from './OfferingEditor';
@@ -116,7 +116,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const actorWithId = stored && (actorDraft as ConfigurableActorResource);
   const typeLabel = getActorTypeLabel(actorDraft.resourceType);
   const noun = typeLabel.toLowerCase();
-  const name = creating ? general.name.trim() : getDisplayString(stored);
+  const typedName = newActorType === 'Practitioner' ? `${general.given ?? ''} ${general.family ?? ''}` : general.name;
+  const name = creating ? typedName.trim() : getDisplayString(stored);
   const actorName = name || `this ${noun}`;
 
   const facilities = useProviderFacilities(stored, actorName);
@@ -165,8 +166,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   const blocking = offered.find((service) => blockedReasonFor(service));
-  const nameError = hasEditableName(actorDraft) && !general.name.trim() ? 'A name is required.' : undefined;
-  const blockedReason = nameError ?? (blocking && blockedReasonFor(blocking));
+  const nameErrors = getNameErrors(actorDraft, general);
+  const blockedReason = Object.values(nameErrors)[0] ?? (blocking && blockedReasonFor(blocking));
 
   function handleGeneralChange(next: ActorGeneralFields): void {
     if (next.active !== general.active) {
@@ -333,9 +334,14 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           onChange={handleGeneralChange}
           scheduleActive={scheduleActive}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
-          nameError={triedToSave || initialGeneral.name ? nameError : undefined}
+          nameErrors={triedToSave || !creating ? nameErrors : undefined}
         />
         {facilities.field && <ProviderFacilitiesFields {...facilities.field} />}
+        {creating && actorDraft.resourceType === 'Practitioner' && (
+          <Text size="sm" c="dimmed">
+            Service facilities can be set once {actorName} is created.
+          </Text>
+        )}
         {alert && (
           <Alert color="blue" variant="light">
             {alert}

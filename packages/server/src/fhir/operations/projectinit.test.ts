@@ -324,4 +324,34 @@ describe('Project $init', () => {
 
     config.defaultProjectSystemSetting = originalDefaultProjectSystemSetting;
   });
+
+  test('New project registration disabled', async () => {
+    config.newProjectRegistrationEnabled = false;
+    try {
+      const body = {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'name', valueString: 'Test Init Project ' + randomUUID() }],
+      };
+
+      const accessToken = await initTestAuth();
+      const res1 = await request(app)
+        .post(`/fhir/R4/Project/$init`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(body);
+      expect(res1).toHaveStatus(400);
+      expect(res1.body.issue[0].details.text).toBe('New project registration is disabled');
+
+      // Super admins can still provision projects
+      const superAdminAccessToken = await getSuperAdminAccessToken();
+      const res2 = await request(app)
+        .post(`/fhir/R4/Project/$init`)
+        .set('Authorization', 'Bearer ' + superAdminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(body);
+      expect(res2).toHaveStatus(201);
+    } finally {
+      config.newProjectRegistrationEnabled = undefined;
+    }
+  });
 });

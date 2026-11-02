@@ -120,7 +120,6 @@ import type {
 } from './repository/access-tracker';
 import { normalizeResourceTypes, repoAccess } from './repository/access-tracker';
 import { removeField } from './repository/field-utils';
-import { removeCachedProfile } from './repository/profile-cache';
 import type {
   ConnectionScope,
   RepositoryConnection,
@@ -468,6 +467,20 @@ export class Repository extends FhirRepository implements Disposable {
     await limiter?.consume(points);
   }
 
+  /**
+   * Executes a read-only SQL query.
+   *
+   * The `READER` default permits the reader pool but does not select it: the query runs on the
+   * writer unless this repository was put in reader mode via `setMode(RepositoryMode.READER)`.
+   * See `RepositoryConnection.getDatabaseClient`.
+   * @param query - The query to execute.
+   * @param query.execute - Runs the query on the selected database client.
+   * @param resourceTypes - The resource types involved, used for shard routing and access tracking.
+   * @param options - Optional settings.
+   * @param options.mode - Lowest permitted database mode; defaults to `READER`.
+   * @param options.source - Short label identifying the call site.
+   * @returns The result rows.
+   */
   async sqlRead<R extends QueryResultRow = any>(
     query: { execute(conn: PgQueryable): Promise<R[]> },
     resourceTypes: ResourceTypeInput,
@@ -671,6 +684,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
+    // A reader may lag behind the writer, so only reads served by the writer are cached. Check this shard's
+    // connection rather than this.mode, which reports writer if any shard is writer. Read it before the query,
+    // which picks its pool synchronously from the same mode, so a concurrent writer switch cannot change it.
+    const { entry } = this.connectionFor({ resourceTypes: resourceType as ResourceType });
+    const servedByWriter = entry.connection.mode === RepositoryMode.WRITER;
     const rows = await this.sqlRead<{ content: string; deleted: boolean }>(builder, resourceType as ResourceType);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
@@ -682,8 +700,8 @@ export class Repository extends FhirRepository implements Disposable {
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
 
-    if (!this.inOwnTransaction()) {
-      // Only set cache entry if not in a transaction
+    // Only set cache entry if not in a transaction
+    if (!this.inOwnTransaction() && servedByWriter) {
       await this.setCacheEntry(resource, { force: true });
     }
 
@@ -1109,7 +1127,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
-    if (!this.context.skipBackgroundJobs) {
+    if (this.shouldAddBackgroundJobs(result)) {
       await this.postCommit(async () => {
         const project = await this.getProjectById(projectId);
         await addBackgroundJobs(result, existing, { project, interaction });
@@ -1118,6 +1136,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
+  }
+
+  private shouldAddBackgroundJobs(resource: Resource): boolean {
+    // Cache-only resources have no history rows for the dispatch worker to read
+    return !this.context.skipBackgroundJobs && !this.isCacheOnly(resource);
   }
 
   /**
@@ -1194,10 +1217,6 @@ export class Repository extends FhirRepository implements Disposable {
         criteria: resource.criteria,
         user: resource.meta?.author?.reference,
       });
-    }
-
-    if (resource.resourceType === 'StructureDefinition') {
-      await removeCachedProfile(resource);
     }
   }
 
@@ -1599,7 +1618,7 @@ export class Repository extends FhirRepository implements Disposable {
         );
       }
 
-      if (!this.context.skipBackgroundJobs) {
+      if (this.shouldAddBackgroundJobs(resource)) {
         await this.postCommit(async () => {
           const project = await this.getProjectById(resource.meta?.project);
           await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
@@ -2204,6 +2223,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (updated.resourceType === 'ProjectMembership') {
       return resolveId(updated.project);
+    }
+
+    if (updated.resourceType === 'Login') {
+      // A Login joins its project once a membership is selected
+      return updated.membership ? resolveId(updated.project) : undefined;
     }
 
     if (this.isSuperAdmin() && SuperAdminProjectIdEditableResourceTypes.includes(updated.resourceType)) {

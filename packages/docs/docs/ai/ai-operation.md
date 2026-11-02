@@ -21,6 +21,7 @@ Before using the `$ai` operation, you need:
 
 1. **Enable AI Feature**: The `ai` feature must be enabled on your Medplum project
 2. **Configure OpenAI API Key**: Add your OpenAI API key as a project secret named `OPENAI_API_KEY` in your project settings
+3. **Use a Supported Account**: `$ai` is intended for practitioners, bots and client applications. For patient-facing AI features, call `$ai` from a Bot
 
 ### Using a LiteLLM Proxy (or other OpenAI-compatible endpoint)
 
@@ -370,7 +371,7 @@ if (toolCallsParam?.valueString) {
 
 1. **API Key Management**: The OpenAI API key is stored as a project secret (`OPENAI_API_KEY`) and never exposed to clients. It is read server-side from project settings.
 
-2. **Feature Gating**: The AI feature must be explicitly enabled on your project. This prevents unauthorized usage.
+2. **Feature Gating**: The AI feature must be explicitly enabled on your project.
 
 3. **Tool Execution**: The `$ai` operation returns suggested tool calls but does not execute them. Your application is responsible for:
    - Validating tool call parameters

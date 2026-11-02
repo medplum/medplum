@@ -64,9 +64,23 @@ describe('CalendarFilters', () => {
 
       expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
       expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      // Named only, without the generic resource row's avatar and id.
+      expect(screen.queryByText(SatelliteClinic.id)).not.toBeInTheDocument();
       // Exam Room A is a calendar, listed under Rooms — never a site to filter by.
       expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
       expect(screen.queryByText('Exam Room A Bed 1')).not.toBeInTheDocument();
+    });
+
+    test('leaves out a site that is inactive because it is not live yet', async () => {
+      await medplum.createResource({ resourceType: 'Location', name: 'Uro Associates - North', status: 'inactive' });
+      setup();
+
+      await openAutocomplete(serviceFacilityField());
+
+      // Neither clinic records a status, and both are still offered.
+      expect(screen.getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+      expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      expect(screen.queryByText('Uro Associates - North')).not.toBeInTheDocument();
     });
 
     test('searching narrows the sites to what was typed, without listing every one', async () => {

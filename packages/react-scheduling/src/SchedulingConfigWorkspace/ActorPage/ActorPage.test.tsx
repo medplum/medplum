@@ -34,15 +34,19 @@ import {
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
+  openAutocomplete,
   removePill,
   settleAutocomplete,
   typeInAutocomplete,
 } from '../../test-utils/asyncAutocomplete';
 import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
 import { ActorPage } from './ActorPage';
+import type { NewActorType } from './actorDraft';
 
 const downtown: WithId<Location> = { resourceType: 'Location', id: 'downtown', name: 'Downtown Clinic' };
 const northside: WithId<Location> = { resourceType: 'Location', id: 'northside', name: 'Northside' };
+// Not live yet: booking leaves it out, but it can still be set up here.
+const eastside: WithId<Location> = { resourceType: 'Location', id: 'eastside', name: 'Eastside', status: 'inactive' };
 const room3: WithId<Location> = {
   resourceType: 'Location',
   id: 'room-3',
@@ -394,6 +398,22 @@ describe('ActorPage', () => {
       'Kept by the system this provider comes from. Switch their Schedule off to stop booking them.'
     );
     expect(screen.getByRole('switch', { name: 'Schedule status' })).toBeEnabled();
+  });
+
+  test('renaming a provider the workspace created rewrites only the names, keeping the rest of the stored name', async () => {
+    const { medplum, onSynced } = await setup({
+      ...ownDrSmith,
+      name: [{ ...ownDrSmith.name?.[0], text: 'Dr. Jane Smith' }],
+    });
+
+    expect(within(general()).queryByText('NPI')).not.toBeInTheDocument();
+    fireEvent.change(within(general()).getByRole('textbox', { name: /Last name/ }), { target: { value: 'Smythe' } });
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect((sentResources(medplum)[0] as Practitioner).name).toEqual([
+      { prefix: ['Dr.'], given: ['Jane'], family: 'Smythe' },
+    ]);
   });
 
   test('switching a provider off switches its Schedule off and locks it, and both save in one bundle', async () => {
@@ -1019,6 +1039,15 @@ describe('ActorPage', () => {
         expect(sent.location?.reference).toBe('Location/northside');
       });
 
+      test('offers a service facility that is inactive because it is not live yet', async () => {
+        const { partOf: _partOf, ...unplaced } = room3;
+        await setup(unplaced, [], [eastside]);
+
+        await pick('Service facility', 'Eastside');
+
+        expect(saveBar()).not.toBeNull();
+      });
+
       test('moving a room to another service facility keeps what it offers', async () => {
         const atNorthside = { ...room3, partOf: { reference: 'Location/northside', display: 'Northside' } };
         await setup(atNorthside, [makeSchedule('Location/room-3', [cystoscopy])], [], cystoscopy.id);
@@ -1034,7 +1063,7 @@ describe('ActorPage', () => {
 
       describe('creating', () => {
         async function setupNew(
-          newActorType: 'Location' | 'Device'
+          newActorType: NewActorType
         ): Promise<Pick<Setup, 'medplum' | 'onSynced'> & { onDiscardNew: ReturnType<typeof vi.fn> }> {
           const medplum = new MockClient({ seedDefaultData: false });
           for (const resource of [downtown, northside, ...services]) {
@@ -1102,6 +1131,46 @@ describe('ActorPage', () => {
           await waitFor(() => expect(onSynced).toHaveBeenCalled());
           expect(onSynced.mock.calls[0][0][0]).toMatchObject({ resourceType: 'Device', status: 'inactive' });
           expect(syncedSchedule(onSynced).active).toBe(false);
+        });
+
+        test('creating a provider stores an active Practitioner with its names and the workspace marker, and no NPI', async () => {
+          const { medplum, onSynced } = await setupNew('Practitioner');
+
+          expect(screen.getByText('New provider')).toBeInTheDocument();
+          expect(screen.getByText('Service facilities can be set once this provider is created.')).toBeInTheDocument();
+          expect(within(general()).queryByText('NPI')).not.toBeInTheDocument();
+          expect(screen.getByRole('switch', { name: 'Provider status' })).toBeEnabled();
+          fireEvent.change(within(general()).getByRole('textbox', { name: /First name/ }), {
+            target: { value: ' Mary Ann ' },
+          });
+          fireEvent.change(within(general()).getByRole('textbox', { name: /Last name/ }), { target: { value: 'Lee' } });
+          expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Mary Ann Lee');
+          await saveNow();
+
+          await waitFor(() => expect(onSynced).toHaveBeenCalled());
+          expect(sentBundle(medplum).entry?.map((item) => item.request)).toEqual([
+            { method: 'POST', url: 'Practitioner' },
+            { method: 'POST', url: 'Schedule' },
+          ]);
+          const created = onSynced.mock.calls[0][0][0] as WithId<Practitioner>;
+          expect(created).toMatchObject({
+            active: true,
+            name: [{ use: 'official', given: ['Mary', 'Ann'], family: 'Lee' }],
+          });
+          expect(created.identifier?.map((identifier) => identifier.system)).toEqual([
+            SCHEDULING_CONFIG_PROVIDER_SYSTEM,
+          ]);
+          expect(syncedSchedule(onSynced).actor).toEqual([{ reference: `Practitioner/${created.id}` }]);
+        });
+
+        test('a new provider is refused without a first and last name', async () => {
+          const { medplum } = await setupNew('Practitioner');
+
+          await saveNow();
+
+          expect(within(general()).getByText('A first name is required.')).toBeInTheDocument();
+          expect(within(general()).getByText('A last name is required.')).toBeInTheDocument();
+          expect(medplum.executeBatch).not.toHaveBeenCalled();
         });
 
         test('a new room is refused without a name, and discarding it writes nothing', async () => {
@@ -1213,6 +1282,12 @@ describe('ActorPage', () => {
 
       expect(await findChips(['Downtown Clinic', 'Northside'])).toBeInTheDocument();
       expect(chips()).not.toHaveTextContent('Room 3');
+
+      await openAutocomplete(await facilityPicker());
+      const checked = screen
+        .getAllByLabelText('Selected')
+        .map((check) => check.closest('[role="option"]')?.textContent);
+      expect(checked).toStrictEqual(['Downtown Clinic', 'Northside']);
     });
 
     test('removing a service facility takes it off the workspace role on save, deleting nothing and writing nothing else', async () => {
@@ -1413,6 +1488,14 @@ describe('ActorPage', () => {
       expect(sentRoles(medplum)?.map((item) => item.resource)).toMatchObject([
         { location: [{ reference: 'Location/northside' }] },
       ]);
+    });
+
+    test('offers a service facility that is inactive because it is not live yet', async () => {
+      await setup(drSmith, [], [eastside, role('own', [downtown], { own: true })]);
+
+      await add('Eastside');
+
+      expect(await findChips(['Downtown Clinic', 'Eastside'])).toBeInTheDocument();
     });
 
     test('picking a linked service facility changes nothing', async () => {
