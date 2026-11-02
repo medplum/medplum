@@ -44,6 +44,10 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
       return;
     }
     const state = readState(connection.basic);
+    if (connection.status === 'disconnecting' && state.inboundError === 'reauth-required' && !state.forgetRevoked) {
+      // Await explicit acknowledgement; release can still publish the pending summary.
+      return;
+    }
     if (
       connection.status === 'active' &&
       state.statusPublishPending &&

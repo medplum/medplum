@@ -108,7 +108,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           const directions: ('inbound' | 'outbound')[] = [];
           if (
             state.statusPublishPending ||
-            connection.status === 'disconnecting' ||
+            (connection.status === 'disconnecting' &&
+              (state.inboundError !== 'reauth-required' || state.forgetRevoked)) ||
             (connection.status === 'active' &&
               (state.inboundRequest !== state.inboundCompleted || state.conflictsPending))
           ) {

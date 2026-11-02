@@ -10,7 +10,7 @@ import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from './constants';
 import { runInbound } from './inbound';
 import { ensureBotMembership } from './install';
 import { LEASE_URL, withConnectionLease } from './lease';
-import { auditPolicyGrants, ensureOperationPolicy } from './policies';
+import { auditPolicyGrants, ensureOperationPolicy, ensureSyncAccessPolicy } from './policies';
 import { callerStatus } from './public-status';
 import { readState, withState } from './state';
 import { ensureSyncSubscription } from './subscriptions';
@@ -145,3 +145,29 @@ test('audit separates expected workers and warns when their Bot has been deleted
   expect(await auditPolicyGrants(medplum, 'p', after)).toEqual([`ProjectMembership/${membership.id}`]);
   expect(after).toEqual([]);
 });
+
+test.each([BOT_IDENTIFIER_VALUE.sync, BOT_IDENTIFIER_VALUE.reconcile])(
+  'audit recognizes %s create-only job dispatch but warns if the grant is broadened',
+  async (identifier) => {
+    const bot = await medplum.createResource({
+      resourceType: 'Bot',
+      identifier: [{ system: BOT_IDENTIFIER_SYSTEM, value: identifier }],
+    });
+    const policy = await ensureSyncAccessPolicy(medplum);
+    const membership = await ensureBotMembership(medplum, 'p', bot, policy);
+    const expected: string[] = [];
+    expect(await auditPolicyGrants(medplum, 'p', expected)).toEqual([]);
+    expect(expected).toEqual([`ProjectMembership/${membership.id}`]);
+    for (const interaction of [undefined, [], ['create', 'read']] as const) {
+      await medplum.updateResource({
+        ...policy,
+        resource: policy.resource?.map((rule) =>
+          rule.resourceType === 'AsyncJob' ? { ...rule, interaction: interaction ? [...interaction] : undefined } : rule
+        ),
+      });
+      const broadened: string[] = [];
+      expect(await auditPolicyGrants(medplum, 'p', broadened)).toEqual([`ProjectMembership/${membership.id}`]);
+      expect(broadened).toEqual([]);
+    }
+  }
+);

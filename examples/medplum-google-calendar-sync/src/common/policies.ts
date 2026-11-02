@@ -199,6 +199,9 @@ export async function auditPolicyGrants(
             (query) => r.criteria === `Basic?${query}`
           );
         }
+        if (r.resourceType === 'AsyncJob') {
+          return r.interaction?.length === 1 && r.interaction[0] === 'create';
+        }
         if (r.resourceType === 'Slot' && !r.readonly) {
           return r.criteria === `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|`;
         }

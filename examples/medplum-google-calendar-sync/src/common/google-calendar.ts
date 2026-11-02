@@ -165,12 +165,17 @@ export class GoogleCalendarClient {
   async listEvents(privateExtendedProperty: string[]): Promise<GoogleCalendarEvent[]> {
     const events: GoogleCalendarEvent[] = [];
     let pageToken: string | undefined;
+    const seen = new Set<string>();
     do {
       const query = new URLSearchParams({ singleEvents: 'false', maxResults: '250' });
       for (const property of privateExtendedProperty) {
         query.append('privateExtendedProperty', property);
       }
       if (pageToken) {
+        if (seen.has(pageToken)) {
+          throw new Error('Google repeated an event page token');
+        }
+        seen.add(pageToken);
         query.set('pageToken', pageToken);
       }
       const page = await this.request<{ items?: GoogleCalendarEvent[]; nextPageToken?: string }>(

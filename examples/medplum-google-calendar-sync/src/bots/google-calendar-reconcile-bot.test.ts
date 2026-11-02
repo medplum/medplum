@@ -119,6 +119,37 @@ describe('google-calendar-reconcile-bot', () => {
     expect(medplum.executeBot).not.toHaveBeenCalled();
   });
 
+  test.each([
+    { forgetRevoked: false, statusPublishPending: false, dispatches: 0 },
+    { forgetRevoked: false, statusPublishPending: true, dispatches: 1 },
+    { forgetRevoked: true, statusPublishPending: false, dispatches: 1 },
+  ])(
+    'minute recovery respects revoked disconnect state %j',
+    async ({ forgetRevoked, statusPublishPending, dispatches }) => {
+      const connection = await connected('Practitioner/a');
+      await updateConnection(medplum, connection, { status: 'disconnecting' });
+      const basic = await medplum.readResource('Basic', connection.basic.id);
+      await medplum.updateResource(
+        withState(basic, {
+          ...readState(basic),
+          inboundError: 'reauth-required',
+          forgetRevoked,
+          statusPublishPending,
+        })
+      );
+      await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });
+      expect(medplum.executeBot).toHaveBeenCalledTimes(dispatches);
+      if (dispatches) {
+        expect(medplum.executeBot).toHaveBeenCalledWith(
+          expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.inbound }),
+          { resourceType: 'Basic', id: connection.basic.id },
+          expect.anything(),
+          expect.anything()
+        );
+      }
+    }
+  );
+
   test('minute recovery requeues incomplete directions without changing checkpoint generations', async () => {
     const connection = await connected('Practitioner/a');
     const before = readState(connection.basic);

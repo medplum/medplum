@@ -114,6 +114,17 @@ describe('GoogleCalendarClient', () => {
     expect(await client.getEvent(event.id)).toEqual(event);
   });
 
+  test.each([
+    ['p2', 'p2'],
+    ['p2', 'p3', 'p2'],
+  ])('listEvents rejects a token cycle %j', async (...tokens) => {
+    for (const nextPageToken of tokens) {
+      fetchMock.mockResolvedValueOnce(reply(200, { items: [event], nextPageToken }));
+    }
+    await expect(client.listEvents(['medplumProject=proj'])).rejects.toThrow('Google repeated an event page token');
+    expect(fetchMock).toHaveBeenCalledTimes(tokens.length);
+  });
+
   test('listEvents follows pages and ANDs the private properties', async () => {
     fetchMock
       .mockResolvedValueOnce(reply(200, { items: [event], nextPageToken: 'p2' }))

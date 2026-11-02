@@ -207,6 +207,47 @@ describe('google-calendar-disconnect-bot', () => {
     expect(await findConnection(medplum, practitionerRef)).toBeDefined();
   });
 
+  test('revocation during disconnect pauses remote work until explicitly acknowledged', async () => {
+    const connection = await connected();
+    const slot = await medplum.createResource({
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: { reference: 'Schedule/synthetic' },
+      start: '2026-12-01T10:00:00.000Z',
+      end: '2026-12-01T11:00:00.000Z',
+      identifier: [
+        {
+          system: IMPORT_IDENTIFIER_SYSTEM,
+          value: importIdentifier({
+            connectionId: connection.basic.id,
+            calendarId: 'synthetic',
+            eventId: 'busy-event',
+            scheduleRef: 'Schedule/synthetic',
+          }),
+        },
+      ],
+    });
+    const fetch = vi.fn().mockImplementation(async () => json(400, { error: 'invalid_grant' }));
+    globalThis.fetch = fetch;
+    await handler(medplum, event);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const paused = await medplum.readResource('Basic', connection.basic.id);
+    expect(readState(paused).inboundError).toBe('reauth-required');
+    await medplum.updateResource(withState(paused, { ...readState(paused), statusPublishPending: true }));
+    await runInbound(medplum, event, connection.basic.id);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const published = await medplum.readResource('Basic', connection.basic.id);
+    expect(readState(published).statusPublishPending).toBeUndefined();
+    expect((await medplum.readResource('Slot', slot.id)).status).toBe('busy-unavailable');
+    await expect(handler(medplum, event)).rejects.toThrow('forgetRevoked=true');
+    event.input.parameter = [{ name: 'forgetRevoked', valueBoolean: true }];
+    await handler(medplum, event);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await findConnection(medplum, practitionerRef)).toBeUndefined();
+    await expect(medplum.readResource('Slot', slot.id)).rejects.toThrow();
+  });
+
   test('requires an explicit acknowledgement before forgetting a revoked connection', async () => {
     const connection = await connected();
     await updateConnection(medplum, connection, { status: 'reauth-required' });
