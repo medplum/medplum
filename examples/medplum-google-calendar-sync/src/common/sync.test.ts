@@ -2,21 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { BotEvent } from '@medplum/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type {
   Appointment,
-  Bundle,
   HealthcareService,
   Patient,
   Practitioner,
   PractitionerRole,
   Schedule,
-  SearchParameter,
   Slot,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { findConnection, saveConnection } from './connection';
 import { GoogleOAuthError } from './google-oauth';
 import type { GoogleCalendarEvent } from './mapping';
@@ -70,15 +66,6 @@ describe('SyncSession', () => {
   let chenRole: PractitionerRole;
   let jane: Patient;
   let schedule: Schedule;
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });

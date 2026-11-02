@@ -12,10 +12,10 @@ import { readFileSync } from 'fs';
 import { execFileSync } from 'node:child_process';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
 
+import { CONTRACTS } from '../common/contracts';
+import { ifMatch } from '../common/lease';
 import { projectQuery } from '../common/project';
 import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
-import { ifMatch } from '../common/lease';
-import { CONTRACTS } from '../common/contracts';
 
 const BASE_URL = process.env.BASE_URL ?? process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com/';
 
@@ -201,18 +201,21 @@ async function createOrUpdateBot(medplum: MedplumClient, definition: BotDefiniti
   }
   const existing = matches[0];
   const bot = existing ?? (await medplum.post(`admin/projects/${PROJECT_ID}/bot`, { name: definition.name }));
-  return medplum.updateResource<Bot>({
-    ...bot,
-    resourceType: 'Bot',
-    name: definition.name,
-    description: definition.description,
-    identifier: [{ system: BOT_IDENTIFIER_SYSTEM, value: definition.identifier }],
-    runAsUser: definition.runAsUser,
-    publicWebhook: definition.publicWebhook ?? false,
-    // No shared-project systemSecret is read; keep this explicit so a redeploy clears an older setting.
-    system: false,
-    ...(definition.timeout ? { timeout: definition.timeout } : {}),
-  });
+  return medplum.updateResource<Bot>(
+    {
+      ...bot,
+      resourceType: 'Bot',
+      name: definition.name,
+      description: definition.description,
+      identifier: [{ system: BOT_IDENTIFIER_SYSTEM, value: definition.identifier }],
+      runAsUser: definition.runAsUser,
+      publicWebhook: definition.publicWebhook ?? false,
+      // No shared-project systemSecret is read; keep this explicit so a redeploy clears an older setting.
+      system: false,
+      ...(definition.timeout ? { timeout: definition.timeout } : {}),
+    },
+    ifMatch(bot)
+  );
 }
 
 async function deployBot(medplum: MedplumClient, bot: Bot, baseFilename: string, code: string): Promise<void> {

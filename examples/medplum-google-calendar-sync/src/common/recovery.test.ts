@@ -3,13 +3,13 @@
 
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { GoogleCalendarClient } from './google-calendar';
 import { saveConnection } from './connection';
-import { ownershipStore, MIRROR_SEARCH } from './ownership';
+import { GoogleCalendarClient } from './google-calendar';
 import { withConnectionLease } from './lease';
-import { migrateMirrors } from './migration';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
+import { migrateMirrors } from './migration';
+import { MIRROR_SEARCH, ownershipStore } from './ownership';
 const sourceId = '12345678-1234-1234-1234-123456789abc';
 const event: GoogleCalendarEvent = {
   id: toGoogleEventId(sourceId) as string,

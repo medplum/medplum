@@ -3,26 +3,14 @@
 
 import { readCredential } from './credentials';
 
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
-import { findConnection, listActiveConnections, readConnection, saveConnection, updateConnection } from './connection';
+import { beforeEach, describe, expect, test } from 'vitest';
+import { findConnection, readConnection, saveConnection, updateConnection } from './connection';
 
 const PRACTITIONER = 'Practitioner/dr-rivera';
 
 describe('connection', () => {
   let medplum: MockClient;
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(() => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
@@ -96,14 +84,6 @@ describe('connection', () => {
       status: 'active',
       eventDetailLevel: 'busy-only',
     });
-  });
-
-  test('lists active connections only', async () => {
-    expect(await listActiveConnections(medplum)).toEqual([]);
-    const a = await saveConnection(medplum, { practitionerRef: 'Practitioner/a', accountSub: 'a', refreshToken: 'rt' });
-    await saveConnection(medplum, { practitionerRef: 'Practitioner/b', accountSub: 'b', refreshToken: 'rt' });
-    await updateConnection(medplum, a, { status: 'reauth-required' });
-    expect((await listActiveConnections(medplum)).map((c) => c.practitionerRef)).toEqual(['Practitioner/b']);
   });
 
   test('readConnection refuses an incomplete or unknown-status Basic', () => {

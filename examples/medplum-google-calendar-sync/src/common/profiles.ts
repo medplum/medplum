@@ -4,8 +4,8 @@
 import type { MedplumClient } from '@medplum/core';
 import type { CodeSystem, StructureDefinition, ValueSet } from '@medplum/fhirtypes';
 import definitions from '../../profiles/definitions.json';
-import { projectQuery } from './project';
 import { ifMatch } from './lease';
+import { projectQuery } from './project';
 export const PROFILE_ROOT = 'https://medplum.com/profiles/integrations/google-calendar';
 export const PROFILES = {
   publicStatus: `${PROFILE_ROOT}/public-status`,

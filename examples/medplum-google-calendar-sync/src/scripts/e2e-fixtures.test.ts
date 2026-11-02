@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { expect, test, vi } from 'vitest';
-import { MockClient } from '@medplum/mock';
 import type { WithId } from '@medplum/core';
 import type { Slot } from '@medplum/fhirtypes';
-import { cleanupFixtures, removeTestEvent, runWithCleanup, retryBusyCleanup, TEST_SYSTEM } from './e2e-fixtures';
-import type { TestManifest } from './e2e-fixtures';
-import { importIdentifier } from '../common/import';
-import { IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
+import { MockClient } from '@medplum/mock';
+import { expect, test, vi } from 'vitest';
 import { saveConnection } from '../common/connection';
+import { IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
+import { importIdentifier } from '../common/import';
 import { ConnectionBusyError } from '../common/lease';
+import type { TestManifest } from './e2e-fixtures';
+import { cleanupFixtures, removeTestEvent, retryBusyCleanup, runWithCleanup, TEST_SYSTEM } from './e2e-fixtures';
 
 const liveEvent = {
   id: 'test-event',

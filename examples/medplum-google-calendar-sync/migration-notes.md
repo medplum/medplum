@@ -1,6 +1,8 @@
-# Changes from the previous integration
+# Optional prototype migration
 
-- Refresh tokens move from the connection Basic to a restricted credential Basic. Connection IDs and imported-Slot identifiers remain stable. Reinstall migrates credentials under a version-guarded lease. Stop workers and remove all caller access to private connection/credential/receipt resources before upgrading, including legacy history/vread permissions. Install then grant callers the new public-status code. A separate summary replaces direct connection reads. Historical token versions still exist: rotate previously exposed grants before production use; deleting the latest field does not revoke them.
+Fresh installations do not require this procedure. These notes apply only to unreleased prototypes.
+
+- Refresh tokens move from the connection Basic to a restricted credential Basic. Connection IDs and imported-Slot identifiers remain stable. Normal installation does not migrate prototype credentials. Migrate those separately under a version-guarded lease before installing the stricter profiles. Stop workers and remove all caller access to private connection/credential/receipt resources before upgrading, including legacy history/vread permissions. Install then grant callers the new public-status code. A separate summary replaces direct connection reads. Historical token versions still exist: rotate previously exposed grants before production use; deleting the latest field does not revoke them.
 - Status is read-only. Use the new settings operation for detail changes. Range sync now returns a queue acknowledgement; read status for completion. Update callers with deployment of the new OperationDefinitions.
 - Install creates restricted memberships for connect, settings, disconnect and range requests. These Bots run as themselves and reject caller fallback. Status and install still run as their authenticated callers.
 - Settings become project-qualified without changing resource IDs. Customer-state lookups explicitly select the authenticated project.

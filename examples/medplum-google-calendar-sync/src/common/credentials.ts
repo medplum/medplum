@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { PROFILES } from './profiles';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getExtensionValue, getIdentifier } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
-import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import type { CalendarConnection } from './connection';
 import { CONNECTION_IDENTIFIER_SYSTEM } from './connection';
+import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import type { ConnectionLease } from './lease';
 import { ifMatch } from './lease';
+import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 
 export const CREDENTIAL_SEARCH = `code=${N}|calendar-credential`;

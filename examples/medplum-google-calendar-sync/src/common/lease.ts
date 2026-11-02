@@ -4,11 +4,11 @@
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getStatus, isGone, isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
-import { assertCurrentProject } from './project';
-import { readState, withState } from './state';
-import { publishStatus } from './public-status';
 import { randomUUID } from 'node:crypto';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
+import { assertCurrentProject } from './project';
+import { publishStatus } from './public-status';
+import { readState, repairCheckpoint, withState } from './state';
 
 export const LEASE_URL = `${GOOGLE_CALENDAR_NAMESPACE}/worker-lease`;
 // Hosted worker Bots are limited to 600 seconds; leave five minutes for termination/in-flight requests.
@@ -84,7 +84,7 @@ export async function withConnectionLease<T>(
   work: (lease: ConnectionLease) => Promise<T>,
   now: () => number = Date.now
 ): Promise<T> {
-  const basic = await medplum.readResource('Basic', id, { cache: 'no-cache' });
+  const basic = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
   await assertCurrentProject(medplum, basic);
   const previous = basic.extension?.find((e) => e.url === LEASE_URL);
   const expires = previous?.extension?.find((e) => e.url === 'expires')?.valueInstant;
@@ -92,22 +92,29 @@ export async function withConnectionLease<T>(
     throw new ConnectionBusyError();
   }
   const token = randomUUID();
-  await medplum.updateResource(
-    {
-      ...basic,
-      extension: [
-        ...(basic.extension ?? []).filter((e) => e.url !== LEASE_URL),
-        {
-          url: LEASE_URL,
-          extension: [
-            { url: 'owner', valueString: token },
-            { url: 'expires', valueInstant: new Date(now() + LEASE_MS).toISOString() },
-          ],
-        },
-      ],
-    },
-    ifMatch(basic)
-  );
+  try {
+    await medplum.updateResource(
+      {
+        ...basic,
+        extension: [
+          ...(basic.extension ?? []).filter((e) => e.url !== LEASE_URL),
+          {
+            url: LEASE_URL,
+            extension: [
+              { url: 'owner', valueString: token },
+              { url: 'expires', valueInstant: new Date(now() + LEASE_MS).toISOString() },
+            ],
+          },
+        ],
+      },
+      ifMatch(basic)
+    );
+  } catch (err) {
+    if (isVersionConflict(err)) {
+      throw new ConnectionBusyError();
+    }
+    throw err;
+  }
   const lease = new ConnectionLease(medplum, id, token, basic.meta?.versionId as string, now);
   try {
     const result = await work(lease);
@@ -122,7 +129,7 @@ export async function withConnectionLease<T>(
   } finally {
     const release = async (): Promise<void> => {
       for (let attempt = 0; attempt < 5; attempt++) {
-        const current = await medplum.readResource('Basic', id, { cache: 'no-cache' });
+        const current = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
         const owner = current.extension
           ?.find((e) => e.url === LEASE_URL)
           ?.extension?.find((e) => e.url === 'owner')?.valueString;

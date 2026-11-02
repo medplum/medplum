@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { PROFILES } from './profiles';
-import { projectQuery } from './project';
 import type { MedplumClient, WithId } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
-import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import type { CalendarConnection } from './connection';
+import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import type { GoogleCalendarClient, RemoteCalendarEvent } from './google-calendar';
 import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
+import { PROFILES } from './profiles';
+import { projectQuery } from './project';
 import type { SyncRange } from './range-sync';
 
 /** v1 + base64url(JSON tuple): delimiters in vendor IDs cannot alias another identity. */
@@ -57,16 +57,18 @@ export interface BusyInterval {
 /**
  * Exclusions are intentional; malformed timed data aborts the snapshot instead of deleting blocks.
  * @param event - A Google event or expanded recurring occurrence.
+ * @param projectId - Current project, whose own mirrors must be excluded.
  * @returns Its UTC busy interval, or undefined for an excluded event.
  */
-export function busyInterval(event: RemoteCalendarEvent): BusyInterval | undefined {
+export function busyInterval(event: RemoteCalendarEvent, projectId?: string): BusyInterval | undefined {
   if (
     event.status === 'cancelled' ||
     event.transparency === 'transparent' ||
     event.start?.date ||
     event.end?.date ||
     event.attendees?.some((a) => a.self && a.responseStatus === 'declined') ||
-    (event.extendedProperties?.private?.[EVENT_PROPERTY.project] &&
+    (projectId &&
+      event.extendedProperties?.private?.[EVENT_PROPERTY.project] === projectId &&
       event.extendedProperties.private[EVENT_PROPERTY.source])
   ) {
     return undefined;
@@ -177,7 +179,7 @@ export async function importBusyTime(
   const previous = await importedSlots(medplum, connection.basic.id);
   // Invalid identities are project-level diagnostics, not attributed to every connection.
   const intervals = snapshot.events
-    .map(busyInterval)
+    .map((event) => busyInterval(event, connection.basic.meta?.project))
     .filter((i): i is BusyInterval => Boolean(i))
     .filter((i) => Date.parse(i.end) > range.start.getTime() && Date.parse(i.start) < range.end.getTime());
   const desired = new Map<string, Slot>();
@@ -244,7 +246,8 @@ export async function importBusyTime(
     if (desired.has(value)) {
       continue;
     }
-    // Never interpret absence outside the snapshot as cancellation. Inactive schedules can be cleaned anywhere.
+    // Remove elapsed blocks and absent blocks inside the snapshot. Retain future blocks beyond it.
+    // Inactive Schedules can be cleaned regardless of the snapshot range.
     const scheduleStillActive = schedules.some((s) => `Schedule/${s.id}` === identity.scheduleRef);
     const covered = Date.parse(old.start) < range.end.getTime();
     if (!covered && scheduleStillActive) {

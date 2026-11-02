@@ -8,9 +8,9 @@ import type { GoogleCalendarClient } from './google-calendar';
 import type { ConnectionLease } from './lease';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
-import { isImportedSlot } from './sync';
 import { ownershipStore } from './ownership';
 import { assertCurrentProject } from './project';
+import { isImportedSlot } from './sync';
 
 export interface MigrationResult {
   eventId: string;

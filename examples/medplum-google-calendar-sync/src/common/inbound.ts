@@ -1,22 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { deletePublicStatus } from './public-status';
-import { projectQuery } from './project';
-import { ownershipStore } from './ownership';
-import { deleteCredential, readCredential } from './credentials';
+import { refreshConflicts } from './conflicts';
+
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Appointment } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { readConnection, updateConnection } from './connection';
 import type { CalendarConnection } from './connection';
+import { readConnection, updateConnection } from './connection';
 import { EVENT_PROPERTY, SECRET } from './constants';
-import { GoogleCalendarClient, GoogleApiError } from './google-calendar';
+import { deleteCredential, readCredential } from './credentials';
+import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
 import { getOAuthClient, GoogleOAuthError, refreshAccessToken, revokeToken } from './google-oauth';
-import { findConflicts, importedSlots, importBusyTime } from './import';
+import { importBusyTime, importedSlots } from './import';
 import type { ConnectionLease } from './lease';
 import { ifMatch, withConnectionLease } from './lease';
-import { MIRRORED_APPOINTMENT_STATUSES, toGoogleEventId } from './mapping';
+import { toGoogleEventId } from './mapping';
+import { ownershipStore } from './ownership';
+import { deletePublicStatus } from './public-status';
 import { parseSyncRange } from './range-sync';
 import { readState, withState } from './state';
 import { ensureWatch } from './watch';
@@ -69,50 +69,10 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
       await ensureWatch(lease, calendar, address);
       const now = new Date();
       const range = parseSyncRange(undefined, undefined, now);
-      const result = await importBusyTime(medplum, calendar, connection, range, () => beforeInboundWrite(lease));
-      const actors = new Set([connection.practitionerRef]);
-      for await (const page of medplum.searchResourcePages(
-        'PractitionerRole',
-        await projectQuery(medplum, {
-          practitioner: connection.practitionerRef,
-          _count: '200',
-        })
-      )) {
-        for (const role of page) {
-          actors.add(`PractitionerRole/${role.id}`);
-        }
-      }
-      const appointments: Appointment[] = [];
-      if (result.schedules.length) {
-        for await (const page of medplum.searchResourcePages(
-          'Appointment',
-          await projectQuery(medplum, {
-            actor: [...actors].join(','),
-            status: [...MIRRORED_APPOINTMENT_STATUSES].join(','),
-            end: `gt${range.start.toISOString()}`,
-            date: `lt${range.end.toISOString()}`,
-            _count: '200',
-          })
-        )) {
-          appointments.push(...page);
-          await lease.check();
-        }
-      }
-      const conflicts = findConflicts(
-        connection.basic.id,
-        result.calendarId,
-        result.intervals,
-        result.schedules.map((s) => `Schedule/${s.id}`),
-        appointments,
-        actors,
-        now
-      );
+      await importBusyTime(medplum, calendar, connection, range, () => beforeInboundWrite(lease));
+      await refreshConflicts(lease, connection);
       await lease.mutate((basic) => {
         const state = readState(basic);
-        if (JSON.stringify(state.conflicts) !== JSON.stringify(conflicts)) {
-          state.conflictsRevision = randomUUID();
-        }
-        state.conflicts = conflicts;
         state.lastInbound = new Date().toISOString();
         state.inboundCompleted = inboundRequestAtStart;
         state.inboundError = undefined;
@@ -151,7 +111,7 @@ export async function cleanupConnection(
 ): Promise<void> {
   const medplum = lease.medplum;
   let state = readState(await lease.read());
-  let legacyPending = false;
+  let cleanupIssue: string | undefined;
   if (!state.googleCleaned) {
     let token: string | undefined;
     try {
@@ -184,7 +144,7 @@ export async function cleanupConnection(
         await beforeInboundWrite(lease);
         const props = event.extendedProperties?.private;
         if (!props?.[EVENT_PROPERTY.connection]) {
-          legacyPending = true;
+          cleanupIssue ??= 'legacy-mirror-repair-required';
           continue;
         }
         if (props[EVENT_PROPERTY.connection] !== connection.basic.id) {
@@ -200,7 +160,8 @@ export async function cleanupConnection(
         }
         const source = props[EVENT_PROPERTY.source]?.match(/^(Appointment|Slot)\/([A-Za-z0-9.-]+)$/);
         if (!source || toGoogleEventId(source[2]) !== event.id) {
-          throw new Error('Invalid mirror identity');
+          cleanupIssue = 'mirror-identity-repair-required';
+          continue;
         }
         if (props[EVENT_PROPERTY.connection] === connection.basic.id) {
           await ownershipStore(lease, connection).remember(event);
@@ -215,8 +176,8 @@ export async function cleanupConnection(
     await lease.mutate((basic) =>
       withState(basic, {
         ...readState(basic),
-        googleCleaned: !legacyPending,
-        cleanupIssue: legacyPending ? 'legacy-mirror-repair-required' : undefined,
+        googleCleaned: !cleanupIssue,
+        cleanupIssue,
         channels: [],
       })
     );
@@ -236,8 +197,8 @@ export async function cleanupConnection(
     }
     await lease.mutate((basic) => withState(basic, { ...readState(basic), slotsCleaned: true }));
   }
-  if (legacyPending) {
-    throw new Error('Legacy mirrors remain; run the ownership migration and resume disconnect');
+  if (cleanupIssue) {
+    throw new Error('Uncertain mirrors remain; repair their ownership before completing disconnect');
   }
   await lease.check();
   if (!state.credentialRevoked) {

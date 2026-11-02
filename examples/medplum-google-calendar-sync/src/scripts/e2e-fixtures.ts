@@ -4,12 +4,12 @@
 import type { MedplumClient, WithId } from '@medplum/core';
 import { sleep } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
+import { EVENT_PROPERTY, GOOGLE_CALENDAR_NAMESPACE as N } from '../common/constants';
 import type { GoogleCalendarClient } from '../common/google-calendar';
-import { GOOGLE_CALENDAR_NAMESPACE as N, EVENT_PROPERTY } from '../common/constants';
 import { importedSlots, readImportedIdentity } from '../common/import';
 import { ConnectionBusyError, ifMatch, withConnectionLease } from '../common/lease';
-import { projectQuery } from '../common/project';
 import { toGoogleEventId } from '../common/mapping';
+import { projectQuery } from '../common/project';
 
 export const TEST_SYSTEM = `${N}/e2e-run`;
 export interface TestManifest {

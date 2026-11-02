@@ -84,6 +84,47 @@ const BOOLEANS = [
   'statusPublishPending',
 ] as const;
 
+export class InvalidCheckpointError extends Error {
+  constructor() {
+    super('Invalid outbound checkpoint requires repair');
+  }
+}
+
+/**
+ * Preserve corrupt checkpoint data privately and restart discovery without trusting its cursor.
+ * @param basic - Private connection record.
+ * @returns The original record or a repaired copy with the corrupt checkpoint preserved.
+ */
+export function repairCheckpoint<T extends Basic>(basic: T): T {
+  try {
+    readState(basic);
+    return basic;
+  } catch (err) {
+    if (!(err instanceof InvalidCheckpointError)) {
+      throw err;
+    }
+  }
+  const checkpoints =
+    basic.extension?.find((e) => e.url === STATE_URL)?.extension?.filter((e) => e.url === 'outboundWork') ?? [];
+  const repaired = {
+    ...basic,
+    extension: [
+      ...(basic.extension ?? []).map((e) =>
+        e.url === STATE_URL ? { ...e, extension: e.extension?.filter((f) => f.url !== 'outboundWork') } : e
+      ),
+      ...checkpoints.map((checkpoint) => ({
+        ...checkpoint,
+        url: `${GOOGLE_CALENDAR_NAMESPACE}/invalid-outbound-checkpoint`,
+      })),
+    ],
+  };
+  return withState(repaired, {
+    ...readState(repaired),
+    outboundRequest: randomUUID(),
+    outboundError: 'checkpoint-repair-required',
+  }) as T;
+}
+
 export function readState(basic: Basic): SyncState {
   const fields = basic.extension?.find((e) => e.url === STATE_URL)?.extension ?? [];
   const state: SyncState = { conflicts: [], channels: [] };
@@ -108,7 +149,7 @@ export function readState(basic: Basic): SyncState {
         !Number.isFinite(Date.parse(instant('start'))) ||
         !(Date.parse(instant('end')) > Date.parse(instant('start')))
       ) {
-        throw new Error('Invalid outbound checkpoint requires repair');
+        throw new InvalidCheckpointError();
       }
       state.outboundWork = {
         start: instant('start'),
@@ -223,7 +264,7 @@ export async function requestSync(
   privacyPending = false
 ): Promise<void> {
   for (let attempt = 0; ; attempt++) {
-    const basic = await medplum.readResource('Basic', id, { cache: 'no-cache' });
+    const basic = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
     const state = readState(basic);
     if (privacyPending) {
       state.privacyPending = true;

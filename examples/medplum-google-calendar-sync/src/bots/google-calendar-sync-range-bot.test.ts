@@ -1,18 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type * as ImportedModule0 from '../common/range-sync';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
-import { readState } from '../common/state';
-import { operationIdentity, empty } from '../test-auth';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import type * as ImportedModule0 from '../common/range-sync';
+import { readState } from '../common/state';
+import { empty, operationIdentity } from '../test-auth';
 
 import type { BotEvent } from '@medplum/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Bundle, Parameters, Practitioner, SearchParameter } from '@medplum/fhirtypes';
+import type { Parameters, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
 import { handler } from './google-calendar-sync-range-bot';
 
@@ -39,15 +37,6 @@ describe('google-calendar-sync-range-bot', () => {
   let medplum: MockClient;
   let practitionerRef: string;
   let event: (input?: Parameters) => BotEvent<Parameters | undefined>;
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });

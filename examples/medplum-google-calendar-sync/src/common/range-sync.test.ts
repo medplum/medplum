@@ -2,29 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { BotEvent, ResourceArray, WithId } from '@medplum/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type {
-  Appointment,
-  Bundle,
-  Practitioner,
-  PractitionerRole,
-  Resource,
-  Schedule,
-  SearchParameter,
-  Slot,
-} from '@medplum/fhirtypes';
+import type { Appointment, Practitioner, PractitionerRole, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { writeProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, saveConnection } from './connection';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
 import { parseSyncRange, syncRange } from './range-sync';
+import { readState, requestSync } from './state';
 import type { SyncDeps } from './sync';
 import { SyncSession } from './sync';
-import { readState, requestSync } from './state';
-import { writeProjectCeiling } from './configuration';
 
 const PROJECT_ID = 'proj-1';
 const NOW = new Date('2026-10-07T12:00:00Z');
@@ -60,15 +49,6 @@ describe('range-sync', () => {
   let schedule: Schedule;
   /** What the (stubbed) Medplum searches return: the in-memory repo can't run the chained/_filter queries. */
   let searched: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] };
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });

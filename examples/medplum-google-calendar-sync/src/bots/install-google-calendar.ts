@@ -14,31 +14,29 @@ import { operationHandler } from '../common/contracts';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import { allOk } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { writeProjectCeiling } from '../common/configuration';
+import { CONNECTION_SEARCH, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, SECRET } from '../common/constants';
 import {
-  ensureBotMembership,
-  ensureOperationPolicy,
   auditPolicyGrants,
+  ensureBotMembership,
   ensureInboundPolicy,
-  ensureWorkSubscription,
+  ensureOperationPolicy,
   ensureReconcileCron,
   ensureSyncAccessPolicy,
   ensureSyncSubscription,
+  ensureWorkSubscription,
   INSTALL_SECRETS,
-  PRACTITIONER_POLICY_SNIPPET,
   ORDINARY_SLOT_POLICY_SNIPPET,
+  PRACTITIONER_POLICY_SNIPPET,
   requireSharedBot,
   writeProjectSecrets,
 } from '../common/install';
-import { writeProjectCeiling } from '../common/configuration';
 import { resolveDetailLevel } from '../common/mapping';
-import { CONNECTION_SEARCH, readConnection } from '../common/connection';
-import { requestSync } from '../common/state';
+import { getParam, parseDetailLevel } from '../common/operations';
 import { installProfiles } from '../common/profiles';
 import { currentProjectId, projectQuery } from '../common/project';
-import { migrateCredential } from '../common/credentials';
-import { withConnectionLease } from '../common/lease';
-import { getParam, parseDetailLevel } from '../common/operations';
+import { requestSync } from '../common/state';
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
   const secrets: Record<string, string> = {};
@@ -122,7 +120,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     await projectQuery(medplum, `${CONNECTION_SEARCH}&_count=200`)
   )) {
     for (const basic of page) {
-      await withConnectionLease(medplum, basic.id, migrateCredential);
       if (readConnection(basic)?.status === 'active') {
         await requestSync(medplum, basic.id, ['inbound', 'outbound'], true);
       }

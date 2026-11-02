@@ -16,9 +16,9 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { GOOGLE_CALENDAR_SCOPE } from '../common/constants';
+import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
 import { GoogleApiError, GoogleCalendarClient } from '../common/google-calendar';
-import { exchangeCode, hasCalendarScope, readIdToken, refreshAccessToken } from '../common/google-oauth';
+import { exchangeCode, hasImportScopes, readIdToken, refreshAccessToken } from '../common/google-oauth';
 import type { GoogleCalendarEvent } from '../common/mapping';
 import { removeTestEvent } from './e2e-fixtures';
 
@@ -68,7 +68,7 @@ async function authorize(client: { clientId: string; clientSecret: string }): Pr
     client_id: client.clientId,
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
-    scope: `openid email ${GOOGLE_CALENDAR_SCOPE}`,
+    scope: `openid email ${GOOGLE_CALENDAR_SCOPE} ${GOOGLE_CALENDAR_METADATA_SCOPE}`,
     access_type: 'offline',
     prompt: 'consent',
     code_challenge: challenge,
@@ -95,20 +95,16 @@ async function authorize(client: { clientId: string; clientSecret: string }): Pr
       server.close();
       resolve(received);
     });
-    server.listen(PORT, () => {
+    server.listen(PORT, '127.0.0.1', () => {
       console.log(`\nOpen this URL in a browser signed in to the test Workspace account:\n\n${url.toString()}\n`);
     });
   });
 
   const tokens = await exchangeCode(client, { code, codeVerifier: verifier, redirectUri: REDIRECT_URI });
   record('refresh token granted', tokens.refresh_token ? 'PASS' : 'FAIL', tokens.refresh_token ? 'present' : 'missing');
-  record('calendar scope granted', hasCalendarScope(tokens.scope) ? 'PASS' : 'FAIL', tokens.scope);
+  record('both calendar scopes granted', hasImportScopes(tokens.scope) ? 'PASS' : 'FAIL', tokens.scope);
   const account = readIdToken(tokens.id_token as string);
-  record(
-    'account',
-    'INFO',
-    `${account.email ?? '?'} hd=${account.hd ?? '(none: personal account)'} sub=${account.sub}`
-  );
+  record('account', 'INFO', account.hd ? 'Workspace account' : 'Personal account');
 
   const refreshed = await refreshAccessToken(client, tokens.refresh_token as string);
   record('refresh token exchange', 'PASS', `expires_in=${refreshed.expires_in}`);
@@ -154,17 +150,17 @@ async function main(): Promise<void> {
     record('insert on primary with calendar.events.owned', 'PASS', id);
 
     // 2. Full replace clears location. Attendees stay empty; invitation delivery is not tested.
-    const withGuest = {
+    const withLocation = {
       ...testEvent(id, 'Medplum live test'),
       location: 'Test Clinic',
       attendees: [],
     };
-    await calendar.updateEvent(id, withGuest);
+    await calendar.updateEvent(id, withLocation);
     let stored = await calendar.getEvent(id);
     record(
       'owner auto-added as attendee',
       'INFO',
-      JSON.stringify(guests(stored).map((a) => ({ email: a.email, self: a.self, organizer: a.organizer })))
+      JSON.stringify(guests(stored).map((a) => ({ self: a.self, organizer: a.organizer })))
     );
     await calendar.updateEvent(id, testEvent(id, 'Medplum live test'));
     stored = await calendar.getEvent(id);

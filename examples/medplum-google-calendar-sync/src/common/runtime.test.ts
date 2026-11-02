@@ -4,25 +4,22 @@
 import { operationIdentity } from '../test-auth';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   evalFhirPath,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
   OperationOutcomeError,
   preconditionFailed,
   satisfiedAccessPolicy,
 } from '@medplum/core';
-import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Appointment, Basic, Bundle, Resource, Schedule, SearchParameter, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Basic, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler as disconnect } from '../bots/google-calendar-disconnect-bot';
-import { findConnection, saveConnection, updateConnection } from './connection';
 import type { CalendarConnection } from './connection';
-import { runInbound } from './inbound';
+import { findConnection, saveConnection, updateConnection } from './connection';
 import { importedSlots } from './import';
+import { runInbound } from './inbound';
 import {
   ensureInboundPolicy,
   notificationSubscription,
@@ -30,7 +27,7 @@ import {
   transitionExpression,
 } from './install';
 import { ConnectionBusyError, LEASE_MS, LEASE_URL, withConnectionLease } from './lease';
-import { authorizedStatus } from './operations';
+import { callerStatus } from './public-status';
 import { readState, requestSync, withState } from './state';
 import { ensureWatch, receiveNotification } from './watch';
 
@@ -80,14 +77,6 @@ describe('calendar runtime', () => {
   let requests: { url: string; method: string }[];
   const originalFetch = globalThis.fetch;
 
-  beforeAll(() => {
-    for (const file of ['profiles-types', 'profiles-resources', 'profiles-medplum']) {
-      indexStructureDefinitionBundle(readJson(`fhir/r4/${file}.json`) as Bundle);
-    }
-    for (const file of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(file) as Bundle<SearchParameter>);
-    }
-  });
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'project', name: 'Calendar test' } });
     enforceVersions(medplum);
@@ -356,11 +345,11 @@ describe('calendar runtime', () => {
 
   test('status omits credentials and filters references through the caller’s permissions', async () => {
     await runInbound(medplum, event, connection.basic.id);
-    const status = await authorizedStatus(medplum, await findConnection(medplum, PRACTITIONER));
+    const status = await callerStatus(medplum, PRACTITIONER);
     expect(status.parameter).toContainEqual({ name: 'activeConflictCount', valueInteger: 1 });
     expect(JSON.stringify(status)).not.toMatch(/refresh-secret|tokenHash|calendar@workspace/);
     await medplum.deleteResource('Appointment', appointment.id);
-    const hidden = await authorizedStatus(medplum, await findConnection(medplum, PRACTITIONER));
+    const hidden = await callerStatus(medplum, PRACTITIONER);
     expect(hidden.parameter).toContainEqual({ name: 'activeConflictCount', valueInteger: 0 });
   });
 

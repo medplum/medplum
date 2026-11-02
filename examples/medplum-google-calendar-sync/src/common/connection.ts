@@ -9,14 +9,14 @@ import { PROFILES } from './profiles';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getExtensionValue, getIdentifier } from '@medplum/core';
 import type { Basic, Extension } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
 import type { EventDetailLevel } from './constants';
 import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE } from './constants';
+import { TOKEN_URL, writeCredential } from './credentials';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
-import { readState, withState } from './state';
-import { randomUUID } from 'node:crypto';
 import { projectQuery } from './project';
-import { TOKEN_URL, writeCredential } from './credentials';
+import { readState, withState } from './state';
 
 /** `Basic.code` for a Calendar Connection. */
 export const CALENDAR_CONNECTION_CODE = 'calendar-connection';
@@ -28,7 +28,6 @@ export const CONNECTION_IDENTIFIER_SYSTEM = `${GOOGLE_CALENDAR_NAMESPACE}/connec
 const ACCOUNT_IDENTIFIER_SYSTEM = 'https://accounts.google.com';
 const EXTENSION = {
   accountEmail: `${GOOGLE_CALENDAR_NAMESPACE}/account-email`,
-  refreshToken: `${GOOGLE_CALENDAR_NAMESPACE}/refresh-token`,
   status: `${GOOGLE_CALENDAR_NAMESPACE}/status`,
   eventDetailLevel: `${GOOGLE_CALENDAR_NAMESPACE}/event-detail-level`,
 } as const;
@@ -102,27 +101,6 @@ export async function findConnection(
     await projectQuery(medplum, `${CONNECTION_SEARCH}&subject=${practitionerRef}`)
   );
   return basic ? readConnection(basic) : undefined;
-}
-
-/**
- * Every active connection in the project, for the hourly reconcile.
- * @param medplum - The client.
- * @returns The connections, every page.
- */
-export async function listActiveConnections(medplum: MedplumClient): Promise<CalendarConnection[]> {
-  const connections: CalendarConnection[] = [];
-  for await (const page of medplum.searchResourcePages(
-    'Basic',
-    await projectQuery(medplum, `${CONNECTION_SEARCH}&_count=200`)
-  )) {
-    for (const basic of page) {
-      const connection = readConnection(basic);
-      if (connection?.status === 'active') {
-        connections.push(connection);
-      }
-    }
-  }
-  return connections;
 }
 
 /**

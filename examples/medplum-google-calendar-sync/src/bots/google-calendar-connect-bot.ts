@@ -11,15 +11,15 @@ import { operationHandler } from '../common/contracts';
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
-import { GOOGLE_CALENDAR_SCOPE, GOOGLE_CALENDAR_METADATA_SCOPE, BOT_IDENTIFIER_VALUE } from '../common/constants';
-import { withConnectionLease } from '../common/lease';
-import type { ConnectionLease } from '../common/lease';
-import { readProjectCeiling } from '../common/configuration';
-import { readCredential, MissingCalendarCredentialError } from '../common/credentials';
-import { findConnection, saveConnection } from '../common/connection';
-import { exchangeCode, revokeToken, getOAuthClient, hasImportScopes, readIdToken } from '../common/google-oauth';
 import { requireOperationBot } from '../common/authorization';
-import { mutationStatus, getParam, parseDetailLevel } from '../common/operations';
+import { readProjectCeiling } from '../common/configuration';
+import { findConnection, saveConnection } from '../common/connection';
+import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
+import { MissingCalendarCredentialError, readCredential } from '../common/credentials';
+import { exchangeCode, getOAuthClient, hasImportScopes, readIdToken, revokeToken } from '../common/google-oauth';
+import type { ConnectionLease } from '../common/lease';
+import { withConnectionLease } from '../common/lease';
+import { getParam, mutationStatus, parseDetailLevel } from '../common/operations';
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
   const practitionerRef = await requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect);
@@ -34,7 +34,11 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   const prior = await findConnection(medplum, practitionerRef);
   const connect = async (lease?: ConnectionLease): Promise<Parameters> => {
     const tokens = await exchangeCode(getOAuthClient(event.secrets), { code, codeVerifier, redirectUri });
+    let exchangedAccount: string | undefined;
     try {
+      if (tokens.id_token) {
+        exchangedAccount = readIdToken(tokens.id_token).sub;
+      }
       if (!tokens.refresh_token) {
         throw new Error('Google returned no refresh token; authorize with access_type=offline and prompt=consent');
       }
@@ -86,7 +90,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       }
       // Revocation may invalidate other tokens for the same client/account. Do not revoke
       // automatically when this practitioner already has a stored grant.
-      if (!persisted && storedCredentialExists) {
+      if (!persisted && storedCredentialExists && (!exchangedAccount || exchangedAccount === current?.accountSub)) {
         throw new Error(
           'Google reconnect failed; existing credentials were preserved. Use explicit disconnect before switching accounts. Remove application access in Google only if you intend to revoke all grants, then reconnect',
           { cause: err }

@@ -15,8 +15,8 @@ import { MedplumClient } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
+import { GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
 import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
-import { GOOGLE_CALENDAR_SCOPE, GOOGLE_CALENDAR_METADATA_SCOPE } from '../common/constants';
 
 const PORT = 8765;
 const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`;

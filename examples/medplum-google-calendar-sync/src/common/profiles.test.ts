@@ -4,9 +4,10 @@
 import { validateResource } from '@medplum/core';
 import type { Basic, Slot, StructureDefinition } from '@medplum/fhirtypes';
 import { expect, test } from 'vitest';
+import { IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
+import { importIdentifier, readImportedIdentity } from './import';
 import { DEFINITIONS, PROFILES } from './profiles';
 import { withState } from './state';
-import { GOOGLE_CALENDAR_NAMESPACE as N, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 const profile = (url: string): StructureDefinition => DEFINITIONS.find((d) => d.url === url) as StructureDefinition;
 const connection: Basic = {
   resourceType: 'Basic',
@@ -49,13 +50,22 @@ test('imported Slot profile requires identity, blocks and a valid interval', () 
   const slot: Slot = {
     resourceType: 'Slot',
     meta: { profile: [PROFILES.slot] },
-    identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'v1.identity' }],
+    identifier: [
+      {
+        system: IMPORT_IDENTIFIER_SYSTEM,
+        value: importIdentifier({ connectionId: 'c', calendarId: 'cal', eventId: 'event', scheduleRef: 'Schedule/s' }),
+      },
+    ],
     schedule: { reference: 'Schedule/s' },
     status: 'busy-unavailable',
-    start: '2026-11-01T10:00:00Z',
-    end: '2026-11-01T11:00:00Z',
+    start: '2026-11-01T10:00:00.000Z',
+    end: '2026-11-01T11:00:00.000Z',
   };
+  expect(readImportedIdentity(slot)?.scheduleRef).toBe(slot.schedule.reference);
   const options = { profile: profile(PROFILES.slot) };
+  expect(() =>
+    validateResource({ ...slot, start: '2026-11-01T10:00:00-05:00', end: '2026-11-01T14:00:00Z' }, options)
+  ).toThrow();
   expect(() => validateResource(slot, options)).not.toThrow();
   expect(() => validateResource({ ...slot, identifier: [] }, options)).toThrow();
   expect(() => validateResource({ ...slot, end: slot.start }, options)).toThrow();
@@ -67,7 +77,9 @@ test.each(['credential', 'settings', 'mirror'] as const)('%s profile validates i
     resourceType: 'Basic',
     code: { coding: [{ system: N, code: `calendar-${name}` }] },
     identifier: [{ system: `${N}/${name}`, value: name === 'settings' ? 'Project/p' : 'Basic/connection' }],
-    subject: { reference: name === 'mirror' ? 'Basic/connection' : 'Practitioner/p' },
+    ...(name === 'settings'
+      ? {}
+      : { subject: { reference: name === 'mirror' ? 'Basic/connection' : 'Practitioner/p' } }),
     extension: [],
   };
   if (name === 'credential') {

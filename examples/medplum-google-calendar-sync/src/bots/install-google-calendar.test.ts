@@ -2,20 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { BotEvent, ResourceArray } from '@medplum/core';
-import { isOk, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type {
-  Bot,
-  Bundle,
-  ExtractResource,
-  OperationOutcome,
-  Parameters,
-  Project,
-  SearchParameter,
-} from '@medplum/fhirtypes';
+import { isOk } from '@medplum/core';
+import type { Bot, ExtractResource, OperationOutcome, Parameters, Project } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { saveConnection } from '../common/connection';
 import { INSTALL_SYSTEM } from '../common/install';
+import { LEASE_URL } from '../common/lease';
+import { readState } from '../common/state';
 import { handler } from './install-google-calendar';
 
 function params(values: Record<string, string>): Parameters {
@@ -39,15 +33,6 @@ describe('install-google-calendar', () => {
   let importBot: Bot;
   let webhookBot: Bot;
   let event: (input: Parameters) => BotEvent<Parameters>;
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
@@ -111,6 +96,27 @@ describe('install-google-calendar', () => {
     const byTag = type === 'Subscription' || type === 'AccessPolicy';
     return medplum.searchResources(type, byTag ? { _tag: `${INSTALL_SYSTEM}|` } : { identifier: `${INSTALL_SYSTEM}|` });
   }
+
+  test('reinstall queues privacy work without taking a busy worker lease', async () => {
+    const connection = await saveConnection(medplum, {
+      practitionerRef: 'Practitioner/p',
+      accountSub: 'sub',
+      refreshToken: 'synthetic',
+    });
+    const held = {
+      url: LEASE_URL,
+      extension: [
+        { url: 'owner', valueString: 'worker' },
+        { url: 'expires', valueInstant: new Date(Date.now() + 60_000).toISOString() },
+      ],
+    };
+    await medplum.updateResource({ ...connection.basic, extension: [...(connection.basic.extension ?? []), held] });
+    await handler(medplum, event(params(REQUIRED)));
+    const saved = await medplum.readResource('Basic', connection.basic.id);
+    expect(saved.extension?.find((e) => e.url === LEASE_URL)).toEqual(held);
+    expect(readState(saved).privacyPending).toBe(true);
+    expect(readState(saved).outboundRequest).toBeTruthy();
+  });
 
   test('requires the client credentials and a valid detail level', async () => {
     await expect(handler(medplum, event(params({ GOOGLE_CALENDAR_CLIENT_ID: 'cid' })))).rejects.toThrow(

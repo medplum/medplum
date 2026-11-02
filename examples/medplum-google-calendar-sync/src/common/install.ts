@@ -11,13 +11,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString, getStatus, OperationOutcomeError } from '@medplum/core';
 import type { AccessPolicy, Bot, Cron, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
-import { PUBLIC_STATUS_SEARCH } from './public-status';
-import { MIRROR_SEARCH } from './ownership';
-import { CREDENTIAL_SEARCH } from './credentials';
-import { projectQuery } from './project';
 import { CONFIG_SEARCH } from './configuration';
-import { STATE_URL } from './state';
-import { ifMatch } from './lease';
 import { CONNECTION_SEARCH } from './connection';
 import {
   BOT_IDENTIFIER_SYSTEM,
@@ -26,6 +20,12 @@ import {
   IMPORT_IDENTIFIER_SYSTEM,
   SECRET,
 } from './constants';
+import { CREDENTIAL_SEARCH } from './credentials';
+import { ifMatch } from './lease';
+import { MIRROR_SEARCH } from './ownership';
+import { projectQuery } from './project';
+import { PUBLIC_STATUS_SEARCH } from './public-status';
+import { STATE_URL } from './state';
 
 /** Memberships are keyed by an identifier, and AccessPolicy and Subscription (which have none) by a tag, in this system. */
 export const INSTALL_SYSTEM = `${GOOGLE_CALENDAR_NAMESPACE}/install`;
@@ -97,7 +97,7 @@ export async function writeProjectSecrets(
   for (const [name, valueString] of Object.entries(secrets)) {
     secret.push({ name, valueString });
   }
-  await medplum.updateResource({ ...project, secret });
+  await medplum.updateResource({ ...project, secret }, ifMatch(project));
 }
 
 /**
@@ -216,6 +216,14 @@ export async function ensureSyncSubscription(
     criteria,
     channel: { type: 'rest-hook', endpoint: getReferenceString(syncBot) },
     extension: [
+      ...(criteria === 'Slot'
+        ? [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+              valueString: `(%current.exists() and %current.identifier.where(system='${IMPORT_IDENTIFIER_SYSTEM}').empty()) or (%previous.exists() and %previous.identifier.where(system='${IMPORT_IDENTIFIER_SYSTEM}').empty())`,
+            },
+          ]
+        : []),
       ...(!deleteOnly && ['Schedule', 'PractitionerRole'].includes(criteria)
         ? [
             {
@@ -279,7 +287,10 @@ export async function ensureReconcileCron(
     targetReference: { reference: getReferenceString(reconcileBot) },
     onBehalfOf: { reference: getReferenceString(membership) },
   };
-  const existing = await medplum.searchOne('Cron', { identifier: `${identifier.system}|${identifier.value}` });
+  const existing = await medplum.searchOne(
+    'Cron',
+    await projectQuery(medplum, { identifier: `${identifier.system}|${identifier.value}` })
+  );
   return existing
     ? medplum.updateResource(
         { ...desired, id: existing.id, meta: { ...existing.meta, ...desired.meta } },
@@ -287,7 +298,7 @@ export async function ensureReconcileCron(
       )
     : medplum.createResourceIfNoneExist(
         desired,
-        new URLSearchParams({ identifier: `${identifier.system}|${identifier.value}` }).toString()
+        await projectQuery(medplum, { identifier: `${identifier.system}|${identifier.value}` })
       );
 }
 

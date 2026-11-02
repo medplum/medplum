@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
+import { importIdentifier } from '../common/import';
+import { LEASE_URL } from '../common/lease';
+import { readState } from '../common/state';
 import { operationIdentity } from '../test-auth';
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 
 import type { BotEvent } from '@medplum/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Bundle, Parameters, Practitioner, SearchParameter } from '@medplum/fhirtypes';
+import type { Parameters, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
 import { runInbound } from '../common/inbound';
@@ -30,15 +31,6 @@ describe('google-calendar-disconnect-bot', () => {
   let practitionerRef: string;
   let event: BotEvent<Parameters>;
   const originalFetch = globalThis.fetch;
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
@@ -108,6 +100,59 @@ describe('google-calendar-disconnect-bot', () => {
     expect(urls.filter((u) => u.includes('/events/') && u.includes('sendUpdates=none'))).toHaveLength(3);
     expect(urls.at(-1)).toBe('https://oauth2.googleapis.com/revoke');
     expect(await findConnection(medplum, practitionerRef)).toBeUndefined();
+  });
+
+  test('uncertain mirror identity keeps the remote event and records repair while freeing owned Slots', async () => {
+    const connection = await connected();
+    const slot = await medplum.createResource({
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: { reference: 'Schedule/synthetic' },
+      start: '2026-11-01T10:00:00.000Z',
+      end: '2026-11-01T11:00:00.000Z',
+      identifier: [
+        {
+          system: IMPORT_IDENTIFIER_SYSTEM,
+          value: importIdentifier({
+            connectionId: connection.basic.id,
+            calendarId: 'synthetic',
+            eventId: 'event',
+            scheduleRef: 'Schedule/synthetic',
+          }),
+        },
+      ],
+    });
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(json(200, { access_token: 'at' }))
+      .mockResolvedValueOnce(
+        json(200, {
+          items: [
+            {
+              id: 'unrelated-id',
+              extendedProperties: {
+                private: {
+                  medplumProject: PROJECT_ID,
+                  medplumConnection: connection.basic.id,
+                  medplumSource: 'Appointment/different',
+                },
+              },
+            },
+          ],
+        })
+      );
+    globalThis.fetch = fetch;
+    await handler(medplum, event);
+    await expect(runInbound(medplum, event, connection.basic.id)).rejects.toThrow('Uncertain mirrors');
+    const basic = await medplum.readResource('Basic', connection.basic.id);
+    expect(readState(basic)).toMatchObject({
+      googleCleaned: false,
+      slotsCleaned: true,
+      cleanupIssue: 'mirror-identity-repair-required',
+    });
+    expect(basic.extension?.some((e) => e.url === LEASE_URL)).toBe(false);
+    await expect(medplum.readResource('Slot', slot.id)).rejects.toThrow();
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   test('keeps the record when the calendar sweep fails, so it can be retried', async () => {

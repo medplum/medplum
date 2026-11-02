@@ -3,11 +3,11 @@
 
 import { MedplumClient } from '@medplum/core';
 import { readConnection } from '../common/connection';
-import { readCredential, migrateCredential } from '../common/credentials';
+import { migrateCredential, readCredential } from '../common/credentials';
+import { GoogleCalendarClient } from '../common/google-calendar';
+import { refreshAccessToken } from '../common/google-oauth';
 import { withConnectionLease } from '../common/lease';
 import { migrateMirrors } from '../common/migration';
-import { refreshAccessToken } from '../common/google-oauth';
-import { GoogleCalendarClient } from '../common/google-calendar';
 
 function env(name: string): string {
   const value = process.env[name];

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import { requireBotMembership } from '../common/authorization';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
+import { requireBotMembership } from '../common/authorization';
+import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { runInbound } from '../common/inbound';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Basic>): Promise<void> {

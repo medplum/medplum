@@ -1,25 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MedplumClient } from '@medplum/core';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Parameters, Slot, Schedule } from '@medplum/fhirtypes';
+import { MedplumClient } from '@medplum/core';
+import type { Appointment, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
 import { findConnection } from '../common/connection';
 import { readCredential } from '../common/credentials';
-import { getOAuthClient, refreshAccessToken } from '../common/google-oauth';
 import { GoogleCalendarClient } from '../common/google-calendar';
+import { getOAuthClient, refreshAccessToken } from '../common/google-oauth';
 import { importedSlots, practitionerSchedules, readImportedIdentity } from '../common/import';
-import { projectQuery } from '../common/project';
-import { toGoogleEventId } from '../common/mapping';
-import type { GoogleCalendarEvent } from '../common/mapping';
 import { ifMatch } from '../common/lease';
-import { cleanupFixtures, runWithCleanup, TEST_SYSTEM } from './e2e-fixtures';
+import type { GoogleCalendarEvent } from '../common/mapping';
+import { toGoogleEventId } from '../common/mapping';
+import { projectQuery } from '../common/project';
+import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
 import type { TestManifest } from './e2e-fixtures';
+import { cleanupFixtures, runWithCleanup, TEST_SYSTEM } from './e2e-fixtures';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -224,7 +224,6 @@ async function main(): Promise<void> {
           const testSchedule = await medplum.createResourceIfNoneExist<Schedule>(
             {
               resourceType: 'Schedule',
-              id: manifest.testScheduleId,
               active: true,
               identifier: [{ system: TEST_SYSTEM, value: manifest.run }],
               actor: [{ reference: practitionerRef }],

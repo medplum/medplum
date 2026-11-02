@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Resource } from '@medplum/fhirtypes';
 import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
 import { BOT_IDENTIFIER_SYSTEM } from './constants';
-import { currentProjectId, assertCurrentProject } from './project';
 import { requirePractitionerRequester } from './operations';
+import { assertCurrentProject, currentProjectId } from './project';
 
 export async function requireBotMembership(medplum: MedplumClient, event: BotEvent, identifier: string): Promise<void> {
   const profile = (await medplum.getProfileAsync()) as Resource | undefined;

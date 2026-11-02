@@ -77,7 +77,7 @@ An outboundWork record has `start`/`end` valueInstant, `phase` valueCode (`disco
 
 Each conflict part contains `key` valueString (SHA-256 of the internal key), `appointment` valueReference, `start`/`end` valueInstant, and zero or more authorized `schedule` valueReferences. A denied or deleted reference is omitted; a transient authorization/read failure fails the operation instead of claiming resolution.
 
-Current stale reasons include `awaiting-initial-import`, `import-overdue` (more than two hours since success), `inbound-pending`, `inbound-error`, `outbound-error`, `outbound-incomplete`, `outbound-quota`, `reauth-required`, `disconnecting`, `legacy-mirror-repair-required`. The two-hour threshold is a UI freshness threshold, not a sync SLA. Retained conflicts are last-known information while stale.
+Current stale reasons include `awaiting-initial-import`, `import-overdue` (more than two hours since success), `inbound-pending`, `inbound-error`, `outbound-error`, `outbound-incomplete`, `outbound-quota`, `reauth-required`, `disconnecting`, `legacy-mirror-repair-required`, `mirror-identity-repair-required`, `checkpoint-repair-required`. The two-hour threshold is a UI freshness threshold, not a sync SLA. Retained conflicts are last-known information while stale.
 
 ## Customer workflows
 
@@ -122,3 +122,9 @@ Restrict ordinary Slot writers with these rules, preserving any existing Schedul
 The importer uses the positive identifier criterion with write access. It has no Appointment or Schedule write grant. Core matcher tests cover allowed imported Slot CRUD, denied ordinary Slot writes, denied Appointment/Schedule writes, and ordinary-writer denial of a forged reserved identifier. Server tests must also prove that removing or changing an existing identifier cannot bypass the old-resource check. Check all effective policy entries and administrative memberships; an identifier alone is not authorization.
 
 Malformed imported identifiers produce Bot-log warnings only. The uncertain Slots remain blocked until an administrator repairs them; no connection is blamed for an unassignable row. A durable project-wide repair queue is not implemented. Ownership receipts are retained across disconnect for recovery; receipt-retention policy remains a release item.
+
+## Corrupt checkpoint recovery
+
+Workers preserve an invalid outbound checkpoint in the private connection's `invalid-outbound-checkpoint` extension, remove it from active state, and request fresh outbound discovery. The saved cursor is never trusted. Lease acquisition and release use the repaired state so corruption cannot retain the worker lock. This diagnostic extension is never copied into public status. An administrator can inspect it after recovery.
+
+Appointment changes recompute conflicts from current imported Slots in Medplum. Each conflict names only Schedules that contain the overlapping block. Google webhooks and scheduled reconciliation still refresh the source events.

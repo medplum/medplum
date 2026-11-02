@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { requireBotMembership } from '../common/authorization';
-import { projectQuery, assertCurrentProject } from '../common/project';
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Resource, Schedule, PractitionerRole } from '@medplum/fhirtypes';
+import type { PractitionerRole, Resource, Schedule } from '@medplum/fhirtypes';
+import { requireBotMembership } from '../common/authorization';
+import { CONNECTION_SEARCH, findConnection, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
-import { CONNECTION_SEARCH, readConnection, findConnection } from '../common/connection';
-import { parseSyncRange, syncRange } from '../common/range-sync';
-import { readState, requestSync } from '../common/state';
-import { LEASE_URL } from '../common/lease';
 import { INSTALL_SYSTEM } from '../common/install';
+import { LEASE_URL } from '../common/lease';
+import { assertCurrentProject, projectQuery } from '../common/project';
+import { parseSyncRange, syncRange } from '../common/range-sync';
+import { readState, repairCheckpoint, requestSync } from '../common/state';
 import { getProjectId, SyncSession } from '../common/sync';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
@@ -105,7 +105,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           if (expires && Date.parse(expires) > Date.now()) {
             continue;
           }
-          const state = readState(basic);
+          const state = readState(repairCheckpoint(basic));
           const directions: ('inbound' | 'outbound')[] = [];
           if (
             state.statusPublishPending ||
@@ -157,7 +157,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const ids = page
       .filter(
         (b) =>
-          ['active', 'disconnecting'].includes(readConnection(b)?.status ?? '') || readState(b).statusPublishPending
+          ['active', 'disconnecting'].includes(readConnection(b)?.status ?? '') ||
+          readState(repairCheckpoint(b)).statusPublishPending
       )
       .map((b) => b.id);
     if (ids.length) {

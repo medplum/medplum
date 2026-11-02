@@ -8,17 +8,14 @@
  * which the server sets to the caller's own profile. Nobody can act on someone else's calendar.
  */
 
-import type { BotEvent, MedplumClient } from '@medplum/core';
-import { getStatus, OperationOutcomeError } from '@medplum/core';
+import type { BotEvent } from '@medplum/core';
 import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { CalendarConnection } from './connection';
 import type { EventDetailLevel } from './constants';
 import { EVENT_DETAIL_LEVELS } from './constants';
-import type { CalendarConnection } from './connection';
-import { readProjectCeiling } from './configuration';
-import { resolveDetailLevel } from './mapping';
 import type { CalendarConflict } from './import';
+import { resolveDetailLevel } from './mapping';
 import { readState } from './state';
-import { createHash } from 'node:crypto';
 
 /**
  * The calling practitioner. Only a Practitioner may hold a Calendar Connection.
@@ -137,42 +134,6 @@ export function connectionStatusParameters(
     }
   }
   return { resourceType: 'Parameters', parameter };
-}
-
-export async function authorizedStatus(
-  medplum: MedplumClient,
-  connection: CalendarConnection | undefined,
-  fallbackCeiling?: string
-): Promise<Parameters> {
-  if (!connection) {
-    return connectionStatusParameters(undefined);
-  }
-  const conflicts: CalendarConflict[] = [];
-  const readable = async (reference: string): Promise<boolean> => {
-    try {
-      await medplum.readReference({ reference }, { cache: 'no-cache' });
-      return true;
-    } catch (err) {
-      if (err instanceof OperationOutcomeError && [403, 404, 410].includes(getStatus(err.outcome))) {
-        return false;
-      }
-      throw err;
-    }
-  };
-  for (const conflict of readState(connection.basic).conflicts) {
-    if (!/^Appointment\/[A-Za-z0-9.-]+$/.test(conflict.appointment) || !(await readable(conflict.appointment))) {
-      continue;
-    }
-    const schedules: string[] = [];
-    for (const ref of conflict.schedules) {
-      if (/^Schedule\/[A-Za-z0-9.-]+$/.test(ref) && (await readable(ref))) {
-        schedules.push(ref);
-      }
-    }
-    // Omit the internal key: it encodes external calendar/event identity, which the status UI does not need.
-    conflicts.push({ ...conflict, key: createHash('sha256').update(conflict.key).digest('hex'), schedules });
-  }
-  return connectionStatusParameters(connection, await readProjectCeiling(medplum, fallbackCeiling), conflicts);
 }
 
 export function mutationStatus(connection: CalendarConnection | undefined, ceiling?: string): Parameters {

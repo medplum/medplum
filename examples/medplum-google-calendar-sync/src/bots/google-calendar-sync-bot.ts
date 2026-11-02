@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import { refreshConflicts } from '../common/conflicts';
+import { withConnectionLease } from '../common/lease';
+
 import { requireBotMembership } from '../common/authorization';
+import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 
 /*
  * Subscription handler for `Appointment` and `Slot`. Deliveries aren't ordered and the
@@ -14,7 +17,7 @@ import { requireBotMembership } from '../common/authorization';
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
-import { findConnection } from '../common/connection';
+import { findConnection, readConnection } from '../common/connection';
 import { requestSync } from '../common/state';
 import type { SyncSource } from '../common/sync';
 import { getProjectId, isResourceGone, SyncSession } from '../common/sync';
@@ -78,7 +81,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SyncBotInp
     for (const result of results) {
       const connection = await findConnection(medplum, result.practitionerRef);
       if (connection?.status === 'active') {
-        await requestSync(medplum, connection.basic.id, ['inbound']);
+        await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+          const current = readConnection(await lease.read());
+          if (current?.status === 'active') {
+            await refreshConflicts(lease, current);
+          }
+        });
       }
     }
   }

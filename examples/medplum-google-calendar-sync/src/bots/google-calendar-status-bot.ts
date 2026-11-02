@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { operationHandler } from '../common/contracts';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
-import { callerStatus } from '../common/public-status';
+import { operationHandler } from '../common/contracts';
 import { requirePractitionerRequester } from '../common/operations';
+import { callerStatus } from '../common/public-status';
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
   const practitioner = requirePractitionerRequester(event);

@@ -12,7 +12,7 @@ profiles/definitions.json Generated FHIR definitions committed for reproducibili
 .env.example              Placeholder environment configuration
 setup.md                  Build, deploy, install, connect and test
 state-and-status.md       Resource state, public outputs and notification recipes
-migration-notes.md        Upgrade constraints and legacy recovery
+migration-notes.md        Optional prototype recovery (not a setup step)
 acceptance.md             Remaining live release checks
 ```
 

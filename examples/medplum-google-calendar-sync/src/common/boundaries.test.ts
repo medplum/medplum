@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { AccessPolicyInteraction, satisfiedAccessPolicy } from '@medplum/core';
 import type { BotEvent } from '@medplum/core';
+import { AccessPolicyInteraction, satisfiedAccessPolicy } from '@medplum/core';
 import type { Basic, Parameters, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { saveConnection, findConnection } from './connection';
-import { TOKEN_URL, CREDENTIAL_SEARCH, migrateCredential, readCredential } from './credentials';
+import { operationIdentity } from '../test-auth';
+import { requireOperationBot } from './authorization';
 import { readProjectCeiling, writeProjectCeiling } from './configuration';
+import { findConnection, saveConnection } from './connection';
+import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
+import { CREDENTIAL_SEARCH, migrateCredential, readCredential, TOKEN_URL } from './credentials';
+import { importedSlots } from './import';
 import {
   auditPolicyGrants,
   ensureInboundPolicy,
   ensureSyncAccessPolicy,
-  PRACTITIONER_POLICY_SNIPPET,
   ORDINARY_SLOT_POLICY_SNIPPET,
+  PRACTITIONER_POLICY_SNIPPET,
 } from './install';
 import { withConnectionLease } from './lease';
-import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_NAMESPACE as N, IMPORT_IDENTIFIER_SYSTEM } from './constants';
-import { requireOperationBot } from './authorization';
-import { operationIdentity } from '../test-auth';
-import { importedSlots } from './import';
 let medplum: MockClient;
 beforeEach(() => {
   medplum = new MockClient({ project: { resourceType: 'Project', id: 'customer-a', name: 'a' } });

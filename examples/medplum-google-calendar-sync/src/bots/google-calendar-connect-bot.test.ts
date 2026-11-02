@@ -1,16 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { readCredential } from '../common/credentials';
-import { operationIdentity, empty } from '../test-auth';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import { readCredential } from '../common/credentials';
+import { empty, operationIdentity } from '../test-auth';
 
 import type { BotEvent } from '@medplum/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Bundle, Parameters, Practitioner, SearchParameter } from '@medplum/fhirtypes';
+import type { Parameters, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
 import { readState } from '../common/state';
@@ -57,15 +55,6 @@ describe('google-calendar-connect-bot', () => {
   let practitioner: Practitioner;
   let event: (input: Parameters) => BotEvent<Parameters>;
   const originalFetch = globalThis.fetch;
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
@@ -200,8 +189,9 @@ describe('google-calendar-connect-bot', () => {
       scope: SCOPE,
       id_token: idToken({ sub: 'new-sub', email: 'new@clinic.example' }),
     });
-    await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('existing credentials were preserved');
+    await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('Disconnect the existing Google account');
     expect((await requireConnection(medplum, practitionerRef)).accountSub).toBe('old-sub');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/revoke');
   });
 });

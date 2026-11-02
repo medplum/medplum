@@ -9,10 +9,10 @@ import { projectQuery } from './project';
  * Then verifies every existing owned mirror, independently of the discovery horizon.
  */
 
-import { GoogleApiError } from './google-calendar';
 import { normalizeErrorString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import type { CalendarConnection } from './connection';
+import { GoogleApiError } from './google-calendar';
 import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import type { SyncSession, SyncSource } from './sync';
 import { isResourceGone } from './sync';

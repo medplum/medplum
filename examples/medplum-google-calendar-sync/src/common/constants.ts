@@ -17,6 +17,7 @@ export const SECRET = {
 export const EVENT_PROPERTY = {
   project: 'medplumProject',
   source: 'medplumSource',
+  detail: 'medplumDetail',
   connection: 'medplumConnection',
 } as const;
 

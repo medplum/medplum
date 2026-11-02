@@ -1,16 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import type * as ImportedModule0 from '../common/sync';
 import { operationIdentity } from '../test-auth';
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 
 import type { BotEvent } from '@medplum/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Appointment, Bundle, SearchParameter, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { SyncBotInput } from './google-calendar-sync-bot';
 import { handler, resolveSource } from './google-calendar-sync-bot';
 
@@ -37,15 +35,6 @@ function event(input: SyncBotInput): BotEvent<SyncBotInput> {
 
 describe('google-calendar-sync-bot', () => {
   let medplum: MockClient;
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-    }
-  });
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });

@@ -9,10 +9,10 @@
  * downgrade.
  */
 
-import type { OwnershipStore } from './ownership';
 import { sleep } from '@medplum/core';
-import type { GoogleCalendarEvent } from './mapping';
 import { EVENT_PROPERTY } from './constants';
+import type { GoogleCalendarEvent } from './mapping';
+import type { OwnershipStore } from './ownership';
 
 const EVENTS_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 /** Statuses retried with backoff: quota (Google uses 403 for some quota errors), rate limit, and server errors. */

@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { operationHandler } from '../common/contracts';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { requireOperationBot } from '../common/authorization';
 import { findConnection, readConnection } from '../common/connection';
+import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import { operationHandler } from '../common/contracts';
+import { withConnectionLease } from '../common/lease';
 import { getParam } from '../common/operations';
 import { parseSyncRange } from '../common/range-sync';
-import { withConnectionLease } from '../common/lease';
 import { readState, withState } from '../common/state';
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {

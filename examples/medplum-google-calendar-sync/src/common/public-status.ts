@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { getExtensionValue, getStatus, OperationOutcomeError } from '@medplum/core';
 import type { MedplumClient, WithId } from '@medplum/core';
-import type { Basic, Appointment, Parameters } from '@medplum/fhirtypes';
-import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
-import { readConnection } from './connection';
+import { getExtensionValue, getStatus, OperationOutcomeError } from '@medplum/core';
+import type { Appointment, Basic, Parameters } from '@medplum/fhirtypes';
+import { createHash } from 'node:crypto';
+import { readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
-import { readState, withState } from './state';
-import { projectQuery } from './project';
+import { readConnection } from './connection';
+import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
+import { findConflicts, importedSlots, readImportedIdentity } from './import';
 import { ifMatch } from './lease';
-import { PROFILES } from './profiles';
-import { importedSlots, findConflicts, readImportedIdentity } from './import';
 import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { connectionStatusParameters } from './operations';
-import { readProjectCeiling } from './configuration';
-import { createHash } from 'node:crypto';
+import { PROFILES } from './profiles';
+import { projectQuery } from './project';
+import { readState, withState } from './state';
 
 export const PUBLIC_STATUS_SEARCH = `code=${N}|calendar-public-status`;
 const SYSTEM = `${N}/public-status`;

@@ -1,21 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Appointment, Bundle, Schedule, SearchParameter, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
-import { saveConnection } from './connection';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from './connection';
+import { saveConnection } from './connection';
 import { IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import type { RemoteCalendarEvent } from './google-calendar';
 import {
   busyInterval,
   findConflicts,
   importBusyTime,
-  importIdentifier,
   importedSlots,
+  importIdentifier,
   readImportedIdentity,
 } from './import';
 
@@ -32,14 +30,6 @@ describe('Google busy import', () => {
   let medplum: MockClient;
   let connection: CalendarConnection;
   let schedule: Schedule;
-  beforeAll(() => {
-    for (const file of ['profiles-types', 'profiles-resources', 'profiles-medplum']) {
-      indexStructureDefinitionBundle(readJson(`fhir/r4/${file}.json`) as Bundle);
-    }
-    for (const file of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(file) as Bundle<SearchParameter>);
-    }
-  });
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
     connection = await saveConnection(medplum, {
@@ -91,7 +81,7 @@ describe('Google busy import', () => {
     { attendees: [{ self: true, responseStatus: 'declined' }] },
     { extendedProperties: { private: { medplumProject: 'project', medplumSource: 'Appointment/a' } } },
   ])('excludes ineligible Google events: %j', (change) => {
-    expect(busyInterval({ ...BUSY, ...change })).toBeUndefined();
+    expect(busyInterval({ ...BUSY, ...change }, 'project')).toBeUndefined();
   });
   test('keeps tentative invitations and normalizes offset/DST instants', () => {
     expect(busyInterval({ ...BUSY, attendees: [{ self: true, responseStatus: 'needsAction' }] })).toEqual({

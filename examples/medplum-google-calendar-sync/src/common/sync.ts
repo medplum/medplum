@@ -8,10 +8,6 @@
  * practitioner.
  */
 
-import { assertCurrentProject, projectQuery } from './project';
-import { ownershipStore } from './ownership';
-import type { OwnershipStore } from './ownership';
-import { readCredential } from './credentials';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -29,20 +25,18 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
-import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM, SECRET } from './constants';
+import { randomUUID } from 'node:crypto';
+import { readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, readConnection, updateConnection } from './connection';
-import type { ConnectionLease } from './lease';
-import { withConnectionLease } from './lease';
-import { randomUUID } from 'node:crypto';
-import type { SyncRange } from './range-sync';
-import type { OutboundWork } from './state';
-import { readState, withState } from './state';
-import { readProjectCeiling } from './configuration';
+import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM, SECRET } from './constants';
+import { readCredential } from './credentials';
 import type { UpsertOutcome } from './google-calendar';
 import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
 import type { GoogleOAuthClient } from './google-oauth';
 import { getOAuthClient, GoogleOAuthError, refreshAccessToken } from './google-oauth';
+import type { ConnectionLease } from './lease';
+import { withConnectionLease } from './lease';
 import type { GoogleCalendarEvent } from './mapping';
 import {
   buildAppointmentEvent,
@@ -51,6 +45,12 @@ import {
   resolveDetailLevel,
   toGoogleEventId,
 } from './mapping';
+import type { OwnershipStore } from './ownership';
+import { ownershipStore } from './ownership';
+import { assertCurrentProject, projectQuery } from './project';
+import type { SyncRange } from './range-sync';
+import type { OutboundWork } from './state';
+import { readState, withState } from './state';
 
 /** The Appointment or Slot to mirror. `deleted` means the event must go for everyone. */
 export interface SyncSource {
@@ -410,7 +410,7 @@ export class SyncSession {
         // Keep an earlier privacy level for historical mirrors when the ceiling is raised.
         // Legacy events have no level marker, so their safe migration is busy-only.
         const historical = Date.parse(resource.end ?? '') < Date.now();
-        const previousLevel = historical ? (owner.medplumDetail ?? 'busy-only') : undefined;
+        const previousLevel = historical ? (owner[EVENT_PROPERTY.detail] ?? 'busy-only') : undefined;
         const desired = await this.buildEvent(resource, connection, previousLevel);
         if (!desired) {
           throw new Error('Source has an invalid time interval');
@@ -638,7 +638,7 @@ export class SyncSession {
       service,
     });
     if (event) {
-      event.extendedProperties.private.medplumDetail = level;
+      event.extendedProperties.private[EVENT_PROPERTY.detail] = level;
       event.extendedProperties.private[EVENT_PROPERTY.connection] = connection.basic.id;
     }
     return event;

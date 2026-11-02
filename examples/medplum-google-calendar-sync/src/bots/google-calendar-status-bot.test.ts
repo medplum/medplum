@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { BotEvent } from '@medplum/core';
+import { OperationOutcomeError, forbidden } from '@medplum/core';
+import type { Appointment, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { handler } from './google-calendar-status-bot';
-import { handler as settings } from './google-calendar-settings-bot';
-import { saveConnection, findConnection, updateConnection } from '../common/connection';
-import { operationIdentity } from '../test-auth';
-import { withConnectionLease } from '../common/lease';
-import { readState, withState } from '../common/state';
-import { PUBLIC_STATUS_SEARCH } from '../common/public-status';
+import { findConnection, saveConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
-import { OperationOutcomeError, forbidden } from '@medplum/core';
 import { importIdentifier } from '../common/import';
-import type { BotEvent } from '@medplum/core';
-import type { Parameters, Appointment } from '@medplum/fhirtypes';
+import { withConnectionLease } from '../common/lease';
+import { PUBLIC_STATUS_SEARCH } from '../common/public-status';
+import { readState, withState } from '../common/state';
+import { operationIdentity } from '../test-auth';
+import { handler as settings } from './google-calendar-settings-bot';
+import { handler } from './google-calendar-status-bot';
 let medplum: MockClient;
 let event: BotEvent<Parameters>;
 beforeEach(async () => {
