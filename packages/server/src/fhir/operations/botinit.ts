@@ -15,6 +15,7 @@ import type { AccessPolicy, Attachment, Binary, Bot, Project, ProjectMembership,
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { isAccessPolicyRequired } from '../../fhir/projectmembership';
 import type { Repository } from '../../fhir/repo';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
@@ -93,6 +94,10 @@ export async function createBot(
   project: WithId<Project>,
   params: BotInitParameters
 ): Promise<WithId<Bot>> {
+  if (!params.accessPolicy && isAccessPolicyRequired(project)) {
+    throw new OperationOutcomeError(badRequest('Project requires an access policy', 'accessPolicy'));
+  }
+
   let sourceCode: Attachment | undefined;
   if (params.sourceCode) {
     sourceCode = await createCodeBinary(repo, project, params.sourceCode);

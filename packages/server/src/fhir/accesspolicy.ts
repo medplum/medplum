@@ -28,7 +28,12 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { membershipProfileTypes, readMembershipReference } from './projectmembership';
+import {
+  hasAccessPolicy,
+  isAccessPolicyRequired,
+  membershipProfileTypes,
+  readMembershipReference,
+} from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
@@ -167,6 +172,18 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
   if (project.superAdmin && (login.launch || parseSmartScopes(login.scope).length > 0)) {
     // Super admin privileges are not limited by the access policy, so SMART scopes cannot narrow them
     throw new OperationOutcomeError(badRequest('SMART scopes are not supported for super admin logins'));
+  }
+
+  if (
+    (!hasAccessPolicy(authState.membership) ||
+      (authState.onBehalfOfMembership && !hasAccessPolicy(authState.onBehalfOfMembership))) &&
+    isAccessPolicyRequired(project)
+  ) {
+    throw new OperationOutcomeError(
+      badRequest(
+        'Cannot authenticate: Project requires an access policy. Please contact your administrator to update your project membership.'
+      )
+    );
   }
 
   // Heal any drift between the admin flag and the default access policy before building.

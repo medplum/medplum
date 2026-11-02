@@ -45,6 +45,24 @@ export function getInactiveReason(
 }
 
 /**
+ * Returns whether the project's `requireAccessPolicy` setting is enabled.
+ * @param project - The project, if known.
+ * @returns True if every membership in the project must have an access policy.
+ */
+export function isAccessPolicyRequired(project: Project | undefined): boolean {
+  return project?.setting?.find((s) => s.name === 'requireAccessPolicy')?.valueBoolean === true;
+}
+
+/**
+ * Returns whether a membership has an `accessPolicy` or at least one `access` entry.
+ * @param membership - The membership, or the access policy fields it will have.
+ * @returns True if the membership has an access policy.
+ */
+export function hasAccessPolicy(membership: Pick<ProjectMembership, 'accessPolicy' | 'access'>): boolean {
+  return Boolean(membership.accessPolicy || membership.access?.length);
+}
+
+/**
  * @param projectId - The ID of the project to search in.
  * @param profile - The profile to find a project membership for.
  * @throws An error whenever there are multiple project memberships for the given user.
