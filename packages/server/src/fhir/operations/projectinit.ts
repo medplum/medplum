@@ -283,6 +283,12 @@ export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'Bot',
 ];
 
+/**
+ * ClientApplication fields hidden from non-admin Practitioners. Hidden fields are also restored on
+ * every write, so Practitioners can neither read nor change (rotate) a client secret.
+ */
+export const PRACTITIONER_CLIENT_APPLICATION_HIDDEN_FIELDS = ['secret', 'retiringSecret'];
+
 async function createPractitionerAccessPolicy(
   systemRepo: SystemRepository,
   projectId: string,
@@ -294,8 +300,12 @@ async function createPractitionerAccessPolicy(
   // writable resource type explicitly. The read-only resource types are omitted from the writable
   // set, leaving them read-only. Project admin and protected resource types are excluded as well,
   // since non-admins cannot write those.
+  //
+  // ClientApplication gets its own entry with hidden secrets. The first matching entry decides which
+  // fields are hidden, so it must come before the readonly wildcard, which would otherwise match reads.
   const writableResourceTypes = getResourceTypes().filter(
     (resourceType) =>
+      resourceType !== 'ClientApplication' &&
       !PRACTITIONER_READONLY_RESOURCE_TYPES.includes(resourceType) &&
       !projectAdminResourceTypes.includes(resourceType) &&
       !protectedResourceTypes.includes(resourceType)
@@ -305,6 +315,7 @@ async function createPractitionerAccessPolicy(
     meta: { project: projectId },
     name,
     resource: [
+      { resourceType: 'ClientApplication', hiddenFields: PRACTITIONER_CLIENT_APPLICATION_HIDDEN_FIELDS },
       { resourceType: '*', readonly: true },
       ...writableResourceTypes.map((resourceType) => ({ resourceType })),
     ],
