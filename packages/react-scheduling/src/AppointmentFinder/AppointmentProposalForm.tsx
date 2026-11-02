@@ -10,6 +10,7 @@ import {
   Select,
   Stack,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -35,7 +36,7 @@ import type { Appointment, Extension, HealthcareService, Location, Patient, Refe
 import { CalendarDateInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, RefObject } from 'react';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
@@ -165,7 +166,8 @@ export interface AppointmentProposalFormProps {
    */
   readonly mrnSystem?: string;
   /**
-   * Called when the time search opens or closes.
+   * Called when the time search opens or closes, including when picking an offered
+   * time closes it.
    *
    * The times render beside the form, not under it, so a host in a side panel has
    * to widen it to fit them.
@@ -189,8 +191,8 @@ export interface AppointmentProposalFormProps {
    * Resolving marks the form written, so it stops offering to write until an answer
    * changes; rejecting shows the reason as the write's refusal, every answer kept.
    *
-   * In `book` mode the proposal carries the patient and the visit type's required
-   * codes; in `reschedule` mode it is the time as `$find` offered it, plus a newly chosen site.
+   * In `book` mode the proposal carries the patient, the visit type's required codes,
+   * and any notes; in `reschedule` mode it is the time as `$find` offered it, plus a newly chosen site.
    */
   readonly onSubmit: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
   /** Extensions to put on every appointment this form books. */
@@ -263,6 +265,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
   const [requirementValues, setRequirementValues] = useState<BookingRequirementValues>(EMPTY_REQUIREMENT_VALUES);
+  const [comment, setComment] = useState('');
   const [writing, setWriting] = useState(false);
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
@@ -271,6 +274,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
+  const [pickCount, setPickCount] = useState(0);
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
@@ -279,7 +283,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
-  // Only a booking writes the patient and the visit type's codes, so only a booking
+  // Only a booking writes the patient, the visit type's codes, and the notes, so only a booking
   // asks for them: `$reschedule` takes a time and the schedules to hold it on.
   const takesDetails = mode === 'book';
 
@@ -423,6 +427,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }, [onChangeProposal]);
   useEffect(() => () => latestOnChangeProposal.current?.(undefined), []);
 
+  const finderButtonRef = useRef<HTMLButtonElement>(null);
+
   function toggleFinder(): void {
     setFinding(!finding);
   }
@@ -488,6 +494,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setChosen(next);
     setConflicts([]);
     setWritten(false);
+    setFinding(false);
+    setPickCount((count) => count + 1);
+    // The picked time's button goes with the search, so focus would fall to the page.
+    finderButtonRef.current?.focus();
   }
 
   const configuredDurationMinutes = useMemo(
@@ -664,6 +674,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           proposal: chosen,
           patient,
           values: requirementValues,
+          comment,
           site,
           requirements,
           extensions: appointmentExtensions,
@@ -744,6 +755,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           searching={searching}
           blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
           onToggleFinder={toggleFinder}
+          finderButtonRef={finderButtonRef}
+          // Only a picked time flashes, as the search closes on it. A typed time changes with
+          // every keystroke, with the search still open.
+          flashKey={manual ? 0 : pickCount}
         />
 
         {takesDetails && (
@@ -752,6 +767,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             mrnSystem={mrnSystem}
             required
             onChange={choosePatient}
+          />
+        )}
+
+        {takesDetails && (
+          <Textarea
+            label="Notes"
+            autosize
+            minRows={2}
+            value={comment}
+            onChange={(event) => {
+              setComment(event.currentTarget.value);
+              setWritten(false);
+            }}
           />
         )}
 
@@ -877,6 +905,9 @@ interface ChosenTimeProps {
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: SelectionBlocker | undefined;
   readonly onToggleFinder: () => void;
+  readonly finderButtonRef: RefObject<HTMLButtonElement | null>;
+  /** Changing this flashes the chosen time; at 0, the time is shown without a flash. */
+  readonly flashKey: number;
 }
 
 /**
@@ -889,12 +920,23 @@ interface ChosenTimeProps {
  * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder } = props;
+  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder, finderButtonRef, flashKey } = props;
+  // Taken off once played, as the browser replays an animation each time its element is shown
+  // again, as switching back to the field's tab does.
+  const [flashedKey, setFlashedKey] = useState(0);
 
   return (
     <>
       {appointment?.start && (
         <TextInput
+          // Remounted on each change, so the flash replays even when the field was already showing.
+          key={flashKey}
+          classNames={flashKey > 0 && flashKey !== flashedKey ? { input: classes.justPicked } : undefined}
+          onAnimationEnd={(event) => {
+            if (event.animationName === classes.justPicked) {
+              setFlashedKey(flashKey);
+            }
+          }}
           label="Date & time"
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
@@ -911,6 +953,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
 
       <Stack gap={4}>
         <Button
+          ref={finderButtonRef}
           variant="outline"
           fullWidth
           leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
@@ -1115,6 +1158,8 @@ interface BuildBookingOptions {
   readonly site: WithId<Location> | undefined;
   /** The codes and attestation given. */
   readonly values: BookingRequirementValues;
+  /** The notes, as typed. */
+  readonly comment: string;
   /** What the visit type requires, from its eligibility codes. */
   readonly requirements: ReadonlySet<SchedulingRequirement>;
   /** Extensions the host asked to be carried on the appointment. */
@@ -1122,8 +1167,8 @@ interface BuildBookingOptions {
 }
 
 /**
- * Puts the patient, the site, anything the visit type required, and whatever the host
- * wants carried onto the proposal that will be booked.
+ * Puts the patient, the site, anything the visit type required, the notes, and whatever
+ * the host wants carried onto the proposal that will be booked.
  *
  * Records a value only where the visit type asked for one: a field nobody was shown holds
  * whatever it was left at, and writing that would put an answer on the booking that was
@@ -1133,7 +1178,7 @@ interface BuildBookingOptions {
  * @returns The appointment to book.
  */
 function buildBooking(options: BuildBookingOptions): Appointment {
-  const { proposal, patient, site, values, requirements, extensions } = options;
+  const { proposal, patient, site, values, comment, requirements, extensions } = options;
   const patientReference = getReferenceString(patient);
   const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
   const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
@@ -1149,6 +1194,8 @@ function buildBooking(options: BuildBookingOptions): Appointment {
   const supportingInformation = site
     ? [...(proposal.supportingInformation ?? []), toAppointmentSiteReference(site)]
     : undefined;
+  // FHIR has no empty strings, so blank notes are left off.
+  const trimmedComment = comment.trim();
 
   return {
     ...proposal,
@@ -1163,6 +1210,7 @@ function buildBooking(options: BuildBookingOptions): Appointment {
     ...(reasonCode.length > 0 && { reasonCode }),
     ...(extension.length > 0 && { extension }),
     ...(supportingInformation && { supportingInformation }),
+    ...(trimmedComment && { comment: trimmedComment }),
   };
 }
 

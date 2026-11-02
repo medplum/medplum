@@ -3,6 +3,7 @@ title: Access Control Decision Guide
 sidebar_label: Access Control
 sidebar_position: 9
 download_slug: access-control
+toc_max_heading_level: 2
 ---
 
 # Access Control Decision Guide
@@ -11,16 +12,16 @@ Use this guide to define who can access which data and how organizational bounda
 
 _Companion to the [Authorization and Access Control](/docs/access) docs._
 
-Identify your users and organizational structure, then [distinguish API restrictions from UI filtering](#does-this-restriction-need-to-prevent-api-access-or-only-change-what-the-ui-displays). Work through these decisions for the access the API must enforce:
+Plan access control around four choices:
 
-1. **[How will you separate and share data?](#decision-1-how-will-you-separate-and-share-data)** For applications with internal or multi-organization isolation.
-2. **[Which data should each role be able to access?](#decision-2-which-data-should-each-role-be-able-to-access)** Define each role's scope.
-3. **[What should each role be allowed to do?](#decision-3-what-should-each-role-be-allowed-to-do)** Choose permissions and any restrictions.
-4. **[Who will administer users and configuration?](#decision-4-who-will-administer-users-and-configuration)** Assign administrative responsibilities.
+1. **[Define data separation and sharing](#data-separation-and-sharing)** if organizations, locations, teams, or service lines need isolation. Choose tenant boundaries, shared resources, and how enrollment or transfers change access.
+2. **[Choose each role's data scope](#role-data-scope).** For multiple tenants, decide whether access is combined across tenants or separated by authenticated session.
+3. **[Define role permissions](#role-permissions).** Choose resource types and interactions, then add field restrictions, write constraints, or attribute filters where needed.
+4. **[Assign administration](#administration).** Decide who manages users, memberships, and configuration, including the clinical access those administrators need.
 
-Also review [patient and caregiver access](#how-will-patients-and-caregivers-get-access), [third-party app access](#how-will-third-party-apps-get-access), and [IP restrictions](#should-access-be-restricted-to-specific-networks) where applicable.
+Also plan [patient and caregiver access](#patient-and-caregiver-access) if you offer a patient portal, [third-party app access](#third-party-app-access) if you need SMART launch or delegated access, and [network restrictions](#network-restrictions) if IP-based controls are required.
 
----
+Use the [questions below](#before-you-start) to identify your users and organizational structure, then distinguish API restrictions from UI filtering before choosing the relevant access controls. Add requirements beyond these examples where needed.
 
 ## Before you start
 
@@ -52,11 +53,11 @@ For example, a clinician authorized for three clinics can view one clinic at a t
 
 **Both can apply:** the API defines the permitted access; the UI selects what to display within it. Apply this distinction to tenant boundaries, resource permissions, and individual fields throughout the guide.
 
----
+<div id="decision-1-how-will-you-separate-and-share-data"></div>
 
-## Decision 1: How will you separate and share data?
+## Data separation and sharing
 
-**For applications that need isolation between organizations, locations, teams, or service lines.** If you have a single organization with no internal isolation, skip to [Decision 2](#decision-2-which-data-should-each-role-be-able-to-access).
+**For applications that need isolation between organizations, locations, teams, or service lines.** If you have a single organization with no internal isolation, skip to [Role data scope](#role-data-scope).
 
 Within a project, tenant isolation uses **compartments** matched by parameterized access policies. Use `$set-accounts` to assign tenant references; Medplum computes `meta.compartment`. These tenant assignments extend the standard FHIR patient-compartment model.
 
@@ -133,11 +134,13 @@ Allow the terminology resources your UI needs; overly restrictive policies can l
 
 **Reference implementation:** [MSO demo `enrollment.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-mso-demo/src/utils/enrollment.ts).
 
-**Next:** Define each role's data scope in [Decision 2](#decision-2-which-data-should-each-role-be-able-to-access).
+**Next:** Define each role's data scope in [Role data scope](#role-data-scope).
 
-## Decision 2: Which data should each role be able to access?
+<div id="decision-2-which-data-should-each-role-be-able-to-access"></div>
 
-List your roles, such as physician, RN, MA, front desk, billing, care coordinator, and medical director. **If you have multiple tenants, choose the data scope for each role below.** Otherwise, continue to [Decision 3](#decision-3-what-should-each-role-be-allowed-to-do).
+## Role data scope
+
+List your roles, such as physician, RN, MA, front desk, billing, care coordinator, and medical director. **If you have multiple tenants, choose the data scope for each role below.** Otherwise, continue to [Role permissions](#role-permissions).
 
 ### Option A: Access to one tenant
 
@@ -161,9 +164,11 @@ Give each session a membership limited to one tenant. Switching context means sw
 
 Implementation: [Parameterized Policies](/docs/access/access-policies#parameterized-policies), [Invite API](/docs/api/project-admin/invite).
 
-**Next:** Choose what each role can do with that data in [Decision 3](#decision-3-what-should-each-role-be-allowed-to-do).
+**Next:** Choose what each role can do with that data in [Role permissions](#role-permissions).
 
-## Decision 3: What should each role be allowed to do?
+<div id="decision-3-what-should-each-role-be-allowed-to-do"></div>
+
+## Role permissions
 
 ### Which resource types and interactions does the role need?
 
@@ -231,9 +236,11 @@ Implementation: [Access Policies](/docs/access/access-policies), [Licensure and 
 
 `basedOn` identifies the policies used to build the effective policy; it is not a policy-inheritance setting. Use it to inform the UI, while continuing to enforce access at the API.
 
-**Next:** Assign administrative responsibilities in [Decision 4](#decision-4-who-will-administer-users-and-configuration).
+**Next:** Assign administrative responsibilities in [Administration](#administration).
 
-## Decision 4: Who will administer users and configuration?
+<div id="decision-4-who-will-administer-users-and-configuration"></div>
+
+## Administration
 
 Decide who manages users and memberships, who manages Bots, ClientApplications, and AccessPolicies, and whether those administrators should see clinical data. Identify any server-level needs, such as project creation or overwriting protected fields.
 
@@ -253,15 +260,17 @@ Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/do
 
 **Next:** Review the additional decisions below that apply to your application.
 
-## Additional decisions, if applicable
+<div id="additional-decisions-if-applicable"></div>
 
-### How will patients and caregivers get access?
+<div id="how-will-patients-and-caregivers-get-access"></div>
+
+## Patient and caregiver access
 
 **For applications with a patient portal.**
 
 Choose how patients register, whether caregivers or proxies need access (such as parents, adult children, or guardians), and how those relationships are established and revoked.
 
-#### How will patients register?
+### How will patients register?
 
 | Registration option    | Approach                                                                 |
 | :--------------------- | :----------------------------------------------------------------------- |
@@ -270,7 +279,7 @@ Choose how patients register, whether caregivers or proxies need access (such as
 
 **Check both enrollment paths.** Open registration uses `Project.defaultPatientAccessPolicy`. Patient invitations without an explicit policy prefer the Patient entry in `Project.defaultAccessPolicies`, falling back to `defaultPatientAccessPolicy` if that entry is absent. Align these defaults if both paths should grant the same access. Changing the registration default affects future registrations; it does not migrate existing memberships. See [Default Access Policies](/docs/access/access-policies#default-access-policies).
 
-#### Which patient records can each person access?
+### Which patient records can each person access?
 
 | Access option                                          | Approach                                                                                                   |
 | :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
@@ -283,7 +292,9 @@ Choose how patients register, whether caregivers or proxies need access (such as
 
 Implementation: [Patient and Caregiver Policies](/docs/access/access-policies#caregiver-access), [Open Patient Registration](/docs/user-management/open-patient-registration).
 
-### How will third-party apps get access?
+<div id="how-will-third-party-apps-get-access"></div>
+
+## Third-party app access
 
 **If an app needs SMART launch or delegated access.** SMART is commonly used for third-party integrations, but is not limited to them.
 
@@ -302,7 +313,9 @@ Launch scopes request context; they do not grant clinical data access. Clinical 
 
 Implementation: [SMART Scopes](/docs/access/smart-scopes).
 
-### Should access be restricted to specific networks?
+<div id="should-access-be-restricted-to-specific-networks"></div>
+
+## Network restrictions
 
 **If access should be restricted by IP range.**
 

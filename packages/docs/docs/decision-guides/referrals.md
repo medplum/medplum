@@ -3,6 +3,7 @@ title: Referrals Decision Guide
 sidebar_label: Referrals
 sidebar_position: 5
 download_slug: referrals
+toc_max_heading_level: 2
 ---
 
 # Referrals Decision Guide
@@ -11,86 +12,79 @@ A referral needs more than a send button. Use this guide with your clinical and 
 
 _Companion to the [Referrals](/docs/careplans/referrals) docs._
 
----
+Define the shared referral model, then follow the sending or receiving path:
 
-## Section 1: Use Case & Participants
+1. **[Define what a referral represents](#what-does-a-referral-represent).** Choose service categories, urgency, identifiers, and draft or release semantics.
+2. **[Plan preparation and delivery](#preparing-and-sending-referrals)** if you originate referrals. Define capture, recipients, clinical information, and delivery channels.
+3. **[Plan acceptance of incoming referrals](#how-will-incoming-referrals-be-accepted)** if you receive them. Define intake channels, patient matching, review, and duplicate handling.
+4. **[Assign coordination and closure](#coordination-and-closure).** For every workflow, define ownership, authorization and scheduling gates, lifecycle stages, expected results, and what closes the loop.
 
-**1.1 Which side(s) of the referral lifecycle do you build for?**
+Use the [questions below](#before-you-start) to establish your use case, then follow the relevant sections. Add requirements beyond these examples where needed.
+
+<div id="section-1-use-case--participants"></div>
+
+## Before you start
+
+<div id="q1-which-sides-of-the-referral-lifecycle-do-you-build-for"></div>
+
+### Which side(s) of the referral lifecycle do you build for?
 
 - Outbound only – you originate referrals to others
 - Inbound only – you receive referrals from others
 - Both
 
-*Why: determines which Section 3 deep dives apply.*
+*Why: determines which decisions apply.*
 
-**1.2 Who interacts with referrals, and is the patient part of the workflow?**
+<div id="q2-who-interacts-with-referrals-and-is-the-patient-part-of-the-workflow"></div>
+
+### Who interacts with referrals, and is the patient part of the workflow?
 
 - Sending side: which roles author, edit, and send referrals (clinicians, MAs, coordinators, intake staff)?
 - Receiving side: which roles triage, accept, and work referrals on intake?
 - Patient: do patients see referrals, get notified, or take action (e.g. view in portal, self-schedule, decline)?
 
-*Why: drives how forms are designed (3.2), who notes are written for (3.4), who owns the work (3.7), and whether patient-facing content is in scope.*
+*Why: drives how forms are designed ([Capture](#which-capture-flows-and-originating-context-are-required)), who notes are written for ([Clinical information](#what-clinical-information-and-notes-will-travel-with-the-referral)), who owns the work ([Ownership and scheduling](#who-owns-the-work-and-what-gates-authorization-and-scheduling)), and whether patient-facing content is in scope.*
 
-**1.3 Where do receiving providers live relative to your tenant?**
+<div id="q3-where-do-receiving-providers-live-relative-to-your-tenant"></div>
+
+### Where do receiving providers live relative to your tenant?
 
 - Inside your tenant only
 - Partner tenants or organizations
 - External organizations without FHIR connectivity
 - Some combination
 
-*Why: drives how recipients are stored and selected (3.3), and which outbound channels you support (3.5).*
+*Why: drives how recipients are stored and selected ([Recipients](#how-will-recipients-be-selected-and-maintained)), and which outbound channels you support ([Delivery](#which-channels-and-payloads-will-deliver-the-referral)).*
 
 For teams sharing one project, create receiving work against the shared ServiceRequest directly. Add transmission and identifier reconciliation when records cross systems. See [internal and external referrals](/docs/careplans/referrals#decide-whether-the-teams-share-a-project).
 
-**1.4 Is this a new build or replacing/extending something, and what other systems must it work with?**
+<div id="q4-is-this-a-new-build-or-replacingextending-something-and-what-other-systems-must-it-work-with"></div>
+
+### Is this a new build or replacing/extending something, and what other systems must it work with?
 
 - If replacing: what system or workflow, and what gaps drove the change?
 - If new: is referrals central to the product or additive?
 - What other systems will referrals flow to or from (source EHR, downstream EHRs at receivers, billing, HIE, payer portals, include DirectMessage)?
 
-*Why: surfaces migration needs and integration boundaries that affect outbound channels (3.5), inbound intake (3.6), and matching of patient and provider records across systems.*
+*Why: surfaces migration needs and integration boundaries that affect outbound channels ([Delivery](#which-channels-and-payloads-will-deliver-the-referral)), inbound intake ([Inbound referrals](#how-will-incoming-referrals-be-accepted)), and matching of patient and provider records across systems.*
 
----
+<div id="section-2-feature-scoping"></div>
 
-## Section 2: Feature Scoping
+<div id="scope-checklist"></div>
 
-*Go through each row together. For each cell under Yes / No / Nice-to-have / Not sure, mark the customer’s answer. The* **§** *column points to the deep-dive subsection that covers each feature.*
+<div id="section-3-feature-deep-dives"></div>
 
-| \# | Feature | § | Yes | No | Nice-to-have | Not sure |
-| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| 1 | Multiple referral forms by specialty (vs one generic form) | 3.2 |  |  |  |  |
-| 2 | Tie every referral to the visit where it was created | 3.2 |  |  |  |  |
-| 3 | Pull in chart context automatically when sending (recent labs, problems, meds, allergies, coverage) | 3.4 |  |  |  |  |
-| 4 | Different audiences for notes on the referral – patient, receiving provider, internal staff, or mix | 3.4 |  |  |  |  |
-| 5 | Maintain your own directory of referral recipients (clinicians, sites, queues) in Medplum, vs sourcing from another system | 3.3 |  |  |  |  |
-| 6 | Send referrals to recipients outside your product (printed or PDF summary, care-summary document, fax, secure messaging, email) | 3.5 |  |  |  |  |
-| 7 | Accept referrals from outside (fax or scanned mail, secure inbox, Direct Message, care-summary drops, API or health-information exchange, typed in by staff) | 3.6 |  |  |  |  |
-| 8 | Route / assign referrals and track work on open referrals (intake pools, ownership, aging or SLA dashboards) | 3.7 |  |  |  |  |
-| 9 | Prior authorization workflow (eligibility checks, payer auth submissions before scheduling) | 3.7 |  |  |  |  |
-| 10 | In-network / coverage check against patient insurance when selecting or verifying a recipient | 3.3 3.7 |  |  |  |  |
-| 11 | Custom status steps for where the referral sits in workflow (e.g. sent → accepted → scheduled → done) | 3.8 |  |  |  |  |
-| 12 | Tie results and visit notes back to the original referral so the thread stays complete | 3.9 |  |  |  |  |
+<div id="decisions"></div>
 
----
+<div id="referral-resource"></div>
 
-## Section 3: Feature Deep Dives
+<div id="31-referral-semantics--type-coding-intent-priority"></div>
 
-*Cover each feature flagged Yes or Nice-to-have in Section 2\. The goal is to land on a clear recommended approach by the end of each section.*
+<div id="decision-1"></div>
 
-Section 3 is grouped into four lanes:
+<div id="decision-1-what-does-a-referral-request-represent"></div>
 
-| Lane | Subsections | When to read |
-| :---- | :---- | :---- |
-| **Referral Resource** | 3.1 | Always |
-| **Sending Referrals** | 3.2 – 3.5 | When you originate referrals |
-| **Receiving Referrals** | 3.6 | When you accept referrals from outside |
-| **Lifecycle & Processing** | 3.7 – 3.9 | Always |
-
----
-
-### Referral Resource
-
-#### 3.1 Referral Semantics – Type, Coding, Intent, Priority
+## What does a referral represent?
 
 Each independently managed requested service uses a `ServiceRequest`; requests authorized together can share a `requisition` identifier. Decide how you classify it, how urgency is expressed, whether you expose a staff-facing reference number, and whether drafts exist before send.
 
@@ -109,11 +103,19 @@ Each independently managed requested service uses a `ServiceRequest`; requests a
 | Released order | Set `intent = order` and `status = active` through the authorized release path. Sending is tracked separately from order status. |
 | Draft before release | Use `status = draft` with `intent = order` for an order being prepared. For a true proposal, retain it and create a separate authorized order with `basedOn` referencing the proposal. |
 
----
+<div id="decision-2"></div>
 
-### Sending Referrals
+<div id="decision-2-how-will-referrals-be-prepared-and-sent"></div>
 
-#### 3.2 Capture Flow – Form Library & Originating Context
+## Preparing and sending referrals
+
+<div id="sending-referrals"></div>
+
+<div id="32-capture-flow--form-library--originating-context"></div>
+
+<div id="decision-2a-which-capture-flows-and-originating-context-are-required"></div>
+
+### Which capture flows and originating context are required?
 
 Decide how referral intake is structured in the UI – one flow vs several by specialty or program, how answers are constrained, and whether every referral must link to an originating visit.
 
@@ -130,9 +132,11 @@ Decide how referral intake is structured in the UI – one flow vs several by sp
 | Encounter required | Require `encounter` when referrals always start from a scheduled or in-progress visit. |
 | Encounter optional | Allow missing `encounter` when referrals can start outside a visit (e.g. intake); enforce `subject` and clinical reason instead. |
 
----
+<div id="33-recipient--directory-model"></div>
 
-#### 3.3 Recipient & Directory Model
+<div id="decision-2b-how-will-recipients-be-selected-and-maintained"></div>
+
+### How will recipients be selected and maintained?
 
 Decide who users may send a referral *to* (person vs site vs queue) and where your recipient directory lives – maintained in Medplum, fed from another system, or both.
 
@@ -152,9 +156,11 @@ Decide who users may send a referral *to* (person vs site vs queue) and where yo
 | External directory | Sync or resolve selections to FHIR references at submit time via Bot or integration. |
 | Network-aware picker | Use authoritative payer directory or contract data for the provider, service, location, and effective date. Record unknown/stale status explicitly. A preferred-provider list or eligibility response alone does not establish network participation. |
 
----
+<div id="34-what-the-referral-carries--notes--clinical-package"></div>
 
-#### 3.4 What the Referral Carries – Notes & Clinical Package
+<div id="decision-2c-what-clinical-information-and-notes-will-travel-with-the-referral"></div>
+
+### What clinical information and notes will travel with the referral?
 
 Decide what leaves with the referral, how much is automated versus curated at send, and which audiences see each part of the narrative.
 
@@ -169,16 +175,18 @@ Decide what leaves with the referral, how much is automated versus curated at se
 | Lean vs rich package | Link the clinical reason through `reasonReference` or `reasonCode`; use `supportingInfo` for selected evidence. Store files in Binary and link them through DocumentReference attachment URLs, without inline base64. |
 | Context at send | Let the sender review selected chart context. Retain the actual transmitted document or payload and its source versions so later chart edits do not change the send history. |
 
----
+<div id="35-outbound-transmission--channels--payload-format"></div>
 
-#### 3.5 Outbound Transmission – Channels & Payload Format
+<div id="decision-2d-which-channels-and-payloads-will-deliver-the-referral"></div>
+
+### Which channels and payloads will deliver the referral?
 
 Decide how referrals leave your product – whether recipients get structured exchange versus documents – and what you produce for each sending path.
 
 **Questions:**
 
 - Do any recipients accept referrals through structured exchange with your system, or only as documents (e.g. PDF or care-summary packages)?
-- What outbound channels do you plan to use? (e.g., secure email, fax, API?)
+- What outbound channels do you plan to use (e.g. printed summary, secure email, fax, API)?
 - For each outbound channel you plan to use, what do you actually send or generate – structured data export, PDF, care-summary document, or a mix?
 - Is the outbound channel the same for every recipient (e.g. always fax) or does it vary per recipient – and if it varies, where does that preference live (recipient directory, referral type, picked at send time)?
 - For each channel, do you need to confirm delivery, retry on failure, and show send history to staff – and what counts as "successfully sent"?
@@ -189,17 +197,21 @@ Decide how referrals leave your product – whether recipients get structured ex
 | No FHIR API (e.g., secure email, fax channels) | Generate a reviewed PDF, or use a validated C-CDA generator matching the exchange contract. Store the result as DocumentReference/Binary and link the sent package from Communication. |
 | More than one channel | Keep one `ServiceRequest` as source of truth; run separate send paths per channel without divergent clinical content. |
 
----
+<div id="receiving-referrals"></div>
 
-### Receiving Referrals
+<div id="36-inbound-intake--channels--ingestion"></div>
 
-#### 3.6 Inbound Intake – Channels & Ingestion
+<div id="decision-3"></div>
+
+<div id="decision-3-how-will-incoming-referrals-be-accepted"></div>
+
+## How will incoming referrals be accepted?
 
 Decide how inbound referrals get created, reviewed, and matched to patients.
 
 **Questions:**
 
-- Which channels feed referrals into your product (e.g. automated exchange with a partner, fax or scanned documents, imported files or care-summary packages, typed in by staff)?
+- Which channels feed referrals into your product (e.g. partner API or health-information exchange, secure inbox or Direct Message, fax or scanned documents, imported files or care-summary packages, typed in by staff)?
 - For each channel, does a referral become active in your system automatically, or only after staff review or cleanup?
 - When inbound patient information is incomplete or inconsistent, how do you find or confirm the correct patient record?
 - After accepting (or declining) a new inbound referral, do you need to send an acknowledgment or response back to the originator – and through what path?
@@ -212,11 +224,19 @@ Decide how inbound referrals get created, reviewed, and matched to patients.
 | Fax, scanned, or image-like documents | Retain the Binary and DocumentReference; extract fields with OCR and review uncertain identity or clinical content. Use a restricted intake Task until the patient is confirmed, then create or reconcile the ServiceRequest. |
 | Patient identity | Match trusted Patient identifiers with their namespaces and route ambiguity for review. Deduplicate referrals separately using the source referral identifier and conditional create. |
 
----
+<div id="decision-4"></div>
 
-### Lifecycle & Processing
+<div id="decision-4-how-will-the-referral-be-coordinated-and-closed"></div>
 
-#### 3.7 Working the Referral – Assignment, Authorization, Scheduling
+## Coordination and closure
+
+<div id="lifecycle--processing"></div>
+
+<div id="37-working-the-referral--assignment-authorization-scheduling"></div>
+
+<div id="decision-4a-who-owns-the-work-and-what-gates-authorization-and-scheduling"></div>
+
+### Who owns the work, and what gates authorization and scheduling?
 
 After a referral is created or accepted, decide how it gets to the right person, what authorization and coverage steps gate the work, and how it turns into an actual visit or service that ties back to the referral.
 
@@ -244,9 +264,11 @@ After a referral is created or accepted, decide how it gets to the right person,
 | Billing handoff | When required, use `Claim.referral` for the ServiceRequest and `Claim.insurance.preAuthRef` for the authorization number. Preserve payer-specific validity and service limits. |
 | Aging and SLA | Use Task history or explicit transitions for time in stage; `lastModified` may reflect unrelated edits. Follow the [Task planned-date convention](/docs/careplans/tasks#task-start--due-dates), range-aware search, and a defined pause policy. |
 
----
+<div id="38-lifecycle--businessstatus-codesystem"></div>
 
-#### 3.8 Lifecycle & BusinessStatus CodeSystem
+<div id="decision-4b-which-lifecycle-stages-and-changes-must-be-tracked"></div>
+
+### Which lifecycle stages and changes must be tracked?
 
 Decide how you track a referral from request through completion – or cancellation – including naming those steps and handling cancel vs reroute.
 
@@ -262,9 +284,11 @@ Decide how you track a referral from request through completion – or cancellat
 | External signals | Correlate and deduplicate callbacks before updating work. Delivery, receiving-team acceptance, service completion, and returned-result review are separate events. |
 | Cancel / reroute | For an unchanged clinical order, the authorized workflow can update `performer` and resolve old Tasks. For a replacement order, use a new ServiceRequest with `replaces` and end the old request appropriately. Preserve transmission history. |
 
----
+<div id="39-results--closure-round-trip"></div>
 
-#### 3.9 Results & Closure Round-Trip
+<div id="decision-4c-what-must-return-and-what-closes-the-referral-loop"></div>
+
+### What must return, and what closes the referral loop?
 
 Decide what should come back after the referral is acted on, how those items attach to the right referral, and what counts as done for the referring side, the receiving side, or both.
 

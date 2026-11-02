@@ -814,6 +814,7 @@ describe('AppointmentProposalForm', () => {
       await openFinder();
       await chooseFirstOfferedTime();
       expect(chosenTimeField()).not.toBeNull();
+      await openTimeFinder();
 
       await dragDays('17', '21');
 
@@ -937,15 +938,41 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
-      await chooseFirstOfferedTime();
+      const picked = await chooseFirstOfferedTime();
 
+      // Picking a time is what the search was open for, so it closes.
+      expect(finderButton()).toHaveTextContent('Change time');
+      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
+      // The picked time's button is gone, so focus lands where the search reopens.
+      expect(finderButton()).toHaveFocus();
+      // And the time flashes where it landed, once: the browser would replay it each time the
+      // field is shown again.
+      const pickedField = chosenTimeField();
+      expect(pickedField?.className).toMatch(/justPicked/);
+      fireEvent.animationEnd(pickedField as HTMLElement, { animationName: 'justPicked' });
+      expect(pickedField?.className).not.toMatch(/justPicked/);
+
+      // Reopened, it still marks the time picked, though once the client's cache has lapsed
+      // the times come back as new objects.
+      medplum.invalidateAll();
+      await openTimeFinder();
+      const [firstGroup] = await screen.findAllByTestId(/^slot-group-/);
+      expect(within(firstGroup).getByRole('button', { name: picked })).toHaveAttribute('data-variant', 'filled');
+
+      // Picking again flashes it again, though the field never left the screen.
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).not.toBe(pickedField);
+      expect(chosenTimeField()?.className).toMatch(/justPicked/);
+      await openTimeFinder();
+
+      // Closing it by hand keeps the time.
+      expect(finderButton()).toHaveTextContent('Close time finder');
       await act(async () => {
         fireEvent.click(finderButton());
       });
-      await settleAutocomplete();
-
       expect(finderButton()).toHaveTextContent('Change time');
-      expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
+      expect(chosenTimeField()).not.toBeNull();
     });
 
     test('Clears the chosen time when the day changes', async () => {
@@ -954,6 +981,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await openTimeFinder();
 
       await chooseDay('18');
 
@@ -978,6 +1006,7 @@ describe('AppointmentProposalForm', () => {
       // `$book` would accept it: that time genuinely was Dr. Rivera's.
       expect(chosenTimeField()).not.toBeInTheDocument();
 
+      await openTimeFinder();
       const label = await chooseFirstOfferedTime();
 
       const chosen = chosenTimeField() as HTMLInputElement;
@@ -1014,6 +1043,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await openTimeFinder();
       onToggleTimeFinder.mockClear();
 
       await chooseActor(/room/i, 'exam', 'Exam Room A');
@@ -1198,6 +1228,7 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       await chooseFirstOfferedTime();
       expect(onChangeProposal).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(String) }));
+      await openTimeFinder();
 
       await chooseDay('18');
 
@@ -1338,13 +1369,15 @@ describe('AppointmentProposalForm', () => {
       expect(searched.some((url) => url.includes('Patient'))).toBe(false);
     });
 
-    test('Asks nothing else below the action that finds a time', async () => {
+    test('Asks only the patient and the notes below the action that finds a time', async () => {
       setup(medplum);
 
-      // The free text about the visit that used to sit here is one of the fields a
-      // practice configures, so the patient is the form's last question.
+      // Anything else the visit needs is one of the fields a practice configures.
       const inputs = [...screen.getAllByRole('searchbox'), ...screen.queryAllByRole('textbox')];
-      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([field(/patient/i)]);
+      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([
+        field(/patient/i),
+        screen.getByRole('textbox', { name: 'Notes' }),
+      ]);
     });
 
     test('Names the patient as a required participant, once', async () => {
@@ -1441,12 +1474,29 @@ describe('AppointmentProposalForm', () => {
       expect(bookButton()).toBeEnabled();
     });
 
+    test('Records the notes, trimmed, and offers to book again once they change', async () => {
+      setup(medplum);
+      await fillBooking();
+      const notes = screen.getByRole('textbox', { name: 'Notes' });
+      fireEvent.change(notes, { target: { value: ' ' } });
+      await clickBook();
+      expect(proposedAppointment().comment).toBeUndefined();
+      expect(bookButton()).toBeDisabled();
+
+      fireEvent.change(notes, { target: { value: '  Bring prior films  ' } });
+      expect(bookButton()).toBeEnabled();
+      await clickBook();
+      const [proposal] = onSubmit.mock.lastCall as [Appointment];
+      expect(proposal.comment).toBe('Bring prior films');
+    });
+
     test('Offers to book again once the time changes', async () => {
       setup(medplum);
       await fillBooking();
       await clickBook();
       expect(bookButton()).toBeDisabled();
 
+      await openTimeFinder();
       await chooseSecondOfferedTime();
 
       expect(bookButton()).toBeEnabled();
@@ -1997,6 +2047,7 @@ describe('AppointmentProposalForm', () => {
       await chooseFirstOfferedTime();
 
       expect(screen.queryByRole('searchbox', { name: /patient/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: 'Notes' })).not.toBeInTheDocument();
       await clickReschedule();
 
       const proposal = proposedAppointment();

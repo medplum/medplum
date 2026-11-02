@@ -119,7 +119,6 @@ import type {
 } from './repository/access-tracker';
 import { normalizeResourceTypes, repoAccess } from './repository/access-tracker';
 import { removeField } from './repository/field-utils';
-import { removeCachedProfile } from './repository/profile-cache';
 import type {
   ConnectionScope,
   RepositoryConnection,
@@ -1212,10 +1211,6 @@ export class Repository extends FhirRepository implements Disposable {
         user: resource.meta?.author?.reference,
       });
     }
-
-    if (resource.resourceType === 'StructureDefinition') {
-      await removeCachedProfile(resource);
-    }
   }
 
   /**
@@ -2221,6 +2216,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (updated.resourceType === 'ProjectMembership') {
       return resolveId(updated.project);
+    }
+
+    if (updated.resourceType === 'Login') {
+      // A Login joins its project once a membership is selected
+      return updated.membership ? resolveId(updated.project) : undefined;
     }
 
     if (this.isSuperAdmin() && SuperAdminProjectIdEditableResourceTypes.includes(updated.resourceType)) {
