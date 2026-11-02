@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { singularize } from '@medplum/core';
+import { RepositoryMode } from '@medplum/fhir-router';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -37,6 +38,12 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
 storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
   const binary = await verifyAndLoadBinary(req, res, 'PUT');
   if (!binary) {
+    return;
+  }
+
+  // Upload authorization was checked against the signed version, so it cannot overwrite a later one
+  if (req.params.versionId !== binary.meta?.versionId) {
+    res.status(409).send('Binary has been updated');
     return;
   }
 
@@ -95,6 +102,10 @@ async function verifyAndLoadBinary(req: Request, res: Response, method: 'GET' | 
   const projectId = originalUrl.searchParams.get('Project');
   // SHARDING: Drop support for URLs without Project: https://github.com/medplum/medplum/issues/10451
   const systemRepo = projectId ? await getProjectSystemRepo(projectId) : getShardSystemRepo(TODO_SHARD_ID);
+  if (method === 'PUT') {
+    // Uploads compare against the latest version
+    systemRepo.setMode(RepositoryMode.WRITER);
+  }
   const binary = await systemRepo.readResource<Binary>('Binary', id);
   if (projectId && binary.meta?.project !== projectId) {
     res.status(401).send('Invalid signature');

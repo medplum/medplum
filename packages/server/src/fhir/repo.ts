@@ -94,6 +94,7 @@ import {
   HistoryInteraction,
   isReadOnlyAction,
   logAuditEvent,
+  OperationInteraction,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
@@ -106,6 +107,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
+import { markBinaryContentHidden } from '../storage/utils';
 import { FhirQuotaCost } from './fhirquota';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
@@ -2409,7 +2411,7 @@ export class Repository extends FhirRepository implements Disposable {
       throw err;
     }
     if (interaction === AccessPolicyInteraction.UPDATE) {
-      return this.canUpdateExisting(resource);
+      return Boolean(this.canUpdateExisting(resource));
     }
     return Boolean(this.canPerformInteraction(interaction, resource));
   }
@@ -2418,12 +2420,83 @@ export class Repository extends FhirRepository implements Disposable {
    * Determines if the current user can update the stored version of a resource.
    * Compartments are recomputed first, so the check uses the latest compartment rules.
    * @param existing - The stored resource; its `meta.compartment` is updated in place.
-   * @returns True if the update is permitted.
+   * @returns The access policy permitting the update, or undefined if not permitted.
    */
-  private canUpdateExisting(existing: WithId<Resource>): boolean {
+  private canUpdateExisting(existing: WithId<Resource>): AccessPolicyResource | undefined {
     existing.meta ??= {};
     existing.meta.compartment = this.getCompartments(existing);
-    return Boolean(this.canPerformInteraction(AccessPolicyInteraction.UPDATE, existing));
+    return this.canPerformInteraction(AccessPolicyInteraction.UPDATE, existing);
+  }
+
+  /**
+   * Verifies that the current user may update the current version of a resource, for writes that bypass
+   * `updateResource()`, e.g. uploading Binary content through a presigned URL.
+   * Applies the checks `updateResource()` would apply to an update of the stored resource by the current user:
+   * write quota and access policy, including write constraints.
+   * Also rejects the write if the access policy makes any of the written fields readonly or hidden.
+   * The authorization is audited as the given operation, since the write itself happens outside the repository.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @param options - The write being authorized.
+   * @param options.operation - Invocation name of the operation that authorizes the write, e.g. `Binary/$presigned-url`.
+   * @param options.fields - The fields the write changes, e.g. `data` for Binary content.
+   * @param options.parameters - Operation input parameters to record on the AuditEvent entity.
+   * @returns The current version of the resource that was checked, with hidden fields removed. Its meta is kept
+   * in full, e.g. `meta.project` for presigned URLs, so it must not be returned to the user as is.
+   */
+  async assertCanUpdateById<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options: { operation: string; fields?: string[]; parameters?: AuditEventEntityDetail[] }
+  ): Promise<WithId<T>> {
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
+
+    const startTime = Date.now();
+    try {
+      // Check against the latest version, as updateResource() does
+      this.setMode(RepositoryMode.WRITER);
+      if (!this.supportsInteraction(AccessPolicyInteraction.UPDATE, resourceType)) {
+        throw new OperationOutcomeError(forbidden);
+      }
+      const existing = await this.readResourceImpl<T>(resourceType, id);
+      const policy = this.canUpdateExisting(existing);
+      // The out-of-band write leaves the resource unchanged, so judge it as the update updateResource() would make
+      const updated = {
+        ...existing,
+        meta: {
+          ...existing.meta,
+          versionId: this.generateId(),
+          lastUpdated: new Date().toISOString(),
+          author: this.getAuthor(),
+          onBehalfOf: this.context.onBehalfOf,
+        },
+      };
+      if (
+        !policy ||
+        !this.satisfiesWriteConstraints(policy, existing, updated) ||
+        // updateResource() would restore these fields, so the write cannot change them
+        options.fields?.some((field) => policy.readonlyFields?.includes(field) || policy.hiddenFields?.includes(field))
+      ) {
+        throw new OperationOutcomeError(forbidden);
+      }
+
+      const result = this.removeHiddenFields(existing, AccessPolicyInteraction.READ, true);
+      this.logEvent(OperationInteraction, AuditEventOutcome.Success, undefined, {
+        resource: result,
+        operation: options.operation,
+        entityDetail: [{ type: 'versionId', valueString: result.meta?.versionId }, ...(options.parameters ?? [])],
+        durationMs: Date.now() - startTime,
+      });
+      return result;
+    } catch (err) {
+      this.logEvent(OperationInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        operation: options.operation,
+        entityDetail: options.parameters,
+        durationMs: Date.now() - startTime,
+      });
+      throw err;
+    }
   }
 
   /**
@@ -2439,14 +2512,26 @@ export class Repository extends FhirRepository implements Disposable {
     interaction: 'create' | 'update'
   ): boolean {
     const matchingPolicy = this.canPerformInteraction(interaction, current);
-    if (!matchingPolicy) {
-      return false;
-    }
-    if (!matchingPolicy.writeConstraint) {
+    return !!matchingPolicy && this.satisfiesWriteConstraints(matchingPolicy, previous, current);
+  }
+
+  /**
+   * Evaluates the write constraints of an access policy entry against a write.
+   * @param policy - The access policy entry permitting the write.
+   * @param previous - The resource before updates were applied.
+   * @param current - The resource as it will be written.
+   * @returns True if every write constraint is satisfied.
+   */
+  private satisfiesWriteConstraints(
+    policy: AccessPolicyResource,
+    previous: Resource | undefined,
+    current: Resource
+  ): boolean {
+    if (!policy.writeConstraint) {
       return true;
     }
 
-    return matchingPolicy.writeConstraint.every((constraint) => {
+    return policy.writeConstraint.every((constraint) => {
       const invariant = evalFhirPathTyped(
         constraint.expression as string,
         [{ type: current.resourceType, value: current }],
@@ -2491,6 +2576,9 @@ export class Repository extends FhirRepository implements Disposable {
     const policy = satisfiedAccessPolicy(input, interaction, this.context.accessPolicy);
     for (const field of policy?.hiddenFields ?? EMPTY) {
       removeField(input, field);
+      if (field === 'data' && input.resourceType === 'Binary') {
+        markBinaryContentHidden(input);
+      }
     }
     if (!extendedMode && input.meta) {
       const meta = input.meta;
@@ -2585,6 +2673,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options.resource - Optional resource to associate with the AuditEvent.
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
    * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
+   * @param options.operation - Invocation name of the FHIR operation performed, e.g. `Binary/$presigned-url`.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
    */
   private logEvent(
@@ -2595,6 +2684,7 @@ export class Repository extends FhirRepository implements Disposable {
       resource?: Resource | Reference;
       searchRequest?: SearchRequest;
       entityDetail?: AuditEventEntityDetail[];
+      operation?: string;
       durationMs?: number;
     }
   ): void {
@@ -2644,6 +2734,7 @@ export class Repository extends FhirRepository implements Disposable {
         resource,
         searchQuery: query,
         entityDetail: options?.entityDetail,
+        operation: options?.operation,
         durationMs: options?.durationMs,
         client: this.context.client,
       }

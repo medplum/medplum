@@ -1,15 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
-import type { Binary, Parameters } from '@medplum/fhirtypes';
+import { createReference, getReferenceString } from '@medplum/core';
+import type { AuditEvent, Binary, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import type { Server } from 'node:http';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { ServerConfig } from '../../config/utils';
+import { globalLogger } from '../../logger';
 import { addTestUser, createTestProject, initTestAuth } from '../../test.setup';
+import { OperationCodeSystem, OperationInteraction } from '../../util/auditevent';
 
 const app = express();
 
@@ -74,6 +77,26 @@ describe('Binary/$presigned-url', () => {
     expect(uploadRes).toHaveStatus(200);
   });
 
+  test('Upload link identifies the project', async () => {
+    const testAgent = request(server);
+    config.storageBaseUrl = testAgent.get('/').url + 'storage/';
+    const { project, accessToken } = await createTestProject({ withAccessToken: true });
+    const binRes = await testAgent
+      .post('/fhir/R4/Binary')
+      .auth(accessToken, { type: 'bearer' })
+      .set('Content-Type', 'application/fhir+json')
+      .send({ resourceType: 'Binary', contentType: 'text/plain' } satisfies Binary);
+    expect(binRes).toHaveStatus(201);
+
+    const writeUrlRes = await testAgent
+      .get(`/fhir/R4/Binary/${binRes.body.id}/$presigned-url?upload=true`)
+      .auth(accessToken, { type: 'bearer' })
+      .send();
+    expect(writeUrlRes).toHaveStatus(200);
+    const writeUrl = new URL((writeUrlRes.body as Parameters).parameter?.[0]?.valueUri as string);
+    expect(writeUrl.searchParams.get('Project')).toBe(project.id);
+  });
+
   test('Requires update permission to generate upload link', async () => {
     const { accessToken } = await createTestProject({
       withAccessToken: true,
@@ -105,6 +128,41 @@ describe('Binary/$presigned-url', () => {
       .auth(accessToken, { type: 'bearer' })
       .send();
     expect(writeUrlRes).toHaveStatus(403);
+  });
+
+  test('Presigned links respect readonly and hidden data fields', async () => {
+    const { project, accessToken: ownerToken } = await createTestProject({ withAccessToken: true });
+    const createBinary = async (): Promise<WithId<Binary>> => {
+      const res = await request(server)
+        .post('/fhir/R4/Binary')
+        .auth(ownerToken, { type: 'bearer' })
+        .set('Content-Type', 'application/fhir+json')
+        .send({ resourceType: 'Binary', contentType: 'text/plain' } satisfies Binary);
+      expect(res).toHaveStatus(201);
+      return res.body as WithId<Binary>;
+    };
+
+    for (const { fields, readStatus } of [
+      { fields: { readonlyFields: ['data'] }, readStatus: 200 },
+      { fields: { hiddenFields: ['data'] }, readStatus: 403 },
+    ]) {
+      const binary = await createBinary();
+      const { accessToken } = await addTestUser(project, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Binary', ...fields }] },
+      });
+
+      const readUrlRes = await request(server)
+        .get(`/fhir/R4/Binary/${binary.id}/$presigned-url`)
+        .auth(accessToken, { type: 'bearer' })
+        .send();
+      expect(readUrlRes).toHaveStatus(readStatus);
+
+      const writeUrlRes = await request(server)
+        .get(`/fhir/R4/Binary/${binary.id}/$presigned-url?upload=true`)
+        .auth(accessToken, { type: 'bearer' })
+        .send();
+      expect(writeUrlRes).toHaveStatus(403);
+    }
   });
 
   test('Linked project cannot generate upload link', async () => {
@@ -145,6 +203,112 @@ describe('Binary/$presigned-url', () => {
       .auth(linked.accessToken, { type: 'bearer' })
       .send();
     expect(linkedWriteUrlRes).toHaveStatus(403);
+  });
+
+  test('Upload link enforces access policy write constraints against the stored Binary', async () => {
+    const { project, accessToken: ownerToken } = await createTestProject({ withAccessToken: true });
+    const otherUser = await addTestUser(project, {
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Binary',
+            writeConstraint: [
+              {
+                language: 'text/fhirpath',
+                expression: '%before.exists() implies %before.meta.author = %after.meta.author',
+              },
+              { language: 'text/fhirpath', expression: "%after.contentType = 'text/plain'" },
+            ],
+          },
+        ],
+      },
+    });
+
+    const createBinary = async (token: string, contentType: string): Promise<WithId<Binary>> => {
+      const res = await request(server)
+        .post('/fhir/R4/Binary')
+        .auth(token, { type: 'bearer' })
+        .set('Content-Type', 'application/fhir+json')
+        .send({ resourceType: 'Binary', contentType } satisfies Binary);
+      expect(res).toHaveStatus(201);
+      return res.body as WithId<Binary>;
+    };
+    const textBinary = await createBinary(otherUser.accessToken, 'text/plain');
+    const ownerTextBinary = await createBinary(ownerToken, 'text/plain');
+    const pdfBinary = await createBinary(ownerToken, 'application/pdf');
+
+    const writeSpy = vi.spyOn(globalLogger, 'write').mockImplementation(() => undefined);
+    config.logAuditEvents = true;
+    try {
+      const textWriteUrlRes = await request(server)
+        .get(`/fhir/R4/Binary/${textBinary.id}/$presigned-url?upload=true`)
+        .auth(otherUser.accessToken, { type: 'bearer' })
+        .send();
+      expect(textWriteUrlRes).toHaveStatus(200);
+
+      const pdfReadUrlRes = await request(server)
+        .get(`/fhir/R4/Binary/${pdfBinary.id}/$presigned-url`)
+        .auth(otherUser.accessToken, { type: 'bearer' })
+        .send();
+      expect(pdfReadUrlRes).toHaveStatus(200);
+
+      const pdfWriteUrlRes = await request(server)
+        .get(`/fhir/R4/Binary/${pdfBinary.id}/$presigned-url?upload=true`)
+        .auth(otherUser.accessToken, { type: 'bearer' })
+        .send();
+      expect(pdfWriteUrlRes).toHaveStatus(403);
+
+      // The upload is judged as an update by this user, which would change the author
+      const ownerTextWriteUrlRes = await request(server)
+        .get(`/fhir/R4/Binary/${ownerTextBinary.id}/$presigned-url?upload=true`)
+        .auth(otherUser.accessToken, { type: 'bearer' })
+        .send();
+      expect(ownerTextWriteUrlRes).toHaveStatus(403);
+
+      const operationEvents = writeSpy.mock.calls
+        .map(([msg]) => JSON.parse(msg) as AuditEvent)
+        .filter((event) => event.resourceType === 'AuditEvent' && event.subtype?.[0]?.code === 'operation');
+      const operationSubtype = [
+        OperationInteraction,
+        { system: OperationCodeSystem, code: 'Binary/$presigned-url', display: 'Binary/$presigned-url' },
+      ];
+      expect(operationEvents).toMatchObject([
+        {
+          subtype: operationSubtype,
+          action: 'E',
+          outcome: '0',
+          agent: [{ who: { reference: getReferenceString(otherUser.profile) }, requestor: true }],
+          entity: [
+            {
+              what: { reference: getReferenceString(textBinary) },
+              detail: [
+                { type: 'versionId', valueString: textBinary.meta?.versionId },
+                { type: 'upload', valueString: 'true' },
+              ],
+            },
+          ],
+        },
+        {
+          subtype: operationSubtype,
+          action: 'E',
+          outcome: '4',
+          outcomeDesc: 'Forbidden',
+          agent: [{ who: { reference: getReferenceString(otherUser.profile) }, requestor: true }],
+          entity: [
+            { what: { reference: getReferenceString(pdfBinary) }, detail: [{ type: 'upload', valueString: 'true' }] },
+          ],
+        },
+        {
+          subtype: operationSubtype,
+          outcome: '4',
+          entity: [{ what: { reference: getReferenceString(ownerTextBinary) } }],
+        },
+      ]);
+    } finally {
+      config.logAuditEvents = false;
+      writeSpy.mockRestore();
+    }
   });
 
   test('Requires securityContext read access to generate presigned URL', async () => {

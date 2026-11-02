@@ -113,6 +113,28 @@ describe('Storage Routes', () => {
     expect(await streamToString(await getBinaryStorage().readBinary(binary))).toBe('foo bar baz quux');
   });
 
+  test('Write after Binary was updated', async () => {
+    const resource = await withTestContext(async () => {
+      const result = await systemRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      const req = new Readable();
+      req.push('original');
+      req.push(null);
+      (req as any).headers = {};
+      await getBinaryStorage().writeBinary(result, 'hello.txt', ContentType.TEXT, req);
+      return result;
+    });
+    const url = await getBinaryStorage().getPresignedUrl(resource, { upload: true });
+
+    const updated = await withTestContext(() =>
+      systemRepo.updateResource<Binary>({ ...resource, securityContext: { reference: 'Patient/123' } })
+    );
+    expect(updated.meta?.versionId).not.toBe(resource.meta?.versionId);
+
+    const res = await request(server).put(toPath(url)).set('Content-Type', 'text/plain').send('stale upload');
+    expect(res).toHaveStatus(409);
+    expect(await streamToString(await getBinaryStorage().readBinary(updated))).toBe('original');
+  });
+
   test('Write mismatched content type', async () => {
     const url = await getBinaryStorage().getPresignedUrl(binary, { upload: true });
     const res = await request(server)

@@ -206,6 +206,33 @@ describe('FHIR Repo', () => {
         expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
         expect(repo.mode).toBe(RepositoryMode.WRITER);
       }));
+
+    test('on assertCanUpdateById', () =>
+      withTestContext(async () => {
+        // AuditEvent since it does not get cached on writes
+        const auditEvent = await testProjectRepo
+          .clone()
+          .createResource(
+            createAuditEvent(
+              RestfulOperationType,
+              ReadInteraction,
+              { resourceType: 'Project', id: randomUUID() },
+              { reference: 'Practitioner/user-123' },
+              undefined,
+              AuditEventOutcome.Success
+            )
+          );
+
+        const repo = testProjectRepo.clone();
+        repo.setMode(RepositoryMode.READER);
+        resetSpies();
+
+        // Checks the latest version, which a lagging reader may not have
+        await repo.assertCanUpdateById('AuditEvent', auditEvent.id, { operation: 'AuditEvent/$test' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+      }));
   });
 
   test('getSearchProjectIds', () => {

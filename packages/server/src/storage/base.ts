@@ -3,7 +3,7 @@
 import type { Binary } from '@medplum/fhirtypes';
 import type { Readable } from 'node:stream';
 import type { BinarySource, BinaryStorage } from './types';
-import { checkFileMetadata } from './utils';
+import { assertBinaryContentReadable, checkFileMetadata } from './utils';
 
 /** Options for getPresignedUrl() */
 export type PresignedUrlOptions = {
@@ -22,7 +22,8 @@ abstract class BaseBinaryStorage implements BinaryStorage {
 
   abstract getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string>;
 
-  readBinary(binary: Binary): Promise<Readable> {
+  async readBinary(binary: Binary): Promise<Readable> {
+    assertBinaryContentReadable(binary);
     return this.readFile(this.getKey(binary));
   }
 

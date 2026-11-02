@@ -4,6 +4,7 @@ import type { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { getPresignedUrl } from '../storage/loader';
+import { isBinaryContentHidden } from '../storage/utils';
 import type { Repository } from './repo';
 
 /**
@@ -206,6 +207,9 @@ class Rewriter {
       }
     } catch (err: any) {
       getLogger().debug('Error reading binary to generate presigned URL', err);
+      return `Binary/${id}`;
+    }
+    if (isBinaryContentHidden(binary)) {
       return `Binary/${id}`;
     }
 

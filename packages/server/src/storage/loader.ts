@@ -6,6 +6,7 @@ import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
 import { GoogleCloudStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
+import { assertBinaryContentReadable } from './utils';
 import { getLogger } from '../logger';
 import type { PresignedUrlOptions } from './base';
 import { FileSystemStorage } from './filesystem';
@@ -60,6 +61,9 @@ export async function deleteBinaryStorageObjects(storageKeys: string[]): Promise
 }
 
 export async function getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
+  if (!opts?.upload) {
+    assertBinaryContentReadable(binary);
+  }
   const config = getConfig();
 
   if (config.storageBaseUrl.startsWith(config.baseUrl)) {

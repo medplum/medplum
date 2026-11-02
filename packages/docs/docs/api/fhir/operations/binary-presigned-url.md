@@ -27,6 +27,14 @@ GET [base]/Binary/[id]/$presigned-url
 | --------- | ----------- | -------- | ---------------------------------------------------------------------- |
 | `url`     | 1..1        | `string` | The presigned URL granting read or write access to the Binary contents |
 
+Generating an upload URL (`upload=true`) requires the same authorization as updating the Binary: the caller's
+access policy must permit `update` on the stored Binary and satisfy any `writeConstraint`, and must not list `data`
+in `readonlyFields` or `hiddenFields`. Generating the URL counts against the write quota.
+
+Uploading content does not create a new Binary version or change its `meta`, so write constraints are evaluated
+with `%before` and `%after` both set to the stored Binary. An upload URL applies only to the version it was issued
+for: if the Binary is updated before the upload, the upload does not replace the newer version's content.
+
 ## Example
 
 ### Request

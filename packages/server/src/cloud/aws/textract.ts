@@ -12,6 +12,7 @@ import type { Binary, DocumentReference, Media, Reference, Resource } from '@med
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { assertBinaryContentReadable } from '../../storage/utils';
 import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
@@ -66,6 +67,8 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
 
   const { awsRegion } = getConfig();
   const bucket = storage.bucket;
+  // The content is read by key, bypassing readBinary()
+  assertBinaryContentReadable(inputBinary);
   const key = storage.getKey(inputBinary);
 
   const textractClient = new TextractClient({ region: awsRegion });

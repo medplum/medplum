@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, Logger, createReference } from '@medplum/core';
-import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import type {
+  AccessPolicyResource,
+  Binary,
+  Bundle,
+  DocumentReference,
+  OperationOutcomeIssue,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import type { Duplex } from 'stream';
 import { Readable } from 'stream';
@@ -10,8 +17,10 @@ import { vi } from 'vitest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getBinaryStorage } from '../storage/loader';
-import { initTestAuth, streamToString } from '../test.setup';
+import { getBinaryStorage, getPresignedUrl } from '../storage/loader';
+import { addTestUser, createTestProject, initTestAuth, streamToString, withTestContext } from '../test.setup';
+import { getShardSystemRepo } from './repo';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 
 const app = express();
 let accessToken: string;
@@ -88,6 +97,45 @@ describe('Binary', () => {
       );
     } finally {
       loggerErrorSpy.mockRestore();
+    }
+  });
+
+  test('Hidden data field blocks reading content', async () => {
+    const { project, accessToken: ownerToken } = await createTestProject({ withAccessToken: true });
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + ownerToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world');
+    expect(res).toHaveStatus(201);
+    const binary = res.body as WithId<Binary>;
+
+    for (const { fields, readStatus } of [
+      { fields: { readonlyFields: ['data'] }, readStatus: 200 },
+      { fields: { hiddenFields: ['data'] }, readStatus: 403 },
+    ]) {
+      const { accessToken } = await addTestUser(project, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Binary', ...fields }] },
+      });
+
+      for (const path of [
+        `/fhir/R4/Binary/${binary.id}`,
+        `/fhir/R4/Binary/${binary.id}/_history/${binary.meta?.versionId}`,
+      ]) {
+        const res2 = await request(app)
+          .get(path)
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res2).toHaveStatus(readStatus);
+        expect(res2.text === 'Hello world').toBe(readStatus === 200);
+      }
+
+      // The resource itself is still readable
+      const res3 = await request(app)
+        .get(`/fhir/R4/Binary/${binary.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Accept', ContentType.FHIR_JSON);
+      expect(res3).toHaveStatus(200);
+      expect(res3.body.id).toBe(binary.id);
     }
   });
 
@@ -342,6 +390,54 @@ describe('Binary', () => {
       .send('Hello world');
     expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
+  });
+
+  describe('Content access', () => {
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+
+    async function readAll(
+      fields: Pick<AccessPolicyResource, 'hiddenFields' | 'readonlyFields'>,
+      asSystem = false
+    ): Promise<Binary[]> {
+      const { project, repo: projectRepo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: 'Binary', ...fields }] },
+      });
+      const binary = await systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        meta: { project: project.id },
+      });
+      await getBinaryStorage().writeBinary(binary, undefined, ContentType.TEXT, 'Hello world');
+
+      const repo = asSystem ? systemRepo : projectRepo;
+      return [
+        await repo.readResource<Binary>('Binary', binary.id),
+        await repo.readVersion<Binary>('Binary', binary.id, binary.meta?.versionId as string),
+        await repo.readReference(createReference(binary)),
+        ...((await repo.readReferences([createReference(binary)])) as Binary[]),
+      ];
+    }
+
+    test('Hidden data field blocks reading and signing stored content', () =>
+      withTestContext(async () => {
+        for (const read of await readAll({ hiddenFields: ['data'] })) {
+          await expect(getBinaryStorage().readBinary(read)).rejects.toThrow('Forbidden');
+          await expect(getPresignedUrl(read)).rejects.toThrow('Forbidden');
+          // Upload links do not expose content
+          await expect(getPresignedUrl(read, { upload: true })).resolves.toBeDefined();
+        }
+      }));
+
+    test('Content is readable without hidden data field', () =>
+      withTestContext(async () => {
+        for (const reads of [await readAll({ readonlyFields: ['data'] }), await readAll({ hiddenFields: ['data'] }, true)]) {
+          for (const read of reads) {
+            expect(await streamToString(await getBinaryStorage().readBinary(read))).toBe('Hello world');
+            await expect(getPresignedUrl(read)).resolves.toBeDefined();
+          }
+        }
+      }));
   });
 });
 
