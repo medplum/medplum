@@ -10,7 +10,8 @@ const AI_CODING_GUIDE = '/docs/building-with-ai-coding-assistants';
 const AI_START_PROMPT =
   `Read https://www.medplum.com${AI_CODING_GUIDE}#plan-your-application. ` +
   'Ask me what I want to build, then follow the linked setup and planning instructions. ' +
-  'Carry out the setup in my workspace, reusing anything already configured.';
+  'Carry out the setup in my workspace, reusing anything already configured. ' +
+  'Verify what you configured and summarize what is ready and anything still needed.';
 
 interface CopyRowProps {
   value: string;
