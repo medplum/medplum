@@ -12,10 +12,10 @@ import type { Binary, DocumentReference, Media, Reference, Resource } from '@med
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { assertBinaryContentReadable } from '../../storage/utils';
 import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
+import { assertBinaryContentReadable } from '../../storage/utils';
 import { S3Storage } from './storage';
 
 export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse> {

@@ -431,7 +431,10 @@ describe('Binary', () => {
 
     test('Content is readable without hidden data field', () =>
       withTestContext(async () => {
-        for (const reads of [await readAll({ readonlyFields: ['data'] }), await readAll({ hiddenFields: ['data'] }, true)]) {
+        for (const reads of [
+          await readAll({ readonlyFields: ['data'] }),
+          await readAll({ hiddenFields: ['data'] }, true),
+        ]) {
           for (const read of reads) {
             expect(await streamToString(await getBinaryStorage().readBinary(read))).toBe('Hello world');
             await expect(getPresignedUrl(read)).resolves.toBeDefined();

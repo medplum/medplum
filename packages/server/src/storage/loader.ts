@@ -6,12 +6,12 @@ import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
 import { GoogleCloudStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
-import { assertBinaryContentReadable } from './utils';
 import { getLogger } from '../logger';
 import type { PresignedUrlOptions } from './base';
 import { FileSystemStorage } from './filesystem';
 import { generatePresignedUrl } from './presign';
 import type { BinaryStorage } from './types';
+import { assertBinaryContentReadable } from './utils';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 

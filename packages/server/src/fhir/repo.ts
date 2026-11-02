@@ -85,6 +85,7 @@ import {
 } from '../pubsub';
 import { getBinaryStorageKey } from '../storage/base';
 import { deleteBinaryStorageObjects, getBinaryStorage } from '../storage/loader';
+import { markBinaryContentHidden } from '../storage/utils';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -107,7 +108,6 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
-import { markBinaryContentHidden } from '../storage/utils';
 import { FhirQuotaCost } from './fhirquota';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
