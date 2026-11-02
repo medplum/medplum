@@ -497,7 +497,7 @@ concurrent, so MSH.13 may reach a downstream out of order.
 
 ## 5. SQLite Configuration (`node:sqlite`)
 
-`node:sqlite` is shipped stable in Node 24 and behind `--experimental-sqlite` in Node 22.18+; `package.json` already requires `^22.18.0 || >=24.2.0`. For Node 22 we'll set `NODE_OPTIONS=--experimental-sqlite` in the SEA bootstrap, or detect at runtime and surface a clear error.
+`node:sqlite` is shipped stable in Node 24 and behind `--experimental-sqlite` in Node 22.18+; `package.json` already requires `^22.22.2 || >=24.15.0`. For Node 22 we'll set `NODE_OPTIONS=--experimental-sqlite` in the SEA bootstrap, or detect at runtime and surface a clear error.
 
 ```ts
 import { DatabaseSync } from 'node:sqlite';
