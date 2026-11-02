@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, resolveId } from '@medplum/core';
-import type { BundleEntry, ClientApplication, ProjectMembership } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
+import type { AccessPolicy, BundleEntry, ClientApplication, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, getSuperAdminAccessToken, withTestContext } from '../test.setup';
 
 const app = express();
@@ -170,5 +171,65 @@ describe('Client admin', () => {
     expect(res).toHaveStatus(201);
     expect(res.body.secret).toBe('dave-client-secret');
     expect(res.body.meta.project).toBe(project.id);
+  });
+
+  test('Applies ClientApplication defaultAccessPolicies when no access policy is provided', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Erin',
+        lastName: 'Jones',
+        projectName: 'Erin Project',
+        email: `erin${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication');
+    expect(defaultPolicy).toBeDefined();
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const customPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      meta: { project: project.id },
+      name: 'Custom Client Policy',
+      resource: [{ resourceType: 'Patient' }],
+    });
+
+    const res1 = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Default policy client' });
+    expect(res1).toHaveStatus(201);
+    const membership1 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'ClientApplication/' + res1.body.id }],
+    });
+    expect(membership1?.accessPolicy?.reference).toBe(defaultPolicy?.accessPolicy.reference);
+
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Custom policy client', accessPolicy: createReference(customPolicy) });
+    expect(res2).toHaveStatus(201);
+    const membership2 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'ClientApplication/' + res2.body.id }],
+    });
+    expect(membership2?.accessPolicy?.reference).toBe(getReferenceString(customPolicy));
+
+    // Super admins creating a client in another project also get that project's default
+    const superAdminAccessToken = await getSuperAdminAccessToken();
+    const res3 = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .type('json')
+      .send({ name: 'Super admin client' });
+    expect(res3).toHaveStatus(201);
+    const membership3 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'ClientApplication/' + res3.body.id }],
+    });
+    expect(membership3?.accessPolicy?.reference).toBe(defaultPolicy?.accessPolicy.reference);
   });
 });

@@ -12,6 +12,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
+  AccessPolicyResource,
   ClientApplication,
   Project,
   ProjectMembership,
@@ -166,6 +167,11 @@ export async function createProject(
         projectId,
         'Default Practitioner Access Policy'
       );
+      const clientApplicationAccessPolicy = await createClientApplicationAccessPolicy(
+        txRepo,
+        projectId,
+        'Default ClientApplication Access Policy'
+      );
 
       const project = await txRepo.createResource<Project>(
         {
@@ -181,6 +187,7 @@ export async function createProject(
             { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
             { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
             { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
+            { profileType: 'ClientApplication', accessPolicy: createReference(clientApplicationAccessPolicy) },
           ],
         },
         { assignedId: true }
@@ -281,29 +288,63 @@ export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'CodeSystem',
 ];
 
+/**
+ * Resource types that ClientApplications can read but not edit by default.
+ */
+export const CLIENT_APPLICATION_READONLY_RESOURCE_TYPES: ResourceType[] = ['AccessPolicy', 'Bot'];
+
 async function createPractitionerAccessPolicy(
   systemRepo: SystemRepository,
   projectId: string,
   name: string
+): Promise<WithId<AccessPolicy>> {
+  return createWritableExceptAccessPolicy(systemRepo, projectId, name, PRACTITIONER_READONLY_RESOURCE_TYPES);
+}
+
+async function createClientApplicationAccessPolicy(
+  systemRepo: SystemRepository,
+  projectId: string,
+  name: string
+): Promise<WithId<AccessPolicy>> {
+  return createWritableExceptAccessPolicy(systemRepo, projectId, name, CLIENT_APPLICATION_READONLY_RESOURCE_TYPES, [
+    { resourceType: 'ClientApplication', hiddenFields: ['secret', 'retiringSecret'] },
+  ]);
+}
+
+async function createWritableExceptAccessPolicy(
+  systemRepo: SystemRepository,
+  projectId: string,
+  name: string,
+  readonlyResourceTypes: ResourceType[],
+  leadingEntries: AccessPolicyResource[] = []
 ): Promise<WithId<AccessPolicy>> {
   // Access policies are additive (a resource is writable if *any* entry grants it), so a
   // "write everything except the read-only resources" policy cannot use a wildcard write entry.
   // Instead, grant read to everything via a readonly wildcard, then grant full access to every
   // writable resource type explicitly. The read-only resource types are omitted from the writable
   // set, leaving them read-only. Project admin and protected resource types are excluded as well,
-  // since non-admins cannot write those.
+  // since non-admins cannot write those. The wildcard never matches project admin resource types,
+  // so any of those in the read-only set need their own readonly entry.
+  // Hidden fields come from the first matching entry, so leading entries go before the wildcard and
+  // replace the plain writable entry for their resource type.
   const writableResourceTypes = getResourceTypes().filter(
     (resourceType) =>
-      !PRACTITIONER_READONLY_RESOURCE_TYPES.includes(resourceType) &&
+      !readonlyResourceTypes.includes(resourceType) &&
+      !leadingEntries.some((entry) => entry.resourceType === resourceType) &&
       !projectAdminResourceTypes.includes(resourceType) &&
       !protectedResourceTypes.includes(resourceType)
+  );
+  const readonlyAdminResourceTypes = readonlyResourceTypes.filter((resourceType) =>
+    projectAdminResourceTypes.includes(resourceType)
   );
   return systemRepo.createResource<AccessPolicy>({
     resourceType: 'AccessPolicy',
     meta: { project: projectId },
     name,
     resource: [
+      ...leadingEntries,
       { resourceType: '*', readonly: true },
+      ...readonlyAdminResourceTypes.map((resourceType) => ({ resourceType, readonly: true })),
       ...writableResourceTypes.map((resourceType) => ({ resourceType })),
     ],
   });

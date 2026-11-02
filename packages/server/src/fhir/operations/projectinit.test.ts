@@ -1,8 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, isUUID } from '@medplum/core';
-import type { AccessPolicy, Practitioner, Project, Reference } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, isUUID, Operator } from '@medplum/core';
+import type {
+  AccessPolicy,
+  Bot,
+  ClientApplication,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -12,6 +21,7 @@ import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { ServerConfig } from '../../config/utils';
 import {
+  createTestProject,
   getSuperAdminAccessToken,
   getSuperAdminTestProject,
   initTestAuth,
@@ -19,7 +29,11 @@ import {
   withTestContext,
 } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-import { PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
+import {
+  CLIENT_APPLICATION_READONLY_RESOURCE_TYPES,
+  createProject,
+  PRACTITIONER_READONLY_RESOURCE_TYPES,
+} from './projectinit';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -83,24 +97,27 @@ describe('Project $init', () => {
     );
     expect(updatedProject.defaultPatientAccessPolicy).toBeUndefined();
 
-    // Verify defaultAccessPolicies array is provisioned with Patient, RelatedPerson, Admin, and Practitioner entries
-    expect(updatedProject.defaultAccessPolicies).toHaveLength(4);
+    // Verify defaultAccessPolicies array is provisioned with Patient, RelatedPerson, Admin, Practitioner, and ClientApplication entries
+    expect(updatedProject.defaultAccessPolicies).toHaveLength(5);
     const patientEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
     const relatedPersonEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
     const adminEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Admin');
     const practitionerEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Practitioner');
+    const clientEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication');
     expect(patientEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     expect(relatedPersonEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     expect(adminEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     expect(practitionerEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    expect(clientEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
     // Each role gets a separate policy instance
     const references = [
       patientEntry?.accessPolicy.reference,
       relatedPersonEntry?.accessPolicy.reference,
       adminEntry?.accessPolicy.reference,
       practitionerEntry?.accessPolicy.reference,
+      clientEntry?.accessPolicy.reference,
     ];
-    expect(new Set(references).size).toBe(4);
+    expect(new Set(references).size).toBe(5);
 
     // Verify the Admin default policy grants full read/write to everything
     const adminPolicy = await withTestContext(() =>
@@ -122,6 +139,69 @@ describe('Project $init', () => {
       expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
     }
   });
+
+  test('Default ClientApplication access policy', () =>
+    withTestContext(async () => {
+      const { project, client } = await createProject('Test Client Policy Project ' + randomUUID());
+      const clientEntry = project.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication');
+      expect(CLIENT_APPLICATION_READONLY_RESOURCE_TYPES).toStrictEqual(['AccessPolicy', 'Bot']);
+
+      // The project's default client gets the ClientApplication default
+      const systemRepo = getGlobalSystemRepo();
+      const clientMembership = await systemRepo.searchOne<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(client) }],
+      });
+      expect(clientMembership?.accessPolicy?.reference).toBe(clientEntry?.accessPolicy.reference);
+
+      const clientPolicy = await systemRepo.readReference<AccessPolicy>(
+        clientEntry?.accessPolicy as Reference<AccessPolicy>
+      );
+      const {
+        project: testProject,
+        accessPolicy,
+        repo,
+      } = await createTestProject({
+        accessPolicy: { resource: clientPolicy.resource },
+        withRepo: true,
+      });
+      const bot = await systemRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        meta: { project: testProject.id },
+        name: 'Test Bot',
+      });
+
+      // Full access to everything else
+      await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).resolves.toBeDefined();
+
+      // Bot is readable but not writable
+      const readBot = await repo.readResource<Bot>('Bot', bot.id);
+      expect(readBot.name).toBe('Test Bot');
+      await expect(repo.updateResource({ ...readBot, name: 'Changed' })).rejects.toThrow('Forbidden');
+      await expect(repo.createResource<Bot>({ resourceType: 'Bot', name: 'New Bot' })).rejects.toThrow('Forbidden');
+
+      // AccessPolicy is readable but not writable
+      await expect(repo.readResource('AccessPolicy', accessPolicy.id)).resolves.toBeDefined();
+      await expect(repo.updateResource({ ...accessPolicy, name: 'Changed' })).rejects.toThrow('Forbidden');
+
+      // ClientApplication secrets are hidden and cannot be overwritten
+      const otherClient = await systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        meta: { project: testProject.id },
+        name: 'Other Client',
+        secret: 'secret',
+        retiringSecret: 'retiring',
+      });
+      const readClient = await repo.readResource<ClientApplication>('ClientApplication', otherClient.id);
+      expect(readClient.name).toBe('Other Client');
+      expect(readClient.secret).toBeUndefined();
+      expect(readClient.retiringSecret).toBeUndefined();
+      await repo.updateResource({ ...readClient, name: 'Renamed', secret: 'overwritten' });
+      const updatedClient = await systemRepo.readResource<ClientApplication>('ClientApplication', otherClient.id);
+      expect(updatedClient.name).toBe('Renamed');
+      expect(updatedClient.secret).toBe('secret');
+      expect(updatedClient.retiringSecret).toBe('retiring');
+    }));
 
   test('Requires project name', async () => {
     const superAdminAccessToken = await getSuperAdminAccessToken();

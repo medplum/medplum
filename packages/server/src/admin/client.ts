@@ -18,7 +18,7 @@ export async function createClientHandler(req: Request, res: Response): Promise<
   let project: Project;
   const { project: localsProject, repo } = getAuthenticatedContext();
   if (localsProject.superAdmin) {
-    project = { resourceType: 'Project', id: singularize(req.params.projectId) };
+    project = await repo.readResource<Project>('Project', singularize(req.params.projectId) as string);
   } else {
     project = localsProject;
   }
@@ -59,7 +59,8 @@ export async function createClient(repo: Repository, request: CreateClientReques
     project: createReference(project),
     user: createReference(client),
     profile: createReference(client),
-    accessPolicy: accessPolicy,
+    accessPolicy:
+      accessPolicy ?? project.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication')?.accessPolicy,
   });
 
   return client;

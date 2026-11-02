@@ -657,14 +657,15 @@ This update allows for more granular control and visibility in RBAC implementati
 
 New projects are created with a set of **default access policies**, one per profile type. These are stored on the [`Project.defaultAccessPolicies`](/docs/api/fhir/medplum/project) element, which maps a `profileType` to the `AccessPolicy` applied when a user of that type is invited without an explicit policy:
 
-| Profile type    | Default policy grants                                                                                                                            |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Practitioner`  | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types. |
-| `Admin`         | Full read/write access to all resource types (equivalent to having no access policy).                                                            |
-| `Patient`       | Access scoped to the patient's own compartment.                                                                                                  |
-| `RelatedPerson` | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                               |
+| Profile type        | Default policy grants                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types. |
+| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                            |
+| `Patient`           | Access scoped to the patient's own compartment.                                                                                                  |
+| `RelatedPerson`     | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                               |
+| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy` and `Bot`, and no access to `ClientApplication` secrets.  |
 
-When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default.
+When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a ClientApplication](/docs/auth/client-credentials) without specifying an access policy, it receives the `ClientApplication` default. This includes the default client created with each new project.
 
 ### Switching a user to (or from) admin
 
