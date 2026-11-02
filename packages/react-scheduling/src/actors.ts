@@ -30,6 +30,9 @@ export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
  * second request rather than a second schedule on the same one — see
  * `getActorCombinations`.
  *
+ * No one type has to be asked about: a search needs a schedule to book against,
+ * and a room or a device holds one as well as a provider does.
+ *
  * Does not include `PractitionerRole` to prevent double-booking a `Practitioner`
  * who holds multiple roles. A practitioner is booked on their `Practitioner`,
  * but their `PractitionerRole`s still decide which schedules they are eligible
@@ -81,23 +84,6 @@ export function getActorTypeLabel(resourceType: SchedulingActorType): string {
       return 'Related Person';
   }
   return assertNever(resourceType);
-}
-
-/**
- * Actor types that must be chosen before a search can run.
- *
- * Locations and devices are left optional: a service may have location schedules
- * configured without every booking needing to hold one.
- */
-export const REQUIRED_ACTOR_TYPES: ReadonlySet<SchedulingActorType> = new Set(['Practitioner']);
-
-/**
- * Reports whether an actorType has to be chosen to be a valid booking
- * @param actorType - The actor type being chosen.
- * @returns Whether a search can run without it.
- */
-export function isActorTypeRequired(actorType: SchedulingActorType): boolean {
-  return REQUIRED_ACTOR_TYPES.has(actorType);
 }
 
 /**

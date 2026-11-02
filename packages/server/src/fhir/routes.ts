@@ -516,7 +516,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
   if (isNotFound(result[0])) {
-    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo, res.locals.rawBody);
     if (customOperationResponse) {
       result = customOperationResponse;
     }

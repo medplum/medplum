@@ -3,6 +3,7 @@ title: Intake & Registration Decision Guide
 sidebar_label: Intake & Registration
 sidebar_position: 1
 download_slug: intake
+toc_max_heading_level: 2
 ---
 
 # Intake & Registration Decision Guide
@@ -11,90 +12,91 @@ Use this guide to design how patients, caregivers, and staff complete intake and
 
 _Companion to the [Intake & Registration](/docs/intake) docs._
 
----
+Make four decisions about the intake workflow:
 
-## Section 1: Use Case & Participants
+1. **[Define patient identity and forms](#patient-identity-and-forms).** Decide when the patient is confirmed, who supplies the answers, and which capture flows are needed.
+2. **[Choose prefill and extraction](#prefill-and-extraction).** Identify any prefill sources and conflict-resolution rules; choose how responses create or update structured records and how resubmissions behave.
+3. **[Define coverage and consent](#coverage-and-consent)** where required. Decide how insurance relationships are represented and which consents must be captured or renewed.
+4. **[Define completion and follow-up](#completion-and-follow-up).** Decide whether intake needs orchestration or encounter linkage, what counts as complete, and which actions run afterward.
 
-**1.1 Who completes intake, and in what setting?**
+Use the [questions below](#before-you-start) to establish your use case, then follow the relevant sections. Add requirements beyond these examples where needed.
+
+<div id="section-1-use-case--participants"></div>
+
+## Before you start
+
+<div id="q1-who-completes-intake-and-in-what-setting"></div>
+
+### Who completes intake, and in what setting?
 
 - Patient self-service (portal, mobile, kiosk)
 - Staff-assisted (registration desk, rooming, phone, paper-to-digital)
 - Mixed (patient starts online, staff verifies in person)
 
-*Why: determines the auth model and whether an intake response may exist before the patient record is created (3.1, 3.2).*
+*Why: determines the auth model and whether an intake response may exist before the patient record is created ([Patient identity](#when-is-intake-linked-to-a-confirmed-patient-record), [Forms and capture](#which-forms-and-capture-flows-are-needed)).*
 
-**1.2 When does intake happen relative to identity and scheduling?**
+<div id="q2-when-does-intake-happen-relative-to-identity-and-scheduling"></div>
+
+### When does intake happen relative to identity and scheduling?
 
 - Before the patient record exists (greenfield / new patient signup)
 - After scheduling, pre-visit (patient exists, no visit yet)
 - At check-in or during the visit
 - Episodic updates only (existing patient, not tied to a visit)
 
-*Why: drives whether intake creates or updates a patient record, when responses get tied to a patient, and whether intake tasks link to a visit (3.1, 3.8).*
+*Why: drives whether intake creates or updates a patient record, when responses get tied to a patient, and whether intake tasks link to a visit ([Patient identity](#when-is-intake-linked-to-a-confirmed-patient-record), [Orchestration](#does-intake-need-orchestration-and-encounter-linkage)).*
 
-**1.3 How are returning patients and duplicates handled?**
+<div id="q3-how-are-returning-patients-and-duplicates-handled"></div>
+
+### How are returning patients and duplicates handled?
 
 - Always create a new patient record on intake (rare; only if you have a separate dedup pipeline downstream)
 - Look up by identifier (e.g. MRN, email, phone) and update if found
 - Run a demographic candidate search and confirm with staff before merge
 - Mixed – different rules for patient self-service vs staff-assisted
 
-*Why: drives 3.1 and must align with your org-wide dedup policy.*
+*Why: drives [Patient identity](#when-is-intake-linked-to-a-confirmed-patient-record) and must align with your org-wide dedup policy.*
 
-**1.4 What consents need to be captured at intake, and are any state- or population-specific?**
+<div id="q4-what-consents-need-to-be-captured-at-intake-and-are-any-state--or-population-specific"></div>
 
-*Why: drives 3.6; sensitive categories may constrain what post-intake automation can auto-share or auto-route (3.7).*
+### What consents need to be captured at intake, and are any state- or population-specific?
 
-**1.5 What other systems must intake feed or read from?**
+*Why: drives [Consent](#which-consents-are-required-and-when-must-they-be-renewed); sensitive categories may constrain what post-intake automation can auto-share or auto-route ([Post-submission actions](#which-actions-run-after-submission-and-how-do-failures-surface)).*
+
+<div id="q5-what-other-systems-must-intake-feed-or-read-from"></div>
+
+### What other systems must intake feed or read from?
 
 - Eligibility / insurance verification (e.g. Stedi, clearinghouse 270/271)
 - Practice management or legacy EHR (write-back of demographics or coverage)
-- Prefill sources (Patient Access API, Payer-to-Payer API, partner EHR, HIE/TEFCA) — see 3.3
+- Prefill sources (Patient Access API, Payer-to-Payer API, partner EHR, HIE/TEFCA) — see [Prefill](#where-does-prefill-come-from-and-who-resolves-conflicts)
 - Referrals (intake initiated by an inbound referral – see the Referrals guide)
 
-*Why: surfaces integration boundaries that affect prefill (3.3), post-intake automation (3.7), and which actions live inside one intake workflow vs separate workflows.*
+*Why: surfaces integration boundaries that affect prefill ([Prefill](#where-does-prefill-come-from-and-who-resolves-conflicts)), post-intake automation ([Post-submission actions](#which-actions-run-after-submission-and-how-do-failures-surface)), and which actions live inside one intake workflow vs separate workflows.*
 
----
+<div id="section-2-feature-scoping"></div>
 
-## Section 2: Feature Scoping
+<div id="scope-checklist"></div>
 
-*Go through each row together. For each cell under Yes / No / Nice-to-have / Not sure, mark the customer's answer. The* **Deep dive** *column points to the Section 3 subsection that covers each feature.*
+<div id="section-3-feature-deep-dives"></div>
 
-| \# | Feature | Deep dive | Yes | No | Nice-to-have | Not sure |
-| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| 1 | Multiple intake forms by visit type, program, or language (vs one universal form) | 3.2 |  |  |  |  |
-| 2 | Separate vs shared questionnaires for patient self-service and staff-assisted intake | 3.2 |  |  |  |  |
-| 3 | Non-form intake modality (conversational chatbot, voice agent) feeding the same data shape as the form | 3.2 |  |  |  |  |
-| 4 | Patient identity handling at intake — identifier lookup, demographic match search, and pre-auth start linked to a patient record later | 3.1 |  |  |  |  |
-| 5 | Prefill intake from prior data, payer/HIE/EHR sources, or insurance card OCR; reconciliation when patient input disagrees with the source | 3.3 |  |  |  |  |
-| 6 | Insurance capture with card images, multiple plans, and non-patient subscriber (e.g. parent's plan covering a child) | 3.5 |  |  |  |  |
-| 7 | Capture clinical history (allergies, medications, conditions, SDOH, immunizations, family history) and persist as distinct structured records | 3.2, 3.4 |  |  |  |  |
-| 8 | Multiple consent types captured at intake, with renewal triggers | 3.6 |  |  |  |  |
-| 9 | Post-intake automation: notify staff, run eligibility, create exception tasks, route to a care team | 3.7 |  |  |  |  |
-| 10 | Multi-step or multi-author intake, with steps that appear in the provider's visit chart | 3.8 |  |  |  |  |
-| 11 | Treat "intake complete" as a tracked operational status that gates downstream work (scheduling, clinical) | 3.9 |  |  |  |  |
+<div id="decisions"></div>
 
----
+<div id="decision-1"></div>
 
-## Section 3: Feature Deep Dives
+<div id="decision-1-who-completes-intake-and-how-is-the-patient-identified"></div>
 
-*Cover each feature flagged Yes or Nice-to-have in Section 2\. The goal is to land on a clear recommended approach by the end of each section.*
+## Patient identity and forms
 
-Section 3 is grouped into three lanes:
+<div id="capture"></div>
 
-| Lane | Subsections | When to read |
-| :---- | :---- | :---- |
-| **Capture** | 3.1 – 3.4 | Always |
-| **Coverage & Consent** | 3.5 – 3.6 | When coverage or consent is in scope |
-| **After Submission** | 3.7 – 3.9 | Always |
+<div id="31-patient-identity-at-intake"></div>
 
----
+<div id="decision-1a-when-is-intake-linked-to-a-confirmed-patient-record"></div>
 
-### Capture
+### When is intake linked to a confirmed patient record?
 
-#### 3.1 Patient Identity at Intake
-
-Decide whether intake creates a new patient record, updates an existing one, or runs unlinked until a human confirms a match – and how the intake response gets tied to the right patient. For matching rules, master records, and merge mechanics, defer to [Patient Deduplication Architectures](/docs/fhir-datastore/patient-deduplication) and \[Patient `$match](/docs/api/fhir/operations/patient-match)`.
+Decide whether intake creates a new patient record, updates an existing one, or runs unlinked until a human confirms a match – and how the intake response gets tied to the right patient. For matching rules, master records, and merge mechanics, defer to [Patient Deduplication Architectures](/docs/fhir-datastore/patient-deduplication) and [Patient `$match`](/docs/api/fhir/operations/patient-match).
 
 **Questions:**
 
@@ -110,28 +112,39 @@ Decide whether intake creates a new patient record, updates an existing one, or 
 | New patient, demographic search returns candidates | Use Patient `$match` for built-in scoring; require human confirmation in a Task before linking. |
 | Anonymous / pre-auth start | Allow QuestionnaireResponse without `subject`; link at the next authenticated step or staff review. Track unlinked responses for cleanup. |
 
----
+<div id="32-form-library--capture-flow"></div>
 
-#### 3.2 Form Library & Capture Flow
+<div id="decision-1b-which-forms-and-capture-flows-are-needed"></div>
+
+### Which forms and capture flows are needed?
 
 Decide whether intake uses one universal form or several, whether the same form serves both patient self-service and staff-assisted flows, and how non-form modalities (chat, voice) feed into the same data.
 
 **Questions:**
 
 - One intake form for everyone, or different forms by visit type, program, or language?
+- Which clinical history must be captured (allergies, medications, conditions, social determinants of health, immunizations, family history), and which answers must become distinct structured records through [extraction](#will-sdc-or-a-bot-own-extraction-and-resubmission-handling)?
 - Same form for patient self-service and staff-assisted, or separate forms tuned to each audience?
 - If you offer conversational or voice intake, does the transcript land in the same data shape as the form, or in a separate pipeline?
 
 | Situation | Approach |
 | :---- | :---- |
-| One form for everyone | Single `Questionnaire`; one Bot maps to one consistent set of FHIR resources. |
-| Forms by visit type, program, or language | Multiple `Questionnaire`s with shared `linkId` conventions; Subscription criteria can target specific `questionnaire` URLs (see 3.7). |
+| One form for everyone | Single `Questionnaire` with one authoritative extraction strategy ([Extraction](#will-sdc-or-a-bot-own-extraction-and-resubmission-handling)). |
+| Forms by visit type, program, or language | Multiple `Questionnaire`s with shared `linkId` conventions; Subscription criteria can target specific `questionnaire` URLs (see [Post-submission actions](#which-actions-run-after-submission-and-how-do-failures-surface)). |
 | Patient vs staff variants | Either reuse one Questionnaire with a "completed-by" gate, or maintain parallel Questionnaires that map to the same target resources. |
-| Conversational or voice intake | Keep a `Questionnaire` as the authoritative schema for what's collected; the chatbot or voice agent maps transcript fields to `linkId`s before submitting a `QuestionnaireResponse`. Downstream extraction (3.4) stays the same. |
+| Conversational or voice intake | Keep a `Questionnaire` as the authoritative schema for what's collected; the chatbot or voice agent maps transcript fields to `linkId`s before submitting a `QuestionnaireResponse`. Downstream extraction ([Extraction](#will-sdc-or-a-bot-own-extraction-and-resubmission-handling)) stays the same. |
 
----
+<div id="decision-2"></div>
 
-#### 3.3 Prefill & Reconciliation
+<div id="decision-2-how-will-collected-data-be-reconciled-and-persisted"></div>
+
+## Prefill and extraction
+
+<div id="33-prefill--reconciliation"></div>
+
+<div id="decision-2a-where-does-prefill-come-from-and-who-resolves-conflicts"></div>
+
+### Where does prefill come from, and who resolves conflicts?
 
 Decide whether intake starts blank or arrives pre-populated, where prefill data comes from, and how patient corrections are reconciled with the upstream source. Prefill is a superset of HIE — HIE is one source among many.
 
@@ -151,9 +164,11 @@ Decide whether intake starts blank or arrives pre-populated, where prefill data 
 | Provenance | Create a `Provenance` resource per prefilled field (or batched per source pull) so downstream consumers know origin and pull date. |
 | Patient visibility and refresh cadence | Default to "show and confirm" for clinical and demographic fields; silent prefill is acceptable for low-risk administrative fields when audit is in place. One-shot pull at form open is the safest default; re-pull on submit only for high-volatility sources (e.g. active coverage status). |
 
----
+<div id="34-extraction-model--sdc-vs-bot"></div>
 
-#### 3.4 Extraction Model – SDC vs Bot
+<div id="decision-2b-will-sdc-or-a-bot-own-extraction-and-resubmission-handling"></div>
+
+### Will SDC or a Bot own extraction and resubmission handling?
 
 Decide where extraction logic lives: on the form itself (declarative SDC rules) or in custom code – and how you handle resubmissions without creating duplicate records.
 
@@ -170,14 +185,27 @@ Decide where extraction logic lives: on the form itself (declarative SDC rules) 
 | :---- | :---- |
 | Simple field-to-resource mapping, no conditionals, no external calls | SDC `$extract` with template resources in `Questionnaire.contained`; rules ship with the form. |
 | Conditional resource creation, external API calls, custom validation | Bot triggered by Subscription on `QuestionnaireResponse`; use `getQuestionnaireAnswers` and `getGroupRepeatedAnswers` from `@medplum/core`. |
-| Mixed | SDC for the deterministic mapping, Bot for the conditional / external pieces. |
-| Resubmission without duplicates | Upsert clinical history by stable natural keys: `patient` \+ `code` for AllergyIntolerance; `subject` \+ `code` for MedicationRequest / Condition; `beneficiary` \+ `payor` for Coverage. See [Intake Data Model → Resource Role Reference](/docs/intake/intake-data-model). |
+| Mapping plus downstream actions | Choose one authoritative extractor per form: SDC or a Bot. Notifications and integrations can run afterward without independently extracting the same records. |
+| Retry of the same submission | Use stable source/workflow identifiers with conditional creates or updates. Reuse the same identifier for the same logical output on every retry. |
+| Annual update, correction, or new episode | Decide which records are amended, replaced, or newly created. Match an existing record by its established identifier or explicit reference; route ambiguous matches for reconciliation. |
 
----
+Patient-plus-code and beneficiary-plus-payor are not universal record identities: a patient can have distinct prescriptions, episodes, or policies with those same values. A conditional update overwrites a single match and fails on multiple matches. Define output identity and amendment behavior before choosing the write criteria. See [Working with FHIR Data](/docs/fhir-datastore/working-with-fhir).
 
-### Coverage & Consent
+One extraction owner is an application design recommendation, not a platform prohibition on combining SDC and Bots. Different forms can use different strategies.
 
-#### 3.5 Coverage & Subscriber Relationships
+<div id="decision-3"></div>
+
+<div id="decision-3-what-coverage-and-consent-must-be-captured"></div>
+
+## Coverage and consent
+
+<div id="coverage--consent"></div>
+
+<div id="35-coverage--subscriber-relationships"></div>
+
+<div id="decision-3a-how-will-coverage-and-subscriber-relationships-be-modeled"></div>
+
+### How will coverage and subscriber relationships be modeled?
 
 Decide how insurance is modeled, especially when the subscriber is not the patient, and how payers are sourced (curated directory or created on demand).
 
@@ -198,9 +226,11 @@ Decide how insurance is modeled, especially when the subscriber is not the patie
 | Card image capture | Store the image as a `DocumentReference` and link it to the Coverage via `DocumentReference.context.related`; for full modeling see [Patient Insurance](/docs/billing/patient-insurance). |
 | Payer directory | Curated `Organization` resources searched by the form; fall back to "create if missing" only when scope is too broad to curate. |
 
----
+<div id="36-consents"></div>
 
-#### 3.6 Consents
+<div id="decision-3b-which-consents-are-required-and-when-must-they-be-renewed"></div>
+
+### Which consents are required, and when must they be renewed?
 
 Decide which consent types are captured, how they're modeled, and what triggers re-consent.
 
@@ -218,11 +248,67 @@ Decide which consent types are captured, how they're modeled, and what triggers 
 | Re-consent | Existing Consent moves to `status: inactive`; new Consent created with current effective period. |
 | Signature artifact | Store as `Binary` referenced from `Consent.sourceAttachment`. |
 
----
+<div id="decision-4"></div>
 
-### After Submission
+<div id="decision-4-when-is-intake-complete-and-what-happens-next"></div>
 
-#### 3.7 Post-Intake Automation – Triggers & Actions
+## Completion and follow-up
+
+<div id="38-plandefinition-orchestration--encounter-linkage"></div>
+
+<div id="decision-4a-does-intake-need-orchestration-and-encounter-linkage"></div>
+
+### Does intake need orchestration and encounter linkage?
+
+Decide whether intake is a single form or a multi-step workflow with several tasks owned by different roles – and whether those tasks must show up in the provider's visit chart.
+
+*Note: The template-driven orchestration pattern is documented in detail under [Post Intake Automation → PlanDefinition Orchestration](/docs/intake/post-intake-automation). This section stays at the level needed to decide whether to adopt that pattern.*
+
+**Questions:**
+
+- Is intake completed by one person in one session, or split across roles (patient fills demographics, MA captures vitals, provider reviews)?
+- Does intake need to appear as tasks in the provider's visit chart?
+- Are some intake steps non-form work (e.g. lab orders, imaging) that should be modeled as orders rather than questionnaires?
+- Will the same intake template be reused across visit types or programs?
+
+| Situation | Approach |
+| :---- | :---- |
+| Single-form intake | Skip PlanDefinition; one Questionnaire plus the selected SDC or Bot extraction path is enough. |
+| Multi-step / multi-author intake | `PlanDefinition` with one action per Questionnaire or ServiceRequest, applied via `$apply`; the operation creates a `CarePlan`, `RequestGroup`, and one `Task` per action. |
+| Encounter-chart visibility | Pass `encounter` to `$apply`; each generated Task must set **both** `Task.focus` (Questionnaire/X or ServiceRequest/X – the provider UI uses this for rendering) **and** `Task.input[0].valueReference` (used to load the form). Missing either breaks the chart view. |
+| Reusable intake template | One `PlanDefinition` with `url`, `name`, and `title` set (the provider UI's resource search uses `name`, not `title`); referenced Questionnaires and ActivityDefinitions must also have `url` so `$apply` can resolve canonicals. |
+
+*Scheduling integration (appointments generated from intake answers, or intake gated on a scheduled visit) is covered in the [Scheduling Decision Guide](/docs/decision-guides/scheduling). From the intake side, link the resulting appointment or visit back to the intake artifacts that originated it.*
+
+<div id="39-lifecycle--intake-complete"></div>
+
+<div id="decision-4b-what-does-intake-complete-mean"></div>
+
+### What does intake complete mean?
+
+Decide what "intake is done" means for your operations, how that signal is represented, and what happens to incomplete intake.
+
+**Questions:**
+
+- Is "intake complete" a single moment (form submitted) or a composite state (extraction succeeded \+ eligibility verified \+ required consents on file)?
+- Which downstream workflows are gated on intake completion (scheduling, clinical, billing)?
+- For incomplete intake (patient bailed mid-form, required field missing), how is that surfaced and worked?
+- Are partial / draft intakes a supported state, or only completed submissions?
+
+| Situation | Approach |
+| :---- | :---- |
+| Simple completion | `QuestionnaireResponse.status` \= `completed` is the signal; nothing further to track. |
+| Composite completion | Single `Task` per Encounter with `businessStatus` advancing through extraction, eligibility, consent, and ready-for-clinical; or use `CarePlan.status` when intake is orchestrated via PlanDefinition ([Orchestration](#does-intake-need-orchestration-and-encounter-linkage)). |
+| Incomplete intake | `QuestionnaireResponse.status` \= `in-progress`; surface via a Task assigned to registration so it doesn't disappear. |
+| Downstream gating | Scheduling, clinical chart, and billing surfaces filter on the chosen completion signal; keep the definition single-sourced. |
+
+<div id="after-submission"></div>
+
+<div id="37-post-intake-automation--triggers--actions"></div>
+
+<div id="decision-4c-which-actions-run-after-submission-and-how-do-failures-surface"></div>
+
+### Which actions run after submission, and how do failures surface?
 
 Decide what happens after intake is submitted: which automations fire, when eligibility runs, and which downstream actions are part of intake vs separate workflows.
 
@@ -238,54 +324,14 @@ Decide what happens after intake is submitted: which automations fire, when elig
 
 | Situation | Approach |
 | :---- | :---- |
-| Monolithic intake Bot | One Bot on `QuestionnaireResponse` create handles extraction and all downstream actions. Simplest to operate; trade-off is larger blast radius on failure. |
+| Monolithic intake Bot | One Bot triggered when the response first becomes `completed` handles extraction and downstream actions. Track completed steps so recovery does not repeat successful side effects. |
 | Split by concern | Separate Subscriptions: one on `QuestionnaireResponse` for extraction, one on `Coverage` for eligibility, one on `Patient` for welcome notifications. Each Bot has a single responsibility and audit trail. |
-| Prevent re-run on updates | Use the create-only Subscription extension so Bot updates to the QuestionnaireResponse (e.g. setting `subject`) don't re-trigger extraction. See [Avoid Infinite Loops](/docs/intake/post-intake-automation#triggering-intake-processing). |
+| Responses are first saved as completed | A create-only Subscription with `status=completed` can handle first submission if drafts are never persisted. |
+| Drafts are saved before submission | Subscribe to create and update, filter for `status=completed`, and use transition criteria for the first entry into completed. A create-only trigger misses draft completion. |
+| Completed responses can be amended | Define a separate amendment/reconciliation path. A first-completion trigger intentionally skips later completed-to-completed updates. |
 | Exception handling | When required data is missing or an external call fails, create a `Task` for staff (`status: requested`, `owner` \= registration pool); do not silently drop the response. |
-| Eligibility — sync gate (during form or on submit) | `CoverageEligibilityRequest` results gate "intake complete" (3.9). Highest UX cost, lowest downstream rework. Use when day-one billing readiness matters. |
+| Eligibility — sync gate (during form or on submit) | `CoverageEligibilityRequest` results gate "intake complete" ([Completion](#what-does-intake-complete-mean)). Highest UX cost, lowest downstream rework. Use when day-one billing readiness matters. |
 | Eligibility — async post-intake | Same Subscription pattern, but failures surface as exception Tasks rather than blocking intake. Use when intake throughput trumps day-one billing readiness. |
 | Care-team / program routing | Bot creates Tasks or CareTeam memberships based on intake answers (e.g. screening result triggers a behavioral health referral). |
 
----
-
-#### 3.8 PlanDefinition Orchestration & Encounter Linkage
-
-Decide whether intake is a single form or a multi-step workflow with several tasks owned by different roles – and whether those tasks must show up in the provider's visit chart.
-
-*Note: The template-driven orchestration pattern is documented in detail under [Post Intake Automation → PlanDefinition Orchestration](/docs/intake/post-intake-automation). This section stays at the level needed to decide whether to adopt that pattern.*
-
-**Questions:**
-
-- Is intake completed by one person in one session, or split across roles (patient fills demographics, MA captures vitals, provider reviews)?
-- Does intake need to appear as tasks in the provider's visit chart?
-- Are some intake steps non-form work (e.g. lab orders, imaging) that should be modeled as orders rather than questionnaires?
-- Will the same intake template be reused across visit types or programs?
-
-| Situation | Approach |
-| :---- | :---- |
-| Single-form intake | Skip PlanDefinition; one Questionnaire \+ one Bot is enough. |
-| Multi-step / multi-author intake | `PlanDefinition` with one action per Questionnaire or ServiceRequest, applied via `$apply`; the operation creates a `CarePlan`, `RequestGroup`, and one `Task` per action. |
-| Encounter-chart visibility | Pass `encounter` to `$apply`; each generated Task must set **both** `Task.focus` (Questionnaire/X or ServiceRequest/X – the provider UI uses this for rendering) **and** `Task.input[0].valueReference` (used to load the form). Missing either breaks the chart view. |
-| Reusable intake template | One `PlanDefinition` with `url`, `name`, and `title` set (the provider UI's resource search uses `name`, not `title`); referenced Questionnaires and ActivityDefinitions must also have `url` so `$apply` can resolve canonicals. |
-
-*Scheduling integration (appointments generated from intake answers, or intake gated on a scheduled visit) is covered in the [Scheduling Decision Guide](/docs/decision-guides/scheduling). From the intake side, link the resulting appointment or visit back to the intake artifacts that originated it.*
-
----
-
-#### 3.9 Lifecycle & "Intake Complete"
-
-Decide what "intake is done" means for your operations, how that signal is represented, and what happens to incomplete intake.
-
-**Questions:**
-
-- Is "intake complete" a single moment (form submitted) or a composite state (extraction succeeded \+ eligibility verified \+ required consents on file)?
-- Which downstream workflows are gated on intake completion (scheduling, clinical, billing)?
-- For incomplete intake (patient bailed mid-form, required field missing), how is that surfaced and worked?
-- Are partial / draft intakes a supported state, or only completed submissions?
-
-| Situation | Approach |
-| :---- | :---- |
-| Simple completion | `QuestionnaireResponse.status` \= `completed` is the signal; nothing further to track. |
-| Composite completion | Single `Task` per Encounter with `businessStatus` advancing through extraction, eligibility, consent, and ready-for-clinical; or use `CarePlan.status` when intake is orchestrated via PlanDefinition (3.8). |
-| Incomplete intake | `QuestionnaireResponse.status` \= `in-progress`; surface via a Task assigned to registration so it doesn't disappear. |
-| Downstream gating | Scheduling, clinical chart, and billing surfaces filter on the chosen completion signal; keep the definition single-sourced. |
+For first completion, use the [FHIRPath criteria extension](/docs/subscriptions/subscription-extensions) with `%current.status = 'completed' and (%previous.status.empty() or %previous.status != 'completed')`, alongside completed search criteria and create/update events. Test initial completed creation, draft completion, and later edits. Keep processing idempotent and apply the [subscription scope and recovery guidance](/docs/subscriptions#planning-automations).

@@ -32,7 +32,7 @@ import { membershipProfileTypes, readMembershipReference } from './projectmember
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
-import { applySmartScopes } from './smart';
+import { applySmartScopes, parseSmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
 
@@ -164,6 +164,11 @@ export async function getAllowedProjects(
  */
 export async function getAccessPolicyForLogin(authState: AuthState): Promise<AccessPolicy | undefined> {
   const { project, login } = authState;
+  if (project.superAdmin && (login.launch || parseSmartScopes(login.scope).length > 0)) {
+    // Super admin privileges are not limited by the access policy, so SMART scopes cannot narrow them
+    throw new OperationOutcomeError(badRequest('SMART scopes are not supported for super admin logins'));
+  }
+
   // Heal any drift between the admin flag and the default access policy before building.
   // If a member's admin flag was toggled without updating their (still-default) access policy,
   // this substitutes the correct role default so an upgraded admin isn't left half-restricted.
@@ -171,16 +176,17 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
 
   let accessPolicy = await buildAccessPolicy(membership);
 
-  if (login.scope) {
-    // If the login specifies SMART scopes,
-    // then set the access policy to use those scopes
-    accessPolicy = applySmartScopes(accessPolicy, authState);
-  }
-
   // Apply project admin access policies
   // This includes ensuring no admin rights for non-admins
   // and restricted access for admins
   accessPolicy = applyProjectAdminAccessPolicy(project, membership, accessPolicy);
+
+  if (login.scope) {
+    // If the login specifies SMART scopes,
+    // then set the access policy to use those scopes.
+    // Applied last so that the scopes also limit the project admin rules.
+    accessPolicy = applySmartScopes(accessPolicy, authState);
+  }
 
   return accessPolicy;
 }
