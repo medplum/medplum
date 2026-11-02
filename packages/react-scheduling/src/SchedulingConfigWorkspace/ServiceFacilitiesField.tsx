@@ -9,7 +9,6 @@ import type { JSX } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ServiceFacilityItem } from '../ServiceFacilityInput';
 import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
-import classes from './ServiceFacilitiesField.module.css';
 
 export interface ServiceFacilitiesFieldProps {
   /** The service facilities named. Empty means every service facility, unless `linked` names some. */
@@ -57,7 +56,7 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
   }
 
   return (
-    <Stack gap={4} className={linked.length > 0 ? classes.sharedLabel : undefined}>
+    <Stack gap={4}>
       {/* Linked ones go above the input, so its open dropdown can't cover them, under the one visible label. */}
       {linked.length > 0 && (
         <>
@@ -71,7 +70,8 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
         key={inputKey}
         resourceType="Location"
         name="service-facilities"
-        label={linked.length > 0 ? <VisuallyHidden>Service facilities</VisuallyHidden> : 'Service facilities'}
+        label={linked.length > 0 ? undefined : 'Service facilities'}
+        aria-label={linked.length > 0 ? 'Service facilities' : undefined}
         placeholder={everywhere ? 'Offered at every service facility' : 'Add a service facility'}
         searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
         defaultValue={[...value]}
