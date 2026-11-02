@@ -19,6 +19,11 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly onChange?: (value: T | undefined) => void;
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
+  /**
+   * Names the search field for assistive technology, for use without a visible `label`. The name is
+   * attached to the field, which is hidden while disabled or once a resource is chosen.
+   */
+  readonly 'aria-label'?: AsyncAutocompleteProps<T>['aria-label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
   /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
   readonly withinPortal?: boolean;
@@ -55,6 +60,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       onChange={handleChange}
       disabled={props.disabled}
       label={props.label}
+      aria-label={props['aria-label']}
       error={props.error}
       withinPortal={props.withinPortal}
       maxValues={1}
