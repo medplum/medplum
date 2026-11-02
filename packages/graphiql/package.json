@@ -35,7 +35,7 @@
     "graphiql": "5.4.0",
     "graphql": "17.0.2",
     "graphql-ws": "6.4.1",
-    "postcss": "8.5.31",
+    "postcss": "8.5.32",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
