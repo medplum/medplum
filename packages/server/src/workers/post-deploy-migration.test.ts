@@ -3,6 +3,7 @@
 import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError, Job, Queue } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -420,6 +421,40 @@ describe('Post-Deploy Migration Worker', () => {
 
     getPostDeployMigrationSpy.mockRestore();
   });
+
+  test('Job processor fails a job tracked by a project-owned AsyncJob', () =>
+    withTestContext(async () => {
+      const mockCustomMigration: CustomPostDeployMigration = {
+        type: 'custom',
+        prepareJobData: vi.fn(),
+        run: vi.fn(),
+      };
+      const getPostDeployMigrationSpy = vi
+        .spyOn(migrationUtils, 'getPostDeployMigration')
+        .mockReturnValue(mockCustomMigration);
+
+      const asyncJob = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        meta: { project: randomUUID() },
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/migrate',
+      });
+      const job = {
+        id: '1',
+        data: { type: 'custom', tracking: getAsyncJobTracking(asyncJob), target: { kind: 'shard', shardId } },
+        queueName: PostDeployMigrationQueueName,
+      } as unknown as Job<PostDeployJobData>;
+
+      await expect(jobProcessor(job)).rejects.toThrow(`Unexpected AsyncJob owner for AsyncJob/${asyncJob.id}`);
+
+      expect(mockCustomMigration.run).not.toHaveBeenCalled();
+      await expect(systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id)).resolves.toMatchObject({
+        status: 'error',
+      });
+
+      getPostDeployMigrationSpy.mockRestore();
+    }));
 
   test('Worker logs async job data', () => {
     const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
