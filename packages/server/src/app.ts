@@ -205,7 +205,9 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
   if (config.logRequests) {
     app.use(loggingMiddleware);
   }
-  app.use(ANTHROPIC_GATEWAY_PATHS, apiKeyAsBearer);
+  if (config.aiGatewayEnabled) {
+    app.use(ANTHROPIC_GATEWAY_PATHS, apiKeyAsBearer);
+  }
   app.use(attachRequestContext);
 
   app.use(rateLimitHandler(config));
@@ -228,7 +230,9 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
     storageRouter
   );
   // The AI gateway parses its own bodies, which are often larger than maxJsonSize
-  app.use(ANTHROPIC_GATEWAY_PATHS, createAnthropicGatewayRouter(config.awsRegion));
+  if (config.aiGatewayEnabled) {
+    app.use(ANTHROPIC_GATEWAY_PATHS, createAnthropicGatewayRouter(config.awsRegion));
+  }
 
   // Handle async batch by enqueueing job
   app.post(

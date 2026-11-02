@@ -38,6 +38,7 @@ describe('AI gateway', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.aiGatewayEnabled = true;
     await initApp(app, config);
     ({ accessToken } = await createTestProject({ withAccessToken: true, project: { features: ['ai'] } }));
   });

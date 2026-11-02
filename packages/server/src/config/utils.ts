@@ -207,6 +207,7 @@ export function isFloatConfig(_key: string): boolean {
 
 const booleanKeys = new Set([
   'allowProjectSmtp',
+  'aiGatewayEnabled',
   'allowUnsafeOutbound',
   'autoDownloadEnabled',
   'cacheResourcesOnWrite',
