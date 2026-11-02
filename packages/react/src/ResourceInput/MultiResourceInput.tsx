@@ -143,6 +143,7 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly onChange?: (value: T[]) => void;
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
+  readonly 'aria-label'?: AsyncAutocompleteProps<T>['aria-label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
   /** Maximum number of resources that can be selected. Defaults to uncapped. */
   readonly maxValues?: number;
@@ -234,6 +235,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
       disabled={props.disabled}
       name={props.name}
       label={props.label}
+      aria-label={props['aria-label']}
       error={props.error}
       required={props.required}
       itemComponent={ItemComponent}
