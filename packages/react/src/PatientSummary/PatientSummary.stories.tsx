@@ -9,9 +9,10 @@ import { PatientSummary, PatientSummarySkeleton } from './PatientSummary';
 export default {
   title: 'Medplum/PatientSummary',
   component: PatientSummary,
-  // Mock State stories freeze the clock; two on one Docs page would collide, so each gets an iframe.
-  parameters: { docs: { story: { inline: false } } },
 } as Meta;
+
+// Mock State stories freeze the clock; two on one Docs page would collide, so each gets an iframe.
+const isolated = { docs: { story: { inline: false } } };
 
 export const Patient = (): JSX.Element => (
   <Box w={350}>
@@ -47,10 +48,10 @@ const summary = (reference: string): JSX.Element => (
 );
 
 export const BusyPatient = (): JSX.Element => summary(PatientSummaryStates.busyPatient.handles.patient);
-BusyPatient.parameters = { mockState: PatientSummaryStates.busyPatient };
+BusyPatient.parameters = { ...isolated, mockState: PatientSummaryStates.busyPatient };
 
 export const NewPatient = (): JSX.Element => summary(PatientSummaryStates.newPatient.handles.patient);
-NewPatient.parameters = { mockState: PatientSummaryStates.newPatient };
+NewPatient.parameters = { ...isolated, mockState: PatientSummaryStates.newPatient };
 
 export const TwoPatients = (): JSX.Element => (
   <Group align="flex-start">
@@ -58,7 +59,7 @@ export const TwoPatients = (): JSX.Element => (
     {summary(PatientSummaryStates.twoPatients.handles.well)}
   </Group>
 );
-TwoPatients.parameters = { mockState: PatientSummaryStates.twoPatients };
+TwoPatients.parameters = { ...isolated, mockState: PatientSummaryStates.twoPatients };
 
 export const WithHeaderMenuTruncatedName = (): JSX.Element => (
   <Box w={260}>
@@ -81,4 +82,4 @@ export const SixGeneratedPatients = (): JSX.Element => (
     ))}
   </Group>
 );
-SixGeneratedPatients.parameters = { mockState: PatientSummaryStates.sixPatients };
+SixGeneratedPatients.parameters = { ...isolated, mockState: PatientSummaryStates.sixPatients };

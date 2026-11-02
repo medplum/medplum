@@ -2,24 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 // Typed example screen data, reusable in apps, demos, tests and Storybook.
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
+import { createReference, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, UCUM } from '@medplum/core';
 import type { CodeableConcept, Observation, Patient, Quantity, Resource } from '@medplum/fhirtypes';
 import { generateMockResources } from '../../generate-mock';
 import { createMockState } from '../../mock-state';
 import { mockPatientProfile } from './mock-patient-profile';
 
 const loinc = (code: string, text: string): CodeableConcept => ({
-  coding: [{ system: 'http://loinc.org', code, display: text }],
+  coding: [{ system: LOINC, code, display: text }],
   text,
 });
 const category = (code: string): CodeableConcept[] => [
-  { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code }] },
+  { coding: [{ system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`, code }] },
 ];
 const quantity = (value: number, code: string): Quantity => ({
   value,
   code,
   unit: code,
-  system: 'http://unitsofmeasure.org',
+  system: UCUM,
 });
 
 const patient: WithId<Patient> = {
@@ -49,7 +49,7 @@ const records: WithId<Resource>[] = [
     subject,
     code: { text: 'Hypertension' },
     clinicalStatus: {
-      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }],
+      coding: [{ system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/condition-clinical`, code: 'active' }],
     },
   },
   {
@@ -58,7 +58,7 @@ const records: WithId<Resource>[] = [
     patient: subject,
     code: { text: 'Penicillin allergy' },
     clinicalStatus: {
-      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical', code: 'active' }],
+      coding: [{ system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/allergyintolerance-clinical`, code: 'active' }],
     },
     criticality: 'high',
     reaction: [{ manifestation: [{ text: 'Hives' }] }],
@@ -108,7 +108,7 @@ const records: WithId<Resource>[] = [
     status: 'final',
     subject,
     code: loinc('58410-2', 'Complete blood count'),
-    category: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0074', code: 'LAB' }] }],
+    category: [{ coding: [{ system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v2-0074`, code: 'LAB' }] }],
   },
   {
     resourceType: 'Observation',
@@ -140,7 +140,7 @@ const records: WithId<Resource>[] = [
     code: loinc('72166-2', 'Tobacco smoking status'),
     valueCodeableConcept: {
       text: 'Never smoked tobacco',
-      coding: [{ system: 'http://snomed.info/sct', code: '266919005', display: 'Never smoked tobacco' }],
+      coding: [{ system: SNOMED, code: '266919005', display: 'Never smoked tobacco' }],
     },
   },
   {
@@ -152,7 +152,7 @@ const records: WithId<Resource>[] = [
     code: loinc('76690-7', 'Sexual orientation'),
     valueCodeableConcept: {
       text: 'Heterosexual',
-      coding: [{ system: 'http://snomed.info/sct', code: '20430005', display: 'Heterosexual' }],
+      coding: [{ system: SNOMED, code: '20430005', display: 'Heterosexual' }],
     },
   },
 ];

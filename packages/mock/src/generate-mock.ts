@@ -49,7 +49,7 @@ export function generateMockResources<K extends ResourceType>(
   if (options.profile && (definition.kind !== 'resource' || definition.type !== type)) {
     throw new Error(`Mock profile ${definition.url ?? definition.name} must describe resource type ${type}`);
   }
-  if (!definition.snapshot?.element.length || definition.snapshot.element[0].path !== type) {
+  if (!definition.snapshot?.element?.length || definition.snapshot.element[0].path !== type) {
     throw new Error(`Mock ${type} profile needs a resolved snapshot rooted at ${type}`);
   }
   // The parser stops at unresolved content references; reject them rather than lose later fields.
@@ -70,6 +70,9 @@ export function generateMockResources<K extends ResourceType>(
 
   return Array.from({ length: count }, (_, index) => {
     const values = typeof options.values === 'function' ? options.values(index) : options.values;
+    if (values?.id === '') {
+      fail(`${type}.id`, 'supply a non-empty id or omit it');
+    }
     const resource = {
       ...deepClone(values ?? {}),
       resourceType: type,
@@ -106,6 +109,9 @@ export function generateMockResources<K extends ResourceType>(
           ...(baseElement?.type ?? []).map((t) => key.replace('[x]', capitalize(t.code))),
         ]);
         const present = [...allVariants].filter((prop) => object[prop] !== undefined);
+        if (present.some((prop) => object[prop] === null)) {
+          fail(fieldPath, 'omit the field instead of supplying null');
+        }
         if (present.length > 1 || present.some((prop) => !variants.includes(prop))) {
           fail(fieldPath, 'supply exactly one allowed choice variant');
         }
@@ -130,21 +136,24 @@ export function generateMockResources<K extends ResourceType>(
                 /^http:\/\/hl7\.org\/fhir\/StructureDefinition\/(SimpleQuantity|MoneyQuantity)(?:\|[^|]+)?$/
               )?.[1]
             : undefined;
+        // Authored references pass through; the generator never resolves or validates their targets.
+        const authoredReference = present.length > 0 && fieldType?.code === 'Reference';
         if (
           !fieldType ||
           element.slicing ||
           (fieldType.profile?.length && !datatypeProfile) ||
-          fieldType.targetProfile?.some(
-            (url) =>
-              !/^(?:(?:http:\/\/hl7\.org\/fhir|https:\/\/medplum\.com\/fhir)\/StructureDefinition\/)?[A-Z][A-Za-z]+$/.test(
-                url.split('|')[0]
-              )
-          )
+          (!authoredReference &&
+            fieldType.targetProfile?.some(
+              (url) =>
+                !/^(?:(?:http:\/\/hl7\.org\/fhir|https:\/\/medplum\.com\/fhir)\/StructureDefinition\/)?[A-Z][A-Za-z]+$/.test(
+                  url.split('|')[0]
+                )
+            ))
         ) {
           fail(fieldPath, 'slices and dependent profiles are not supported');
         }
         if (isPrimitiveType(fieldType.code) || fieldType.code === 'Resource') {
-          for (const [childKey, child] of Object.entries(context.elements)) {
+          for (const childKey of Object.keys(context.elements)) {
             if (!childKey.startsWith(key + '.')) {
               continue;
             }
@@ -153,7 +162,7 @@ export function generateMockResources<K extends ResourceType>(
               const prefix = parts.slice(0, index + 2).join('.');
               return (context.elements[prefix]?.min ?? 0) > 0 || requiredSlices.has(`${path}.${prefix}`);
             });
-            if (required && (child.min > 0 || requiredSlices.has(`${path}.${childKey}`))) {
+            if (required) {
               fail(
                 `${path}.${childKey}`,
                 `required ${fieldType.code === 'Resource' ? 'contained resource' : 'primitive'} child constraints are not supported`

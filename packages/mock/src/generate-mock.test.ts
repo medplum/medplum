@@ -59,6 +59,22 @@ test('base Patient has only stable IDs, with no unsolicited demographics', () =>
   expect(generateMockResources('Patient', 1, { values: { id: 'authored' } })[0].id).toBe('authored');
 });
 
+test('names the real problem for empty ids, null values and empty snapshots', () => {
+  expect(() => generateMockResources('Patient', 1, { values: { id: '' } })).toThrow(
+    'Patient.id: supply a non-empty id'
+  );
+  expect(() => generateMockResources('Patient', 1, { values: { active: null as unknown as boolean } })).toThrow(
+    'Patient.active: omit the field instead of supplying null'
+  );
+  const empty = { ...profile('Patient', []), snapshot: {} } as StructureDefinition;
+  expect(() => generateMockResources('Patient', 1, { profile: empty })).toThrow('needs a resolved snapshot');
+});
+
+test('fills bound codes on bundled Medplum resource types', () => {
+  const bot = profile('Bot', [{ path: 'Bot.runtimeVersion', min: 1 }]);
+  expect(generateMockResources('Bot', 1, { profile: bot })[0].runtimeVersion).toBeDefined();
+});
+
 test('six profiled patients fill nested required fields and preserve authored family names', () => {
   const values = { name: [{ family: 'Demo' }], active: false };
   const options = { profile: mockPatientProfile, values };
@@ -344,12 +360,12 @@ test('rejects unsupported primitive generation, profile dependencies and unresol
     resourceType: 'Patient',
     id: 'patient-1',
   });
-  expect(() =>
+  expect(
     generateMockResources('Patient', 1, {
       profile: target,
       values: { managingOrganization: { reference: 'Organization/one' } },
-    })
-  ).toThrow('Patient.managingOrganization: slices and dependent profiles');
+    })[0].managingOrganization
+  ).toEqual({ reference: 'Organization/one' });
   const forward = profile('Observation', []);
   assert(forward.snapshot);
   forward.snapshot.element.sort((a, b) => a.path.localeCompare(b.path));

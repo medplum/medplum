@@ -155,8 +155,9 @@ their children are unsupported. Core SimpleQuantity and MoneyQuantity use their 
 datatype schemas. Required constraints beneath primitive
 fields (such as `birthDate.extension`) are rejected rather than silently omitted.
 
-Required slices, supplied sliced fields, and fields that need dependent datatype or reference
-target profiles are not supported. Absent optional fields with those features remain absent.
+Required slices, supplied sliced fields, and fields that need dependent datatype profiles are not
+supported. Authored references whose element names a custom target profile are copied without
+checking the target. Absent optional fields with those features remain absent.
 The parser can reject unsupported slicing discriminators before generation. Forward or external
 content references are rejected, and excessive recursion fails with the field path. Supply a
 fully authored resource directly to `createMockState` when its profile is outside this subset.
@@ -239,8 +240,8 @@ createRoot(document.getElementById('root')!).render(
 The bundled `PatientSummaryStates` export provides populated, empty, two-patient, and six-generated-patient examples.
 The repository's Storybook also accepts the same state through `parameters.mockState`; its
 decorator loads a fresh client and freezes the clock. An app using the helpers directly controls
-its own clock. Set `parameters: { docs: { story: { inline: false } } }` on story files using
-`mockState`, so each Docs story gets an iframe and its own clock.
+its own clock. Set `parameters: { docs: { story: { inline: false } } }` on each story that uses
+`mockState`, so it gets an iframe and its own clock on the Docs page.
 
 The mock client ships a subset of search parameters. For repository examples that need more,
 add them to `packages/generator/src/mockclient.ts` and run `npm run mockclient --workspace

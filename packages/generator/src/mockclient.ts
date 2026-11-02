@@ -171,7 +171,7 @@ function removeBaseFromElements(sd: StructureDefinition): void {
 function writeGenerationCodes(): void {
   const bindings: Record<string, string> = {};
   const valueSets: Record<string, string[]> = {};
-  for (const file of ['profiles-resources.json', 'profiles-types.json']) {
+  for (const file of ['profiles-resources.json', 'profiles-types.json', 'profiles-medplum.json']) {
     for (const entry of readJson('fhir/r4/' + file).entry as BundleEntry<StructureDefinition>[]) {
       const sd = entry.resource;
       if (!sd || (sd.kind === 'resource' && !resourceTypes.includes(sd.type))) {
