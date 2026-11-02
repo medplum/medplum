@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Notifications } from '@mantine/notifications';
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { PatientSummaryProps } from './PatientSummary';
 import { PatientSummary, PatientSummarySkeleton } from './PatientSummary';
 import type { PatientSummarySectionConfig } from './PatientSummary.types';
@@ -93,6 +94,57 @@ describe('PatientSummary', () => {
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('Max Power')).toBeNull();
+  });
+
+  test('Refresh reloads the patient and section data', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} sections={[AllergiesSection]} />
+        </MedplumProvider>
+      );
+    });
+    expect(screen.queryByText('Shellfish')).toBeNull();
+
+    await client.createResource({
+      resourceType: 'AllergyIntolerance',
+      patient: createReference(HomerSimpson),
+      code: { text: 'Shellfish' },
+    });
+    const searchSpy = vi.spyOn(client, 'searchResources');
+    const readSpy = vi.spyOn(client, 'readResource');
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Refresh'));
+    });
+
+    expect(await screen.findByText('Shellfish')).toBeInTheDocument();
+    expect(searchSpy).toHaveBeenCalledWith(
+      'AllergyIntolerance',
+      expect.any(Object),
+      expect.objectContaining({ cache: 'reload' })
+    );
+    expect(readSpy).toHaveBeenCalledWith('Patient', HomerSimpson.id, expect.objectContaining({ cache: 'reload' }));
+  });
+
+  test('Shows an error when refreshing the patient fails', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <Notifications />
+          <PatientSummary patient={HomerSimpson} sections={[AllergiesSection]} />
+        </MedplumProvider>
+      );
+    });
+    vi.spyOn(client, 'readResource').mockRejectedValueOnce(new Error('Network down'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Refresh'));
+    });
+
+    expect(await screen.findByText('Network down')).toBeInTheDocument();
   });
 
   test('Shows skeleton while loading, then hides it', async () => {
