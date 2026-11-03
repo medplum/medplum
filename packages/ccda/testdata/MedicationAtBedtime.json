@@ -123,7 +123,7 @@
         },
         "dispenseRequest": {
           "validityPeriod": {
-            "start": "2009-01-09T00:00:00Z"
+            "start": "2009-01-09"
           }
         },
         "dosageInstruction": [

@@ -17,6 +17,8 @@ The `$ai` operation provides an interface for calling AI language models (like O
 
 The AI feature must be enabled for your project. Contact your Medplum administrator or ensure `ai` is included in your project's features list.
 
+The operation is intended for practitioners, bots and client applications. For patient-facing AI features, call `$ai` from a [Bot](/docs/bots).
+
 By default the operation calls OpenAI at `https://api.openai.com/v1`. To route requests through a [LiteLLM](https://docs.litellm.ai/) proxy or other OpenAI-compatible endpoint, set the optional project secret `LLM_BASE_URL` (e.g. `https://litellm.example.com/v1`); the `OPENAI_API_KEY` secret is then used as the proxy's bearer token. See [`$ai` Operation](/docs/ai/ai-operation) for details.
 
 ## Invoke the `$ai` operation
@@ -39,10 +41,6 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
         "valueString": "[{\"role\": \"user\", \"content\": \"What is FHIR?\"}]"
       },
       {
-        "name": "apiKey",
-        "valueString": "sk-your-openai-api-key"
-      },
-      {
         "name": "model",
         "valueString": "gpt-4"
       }
@@ -55,7 +53,6 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
 | Name               | Type     | Description                                                                                                                     | Required |
 | ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `messages`         | `string` | JSON string containing the conversation messages array                                                                          | Yes      |
-| `apiKey`           | `string` | OpenAI API key                                                                                                                  | Yes      |
 | `model`            | `string` | OpenAI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`)                                                                            | Yes      |
 | `tools`            | `string` | JSON string containing the tools array for function calling                                                                     | No       |
 | `reasoning_effort` | `string` | Reasoning effort for reasoning models: `none`, `minimal`, `low`, `medium`, `high` or `xhigh`                                    | No       |

@@ -8,14 +8,14 @@ import type { Server } from 'node:http';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import type { MedplumServerConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import { addTestUser, createTestProject, initTestAuth } from '../../test.setup';
 
 const app = express();
 
 describe('Binary/$presigned-url', () => {
   let accessToken: string;
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let server: Server;
 
   beforeAll(async () => {

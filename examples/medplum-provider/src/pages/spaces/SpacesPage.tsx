@@ -1,17 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Center, Paper, Stack, Text, Title } from '@mantine/core';
-import type { Communication, Reference } from '@medplum/fhirtypes';
+import type { Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconRobotOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { SpacesInbox } from '../../components/spaces/SpacesInbox';
+import { useSpacesConversation } from '../../hooks/useSpacesConversation';
 import classes from './SpacesPage.module.css';
 
 /**
- * SpacesPage component that handles routing for AI conversation spaces.
- * Follows the same pattern as MessagesPage by delegating all logic to SpaceInbox.
+ * SpacesPage owns the route and the conversation state for AI conversation spaces, and
+ * hands both to SpacesInbox, which is purely presentational.
  * @returns A React component that displays the AI conversation interface.
  */
 export function SpacesPage(): JSX.Element {
@@ -27,13 +28,11 @@ export function SpacesPage(): JSX.Element {
     navigate(`/Spaces/Communication/${newTopic.id}`)?.catch(console.error);
   };
 
+  const conversation = useSpacesConversation({ topicId, onNewTopic: handleNewTopic });
+
   const onSelectedItem = (selectedTopic: Communication): string => {
     return `/Spaces/Communication/${selectedTopic.id}`;
   };
-
-  const topicRef: Reference<Communication> | undefined = topicId
-    ? { reference: `Communication/${topicId}` }
-    : undefined;
 
   const handleNewConversation = (): void => {
     navigate('/Spaces/Communication')?.catch(console.error);
@@ -42,12 +41,7 @@ export function SpacesPage(): JSX.Element {
   return (
     <div className={classes.container}>
       <div className={isEnabled ? classes.fill : classes.blurred}>
-        <SpacesInbox
-          topic={topicRef}
-          onNewTopic={handleNewTopic}
-          onSelectedItem={onSelectedItem}
-          onAdd={handleNewConversation}
-        />
+        <SpacesInbox {...conversation} onSelectedItem={onSelectedItem} onAdd={handleNewConversation} />
       </div>
       {!isEnabled && (
         <div className={classes.overlay}>

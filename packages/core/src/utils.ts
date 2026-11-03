@@ -95,11 +95,13 @@ export function getReferenceString(input: Reference | Resource): string | undefi
 export function getReferenceString(
   input: Reference | Resource | (Reference & { reference: string }) | WithId<Resource>
 ): string | undefined {
-  if (isReference(input)) {
-    return input.reference;
-  }
+  // Check for a resource first: some resources (e.g. DetectedIssue) have their own
+  // top-level `reference` element, which would otherwise be mistaken for a Reference.
   if (isResourceWithId(input)) {
     return `${(input as Resource).resourceType}/${input.id}`;
+  }
+  if (isReference(input)) {
+    return input.reference;
   }
   return undefined;
 }
@@ -129,9 +131,27 @@ export function parseReference<T extends Resource>(reference: Reference<T> | und
   if (reference?.reference === undefined) {
     throw new OperationOutcomeError(validationError('Reference missing reference property.'));
   }
+  const parsed = tryParseReference(reference);
+  if (!parsed) {
+    throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
+  }
+  return parsed;
+}
+
+/**
+ * Parses a reference and returns a tuple of [ResourceType, ID], or undefined if the reference cannot be parsed.
+ * @param reference - A reference to a FHIR resource.
+ * @returns A tuple containing the `ResourceType` and the ID of the resource, or undefined if the reference cannot be parsed.
+ */
+export function tryParseReference<T extends Resource>(
+  reference: Reference<T> | undefined
+): [T['resourceType'], string] | undefined {
+  if (reference?.reference === undefined) {
+    return undefined;
+  }
   const [type, id] = reference.reference.split('/') as [T['resourceType'] | '', string];
   if (type === '' || id === '' || id === undefined) {
-    throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
+    return undefined;
   }
   return [type, id];
 }

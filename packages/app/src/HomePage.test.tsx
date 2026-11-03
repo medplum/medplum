@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Loading, MedplumProvider } from '@medplum/react';
@@ -8,8 +9,13 @@ import { randomUUID } from 'crypto';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
-import { RESOURCE_TYPE_CREATION_PATHS, getDefaultFields } from './HomePage.utils';
+import { getDefaultFields, RESOURCE_TYPE_CREATION_PATHS } from './HomePage.utils';
 import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
+
+vi.mock('@mantine/notifications', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  showNotification: vi.fn(),
+}));
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
@@ -28,6 +34,7 @@ async function setup(url = '/Patient', medplum = new MockClient()): Promise<void
 describe('HomePage', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.mocked(showNotification).mockClear();
   });
 
   test('Renders default page', async () => {
@@ -71,10 +78,10 @@ describe('HomePage', () => {
 
   test('New button', async () => {
     await setup();
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Patient')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Patient'));
     });
   });
 
@@ -95,23 +102,32 @@ describe('HomePage', () => {
     expect(typeof RESOURCE_TYPE_CREATION_PATHS['Bot']).toBe('string');
 
     await setup(`/Bot`, medplum);
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Bot'));
     });
 
     expect(screen.getByText('Create new Bot')).toBeInTheDocument();
   });
 
   test('Delete button, cancel', async () => {
-    window.confirm = vi.fn(() => false);
-
     await setup();
-    expect(await screen.findByText('Delete...')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete...'));
+      fireEvent.click(await screen.findByTestId('all-checkbox'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     });
   });
 
@@ -125,25 +141,93 @@ describe('HomePage', () => {
       name: [{ family }],
     });
 
-    window.confirm = vi.fn(() => true);
-
     await setup('/Patient', medplum);
 
     // Make sure the patient is on the screen
     expect(await screen.findByText(family)).toBeInTheDocument();
-
-    expect(await screen.findByText('Delete...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete...'));
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
     });
 
     // Make sure the patient is *not* on the screen
     await waitFor(() => screen.queryByText(family) === null);
+  });
+
+  test('Delete button, error keeps the dialog open and notifies', async () => {
+    const family = randomUUID();
+    const medplum = new MockClient();
+    const patient = await medplum.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family }],
+    });
+    vi.spyOn(medplum, 'executeBatch').mockRejectedValue(new Error('Delete failed'));
+
+    await setup('/Patient', medplum);
+    expect(await screen.findByText(family)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+    });
+
+    await waitFor(() => {
+      expect(showNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'red', message: 'Delete failed' })
+      );
+    });
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.getByText(family)).toBeInTheDocument();
+  });
+
+  test('Bulk Apply button navigates to the bulk page', async () => {
+    const family = randomUUID();
+    const medplum = new MockClient();
+    const patient = await medplum.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family }],
+    });
+
+    await setup('/Patient', medplum);
+    expect(await screen.findByText(family)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Bulk Apply'));
+    });
+
+    expect(await screen.findByText('Patient Registration')).toBeInTheDocument();
+    expect(screen.queryByText(family)).not.toBeInTheDocument();
   });
 
   test('Export CSV button', async () => {
@@ -155,10 +239,12 @@ describe('HomePage', () => {
     medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
 
     await setup('/Patient', medplum);
-    expect(await screen.findByText('Export...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Export...'));
+      fireEvent.click(await screen.findByText('Export'));
     });
 
     const exportButton = await screen.findByText('Export as CSV');
@@ -170,16 +256,45 @@ describe('HomePage', () => {
     expect(window.open).toHaveBeenCalled();
   });
 
+  test('Export CSV button, error notifies', async () => {
+    window.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/blob');
+    window.open = vi.fn();
+
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'download').mockRejectedValue(new Error('CSV failed'));
+
+    await setup('/Patient', medplum);
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Export'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Export as CSV'));
+    });
+
+    await waitFor(() => {
+      expect(showNotification).toHaveBeenCalledWith(expect.objectContaining({ color: 'red', message: 'CSV failed' }));
+    });
+    expect(window.URL.createObjectURL).not.toHaveBeenCalled();
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
   test('Export Transaction Bundle button', async () => {
     const medplum = new MockClient();
     medplum.router.router.add('GET', ':resourceType/', async () => [allOk]);
     HTMLAnchorElement.prototype.click = vi.fn();
 
     await setup('/Patient', medplum);
-    expect(await screen.findByText('Export...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Export...'));
+      fireEvent.click(await screen.findByText('Export'));
     });
 
     const exportButton = await screen.findByText('Export as Transaction Bundle');
@@ -187,6 +302,36 @@ describe('HomePage', () => {
       fireEvent.click(exportButton);
     });
     expect(screen.getByText('Export as Transaction Bundle')).toBeInTheDocument();
+  });
+
+  test('Export Transaction Bundle button, error notifies', async () => {
+    const medplum = new MockClient();
+    HTMLAnchorElement.prototype.click = vi.fn();
+
+    await setup('/Patient', medplum);
+    expect(await screen.findByLabelText('Actions')).toBeInTheDocument();
+
+    // Fail only the export search, after the page itself has loaded
+    vi.spyOn(medplum, 'search').mockRejectedValue(new OperationOutcomeError(badRequest('Bundle failed')));
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Export'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Export as Transaction Bundle'));
+    });
+
+    await waitFor(() => {
+      expect(showNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'red', message: 'Bundle failed' })
+      );
+    });
+    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
   });
 
   test('Default search fields', () => {

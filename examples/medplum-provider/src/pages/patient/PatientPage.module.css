@@ -7,7 +7,8 @@
 }
 
 .sidebar {
-  flex: 1;
+  /* Fixed width that never shrinks: the content column scrolls instead of squeezing the summary. */
+  flex: 0 0 350px;
   width: 350px;
   height: 100%;
   background-color: light-dark(var(--mantine-color-white), var(--mantine-color-body));
@@ -21,7 +22,8 @@
 .content {
   display: flex;
   flex-direction: column;
-  width: calc(100% - 350px);
+  flex: 1;
+  min-width: 0;
   height: 100%;
   overflow: hidden;
   border-inline-start: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));

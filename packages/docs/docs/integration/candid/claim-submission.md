@@ -26,11 +26,14 @@ flowchart TD
 
     Encounter["<div style='text-align: center;'><strong>Encounter</strong></div>"]
 
+    Location["<div style='text-align: center;'><strong>Location (Service Facility)</strong></div>"]
+
     Claim -->|patient| Patient
     Claim -->|provider| BillingOrg
     Claim -->|"careTeam.provider (role: primary)"| Practitioner
     Claim -->|insurance.coverage| Coverage
     Claim -->|item.encounter| Encounter
+    Claim -.->|"facility (optional)"| Location
 
     Coverage -->|subscriber| Patient
     Coverage -->|beneficiary| Patient
@@ -58,6 +61,7 @@ flowchart TD
 | `provider` | Reference to the billing provider: an Organization for organization billing (the common case), or a Practitioner for individual billing | Yes |
 | `careTeam` | Care team member with role `primary` (system: `http://terminology.hl7.org/CodeSystem/claimcareteamrole`) referencing the rendering Practitioner | Yes* |
 | `careTeam` | Optional: care team member with role `referral` referencing the referring Practitioner. Required by some payers (e.g. Medicare MNT). The Practitioner can be a contained resource with just a name and NPI — no stored resource needed for external referrers. | No |
+| `facility` | Optional: reference to the service facility Location (see below). When absent, the billing Organization is the service facility, or the billing Practitioner for individual billing. | No |
 | `billablePeriod.start` | Preferred date of service when service lines carry no individual `servicedDate` | No |
 | `created` | Fallback date of service when `billablePeriod.start` is also absent | No |
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
@@ -109,6 +113,16 @@ The billing provider Organization is referenced directly from `Claim.provider`. 
 | `identifier` | EIN/Tax ID (system: `http://hl7.org/fhir/sid/us-ein`) | Yes |
 | `name` | Organization name | Yes |
 | `address` | Organization address | Yes |
+
+### Location (Service Facility)
+
+Candid requires a service facility (CMS-1500 box 32) on every non-telehealth claim. Set `Claim.facility` to a Location to name where the service was rendered; otherwise the billing Organization's name, NPI and address are used, or the billing Practitioner's for individual billing. The Location can be a contained resource.
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `name` | Facility name | Yes |
+| `address` | Facility address with `line`, `city`, two-letter `state` and `postalCode` | Yes |
+| `identifier` | NPI identifier (system: `http://hl7.org/fhir/sid/us-npi`) | No |
 
 ### Organization (Payer)
 

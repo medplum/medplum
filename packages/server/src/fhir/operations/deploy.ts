@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   badRequest,
   ContentType,
   createReference,
+  forbidden,
   getReferenceString,
   normalizeOperationOutcome,
   OperationOutcomeError,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Attachment, Binary, Bot, OperationOutcome } from '@medplum/fhirtypes';
+import type { Attachment, Binary, Bot, OperationOutcome, Project } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabledForProject } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
@@ -23,16 +25,28 @@ import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import { findProjectMembership } from '../projectmembership';
 import type { Repository } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
 
-  // First read the bot as the user to verify access
-  await ctx.repo.readResource<Bot>('Bot', id);
-
-  // Then read the bot as system user to load extended metadata
+  // Read the bot as system user to load extended metadata
   const bot = await ctx.systemRepo.readResource<Bot>('Bot', id);
+
+  // Deploying replaces the Bot's running code; unconditionally require write access to the Bot itself
+  if (!ctx.repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, bot)) {
+    return [forbidden];
+  }
+
+  if (!ctx.repo.isProjectAdmin() && !ctx.repo.isSuperAdmin()) {
+    getLogger().warn('Bot deployed by non-admin user', {
+      botId: bot.id,
+      botProject: bot.meta?.project,
+      profile: ctx.profile.reference,
+      membership: ctx.membership.id,
+    });
+  }
 
   // Validate that the request body has a code property
   // Or that the Bot already has executable code attached
@@ -90,7 +104,8 @@ export async function deployBot(
     throw new OperationOutcomeError(badRequest('Bot missing executable code'));
   }
 
-  if (!(await isBotEnabledForProject(bot.meta?.project as string))) {
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', bot.meta?.project as string);
+  if (!isBotEnabledForProject(project)) {
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
   }
 

@@ -751,6 +751,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Dave',
         lastName: 'Lee',
         email: `dave${randomUUID()}@example.com`,
@@ -802,6 +803,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Frank',
         lastName: 'Mills',
         email: `frank${randomUUID()}@example.com`,
@@ -845,6 +847,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + tokenB)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Ivy',
         lastName: 'Chen',
         email: `ivy${randomUUID()}@example.com`,
@@ -878,6 +881,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Karen',
         lastName: 'Page',
         email: `karen${randomUUID()}@example.com`,
@@ -912,6 +916,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Mia',
         lastName: 'Wong',
         email: `mia${randomUUID()}@example.com`,
@@ -942,6 +947,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Omar',
         lastName: 'Reed',
         email: `omar${randomUUID()}@example.com`,
@@ -993,6 +999,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Quinn',
         lastName: 'Ryder',
         email: `quinn${randomUUID()}@example.com`,
@@ -1043,6 +1050,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Sam',
         lastName: 'Tan',
         email: `sam${randomUUID()}@example.com`,
@@ -1088,6 +1096,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Uma',
         lastName: 'West',
         email: `uma${randomUUID()}@example.com`,
@@ -1119,6 +1128,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
+        scope: 'project',
         firstName: 'Will',
         lastName: 'Xu',
         email: `will${randomUUID()}@example.com`,
@@ -1131,6 +1141,38 @@ describe('Project Admin routes', () => {
     const resetRes = await request(app)
       .post(`/admin/projects/${project.id}/members/${membershipId}/resetpassword`)
       .set('Authorization', 'Bearer ' + nonAdminUser.accessToken)
+      .send();
+    expect(resetRes).toHaveStatus(403);
+  });
+
+  test.each(['mfa/reset', 'resetpassword'])('Server-scoped member is rejected (%s)', async (route) => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Yara',
+        lastName: 'Zane',
+        projectName: 'Yara Project',
+        email: `yara${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        scope: 'server',
+        firstName: 'Zed',
+        lastName: 'Abel',
+        email: `zed${randomUUID()}@example.com`,
+        sendEmail: false,
+      });
+    expect(inviteRes).toHaveStatus(200);
+    const membershipId = inviteRes.body.id as string;
+
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/${route}`)
+      .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(resetRes).toHaveStatus(403);
   });

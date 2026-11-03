@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { extractServiceTypeReferences, getDisplayString, isDefined } from '@medplum/core';
+import {
+  extractServiceTypeReferences,
+  getDisplayString,
+  getPrimaryProvider,
+  getReferenceString,
+  isDefined,
+} from '@medplum/core';
 import type { Appointment, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
@@ -21,6 +27,8 @@ const NO_SELECTIONS: ActorSelections = {};
 
 const NO_ACTORS: readonly SchedulingActor[] = [];
 
+const NO_SCHEDULES: readonly string[] = [];
+
 export interface RescheduleDefaults {
   /** The visit type the appointment is on file under, where it records one. */
   readonly service: WithId<HealthcareService> | undefined;
@@ -35,6 +43,8 @@ export interface RescheduleDefaults {
    * the actors it is given, so these are about to be dropped off the visit.
    */
   readonly droppedActors: readonly SchedulingActor[];
+  /** References to every Schedule the visit is held on now, including those behind `droppedActors`. */
+  readonly heldSchedules: readonly string[];
   /**
    * Set when the visit type, or a Slot or Schedule the visit is held on, could not be read.
    *
@@ -72,6 +82,7 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
   // arrays that every render builds anew.
   const key = [
     extractServiceTypeReferences(appointment.serviceType)[0]?.reference ?? '',
+    getPrimaryProvider(appointment)?.reference ?? '',
     ...(appointment.slot ?? []).map((slot) => slot.reference).filter(isDefined),
   ].join(KEY_SEPARATOR);
 
@@ -79,9 +90,9 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
 
   useEffect(() => {
     const controller = new AbortController();
-    const [serviceReference, ...slotReferences] = key.split(KEY_SEPARATOR);
+    const [serviceReference, primaryReference, ...slotReferences] = key.split(KEY_SEPARATOR);
 
-    loadDefaults(medplum, serviceReference, slotReferences, controller.signal)
+    loadDefaults(medplum, serviceReference, primaryReference, slotReferences, controller.signal)
       .then((defaults) => {
         if (!controller.signal.aborted) {
           setLoaded({ key, ...defaults, error: undefined });
@@ -89,7 +100,14 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          setLoaded({ key, service: undefined, selections: NO_SELECTIONS, droppedActors: NO_ACTORS, error });
+          setLoaded({
+            key,
+            service: undefined,
+            selections: NO_SELECTIONS,
+            droppedActors: NO_ACTORS,
+            heldSchedules: NO_SCHEDULES,
+            error,
+          });
         }
       });
 
@@ -102,6 +120,7 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
     service: stale ? undefined : loaded.service,
     selections: stale ? NO_SELECTIONS : loaded.selections,
     droppedActors: stale ? NO_ACTORS : loaded.droppedActors,
+    heldSchedules: stale ? NO_SCHEDULES : loaded.heldSchedules,
     error: stale ? undefined : loaded.error,
     loading: stale,
   };
@@ -113,6 +132,7 @@ interface LoadedDefaults {
   readonly service: WithId<HealthcareService> | undefined;
   readonly selections: ActorSelections;
   readonly droppedActors: readonly SchedulingActor[];
+  readonly heldSchedules: readonly string[];
   readonly error: unknown;
 }
 
@@ -125,6 +145,7 @@ const NOTHING_LOADED: LoadedDefaults = {
   service: undefined,
   selections: NO_SELECTIONS,
   droppedActors: NO_ACTORS,
+  heldSchedules: NO_SCHEDULES,
   error: undefined,
 };
 
@@ -132,6 +153,7 @@ const NOTHING_LOADED: LoadedDefaults = {
  * Reads the visit type and the held schedules.
  * @param medplum - The Medplum client.
  * @param serviceReference - The HealthcareService the appointment names, or empty for one naming none.
+ * @param primaryReference - The provider the appointment marks primary, or empty for one marking none.
  * @param slotReferences - The Slots the appointment holds.
  * @param signal - Abort signal.
  * @returns The defaults to open a form on. Rejects when the visit type, or a Slot or
@@ -140,6 +162,7 @@ const NOTHING_LOADED: LoadedDefaults = {
 async function loadDefaults(
   medplum: MedplumClient,
   serviceReference: string,
+  primaryReference: string,
   slotReferences: readonly string[],
   signal: AbortSignal
 ): Promise<Omit<RescheduleDefaults, 'loading' | 'error'>> {
@@ -152,10 +175,15 @@ async function loadDefaults(
 
   const actors = await loadActors(medplum, schedules, signal);
   const candidates = schedules.map((schedule) => toScheduleCandidate(schedule, service, actors)).filter(isDefined);
+  // A move marks the first provider row primary, so the current primary opens there.
+  const isPrimary = (candidate: ScheduleCandidate): boolean =>
+    !!primaryReference && getCandidateActor(candidate).reference === primaryReference;
+  candidates.sort((a, b) => Number(isPrimary(b)) - Number(isPrimary(a)));
   return {
     service,
     selections: toActorSelections(candidates),
     droppedActors: getDroppedActors(schedules, candidates, actors),
+    heldSchedules: schedules.map(getReferenceString).filter(isDefined),
   };
 }
 

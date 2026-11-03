@@ -19,10 +19,9 @@ Configure these secrets on the Medplum project that runs the bot:
 | Secret | Type | Required | Description |
 |--------|------|----------|-------------|
 | `STEDI_CLAIM_API_KEY` | string | Yes | Stedi API key with permission to submit professional claims |
-| `STEDI_CLAIM_TEST_MODE` | boolean | No | When `true`, sets Stedi `usageIndicator` to `T` (test). Default is `P` (production) |
 
 :::note[]
-Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow) uses a **production** API key. It does not use Stedi test API keys (prefix `test_`) the same way eligibility sandbox checks do.
+The API key selects the mode. Use a Stedi test API key (prefix `test_`) for test claims and a production API key for production claims. See [Stedi test mode](https://www.stedi.com/docs/healthcare/test-mode).
 :::
 
 ## Resource model
@@ -621,9 +620,8 @@ X12/NANP forbids both the **area code** and the **exchange** (the 4th digit) fro
 
 To submit a **test** claim end-to-end (including test 277CA and 835 ERA from the Stedi Test Payer):
 
-1. Set project secret `STEDI_CLAIM_TEST_MODE` to `true`, **or** ensure your deployment maps that secret so the bot sends `usageIndicator: T`.
-2. Use payer ID `STEDITEST` on the payer `Organization` (Stedi Test Payer).
-3. Use a **production** Stedi claims API key enrolled for your billing provider.
+1. Set `STEDI_CLAIM_API_KEY` to a Stedi **test** API key (prefix `test_`). Stedi validates the claim and returns a test 277CA without contacting the payer.
+2. Use payer ID `STEDITEST` on the payer `Organization` (Stedi Test Payer). Any other payer ID returns a test 277CA only, with no 835.
 
 See Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow) for enrollment and example payloads.
 

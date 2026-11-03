@@ -1,18 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, getReferenceString } from '@medplum/core';
-import type { BulkDataExportOutput, Group, Organization, Patient, Project } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import type {
+  Binary,
+  BulkDataExportOutput,
+  Group,
+  Observation,
+  Organization,
+  Patient,
+  PractitionerRole,
+  Project,
+} from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { createTestProject, streamToString, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { execBulkExportJob } from '../../workers/bulk-export';
+import { queueRegistry } from '../../workers/utils';
 import type { Repository, SystemRepository } from '../repo';
-import { groupExportResources } from './groupexport';
+import { groupExportResources, groupMemberChunkSize } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Group Export', () => {
@@ -25,6 +38,11 @@ describe('Group Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    vi.mocked(queueRegistry.get('BulkExportQueue')?.add)?.mockImplementation(async (name, data) => {
+      const job = { name, data, queueName: 'BulkExportQueue' } as Job;
+      await execBulkExportJob(job);
+      return job;
+    });
     ({ project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true }));
     systemRepo = repo.getSystemRepo();
   });
@@ -308,6 +326,14 @@ describe('Group Export', () => {
     expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
   });
 
+  test('Rejects _typeFilter', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Group/123/$export?_typeFilter=Observation?status=final')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('_typeFilter is not supported');
+  });
+
   test('status accepted with error', async () => {
     // Create group
     const groupRes = await request(app)
@@ -367,6 +393,88 @@ describe('Group Export', () => {
     await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
+  });
+
+  test('groupExportResources includes referenced resources', async () => {
+    const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+    const role = await repo.createResource<PractitionerRole>({
+      resourceType: 'PractitionerRole',
+      organization: createReference(organization),
+    });
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+      performer: [createReference(role)],
+    });
+    const group = await repo.createResource<Group>({
+      resourceType: 'Group',
+      type: 'person',
+      actual: true,
+      member: [{ entity: createReference(patient) }],
+    });
+
+    const getExportedReferences = async (types?: string[]): Promise<string[]> => {
+      const exporter = new BulkExporter(repo);
+      const writeResourceSpy = vi.spyOn(exporter, 'writeResource');
+      await exporter.start('http://example.com');
+      await groupExportResources(repo, exporter, project, group, types);
+      return writeResourceSpy.mock.calls.map(([resource]) => getReferenceString(resource));
+    };
+
+    // The Organization is only referenced by the PractitionerRole, which is referenced by the Observation
+    expect(await getExportedReferences()).toContainExactly(
+      [patient, observation, group, role, organization].map(getReferenceString)
+    );
+    expect(await getExportedReferences(['Observation'])).toStrictEqual([getReferenceString(observation)]);
+    // The Organization is still reached through the PractitionerRole, which _type excludes
+    expect(await getExportedReferences(['Observation', 'Organization'])).toContainExactly(
+      [observation, organization].map(getReferenceString)
+    );
+  });
+
+  test('groupExportResources searches large groups in chunks', async () => {
+    const patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    // In the compartments of both patients, which fall in different member chunks
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient1),
+      performer: [createReference(patient2)],
+    });
+    const group = await repo.createResource<Group>({
+      resourceType: 'Group',
+      type: 'person',
+      actual: true,
+      member: [
+        { entity: createReference(patient1) },
+        ...Array.from({ length: groupMemberChunkSize }, () => ({ entity: { reference: `Patient/${randomUUID()}` } })),
+        { entity: createReference(patient2) },
+      ],
+    });
+
+    const exporter = new BulkExporter(repo);
+    await exporter.start('http://example.com');
+    await groupExportResources(repo, exporter, project, group, ['Patient', 'Observation']);
+    const bulkDataExport = await exporter.close(project);
+    expect(bulkDataExport.status).toBe('completed');
+
+    const readOutput = async (resourceType: string): Promise<string[]> => {
+      const url = bulkDataExport.output?.parameter?.find((param) => param.part?.[0]?.valueCode === resourceType)
+        ?.part?.[1]?.valueUri as string;
+      const binary = await systemRepo.readReference<Binary>({ reference: url });
+      const content = await streamToString(await getBinaryStorage().readBinary(binary));
+      return content
+        .trim()
+        .split('\n')
+        .map((line) => getReferenceString(JSON.parse(line)));
+    };
+    expect(await readOutput('Patient')).toContainExactly([patient1, patient2].map(getReferenceString));
+    expect(await readOutput('Observation')).toStrictEqual([getReferenceString(observation)]);
   });
 
   test('Export with read-only access policy (no write scope)', () =>

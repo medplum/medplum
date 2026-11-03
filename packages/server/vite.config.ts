@@ -5,10 +5,20 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import type { TestSpecification } from 'vitest/node';
 import { BaseSequencer } from 'vitest/node';
-import { medplumAliases } from '../../aliases.mjs';
 import packageJson from './package.json' with { type: 'json' };
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
+
+// These files book Slots in SERIALIZABLE transactions, which abort with 40001 when another file
+// books at the same time. They run after everything else, one file at a time.
+const serialTestFiles = [
+  'src/fhir/operations/book.recurring.test.ts',
+  'src/fhir/operations/book.test.ts',
+  'src/fhir/operations/cancel.test.ts',
+  'src/fhir/operations/confirm.test.ts',
+  'src/fhir/operations/hold.test.ts',
+  'src/fhir/operations/reschedule.test.ts',
+];
 
 /**
  * Matches the Jest custom sequencer: run seed.test.ts first, then alphabetical order.
@@ -35,18 +45,21 @@ export default defineConfig({
     'import.meta.env.MEDPLUM_VERSION': JSON.stringify(`${packageJson.version}-test`),
   },
   resolve: {
-    alias: {
-      ...medplumAliases,
-      '@azure/identity': resolve(serverDir, 'src/__mocks__/@azure/identity.ts'),
-      '@azure/keyvault-secrets': resolve(serverDir, 'src/__mocks__/@azure/keyvault-secrets.ts'),
-      '@azure/storage-blob': resolve(serverDir, 'src/__mocks__/@azure/storage-blob.ts'),
-      '@google-cloud/secret-manager': resolve(serverDir, 'src/__mocks__/@google-cloud/secret-manager.ts'),
-      '@google-cloud/storage': resolve(serverDir, 'src/__mocks__/@google-cloud/storage.ts'),
-      hibp: resolve(serverDir, 'src/__mocks__/hibp.ts'),
-    },
+    alias: [
+      { find: /^@medplum\/([\w-]+)$/, replacement: resolve(serverDir, '../$1/src') },
+      { find: '@azure/identity', replacement: resolve(serverDir, 'src/__mocks__/@azure/identity.ts') },
+      { find: '@azure/keyvault-secrets', replacement: resolve(serverDir, 'src/__mocks__/@azure/keyvault-secrets.ts') },
+      { find: '@azure/storage-blob', replacement: resolve(serverDir, 'src/__mocks__/@azure/storage-blob.ts') },
+      {
+        find: '@google-cloud/secret-manager',
+        replacement: resolve(serverDir, 'src/__mocks__/@google-cloud/secret-manager.ts'),
+      },
+      { find: '@google-cloud/storage', replacement: resolve(serverDir, 'src/__mocks__/@google-cloud/storage.ts') },
+      { find: 'hibp', replacement: resolve(serverDir, 'src/__mocks__/hibp.ts') },
+    ],
   },
   test: {
-    name: '@medplum/server',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],
@@ -61,7 +74,26 @@ export default defineConfig({
     sequence: {
       sequencer: CustomSequencer,
     },
-    include: ['src/**/*.test.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: '@medplum/server',
+          include: ['src/**/*.test.ts'],
+          // seed.test.ts runs on its own first, via vite.seed.config.ts
+          exclude: ['src/seed.test.ts', ...serialTestFiles],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: '@medplum/server-serial',
+          include: serialTestFiles,
+          maxWorkers: 1,
+          sequence: { groupOrder: 1 },
+        },
+      },
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['json', 'text'],

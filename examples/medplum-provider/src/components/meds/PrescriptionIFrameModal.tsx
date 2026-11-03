@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, Modal, useComputedColorScheme } from '@mantine/core';
+import { Alert, Box, useComputedColorScheme } from '@mantine/core';
 import type { MedicationRequest } from '@medplum/fhirtypes';
+import { Modal } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { CSSProperties, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useMedicationRequestSyncPolling } from '../../hooks/useMedicationRequestSyncPolling';
 import { applyDarkmode } from './applyDarkmode';
@@ -39,11 +40,10 @@ function medicationRequestLooksSynced(mr: MedicationRequest): boolean {
 }
 
 /**
- * Modal embedding the ScriptSure (or vendor) prescription confirmation iframe.
- * Uses a ~9:16 viewport aspect ratio for the iframe area.
+ * Modal embedding the ScriptSure (or vendor) prescription iframe, filling the modal body edge to edge.
  *
  * @param props - Modal and iframe configuration.
- * @returns Mantine modal with embedded iframe.
+ * @returns Medplum modal with embedded iframe.
  */
 export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JSX.Element {
   const {
@@ -133,11 +133,11 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
   const hasReadErrors = errors.size > 0;
 
   return (
-    <Modal opened={opened} onClose={onClose} size="xl" centered title={title} styles={{ body: { padding: 0 } }}>
-      <Box p="md" style={{ maxWidth: 'min(100%, 560px)', margin: '0 auto' }}>
+    <Modal opened={opened} onClose={onClose} size="xl" title={title} style={FULL_BLEED}>
+      <>
         {timedOut && (
           <Alert
-            mb="sm"
+            m="md"
             color="yellow"
             variant="light"
             icon={<IconAlertCircle size={16} />}
@@ -148,14 +148,7 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
             refresh the medications list shortly, or close it and check back later.
           </Alert>
         )}
-        <Box
-          style={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: '9 / 16',
-            maxHeight: 'min(80vh, 720px)',
-          }}
-        >
+        <Box style={{ position: 'relative', width: '100%', height: 'min(80vh, 720px)' }}>
           {url ? (
             <iframe
               title={title}
@@ -166,13 +159,15 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
                 width: '100%',
                 height: '100%',
                 border: 'none',
-                borderRadius: 8,
               }}
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals allow-top-navigation-by-user-activation"
             />
           ) : null}
         </Box>
-      </Box>
+      </>
     </Modal>
   );
 }
+
+/** Drops the Medplum Modal body padding so the iframe runs edge to edge. */
+const FULL_BLEED = { '--mb-padding': '0' } as CSSProperties;

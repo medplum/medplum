@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentConnectRequest, AgentMessage, AgentTransmitRequest } from '@medplum/core';
-import { ContentType, Hl7Message, MEDPLUM_VERSION, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { AgentConnectRequest, AgentMessage, AgentTransmitRequest, WithId } from '@medplum/core';
+import {
+  ContentType,
+  Hl7Message,
+  MEDPLUM_VERSION,
+  OperationOutcomeError,
+  forbidden,
+  getReferenceString,
+  normalizeErrorString,
+} from '@medplum/core';
 import type { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -12,6 +20,7 @@ import type { AgentInfo } from '../agent/utils';
 import { AgentConnectionState } from '../agent/utils';
 import { executeBot } from '../bots/execute';
 import { publishAgentCallback } from '../fhir/operations/utils/agentcallback';
+import type { Repository } from '../fhir/repo';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
@@ -46,6 +55,23 @@ export function stopAgentHeartbeat(): void {
     heartbeat.removeEventListener('heartbeat', agentHeartbeatHandler);
     agentHeartbeatHandler = undefined;
   }
+}
+
+/**
+ * Reads the Agent for an agent connection.
+ * Linked Projects are read-only, so only Agents in the user's own Project are returned,
+ * unless the user is a super admin.
+ * @param repo - The repository of the connection's access token.
+ * @param id - The agent ID.
+ * @returns The agent.
+ */
+async function readAgentInOwnProject(repo: Repository, id: string): Promise<WithId<Agent>> {
+  // Extended mode for meta.project
+  const agent = await repo.withOverrideConfig({ extendedMode: true }).readResource<Agent>('Agent', id);
+  if (!repo.isSuperAdmin() && agent.meta?.project !== repo.currentProject()?.id) {
+    throw new OperationOutcomeError(forbidden);
+  }
+  return repo.removeHiddenFields(agent);
 }
 
 /**
@@ -161,15 +187,16 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
       return;
     }
 
-    agentId = command.agentId;
-
     const repo = (await getLoginForAccessToken(undefined, command.accessToken))?.repo;
     if (!repo) {
       sendError('Invalid access token');
       return;
     }
 
-    const agent = await repo.readResource<Agent>('Agent', agentId);
+    const agent = await readAgentInOwnProject(repo, command.agentId);
+
+    // agentId identifies the agent whose status this connection reports
+    agentId = agent.id;
 
     // Connect to Redis
     // Bind the message listener before awaiting the subscribe so that messages
@@ -229,7 +256,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     }
     const { authState, repo } = authResult;
 
-    const agent = await repo.readResource<Agent>('Agent', agentId);
+    const agent = await readAgentInOwnProject(repo, agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
       sendError('Channel not found');
@@ -249,6 +276,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
       agent,
       bot,
       runAs: authState.membership,
+      runAsProject: authState.project,
       requester: authState.membership.profile,
       contentType: command.contentType,
       input,

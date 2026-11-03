@@ -253,6 +253,17 @@ export interface Login {
    * authorization request reused an existing session.
    */
   basedOn?: Reference<Login>;
+
+  /**
+   * The refresh secret that was most recently replaced by refresh token
+   * rotation.
+   */
+  previousRefreshSecret?: string;
+
+  /**
+   * The time at which the refresh secret was most recently rotated.
+   */
+  refreshSecretRotatedAt?: string;
 }
 
 /**

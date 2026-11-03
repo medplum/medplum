@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClientOptions } from '@medplum/core';
+import { MEDPLUM_VERSION } from '@medplum/core';
 import type * as NodeFs from 'node:fs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
 import type { Mock } from 'vitest';
 import { FileSystemStorage } from '../storage';
-import { createMedplumClient } from './client';
+import { CLI_USER_AGENT, createMedplumClient } from './client';
 
 vi.mock('node:os');
 vi.mock('fast-glob', () => {
@@ -138,6 +139,53 @@ describe('createMedplumClient', () => {
     }
   });
 
+  test('Login does not resume expired active login', async () => {
+    const testProfile = 'expiredProfile';
+    const storage = new FileSystemStorage(testProfile);
+    storage.setObject('options', { name: testProfile, baseUrl: 'https://api.medplum.com/' });
+    storage.setObject('activeLogin', {
+      accessToken:
+        'header.' + Buffer.from(JSON.stringify({ login_id: 'login-123', exp: 1 })).toString('base64') + '.signature',
+      refreshToken: 'expired-refresh-token',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    });
+
+    const fetch = vi.fn(async () => ({ status: 401 }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const medplumClient = await createMedplumClient({ fetch, profile: testProfile }, false);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(console.log).not.toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to sign in');
+    expect(medplumClient.getActiveLogin()).toBeUndefined();
+    expect(storage.getObject('options')).toMatchObject({ name: testProfile });
+    errorSpy.mockRestore();
+  });
+
+  test('Login keeps active login when base URL validation fails', async () => {
+    const testProfile = 'invalidBaseUrlProfile';
+    const storage = new FileSystemStorage(testProfile);
+    const activeLogin = {
+      accessToken: 'test-access-token',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    };
+    storage.setObject('options', { name: testProfile });
+    storage.setObject('activeLogin', activeLogin);
+
+    const fetch = vi.fn(async () => ({ status: 404, ok: false }));
+
+    await expect(
+      createMedplumClient({ fetch, profile: testProfile, baseUrl: 'https://typo.example.com/' }, false)
+    ).rejects.toThrow('Failed to validate base URL');
+    expect(storage.getObject('activeLogin')).toEqual(activeLogin);
+  });
+
   test('validates base URL healthcheck on non-default URL', async () => {
     const fetch = vi.fn(async (url: string) => {
       if (url.includes('healthcheck')) {
@@ -160,7 +208,7 @@ describe('createMedplumClient', () => {
     });
 
     expect(medplumClient.getBaseUrl()).toContain('http://custom.example.com/');
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('healthcheck'));
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('healthcheck'), expect.anything());
   });
 
   test('throws error when healthcheck fails', async () => {
@@ -225,5 +273,26 @@ describe('createMedplumClient', () => {
     expect(medplumClient.getBaseUrl()).toContain('https://api.medplum.com/');
     // Verify healthcheck was not called for default URL
     expect(fetch).not.toHaveBeenCalledWith(expect.stringContaining('healthcheck'));
+  });
+
+  test('sends CLI User-Agent header', async () => {
+    const fetch = vi.fn(async () => {
+      return {
+        status: 200,
+        ok: true,
+        headers: { get: () => 'application/fhir+json' },
+        json: vi.fn(async () => ({ ok: true })),
+      };
+    });
+
+    const medplumClient = await createMedplumClient({ fetch, baseUrl: 'http://example.com/' });
+    await medplumClient.get('Patient');
+
+    expect(CLI_USER_AGENT).toBe(`medplum-cli/${MEDPLUM_VERSION}`);
+    // Both the healthcheck and the FHIR request should carry the User-Agent
+    expect(fetch).toHaveBeenCalledTimes(2);
+    for (const call of fetch.mock.calls as unknown as [string, RequestInit][]) {
+      expect((call[1]?.headers as Record<string, string>)['User-Agent']).toBe(CLI_USER_AGENT);
+    }
   });
 });

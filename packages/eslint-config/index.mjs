@@ -293,7 +293,6 @@ export const medplumEslintConfig = [
       '**/coverage/',
       '**/dist/',
       '**/node_modules/',
-      '**/babel.config.*',
       '**/jest.sequencer.*',
       '**/postcss.config.*',
       '**/rollup.config.*',
@@ -311,6 +310,37 @@ export const medplumEslintConfig = [
     },
     rules: {
       'medplum/no-transaction-callback-invoking-repo': 'error',
+    },
+  },
+  {
+    // Workers act as a job's user only via runJobInAuthenticatedContext. runInAuthenticatedContext
+    // alone would retry a job whose auth state was revoked instead of failing it; the other imports
+    // skip the revocation check entirely.
+    files: ['packages/server/src/workers/**/*.ts'],
+    ignores: ['packages/server/src/workers/utils.ts', '**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(^|/)context$',
+              importNames: ['runInAuthenticatedContext', 'AuthenticatedRequestContext'],
+              message: 'Use runJobInAuthenticatedContext',
+            },
+            {
+              regex: '(^|/)fhir/accesspolicy$',
+              importNames: ['getRepoForLogin'],
+              message: 'Use runJobInAuthenticatedContext',
+            },
+            {
+              regex: '(^|/)request-context-store$',
+              importNames: ['requestContextStore'],
+              message: 'Use runJobInAuthenticatedContext or tryRunInRequestContext',
+            },
+          ],
+        },
+      ],
     },
   },
   /**

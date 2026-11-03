@@ -10,7 +10,7 @@ import { loadTestConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
 import { createTestProject } from '../test.setup';
 import type { PopulatedAccessPolicy } from './accesspolicy';
-import { applySmartScopes, parseSmartScopes } from './smart';
+import { applySmartScopes, getPartialPermissionScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {
@@ -84,6 +84,23 @@ describe('SMART on FHIR', () => {
     ]);
   });
 
+  test.each<[string, string[]]>([
+    ['openid offline_access', []],
+    ['patient/Observation.rs patient/Patient.read', []],
+    ['patient/Observation.read patient/Observation.write', []],
+    ['patient/Observation.r patient/Observation.s', []],
+    ['user/*.*', []],
+    ['patient/Observation.r', ['patient/Observation.r']],
+    ['patient/Observation.s', ['patient/Observation.s']],
+    ['user/Patient.c openid', ['user/Patient.c']],
+    ['patient/Observation.write', ['patient/Observation.cud']],
+    ['patient/Observation.c patient/Observation.rs', ['patient/Observation.crs']],
+    ['user/*.* user/Patient.c', []],
+    ['user/*.c user/Patient.rs', ['user/*.c', 'user/Patient.crs']],
+  ])('Partial permission scopes for %s', (scope, expected) => {
+    expect(getPartialPermissionScopes(scope)).toStrictEqual(expected);
+  });
+
   describe('applySmartScopes()', () => {
     let project: WithId<Project>;
     let login: WithId<Login>;
@@ -122,6 +139,28 @@ describe('SMART on FHIR', () => {
           { resourceType: 'VisionPrescription' },
         ],
       });
+    });
+
+    test('Project admin resource types are only covered by scopes that name them', () => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: '*' },
+          { resourceType: 'ProjectMembership', criteria: 'ProjectMembership?_project=' + project.id },
+        ],
+      };
+      const applyScope = (scope: string): PopulatedAccessPolicy['resource'] =>
+        applySmartScopes(startAccessPolicy, {
+          login: { ...login, scope },
+          membership,
+          project,
+          userConfig: { resourceType: 'UserConfiguration' },
+        }).resource;
+
+      expect(applyScope('user/*.rs').map((r) => r.resourceType)).toStrictEqual(['*']);
+      expect(applyScope('user/ProjectMembership.rs')).toMatchObject([
+        { resourceType: 'ProjectMembership', criteria: 'ProjectMembership?_project=' + project.id },
+      ]);
     });
 
     test('Generate access policy', () => {
@@ -291,6 +330,23 @@ describe('SMART on FHIR', () => {
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.SEARCH, 'Observation')).toBe(true);
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.UPDATE, 'Observation')).toBe(false);
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.READ, 'Patient')).toBe(false);
+    });
+
+    test('Scope with no permissions grants no access', () => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient' }, { resourceType: '*' }],
+      };
+
+      const authState: AuthState = {
+        login: { ...login, scope: 'user/Patient. user/*.' },
+        membership,
+        project,
+        userConfig: { resourceType: 'UserConfiguration' },
+      };
+
+      const result = applySmartScopes(startAccessPolicy, authState);
+      expect(result.resource).toStrictEqual([]);
     });
 
     test('Intersect with wildcard access policy', () => {

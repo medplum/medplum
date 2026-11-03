@@ -7,7 +7,7 @@ import { EventEmitter } from 'node:events';
 import os from 'node:os';
 import type { MockInstance } from 'vitest';
 import { loadTestConfig } from '../../../config/loader';
-import type { MedplumServerConfig } from '../../../config/types';
+import type { ServerConfig } from '../../../config/utils';
 import { globalLogger } from '../../../logger';
 import * as pubsubModule from '../../../pubsub';
 import { publish } from '../../../pubsub';
@@ -83,7 +83,7 @@ describe('agentcallback', () => {
   });
 
   describe('Subscriber lifecycle', () => {
-    let config: MedplumServerConfig;
+    let config: ServerConfig;
 
     beforeAll(async () => {
       config = await loadTestConfig();

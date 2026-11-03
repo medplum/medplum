@@ -4,11 +4,15 @@ import type { WithId } from '@medplum/core';
 import { getExtension } from '@medplum/core';
 import type { AsyncJob, Parameters, Subscription } from '@medplum/fhirtypes';
 import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
-import { DelayedError } from 'bullmq';
+import { DelayedError, UnrecoverableError } from 'bullmq';
 import * as semver from 'semver';
-import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
+import type { MedplumBullmqConfig, WorkerName } from '../config/types';
+import type { ServerConfig } from '../config/utils';
+import type { AuthenticatedContextOptions } from '../context';
+import { RevokedAuthStateError, runInAuthenticatedContext } from '../context';
 import type { Repository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import type { AuthState } from '../oauth/middleware';
 import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
@@ -94,7 +98,7 @@ export interface WorkerInitializerOptions {
 }
 
 export type WorkerInitializer = (
-  config: MedplumServerConfig,
+  config: ServerConfig,
   options?: WorkerInitializerOptions
 ) => { queue: Queue | undefined; worker: Worker | undefined; name: string };
 
@@ -224,6 +228,35 @@ export function addVerboseQueueLogging<TDataType>(
 }
 
 /**
+ * Runs a job as the user who queued it, via {@link runInAuthenticatedContext}.
+ *
+ * A {@link RevokedAuthStateError} is rethrown as an `UnrecoverableError` so BullMQ fails the job
+ * without retrying; the original is kept as its `cause`, whose outcome `AsyncJobExecutor.failJob` records.
+ * @param authState - The auth state serialized into the job data.
+ * @param requestId - The request ID that queued the job, if any.
+ * @param traceId - The trace ID that queued the job, if any.
+ * @param options - Options for the authenticated context.
+ * @param fn - The job work.
+ * @returns The result of `fn`.
+ */
+export async function runJobInAuthenticatedContext<T>(
+  authState: Readonly<AuthState>,
+  requestId: string | undefined,
+  traceId: string | undefined,
+  options: AuthenticatedContextOptions | undefined,
+  fn: () => T
+): Promise<T> {
+  try {
+    return await runInAuthenticatedContext(authState, requestId, traceId, options, fn);
+  } catch (err) {
+    if (err instanceof RevokedAuthStateError) {
+      throw Object.assign(new UnrecoverableError(err.message), { cause: err });
+    }
+    throw err;
+  }
+}
+
+/**
  * Wraps a worker's job processor to report the queue's `inFlightJobs` and `jobsCompleted` metrics.
  *
  * Wrapping is necessary because the worker's `active`/`completed`/`failed` events cannot be used: they
@@ -319,7 +352,7 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
  * @returns The merged BullMQ config for the worker.
  */
 export function getMedplumBullmqConfig(
-  config: MedplumServerConfig,
+  config: ServerConfig,
   workerName: WorkerName,
   workerDefaults?: Partial<MedplumBullmqConfig>
 ): Partial<MedplumBullmqConfig> {
@@ -341,7 +374,7 @@ export function getMedplumBullmqConfig(
  * @returns The merged `Worker` options for the worker.
  */
 export function getWorkerBullmqConfig(
-  config: MedplumServerConfig,
+  config: ServerConfig,
   workerName: WorkerName,
   queueOptions: QueueOptions,
   workerDefaults?: Partial<MedplumBullmqConfig>
@@ -352,11 +385,11 @@ export function getWorkerBullmqConfig(
   return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults) };
 }
 
-export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {
+export function getBullmqRedisConnectionOptions(config: ServerConfig): ConnectionOptions {
   return { ...(config.backgroundJobsRedis ?? config.redis), reconnectOnError };
 }
 
-export function defaultQueueOptions(config: MedplumServerConfig): QueueOptions {
+export function defaultQueueOptions(config: ServerConfig): QueueOptions {
   return {
     connection: getBullmqRedisConnectionOptions(config),
     defaultJobOptions: {

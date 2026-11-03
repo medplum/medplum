@@ -6,7 +6,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getRateLimitRedis } from '../redis';
 import type { TestRedisConfig } from '../test.setup';
 import { createTestProject, deleteRedisKeys } from '../test.setup';
@@ -14,7 +14,7 @@ import { getProjectSystemRepo } from './repo';
 
 describe('FHIR Resource Limits', () => {
   let app: Express;
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let redisConfig: TestRedisConfig;
 
   beforeAll(async () => {

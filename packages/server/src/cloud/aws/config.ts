@@ -6,6 +6,7 @@ import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
 import type { MedplumServerConfig } from '../../config/types';
 import { setValue } from '../../config/utils';
+import { isValidShardId } from '../../fhir/sharding';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -56,6 +57,17 @@ export async function loadAwsConfig(path: string): Promise<MedplumServerConfig> 
       config['pubSubRedis'] = await loadAwsSecrets(region, value);
     } else if (key === 'BackgroundJobsRedisSecrets') {
       config['backgroundJobsRedis'] = await loadAwsSecrets(region, value);
+    } else if (/^shards\.[^.]+\.(Reader)?DatabaseSecrets$/.test(key)) {
+      const [, shardId, secretKey] = key.split('.');
+      if (!isValidShardId(shardId)) {
+        throw new Error(`Invalid shard ID in parameter ${key}`);
+      }
+      config.shards ??= {};
+      if (!Object.hasOwn(config.shards, shardId)) {
+        config.shards[shardId] = {};
+      }
+      const field = secretKey === 'DatabaseSecrets' ? 'database' : 'readonlyDatabase';
+      config.shards[shardId][field] = await loadAwsSecrets(region, value);
     }
   }
 

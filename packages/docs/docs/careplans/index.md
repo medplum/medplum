@@ -1,66 +1,58 @@
 ---
 sidebar_position: 0
+title: Care Coordination
 ---
 
-# Care Plans
+# Care Coordination
 
-Care Plans are representations of protocols that patients are meant to follow. They exist in two modes:
+A patient needs a follow-up visit. Someone has to review the assessment, contact the patient, arrange the visit, and make sure the result gets back to the care team. Each step is straightforward on its own. Keeping track of who owns the next step is where care coordination becomes useful.
 
-- **In abstract**, a protocol that could apply to a _hypothetical patient_, which is represented in FHIR as a [PlanDefinition](/docs/api/fhir/resources/plandefinition).
-- **In concrete**, a protocol that is planned for a _specific patient_, the PlanDefinition is instantiated (in FHIR terms, they call this `$apply`) into an optional [CarePlan](/docs/api/fhir/resources/careplan) with a linked [RequestGroup](/docs/api/fhir/resources/requestgroup) representing all the items that need to be done and their status.
+This section covers operational workflows across the practice, from a shared task queue to ongoing patient case management. Medplum provides the FHIR resources, search, access policies, and automation tools you can combine to build these workflows.
 
-It can be helpful to think of the historical analogs to these resources in the physical world. A `PlanDefinition` can be thought of as a written manual or protocol document that would be given to staff for training. A `CarePlan`/`RequestGroup` can be thought of a checklist that is added to a patient chart.
+:::tip[Start with the workflow]
 
-## Key Resources
-
-```mermaid
-
-flowchart LR
-   CarePlan[<b>CarePlan</b>]
-   Goal[<table><thead><tr><th>Goal</th></tr></thead><tbody><tr><td>Reduce Fall Risk by 10%</td></tr></tbody></table>]
-    subgraph tasks [<i>Tasks</i>]
-   T1[<table><thead><tr><th>Task</th></tr></thead><tbody><tr><td>Complete ICA Assessment</td></tr></tbody></table>]
-   T2[<table><thead><tr><th>Task</th></tr></thead><tbody><tr><td>Schedule Appointment</td></tr></tbody></table>]
-   F1[<table><thead><tr><th>Questionnaire</th></tr></thead><tbody><tr><td>ICA Screen</td></tr></tbody></table>]
-   F2[<table><thead><tr><th>Schedule</th></tr></thead><tbody><tr><td>Dr. Alice Smith's schedule</td></tr></tbody></table>]
-   T1 -->|focus| F1
-   T2 -->|focus| F2
-   end
-
-   CarePlan-->|subject| D[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
-   CarePlan -->|goal| Goal
-   CarePlan -->|activity| T1
-   CarePlan -->|activity| T2
-
-```
-
-| **Resource**                                                | **Description**                                                                                                                             |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`Task`](/docs/api/fhir/resources/task)                     | A workhorse resource defining all clinical work items to be completed.                                                                      |
-| [`Goal`](/docs/api/fhir/resources/goal)                     | A resource to define a measurable target to achieve.                                                                                        |
-| [`CarePlan`](/docs/api/fhir/resources/careplan)             | A grouping resource to organize a group of [`Tasks`](/docs/api/fhir/resources/task) for each [`Patient`](/docs/api/fhir/resources/patient). |
-| [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) | A resource that defines a clinical protocol that can be implemented on a per-patient basis.                                                 |
-| [`RequestGroup`](/docs/api/fhir/resources/requestgroup)     | A resource that can define complex relationships between tasks, including temporal tasks, recurring tasks, mutually exclusive tasks, etc.   |
-
-## Key Code Systems
-
-| **Code System**                                       | **Description**                                                                          |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [LOINC](/docs/careplans/loinc) | Used to define the target measure of a [`Goal`](/docs/api/fhir/resources/goal) resource. |
-
-## Other Resources
-
-:::caution[Note]
-
-Feel free to reach out to us at hello@medplum.com if you have questions about your care plan setup.
+Use the [Care Coordination Decision Guide](/docs/decision-guides/care-coordination) to work through ownership, handoffs, and follow-up with your team. You can start with Tasks and add a case or clinical plan as your care model needs it.
 
 :::
 
-Care planning can range from very simple - for example, a single prescription, to very complex - like a surgery with post operative follow up, evaluations, medications and more. For basic use, we recommend looking at reference care plans and customizing them to your needs.
+## Start with the Work Your Team Needs to Do {/* #choose-the-resources-for-your-workflow */}
 
-- [Sample Care Plan Resources](https://github.com/medplum/medplum/blob/86bfdc2435035478d5672daf9cd45a609a012119/packages/react/src/stories/covid19.ts) including PlanDefinition, CarePlan and RequestGroup
-- [PlanDefinitions on Medplum App](https://app.medplum.com/PlanDefinition) - if you look at the tabs, you will see an `$apply` tab that allows you to convert a PlanDefinition into a RequestGroup that belongs to a specific patient.
-- [RequestGroup on Medplum App](https://app.medplum.com/RequestGroup)
-- [PlanDefinition Builder sample on Storybook](https://storybook.medplum.com/?path=/docs/medplum-plandefinitionbuilder--basic)
-- [RequestGroup sample on Storybook](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple)
-- [Care Plan Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acareplans) on Github
+| Need | Model | What it represents |
+| --- | --- | --- |
+| Assign and track an action | `Task` | A unit of work with its own owner, lifecycle, inputs, and outputs |
+| Request a clinical service | `ServiceRequest` or another specific request resource | The clinical request or authorization that work fulfills |
+| Coordinate ongoing participants | `CareTeam` | People and organizations involved in care, with roles and participation periods |
+| Track responsibility across visits | `EpisodeOfCare` | A period of responsibility for a patient, including organization, coordinator, and team |
+| Agree on a patient's care | `CarePlan` and `Goal` | Intended activities and objectives, with evidence of progress |
+| Reuse a clinical protocol | `PlanDefinition` and `ActivityDefinition` | Definitions that can be applied to patient-specific work |
+
+```mermaid
+flowchart LR
+  plan[CarePlan] -->|goal| goal[Goal]
+  plan -->|activity.reference| task[Task]
+  task -->|focus| request[ServiceRequest]
+  plan -->|careTeam| team[CareTeam]
+  plan -->|supportingInfo convention| episode[EpisodeOfCare]
+  encounter[Encounter] -->|episodeOfCare| episode
+```
+
+This diagram shows one directly authored plan. Resources also carry their own patient references. The `supportingInfo` association is an application convention; a shared Condition alone does not establish case membership. Protocol-generated plans can have an intermediate RequestGroup.
+
+## Build Your Care Coordination Workflow {/* #build-the-operational-workflow */}
+
+1. [Tasks and Work Queues](/docs/careplans/tasks): identify work, expose queues, and claim items safely.
+2. [Teams, Assignment, and Top-of-License Care](/docs/careplans/teams-and-delegation): assign eligible roles and preserve required review.
+3. [Handoffs, Deadlines, and Escalation](/docs/careplans/handoffs-and-escalation): define completion evidence, dependencies, and exceptions.
+4. [Longitudinal Patient Case Tracking](/docs/careplans/longitudinal-patient-case-tracking): maintain continuity and responsibility across visits.
+5. [Care Plans, Goals, and Progress](/docs/careplans/care-plans-and-goals): connect planned work to clinical objectives.
+6. [Automating Care Workflows](/docs/careplans/automating-workflows): create and advance work reliably.
+7. [Clinical Decision Support and Follow-Through](/docs/careplans/clinical-decision-support): connect guidance to review and action.
+8. [Operational Reporting](/docs/careplans/operational-reporting): measure workload, delays, and outcomes.
+
+## Connect the Rest of the Practice {/* #connect-to-other-workflows */}
+
+[Referrals](/docs/careplans/referrals), [messaging](/docs/communications/messaging-data-model), and [scheduling](/docs/scheduling) use these coordination patterns. Keep domain-specific clinical records in those models and use Tasks for the work around them. [Clinical Protocols](/docs/careplans/protocols) covers reusable definition authoring.
+
+Enforce visibility through [AccessPolicy and ProjectMembership](/docs/access/access-policies). Assignment and CareTeam membership do not automatically grant access. Populate each resource's own patient references, including work created by Bots.
+
+For the operational motivation, see [Digital Health is an Operations Game](/blog/digital-health-operations), particularly its discussion of task classification, delegation, and asynchronous care.

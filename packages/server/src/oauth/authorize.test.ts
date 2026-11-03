@@ -616,13 +616,6 @@ describe('OAuth Authorize', () => {
     });
     expect(res3).toHaveStatus(200);
 
-    // Confirm that the original refresh token is no longer accepted for its own grant type
-    const res4 = await request(app).post('/oauth2/token').type('form').send({
-      grant_type: 'refresh_token',
-      refresh_token: res2.body.refresh_token,
-    });
-    expect(res4).toHaveStatus(400);
-
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
@@ -633,11 +626,11 @@ describe('OAuth Authorize', () => {
       id_token_hint: res2.body.refresh_token,
       prompt: 'none',
     });
-    const res5 = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res5).toHaveStatus(302);
-    expect(res5.headers.location).toBeDefined();
+    const res4 = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res4).toHaveStatus(302);
+    expect(res4.headers.location).toBeDefined();
 
-    const location = new URL(res5.headers.location);
+    const location = new URL(res4.headers.location);
     expect(location.host).toBe('example.com');
     expect(location.searchParams.get('code')).toBeNull();
     expect(location.searchParams.get('error')).toBe('login_required');

@@ -254,9 +254,16 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexdef = indexdef.substring(0, whereMatch.index);
   }
 
-  // parse but ignore WITH clause since we don't want to consider any index settings in the official schema
+  // Only fastupdate is tracked; other storage parameters are ignored so that manual tuning doesn't cause schema drift
+  let fastupdate: boolean | undefined;
   const withMatch = / WITH \((.+)\)$/.exec(indexdef);
   if (withMatch) {
+    for (const option of withMatch[1].split(',')) {
+      const [key, value] = option.split('=').map((s) => s.trim().replaceAll("'", ''));
+      if (key === 'fastupdate') {
+        fastupdate = parseReloptionBoolean(value, indexdef);
+      }
+    }
     indexdef = indexdef.substring(0, withMatch.index);
   }
 
@@ -316,7 +323,30 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexDef.include = include;
   }
 
+  if (fastupdate !== undefined) {
+    indexDef.fastupdate = fastupdate;
+  }
+
   return indexDef;
+}
+
+/**
+ * Parses a boolean storage parameter the way Postgres' `parse_bool` does. Postgres stores the value as written,
+ * so `WITH (fastupdate = ye)` is reported back as `fastupdate=ye`.
+ * @param value - The raw storage parameter value.
+ * @param indexdef - The full index definition, for error messages.
+ * @returns The parsed boolean.
+ */
+function parseReloptionBoolean(value: string | undefined, indexdef: string): boolean {
+  const v = value?.toLowerCase() ?? '';
+  const isPrefixOf = (word: string, minLength = 1): boolean => v.length >= minLength && word.startsWith(v);
+  if (isPrefixOf('true') || isPrefixOf('yes') || isPrefixOf('on', 2) || v === '1') {
+    return true;
+  }
+  if (isPrefixOf('false') || isPrefixOf('no') || isPrefixOf('off', 2) || v === '0') {
+    return false;
+  }
+  throw new Error(`Could not parse boolean storage parameter value "${value}" from ${indexdef}`);
 }
 
 function expandAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {

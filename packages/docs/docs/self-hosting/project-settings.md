@@ -55,6 +55,7 @@ The supported options that can be specified by a Super Admin in `Project.systemS
 | `totalFhirQuota`               | integer | Similar to `userFhirQuota`, but calculated as a sum of all Users' FHIR interactions in the project. To enforce, set `enableFhirQuota` to true.                                                                                            | 500000  |
 | `enableFhirQuota`              | boolean | If true, the totalFhirQuota limit will be enforced, returning `429 Too Many Requests` errors when the limit is exceeded over a minute. Please note that as of `v4.1.6`, FHIR quotas are enabled by default.                               | true    |
 | `searchOnReader`               | boolean | If true, FHIR search requests (except in batch requests) are served by the reader database pool if available                                                                                                                              | false   |
+| `chainedSearchOnReader`        | boolean | If true, FHIR search requests with chained search parameters (except in batch requests) are served by the reader database pool if available                                                                                               | false   |
 | `redactAuditEvents`            | boolean | If true, remove human-readable detail strings from AuditEvent resources saved to the database and logs                                                                                                                                    | false   |
 
 ## Multi-factor authentication

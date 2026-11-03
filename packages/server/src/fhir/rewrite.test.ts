@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { withTestContext } from '../test.setup';
 import { Repository, getShardSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
@@ -16,7 +16,7 @@ import { PLACEHOLDER_SHARD_ID } from './sharding';
 describe('URL rewrite', () => {
   const shardId = PLACEHOLDER_SHARD_ID;
   const systemRepo = getShardSystemRepo(shardId);
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let binary: WithId<Binary>;
 
   beforeAll(async () => {

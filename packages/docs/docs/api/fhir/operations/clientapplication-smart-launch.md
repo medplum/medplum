@@ -22,10 +22,10 @@ POST [base]/ClientApplication/[id]/$smart-launch
 
 ## Input Parameters
 
-| Parameter | Cardinality | Type | Description |
-|-----------|-------------|------|-------------|
-| `patient` | 0..1 | `uuid` | The patient ID to include in the launch context |
-| `encounter` | 0..1 | `uuid` | The encounter ID to include in the launch context |
+| Parameter   | Cardinality | Type   | Description                                       |
+| ----------- | ----------- | ------ | ------------------------------------------------- |
+| `patient`   | 0..1        | `uuid` | The patient ID to include in the launch context   |
+| `encounter` | 0..1        | `uuid` | The encounter ID to include in the launch context |
 
 **Note:** Only one of `patient` or `encounter` can be specified, not both.
 
@@ -33,14 +33,14 @@ POST [base]/ClientApplication/[id]/$smart-launch
 
 The operation returns an HTTP redirect (302) to the ClientApplication's `launchUri` with the following query parameters:
 
-| Parameter | Description |
-|-----------|-------------|
-| `iss` | The FHIR server base URL (e.g., `https://api.medplum.com/fhir/R4/`) |
-| `launch` | The ID of the created `SmartAppLaunch` resource |
+| Parameter | Description                                                         |
+| --------- | ------------------------------------------------------------------- |
+| `iss`     | The FHIR server base URL (e.g., `https://api.medplum.com/fhir/R4/`) |
+| `launch`  | The ID of the created `SmartAppLaunch` resource                     |
 
 ## Prerequisites
 
-The `ClientApplication` must have a `launchUri` configured. This is the URL where the SMART app expects to receive the launch request.
+The `ClientApplication` must have a `launchUri` configured. This is the URL where the SMART app expects to receive the launch request. It must be an absolute `http://` or `https://` URL; other schemes are rejected.
 
 ## Example
 
@@ -80,12 +80,13 @@ The operation creates a `SmartAppLaunch` resource in the background:
 
 ## Error Responses
 
-| Status Code | Description |
-|-------------|-------------|
-| `400 Bad Request` | ClientApplication ID not specified |
+| Status Code       | Description                                                       |
+| ----------------- | ----------------------------------------------------------------- |
+| `400 Bad Request` | ClientApplication ID not specified                                |
 | `400 Bad Request` | ClientApplication not configured for launch (missing `launchUri`) |
-| `400 Bad Request` | Both `patient` and `encounter` specified (only one allowed) |
-| `404 Not Found` | ClientApplication not found |
+| `400 Bad Request` | `launchUri` is not an absolute `http://` or `https://` URL        |
+| `400 Bad Request` | Both `patient` and `encounter` specified (only one allowed)       |
+| `404 Not Found`   | ClientApplication not found                                       |
 
 ## Configuration
 

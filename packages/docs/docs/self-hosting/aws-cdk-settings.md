@@ -119,6 +119,10 @@ The contents of the public key file that you created before. By default, the fil
 
 Optional ARN of the WAF IP Set to use for the storage CloudFront Distribution. When set, the WAF will use the IP Set as an "allow" list, and default to "block". The IP Set must be in the special "Global (CloudFront)" region.
 
+### storageBotInputExpirationDays
+
+Optional number of days after which bot inputs written by the server [`storeBotInput`](/docs/self-hosting/server-config#storebotinput) setting are deleted. When set, the storage bucket gets lifecycle rules scoped to the `bot/` prefix; other objects, such as Binary content, are unaffected. Because the bucket is versioned, the expired version is permanently removed one day after expiration. By default, bot inputs are kept indefinitely.
+
 ### maxAzs
 
 The maximum number of availability zones to use. If you want to use all availability zones, choose a large number such as 99. If you want to restrict the number, for example to manage EIP limits, then choose a small number such as 1 or 2.
@@ -166,6 +170,10 @@ The number of running ECS/Fargate instances in steady state. Use `1` when gettin
 ### serverImage
 
 The DockerHub server image to deploy. Use `medplum/medplum-server:4.0` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.
+
+### pinAdditionalContainerImages
+
+Optional flag (default `false`). When `true`, `cdk synth` and `cdk deploy` look up the digest each `additionalContainers` image tag (including `workerServices` overrides) currently points to and deploy `image@sha256:...` instead of the tag. Those containers then keep running the same image until the next `cdk deploy`, even if the tag is pushed again or a task restarts. `serverImage` is left as a tag, because the server is usually deployed by a pipeline that registers its own digest-pinned task definitions; pinning it in CDK would show up as a change in every `cdk diff`. Images in Amazon ECR are resolved with the AWS credentials running CDK, which need `ecr:DescribeImages`; images in other registries must be publicly readable.
 
 ### serverMemory
 

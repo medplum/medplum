@@ -3,6 +3,7 @@
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   CPT,
+  createReference,
   extractServiceTypeReferences,
   getAppointmentSite,
   getExtensionValue,
@@ -46,7 +47,7 @@ import {
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
 import {
-  addActorRow,
+  addRow,
   bookButton,
   chooseActor,
   chooseAuthorizedService,
@@ -54,6 +55,7 @@ import {
   chooseFirstOfferedTime,
   chooseImagingService,
   choosePatient,
+  chooseRepeat,
   chooseSecondOfferedTime,
   chooseSite,
   chosenTimeField,
@@ -169,21 +171,18 @@ describe('AppointmentProposalForm', () => {
       expect(field(/provider/i)).toBeInTheDocument();
     });
 
-    test('Offers no search until a provider is named, and says so', async () => {
+    test('Offers no search until a provider, room, or device is named, and says so', async () => {
       setup(medplum);
       await chooseImagingService();
 
-      // A room alone holds a room but no calendar to book it against.
+      expect(finderButton()).toBeDisabled();
+      expect(screen.getByText('Choose at least one provider, room, or device first.')).toBeInTheDocument();
+
+      // A room holds a schedule of its own, so it is enough to book against.
       await chooseActor(/room/i, 'exam', 'Exam Room A');
 
-      expect(finderButton()).toBeDisabled();
-      expect(screen.getByText('Choose at least one provider first.')).toBeInTheDocument();
-      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
-
-      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-
       expect(finderButton()).toBeEnabled();
-      expect(screen.queryByText('Choose at least one provider first.')).not.toBeInTheDocument();
+      expect(screen.queryByText('Choose at least one provider, room, or device first.')).not.toBeInTheDocument();
     });
 
     test('Searches against the provider alone when the room and device are left empty', async () => {
@@ -234,8 +233,8 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await addActorRow('provider');
-      await chooseActor(/^and provider 2$/i, 'oka', 'Dr. Tunde Okafor');
+      await addRow('provider');
+      await chooseActor(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
       // One set of actors, not two: a row each is a second provider the visit needs,
@@ -250,8 +249,8 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await addActorRow('provider');
-      await chooseActor(/^and provider 2$/i, 'riv', 'Dr. Maya Rivera');
+      await addRow('provider');
+      await chooseActor(/^and additional$/i, 'riv', 'Dr. Maya Rivera');
 
       // Nobody attends their own appointment twice. The button says the search is
       // blocked, and the provider rows say which rows blocked it, so the two halves
@@ -354,7 +353,7 @@ describe('AppointmentProposalForm', () => {
 
   describe('Narrowing resources to the chosen site', () => {
     test('Offers a room that belongs to a place inside the chosen site', async () => {
-      setup(medplum, { defaultLocation: MainClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/room/i);
@@ -368,7 +367,7 @@ describe('AppointmentProposalForm', () => {
     test('Offers a device kept inside the chosen site', async () => {
       const sitedDevice: Device = { ...Ultrasound1Device, location: { reference: 'Location/second-floor' } };
       await medplum.updateResource(sitedDevice);
-      setup(medplum, { defaultLocation: MainClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/device/i);
@@ -378,7 +377,7 @@ describe('AppointmentProposalForm', () => {
 
     test('Offers a provider whose role names the chosen site', async () => {
       // Dr. Martinez's role names the main clinic itself, the only way a provider is sited.
-      setup(medplum, { defaultLocation: MainClinic, defaultService: SurgeryService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: SurgeryService });
       await settleAutocomplete();
 
       const input = await openRoleField(/provider/i);
@@ -388,7 +387,7 @@ describe('AppointmentProposalForm', () => {
     });
 
     test('Leaves out a provider whose roles name another site', async () => {
-      setup(medplum, { defaultLocation: SatelliteClinic, defaultService: SurgeryService });
+      setup(medplum, { defaultServiceFacility: SatelliteClinic, defaultService: SurgeryService });
       await settleAutocomplete();
 
       const input = await openRoleField(/provider/i);
@@ -401,7 +400,7 @@ describe('AppointmentProposalForm', () => {
     test('Leaves out a provider sited inside the chosen site rather than at it, while offering a room there', async () => {
       // A room is sited by walking `partOf`; a provider only by a role naming the
       // site exactly.
-      setup(medplum, { defaultLocation: MainClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: MainClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/provider/i);
@@ -413,7 +412,7 @@ describe('AppointmentProposalForm', () => {
     });
 
     test('Keeps a resource that records nothing about where it is', async () => {
-      setup(medplum, { defaultLocation: SatelliteClinic, defaultService: UltrasoundImagingService });
+      setup(medplum, { defaultServiceFacility: SatelliteClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
       await openRoleField(/device/i);
@@ -438,7 +437,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
 
       // Unscoped: a search that came back with nothing leaves no dropdown to scope to.
-      await typeInAutocomplete(field(/location/i), 'Exam Room A');
+      await typeInAutocomplete(field(/service facility/i), 'Exam Room A');
 
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
       expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
@@ -448,12 +447,24 @@ describe('AppointmentProposalForm', () => {
     test('Offers a Location that records no physical type', async () => {
       setup(medplum);
 
-      const listbox = await searchField(/location/i, 'Uro Associates');
+      const listbox = await searchField(/service facility/i, 'Uro Associates');
 
       // Neither clinic declares one, and nothing requires it: the field excludes what
       // says it is a room rather than admitting only what says site.
       expect(within(listbox).getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
       expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
+    });
+
+    test('Leaves out a site that is inactive because it is not live yet', async () => {
+      await medplum.createResource({ resourceType: 'Location', name: 'Uro Associates - North', status: 'inactive' });
+      setup(medplum);
+
+      const listbox = await searchField(/service facility/i, 'Uro Associates');
+
+      // Neither clinic records a status, and both are still offered.
+      expect(within(listbox).getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+      expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      expect(within(listbox).queryByText('Uro Associates - North')).not.toBeInTheDocument();
     });
 
     test('Narrows the visit types to the chosen site', async () => {
@@ -647,6 +658,16 @@ describe('AppointmentProposalForm', () => {
       expect(dayCell('19').className).toContain('selected');
     });
 
+    test('Nests the day headings under the column heading', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      expect(screen.getByRole('heading', { level: 5, name: 'Select a time' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 6, name: /Monday, August 17/ })).toBeInTheDocument();
+    });
+
     test('Puts the added days away when the named resources change', async () => {
       setup(medplum);
       await chooseImagingService();
@@ -793,6 +814,7 @@ describe('AppointmentProposalForm', () => {
       await openFinder();
       await chooseFirstOfferedTime();
       expect(chosenTimeField()).not.toBeNull();
+      await openTimeFinder();
 
       await dragDays('17', '21');
 
@@ -916,15 +938,41 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
-      await chooseFirstOfferedTime();
+      const picked = await chooseFirstOfferedTime();
 
+      // Picking a time is what the search was open for, so it closes.
+      expect(finderButton()).toHaveTextContent('Change time');
+      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
+      // The picked time's button is gone, so focus lands where the search reopens.
+      expect(finderButton()).toHaveFocus();
+      // And the time flashes where it landed, once: the browser would replay it each time the
+      // field is shown again.
+      const pickedField = chosenTimeField();
+      expect(pickedField?.className).toMatch(/justPicked/);
+      fireEvent.animationEnd(pickedField as HTMLElement, { animationName: 'justPicked' });
+      expect(pickedField?.className).not.toMatch(/justPicked/);
+
+      // Reopened, it still marks the time picked, though once the client's cache has lapsed
+      // the times come back as new objects.
+      medplum.invalidateAll();
+      await openTimeFinder();
+      const [firstGroup] = await screen.findAllByTestId(/^slot-group-/);
+      expect(within(firstGroup).getByRole('button', { name: picked })).toHaveAttribute('data-variant', 'filled');
+
+      // Picking again flashes it again, though the field never left the screen.
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).not.toBe(pickedField);
+      expect(chosenTimeField()?.className).toMatch(/justPicked/);
+      await openTimeFinder();
+
+      // Closing it by hand keeps the time.
+      expect(finderButton()).toHaveTextContent('Close time finder');
       await act(async () => {
         fireEvent.click(finderButton());
       });
-      await settleAutocomplete();
-
       expect(finderButton()).toHaveTextContent('Change time');
-      expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
+      expect(chosenTimeField()).not.toBeNull();
     });
 
     test('Clears the chosen time when the day changes', async () => {
@@ -933,6 +981,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await openTimeFinder();
 
       await chooseDay('18');
 
@@ -957,6 +1006,7 @@ describe('AppointmentProposalForm', () => {
       // `$book` would accept it: that time genuinely was Dr. Rivera's.
       expect(chosenTimeField()).not.toBeInTheDocument();
 
+      await openTimeFinder();
       const label = await chooseFirstOfferedTime();
 
       const chosen = chosenTimeField() as HTMLInputElement;
@@ -993,6 +1043,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      await openTimeFinder();
       onToggleTimeFinder.mockClear();
 
       await chooseActor(/room/i, 'exam', 'Exam Room A');
@@ -1118,7 +1169,7 @@ describe('AppointmentProposalForm', () => {
   describe('Mounting the form', () => {
     test('Starts with the answers the host pre-filled', async () => {
       setup(medplum, {
-        defaultLocation: MainClinic,
+        defaultServiceFacility: MainClinic,
         defaultService: UltrasoundImagingService,
         defaultPatient: ElderJordanPatient,
       });
@@ -1146,43 +1197,68 @@ describe('AppointmentProposalForm', () => {
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
     });
 
-    test('Reports the time as it is chosen', async () => {
-      const onChangeTime = vi.fn();
-      setup(medplum, { onChangeTime });
+    test('Reports the proposal as it is chosen, and its drop when the form goes away', async () => {
+      const onChangeProposal = vi.fn();
+      const { unmount } = renderWithMedplum(
+        <AppointmentProposalForm onSubmit={onSubmit} onChangeProposal={onChangeProposal} />,
+        medplum
+      );
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
-      // Mounting has chosen nothing, and saying so would take down a marker a host
-      // put up when it opened this form.
-      expect(onChangeTime).not.toHaveBeenCalled();
-
       await chooseFirstOfferedTime();
       await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
       await clickBook();
 
-      // The interval reported is the one that got booked, to the instant: a host
-      // marking it on a calendar of its own is marking the visit itself.
+      // Reported to the instant that got booked: a host drawing it is drawing the visit itself.
       const proposal = proposedAppointment();
-      expect(onChangeTime).toHaveBeenLastCalledWith({
-        start: new Date(proposal.start as string),
-        end: new Date(proposal.end as string),
-      });
+      expect(onChangeProposal).toHaveBeenLastCalledWith(
+        expect.objectContaining({ start: proposal.start, end: proposal.end })
+      );
+
+      unmount();
+      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
-    test('Reports the time being dropped when a different day is searched', async () => {
-      const onChangeTime = vi.fn();
-      setup(medplum, { onChangeTime });
+    test('Reports the proposal being dropped when a different day is searched', async () => {
+      const onChangeProposal = vi.fn();
+      setup(medplum, { onChangeProposal });
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      expect(onChangeTime).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(Date) }));
+      expect(onChangeProposal).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(String) }));
+      await openTimeFinder();
 
       await chooseDay('18');
 
-      // The time was on the Monday, and the search has moved to the Tuesday. A host
-      // hears that rather than keeping a marker on a time nobody has chosen.
-      expect(onChangeTime).toHaveBeenLastCalledWith(undefined);
+      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
+    });
+
+    test('Reports the proposal, and its drop even when the host moved the day', async () => {
+      const onChangeProposal = vi.fn();
+      const { rerender } = renderWithMedplum(
+        <AppointmentProposalForm onSubmit={onSubmit} onChangeProposal={onChangeProposal} />,
+        medplum
+      );
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      expect(onChangeProposal).toHaveBeenLastCalledWith(
+        expect.objectContaining({ resourceType: 'Appointment', status: 'proposed', start: expect.any(String) })
+      );
+
+      // A drop the host caused is reported too: a host drawing the proposal draws only
+      // what Book would book.
+      rerender(
+        <AppointmentProposalForm
+          onSubmit={onSubmit}
+          onChangeProposal={onChangeProposal}
+          defaultStart={new Date(2026, 8, 2)}
+        />
+      );
+      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
     test('Opens the time search on the day the host named', async () => {
@@ -1205,6 +1281,32 @@ describe('AppointmentProposalForm', () => {
       // Floored to now rather than searching from the stale day named.
       expect(await screen.findByText(/Monday, August 17/)).toBeInTheDocument();
       expect(screen.queryByText(/August 10/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Jumping to a month', () => {
+    test('Moves the calendar to the month picked from its label', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Nov' }));
+
+      expect(screen.getByRole('button', { name: 'November 2026' })).toBeInTheDocument();
+    });
+
+    test('Offers no month before today', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
+
+      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Jul' }).disabled).toBe(true);
+      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Aug' }).disabled).toBe(false);
     });
   });
 
@@ -1267,13 +1369,15 @@ describe('AppointmentProposalForm', () => {
       expect(searched.some((url) => url.includes('Patient'))).toBe(false);
     });
 
-    test('Asks nothing else below the action that finds a time', async () => {
+    test('Asks only the patient and the notes below the action that finds a time', async () => {
       setup(medplum);
 
-      // The free text about the visit that used to sit here is one of the fields a
-      // practice configures, so the patient is the form's last question.
+      // Anything else the visit needs is one of the fields a practice configures.
       const inputs = [...screen.getAllByRole('searchbox'), ...screen.queryAllByRole('textbox')];
-      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([field(/patient/i)]);
+      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([
+        field(/patient/i),
+        screen.getByRole('textbox', { name: 'Notes' }),
+      ]);
     });
 
     test('Names the patient as a required participant, once', async () => {
@@ -1290,8 +1394,11 @@ describe('AppointmentProposalForm', () => {
   });
 
   describe('Booking the appointment', () => {
-    test('Records the site the booking was made at', async () => {
-      setup(medplum, { defaultLocation: MainClinic });
+    test.each([
+      ['the Location', MainClinic],
+      ['a reference to it', createReference(MainClinic)],
+    ])('Records the site the booking was made at, given %s', async (_, defaultServiceFacility) => {
+      setup(medplum, { defaultServiceFacility });
       await fillBooking();
       await clickBook();
 
@@ -1309,7 +1416,7 @@ describe('AppointmentProposalForm', () => {
 
     test('Keeps the site off the participants, where a room lives', async () => {
       // A site named as a participant would be indistinguishable from a booked room.
-      setup(medplum, { defaultLocation: MainClinic });
+      setup(medplum, { defaultServiceFacility: MainClinic });
       await fillBooking();
       await clickBook();
 
@@ -1367,12 +1474,29 @@ describe('AppointmentProposalForm', () => {
       expect(bookButton()).toBeEnabled();
     });
 
+    test('Records the notes, trimmed, and offers to book again once they change', async () => {
+      setup(medplum);
+      await fillBooking();
+      const notes = screen.getByRole('textbox', { name: 'Notes' });
+      fireEvent.change(notes, { target: { value: ' ' } });
+      await clickBook();
+      expect(proposedAppointment().comment).toBeUndefined();
+      expect(bookButton()).toBeDisabled();
+
+      fireEvent.change(notes, { target: { value: '  Bring prior films  ' } });
+      expect(bookButton()).toBeEnabled();
+      await clickBook();
+      const [proposal] = onSubmit.mock.lastCall as [Appointment];
+      expect(proposal.comment).toBe('Bring prior films');
+    });
+
     test('Offers to book again once the time changes', async () => {
       setup(medplum);
       await fillBooking();
       await clickBook();
       expect(bookButton()).toBeDisabled();
 
+      await openTimeFinder();
       await chooseSecondOfferedTime();
 
       expect(bookButton()).toBeEnabled();
@@ -1726,8 +1850,10 @@ describe('AppointmentProposalForm', () => {
       await fillAuthorizedBooking();
       await enterAuthorizationDetails();
 
-      await enterCode(/procedure code/i, ProcedureCodes[1]);
-      await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+      await addRow('procedure');
+      await enterCode(/procedure 2/i, ProcedureCodes[1]);
+      await addRow('diagnosis');
+      await enterCode(/diagnosis 2/i, DiagnosisCodes[1]);
       await clickBook();
 
       // One entry of `reasonCode` per diagnosis: an element there is one reason, and codings inside
@@ -1752,6 +1878,107 @@ describe('AppointmentProposalForm', () => {
       await clickBook();
 
       expect(proposedAppointment().reasonCode).toHaveLength(1);
+    });
+  });
+
+  describe('Booking a weekly series', () => {
+    test('Offers to repeat only a booking that can search for a series', async () => {
+      setup(medplum, { allowRecurring: true, mode: 'reschedule' });
+      await settleAutocomplete();
+      // `$find` refuses a series search that ignores an appointment, as a move's does.
+      expect(screen.queryByRole('textbox', { name: 'Repeat' })).not.toBeInTheDocument();
+    });
+
+    test('Offers nothing to repeat for a booking ignoring an appointment', async () => {
+      setup(medplum, {
+        allowRecurring: true,
+        ignoreAppointment: { resourceType: 'Appointment', id: 'held', status: 'booked', participant: [] },
+      });
+      await settleAutocomplete();
+      expect(screen.queryByRole('textbox', { name: 'Repeat' })).not.toBeInTheDocument();
+    });
+
+    test('Stops searching for a series once the field is taken away', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+      await openTimeFinder();
+      expect(lastFindParams(get)?.get('occurrence-count')).toBe('3');
+
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} />);
+      await settleAutocomplete();
+
+      // A count nobody can see, or change, is not one to keep searching by.
+      expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
+    });
+
+    test('Names the later dates a series books beside the time chosen', async () => {
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      // The search opens on Monday 17 August, so the series runs on into the next two Mondays.
+      expect(screen.getByText(/Also books Aug 24 and Aug 31 at the same time\./)).toBeInTheDocument();
+    });
+
+    test('Says how many appointments Book writes for a series', async () => {
+      setup(medplum, { allowRecurring: true });
+      expect(bookButton()).toHaveTextContent('Book appointment');
+
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+
+      expect(bookButton()).toHaveTextContent('Book 3 appointments');
+    });
+
+    test('Names no later dates for a visit that does not repeat', async () => {
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      expect(screen.queryByText(/Also books/)).not.toBeInTheDocument();
+    });
+
+    test('Drops a series chosen before the field was taken away', async () => {
+      const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 2 weeks');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).toBeInTheDocument();
+
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} />);
+      await settleAutocomplete();
+
+      // Booked as it stood, it would write a series with no repeat on screen.
+      expect(chosenTimeField()).not.toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+    });
+
+    test('Drops a single time chosen before the field came back', async () => {
+      const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} />);
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />);
+      await settleAutocomplete();
+
+      // The field says three times again, and a single visit is not what it says.
+      expect(screen.getByRole('textbox', { name: 'Repeat' })).toHaveValue('Once a week for 3 weeks');
+      expect(chosenTimeField()).not.toBeInTheDocument();
     });
   });
 
@@ -1820,6 +2047,7 @@ describe('AppointmentProposalForm', () => {
       await chooseFirstOfferedTime();
 
       expect(screen.queryByRole('searchbox', { name: /patient/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: 'Notes' })).not.toBeInTheDocument();
       await clickReschedule();
 
       const proposal = proposedAppointment();

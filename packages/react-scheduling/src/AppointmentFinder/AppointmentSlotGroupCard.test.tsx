@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
+import type { Appointment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SchedulingActorResource } from '../actors';
 import type { ParticipantActor } from '../stories/scheduling';
@@ -35,15 +36,16 @@ function buildGroup(
 
 function setup(
   group: AppointmentSlotGroup,
-  options: { onSelectAppointment?: () => void; medplum?: MedplumClient } = {}
-): void {
-  const { onSelectAppointment = vi.fn(), medplum = new MockClient() } = options;
-  renderWithMedplum(
+  options: { onSelectAppointment?: () => void; medplum?: MedplumClient; selected?: Appointment } = {}
+): ReturnType<typeof renderWithMedplum> {
+  const { onSelectAppointment = vi.fn(), medplum = new MockClient(), selected } = options;
+  return renderWithMedplum(
     <AppointmentSlotGroupCard
       group={group}
       timezone={EASTERN}
       viewerTimezone={EASTERN}
       onSelectAppointment={onSelectAppointment}
+      selected={selected}
     />,
     medplum
   );
@@ -87,5 +89,19 @@ describe('AppointmentSlotGroupCard', () => {
     fireEvent.click(screen.getByRole('button', { name: '9:30 AM' }));
 
     expect(onSelectAppointment).toHaveBeenCalledWith(group.appointments[1]);
+  });
+
+  test('Marks the chosen time by its times and actors, not by which object it is', () => {
+    const group = buildGroup([{ reference: RIVERA }], [DrRiveraPractitioner]);
+
+    // A refetch offers the time chosen as a new object; it's still the one marked.
+    const { unmount } = setup(group, { selected: { ...group.appointments[0] } });
+    expect(screen.getByRole('button', { name: '9:00 AM' })).toHaveAttribute('data-variant', 'filled');
+    expect(screen.getByRole('button', { name: '9:30 AM' })).toHaveAttribute('data-variant', 'outline');
+    unmount();
+
+    // A typed time can start with an offered one and run longer; that's not the time offered.
+    setup(group, { selected: { ...group.appointments[0], end: '2026-07-27T14:00:00.000Z' } });
+    expect(screen.getByRole('button', { name: '9:00 AM' })).toHaveAttribute('data-variant', 'outline');
   });
 });

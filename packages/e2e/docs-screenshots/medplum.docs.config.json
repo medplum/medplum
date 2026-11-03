@@ -1,0 +1,5 @@
+{
+  "appBaseUrl": "http://localhost:3001/",
+  "recaptchaSiteKey": "",
+  "recaptchaSecretKey": ""
+}

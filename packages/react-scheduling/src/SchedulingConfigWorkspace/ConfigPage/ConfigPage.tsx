@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Paper, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
+import { Alert, Button, Group, Paper, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { JSX, ReactNode } from 'react';
 import { useId } from 'react';
 import classes from './ConfigPage.module.css';
+import type { ConfigSaveFailure } from './configSave';
 
 export interface ConfigSectionProps {
   readonly title: string;
@@ -86,5 +87,47 @@ export function SaveBar(props: SaveBarProps): JSX.Element | null {
       </Group>
       {blocked && <VisuallyHidden id={reasonId}>{blockedReason}</VisuallyHidden>}
     </Group>
+  );
+}
+
+export interface SaveFailureAlertProps {
+  /** Why the last save failed, if it did. */
+  readonly failure: Pick<ConfigSaveFailure, 'conflict' | 'message'> | undefined;
+  /** The conflict's title, naming what changed. */
+  readonly conflictTitle: string;
+  readonly reloading: boolean;
+  readonly onReload: () => void;
+}
+
+/**
+ * Says why a configuration page's save failed: a conflict, with a way to reload the newer version, or anything
+ * else, with the server's reason.
+ * @param props - The failure, the conflict's title, and how to reload.
+ * @returns The alert, or null when the last save didn't fail.
+ */
+export function SaveFailureAlert(props: SaveFailureAlertProps): JSX.Element | null {
+  const { failure } = props;
+  if (!failure) {
+    return null;
+  }
+  if (!failure.conflict) {
+    return (
+      <Alert color="red" title="Not saved">
+        {failure.message}
+      </Alert>
+    );
+  }
+  return (
+    <Alert color="orange" title={props.conflictTitle}>
+      <Stack gap="sm" align="flex-start">
+        <Text size="sm">
+          A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
+          version. Your changes on this page will be discarded.
+        </Text>
+        <Button size="xs" variant="light" color="orange" loading={props.reloading} onClick={props.onReload}>
+          Reload
+        </Button>
+      </Stack>
+    </Alert>
   );
 }

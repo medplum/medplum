@@ -31,7 +31,7 @@ To use this flow:
 
 :::caution[One-time codes]
 
-Pre-authorized codes are single-use and expire automatically. By default, Medplum issues codes that expire after 1 hour. The maximum allowed lifetime is 24 hours.
+Pre-authorized codes are single-use and expire automatically. By default, Medplum issues codes that expire after 1 hour. The maximum allowed lifetime is 7 days.
 
 :::
 
@@ -48,9 +48,9 @@ Request headers:
 Request body:
 
 - `clientId`: Required. The target [`ClientApplication`](https://app.medplum.com/ClientApplication) ID.
-- `scope`: Optional. Defaults to `openid`.
+- `scope`: Optional. See [Scope](#scope) for the default and the allowed values.
 - `nonce`: Optional. If omitted, Medplum generates a random nonce.
-- `expiresIn`: Optional expiration time in seconds. Must be between `1` and `86400`.
+- `expiresIn`: Optional expiration time in seconds. Must be between `1` and `604800`.
 
 Example:
 
@@ -77,6 +77,24 @@ On success, Medplum returns a response like:
 ```
 
 You can package this code into a magic link, QR code, or handoff to a wallet or application that will redeem it.
+
+### Scope
+
+The scope of a pre-authorized code can never be broader than the scope of the access token used to create it.
+
+If the calling access token has no [SMART scopes](/docs/access/smart-scopes), it is unrestricted, and `scope` defaults to `openid`.
+
+If the calling access token has SMART scopes, such as `user/*.rs`:
+
+- When `scope` is omitted, it defaults to `openid` plus the caller's SMART scopes. Other scopes, such as `offline_access`, are not inherited.
+- Each requested SMART scope must be covered by one of the caller's SMART scopes, with the same or fewer resource types and permissions.
+- A `system/` scope covers the same `user/` scope. A `system/` or `user/` scope covers the same `patient/` scope only when the target user's profile is a `Patient`, and the code is then limited to that patient's compartment.
+- `scope` must include at least one SMART scope. A scope with no SMART scopes, such as `openid` alone, would be unrestricted.
+- Any other requested scope, except `openid`, must also be in the caller's scope.
+
+For example, a caller with `openid user/*.rs` can create a code with `openid user/Patient.rs`, or with `openid patient/*.rs` for a `Patient` user, but not with `openid user/Patient.cruds`.
+
+If the requested scope is broader than the caller's scope, Medplum returns `400 Bad Request` with `Invalid scope`.
 
 ## Redeem the pre-authorized code
 

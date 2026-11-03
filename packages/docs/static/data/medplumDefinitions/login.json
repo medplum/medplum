@@ -592,6 +592,38 @@
       "definition": "The existing login that this login was created from, when an authorization request reused an existing session.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "previousRefreshSecret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.previousRefreshSecret",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The refresh secret that was most recently replaced by refresh token rotation.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "refreshSecretRotatedAt",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "instant"
+        }
+      ],
+      "path": "Login.refreshSecretRotatedAt",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The time at which the refresh secret was most recently rotated.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

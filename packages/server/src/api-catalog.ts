@@ -18,6 +18,8 @@ const API_CATALOG_PATH = '.well-known/api-catalog';
 const RFC_9727_PROFILE = 'https://www.rfc-editor.org/info/rfc9727';
 const API_CATALOG_CONTENT_TYPE = `${ContentType.LINKSET_JSON}; profile="${RFC_9727_PROFILE}"`;
 const DOCS_URL = 'https://www.medplum.com/docs/';
+// See: https://www.iana.org/assignments/media-types/application/vnd.oai.openapi+json
+const OPENAPI_JSON_CONTENT_TYPE = 'application/vnd.oai.openapi+json';
 
 /** RFC 9264 link target object. */
 interface LinksetTarget {
@@ -41,7 +43,10 @@ function buildLinkset(): LinksetContext[] {
   return [
     {
       anchor: concatUrls(baseUrl, 'fhir/R4'),
-      'service-desc': [{ href: concatUrls(baseUrl, 'fhir/R4/metadata'), type: ContentType.FHIR_JSON }],
+      'service-desc': [
+        { href: concatUrls(baseUrl, 'fhir/R4/metadata'), type: ContentType.FHIR_JSON },
+        { href: concatUrls(baseUrl, 'openapi.json'), type: OPENAPI_JSON_CONTENT_TYPE },
+      ],
       'service-doc': [{ href: concatUrls(DOCS_URL, 'api/fhir'), type: ContentType.HTML }],
     },
     {

@@ -11,6 +11,7 @@ import {
   addDays,
   endOfDay,
   getDayCount,
+  getFindWindowError,
   getZonedDayRange,
   groupAppointmentsByDay,
   startOfDay,
@@ -55,6 +56,8 @@ export interface UseDaySearchOptions {
    * behalf of an appointment being moved. See {@link useProposedAppointments}.
    */
   readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
+  /** How many weekly occurrences to find a series of. See {@link useProposedAppointments}. */
+  readonly occurrenceCount?: number;
   /**
    * Fired when what is on show is replaced rather than added to, so the caller can
    * drop the time it chose out of results that no longer exist.
@@ -91,6 +94,8 @@ export interface UseDaySearchResult {
    * A day picked on its own is a stretch of one, so a click and a drag come in the same way.
    */
   readonly chooseDayRange: (start: Date, end?: Date) => void;
+  /** Whether the day an instant falls on is already searched. */
+  readonly isDayOnShow: (date: Date) => boolean;
   /** Reaches further than the days already answered, keeping them on screen. */
   readonly showMoreDays: () => void;
   /**
@@ -113,8 +118,16 @@ export interface UseDaySearchResult {
  * @returns The days on show with their times, load and error state, and the ways in.
  */
 export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
-  const { service, combinations, timezone, defaultStart, actorResources, ignoreAppointment, onResultsReplaced } =
-    options;
+  const {
+    service,
+    combinations,
+    timezone,
+    defaultStart,
+    actorResources,
+    ignoreAppointment,
+    occurrenceCount,
+    onResultsReplaced,
+  } = options;
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
   const [combinationLimit, setCombinationLimit] = useState(COMBINATION_WAVE);
@@ -131,6 +144,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     range: siteWindow,
     count: TIMES_PER_DAY * getDayCount(siteWindow.start, siteWindow.end),
     ignoreAppointment,
+    occurrenceCount,
   });
 
   const selectedDayRange = useMemo(
@@ -150,6 +164,13 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
       onResultsReplaced?.();
     },
     [onResultsReplaced]
+  );
+
+  const isDayOnShow = useCallback(
+    (date: Date): boolean => {
+      return date >= startOfDay(selectedDayRange.start) && date <= selectedDayRange.end;
+    },
+    [selectedDayRange]
   );
 
   // `search.appointments` is the settled result of the current window rather than an
@@ -172,12 +193,18 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   // Unlike `reset`, this does announce itself: the times are refetched, so a chosen
   // one is replaced by an equal object the caller would no longer recognise. The days
   // paged in are kept and asked again rather than dropped, since asking for more
-  // actors is not asking about fewer days.
+  // actors is not asking about fewer days — unless together they are more than `$find`
+  // answers at once, as a series' week soon is, when the days first picked are asked alone.
   const searchMoreCombinations = useCallback((): void => {
     setCombinationLimit((limit) => limit + COMBINATION_WAVE);
-    setDaySearch(reaskEveryDayOnShow);
+    setDaySearch((previous) => {
+      const everyDay = reaskEveryDayOnShow(previous);
+      return getFindWindowError(toSiteWindow(everyDay.range, timezone), occurrenceCount)
+        ? backToFirstWindow(previous)
+        : everyDay;
+    });
     onResultsReplaced?.();
-  }, [onResultsReplaced]);
+  }, [onResultsReplaced, timezone, occurrenceCount]);
 
   // A spinner rather than empty days: only while the first window is still out, before
   // "Show more days" has moved the search past it.
@@ -196,6 +223,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     hasMoreCombinations: combinations.length > searchedCombinations.length,
     searchMoreCombinations,
     chooseDayRange,
+    isDayOnShow,
     showMoreDays,
     reset,
   };
@@ -248,7 +276,7 @@ function reaskEveryDayOnShow(previous: DaySearch): DaySearch {
  * @param date - Any instant during the day.
  * @returns The later of that instant and now.
  */
-function floorToNow(date: Date): Date {
+export function floorToNow(date: Date): Date {
   const now = new Date();
   return date > now ? date : now;
 }

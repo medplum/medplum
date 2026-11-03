@@ -132,9 +132,9 @@ describe('AppointmentServiceSelect', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ id: 'ultrasound-imaging' }));
   });
 
-  test('Narrows the services to a chosen location', async () => {
+  test('Narrows the services to a chosen service facility', async () => {
     const searchResources = vi.spyOn(medplum, 'searchResources');
-    setup({ location: MainClinic });
+    setup({ serviceFacility: MainClinic });
 
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
@@ -151,9 +151,9 @@ describe('AppointmentServiceSelect', () => {
 
   // A caller holding a reference should not have to read the Location first:
   // narrowing needs only the reference string.
-  test('Narrows the services to a location given as a reference', async () => {
+  test('Narrows the services to a service facility given as a reference', async () => {
     const searchResources = vi.spyOn(medplum, 'searchResources');
-    setup({ location: { reference: 'Location/main-clinic' } });
+    setup({ serviceFacility: { reference: 'Location/main-clinic' } });
 
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
@@ -163,7 +163,7 @@ describe('AppointmentServiceSelect', () => {
 
   describe('Offering the visit types a chosen site can hold', () => {
     test('Offers a visit type that names the chosen site', async () => {
-      setup({ location: MainClinic });
+      setup({ serviceFacility: MainClinic });
 
       await typeInAutocomplete(searchBox(), 'Ultrasound');
 
@@ -171,18 +171,18 @@ describe('AppointmentServiceSelect', () => {
     });
 
     test('Offers a visit type that names no location, at every site in turn', async () => {
-      const { rerender } = setup({ location: MainClinic }, 'main');
+      const { rerender } = setup({ serviceFacility: MainClinic }, 'main');
       await typeInAutocomplete(searchBox(), 'Telehealth');
       expect(await screen.findByText('Telehealth Consult')).toBeInTheDocument();
 
-      rerender(<AppointmentServiceSelect key="satellite" onChange={vi.fn()} location={SatelliteClinic} />);
+      rerender(<AppointmentServiceSelect key="satellite" onChange={vi.fn()} serviceFacility={SatelliteClinic} />);
       await typeInAutocomplete(searchBox(), 'Telehealth');
 
       expect(await screen.findByText('Telehealth Consult')).toBeInTheDocument();
     });
 
     test('Leaves out a visit type held only somewhere else', async () => {
-      setup({ location: MainClinic });
+      setup({ serviceFacility: MainClinic });
 
       await typeInAutocomplete(searchBox(), 'Ultrasound');
 
@@ -191,7 +191,7 @@ describe('AppointmentServiceSelect', () => {
     });
 
     test('Leaves out a visit type held at a place inside the chosen site', async () => {
-      setup({ location: MainClinic });
+      setup({ serviceFacility: MainClinic });
 
       await typeInAutocomplete(searchBox(), 'Ultrasound');
 
@@ -217,7 +217,7 @@ describe('AppointmentServiceSelect', () => {
     });
 
     test('Finds nothing rather than falling back when a site can hold nothing', async () => {
-      setup({ location: SatelliteClinic });
+      setup({ serviceFacility: SatelliteClinic });
 
       await typeInAutocomplete(searchBox(), 'Imaging');
 
@@ -229,7 +229,7 @@ describe('AppointmentServiceSelect', () => {
     });
 
     test('Reads as one list in name order, not two lists end to end', async () => {
-      setup({ location: MainClinic });
+      setup({ serviceFacility: MainClinic });
 
       await openAutocomplete(searchBox());
 
@@ -243,7 +243,7 @@ describe('AppointmentServiceSelect', () => {
     });
 
     test('Does not smuggle in an unschedulable visit type by the location-less route', async () => {
-      setup({ location: MainClinic });
+      setup({ serviceFacility: MainClinic });
 
       await typeInAutocomplete(searchBox(), 'Telehealth');
 
@@ -277,13 +277,18 @@ describe('AppointmentServiceSelect', () => {
   test('Empties when a location change keys it onto no visit type', async () => {
     const onChange = vi.fn();
     const { rerender } = setup(
-      { onChange, defaultValue: UltrasoundImagingService, location: MainClinic },
+      { onChange, defaultValue: UltrasoundImagingService, serviceFacility: MainClinic },
       UltrasoundImagingService.id
     );
     await screen.findByText('Ultrasound Imaging');
 
     rerender(
-      <AppointmentServiceSelect key="empty" defaultValue={undefined} onChange={onChange} location={SatelliteClinic} />
+      <AppointmentServiceSelect
+        key="empty"
+        defaultValue={undefined}
+        onChange={onChange}
+        serviceFacility={SatelliteClinic}
+      />
     );
 
     await waitFor(() => expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument());

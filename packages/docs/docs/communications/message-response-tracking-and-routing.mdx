@@ -5,22 +5,16 @@ tags: [communications, task, routing]
 keywords: [task, routing, assignment, communication, thread, pool, reroute, claim]
 ---
 
-import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
+import RoutingCode from '!!raw-loader!@site/../examples/src/communications/task-routing-examples.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Message Response Tracking and Routing
 
-When messages need responses — and those responses need to be tracked, assigned, and rerouted — use the FHIR [`Task`](/docs/api/fhir/resources/task) resource alongside [`Communication`](/docs/api/fhir/resources/communication). This separates message content ([`Communication`](/docs/api/fhir/resources/communication)) from the routing and assignment lifecycle ([`Task`](/docs/api/fhir/resources/task)), allowing you to reassign work without modifying conversation data.
+A conversation can move between teams while the patient keeps replying in the same thread. Use a Task to track who owes the next response, and Communication to retain what everyone said. Reassigning the work then preserves the conversation and its history.
 
-:::tip[Assignment model]
-Do you need to assign work to named individuals only, to a pool by provider type, or both? That choice drives whether you use `owner`, `performerType`, or both.
-:::
+:::tip[Choose an assignment model]
 
-:::note[Key concept]
-
-[`Task`](/docs/api/fhir/resources/task) is the authoritative source for routing and assignment. `Communication.recipient` is informational — it reflects who should see the thread (for access policy scoping and display), but if there's ever a conflict between `Task.owner` and `Communication.recipient`, the [`Task`](/docs/api/fhir/resources/task) is the source of truth. When rerouting, always update the [`Task`](/docs/api/fhir/resources/task) first, then update `Communication.recipient` to match.
+Use a named owner when one person is responsible, a group owner for team accountability, or an unowned pool when eligible staff claim work. The examples below use an unowned role pool.
 
 :::
 
@@ -28,169 +22,119 @@ Do you need to assign work to named individuals only, to a pool by provider type
 
 ```mermaid
 flowchart TD
-    Task["<b>Task</b><br/>Respond to Homer Simpson's<br/>lab question"]
-    Comm["<b>Thread Header</b><br/>Homer Simpson April 10th lab tests"]
-    Patient["<b>Patient</b><br/>Homer Simpson"]
-    Task -->|focus| Comm
-    Task -->|for| Patient
+    Task[Respond to the patient's question] -->|focus| Comm[Communication thread header]
+    Task -->|for| Patient[Patient]
+    Comm -->|subject| Patient
 ```
+
+`Task.owner` identifies the accountable assignee. The thread's `Communication.recipient` retains all conversation participants, including its creator. When a new assignee joins the conversation, add that participant through your membership workflow; preserve the other participants. Returning work to a pool changes the Task's routing fields while retaining the conversation's membership. See the [Messaging Data Model](/docs/communications/messaging-data-model).
 
 ## Task Element Reference
 
-| Element          | What It Does                                                                                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `focus`          | Links the [`Task`](/docs/api/fhir/resources/task) to the [`Communication`](/docs/api/fhir/resources/communication) thread header it's tracking                                                                                                           |
-| `for`            | The patient this Task is about (mirrors `Communication.subject`)                                                                                                          |
-| `owner`          | Who is currently responsible — a [`Practitioner`](/docs/api/fhir/resources/practitioner) (individual). Cleared when rerouting to a pool.                                                                           |
-| `performerType`  | The type of provider who should handle this Task (e.g. "Health coach"). Used for pool-based routing — providers whose `PractitionerRole.code` matches can claim the Task. |
-| `requester`      | Who created or triggered the Task                                                                                                                                         |
-| `status`         | Task lifecycle: `requested` → `accepted` → `completed` (or `cancelled`)                                                                                                  |
-| `businessStatus` | Custom status for your workflow (e.g. `unassigned`, `claimed`, `escalated`)                                                                                               |
-| `priority`       | Urgency level: `routine`, `urgent`, `asap`, `stat`                                                                                                                        |
-| `output`         | References the response Communication that resolved the Task                                                                                                              |
+| Element | What it does |
+| --- | --- |
+| `focus` | References the Communication thread header requiring a response |
+| `for` | Identifies the patient the work concerns |
+| `owner` | Identifies the accountable person, practitioner role, or group; unset for an unowned pool |
+| `performerType` | Describes the required role, evaluated through the application's eligibility rules |
+| `requester` | Identifies who requested the work |
+| `status` | Tracks the work lifecycle, such as `ready`, `in-progress`, and `completed` |
+| `businessStatus` | Records local stages such as waiting for clinical review |
+| `priority` | Uses `routine`, `urgent`, `asap`, or `stat` |
+| `output` | References the response Communication that resolved the obligation, with a type describing that output |
 
 ## Create a Task for a Thread
 
-:::tip[When to create a Task]
-Does this message require a tracked response? If not, keep it as Communication only. Use `Communication.category` or a Bot to determine which messages need routing.
-:::
+Create a Task when a message needs an accountable response. Informational messages can stay in the conversation without creating work. For repeated events, conditionally create the Task using a stable identifier for the thread and response obligation.
 
-When a new message arrives that requires action, create a [`Task`](/docs/api/fhir/resources/task) linked to the thread via `focus`. Use `performerType` to route to a provider pool, or set `owner` directly for individual assignment.
+```json
+{
+  "resourceType": "Task",
+  "identifier": [{
+    "system": "https://example.org/message-work",
+    "value": "thread-001-response-001"
+  }],
+  "status": "ready",
+  "intent": "order",
+  "code": { "text": "Respond to patient question" },
+  "focus": { "reference": "Communication/thread-001" },
+  "for": { "reference": "Patient/example" },
+  "performerType": [{ "text": "Clinical reviewer" }]
+}
+```
 
-<MedplumCodeBlock language="ts" selectBlocks="createTaskForThreadTs">
-  {ExampleCode}
-</MedplumCodeBlock>
-
-To assign directly to a specific provider instead of a pool, set `owner` to the [`Practitioner`](/docs/api/fhir/resources/practitioner) reference and omit `performerType`.
-
-:::tip[]
-
-Only create a [`Task`](/docs/api/fhir/resources/task) for messages that require a response. Use `Communication.category` or business logic in a Bot to determine which messages need routing. In production, [`Task`](/docs/api/fhir/resources/task) creation is typically handled by a Bot triggered via a [`Subscription`](/docs/api/fhir/resources/subscription) on [`Communication`](/docs/api/fhir/resources/communication) creation rather than created manually.
-
-:::
+The role label is illustrative. Use the [coded role and matching query](/docs/careplans/tasks#describe-the-role-required) when building a searchable pool. Set an `owner` when assigning directly, retaining `performerType` when the role requirement remains relevant.
 
 ## Claim a Task from the Pool
 
-When a team member picks up the [`Task`](/docs/api/fhir/resources/task), update `status` to `accepted` and set `owner` to the specific [`Practitioner`](/docs/api/fhir/resources/practitioner):
+Query for the pool's work type, role, open status, and `owner:missing=true`. A role filter alone also returns work that someone has already claimed. A group-owned queue instead searches for that group's owner reference.
 
-<MedplumCodeBlock language="ts" selectBlocks="claimTaskTs">
-  {ExampleCode}
+Read the current Task, check the claimant's eligibility, and update `owner` using `If-Match` for the version read. If the version changed, reload the Task and let the user review the current assignment. Follow [Build a Queue and Let Staff Claim Work](/docs/careplans/tasks#build-and-claim-a-queue) for the shared claiming pattern.
+
+After checking eligibility in your controlled assignment path, pass the Task version the user reviewed to this function. A conflict returns `undefined`; reload the queue and ask the user to review the current assignment before another attempt.
+
+<MedplumCodeBlock language="ts" selectBlocks="routingImports, versionedTask, claimTaskTs">
+  {RoutingCode}
 </MedplumCodeBlock>
 
-To see unclaimed [`Task`](/docs/api/fhir/resources/task) resources in a pool, query by `performerType`:
-
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="queryUnclaimedTasksTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="queryUnclaimedTasksCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="queryUnclaimedTasksCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+Claiming establishes ownership. Set `in-progress` when the response work begins. Workflows that explicitly request and acknowledge a handoff can use `requested` and `accepted` as described in [Handoffs](/docs/careplans/handoffs-and-escalation#define-lifecycle-and-completion).
 
 ## Reroute to a Different Provider
 
-:::tip[Reroute target]
-Are you reassigning to one specific provider or back to a pool? Update `owner` and `Communication.recipient` for an individual; clear `owner`, set `performerType`, and clear `recipient` for a pool.
-:::
+For the same response obligation, update the existing Task's `owner` with a version check. Record why it moved so the next person can pick up the conversation. If that person is joining the thread, update the participant list to include them while preserving the remaining members.
 
-Update `Task.owner` and `Communication.recipient` to reassign the thread:
+Use a transaction Bundle when linked resource updates must succeed together. Apply version checks to both records. See [FHIR Batch and Transaction Requests](/docs/fhir-datastore/fhir-batch-requests).
+
+This example also adds the assignee to the thread. Pass the Practitioner who will participate in the conversation, even if a PractitionerRole owns the Task. Check eligibility and permission to join before calling it. The transaction requires the project's [transaction support](/docs/fhir-datastore/fhir-batch-requests) to be enabled. On a version conflict, reload both records and review the proposed transfer; retrying must preserve any intervening membership changes.
 
 <MedplumCodeBlock language="ts" selectBlocks="rerouteToProviderTs">
-  {ExampleCode}
+  {RoutingCode}
 </MedplumCodeBlock>
 
 ## Reroute to a Provider Pool
 
-Clear `Task.owner`, set `Task.performerType` to the role type, and clear `Communication.recipient`. Providers whose `PractitionerRole.code` matches the `performerType` can see and claim the [`Task`](/docs/api/fhir/resources/task).
+Clear `Task.owner`, set the required `performerType`, and return the work to the pool's actionable status. Retain its `focus`, patient context, and history. Keep the thread's participant list intact; the pool is a routing destination for work.
+
+The helper below updates only the Task. It preserves earlier notes and leaves the conversation's participants intact. Use the same version-checking helper shown above; let a conflict reach the caller for review.
 
 <MedplumCodeBlock language="ts" selectBlocks="rerouteToPoolTs">
-  {ExampleCode}
+  {RoutingCode}
 </MedplumCodeBlock>
 
-To find Tasks routed to a pool:
-
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="poolTasksTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="poolTasksCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="poolTasksCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
-
-Providers match pools via their `PractitionerRole.code`.
+Configure eligibility through [Teams and Delegation](/docs/careplans/teams-and-delegation#check-eligibility-before-assignment) and visibility through the [assignment and access rules](/docs/careplans/teams-and-delegation#assignment-and-access). This includes access to the thread and individual messages the assignee needs to read.
 
 ## Tracking Reroute History
 
-:::tip[Audit trail]
-Do you need an audit trail of who owned the Task and why it was rerouted? Version history gives who/when; add `Task.note` or `Provenance` for reasons.
-:::
-
-When [`Task`](/docs/api/fhir/resources/task) resources are rerouted, you may need an audit trail of who owned them previously, when they were reassigned, and why. [`Task`](/docs/api/fhir/resources/task) version history (`meta.versionId`) automatically captures every state change, so the basic audit trail is always available via `medplum.readHistory('Task', task.id!)`. The question is how to capture the reason for the reroute.
+Resource history retains earlier Task versions, including previous owners. Use an authored note for the reason, or Provenance when the workflow needs structured attribution. See [Resource History](/docs/fhir-datastore/resource-history).
 
 ### Free Text Reasons
 
-Use `Task.note` to append a human-readable reason on each reroute. Notes are an array, so each reroute adds an entry with the author and timestamp:
-
-<MedplumCodeBlock language="ts" selectBlocks="rerouteWithNoteTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+Append an Annotation to `Task.note` with `authorReference` or `authorString`, `time`, and a concise reason. Preserve earlier notes. For example, "Transferred to the clinical review pool because the patient asked about their treatment plan" gives the next assignee useful context.
 
 ### Structured Reason Codes
 
-If you need standardized, queryable reason codes, create a [`Provenance`](/docs/api/fhir/resources/provenance) resource alongside the [`Task`](/docs/api/fhir/resources/task) update. `Provenance.reason` accepts coded values:
-
-<MedplumCodeBlock language="ts" selectBlocks="rerouteProvenanceTs">
-  {ExampleCode}
-</MedplumCodeBlock>
-
-You can then query `Provenance?target=Task/{id}` to get the full reroute history with structured reasons.
+Create Provenance targeting the relevant Task version, recording the actor and a verified local or standard reason code. Use `occurredDateTime` for the effective transfer time and `recorded` for when it was recorded. See [Operational Reporting](/docs/careplans/operational-reporting#build-a-transition-model) for deriving owner and stage intervals.
 
 ### Reroute Visibility
 
-:::tip[Visibility after reroute]
-After reroute, should the previous owner still see the Task (e.g. for reference), or only the new owner? That determines whether you update `Task.owner` in place or create a new Task for the new owner.
-:::
+Decide whether the previous owner should retain access through AccessPolicy. Their access to a Task and to the conversation are separate policy decisions.
 
-`Task.owner` is `0..1`, so it can only reference a single [`Practitioner`](/docs/api/fhir/resources/practitioner). When rerouting, you need to decide whether the original owner retains visibility.
+### Update Task in Place
 
-#### Update Task in Place
+Keep one Task when the obligation stays the same. Updating its owner preserves one work history, and access policies can permit the former owner to retain visibility where required.
 
-If the original owner does not need to see the Task after reroute, update `Task.owner` directly. The original owner loses access (assuming access policies are scoped to `owner`):
+### Create a New Task for the New Owner
 
-<MedplumCodeBlock language="ts" selectBlocks="simpleRerouteTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+Create a separate Task when the next person has a distinct obligation with its own completion criteria, such as a clinical review alongside a coordinator's patient response. Both can focus on the same thread. Choose this pattern because the work is separate, rather than to duplicate an item for visibility.
 
-#### Create a New Task for the New Owner
+## Complete the Response and Notify the Team
 
-If the original owner does need to retain visibility, create a new [`Task`](/docs/api/fhir/resources/task) for the new owner and mark the original as rerouted. Both owners can see their respective [`Task`](/docs/api/fhir/resources/task) resources, and `Task.focus` links both to the same thread:
+Reference the resolving message in `Task.output` with a `type` and `valueReference`. Complete the Task when the response satisfies the workflow's criteria. If the reply creates another obligation, give that work an owner and its own completion criteria.
 
-<MedplumCodeBlock language="ts" selectBlocks="dualTaskRerouteTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+Use [assignee notifications](/docs/careplans/automating-workflows#let-the-assignee-know) for live queue updates and outbound alerts. Use [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation#escalate-without-duplicating-work) when the response becomes overdue.
 
 ## See Also
 
-- [Messaging Data Model](/docs/communications/messaging-data-model) — thread headers, messages, and [`Communication`](/docs/api/fhir/resources/communication) structure
-- [`Communication`](/docs/api/fhir/resources/communication) FHIR resource API
-- [`Task`](/docs/api/fhir/resources/task) FHIR resource API
+- [Messaging Data Model](/docs/communications/messaging-data-model)
+- [Tasks and Work Queues](/docs/careplans/tasks)
+- [Teams and Delegation](/docs/careplans/teams-and-delegation)

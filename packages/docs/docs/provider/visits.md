@@ -58,7 +58,7 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
 4. **Billing for Your Visit**
    - On the “Details & Billing” tab, you will also see the individual Charge Items related to the Visit which will need to be configured as part of your Care Template ahead of time (see [“Setting Up Care Templates”](#setting-up-care-templates-via-medplum-app) )
    - Once billing details are finalized, you can export a claim as a CMS 1500 form to submit for billing.
-   - Alternatively, Medplum offers integrations for both Stedi and Candid Health which allow claims to be sent directly to these services which forward to payors
+   - Alternatively, Medplum offers integrations for both Stedi and Candid Health which allow claims to be sent directly to these services which forward to payors. See [Submitting Claims to Candid Health](./submitting-claims) for a walkthrough
      - To learn more about these integrations, please [contact our sales team](mailto:hello@medplum.com)
 
 ---

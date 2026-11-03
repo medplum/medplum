@@ -15,6 +15,7 @@ import {
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
   OperationOutcomeError,
+  projectAdminResourceTypes,
   readInteractions,
   splitN,
 } from '@medplum/core';
@@ -25,6 +26,17 @@ import { getConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
 import { getProjectScopedUrl } from '../util/url';
 import type { PopulatedAccessPolicy } from './accesspolicy';
+
+export const SMART_SCOPES_SUPPORTED = [
+  'patient/*.rs',
+  'user/*.cruds',
+  'openid',
+  'fhirUser',
+  'launch',
+  'launch/patient',
+  'offline_access',
+  'online_access',
+];
 
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 
@@ -70,16 +82,7 @@ export function smartConfigurationHandler(req: Request, res: Response): void {
         OAuthSigningAlgorithm.RS384,
         OAuthSigningAlgorithm.ES384,
       ],
-      scopes_supported: [
-        'patient/*.rs',
-        'user/*.cruds',
-        'openid',
-        'fhirUser',
-        'launch',
-        'launch/patient',
-        'offline_access',
-        'online_access',
-      ],
+      scopes_supported: SMART_SCOPES_SUPPORTED,
       response_types_supported: ['code'],
       introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
       capabilities: [
@@ -169,6 +172,38 @@ export function parseSmartScopeString(scope: string): SmartScope | undefined {
   };
 }
 
+/**
+ * Returns the SMART scopes whose combined permissions, per permission type and resource type, are
+ * neither read-only (`rs`) nor full access (`cruds`).
+ * @param scope - The OAuth scope string.
+ * @returns The partial permission scopes, such as `patient/Observation.cs`.
+ */
+export function getPartialPermissionScopes(scope: string | undefined): string[] {
+  const permissions = new Map<string, Set<string>>();
+  for (const smartScope of parseSmartScopes(scope)) {
+    const key = `${smartScope.permissionType}/${smartScope.resourceType}`;
+    let letters = permissions.get(key);
+    if (!letters) {
+      letters = new Set<string>();
+      permissions.set(key, letters);
+    }
+    for (const letter of smartScope.scope) {
+      letters.add(letter);
+    }
+  }
+
+  const result: string[] = [];
+  for (const [key, letters] of permissions) {
+    // Wildcard scopes also apply to each concrete resource type of the same permission type
+    const wildcard = permissions.get(key.split('/')[0] + '/*');
+    const combined = [...'cruds'].filter((letter) => letters.has(letter) || wildcard?.has(letter)).join('');
+    if (combined !== 'rs' && combined !== 'cruds') {
+      result.push(`${key}.${combined}`);
+    }
+  }
+  return result;
+}
+
 function normalizeV2ScopeString(str: string): string {
   switch (str) {
     case '*':
@@ -233,6 +268,10 @@ function intersectSmartScopes(
   for (const policy of accessPolicy.resource ?? EMPTY) {
     if (policy.resourceType === '*') {
       for (const scope of smartScope) {
+        if (projectAdminResourceTypes.includes(scope.resourceType)) {
+          // A wildcard policy does not cover project admin resource types
+          continue;
+        }
         // Expand the wildcard policy before merging, so that any criteria added by the scope
         // is prefixed with the resource type the policy will be applied to
         const merged = mergeAccessPolicyWithScope({ ...policy, resourceType: scope.resourceType }, scope, context);
@@ -258,6 +297,10 @@ function mergeAccessPolicyWithScope(
   scope: SmartScope,
   context?: Reference<Patient>
 ): AccessPolicyResource | undefined {
+  if (!scope.scope) {
+    // A scope with no permissions grants no access
+    return undefined;
+  }
   const result = deepClone(policy);
   if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
     result.criteria = result.criteria.replace('*', scope.resourceType);
@@ -294,5 +337,7 @@ function appendCriteria(policy: AccessPolicyResource, criteria: string): void {
 }
 
 function getScopesForResourceType(scopes: SmartScope[], resourceType: string): SmartScope[] {
-  return scopes.filter((s) => s.resourceType === resourceType || s.resourceType === '*');
+  // Project admin resource types are only covered by scopes that name them
+  const wildcardMatches = !projectAdminResourceTypes.includes(resourceType);
+  return scopes.filter((s) => s.resourceType === resourceType || (wildcardMatches && s.resourceType === '*'));
 }

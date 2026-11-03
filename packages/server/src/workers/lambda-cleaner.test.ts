@@ -15,7 +15,7 @@ import type { Job } from 'bullmq';
 import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { createTestProject } from '../test.setup';
 import { getAsyncJobTracking } from './base';
@@ -25,7 +25,7 @@ import * as workerUtils from './utils';
 
 describe('Lambda version cleanup worker', () => {
   let mockLambdaClient: AwsClientStub<LambdaClient>;
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
 
   beforeAll(async () => {
     config = await loadTestConfig();

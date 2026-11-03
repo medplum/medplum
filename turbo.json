@@ -1,6 +1,8 @@
 {
   "$schema": "https://turborepo.org/schema.json",
+  "globalDependencies": ["api-extractor.json", "tsdoc.json"],
   "globalEnv": ["NODE_VERSION", "MEDPLUM_GIT_SHORTHASH"],
+  "globalPassThroughEnv": ["TEST_MAX_WORKERS"],
   "tasks": {
     "clean": {
       "outputs": ["build/**", "dist/**", "coverage/**"]
