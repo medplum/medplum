@@ -502,7 +502,9 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
     body: req.body ?? {},
     headers: req.headers,
     config: {
-      chainedSearchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'chainedSearchOnReader')?.valueBoolean,
+      chainedSearchOnReader:
+        ctx.project.systemSetting?.find((s) => s.name === 'chainedSearchOnReader')?.valueBoolean ??
+        getConfig().defaultChainedSearchOnReader,
       graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
         ?.valueInteger,
       graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
