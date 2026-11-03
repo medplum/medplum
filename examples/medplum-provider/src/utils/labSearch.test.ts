@@ -8,7 +8,7 @@ describe('labSearch utils', () => {
   test('completed tab defaults to DiagnosticReport, including preliminary and partial results', () => {
     expect(getLabResourceType('completed')).toBe('DiagnosticReport');
 
-    const search = addDefaultLabSearchValues({}, 'completed');
+    const search = addDefaultLabSearchValues({ resourceType: 'DiagnosticReport' }, 'completed');
 
     const statusFilter = search.filters?.find((filter) => filter.code === 'status');
     expect(statusFilter?.value).toBe('final,corrected,amended,preliminary,partial');
@@ -17,7 +17,7 @@ describe('labSearch utils', () => {
   test('open tab defaults to ServiceRequest with in-progress statuses', () => {
     expect(getLabResourceType('open')).toBe('ServiceRequest');
 
-    const search = addDefaultLabSearchValues({}, 'open');
+    const search = addDefaultLabSearchValues({ resourceType: 'ServiceRequest' }, 'open');
 
     const statusFilter = search.filters?.find((filter) => filter.code === 'status');
     expect(statusFilter?.value).toBe('active,draft,on-hold');
@@ -26,7 +26,7 @@ describe('labSearch utils', () => {
   test('revoked tab defaults to ServiceRequest with revoked status', () => {
     expect(getLabResourceType('revoked')).toBe('ServiceRequest');
 
-    const search = addDefaultLabSearchValues({}, 'revoked');
+    const search = addDefaultLabSearchValues({ resourceType: 'ServiceRequest' }, 'revoked');
 
     const statusFilter = search.filters?.find((filter) => filter.code === 'status');
     expect(statusFilter?.value).toBe('revoked');
@@ -34,7 +34,10 @@ describe('labSearch utils', () => {
 
   test('preserves an explicit status filter already present in the search', () => {
     const search = addDefaultLabSearchValues(
-      { filters: [{ code: 'status', operator: Operator.EQUALS, value: 'final' }] },
+      {
+        resourceType: 'DiagnosticReport',
+        filters: [{ code: 'status', operator: Operator.EQUALS, value: 'final' }],
+      },
       'completed'
     );
 
