@@ -665,6 +665,33 @@ describe('LabOrderDetails', () => {
       expect(screen.queryByText('All values within normal range')).not.toBeInTheDocument();
       expect(medplum.searchResources).not.toHaveBeenCalledWith('DiagnosticReport', expect.anything());
     });
+
+    test('shows the Report tab for a preliminary result on an order that is not yet completed', async () => {
+      const preliminaryReport: DiagnosticReport = {
+        ...mockDiagnosticReport,
+        id: 'diagnostic-report-preliminary',
+        status: 'preliminary',
+        conclusion: 'Preliminary interim result',
+      };
+      medplum.readResource = vi.fn().mockImplementation((resourceType: string, id: string) => {
+        if (resourceType === 'DiagnosticReport' && id === 'diagnostic-report-preliminary') {
+          return Promise.resolve(preliminaryReport);
+        }
+        return Promise.reject(new Error(`Unexpected readResource(${resourceType}, ${id})`));
+      });
+
+      await act(async () => {
+        setup({
+          order: mockActiveServiceRequest,
+          selectedReport: { reference: 'DiagnosticReport/diagnostic-report-preliminary' },
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: 'Report' })).toBeInTheDocument();
+        expect(screen.getByText('Preliminary interim result')).toBeInTheDocument();
+      });
+    });
   });
 
   describe('Document references', () => {

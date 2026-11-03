@@ -58,8 +58,14 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
+  // Default to the Report tab whenever the caller explicitly selected a report (e.g. clicked one
+  // from a results list) or the order is fully completed - in every other case there's nothing
+  // to show there yet, so default to tracking progress instead. This is only the *initial* tab;
+  // availability of the Report tab itself is governed separately, by whether a report exists (see
+  // primaryReport below) rather than by order status, since a report can exist well before the
+  // order it belongs to is marked completed (e.g. a preliminary or partial result).
   const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
-    order.status !== 'completed' ? 'progress' : 'report'
+    selectedReport || order.status === 'completed' ? 'report' : 'progress'
   );
 
   const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
@@ -345,11 +351,8 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             className={classes.pillTabs}
           >
             <Tabs.List>
-              {!hideProgress && (
-                <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
-                  {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                </Tabs.Tab>
-              )}
+              {primaryReport && <Tabs.Tab value="report">Report</Tabs.Tab>}
+              {!hideProgress && <Tabs.Tab value="progress">Progress Tracker</Tabs.Tab>}
               <Tabs.Tab value="order">Order Details</Tabs.Tab>
             </Tabs.List>
           </Tabs>
