@@ -423,8 +423,8 @@ describe('SchedulingWorkspace', () => {
     );
 
     test(`shows the fixtures' booked appointments and blocked slots on the pinned "today"`, async () => {
-      // The same frozen "today" Storybook's `MockDateWrapper` uses, so `timeGridWeek`
-      // renders the same Sun May 3 – Sat May 9 2020 week the fixtures are dated within.
+      // The same frozen "today" Storybook's `MockDateWrapper` uses, so the calendar opens on
+      // the same Mon May 4 – Thu May 7 2020 the fixtures are dated within.
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
 
       const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, streamToBuffer } from '@medplum/core';
-import type { Binary } from '@medplum/fhirtypes';
+import type { Binary, Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -10,6 +10,7 @@ import type { ServerConfig } from '../../config/utils';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 
 const app = express();
 
@@ -75,7 +76,7 @@ describe('Bot $init', () => {
   });
 
   test('Create new bot', async () => {
-    const { accessToken } = await createTestProject({
+    const { project, accessToken } = await createTestProject({
       membership: { admin: true },
       withAccessToken: true,
     });
@@ -104,6 +105,12 @@ describe('Bot $init', () => {
     expect(res3.body.resourceType).toBe('Bot');
     expect(res3.body.id).toBe(res2.body.id);
 
+    const systemRepo = getGlobalSystemRepo();
+    const bot = await systemRepo.readResource<Bot>('Bot', res2.body.id);
+    expect(bot.meta?.project).toBe(project.id);
+    const binary = await systemRepo.readReference<Binary>({ reference: bot.sourceCode?.url });
+    expect(binary.meta?.project).toBe(project.id);
+
     // Create bot with invalid name (should fail)
     const res4 = await request(app)
       .post('/fhir/R4/Bot/$init')
@@ -128,7 +135,7 @@ describe('Bot $init', () => {
     };
     `;
 
-    const { accessToken, repo } = await createTestProject({
+    const { project, accessToken, repo } = await createTestProject({
       membership: { admin: true },
       withAccessToken: true,
       withRepo: true,
@@ -165,6 +172,17 @@ describe('Bot $init', () => {
 
     const executableCodeCheck = await readBinaryContent(repo, extractBinaryId(res2.body.executableCode.url));
     expect(executableCodeCheck).toBe(executableCode);
+
+    const systemRepo = getGlobalSystemRepo();
+    const bot = await systemRepo.readResource<Bot>('Bot', res2.body.id);
+    expect(bot.meta?.project).toBe(project.id);
+    const sourceBinary = await systemRepo.readResource<Binary>('Binary', extractBinaryId(res2.body.sourceCode.url));
+    expect(sourceBinary.meta?.project).toBe(project.id);
+    const executableBinary = await systemRepo.readResource<Binary>(
+      'Binary',
+      extractBinaryId(res2.body.executableCode.url)
+    );
+    expect(executableBinary.meta?.project).toBe(project.id);
   });
 });
 

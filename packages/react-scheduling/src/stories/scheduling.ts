@@ -1180,9 +1180,9 @@ export const AppointmentPatientFixtures = [
 ];
 
 /**
- * Appointments and Slots for the calendar view, dated within the week of Monday,
- * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
- * always renders Sun May 3 through Sat May 9.
+ * Appointments and Slots for the calendar view, dated Monday, May 4 2020 — the date
+ * `MockDateWrapper` freezes the clock to — through Thursday, May 7, so they all fall within
+ * the four days `MultiCalendar` opens on.
  */
 
 /**
@@ -1307,10 +1307,10 @@ export const ExamRoomABlockedSlot: WithId<Slot> = {
 /** Availability at the satellite site, for when the service facility filter is switched. */
 export const SatelliteRoomFreeSlot: WithId<Slot> = {
   resourceType: 'Slot',
-  id: 'slot-satellite-room-free-fri',
+  id: 'slot-satellite-room-free-thu',
   status: 'free',
-  start: '2020-05-08T13:00:00Z',
-  end: '2020-05-08T15:00:00Z',
+  start: '2020-05-07T13:00:00Z',
+  end: '2020-05-07T15:00:00Z',
   schedule: createReference(SatelliteRoomSchedule),
 };
 

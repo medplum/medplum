@@ -18,7 +18,7 @@ import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { hasSmartResourceScopes, isMfaRequired } from './utils';
+import { canManageUserAccount, hasSmartResourceScopes, isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
@@ -59,7 +59,6 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
 
   // Account security details are only for logins that can manage the account (see getCallerUserReference)
   if (user && !hasSmartResourceScopes(authState.login)) {
-    const sessions = await getSessions(systemRepo, user);
     const memberships = await systemRepo.searchResources<ProjectMembership>({
       resourceType: 'ProjectMembership',
       filters: [
@@ -75,6 +74,11 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
         },
       ],
     });
+    const sessions = await getSessions(
+      systemRepo,
+      user,
+      canManageUserAccount(authState.login) ? undefined : memberships
+    );
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       mfaRequired: isMfaRequired(user, project),
@@ -183,7 +187,19 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
   return result;
 }
 
-async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Promise<UserSession[]> {
+/**
+ * Returns the user's recent sessions.
+ * @param systemRepo - The system repository.
+ * @param user - The user.
+ * @param memberships - Optional memberships; if set, only sessions for one of these memberships are returned.
+ * @returns The user's sessions.
+ */
+async function getSessions(
+  systemRepo: SystemRepository,
+  user: WithId<User>,
+  memberships?: WithId<ProjectMembership>[]
+): Promise<UserSession[]> {
+  const membershipRefs = memberships && new Set(memberships.map((m) => getReferenceString(m)));
   const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [
@@ -203,7 +219,10 @@ async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Pr
   const result = [];
   for (const login of logins) {
     // A login that has not been granted yet is not a session
-    if (!login.membership || !login.granted || login.revoked) {
+    if (!login.membership?.reference || !login.granted || login.revoked) {
+      continue;
+    }
+    if (membershipRefs && !membershipRefs.has(login.membership.reference)) {
       continue;
     }
 

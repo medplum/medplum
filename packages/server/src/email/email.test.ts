@@ -19,6 +19,7 @@ import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import { safeAgent } from '../util/url';
 import { sendEmail } from './email';
+import { PROJECT_SMTP_SOCKET_TIMEOUT_MS, PROJECT_SMTP_TIMEOUT_MS } from './utils';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
@@ -438,7 +439,11 @@ describe('Email', () => {
         text: 'Hello Alice',
       });
 
-      expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+      expect(mockCreateTransport).toHaveBeenCalledExactlyOnceWith({
+        host: 'smtp.example.com',
+        port: 587,
+        auth: { user: 'user', pass: 'pass' },
+      });
       expect(mockSendMail).toHaveBeenCalledTimes(1);
       expect(mockSESv2Client.send.callCount).toBe(0);
     } finally {
@@ -467,6 +472,7 @@ describe('Email', () => {
 
     afterEach(() => {
       getConfig().allowProjectSmtp = undefined;
+      getConfig().allowUnsafeOutbound = undefined;
       getConfig().smtp = undefined;
     });
 
@@ -481,10 +487,22 @@ describe('Email', () => {
           port: 587,
           secure: false,
           auth: { user: 'projectuser', pass: 'projectpass' },
+          getSocket: expect.any(Function),
+          connectionTimeout: PROJECT_SMTP_TIMEOUT_MS,
+          greetingTimeout: PROJECT_SMTP_TIMEOUT_MS,
+          socketTimeout: PROJECT_SMTP_SOCKET_TIMEOUT_MS,
         })
       );
       expect(mockSendMail).toHaveBeenCalledTimes(1);
       expect(mockSESv2Client.send.callCount).toBe(0);
+    });
+
+    test('allowUnsafeOutbound uses the default project SMTP socket', async () => {
+      getConfig().allowUnsafeOutbound = true;
+      const project = makeProject(baseSecrets);
+      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.not.objectContaining({ getSocket: expect.anything() }));
     });
 
     test('Infers secure for port 465', async () => {

@@ -29,7 +29,6 @@
   background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
-
 .contentContainer.selected {
   background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-8));
 }

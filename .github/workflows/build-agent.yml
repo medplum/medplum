@@ -48,7 +48,7 @@ jobs:
         run: choco install wget
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -215,7 +215,7 @@ jobs:
           echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: medplum-agent-installer-${{ env.MEDPLUM_VERSION }}-windows
           path: packages/agent/medplum-agent-installer-*
@@ -235,7 +235,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -303,13 +303,13 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-x64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-x64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64.tar.gz
 
   build_agent_linux-arm64:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 45
     env:
       NODE_VERSION: '24'
@@ -323,7 +323,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -391,7 +391,7 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-arm64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-arm64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64.tar.gz
@@ -411,7 +411,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -479,7 +479,7 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-macos-arm64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-macos-arm64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-macos-arm64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-macos-arm64.tar.gz
