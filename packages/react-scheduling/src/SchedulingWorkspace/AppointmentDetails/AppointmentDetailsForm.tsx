@@ -62,7 +62,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
 
   const edited = isEdited(appointment, values, requirements) || comment.trim() !== (appointment.comment ?? '');
   const complete = hasRequiredValues(values, requirements);
-  const commentTooLong = commentMaxLength !== undefined && comment.length > commentMaxLength;
+  const commentTooLong = commentMaxLength !== undefined && comment.trim().length > commentMaxLength;
 
   function chooseValues(next: BookingRequirementValues): void {
     setValues(next);
