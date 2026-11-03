@@ -153,7 +153,7 @@ describe('AppointmentBookingForm', () => {
       await chooseRepeat('Once a week for 2 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       await clickBook();
 
       expect(onBooked).toHaveBeenCalledWith(expect.objectContaining({ appointments: TWO_WEEKS }));
@@ -169,7 +169,7 @@ describe('AppointmentBookingForm', () => {
       await chooseRepeat('Once a week for 2 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       await clickBook();
 
       const [first, second] = reportedBooking().appointments;
@@ -227,7 +227,7 @@ describe('AppointmentBookingForm', () => {
   async function fillWithoutTime(): Promise<void> {
     await chooseImagingService();
     await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
     await openTimeFinder();
   }
 
@@ -293,7 +293,7 @@ describe('AppointmentBookingForm', () => {
         await chooseImagingService();
         await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
         await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
-        await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+        await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
         await openTimeFinder();
       }
 
