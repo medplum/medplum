@@ -83,7 +83,7 @@ flowchart TD
 
 The dashed `Claim` → `Practitioner (supervising)` path is optional. The bot resolves the rendering provider from the `Claim.careTeam` member with role code `primary` (falling back to the first care team member that references a `Practitioner`), and the supervising provider from the member with role code `supervisor`.
 
-### Service facility
+### Service Facility
 
 Set `Claim.facility` to a stored or contained Location when submitting a separate service facility. The bot maps that Location's name and address into the service-facility block and includes its NPI only when present and different from the billing provider's NPI. If `Claim.facility` is absent, the bot omits the separate block; validate the requirements of the intended payer and submission workflow.
 

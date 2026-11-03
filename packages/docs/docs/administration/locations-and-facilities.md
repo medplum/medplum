@@ -10,7 +10,7 @@ Use this guide to model organizations and the places they use across scheduling,
 
 A clinic can be the facility selected during booking and reported on a claim, while a room within it is reserved and recorded on the Encounter. These references can point to the same Location when that is sufficient; add detail when the workflow needs it.
 
-## Places, organizations, and services
+## Places, Organizations, and Services
 
 | What you need to represent | Resource and relationship |
 | :--- | :--- |
@@ -26,19 +26,24 @@ Some integrations use **practice location** to mean an Organization. [Health Gor
 
 Use `Organization.partOf` for organizational subdivisions. For relationships between distinct organizations, such as partnerships or network participation, use [OrganizationAffiliation](https://hl7.org/fhir/R4/organizationaffiliation.html). See [Modeling Provider Networks](/docs/administration/provider-directory/provider-networks) for insurance network relationships.
 
-### Organizations and tenant boundaries
+### Organizations and Tenant Boundaries
 
 **Projects provide Medplum's primary data-isolation boundary. Organizations within a project are not necessarily strict PHI boundaries.** An Organization can represent a tenant, while selected patient data, including the Patient resource itself, can be shared across organizations by design.
 
-Define that separation and sharing through [AccessPolicy and ProjectMembership](/docs/access/access-policies). Creating Organizations, assigning a Location's `managingOrganization`, or linking a child with `partOf` does not enforce access to related patient records.
+- **Access rules:** Define separation and sharing through [AccessPolicy and ProjectMembership](/docs/access/access-policies). Creating Organizations, assigning a Location's `managingOrganization`, or linking a child with `partOf` does not enforce access to related patient records.
 
-In Medplum's standard patient-enrollment model, related clinical resources can inherit the Patient's tenant assignments. If the requirement is to share the Patient record while keeping clinical records separate, account for that inheritance in the access design. See [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy) and the [Access Control Decision Guide](/docs/decision-guides/access-control). For project isolation and explicitly configured sharing between projects, see [Projects](/docs/access/projects).
+- **Patient enrollment:** In Medplum's standard patient-enrollment model, related clinical resources can inherit the Patient's tenant assignments. If you need to share the Patient record while keeping clinical records separate, account for that inheritance in the access design. See [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy) and the [Access Control Decision Guide](/docs/decision-guides/access-control).
 
-Organizations also represent payers, pharmacies, laboratories, and networks; creating one does not necessarily create a tenant. For example, practices can share a pharmacy directory while protecting each patient's pharmacy preference separately. See [Sharing pharmacy Organizations](/docs/integration/scriptsure/multiple-locations#sharing-pharmacy-organizations).
+- **Shared directories:** Organizations also represent payers, pharmacies, laboratories, and networks; creating one does not necessarily create a tenant. For example, practices can share a pharmacy directory while protecting each patient's pharmacy preference separately. See [Sharing pharmacy Organizations](/docs/integration/scriptsure/multiple-locations#sharing-pharmacy-organizations).
 
-## Choose the location detail you need
+For project isolation and explicitly configured sharing between projects, see [Projects](/docs/access/projects).
 
-For a simple outpatient practice, start with one clinic Location. Add rooms or beds when you need to reserve their capacity or document where care occurred. Add a campus or building level when your application needs to group or identify those places.
+## Choose the Location Detail You Need
+
+For a simple outpatient practice, start with one clinic Location. Add detail as the workflow requires:
+
+- **Rooms or beds:** Reserve their capacity or document where care occurred.
+- **Campus or building:** Group or identify the places your application uses.
 
 In this example, West Clinic occupies one building on a campus. The clinic is the service facility used for booking and billing, and Room 201 has its own reservable calendar.
 
@@ -54,7 +59,7 @@ This is an example hierarchy, not a required structure. A standalone clinic does
 
 The hierarchy expresses relationships. It does not automatically make every query recursive or copy parent addresses into children.
 
-## Describe each Location
+## Describe Each Location
 
 | Field | What it tells consumers |
 | :--- | :--- |
@@ -70,13 +75,13 @@ The hierarchy expresses relationships. It does not automatically make every quer
 
 These are [FHIR R4 Location fields](https://hl7.org/fhir/R4/location-definitions.html). Use each distinction for its intended purpose: a room's physical form, a clinic's function, and a claim's place-of-service classification answer different questions.
 
-## Choose the reference for each workflow
+## Choose the Reference for Each Workflow
 
 For one visit at West Clinic, the Appointment and Claim identify the clinic as the facility. The room reservation and Encounter both identify Room 201.
 
 ```mermaid
 flowchart LR
-    subgraph records["Workflow records"]
+    subgraph records["Workflow Records"]
         claim["Claim"]
         appointment["Appointment"]
         encounter["Encounter"]
@@ -114,25 +119,25 @@ For referrals and orders, distinguish who should perform the service from where 
 
 ### Scheduling
 
-Selecting a service facility does not reserve a room. Include the room's Schedule when finding and booking time if its capacity must be reserved. Availability is implicit: Medplum creates Slots for booked, held, or blocked time, rather than pre-creating free Slots. See [Defining Availability](/docs/scheduling/defining-availability).
+- **Room reservations:** Include the room's Schedule when finding and booking time; selecting a service facility reserves no room capacity. Availability is implicit: Medplum creates Slots only for booked, held, or blocked time. See [Defining Availability](/docs/scheduling/defining-availability).
 
-Listing several Locations on a HealthcareService does not define different hours at each site. For site-specific availability, use separate HealthcareServices for the sites, with a shared practitioner Schedule and service-specific overrides where needed. See [Choosing the actor](/docs/scheduling/defining-availability#choosing-the-actor) for this pattern.
+- **Hours by site:** Listing several Locations on one HealthcareService does not assign different hours to each. For site-specific availability, use separate HealthcareServices with a shared practitioner Schedule and service-specific overrides where needed. See [Choosing the actor](/docs/scheduling/defining-availability#choosing-the-actor).
 
-Configure the time zone used by each Schedule's availability. Scheduling uses time zone settings on the Schedule or HealthcareService, with the Schedule actor's time zone as a fallback. A time zone on a facility or its managing Organization is not automatically inherited by a practitioner's Schedule. See [Facility Time Zones](/docs/scheduling/timezones#facility-time-zones).
+- **Time zones:** Set the availability time zone on the Schedule or HealthcareService. The Schedule actor's time zone is the fallback; a practitioner's Schedule does not automatically inherit the facility's or managing Organization's time zone. See [Facility Time Zones](/docs/scheduling/timezones#facility-time-zones).
 
-To close a facility's calendars, update the affected Schedules or block the unavailable time. Changing the parent Location's status or opening hours does not close those calendars automatically.
+- **Closures:** Update the affected Schedules or block the unavailable time. Changing the parent Location's status or opening hours does not close those calendars automatically.
 
-Facility assignments and licensure also answer different questions. A role referencing a licensed jurisdiction does not establish an assignment to a particular clinic. Use the [service-specific licensure model](/docs/scheduling/state-by-state-licensure) when needed, and enforce required eligibility checks in the application's controlled booking path.
+- **Licensure:** A role referencing a licensed jurisdiction does not establish an assignment to a particular clinic. Use the [service-specific licensure model](/docs/scheduling/state-by-state-licensure) when needed, and enforce required eligibility checks in the application's controlled booking path.
 
 `SchedulingConfigWorkspace` can create its own facility-assignment `PractitionerRole` without an `organization`, alongside directory roles. The React booking UI combines locations from each provider's active roles; see [Configuration ownership](/docs/scheduling/react-components#configuration-ownership) and [Facility matching](/docs/scheduling/react-components#service-facility-references). These UI filters do not enforce backend eligibility or data access. Choose how to use the UI in the [Scheduling Decision Guide](/docs/decision-guides/scheduling).
 
-### Clinical care
+### Clinical Care
 
 Use `Encounter.location` at the level the clinical workflow needs. Its entries can include `status` and `period` to distinguish planned locations from actual presence and to record movement during care.
 
 `Encounter.serviceProvider` identifies the organization responsible for the encounter's services. It is separate from the physical location. See [FHIR R4 Encounter location](https://hl7.org/fhir/R4/encounter-definitions.html#Encounter.location) and the [Chart Data Model](/docs/charting/chart-data-model).
 
-## Billing facility and place of service
+## Billing Facility and Place of Service
 
 `Claim.facility` identifies the Location where services were provided. A **place-of-service code** classifies the setting for billing. The facility, billing provider, and place-of-service classification are separate inputs.
 

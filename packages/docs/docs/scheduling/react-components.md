@@ -6,7 +6,7 @@ title: React Scheduling Components
 
 Use `@medplum/react-scheduling` to embed scheduling and configuration interfaces in an application built with `@medplum/react`. The package is [Alpha](/docs/compliance/alpha-beta) and subject to breaking changes. Its scheduling operations are Beta. You can use complete workspaces, individual React components, or your own UI using only the scheduling backend. Start with the [Scheduling Decision Guide](/docs/decision-guides/scheduling) for workflow planning. This page describes component behavior and integration details; [Storybook](https://storybook.medplum.com/) lets you explore the interfaces.
 
-## Available components
+## Available Components
 
 Adopt booking and configuration independently. For example, use `SchedulingConfigWorkspace` for staff administration while composing a patient booking screen from individual components or building it directly on the scheduling APIs.
 
@@ -22,7 +22,7 @@ Adopt booking and configuration independently. For example, use `SchedulingConfi
 
 These are public exports from the [package entry point](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/index.ts). The appointment details pane, blocked-time forms, and visit-type/actor configuration pages are features within the workspaces, not separately exported components. The parameter editor is also internal to the package's current public entry point.
 
-## Embed the workspaces
+## Embed the Workspaces
 
 Mount components inside the application's existing `MedplumProvider` and `MantineProvider`, with an authenticated Medplum client. Import the scheduling stylesheet alongside the application's existing styles. See [React](/docs/react) for application setup.
 
@@ -42,23 +42,23 @@ export function SchedulingConfigurationPage() {
 
 The workspaces use the signed-in user's Medplum client. Showing or hiding a route does not grant or revoke access to FHIR resources; enforce that access through [AccessPolicy and ProjectMembership](/docs/access/access-policies).
 
-### Submission and callbacks
+### Submission and Callbacks
 
 `AppointmentBookingForm` performs the booking before calling `onBooked`. `SchedulingWorkspace` also exposes callbacks such as `onConfirmed`, `onCancelled`, `onRescheduled`, `onUpdated`, and `onBlocked` after the corresponding writes. Use these for refreshing host views and reporting outcomes. Throwing from a post-write callback does not roll back the write.
 
 When booking requires checks before it commits, use `AppointmentProposalForm.onSubmit` to call the application's controlled booking path. That path must revalidate eligibility and use the appropriate scheduling operation. The built-in booking flow calls `$book`; it does not automatically substitute `$hold` for a visit requiring approval. The details pane's Confirm button calls `$confirm` for a pending appointment, without performing an approval or prior-authorization workflow.
 
-### Manual booking and rescheduling
+### Manual Booking and Rescheduling
 
 `canBypassSchedulingRules` exposes manual booking and rescheduling through FHIR writes. It does not grant permission or reproduce the scheduling operations' availability checks. Keep any such exceptions behind a controlled and authorized workflow.
 
-Manual booking submits the Appointment and its Slots in a transaction Bundle. Without the project's `transaction-bundles` feature, the server applies it as a batch: successful Slot writes can remain as blocked time if the Appointment fails to save. Enable the feature for an all-or-none booking. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+- **Manual booking:** Submits the Appointment and its Slots in a transaction Bundle. Without the project's `transaction-bundles` feature, the server applies it as a batch: successful Slot writes can remain as blocked time if the Appointment fails to save. Enable the feature for an all-or-none booking. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 
-Manual rescheduling uses separate FHIR writes: create new Slots, conditionally update the Appointment, then delete the old Slots. If creation or the update fails, it attempts to delete the new Slots. Cleanup is best effort; failed deletions are logged and can leave new or old Slots blocking time without a visit. The transaction feature does not change this path. Inspect the Appointment and Slot records before retrying or removing unused Slots.
+- **Manual rescheduling:** Uses separate FHIR writes: create new Slots, conditionally update the Appointment, then delete the old Slots. If creation or the update fails, it attempts to delete the new Slots. Cleanup is best effort; failed deletions are logged and can leave new or old Slots blocking time without a visit. The transaction feature does not change this path. Inspect the Appointment and Slot records before retrying or removing unused Slots.
 
 Both manual paths add an Appointment extension with `valueBoolean: true`: `SchedulingUnvalidatedBookingURI` from `@medplum/core` for booking, and [`SchedulingUnvalidatedReschedule`](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/AppointmentFinder/writeElevatedReschedule.ts) for rescheduling. These markers identify writes that skipped scheduling checks; the chosen time may still satisfy the rules. A successful `$reschedule` replaces the reschedule marker but preserves the original booking marker.
 
-## Configuration ownership
+## Configuration Ownership
 
 The configuration workspace edits `HealthcareService` defaults and each actor's `Schedule` offerings and per-service overrides. An actor can offer or stop offering visit types, and a visit-type page links to the actors offering it. Stopping an offering removes that service's Schedule overrides; it does not rewrite existing Appointments. Hours use the inheritance rules in [Defining Availability](/docs/scheduling/defining-availability).
 
@@ -77,7 +77,7 @@ Turning off an actor in the workspace also turns off its Schedule. Turning off o
 
 Configuration saves submit changed resources in one transaction Bundle, with version conditions on updates. Without the project's `transaction-bundles` feature, entries execute independently and a save can partially succeed. The actor configuration page shows the first failure, not a complete report of each resource's outcome. Inspect the stored resources and reload the latest state before retrying; a save error does not mean nothing was written. Enable the feature for all-or-none saves. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 
-## Booking requirements
+## Booking Requirements
 
 The configuration workspace records these codes in `HealthcareService.eligibility.code.coding`, using `SCHEDULING_ELIGIBILITY_SYSTEM` from `@medplum/core`. `getSchedulingRequirements(service)` reads them.
 
@@ -95,7 +95,7 @@ The details editor updates notes and requirement fields that the visit type curr
 
 Source: [core constants and reader](https://github.com/medplum/medplum/blob/main/packages/core/src/scheduling.ts), [React validation](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/AppointmentFinder/AppointmentFinder.requirements.ts), and [booking validation and writes](https://github.com/medplum/medplum/blob/main/packages/server/src/fhir/operations/utils/scheduling.ts).
 
-## Service facility references
+## Service Facility References
 
 See [Organizations and Locations](/docs/administration/locations-and-facilities) for the shared model across scheduling, encounters, and billing. This section describes the React components' current selection and matching behavior.
 
@@ -113,7 +113,7 @@ The configuration workspace confirms changes between an empty facility list and 
 
 The appointment's marked facility reference reserves no capacity. Reserve a room by including its Schedule in search and booking. A facility association does not automatically close child calendars, scope patient access, or populate a Claim. A billing workflow can reuse the facility Location when appropriate, or reference another level of the Location hierarchy when required by its submission model. See the [RCM & Billing Decision Guide](/docs/decision-guides/rcm-billing), [Candid service facility mapping](/docs/integration/candid/claim-submission#location-service-facility), and [Stedi service facility mapping](/docs/integration/stedi/claim-submission/professional-claims#service-facility).
 
-### Facility filtering and licensure
+### Facility Filtering and Licensure
 
 The provider facility filter reads locations from active roles without checking each role's `healthcareService`. It does not distinguish facility-assignment roles from roles representing licensed jurisdictions. A role naming a state does not match a clinic within that state; the provider comparison does not walk Location ancestry. Keep this behavior in mind when combining the workspace with the [service-and-jurisdiction model](/docs/scheduling/state-by-state-licensure).
 
@@ -121,17 +121,23 @@ The selectors are permissive when associations are unknown: unreadable provider 
 
 Source: [facility search criteria](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/constants.ts), [service matching](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/AppointmentFinder/AppointmentServiceSelect.utils.ts), [actor matching](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/AppointmentFinder/AppointmentFinder.schedules.ts), and [provider-role writes](https://github.com/medplum/medplum/blob/main/packages/react-scheduling/src/SchedulingConfigWorkspace/ActorPage/roleDraft.ts).
 
-## Blocked time
+## Blocked Time
 
 The workspace's Block Time action creates a `busy-unavailable` Slot on each selected Schedule. These blocks omit `serviceType` and apply to all services on those Schedules. They do not create an Appointment or change existing appointments.
 
-The multi-calendar action submits one Slot per selected Schedule in a transaction Bundle. Without the project's `transaction-bundles` feature, some calendars can be blocked while others fail. The form reports how many were blocked and disables immediate resubmission. Check which calendars were missed, then select only those calendars to re-enable the form and submit again. This avoids duplicate blocks on calendars where the first attempt succeeded. Enable the feature to write all the blocks or none. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+The multi-calendar action submits one Slot per selected Schedule in a transaction Bundle. Without the project's `transaction-bundles` feature, some calendars can be blocked while others fail. Enable the feature to write all the blocks or none. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+
+After a partial save, the form reports how many calendars were blocked and disables immediate resubmission. To recover:
+
+1. Inspect the calendars to identify which ones were missed.
+2. Select only the missed calendars. Changing the selection re-enables the form.
+3. Submit again to block those calendars without duplicating the successful writes.
 
 A saved block can be edited or deleted individually. The details pane disables those actions until it verifies that no Appointment holds the Slot. Appointment-owned Slots, including buffers, must be moved or released through the appointment workflow.
 
 When a service facility or visit-type calendar filter is active, the workspace hides standalone blocked-time Slots. They still affect availability. Clear those filters to inspect the blocks.
 
-## Appointment changes
+## Appointment Changes
 
 The workspace details pane offers confirmation for pending appointments and cancellation or rescheduling for eligible booked or pending appointments. It shows appointments read-only once 12 hours have elapsed after `end`, falling back to `start` if `end` is missing. An already-open edit or reschedule view can still finish; this is a UI rule, not a backend lock. Applications requiring a correction deadline must enforce it in their controlled write path.
 
