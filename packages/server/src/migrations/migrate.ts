@@ -583,9 +583,14 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   }
 
   if (resourceType === 'User') {
+    result.indexes = result.indexes.filter((i) => !(i.columns.length === 1 && i.columns[0] === 'projectId'));
     result.indexes.push(
       { columns: ['project', 'email'], indexType: 'btree', unique: true },
-      { columns: ['project', 'externalId'], indexType: 'btree', unique: true }
+      { columns: ['project', 'externalId'], indexType: 'btree', unique: true },
+      {
+        columns: ['projectId', { expression: 'lower(email) text_pattern_ops', name: 'emailLowerPattern' }],
+        indexType: 'btree',
+      }
     );
   }
 
