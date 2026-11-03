@@ -124,11 +124,11 @@ export function formatHumanName(name: HumanName | undefined, options?: HumanName
 
   const builder = [];
 
-  if (name.prefix && options?.prefix !== false) {
+  if (Array.isArray(name.prefix) && options?.prefix !== false) {
     builder.push(...name.prefix);
   }
 
-  if (name.given) {
+  if (Array.isArray(name.given)) {
     builder.push(...name.given);
   }
 
@@ -136,7 +136,7 @@ export function formatHumanName(name: HumanName | undefined, options?: HumanName
     builder.push(name.family);
   }
 
-  if (name.suffix && options?.suffix !== false) {
+  if (Array.isArray(name.suffix) && options?.suffix !== false) {
     builder.push(...name.suffix);
   }
 
@@ -504,7 +504,10 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
     return textStr;
   }
   if (Array.isArray(codeableConcept.coding)) {
-    return codeableConcept.coding.map((c) => formatCoding(c)).join(', ');
+    return codeableConcept.coding
+      .map((c) => formatCoding(c))
+      .filter(Boolean)
+      .join(', ');
   }
   return '';
 }

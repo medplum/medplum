@@ -521,8 +521,20 @@ describe('Core Utils', () => {
     ).toStrictEqual('Ondansetron 4 MG');
   });
 
+  test('getDisplayString with a missing resource', () => {
+    expect(getDisplayString(undefined)).toBe('');
+    expect(getDisplayString(null as unknown as Resource)).toBe('');
+  });
+
   test('getDisplayString does not throw on malformed input', () => {
     const malformed = [
+      { resourceType: 'Device', id: '123', deviceName: [null] },
+      { resourceType: 'Device', id: '123', deviceName: [{ name: 123 }] },
+      { resourceType: 'Patient', id: '123', name: [{ given: 5, prefix: {}, suffix: {} }] },
+      { resourceType: 'DocumentReference', id: '123', description: {} },
+      { resourceType: 'Subscription', id: '123', criteria: {} },
+      { resourceType: 'User', id: '123', email: {} },
+      { resourceType: 'Immunization', id: '123', vaccineCode: { coding: [null, {}] } },
       { resourceType: 'Coverage', id: '123', payor: [null] },
       { resourceType: 'Coverage', id: '123', payor: { display: 'Acme' } },
       { resourceType: 'Coverage', id: '123', payor: [{ display: 123, reference: 456 }] },

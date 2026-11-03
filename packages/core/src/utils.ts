@@ -200,7 +200,10 @@ export function isProfileResource(resource: Resource): resource is ProfileResour
  * @param resource - The input resource.
  * @returns Human friendly display string.
  */
-export function getDisplayString(resource: Resource): string {
+export function getDisplayString(resource: Resource | undefined): string {
+  if (!resource) {
+    return '';
+  }
   if (isProfileResource(resource)) {
     const profileName = getProfileResourceDisplayString(resource);
     if (profileName) {
@@ -217,7 +220,7 @@ export function getDisplayString(resource: Resource): string {
     }
   }
   if (resource.resourceType === 'DocumentReference') {
-    if (resource.description) {
+    if (typeof resource.description === 'string' && resource.description) {
       return resource.description;
     }
     if (resource.type) {
@@ -250,10 +253,10 @@ export function getDisplayString(resource: Resource): string {
   if (resource.resourceType === 'Slot' && (resource.start || resource.end)) {
     return `${formatDateTime(resource.start)} - ${formatDateTime(resource.end)}`;
   }
-  if (resource.resourceType === 'Subscription' && resource.criteria) {
+  if (resource.resourceType === 'Subscription' && typeof resource.criteria === 'string' && resource.criteria) {
     return resource.criteria;
   }
-  if (resource.resourceType === 'User' && resource.email) {
+  if (resource.resourceType === 'User' && typeof resource.email === 'string' && resource.email) {
     return resource.email;
   }
   if ('name' in resource && resource.name && typeof resource.name === 'string') {
@@ -294,7 +297,7 @@ function getProfileResourceDisplayString(resource: ProfileResource): string | un
  */
 function getDeviceDisplayString(device: Device): string | undefined {
   const names = device.deviceName;
-  if (names && names.length > 0) {
+  if (Array.isArray(names) && typeof names[0]?.name === 'string') {
     return names[0].name;
   }
   return undefined;
