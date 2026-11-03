@@ -1,7 +1,8 @@
 # This is the docker-compose file to run Medplum's required background services
-# It can be used to quickly run 2 services:
+# It can be used to quickly run 3 services:
 #   1) The Postgres database
 #   2) The Redis cache
+#   3) Mailpit, an SMTP server that catches outgoing email, used by the e2e tests (web UI at http://localhost:8025)
 # You can start all services by running "docker-compose up"
 services:
   postgres:
@@ -23,6 +24,12 @@ services:
     command: redis-server --requirepass medplum
     ports:
       - '6379:6379'
+  mailpit:
+    image: axllent/mailpit:v1.33.0
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
 
 volumes:
   medplum-postgres-data:

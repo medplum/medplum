@@ -50,3 +50,7 @@ npm t -- --coverage
 npm t -- src/App.test.tsx --coverage
 npm t -- src/App.test.tsx -t 'Click logo' --coverage
 ```
+
+## End-to-end tests
+
+The [`@medplum/e2e`](https://github.com/medplum/medplum/tree/main/packages/e2e) package runs [Playwright](https://playwright.dev/) tests against a real server and app, with Postgres, Redis and [Mailpit](https://mailpit.axllent.org/) running. CI runs them on every pull request. See the [e2e README](https://github.com/medplum/medplum/blob/main/packages/e2e/README.md) for setup and how to write tests.

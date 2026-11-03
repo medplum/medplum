@@ -21,14 +21,15 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "scripts": {
-    "docs:screenshots": "npx playwright test docs-screenshots --reporter=list",
+    "docs:screenshots": "npx playwright test -c playwright.docs.config.ts",
     "playwright:codegen": "npx playwright codegen http://localhost:3000",
     "playwright:install": "npx playwright install --with-deps chromium",
-    "test:smoke": "npx playwright test smoke/medplum.smoke.test.ts --reporter=list,html"
+    "test:e2e": "npx playwright test"
   },
   "devDependencies": {
     "@medplum/core": "5.2.13",
     "@medplum/fhirtypes": "5.2.13",
+    "@peculiar/x509": "1.14.3",
     "@playwright/test": "1.64.1"
   },
   "engines": {

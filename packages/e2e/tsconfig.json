@@ -1,4 +1,4 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["smoke/**/*.ts", "docs-screenshots/**/*.ts"]
+  "include": ["*.ts", "api/**/*.ts", "ui/**/*.ts", "fixtures/**/*.ts", "docs-screenshots/**/*.ts"]
 }

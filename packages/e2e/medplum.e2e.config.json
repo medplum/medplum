@@ -1,0 +1,8 @@
+{
+  "recaptchaSiteKey": "",
+  "recaptchaSecretKey": "",
+  "smtp": {
+    "host": "localhost",
+    "port": 1025
+  }
+}

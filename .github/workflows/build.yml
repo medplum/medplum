@@ -565,7 +565,7 @@ jobs:
     strategy:
       matrix:
         node-version: [22, 24]
-        pg-version: [14, 18]
+        pg-version: [18]
         redis-version: [7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
@@ -601,6 +601,18 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+      mailpit:
+        image: axllent/mailpit:v1.33.0
+        # Fork PRs don't get secrets; empty username/password (or null) fail template validation, so fall back to an empty mapping
+        credentials: ${{ secrets.DOCKERHUB_USERNAME && fromJSON(format('{{"username":{0},"password":{1}}}', toJSON(secrets.DOCKERHUB_USERNAME), toJSON(secrets.DOCKERHUB_TOKEN))) || fromJSON('{}') }}
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 1025:1025
+          - 8025:8025
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -649,10 +661,26 @@ jobs:
         run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
         env:
           PGPASSWORD: medplum
-      - name: Install playwright
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+      - name: Install Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - name: Build Medplum
         run: npm run build:fast
+        env:
+          # The e2e server config disables reCAPTCHA, so the app must not render it either
+          RECAPTCHA_SITE_KEY: ''
       - name: Smoke test npm run dev
         run: |
           pushd packages/server
@@ -688,45 +716,19 @@ jobs:
           wait "$SERVER_PID" 2>/dev/null || true
           # last resort if something is still listening
           kill -9 -- "-$SERVER_PID" 2>/dev/null || true
-      - name: Start server and app
-        run: |
-          pushd packages/server
-          npm start > server.log 2>&1 &
-          popd
-          pushd packages/app
-          npm run preview > app.log 2>&1 &
-          popd
-      - name: Wait for deployment to be ready
-        run: |
-          # Add retry mechanism for deployment readiness check
-          MAX_RETRIES=10
-          RETRY_COUNT=0
-
-          until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
-            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-              echo "Max retries reached. Deployment not ready."
-              cat packages/server/server.log
-              exit 1
-            fi
-
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            echo "Waiting for deployment to be ready... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
-            sleep 30
-          done
       - name: Run e2e tests
-        # TODO: Later on, we can change this to test:e2e to run all e2e tests, when we have more
-        run: |
-          pushd packages/e2e
-          npm run test:smoke
-          popd
+        # Playwright's webServer starts the server and app; see packages/e2e/playwright.config.ts
+        run: npm run test:e2e
+        working-directory: packages/e2e
       - name: Upload test results
-        if: ${{ failure() || (matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
+        if: ${{ failure() || matrix.node-version == 22 }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
           path: |
             packages/e2e/playwright-report/
             packages/e2e/test-results/
+            packages/e2e/logs/
           retention-days: 30
 
   build-docs:

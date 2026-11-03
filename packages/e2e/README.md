@@ -1,30 +1,72 @@
 # @medplum/e2e
 
-A collection of end-to-end tests to run against Medplum
+End-to-end tests that run against a real Medplum server and app.
 
-## Getting started
+- `api/`: tests that call the server directly with `MedplumClient`
+- `ui/`: tests that drive the app in Chromium
+- `fixtures/`: shared fixtures and helpers
+- `docs-screenshots/`: generates the screenshots in the docs (not part of the e2e suite)
 
-Before running any tests, you have to install Playwright in your local environment. To do this, run the following command in this directory:
+## Prerequisites
+
+1. Postgres, Redis and [Mailpit](https://mailpit.axllent.org/) running on their default ports. From the repository root, `docker compose up` starts all three.
+2. Medplum built with reCAPTCHA disabled, from the repository root:
+
+   ```bash
+   RECAPTCHA_SITE_KEY= npm run build:fast
+   ```
+
+   The e2e server config disables reCAPTCHA, so the app must not render it either.
+
+3. Chromium for Playwright, from this directory:
+
+   ```bash
+   npm run playwright:install
+   ```
+
+## Running the tests
+
+From this directory:
 
 ```bash
-npm run playwright:install
+npm run test:e2e
 ```
 
-This installs Playwright along with the required Chromium dependency.
+Playwright starts the server (with `medplum.e2e.config.json` layered over `packages/server/medplum.config.json`) and the app, runs the tests, then stops both. Server logs are written to `logs/server.log`.
 
-## Running the smoke tests
-
-To run the tests, after making sure that both `@medplum/server` and `@medplum/app` are running, run the following command:
+To run part of the suite, pass Playwright arguments through, for example:
 
 ```bash
-npm run test:smoke
+npm run test:e2e -- --project=api
+npm run test:e2e -- --grep @auth
+npm run test:e2e -- ui/signin.test.ts
 ```
+
+Tags (`@smoke`, `@auth`, `@outbound`) only exist for picking an area locally; CI runs everything.
+
+### Reusing a running server
+
+Outside CI, Playwright reuses a server on port 8103 and an app on port 3000 instead of starting its own. A reused server must load the e2e config and trust the test CA, or tests that depend on them will fail:
+
+```bash
+# packages/server
+NODE_EXTRA_CA_CERTS=../e2e/.certs/ca.pem npm run dev -- file:medplum.config.json,file:../e2e/medplum.e2e.config.json
+```
+
+`.certs/` is created the first time Playwright loads its config.
 
 ## Writing tests
 
-Aside from writing tests manually, you can also use the Playwright codegen tool to create tests by clicking through scenarios in the actual app.
+Tests must not depend on each other or on shared data. Import `test` and `expect` from `fixtures/test.ts` and use its fixtures:
 
-To use the tool, start both `@medplum/server` and `@medplum/app` locally on the default ports and then run the following command:
+- `testProject`: a new project whose owner is signed in as a project admin. Use `signIn(page, email, password)` to sign in through the app.
+- `superAdmin`: a super admin client, for setup that a project admin can't do, such as enabling project features.
+- `startHttpsServer`: starts a local HTTPS server with a certificate signed by the test CA. The server trusts that CA through `NODE_EXTRA_CA_CERTS`.
+- `waitForEmail(address)` in `fixtures/mailpit.ts`: waits for an email that the server sent through Mailpit.
+
+Use a unique address, such as `` `e2e-${randomUUID()}@example.com` ``, for every user a test creates.
+
+You can also generate test steps by clicking through the app with the Playwright codegen tool, while the server and app are running:
 
 ```bash
 npm run playwright:codegen

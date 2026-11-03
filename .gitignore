@@ -103,6 +103,8 @@ terraform.rc
 test-results/
 playwright-report/
 playwright/.cache/
+packages/e2e/.certs/
+packages/e2e/logs/
 
 # Cursor
 .cursor/
