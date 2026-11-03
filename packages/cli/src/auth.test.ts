@@ -306,6 +306,22 @@ describe('CLI auth', () => {
       });
     });
 
+    function mockSignOutResponse(status: number): void {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(null, { status }))
+      );
+      vi.spyOn(medplum, 'signOut').mockImplementation(async () => {
+        const options = (createMedplumClient as unknown as Mock).mock.calls[0][0];
+        await options.fetch('https://example.com/oauth2/token', {});
+        throw new Error(`HTTP ${status}`);
+      });
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
     test('Revokes every stored session and keeps profile settings', async () => {
       const signOut = vi.spyOn(medplum, 'signOut');
 
@@ -321,11 +337,7 @@ describe('CLI auth', () => {
     });
 
     test('Treats tokens rejected by the server as already invalid', async () => {
-      vi.spyOn(medplum, 'signOut').mockImplementation(async () => {
-        const options = (createMedplumClient as unknown as Mock).mock.calls[0][0];
-        options.onUnauthenticated();
-        throw new Error('Unauthenticated');
-      });
+      mockSignOutResponse(400);
 
       await main(['node', 'index.js', 'logout']);
 
@@ -334,8 +346,8 @@ describe('CLI auth', () => {
       expect(JSON.parse(file).activeLogin).toBeUndefined();
     });
 
-    test('Keeps stored tokens when revocation fails', async () => {
-      vi.spyOn(medplum, 'signOut').mockRejectedValue(new Error('Network error'));
+    test('Keeps stored tokens when the server is unavailable', async () => {
+      mockSignOutResponse(503);
       const original = file;
 
       await expect(main(['node', 'index.js', 'logout'])).rejects.toThrow('Process exited with exit code 1');

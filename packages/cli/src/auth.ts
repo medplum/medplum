@@ -46,16 +46,24 @@ logout.action(async (options) => {
     return;
   }
 
-  // Revoke through an in-memory client: a rejected token makes MedplumClient clear its storage,
-  // which would otherwise erase the saved profile settings along with the tokens.
+  // Revoke through an in-memory client: MedplumClient clears its storage after signOut() and when a token is
+  // rejected, which would otherwise erase the saved profile settings along with the tokens.
+  // MedplumClient reports a rejected token and a 429, 5xx or network failure through the same errors,
+  // so watch the response status to tell them apart: only a 400 or 401 means the session is already invalid.
   let rejected = false;
+  const fetchApi = options.fetch ?? fetch;
   const medplum = await createMedplumClient(
     {
       ...options,
-      storage: new ClientStorage(new MemoryStorage()),
-      onUnauthenticated: () => {
-        rejected = true;
+      fetch: async (url: string, init?: RequestInit) => {
+        const response = await fetchApi(url, init);
+        if (response.status === 400 || response.status === 401) {
+          rejected = true;
+        }
+        return response;
       },
+      storage: new ClientStorage(new MemoryStorage()),
+      onUnauthenticated: () => undefined,
     },
     false
   );
