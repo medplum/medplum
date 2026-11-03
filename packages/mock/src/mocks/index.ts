@@ -6,6 +6,7 @@ export * from './bot';
 export * from './project';
 export * from './questionnaire';
 export * from './simpsons';
+export * from './states';
 export * from './subscription';
 export * from './thread';
 export * from './uscore';

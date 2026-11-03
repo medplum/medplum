@@ -11,7 +11,7 @@ including when starting from Medplum Provider.
 
 Read these files before proposing an approach or beginning setup or implementation:
 
-- `packages/docs/docs/building-with-ai-coding-assistants.md`
+- `packages/docs/docs/agentic-engineering/index.md`
 - `packages/docs/static/ai/medplum-rules.md`
 
 Apply the rules to the current conversation immediately, even before an application folder exists. Initial planning does

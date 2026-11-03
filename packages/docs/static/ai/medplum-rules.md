@@ -14,7 +14,7 @@ before writing code – the rules below are reminders, not a substitute for the 
 
 Apply these rules immediately, even before an application folder exists. Initial planning does not require persistent setup.
 Once the application's folder is known, check its agent instructions and offer the optional rules setup in section 5 of
-`medplum-link/packages/docs/docs/building-with-ai-coding-assistants.md`
+`medplum-link/packages/docs/docs/agentic-engineering/index.md`
 (or https://www.medplum.com/docs/building-with-ai-coding-assistants#5-encode-your-conventions-in-a-rule-file).
 For application design or substantial feature planning, follow `medplum-link/packages/docs/static/ai/planning.md`
 (or https://www.medplum.com/ai/planning.md with web access).

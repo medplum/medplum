@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 export * from './client';
 export * from './constants';
+export * from './generate-mock';
+export * from './mock-state';
 export * from './mocks';
 export * from './subscription-manager';
 export * from './test-resources/fish-patient';

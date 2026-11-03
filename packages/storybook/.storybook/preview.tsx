@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { useFakeTimers } from 'sinon';
 import { addons } from 'storybook/preview-api';
+import { withMockState } from '../../react/src/stories/decorators';
 import { withSchedulingHeader } from '../src/decorators';
 import { themePresetMap, themePresets } from './themes';
 
@@ -74,6 +75,7 @@ function ColorSchemeWrapper({ children }: { children: React.ReactNode }) {
 
 export const decorators: Decorator[] = [
   withSchedulingHeader,
+  withMockState,
   (Story, ctx) => (
     <BrowserRouter>
       <MedplumProvider
