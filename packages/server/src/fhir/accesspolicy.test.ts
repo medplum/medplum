@@ -3529,6 +3529,29 @@ describe('AccessPolicy', () => {
         await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
         await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
       }));
+
+    test('Extra ? in scope search string does not drop Patient compartment', async () =>
+      withTestContext(async () => {
+        const login = await tryLogin({
+          authMethod: 'password',
+          email,
+          password,
+          projectId: project.id,
+          scope: 'openid launch/patient patient/Condition.rs',
+          nonce: randomUUID(),
+        });
+
+        const patientRepo = await getRepoForLogin({
+          // Matches both Conditions, so only the Patient compartment hides otherCondition
+          login: { ...login, scope: 'openid launch/patient patient/Condition.rs?code:not=x?y' },
+          project,
+          membership,
+          userConfig: { resourceType: 'UserConfiguration' },
+        });
+
+        await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
+        await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
   });
 
   describe('Logins with SMART scopes', () => {
