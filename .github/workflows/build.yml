@@ -438,9 +438,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # The SonarCloud leg needs unshallow history for blame; blobless keeps it small, and blame fetches old blobs on demand
-          fetch-depth: ${{ (!github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7) && '0' || '10' }}
-          filter: ${{ (!github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7) && 'blob:none' || '' }}
+          # SonarCloud on main needs full history (blame, new code period); PRs only need the merge base with main
+          fetch-depth: ${{ (!github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 && github.event_name != 'pull_request') && '0' || '10' }}
+      - name: Fetch main for SonarCloud merge base
+        if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 && github.event_name == 'pull_request' }}
+        run: git fetch --no-tags --depth=50 origin +refs/heads/main:refs/remotes/origin/main
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
