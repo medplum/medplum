@@ -210,8 +210,10 @@ describe('safeFetch', () => {
     // Route the TLS connection for the public address to the local server and trust its certificate.
     // Relies on undici's connector calling tls.connect through the module object at call time.
     const tlsConnect = tls.connect;
-    const connectSpy = vi.spyOn(tls, 'connect').mockImplementation(((options: tls.ConnectionOptions) =>
-      tlsConnect({ ...options, host: '127.0.0.1', ca: cert })) as typeof tls.connect);
+    const connectSpy = vi
+      .spyOn(tls, 'connect')
+      .mockImplementation(((options: tls.ConnectionOptions) =>
+        tlsConnect({ ...options, host: '127.0.0.1', ca: cert })) as typeof tls.connect);
 
     await withServer(server, async (port) => {
       mockDnsLookup(null, [{ address: '93.184.216.34', family: 4 }]);
