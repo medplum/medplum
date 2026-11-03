@@ -15,7 +15,7 @@ import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
-import type { Mock, Mocked, MockedFunction, MockInstance } from 'vitest';
+import type { Mock, Mocked, MockedFunction } from 'vitest';
 import { vi } from 'vitest';
 import { encodeBase64 } from './base64';
 import type { CdsRequest } from './cds';
@@ -739,16 +739,12 @@ describe('Client', () => {
 
   describe('Get external auth redirect URI', () => {
     let client: MedplumClient;
-    let consoleErrorSpy: MockInstance;
 
     beforeAll(() => {
-      consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // Earlier tests leave an active login behind, which the client would try to resume
+      localStorage.clear();
       const fetch = mockFetch(200, {});
       client = new MedplumClient({ fetch });
-    });
-
-    afterAll(() => {
-      consoleErrorSpy.mockRestore();
     });
 
     beforeEach(() => {

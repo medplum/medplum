@@ -3,6 +3,8 @@
 import { TextDecoder, TextEncoder } from 'node:util';
 import { MemoryStorage } from './storage';
 
-Object.defineProperty(globalThis.window, 'sessionStorage', { value: new MemoryStorage() });
-Object.defineProperty(globalThis.window, 'TextDecoder', { value: TextDecoder });
-Object.defineProperty(globalThis.window, 'TextEncoder', { value: TextEncoder });
+if (globalThis.window) {
+  Object.defineProperty(globalThis.window, 'sessionStorage', { value: new MemoryStorage() });
+  Object.defineProperty(globalThis.window, 'TextDecoder', { value: TextDecoder });
+  Object.defineProperty(globalThis.window, 'TextEncoder', { value: TextEncoder });
+}

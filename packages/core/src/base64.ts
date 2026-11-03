@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { getBuffer, isBrowserEnvironment } from './environment';
+import { getBuffer, getWindow } from './environment';
 
 /**
  * Decodes a base64 string.
@@ -12,10 +12,11 @@ import { getBuffer, isBrowserEnvironment } from './environment';
  */
 
 export function decodeBase64(data: string): string {
-  if (isBrowserEnvironment()) {
-    const binaryString = window.atob(data);
+  const win = getWindow();
+  if (win) {
+    const binaryString = win.atob(data);
     const bytes = Uint8Array.from(binaryString, (c) => c.codePointAt(0) as number);
-    return new window.TextDecoder().decode(bytes);
+    return new TextDecoder().decode(bytes);
   }
   const BufferConstructor = getBuffer();
   if (BufferConstructor) {
@@ -32,11 +33,12 @@ export function decodeBase64(data: string): string {
  * @returns The base-64 encoded string.
  */
 export function encodeBase64(data: string): string {
-  if (isBrowserEnvironment()) {
-    const utf8Bytes = new window.TextEncoder().encode(data);
+  const win = getWindow();
+  if (win) {
+    const utf8Bytes = new TextEncoder().encode(data);
     // utf8Bytes is a Uint8Array, but String.fromCodePoint expects a sequence of numbers.
     const binaryString = String.fromCodePoint.apply(null, utf8Bytes as unknown as number[]);
-    return window.btoa(binaryString);
+    return win.btoa(binaryString);
   }
   const BufferConstructor = getBuffer();
   if (BufferConstructor) {
