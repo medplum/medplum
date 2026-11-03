@@ -83,8 +83,10 @@ jobs:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           DOCS_DESTINATION: www.medplum.com
           FOOMEDICAL_BUCKET: foomedical.com
-          FOOMEDICAL_GOOGLE_CLIENT_ID: 679052511930-8dqur4mmg8egbttgos5pmr4ljtf3etbb.apps.googleusercontent.com
-          FOOMEDICAL_RECAPTCHA_SITE_KEY: 6LfFd_8gAAAAAOCVrZQ_aF2CN5b7s91NEYIu5GxL
+          FOOMEDICAL_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          FOOMEDICAL_PROJECT_ID: ${{ vars.STAGING_FOOMEDICAL_PROJECT_ID }}
+          FOOMEDICAL_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
+          FOOMEDICAL_RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
           GRAPHIQL_BUCKET: graphiql.medplum.com
           GRAPHIQL_AWS_REGION: us-east-1
           PROVIDER_APP_BUCKET: provider.medplum.com
