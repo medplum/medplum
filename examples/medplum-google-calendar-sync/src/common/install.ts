@@ -15,7 +15,7 @@ import { ifMatch } from './versioning';
  * duplicates.
  */
 
-/** Secrets install accepts, and whether each is required. */
+/** Secrets install accepts; required ones may already be project secrets instead of parameters. */
 export const INSTALL_SECRETS: { name: string; required: boolean }[] = [
   { name: SECRET.clientId, required: true },
   { name: SECRET.clientSecret, required: true },

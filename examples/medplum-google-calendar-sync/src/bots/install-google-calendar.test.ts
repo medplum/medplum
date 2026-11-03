@@ -118,13 +118,34 @@ describe('install-google-calendar', () => {
     expect(readState(saved).outboundRequest).toBeTruthy();
   });
 
-  test('requires the client credentials and a valid detail level', async () => {
+  test('requires the client credentials as parameters or project secrets, and a valid detail level', async () => {
     await expect(handler(medplum, event(params({ GOOGLE_CALENDAR_CLIENT_ID: 'cid' })))).rejects.toThrow(
-      'Required parameters missing or repeated: GOOGLE_CALENDAR_CLIENT_SECRET'
+      'GOOGLE_CALENDAR_CLIENT_SECRET is not a project secret'
     );
     await expect(
       handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_DETAIL_LEVEL: 'everything' })))
     ).rejects.toThrow('must be one of');
+  });
+
+  test('installs from the Google client a customer admin entered as project secrets', async () => {
+    const stored = await medplum.readResource('Project', project.id as string);
+    await medplum.updateResource({
+      ...stored,
+      secret: [
+        { name: 'GOOGLE_CALENDAR_CLIENT_ID', valueString: 'console-cid' },
+        { name: 'GOOGLE_CALENDAR_CLIENT_SECRET', valueString: 'console-secret' },
+      ],
+    });
+    const result = await handler(medplum, event({ resourceType: 'Parameters' }));
+    expect(isOk(outcome(result))).toBe(true);
+    const after = await medplum.readResource('Project', project.id as string);
+    expect(after.secret).toEqual(
+      expect.arrayContaining([
+        { name: 'GOOGLE_CALENDAR_CLIENT_ID', valueString: 'console-cid' },
+        { name: 'GOOGLE_CALENDAR_CLIENT_SECRET', valueString: 'console-secret' },
+        expect.objectContaining({ name: 'GOOGLE_CALENDAR_WEBHOOK_URL' }),
+      ])
+    );
   });
 
   test('requires the bots feature and the shared Bots', async () => {

@@ -49,8 +49,8 @@ const entries = [
     'install',
     BOT_IDENTIFIER_VALUE.install,
     [
-      param(SECRET.clientId, 'string', 1),
-      param(SECRET.clientSecret, 'string', 1),
+      param(SECRET.clientId, 'string'),
+      param(SECRET.clientSecret, 'string'),
       param(SECRET.appointmentUrl, 'string'),
       param(SECRET.detailLevel, 'string'),
     ],

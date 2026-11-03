@@ -15,16 +15,14 @@ test('installation forwards only declared inputs and preserves an omitted projec
     ],
   });
 });
-test('missing secrets and invalid privacy levels fail before a request', () => {
-  expect(() => installationInput({ GOOGLE_CALENDAR_CLIENT_ID: 'test-client' })).toThrow(
-    'Missing GOOGLE_CALENDAR_CLIENT_SECRET'
-  );
+test('an omitted Google client defers to the project secrets; placeholders and bad levels fail first', () => {
+  expect(installationInput({})).toEqual({ resourceType: 'Parameters', parameter: [] });
   expect(() => installationInput({ ...credentials, GOOGLE_CALENDAR_DETAIL_LEVEL: 'full-with-invite' })).toThrow(
     'Invalid GOOGLE_CALENDAR_DETAIL_LEVEL'
   );
   expect(() =>
     installationInput({ ...credentials, GOOGLE_CALENDAR_CLIENT_SECRET: 'YOUR_GOOGLE_CLIENT_SECRET' })
-  ).toThrow('Replace the .env.example placeholder in GOOGLE_CALENDAR_CLIENT_SECRET');
+  ).toThrow('Replace or remove the .env.example placeholder in GOOGLE_CALENDAR_CLIENT_SECRET');
 });
 test('explicit detail level and application link are included', () => {
   const input = installationInput({

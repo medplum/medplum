@@ -37,7 +37,7 @@ Build runs ESLint, TypeScript and Bot bundling. Default unit tests mock Google a
 
 ## Deployment and installation
 
-Follow [setup.md](setup.md). Deployment uploads ten Bots and six operation definitions; `setup:project` invokes the installer in the selected customer project. The installer creates or adopts eight restricted Bot memberships, five policies, eight Subscriptions, two Crons, and the profile definitions. Applying practitioner access rules and connecting Google are separate setup steps.
+Follow [setup.md](setup.md). The operator deploys ten Bots and six operation definitions into a shared project; a super admin links each customer project to it; the customer administrator enters the Google client as project secrets in the Medplum app and invokes the installer. The installer creates or adopts eight restricted Bot memberships, five policies, eight Subscriptions, two Crons, and the profile definitions. Applying practitioner access rules and connecting Google are separate setup steps.
 
 All commands run from the repository root. CLI deployment requires the installed `medplum` command, an authenticated profile and an explicit `PROJECT_ID`. `--check` verifies the authenticated project and reads the local bundles without changing resources. Installation requires a project administrator. Neither a successful deploy nor installer response proves live synchronization; run the smoke tests and review the acceptance checklist.
 
@@ -72,14 +72,14 @@ These tests do not establish booking-operation availability, privacy-mode change
 
 All operations are type-level and use FHIR Parameters. Definitions and explicit input/output validation come from `src/common/contracts.ts`; server dispatch alone is not contract validation.
 
-| Operation                                  | Inputs                                                                                               | Result                                                           |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `Project/$google-calendar-install`         | Required Google client ID/secret; optional project detail level and appointment URL, all valueString | Installation result and administrator instructions               |
-| `Practitioner/$google-calendar-connect`    | Required `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel`, all valueString         | Connection summary; initial work queued                          |
-| `Practitioner/$google-calendar-status`     | None                                                                                                 | Read-only status and caller-authorized conflicts                 |
-| `Practitioner/$google-calendar-settings`   | Required `eventDetailLevel` valueString                                                              | Connection summary; privacy scrub queued                         |
-| `Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked` valueBoolean                                                                | Cleanup queued; status remains disconnecting until finished      |
-| `Practitioner/$google-calendar-sync`       | Optional `start` and `end` ISO date-time valueString                                                 | `queued=true` and the accepted range; no synchronous Google work |
+| Operation                                  | Inputs                                                                                                                               | Result                                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `Project/$google-calendar-install`         | Optional Google client ID/secret (read from project secrets when omitted), project detail level and appointment URL, all valueString | Installation result and administrator instructions               |
+| `Practitioner/$google-calendar-connect`    | Required `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel`, all valueString                                         | Connection summary; initial work queued                          |
+| `Practitioner/$google-calendar-status`     | None                                                                                                                                 | Read-only status and caller-authorized conflicts                 |
+| `Practitioner/$google-calendar-settings`   | Required `eventDetailLevel` valueString                                                                                              | Connection summary; privacy scrub queued                         |
+| `Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked` valueBoolean                                                                                                | Cleanup queued; status remains disconnecting until finished      |
+| `Practitioner/$google-calendar-sync`       | Optional `start` and `end` ISO date-time valueString                                                                                 | `queued=true` and the accepted range; no synchronous Google work |
 
 The practitioner always comes from the server's authenticated requester. Supplying another practitioner in the body is rejected. Status accepts no settings mutation. A second explicit range request is rejected while one is pending. Mutation summaries omit conflict details; read status afterward for those. See [state and status](state-and-status.md) for the fields and notification recipes.
 

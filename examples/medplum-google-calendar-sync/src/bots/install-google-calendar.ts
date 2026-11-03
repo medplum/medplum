@@ -38,23 +38,27 @@ import { ensureSyncSubscription, ensureWorkSubscription } from '../common/subscr
  */
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
-  const secrets: Record<string, string> = {};
-  for (const { name, required } of INSTALL_SECRETS) {
-    const value = getParam(event.input, name);
-    if (value) {
-      secrets[name] = value;
-    } else if (required) {
-      throw new Error(`Required parameter missing: ${name}`);
-    }
-  }
-  parseDetailLevel(secrets[SECRET.detailLevel]);
-
   // The install runs as the calling admin, so their profile names the customer project.
   const projectId = await currentProjectId(medplum);
   const project = await medplum.readResource('Project', projectId);
   if (!project.features?.includes('bots')) {
     throw new Error('This project needs the "bots" feature; ask a Medplum super admin to enable it');
   }
+
+  // The Google client normally comes from the project secrets the customer admin entered in
+  // the Medplum app (Admin, Project, Secrets); parameters override them, for example to rotate.
+  const secrets: Record<string, string> = {};
+  for (const { name, required } of INSTALL_SECRETS) {
+    const value = getParam(event.input, name);
+    if (value) {
+      secrets[name] = value;
+    } else if (required && !project.secret?.some((s) => s.name === name && s.valueString?.trim())) {
+      throw new Error(
+        `${name} is not a project secret; add it under Admin, Project, Secrets, or pass it as a parameter`
+      );
+    }
+  }
+  parseDetailLevel(secrets[SECRET.detailLevel]);
 
   await installProfiles(medplum);
   const syncBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.sync);

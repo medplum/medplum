@@ -4,15 +4,17 @@
 import type { Parameters } from '@medplum/fhirtypes';
 import { EVENT_DETAIL_LEVELS, SECRET } from '../common/constants';
 
+/**
+ * The install parameters from the environment. The Google client is optional here: a customer
+ * admin normally enters it as project secrets in the Medplum app, and the installer reads those.
+ * @param env - Environment variables.
+ * @returns The `Parameters` body for `Project/$google-calendar-install`.
+ */
 export function installationInput(env: Record<string, string | undefined>): Parameters {
   const names = [SECRET.clientId, SECRET.clientSecret, SECRET.detailLevel, SECRET.appointmentUrl];
   for (const name of [SECRET.clientId, SECRET.clientSecret]) {
-    const value = env[name]?.trim();
-    if (!value) {
-      throw new Error(`Missing ${name}`);
-    }
-    if (value.startsWith('YOUR_')) {
-      throw new Error(`Replace the .env.example placeholder in ${name}`);
+    if (env[name]?.trim().startsWith('YOUR_')) {
+      throw new Error(`Replace or remove the .env.example placeholder in ${name}`);
     }
   }
   const level = env[SECRET.detailLevel]?.trim();
