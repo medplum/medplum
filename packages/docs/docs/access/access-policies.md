@@ -666,6 +666,13 @@ New projects are created with a set of **default access policies**, one per prof
 
 When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default.
 
+For non-admin practitioners, the `Practitioner` default also:
+
+- Is read-only on [`Bot`](/docs/api/fhir/medplum/bot) resources: they can [execute](/docs/bots/bot-basics) Bots, but only project admins can save Bot changes or `$deploy` them.
+- Hides `secret` and `retiringSecret` on [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) resources. Hidden fields are restored on every write, so they cannot change a client secret either.
+
+Independent of any access policy, non-admins can never create or edit [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership), [`Project`](/docs/api/fhir/medplum/project), or [`AccessPolicy`](/docs/api/fhir/medplum/accesspolicy) resources, invite users, or call `$rotate-secret`. A policy can grant them read access to `AccessPolicy` resources, which the `Practitioner` default does through its read-only wildcard.
+
 ### Switching a user to (or from) admin
 
 The `admin` flag does **not** bypass a user's access policy — it only grants access to project administration resource types (such as [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) and [`User`](/docs/api/fhir/medplum/user)) on top of the existing policy. This means that promoting a Practitioner to admin without also changing their policy would leave them "half-upgraded": still restricted by the read-only rules of the `Practitioner` default.

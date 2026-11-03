@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, isUUID } from '@medplum/core';
-import type { AccessPolicy, Practitioner, Project, Reference } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, isUUID } from '@medplum/core';
+import type {
+  AccessPolicy,
+  Bot,
+  ClientApplication,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -12,6 +20,7 @@ import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { ServerConfig } from '../../config/utils';
 import {
+  addTestUser,
   getSuperAdminAccessToken,
   getSuperAdminTestProject,
   initTestAuth,
@@ -19,7 +28,7 @@ import {
   withTestContext,
 } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-import { PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
+import { createProject, PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -112,8 +121,14 @@ describe('Project $init', () => {
     const practitionerPolicy = await withTestContext(() =>
       getGlobalSystemRepo().readReference<AccessPolicy>(practitionerEntry?.accessPolicy as Reference<AccessPolicy>)
     );
+    // ClientApplication secrets are hidden; this entry must precede the readonly wildcard,
+    // since the first matching entry decides which fields are hidden
+    expect(practitionerPolicy.resource?.[0]).toStrictEqual({
+      resourceType: 'ClientApplication',
+      hiddenFields: ['secret', 'retiringSecret'],
+    });
     // Read access to everything via a readonly wildcard
-    expect(practitionerPolicy.resource).toContainEqual({ resourceType: '*', readonly: true });
+    expect(practitionerPolicy.resource?.[1]).toStrictEqual({ resourceType: '*', readonly: true });
     // Writable clinical resource types are granted explicitly
     expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Patient' });
     expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Observation' });
@@ -121,6 +136,9 @@ describe('Project $init', () => {
     for (const readonlyType of PRACTITIONER_READONLY_RESOURCE_TYPES) {
       expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
     }
+    // Non-admin Practitioners can read (and therefore execute) Bots, but not save or deploy them
+    expect(PRACTITIONER_READONLY_RESOURCE_TYPES).toContain('Bot');
+    expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: 'Bot' });
   });
 
   test('Requires project name', async () => {
@@ -353,5 +371,119 @@ describe('Project $init', () => {
     } finally {
       config.newProjectRegistrationEnabled = undefined;
     }
+  });
+
+  test('Default Practitioner policy restricts project administration', async () => {
+    const owner = await createUser({
+      email: randomUUID() + '@example.com',
+      password: randomUUID(),
+      firstName: 'The',
+      lastName: 'Admin',
+    });
+    const { project, client } = await withTestContext(() => createProject('Practitioner Policy Project', owner));
+    const systemRepo = getGlobalSystemRepo();
+    const bot = await withTestContext(() =>
+      systemRepo.createResource<Bot>({ resourceType: 'Bot', meta: { project: project.id }, name: 'Test Bot' })
+    );
+    const accessPolicy = await withTestContext(() =>
+      systemRepo.readReference<AccessPolicy>(
+        project.defaultAccessPolicies?.find((p) => p.profileType === 'Practitioner')
+          ?.accessPolicy as Reference<AccessPolicy>
+      )
+    );
+
+    // Invited without an explicit policy, so the member gets the Practitioner default
+    const { accessToken, membership } = await withTestContext(() => addTestUser(project));
+    expect(membership.accessPolicy?.reference).toBe(getReferenceString(accessPolicy));
+    const auth = 'Bearer ' + accessToken;
+
+    // ClientApplication secrets are hidden on read...
+    const res1 = await request(app).get(`/fhir/R4/ClientApplication/${client.id}`).set('Authorization', auth);
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.name).toBe(client.name);
+    expect(res1.body.secret).toBeUndefined();
+    expect(res1.body.retiringSecret).toBeUndefined();
+
+    // ...and cannot be changed, by update or by $rotate-secret
+    const res2 = await request(app)
+      .put(`/fhir/R4/ClientApplication/${client.id}`)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...res1.body, description: 'Updated', secret: 'new-secret' } satisfies ClientApplication);
+    expect(res2).toHaveStatus(200);
+    const updatedClient = await withTestContext(() =>
+      systemRepo.readResource<ClientApplication>('ClientApplication', client.id)
+    );
+    expect(updatedClient.description).toBe('Updated');
+    expect(updatedClient.secret).toBe(client.secret);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/ClientApplication/${client.id}/$rotate-secret`)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'secret', valueString: client.secret }] });
+    expect(res3).toHaveStatus(403);
+
+    // Cannot create ProjectMemberships or invite users
+    const res4 = await request(app)
+      .post(`/fhir/R4/ProjectMembership`)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(owner),
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      } satisfies ProjectMembership);
+    expect(res4).toHaveStatus(403);
+
+    const res5 = await request(app)
+      .post(`/admin/projects/${project.id}/invite`)
+      .set('Authorization', auth)
+      .send({ resourceType: 'Practitioner', firstName: 'New', lastName: 'User', email: randomUUID() + '@example.com' });
+    expect(res5).toHaveStatus(403);
+
+    // Cannot edit the Project
+    const res6 = await request(app)
+      .put(`/fhir/R4/Project/${project.id}`)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...project, name: 'Renamed' } satisfies Project);
+    expect(res6.status).toBeGreaterThanOrEqual(400);
+    const unchangedProject = await withTestContext(() => systemRepo.readResource<Project>('Project', project.id));
+    expect(unchangedProject.name).toBe(project.name);
+
+    // Can read AccessPolicies, but not create or edit them
+    const res7 = await request(app).get(`/fhir/R4/AccessPolicy/${accessPolicy.id}`).set('Authorization', auth);
+    expect(res7).toHaveStatus(200);
+
+    const res8 = await request(app)
+      .put(`/fhir/R4/AccessPolicy/${accessPolicy.id}`)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...accessPolicy, resource: [{ resourceType: '*' }] } satisfies AccessPolicy);
+    expect(res8).toHaveStatus(403);
+
+    const res9 = await request(app)
+      .post(`/fhir/R4/AccessPolicy`)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'AccessPolicy',
+        name: 'Escalate',
+        resource: [{ resourceType: '*' }],
+      } satisfies AccessPolicy);
+    expect(res9).toHaveStatus(403);
+
+    // Can read Bots, but not save them
+    const res10 = await request(app).get(`/fhir/R4/Bot/${bot.id}`).set('Authorization', auth);
+    expect(res10).toHaveStatus(200);
+
+    const res11 = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...res10.body, name: 'Renamed Bot' } satisfies Bot);
+    expect(res11).toHaveStatus(403);
   });
 });
