@@ -228,19 +228,25 @@ class Rewriter {
 export function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
   const config = getConfig();
   let refStr: string | undefined;
+  let isStorageUrl = false;
 
   if (url.startsWith(config.baseUrl + 'fhir/R4/Binary/')) {
     refStr = url.substring(config.baseUrl.length + 'fhir/R4/Binary/'.length);
   } else if (url.startsWith(config.storageBaseUrl)) {
     refStr = url.substring(config.storageBaseUrl.length);
+    isStorageUrl = true;
   } else if (url.startsWith('Binary/')) {
     refStr = url.substring('Binary/'.length);
   }
 
   if (refStr) {
-    const parts = refStr.split('/');
+    const parts = refStr.split(/[?#]/)[0].split('/');
     if (parts.length === 3 && parts[1] === '_history') {
       return { id: parts[0], versionId: parts[2] };
+    }
+    if (isStorageUrl && parts.length === 2 && parts[1]) {
+      // Storage URLs are {id}/{versionId}
+      return { id: parts[0], versionId: parts[1] };
     }
     return { id: parts[0] };
   }

@@ -12,6 +12,7 @@ import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
+import { normalizeBinaryUrl } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { safeFetch } from '../util/url';
@@ -128,20 +129,13 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
  * @returns The Binary, or undefined if the path does not refer to a Binary.
  */
 async function readAttachmentBinary(repo: Repository, path: string): Promise<Binary | undefined> {
-  if (path.startsWith('Binary/')) {
-    // Validate that the user can read it
-    return repo.readReference<Binary>({ reference: path });
+  // This server's own Binary URLs (e.g. a presigned Binary.url) are read from the repository, since storage may not
+  // be reachable by URL from the server. The read uses the user's own access, not the URL's signature.
+  const { id, versionId } = normalizeBinaryUrl(path);
+  if (!id) {
+    return undefined;
   }
-
-  const { storageBaseUrl } = getConfig();
-  if (path.startsWith(storageBaseUrl)) {
-    // This server's own storage URLs (e.g. a presigned Binary.url) are read like `Binary/` paths, since storage
-    // may not be reachable by URL from the server. The read uses the user's own access, not the URL's signature.
-    const [id = '', versionId] = path.slice(storageBaseUrl.length).split('?')[0].split('/').filter(Boolean);
-    return versionId ? repo.readVersion<Binary>('Binary', id, versionId) : repo.readResource<Binary>('Binary', id);
-  }
-
-  return undefined;
+  return versionId ? repo.readVersion<Binary>('Binary', id, versionId) : repo.readResource<Binary>('Binary', id);
 }
 
 /**
