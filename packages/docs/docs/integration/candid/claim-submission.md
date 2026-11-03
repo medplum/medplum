@@ -116,7 +116,7 @@ The billing provider Organization is referenced directly from `Claim.provider`. 
 
 ### Location (Service Facility)
 
-Candid requires a service facility (CMS-1500 box 32) on every non-telehealth claim. Set `Claim.facility` to a Location to name where the service was rendered; otherwise the integration uses the billing Organization's name, NPI, and address. When there is no billing Organization, the current implementation requires `Claim.facility` for non-telehealth claims and permits omission for its supported telehealth place-of-service values. It does not use the individual billing Practitioner as the facility fallback. The Location can be a contained resource.
+Candid requires a service facility (CMS-1500 box 32) on every non-telehealth claim. Set `Claim.facility` to a Location to name where the service was rendered; the Location can be a contained resource. If the field is omitted, the integration uses the billing Organization's name, NPI, and address. For individual billing, supply `Claim.facility` on non-telehealth claims; the current implementation permits omission for its supported telehealth place-of-service values.
 
 See [Organizations and Locations](/docs/administration/locations-and-facilities#billing-facility-and-place-of-service) for how the billing facility relates to the scheduled facility, reserved room, actual encounter location, and place-of-service classification.
 

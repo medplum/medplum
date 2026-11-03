@@ -87,7 +87,7 @@ The dashed `Claim` → `Practitioner (supervising)` path is optional. The bot re
 
 Set `Claim.facility` to a stored or contained Location when submitting a separate service facility. The bot maps that Location's name and address into the service-facility block and includes its NPI only when present and different from the billing provider's NPI. If `Claim.facility` is absent, the bot omits the separate block; validate the requirements of the intended payer and submission workflow.
 
-When `Claim.facility` is supplied, the referenced Location must pass the integration's validation. Invalid or incomplete details fail submission rather than falling back to the billing provider.
+When `Claim.facility` is supplied, the referenced Location must pass the integration's validation. Invalid or incomplete details fail submission; correct them before retrying.
 
 | Location field | Requirement |
 | :--- | :--- |

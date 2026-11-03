@@ -105,7 +105,7 @@ Encounter billing often references [CPT](https://www.ama-assn.org/practice-manag
 
 ### Encounter Locations
 
-Use `Encounter.location[].location` to record the Locations involved in the visit, with `status` and `period` when tracking planned or actual presence and movement. These references can differ from the facility selected during booking or the facility submitted for billing. Linking an Encounter to an Appointment does not populate them automatically. See [Organizations and Locations](/docs/administration/locations-and-facilities#choose-the-reference-for-each-workflow) for the shared model.
+Use `Encounter.location[].location` to record the Locations involved in the visit, with `status` and `period` when tracking planned or actual presence and movement. Populate these references in the clinical workflow, including when the Encounter is linked to an Appointment. They can differ from the facility selected during booking or submitted for billing. See [Organizations and Locations](/docs/administration/locations-and-facilities#choose-the-reference-for-each-workflow) for the shared model.
 
 ## Patient Demographics
 

@@ -129,7 +129,7 @@ The `Practitioner` resource in FHIR is used to describe the _person_ who is the 
 
 The `PractitionerRole` is used to assign practitioners to `Organizations`, `CareTeams`, and `HealthcareServices`.
 
-For a simple directory, start with one `PractitionerRole` per practitioner per organization. A role can reference multiple `HealthcareServices` and `Locations` when the same responsibilities and eligibility apply to those associations. Create separate roles when those associations need different responsibilities or eligibility, even within one organization. For example, the [state-by-state licensure model](/docs/scheduling/state-by-state-licensure) uses a role per service or service line so each can carry its own licensed jurisdictions. One role per organization is a starting model, not a limit.
+For a simple directory, start with one `PractitionerRole` per practitioner per organization. A role can reference multiple `HealthcareServices` and `Locations` when the same responsibilities and eligibility apply to those associations. Create separate roles when those associations need different responsibilities or eligibility, even within one organization. For example, the [state-by-state licensure model](/docs/scheduling/state-by-state-licensure) uses a role per service or service line so each can carry its own licensed jurisdictions.
 
 There are two additional fields that describe _how_ the provider participates in the organization:
 
