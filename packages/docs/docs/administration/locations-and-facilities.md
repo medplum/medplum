@@ -1,7 +1,7 @@
 ---
 title: Organizations and Locations
 sidebar_label: Organizations and Locations
-toc_max_heading_level: 2
+toc_max_heading_level: 3
 ---
 
 # Organizations and Locations
@@ -40,7 +40,7 @@ Organizations also represent payers, pharmacies, laboratories, and networks; cre
 
 For a simple outpatient practice, start with one clinic Location. Add rooms or beds when you need to reserve their capacity or document where care occurred. Add a campus or building level when your application needs to group or identify those places.
 
-In this example, West Clinic occupies one building on a campus. The clinic is the service facility used for booking and billing, and room 201 has its own reservable calendar.
+In this example, West Clinic occupies one building on a campus. The clinic is the service facility used for booking and billing, and Room 201 has its own reservable calendar.
 
 ```mermaid
 flowchart BT
@@ -72,6 +72,29 @@ These are [FHIR R4 Location fields](https://hl7.org/fhir/R4/location-definitions
 
 ## Choose the reference for each workflow
 
+For one visit at West Clinic, the Appointment and Claim identify the clinic as the facility. The room reservation and Encounter both identify Room 201.
+
+```mermaid
+flowchart LR
+    subgraph records["Workflow records"]
+        claim["Claim"]
+        appointment["Appointment"]
+        encounter["Encounter"]
+    end
+
+    subgraph places["Locations"]
+        clinic["West Clinic"]
+        room["Room 201"]
+    end
+
+    claim -->|Facility for billing| clinic
+    appointment -->|Service facility| clinic
+    appointment -->|Reserved room| room
+    encounter -->|Where care occurred| room
+```
+
+The room reservation uses Slots on the room's Schedule. Set the Encounter and Claim locations in their respective workflows; scheduling does not create those records or populate their locations.
+
 | Workflow | Field | Example |
 | :--- | :--- | :--- |
 | Offer a visit type at the clinic | `HealthcareService.location` | West Clinic. |
@@ -82,12 +105,10 @@ These are [FHIR R4 Location fields](https://hl7.org/fhir/R4/location-definitions
 | Give the room a reservable calendar | `Schedule.actor` | Room 201. |
 | Record the booking's service facility | `Appointment.supportingInformation`, using Medplum's facility marker | West Clinic. |
 | Reserve the room for an appointment | `Appointment.participant.actor` and Slots linked to its Schedule | Room 201, included in the booking. |
-| Record where the patient received care | `Encounter.location[].location` | Room 201, or the actual place if different. |
+| Record where the patient received care | `Encounter.location[].location` | Room 201. |
 | Identify the facility for a claim | `Claim.facility` | West Clinic, when appropriate for the submission. |
 
 The facility marker in the table is a **Medplum convention**, not a standard FHIR facility field. Use `toAppointmentSiteReference` to create the marked reference and `getAppointmentSite` to read it, both from `@medplum/core`. The marker is defined by `SchedulingSiteURI`.
-
-A simple clinic visit may use the same Location for booking, care, and billing. For more detailed workflows, define the mapping explicitly. The appointment records the plan, the Encounter records the care, and the Claim identifies the facility appropriate to the billed service. The scheduling operations do not create those downstream records or copy location references into them.
 
 For referrals and orders, distinguish who should perform the service from where it should happen. Selecting a receiving Organization does not select a physical site. See [Recipients and Referral Packages](/docs/careplans/referrals/recipients-and-packages#choose-the-recipient-model) for choosing the destination.
 
@@ -103,11 +124,11 @@ To close a facility's calendars, update the affected Schedules or block the unav
 
 Facility assignments and licensure also answer different questions. A role referencing a licensed jurisdiction does not establish an assignment to a particular clinic. Use the [service-specific licensure model](/docs/scheduling/state-by-state-licensure) when needed, and enforce required eligibility checks in the application's controlled booking path.
 
-The supplied React components have specific facility-selection and matching rules. Review those [component contracts](/docs/scheduling/react-components#service-facility-references) when adopting the model; the selectors do not enforce backend eligibility or data access. Choose how to use the UI in the [Scheduling Decision Guide](/docs/decision-guides/scheduling).
+`SchedulingConfigWorkspace` can create its own facility-assignment `PractitionerRole` without an `organization`, alongside directory roles. The React booking UI combines locations from each provider's active roles; see [Configuration ownership](/docs/scheduling/react-components#configuration-ownership) and [Facility matching](/docs/scheduling/react-components#service-facility-references). These UI filters do not enforce backend eligibility or data access. Choose how to use the UI in the [Scheduling Decision Guide](/docs/decision-guides/scheduling).
 
 ### Clinical care
 
-Use `Encounter.location` at the level the clinical workflow needs. Its entries can include `status` and `period` to distinguish planned locations from actual presence and to record movement. The room originally reserved may differ from where care occurred.
+Use `Encounter.location` at the level the clinical workflow needs. Its entries can include `status` and `period` to distinguish planned locations from actual presence and to record movement during care.
 
 `Encounter.serviceProvider` identifies the organization responsible for the encounter's services. It is separate from the physical location. See [FHIR R4 Encounter location](https://hl7.org/fhir/R4/encounter-definitions.html#Encounter.location) and the [Chart Data Model](/docs/charting/chart-data-model).
 
@@ -115,7 +136,7 @@ Use `Encounter.location` at the level the clinical workflow needs. Its entries c
 
 `Claim.facility` identifies the Location where services were provided. A **place-of-service code** classifies the setting for billing. The facility, billing provider, and place-of-service classification are separate inputs.
 
-For example, a visit delivered in room 201 may be billed under West Clinic. The claim-building workflow must choose the appropriate facility and supply its required name, address, and identifiers. The Candid and Stedi integrations read those details from the selected Location without inheriting them from its parent. Do not assume the first encounter location, the closest parent, or the Location's managing Organization is always the correct billing choice.
+The claim-building workflow must choose the appropriate facility and supply its required name, address, and identifiers. The Candid and Stedi integrations read those details from the selected Location without inheriting them from its parent. Do not assume the first encounter location, the closest parent, or the Location's managing Organization is always the correct billing choice.
 
 FHIR R4 allows a service line's `Claim.item.location[x]` to be a coded setting, an address, or a Location reference. Medplum's Candid and Stedi professional-claim integrations read place of service from `Claim.item.locationCodeableConcept`; they do not infer it from `Location.type` or `physicalType`. See [FHIR Claim definitions](https://hl7.org/fhir/R4/claim-definitions.html), [Candid facility mapping](/docs/integration/candid/claim-submission#location-service-facility), and [Stedi facility mapping](/docs/integration/stedi/claim-submission/professional-claims#service-facility) for the applicable requirements and fallback behavior.
 

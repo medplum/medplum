@@ -137,6 +137,8 @@ There are two additional fields that describe _how_ the provider participates in
 
 - `PractitionerRole.specialty` can be used to indicate which specialty a provider is performing _at a given organization._ For instance, Provider A may act as a Cardiologist at Organization 1, but as an Internal Medicine Doctor at Organization 2. The recommended terminology for this field is the [NUCC Health Care Provider Taxonomy](https://www.nucc.org/index.php/code-sets-mainmenu-41/provider-taxonomy-mainmenu-40)
 
+Alongside these directory roles, the scheduling configuration workspace can create a separate facility-assignment role without an `organization`. See [Scheduling configuration ownership](/docs/scheduling/react-components#configuration-ownership) when using it with the directory model.
+
 When adding a practitioner to a `CareTeam`, it is important to add the `PractitionerRole` resource, rather than the `Practitioner` resource itself. This approach makes it easier to keep track of in-network and out-of-network providers for billing purposes (see our guide on Modeling Insurance Networks more information on this topic).
 
 ```mermaid
