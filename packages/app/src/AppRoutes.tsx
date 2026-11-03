@@ -80,6 +80,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/changepassword" element={<ChangePasswordPage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/mfa" element={<MfaPage />} />
+        <Route path="/batch/:tab" element={<BatchPage />} />
         <Route path="/batch" element={<BatchPage />} />
         <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
         <Route path="/smart" element={<SmartSearchPage />} />
