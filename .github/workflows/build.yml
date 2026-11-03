@@ -213,7 +213,7 @@ jobs:
         env:
           AWS_REGION: 'us-east-1'
           FOOMEDICAL_BUCKET: preview.medplum.dev/previews/foomedical-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
-          FOOMEDICAL_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          FOOMEDICAL_BASE_URL: https://api.staging.medplum.dev/
           FOOMEDICAL_PROJECT_ID: ${{ vars.STAGING_FOOMEDICAL_PROJECT_ID }}
           FOOMEDICAL_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           FOOMEDICAL_RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}

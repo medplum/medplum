@@ -83,7 +83,7 @@ jobs:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           DOCS_DESTINATION: www.medplum.com
           FOOMEDICAL_BUCKET: foomedical.com
-          FOOMEDICAL_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          FOOMEDICAL_BASE_URL: https://api.staging.medplum.dev/
           FOOMEDICAL_PROJECT_ID: ${{ vars.STAGING_FOOMEDICAL_PROJECT_ID }}
           FOOMEDICAL_GOOGLE_CLIENT_ID: ${{ vars.FOOMEDICAL_GOOGLE_CLIENT_ID }}
           FOOMEDICAL_RECAPTCHA_SITE_KEY: ${{ vars.FOOMEDICAL_RECAPTCHA_SITE_KEY }}
