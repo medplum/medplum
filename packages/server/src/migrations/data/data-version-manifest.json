@@ -197,5 +197,8 @@
   },
   "v55": {
     "serverVersion": "5.2.14"
+  },
+  "v56": {
+    "serverVersion": "5.2.14"
   }
 }
