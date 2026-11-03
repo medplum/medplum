@@ -13,9 +13,22 @@ import { projectQuery } from './project';
 import { PUBLIC_STATUS_SEARCH } from './public-status';
 import { ifMatch } from './versioning';
 
+/** The Bots behind the practitioner operations (`Practitioner/$google-calendar-*`). */
+const OPERATION_BOT_CRITERIA = `Bot?identifier=${[
+  BOT_IDENTIFIER_VALUE.connect,
+  BOT_IDENTIFIER_VALUE.status,
+  BOT_IDENTIFIER_VALUE.settings,
+  BOT_IDENTIFIER_VALUE.disconnect,
+  BOT_IDENTIFIER_VALUE.syncRange,
+]
+  .map((value) => `${BOT_IDENTIFIER_SYSTEM}|${value}`)
+  .join(',')}`;
+
 /**
  * AccessPolicy entries for practitioners to read their own public calendar status and the
- * project settings. Private connections, credentials and worker state are not included.
+ * project settings, and to invoke the operations: the server resolves an operation by reading
+ * its OperationDefinition and Bot as the caller before the Bot runs. Private connections,
+ * credentials and worker state are not included.
  */
 export const PRACTITIONER_POLICY_SNIPPET: NonNullable<AccessPolicy['resource']> = [
   {
@@ -24,6 +37,8 @@ export const PRACTITIONER_POLICY_SNIPPET: NonNullable<AccessPolicy['resource']> 
     interaction: ['read', 'search'],
   },
   { resourceType: 'Basic', criteria: `Basic?${CONFIG_SEARCH}`, readonly: true },
+  { resourceType: 'OperationDefinition', readonly: true },
+  { resourceType: 'Bot', criteria: OPERATION_BOT_CRITERIA, readonly: true },
 ];
 
 /** Apply within existing Slot scope; remove broader write grants before relying on this restriction. */

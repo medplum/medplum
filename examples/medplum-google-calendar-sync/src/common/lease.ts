@@ -28,7 +28,6 @@ export class ConnectionLease {
     readonly medplum: MedplumClient,
     readonly id: string,
     readonly token: string,
-    readonly originalVersion: string,
     private readonly now: () => number = Date.now
   ) {
     this.deadline = now() + WORK_MS;
@@ -105,7 +104,7 @@ export async function withConnectionLease<T>(
     }
     throw err;
   }
-  const lease = new ConnectionLease(medplum, id, token, basic.meta?.versionId as string, now);
+  const lease = new ConnectionLease(medplum, id, token, now);
   try {
     const result = await work(lease);
     try {

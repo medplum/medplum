@@ -104,7 +104,7 @@ Use a restricted customer Bot as the endpoint. New public-status payloads omit p
 
 ## Permission requirements
 
-The installer returns these own-summary entries; the private connection is not caller-readable. Apply them within existing policies; replace broader Basic grants that permit direct connection writes or credential/history reads.
+The installer returns these entries: the practitioner's own summary, the project settings, and read access to the operation Bots and OperationDefinitions, which the server reads as the caller before it runs a `$google-calendar-*` operation. The private connection is not caller-readable. Apply them within existing policies; replace broader Basic grants that permit direct connection writes or credential/history reads.
 
 ```json
 [
@@ -116,6 +116,12 @@ The installer returns these own-summary entries; the private connection is not c
   {
     "resourceType": "Basic",
     "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-settings",
+    "readonly": true
+  },
+  { "resourceType": "OperationDefinition", "readonly": true },
+  {
+    "resourceType": "Bot",
+    "criteria": "Bot?identifier=https://www.medplum.com/bots|google-calendar-connect-bot,https://www.medplum.com/bots|google-calendar-status-bot,https://www.medplum.com/bots|google-calendar-settings-bot,https://www.medplum.com/bots|google-calendar-disconnect-bot,https://www.medplum.com/bots|google-calendar-sync-range-bot",
     "readonly": true
   }
 ]

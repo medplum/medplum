@@ -24,6 +24,9 @@ import { ensureWatch } from './watch';
 
 class InboundPending extends Error {}
 
+/** Backoff after a failed import, so the minute recovery sweep does not refetch the snapshot every minute. */
+const INBOUND_ERROR_RETRY_MS = 15 * 60_000;
+
 async function beforeInboundWrite(lease: ConnectionLease): Promise<void> {
   await lease.check();
   if (Date.now() >= lease.deadline - 60_000) {
@@ -61,6 +64,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
       return;
     }
     const inboundRequestAtStart = state.inboundRequest;
+    let importing = false;
     try {
       if (connection.status === 'disconnecting') {
         await cleanupConnection(lease, event.secrets, connection);
@@ -68,6 +72,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
       }
       let imported: ImportResult | undefined;
       if (!state.conflictsPending || state.inboundRequest !== state.inboundCompleted) {
+        importing = true;
         const access = await refreshAccessToken(
           getOAuthClient(event.secrets),
           await readCredential(medplum, connection)
@@ -89,6 +94,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
             conflictsPending: true,
           })
         );
+        importing = false;
       }
       await refreshConflicts(lease, connection, imported);
       await lease.mutate((basic) => {
@@ -116,6 +122,10 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
         let retryAt = err instanceof GoogleApiError ? err.retryAt : undefined;
         if (!retryAt && connection.status === 'disconnecting' && current.cleanupIssue) {
           retryAt = Date.now() + 60 * 60_000;
+        }
+        if (!retryAt && !revoked && importing) {
+          // The snapshot was not committed; back off rather than refetch it on every minute sweep.
+          retryAt = Date.now() + INBOUND_ERROR_RETRY_MS;
         }
         return withState(basic, {
           ...current,

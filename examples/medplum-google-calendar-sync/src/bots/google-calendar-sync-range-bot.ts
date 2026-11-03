@@ -24,7 +24,8 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       throw new Error('Google access is paused; reconnect it first');
     }
     const state = readState(basic);
-    if (state.requestedRangeStart) {
+    // A range retained after an incomplete run is replaced; one still being worked is not.
+    if (state.requestedRangeStart && state.outboundRequest !== state.outboundCompleted) {
       throw new Error('A range sync is already pending; wait for completion');
     }
     state.requestedRangeStart = range.start.toISOString();

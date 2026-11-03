@@ -8,10 +8,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { writeProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, saveConnection } from './connection';
+import { GoogleApiError } from './google-calendar';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
 import { parseSyncRange, syncRange } from './range-sync';
-import { readState, requestSync } from './state';
+import { readState, requestSync, withState } from './state';
 import type { SyncDeps } from './sync';
 import { SyncSession } from './sync';
 
@@ -70,7 +71,16 @@ describe('range-sync', () => {
       if (resourceType !== 'Appointment' && resourceType !== 'Slot') {
         return realPages(resourceType as 'Basic', query);
       }
-      const items: Resource[] = resourceType === 'Appointment' ? searched.appointments : searched.slots;
+      // Honour the overlap window (`end=ge…` with `date=le…` or `start=le…`) so the range matters.
+      const params = new URLSearchParams(query);
+      const from = Date.parse(params.get('end')?.replace(/^ge/, '') ?? '');
+      const to = Date.parse((params.get('date') ?? params.get('start'))?.replace(/^le/, '') ?? '');
+      const items: Resource[] = (resourceType === 'Appointment' ? searched.appointments : searched.slots).filter(
+        (item: Appointment | Slot) =>
+          !Number.isFinite(from) ||
+          !Number.isFinite(to) ||
+          (Date.parse(item.end ?? '') >= from && Date.parse(item.start ?? '') <= to)
+      );
       const page = [...items] as ResourceArray;
       page.bundle = { resourceType: 'Bundle', type: 'searchset' };
       return (async function* () {
@@ -162,6 +172,92 @@ describe('range-sync', () => {
 
     expect(counts).toMatchObject({ candidates: 2, inserted: 1, errors: 1 });
     expect(upserts.map((e) => e.id)).toEqual([toGoogleEventId(good.id)]);
+    // The request is complete with a reported error; the minute sweep must not rerun discovery.
+    const state = readState(await medplum.readResource('Basic', connection.basic.id));
+    expect(state.outboundCompleted).toBe(state.outboundRequest);
+    expect(state.outboundError).toBe('outbound-incomplete');
+    expect(state.lastOutbound).toBeUndefined();
+  });
+
+  test('an incomplete explicit range is kept for the hourly retry and cleared once it succeeds', async () => {
+    const historical = await booked({ start: '2025-03-01T16:00:00Z', end: '2025-03-01T16:30:00Z' });
+    searched.appointments = [historical];
+    const requested = { start: '2025-02-01T00:00:00.000Z', end: '2025-04-01T00:00:00.000Z' };
+    await medplum.updateResource(
+      withState(connection.basic, {
+        ...readState(connection.basic),
+        requestedRangeStart: requested.start,
+        requestedRangeEnd: requested.end,
+      })
+    );
+    const defaultWindow = parseSyncRange(undefined, undefined, NOW);
+    const failing = fakeDeps(upserts, toGoogleEventId(historical.id));
+    const first = await syncRange(
+      new SyncSession(medplum, secrets, PROJECT_ID, failing),
+      connection,
+      defaultWindow,
+      true
+    );
+    expect(first).toMatchObject({ candidates: 1, errors: 1 });
+    let state = readState(await medplum.readResource('Basic', connection.basic.id));
+    expect(state.outboundCompleted).toBe(state.outboundRequest);
+    expect(state.outboundError).toBe('outbound-incomplete');
+    expect(state).toMatchObject({ requestedRangeStart: requested.start, requestedRangeEnd: requested.end });
+
+    // The hourly reconcile requests outbound again; the retained range, not the default window, is walked.
+    await requestSync(medplum, connection.basic.id, ['outbound']);
+    const second = await syncRange(
+      new SyncSession(medplum, secrets, PROJECT_ID, fakeDeps(upserts)),
+      connection,
+      defaultWindow,
+      true
+    );
+    expect(second).toMatchObject({ candidates: 1, inserted: 1, errors: 0 });
+    expect(upserts.map((e) => e.id)).toEqual([toGoogleEventId(historical.id)]);
+    state = readState(await medplum.readResource('Basic', connection.basic.id));
+    expect(state.outboundCompleted).toBe(state.outboundRequest);
+    expect(state.outboundError).toBeUndefined();
+    expect(state.requestedRangeStart).toBeUndefined();
+    expect(state.requestedRangeEnd).toBeUndefined();
+  });
+
+  test('a rate-limited repair is retried when the work resumes rather than skipped', async () => {
+    const outside = await booked({ start: '2027-06-01T16:00:00Z', end: '2027-06-01T16:30:00Z' });
+    const deps = fakeDeps(upserts);
+    const original = deps.createCalendarClient;
+    deps.createCalendarClient = (token) => ({
+      ...original(token),
+      listEvents: async () => [
+        {
+          id: toGoogleEventId(outside.id) as string,
+          status: 'confirmed',
+          summary: 'External edit',
+          start: { dateTime: outside.start as string },
+          end: { dateTime: outside.end as string },
+          transparency: 'opaque',
+          visibility: 'private',
+          attendees: [],
+          reminders: { useDefault: true },
+          extendedProperties: {
+            private: {
+              medplumProject: PROJECT_ID,
+              medplumSource: `Appointment/${outside.id}`,
+              medplumConnection: connection.basic.id,
+            },
+          },
+        },
+      ],
+      upsertEvent: async () => {
+        throw new GoogleApiError(429, 'rateLimitExceeded', 'slow down', Date.now() + 60_000);
+      },
+    });
+    await expect(
+      syncRange(new SyncSession(medplum, secrets, PROJECT_ID, deps), connection, RANGE, true)
+    ).rejects.toThrow('slow down');
+    const state = readState(await medplum.readResource('Basic', connection.basic.id));
+    expect(state.outboundRetryAt).toBeDefined();
+    expect(state.outboundWork).toMatchObject({ phase: 'repair' });
+    expect(state.outboundWork?.cursor).toBeUndefined();
   });
 
   test.each(['unchanged', 'rescheduled', 'cancelled', 'google-edit'] as const)(

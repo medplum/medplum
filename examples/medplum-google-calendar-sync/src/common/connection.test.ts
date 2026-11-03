@@ -73,14 +73,15 @@ describe('connection', () => {
     });
   });
 
-  test('a stale copy cannot overwrite a newer write', async () => {
+  test('a stale copy is applied to the latest version rather than overwriting a newer write', async () => {
     const saved = await saveConnection(medplum, { practitionerRef: PRACTITIONER, accountSub: 'a', refreshToken: 'rt' });
     await updateConnection(medplum, saved, { eventDetailLevel: 'busy-only' });
-    await expect(updateConnection(medplum, saved, { status: 'reauth-required' })).rejects.toThrow(
-      'Stale calendar connection'
-    );
+    await expect(updateConnection(medplum, saved, { status: 'reauth-required' })).resolves.toMatchObject({
+      status: 'reauth-required',
+      eventDetailLevel: 'busy-only',
+    });
     expect(await findConnection(medplum, PRACTITIONER)).toMatchObject({
-      status: 'active',
+      status: 'reauth-required',
       eventDetailLevel: 'busy-only',
     });
   });

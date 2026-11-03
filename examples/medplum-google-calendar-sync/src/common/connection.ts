@@ -210,8 +210,8 @@ export async function saveConnection(
 }
 
 /**
- * Changes the status or detail level and nothing else, with writes guarded by the
- * version it was read at, so a stale copy can't overwrite a newer write.
+ * Changes the status or detail level and nothing else. The change is applied to the latest
+ * version under the lease, so a copy read earlier never overwrites a newer write.
  * @param medplum - The client.
  * @param connection - The connection as last read.
  * @param changes - The fields to change.
@@ -253,12 +253,7 @@ export async function updateConnection(
   if (lease) {
     await apply(lease);
   } else {
-    await withConnectionLease(medplum, connection.basic.id, async (held) => {
-      if (held.originalVersion !== connection.basic.meta?.versionId) {
-        throw new Error('Stale calendar connection; reload and retry');
-      }
-      await apply(held);
-    });
+    await withConnectionLease(medplum, connection.basic.id, apply);
   }
   const updated = readConnection(await medplum.readResource('Basic', connection.basic.id, { cache: 'no-cache' }));
   if (!updated) {

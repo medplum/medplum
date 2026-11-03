@@ -303,11 +303,18 @@ describe('calendar runtime', () => {
     const slots = await importedSlots(medplum, connection.basic.id);
     snapshotFails = true;
     await expect(runInbound(medplum, event, connection.basic.id)).rejects.toMatchObject({ status: 403 });
-    expect(readState(await current())).toMatchObject({
+    const failed = readState(await current());
+    expect(failed).toMatchObject({
       conflicts: before.conflicts,
       lastInbound: before.lastInbound,
       inboundError: 'inbound-error',
     });
+    // The failure is retried with a backoff, not on every minute sweep.
+    expect(Date.parse(failed.inboundRetryAt ?? '')).toBeGreaterThan(Date.now() + 10 * 60_000);
+    const deferred = requests.length;
+    await runInbound(medplum, event, connection.basic.id);
+    expect(requests).toHaveLength(deferred);
+    await medplum.updateResource(withState(await current(), { ...failed, inboundRetryAt: undefined }));
     tokenRevoked = true;
     await runInbound(medplum, event, connection.basic.id);
     expect((await findConnection(medplum, PRACTITIONER))?.status).toBe('reauth-required');

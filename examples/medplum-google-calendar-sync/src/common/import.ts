@@ -10,6 +10,7 @@ import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import type { SyncRange } from './range-sync';
+import { ifMatch } from './versioning';
 
 /** v1 + base64url(JSON tuple): delimiters in vendor IDs cannot alias another identity. */
 export interface ImportedIdentity {
@@ -234,9 +235,7 @@ export async function importBusyTime(
       await beforeWrite();
       await medplum.updateResource(
         { ...slot, id: stored.id, meta: { ...stored.meta, profile: [PROFILES.slot] } },
-        {
-          headers: { 'If-Match': `W/"${stored.meta?.versionId}"` },
-        }
+        ifMatch(stored)
       );
     }
     createdOrUpdated++;
@@ -256,7 +255,7 @@ export async function importBusyTime(
       continue;
     }
     await beforeWrite();
-    await medplum.deleteResource('Slot', old.id, { headers: { 'If-Match': `W/"${old.meta?.versionId}"` } });
+    await medplum.deleteResource('Slot', old.id, ifMatch(old));
     removed++;
   }
   return { calendarId: snapshot.calendarId, intervals, schedules, createdOrUpdated, removed };

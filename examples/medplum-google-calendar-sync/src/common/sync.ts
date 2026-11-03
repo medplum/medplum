@@ -256,12 +256,15 @@ export class SyncSession {
     await this.lease.mutate((basic) => {
       const state = readState(basic);
       state.outboundError = error;
+      if (complete) {
+        // The range was walked even when some sources failed: the request is done and the error
+        // reported, so the minute sweep does not re-run discovery. An explicit range is kept until
+        // a run succeeds, so the hourly retry walks it again rather than the default window.
+        state.outboundCompleted = this.outboundRequestAtStart;
+      }
       if (!error) {
         state.lastOutbound = new Date().toISOString();
         state.outboundRetryAt = undefined;
-        if (complete) {
-          state.outboundCompleted = this.outboundRequestAtStart;
-        }
         if (complete && ceilingStillCurrent && state.outboundRequest === this.outboundRequestAtStart) {
           state.privacyPending = false;
           state.requestedRangeStart = undefined;
@@ -289,7 +292,6 @@ export class SyncSession {
       return [];
     }
 
-    const mirrorable = !source.deleted && (await this.isMirrorable(source.resource));
     const recipients = await this.resolveRecipients(source.resource);
     const named = new Set(recipients.map((r) => r.practitioner));
     for (const practitioner of await this.previousRecipients(source)) {
@@ -301,9 +303,7 @@ export class SyncSession {
     const results: SyncResult[] = [];
     for (const recipient of recipients) {
       try {
-        results.push(
-          await this.syncRecipient(source, recipient.practitioner, eventId, !mirrorable || recipient.declined)
-        );
+        results.push(await this.syncRecipient(source, recipient.practitioner, eventId));
       } catch (err) {
         results.push({ practitionerRef: recipient.practitioner, outcome: 'error', error: normalizeErrorString(err) });
       }
@@ -373,6 +373,7 @@ export class SyncSession {
         return { ...counts, pending: 1 };
       }
       let failed = false;
+      let deferred = false;
       try {
         const owner = event.extendedProperties?.private;
         if (owner?.[EVENT_PROPERTY.connection] && owner[EVENT_PROPERTY.connection] !== connection.basic.id) {
@@ -434,11 +435,15 @@ export class SyncSession {
         counts.errors++;
         failed = true;
         if (err instanceof GoogleApiError && err.retryAt) {
+          // Not checkpointed: the deferred event is retried when the work resumes.
+          deferred = true;
           throw err;
         }
         console.warn(`Owned mirror repair failed: ${normalizeErrorString(err)}`);
       } finally {
-        await this.checkpoint('repair', event.id, failed);
+        if (!deferred) {
+          await this.checkpoint('repair', event.id, failed);
+        }
       }
     }
     return counts;
@@ -458,12 +463,7 @@ export class SyncSession {
     return recipient !== undefined && !recipient.declined;
   }
 
-  private async syncRecipient(
-    source: SyncSource,
-    practitionerRef: string,
-    eventId: string,
-    remove: boolean
-  ): Promise<SyncResult> {
+  private async syncRecipient(source: SyncSource, practitionerRef: string, eventId: string): Promise<SyncResult> {
     const connection = await findConnection(this.medplum, practitionerRef);
     if (!connection) {
       return { practitionerRef, outcome: 'not-connected' };
@@ -482,7 +482,7 @@ export class SyncSession {
         }
         source = { ...source, deleted: true };
       }
-      remove = !(await this.isMirroredFor(source, practitionerRef));
+      const remove = !(await this.isMirroredFor(source, practitionerRef));
       if (connection.status !== 'active') {
         return { practitionerRef, outcome: 'reauth-required' };
       }
