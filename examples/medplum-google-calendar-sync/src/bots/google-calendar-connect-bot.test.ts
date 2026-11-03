@@ -9,7 +9,8 @@ import type { CalendarConnection } from '../common/connection';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { readCredential } from '../common/credentials';
-import { readState } from '../common/state';
+import { withConnectionLease } from '../common/lease';
+import { readState, withState } from '../common/state';
 import { empty, operationIdentity } from '../test-auth';
 import { handler } from './google-calendar-connect-bot';
 
@@ -94,6 +95,20 @@ describe('google-calendar-connect-bot', () => {
     return fetchMock;
   }
 
+  test('a busy reconnect reports a retry message without exchanging or revoking the grant', async () => {
+    const connection = await saveConnection(medplum, {
+      practitionerRef: `Practitioner/${practitioner.id}`,
+      accountSub: 'sub',
+      refreshToken: 'stored',
+    });
+    globalThis.fetch = vi.fn();
+    await withConnectionLease(medplum, connection.basic.id, async () => {
+      await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('try reconnecting again in a few minutes');
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(await readCredential(medplum, connection)).toBe('stored');
+  });
+
   test('stores the connection and starts the backfill', async () => {
     mockGoogle({
       access_token: 'at',
@@ -122,6 +137,27 @@ describe('google-calendar-connect-bot', () => {
     expect(readState(stored.basic).inboundRequest).toBeTruthy();
     expect(readState(stored.basic).outboundRequest).toBeTruthy();
     expect(medplum.executeBot).not.toHaveBeenCalled();
+  });
+
+  test('reconnect during paused cleanup keeps disconnecting and clears the revoked-credential pause', async () => {
+    const practitionerRef = `Practitioner/${practitioner.id}`;
+    const saved = await saveConnection(medplum, { practitionerRef, accountSub: 'sub-1', refreshToken: 'rt-old' });
+    await updateConnection(medplum, saved, { status: 'disconnecting' });
+    const basic = await medplum.readResource('Basic', saved.basic.id);
+    await medplum.updateResource(withState(basic, { ...readState(basic), inboundError: 'reauth-required' }));
+    mockGoogle({
+      access_token: 'at',
+      refresh_token: 'rt-new',
+      expires_in: 3599,
+      scope: SCOPE,
+      token_type: 'Bearer',
+      id_token: idToken({ sub: 'sub-1' }),
+    });
+    await handler(medplum, event(CODE_PARAMS));
+    const current = await requireConnection(medplum, practitionerRef);
+    expect(current.status).toBe('disconnecting');
+    expect(readState(current.basic).inboundError).toBeUndefined();
+    expect(readState(current.basic).credentialRevoked).toBe(false);
   });
 
   test('reconnecting restores active status without creating workflow resources', async () => {

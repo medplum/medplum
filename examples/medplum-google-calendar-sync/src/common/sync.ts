@@ -36,6 +36,7 @@ import {
   buildSlotEvent,
   MIRRORED_APPOINTMENT_STATUSES,
   resolveDetailLevel,
+  sameGoogleEvent,
   toGoogleEventId,
 } from './mapping';
 import type { OwnershipStore } from './ownership';
@@ -344,9 +345,13 @@ export class SyncSession {
   /**
    * Repair every existing owned mirror, including sources outside the discovery horizon.
    * @param connection - Connection whose owned events are being repaired.
+   * @param processed - Source versions successfully synced during this delivery.
    * @returns Per-outcome counts; errors are not counted as successful repairs.
    */
-  async reconcileExisting(connection: CalendarConnection): Promise<Record<string, number>> {
+  async reconcileExisting(
+    connection: CalendarConnection,
+    processed: ReadonlyMap<string, string> = new Map()
+  ): Promise<Record<string, number>> {
     this.requireLease();
     const counts: Record<string, number> = { repaired: 0, deleted: 0, errors: 0 };
     const token = await this.accessTokenFor(connection);
@@ -414,6 +419,14 @@ export class SyncSession {
         const desired = await this.buildEvent(resource, connection, previousLevel);
         if (!desired) {
           throw new Error('Source has an invalid time interval');
+        }
+        if (
+          owner[EVENT_PROPERTY.connection] === connection.basic.id &&
+          resource.meta?.versionId &&
+          processed.get(sourceRef) === resource.meta.versionId &&
+          sameGoogleEvent(event, desired)
+        ) {
+          continue;
         }
         await calendar.upsertEvent(desired);
         counts.repaired++;

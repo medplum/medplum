@@ -7,8 +7,8 @@ import type { Appointment, Basic, Parameters } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
 import { readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
-import { readConnection } from './connection';
-import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
+import { CONNECTION_STATUSES, readCode, readConnection } from './connection';
+import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import { findConflicts, importedSlots, readImportedIdentity } from './import';
 import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { connectionStatusParameters } from './operations';
@@ -83,12 +83,24 @@ export async function callerStatus(medplum: MedplumClient, practitionerRef: stri
   if (!id) {
     throw new Error('Invalid calendar status identity');
   }
+  const status = readCode(basic, `${N}/status`, CONNECTION_STATUSES);
+  const eventDetailLevel = readCode(basic, `${N}/event-detail-level`, EVENT_DETAIL_LEVELS);
+  if (!status || (basic.extension?.some((e) => e.url === `${N}/event-detail-level`) && !eventDetailLevel)) {
+    return {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'connected', valueBoolean: true },
+        { name: 'stale', valueBoolean: true },
+        { name: 'staleReason', valueCode: 'invalid-public-status' },
+      ],
+    };
+  }
   const connection: CalendarConnection = {
     basic: { ...basic, id },
     practitionerRef,
     accountSub: '',
-    status: getExtensionValue(basic, `${N}/status`) as CalendarConnection['status'],
-    eventDetailLevel: getExtensionValue(basic, `${N}/event-detail-level`) as CalendarConnection['eventDetailLevel'],
+    status,
+    eventDetailLevel,
     accountEmail: getExtensionValue(basic, `${N}/account-email`) as string | undefined,
   };
   // Both searches execute with the caller's policy. Unreadable appointments never enter the response.

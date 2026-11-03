@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import type { Basic, Extension } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { EventDetailLevel } from './constants';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
 import type { CalendarConflict } from './import';
+import { assertCurrentProject } from './project';
 import { ifMatch, isVersionConflict } from './versioning';
 
 export const STATE_URL = `${GOOGLE_CALENDAR_NAMESPACE}/sync-state`;
@@ -280,16 +281,40 @@ export function withState(basic: Basic, state: SyncState): Basic {
   };
 }
 
-// Request markers are intentionally allowed while a lease is held. They never change credentials,
-// lifecycle, ownership, or Google/Slot data. Workers rebase their state writes on the latest version.
+/**
+ * Queue state changes without acquiring or replacing the worker lease. Never write credentials or remote data here.
+ * @param medplum - The authenticated operation or worker client.
+ * @param id - Connection in the current project.
+ * @param change - Pure mutation, reapplied to the latest version after a conflict.
+ * @returns The saved connection state.
+ */
+export async function mutateConnectionState(
+  medplum: MedplumClient,
+  id: string,
+  change: (basic: WithId<Basic>) => Basic
+): Promise<WithId<Basic>> {
+  for (let attempt = 0; ; attempt++) {
+    const basic = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
+    await assertCurrentProject(medplum, basic);
+    const updated = change(basic);
+    try {
+      return await medplum.updateResource(updated, ifMatch(basic));
+    } catch (err) {
+      if (attempt >= 4 || !isVersionConflict(err)) {
+        throw err;
+      }
+    }
+  }
+}
+
+// Workers rebase their writes on the latest version, preserving requests queued during a run.
 export async function requestSync(
   medplum: MedplumClient,
   id: string,
   directions: ('inbound' | 'outbound')[],
   privacyPending = false
 ): Promise<void> {
-  for (let attempt = 0; ; attempt++) {
-    const basic = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
+  await mutateConnectionState(medplum, id, (basic) => {
     const state = readState(basic);
     if (privacyPending) {
       state.privacyPending = true;
@@ -297,13 +322,6 @@ export async function requestSync(
     for (const direction of directions) {
       state[`${direction}Request`] = randomUUID();
     }
-    try {
-      await medplum.updateResource(withState(basic, state), ifMatch(basic));
-      return;
-    } catch (err) {
-      if (attempt >= 4 || !isVersionConflict(err)) {
-        throw err;
-      }
-    }
-  }
+    return withState(basic, state);
+  });
 }

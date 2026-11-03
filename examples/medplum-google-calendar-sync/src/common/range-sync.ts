@@ -93,6 +93,7 @@ async function syncRangeLocked(
   range: SyncRange
 ): Promise<Record<string, number>> {
   const counts: Record<string, number> = { candidates: 0, errors: 0 };
+  const processed = new Map<string, string>();
   const practitionerRef = connection.practitionerRef;
   const work = await session.workState();
   if (work?.phase === 'discover') {
@@ -115,6 +116,9 @@ async function syncRangeLocked(
           const outcome = await session.syncForConnection(source, connection);
           counts[outcome] = (counts[outcome] ?? 0) + 1;
           failed = outcome === 'unmappable' || outcome === 'reauth-required';
+          if (!failed && source.resource.meta?.versionId) {
+            processed.set(ref(source.resource), source.resource.meta.versionId);
+          }
         }
       } catch (err) {
         counts.errors++;
@@ -136,7 +140,7 @@ async function syncRangeLocked(
   if (counts['reauth-required']) {
     return counts;
   }
-  const repairs = await session.reconcileExisting(connection);
+  const repairs = await session.reconcileExisting(connection, processed);
   for (const [key, count] of Object.entries(repairs)) {
     counts[key] = (counts[key] ?? 0) + count;
   }

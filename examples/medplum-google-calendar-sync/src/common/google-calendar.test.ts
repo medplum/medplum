@@ -195,10 +195,10 @@ describe('GoogleCalendarClient', () => {
       expect(calls().map((c) => c.method)).toEqual(['POST']);
     });
 
-    test('replaces an existing event, live or a deleted tombstone, as confirmed', async () => {
+    test('replaces an existing changed event as confirmed', async () => {
       fetchMock
         .mockResolvedValueOnce(googleError(409, 'duplicate'))
-        .mockResolvedValueOnce(reply(200, event))
+        .mockResolvedValueOnce(reply(200, { ...event, status: 'cancelled' }))
         .mockResolvedValueOnce(reply(200, event));
       expect(await client.upsertEvent(event)).toBe('replaced');
       expect(calls().map((c) => c.method)).toEqual(['POST', 'GET', 'PUT']);
@@ -207,6 +207,40 @@ describe('GoogleCalendarClient', () => {
         body: { status: 'confirmed', summary: 'Appointment' },
       });
       expect(calls()[2].body).not.toHaveProperty('location');
+    });
+
+    test('leaves an unchanged mirror alone and repairs missing ownership evidence', async () => {
+      const remember = vi.fn(async () => undefined);
+      client = new GoogleCalendarClient('token', {
+        fetch: fetchMock as unknown as typeof fetch,
+        ownership: { remember, has: async () => false },
+      });
+      fetchMock.mockResolvedValueOnce(googleError(409, 'duplicate')).mockResolvedValueOnce(
+        reply(200, {
+          ...event,
+          start: { dateTime: '2026-10-12T11:00:00-05:00' },
+          end: { dateTime: '2026-10-12T11:30:00-05:00' },
+        })
+      );
+      expect(await client.upsertEvent(event)).toBe('unchanged');
+      expect(calls().map((c) => c.method)).toEqual(['POST', 'GET']);
+      expect(remember).toHaveBeenCalledWith(event);
+    });
+
+    test.each([
+      { description: 'Details that must be scrubbed' },
+      { location: 'Old location' },
+      { attendees: [{ email: 'synthetic@example.com' }] },
+      { reminders: { useDefault: false } },
+      { summary: 'Edited title' },
+      { start: { dateTime: '2026-10-12T17:00:00.000Z' } },
+    ])('repairs changed mapped fields %j', async (change) => {
+      fetchMock
+        .mockResolvedValueOnce(googleError(409, 'duplicate'))
+        .mockResolvedValueOnce(reply(200, { ...event, ...change }))
+        .mockResolvedValueOnce(reply(200, event));
+      expect(await client.upsertEvent(event)).toBe('replaced');
+      expect(calls().map((c) => c.method)).toEqual(['POST', 'GET', 'PUT']);
     });
 
     test('non-duplicate insert failures propagate', async () => {

@@ -11,7 +11,7 @@ import { operationHandler } from '../common/contracts';
 import { MissingCalendarCredentialError, readCredential } from '../common/credentials';
 import { exchangeCode, getOAuthClient, hasImportScopes, readIdToken, revokeToken } from '../common/google-oauth';
 import type { ConnectionLease } from '../common/lease';
-import { withConnectionLease } from '../common/lease';
+import { ConnectionBusyError, withConnectionLease } from '../common/lease';
 import { getParam, mutationStatus, parseDetailLevel } from '../common/operations';
 
 /*
@@ -107,7 +107,14 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       throw err;
     }
   };
-  return prior ? withConnectionLease(medplum, prior.basic.id, connect) : connect();
+  try {
+    return await (prior ? withConnectionLease(medplum, prior.basic.id, connect) : connect());
+  } catch (err) {
+    if (err instanceof ConnectionBusyError) {
+      throw new Error('A calendar sync is running; try reconnecting again in a few minutes', { cause: err });
+    }
+    throw err;
+  }
 }
 
 export const handler = operationHandler('connect', execute);

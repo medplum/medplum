@@ -157,3 +157,32 @@ test('status derives readable overlaps without exposing denied appointment or Sc
     expect(json).not.toContain(value);
   }
 });
+
+test.each([
+  { field: 'status', valueCode: 'invalid' },
+  { field: 'status', valueCode: undefined },
+  { field: 'event-detail-level', valueCode: 'full-with-invite' },
+])('malformed public code %j returns a read-only stale diagnostic', async ({ field, valueCode }) => {
+  await saveConnection(medplum, {
+    practitionerRef: event.requester?.reference as string,
+    accountSub: 'sub',
+    refreshToken: 'synthetic',
+  });
+  const summary = await medplum.searchOne('Basic', PUBLIC_STATUS_SEARCH);
+  if (!summary) {
+    throw new Error('Missing summary');
+  }
+  const url = `https://www.medplum.com/integrations/google-calendar/${field}`;
+  await medplum.updateResource({
+    ...summary,
+    extension: [...(summary.extension ?? []).filter((e) => e.url !== url), ...(valueCode ? [{ url, valueCode }] : [])],
+  });
+  const writes = vi.spyOn(medplum, 'updateResource');
+  writes.mockClear();
+  expect((await handler(medplum, event)).parameter).toEqual([
+    { name: 'connected', valueBoolean: true },
+    { name: 'stale', valueBoolean: true },
+    { name: 'staleReason', valueCode: 'invalid-public-status' },
+  ]);
+  expect(writes).not.toHaveBeenCalled();
+});

@@ -8,10 +8,9 @@ import { requireOperationBot } from '../common/authorization';
 import { findConnection, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
-import { withConnectionLease } from '../common/lease';
 import { getParam } from '../common/operations';
 import { parseSyncRange } from '../common/range-sync';
-import { readState, withState } from '../common/state';
+import { mutateConnectionState, readState, withState } from '../common/state';
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
   const practitioner = await requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.syncRange);
@@ -20,20 +19,18 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   if (!connection) {
     throw new Error('Google Calendar is not connected; connect it first');
   }
-  await withConnectionLease(medplum, connection.basic.id, async (lease) => {
-    await lease.mutate((basic) => {
-      if (readConnection(basic)?.status !== 'active') {
-        throw new Error('Google access is paused; reconnect it first');
-      }
-      const state = readState(basic);
-      if (state.requestedRangeStart) {
-        throw new Error('A range sync is already pending; wait for completion');
-      }
-      state.requestedRangeStart = range.start.toISOString();
-      state.requestedRangeEnd = range.end.toISOString();
-      state.outboundRequest = randomUUID();
-      return withState(basic, state);
-    });
+  await mutateConnectionState(medplum, connection.basic.id, (basic) => {
+    if (readConnection(basic)?.status !== 'active') {
+      throw new Error('Google access is paused; reconnect it first');
+    }
+    const state = readState(basic);
+    if (state.requestedRangeStart) {
+      throw new Error('A range sync is already pending; wait for completion');
+    }
+    state.requestedRangeStart = range.start.toISOString();
+    state.requestedRangeEnd = range.end.toISOString();
+    state.outboundRequest = randomUUID();
+    return withState(basic, state);
   });
   return {
     resourceType: 'Parameters',

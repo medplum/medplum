@@ -4,6 +4,7 @@
 import { sleep } from '@medplum/core';
 import { EVENT_PROPERTY } from './constants';
 import type { GoogleCalendarEvent } from './mapping';
+import { sameGoogleEvent } from './mapping';
 import type { OwnershipStore } from './ownership';
 
 /*
@@ -50,7 +51,7 @@ export class GoogleApiError extends Error {
 }
 
 /** What `upsertEvent` did. */
-export type UpsertOutcome = 'inserted' | 'replaced';
+export type UpsertOutcome = 'inserted' | 'replaced' | 'unchanged';
 
 interface GoogleErrorBody {
   error?: { message?: string; errors?: { reason?: string }[] };
@@ -218,6 +219,11 @@ export class GoogleCalendarClient {
       (await this.ownership?.ownsPrevious?.(event, previous));
     if (!(strippedTombstone && (await this.ownership?.has(event))) && !verifiedPredecessor) {
       assertEventOwnership(existing, event.extendedProperties.private);
+    }
+    if (existing && sameGoogleEvent(existing, event)) {
+      // The event can outlive a failed receipt write. Preserve recovery evidence even on a no-op.
+      await this.ownership?.remember(event);
+      return 'unchanged';
     }
     await this.updateEvent(event.id, event, requireEtag(existing));
     await this.ownership?.remember(event);

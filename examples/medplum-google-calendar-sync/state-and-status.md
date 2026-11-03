@@ -8,13 +8,13 @@ Let `N` mean `https://www.medplum.com/integrations/google-calendar`. A connectio
 
 Top-level connection extensions are:
 
-| URL suffix under N | Type | Meaning |
-| --- | --- | --- |
-| `/account-email` | valueString | Google account email, when available |
-| `/status` | valueCode | `active`, `reauth-required`, or `disconnecting` |
-| `/event-detail-level` | valueCode | Optional practitioner ceiling: `busy-only`, `initials`, `full` |
-| `/worker-lease` | extension | `owner` valueString UUID; `expires` valueInstant |
-| `/sync-state` | extension | Fields below |
+| URL suffix under N    | Type        | Meaning                                                        |
+| --------------------- | ----------- | -------------------------------------------------------------- |
+| `/account-email`      | valueString | Google account email, when available                           |
+| `/status`             | valueCode   | `active`, `reauth-required`, or `disconnecting`                |
+| `/event-detail-level` | valueCode   | Optional practitioner ceiling: `busy-only`, `initials`, `full` |
+| `/worker-lease`       | extension   | `owner` valueString UUID; `expires` valueInstant               |
+| `/sync-state`         | extension   | Fields below                                                   |
 
 The project settings Basic has code `N|calendar-settings`, identifier `N/settings|Project/<customer-project-id>`, and extension `N/project-detail-level` with valueCode `busy-only`, `initials`, or `full`. Workers and practitioners read it; installation writes it. It contains no credential. A settings read failure is an error, not permission to fall back to a broader ceiling.
 
@@ -30,25 +30,25 @@ The worker connection is private. A separate `calendar-public-status` Basic has 
 
 All names below are relative child-extension URLs under `N/sync-state`. Optional scalar fields appear at most once. Repeated records use nested extensions. `src/common/state.ts` defines the serialization.
 
-| Field | FHIR value type | Meaning |
-| --- | --- | --- |
-| inboundRequest, outboundRequest | string | UUID identifying requested work |
-| inboundCompleted, outboundCompleted | string | Request generation covered by a completed Google import or outbound repair, respectively; conflict refresh is tracked separately |
-| lastInbound, lastOutbound | instant | Last completed Google import or outbound repair, respectively; not a single-event acknowledgement |
-| inboundRetryAt, outboundRetryAt | instant | Retry deadline for Google throttling or disconnect ownership repair; no Google work before it |
-| staleReason, inboundError, outboundError | string | Stable diagnostic category, without vendor event content |
-| privacyPending | boolean | All-owned-mirror scrub has not completed for the current request/configuration |
-| projectDetailLevel | code | Last ceiling read by an outbound worker |
-| statusPublishPending | boolean | Public summary publication needs a retry |
-| conflictsRevision | string | New UUID when the conflict set opens, changes, or resolves |
-| conflictsPending | boolean | Local conflict refresh remains incomplete after the Google import |
-| forgetRevoked | boolean | Explicit consent to leave residual Google events when access is revoked |
-| googleCleaned, slotsCleaned, credentialRevoked | boolean | Disconnect cleanup checkpoints |
-| cleanupIssue | string | Unresolved cleanup category, including legacy ownership |
-| requestedRangeStart, requestedRangeEnd | instant | Explicit outbound range retained until a successful repair |
-| channel | nested, repeated | Watch binding, described below |
-| conflict | nested, repeated | Last successful conflict set, described below |
-| outboundWork | nested, optional | Range and cursor for a partially completed repair |
+| Field                                          | FHIR value type  | Meaning                                                                                                                          |
+| ---------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| inboundRequest, outboundRequest                | string           | UUID identifying requested work                                                                                                  |
+| inboundCompleted, outboundCompleted            | string           | Request generation covered by a completed Google import or outbound repair, respectively; conflict refresh is tracked separately |
+| lastInbound, lastOutbound                      | instant          | Last completed Google import or outbound repair, respectively; not a single-event acknowledgement                                |
+| inboundRetryAt, outboundRetryAt                | instant          | Retry deadline for Google throttling or disconnect ownership repair; no Google work before it                                    |
+| staleReason, inboundError, outboundError       | string           | Stable diagnostic category, without vendor event content                                                                         |
+| privacyPending                                 | boolean          | All-owned-mirror scrub has not completed for the current request/configuration                                                   |
+| projectDetailLevel                             | code             | Last ceiling read by an outbound worker                                                                                          |
+| statusPublishPending                           | boolean          | Public summary publication needs a retry                                                                                         |
+| conflictsRevision                              | string           | New UUID when the conflict set opens, changes, or resolves                                                                       |
+| conflictsPending                               | boolean          | Local conflict refresh remains incomplete after the Google import                                                                |
+| forgetRevoked                                  | boolean          | Explicit consent to leave residual Google events when access is revoked                                                          |
+| googleCleaned, slotsCleaned, credentialRevoked | boolean          | Disconnect cleanup checkpoints                                                                                                   |
+| cleanupIssue                                   | string           | Unresolved cleanup category, including legacy ownership                                                                          |
+| requestedRangeStart, requestedRangeEnd         | instant          | Explicit outbound range retained until a successful repair                                                                       |
+| channel                                        | nested, repeated | Watch binding, described below                                                                                                   |
+| conflict                                       | nested, repeated | Last successful conflict set, described below                                                                                    |
+| outboundWork                                   | nested, optional | Range and cursor for a partially completed repair                                                                                |
 
 A channel has `id`, `tokenHash`, optional `resourceId`, and optional `lastMessage` as valueString, plus `expires` as valueInstant. `tokenHash` is SHA-256; the raw channel token is never persisted. `lastMessage` is a decimal string compared with BigInt.
 
@@ -60,23 +60,25 @@ An outboundWork record has `start`/`end` valueInstant, `phase` valueCode (`disco
 
 `Practitioner/$google-calendar-status` resolves the caller from the authenticated requester. It accepts no input parameters and performs no writes. Change `eventDetailLevel` through `Practitioner/$google-calendar-settings`. Status derives conflicts within the next 90 days from caller-visible imported Slots and eligible Appointments, then checks referenced-resource read permissions. Retained Slots still show stale busy-time overlaps after revocation. Status returns a Parameters resource; `connected` is always present. Other fields appear when a connection exists.
 
-| Parameter | Type | Meaning |
-| --- | --- | --- |
-| connected | valueBoolean | A connection record exists, including paused or disconnecting records |
-| status | valueCode | Connection lifecycle state |
-| email | valueString, optional | Google account email |
-| eventDetailLevel | valueCode, optional | Practitioner's selected ceiling |
-| effectiveDetailLevel | valueCode | Stricter of project and practitioner ceilings |
-| privacyCleanupPending | valueBoolean | Scrub remains outstanding |
-| inboundPending, outboundPending | valueBoolean | Requested generation remains incomplete, or outbound work has a checkpoint |
-| stale | valueBoolean | Import is unverified, overdue, errored, paused, or disconnecting; outbound errors also set it |
-| staleReason | valueCode, optional | Current diagnostic category |
-| lastSuccessfulInbound, lastSuccessfulOutbound | valueInstant, optional | Last successful full-direction runs |
-| activeConflictCount | valueInteger | Count of conflicts whose Appointment the caller can currently read |
-| conflict | repeated part | Authorized conflict fields below |
-| disconnectWarning | valueString | Explains that removing imported blocks makes time bookable |
+| Parameter                                     | Type                   | Meaning                                                                                       |
+| --------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------- |
+| connected                                     | valueBoolean           | A connection record exists, including paused or disconnecting records                         |
+| status                                        | valueCode              | Connection lifecycle state                                                                    |
+| email                                         | valueString, optional  | Google account email                                                                          |
+| eventDetailLevel                              | valueCode, optional    | Practitioner's selected ceiling                                                               |
+| effectiveDetailLevel                          | valueCode              | Stricter of project and practitioner ceilings                                                 |
+| privacyCleanupPending                         | valueBoolean           | Scrub remains outstanding                                                                     |
+| inboundPending, outboundPending               | valueBoolean           | Requested generation remains incomplete, or outbound work has a checkpoint                    |
+| stale                                         | valueBoolean           | Import is unverified, overdue, errored, paused, or disconnecting; outbound errors also set it |
+| staleReason                                   | valueCode, optional    | Current diagnostic category                                                                   |
+| lastSuccessfulInbound, lastSuccessfulOutbound | valueInstant, optional | Last successful full-direction runs                                                           |
+| activeConflictCount                           | valueInteger           | Count of conflicts whose Appointment the caller can currently read                            |
+| conflict                                      | repeated part          | Authorized conflict fields below                                                              |
+| disconnectWarning                             | valueString            | Explains that removing imported blocks makes time bookable                                    |
 
 Each conflict part contains `key` valueString (SHA-256 of the internal key), `appointment` valueReference, `start`/`end` valueInstant, and zero or more authorized `schedule` valueReferences. A denied or deleted reference is omitted; a transient authorization/read failure fails the operation instead of claiming resolution.
+
+If a public summary contains an unknown status or detail-level code, status returns `connected=true`, `stale=true` and `staleReason=invalid-public-status`. It omits the invalid codes and leaves repair to a worker's next summary publication.
 
 Current stale reasons include `awaiting-initial-import`, `import-overdue` (more than two hours since success), `inbound-pending`, `inbound-error`, `outbound-error`, `outbound-incomplete`, `outbound-quota`, `reauth-required`, `disconnecting`, `legacy-mirror-repair-required`, `mirror-identity-repair-required`, `checkpoint-repair-required`. The two-hour threshold is a UI freshness threshold, not a sync SLA. Retained conflicts are last-known information while stale.
 
@@ -106,8 +108,16 @@ The installer returns these own-summary entries; the private connection is not c
 
 ```json
 [
-  { "resourceType": "Basic", "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-public-status&subject=%profile", "interaction": ["read", "search"] },
-  { "resourceType": "Basic", "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-settings", "readonly": true }
+  {
+    "resourceType": "Basic",
+    "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-public-status&subject=%profile",
+    "interaction": ["read", "search"]
+  },
+  {
+    "resourceType": "Basic",
+    "criteria": "Basic?code=https://www.medplum.com/integrations/google-calendar|calendar-settings",
+    "readonly": true
+  }
 ]
 ```
 
@@ -115,8 +125,15 @@ Restrict ordinary Slot writers with these rules, preserving any existing Schedul
 
 ```json
 [
-  { "resourceType": "Slot", "criteria": "Slot?identifier:not=https://www.medplum.com/integrations/google-calendar/imported-slot|" },
-  { "resourceType": "Slot", "criteria": "Slot?identifier=https://www.medplum.com/integrations/google-calendar/imported-slot|", "readonly": true }
+  {
+    "resourceType": "Slot",
+    "criteria": "Slot?identifier:not=https://www.medplum.com/integrations/google-calendar/imported-slot|"
+  },
+  {
+    "resourceType": "Slot",
+    "criteria": "Slot?identifier=https://www.medplum.com/integrations/google-calendar/imported-slot|",
+    "readonly": true
+  }
 ]
 ```
 

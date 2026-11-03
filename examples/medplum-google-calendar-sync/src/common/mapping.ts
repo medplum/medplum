@@ -32,6 +32,34 @@ export interface GoogleCalendarEvent {
   extendedProperties: { private: Record<string, string> };
 }
 
+/**
+ * Compare mapped fields, ignoring Google metadata and equivalent RFC 3339 time representations.
+ * @param existing - The event fetched from Google after verifying ownership.
+ * @param desired - The body produced by the current mapping and detail level.
+ * @returns Whether a Google update would leave the mapped fields unchanged.
+ */
+export function sameGoogleEvent(existing: GoogleCalendarEvent, desired: GoogleCalendarEvent): boolean {
+  const instant = (value: string | undefined): number => Date.parse(value ?? '');
+  const properties = (event: GoogleCalendarEvent): string =>
+    JSON.stringify(Object.entries(event.extendedProperties?.private ?? {}).sort(([a], [b]) => a.localeCompare(b)));
+  const reminders = existing.reminders as { useDefault?: boolean; overrides?: unknown[] } | undefined;
+  return (
+    existing.status === desired.status &&
+    existing.summary === desired.summary &&
+    (existing.description ?? '') === (desired.description ?? '') &&
+    (existing.location ?? '') === (desired.location ?? '') &&
+    instant(existing.start?.dateTime) === instant(desired.start.dateTime) &&
+    instant(existing.end?.dateTime) === instant(desired.end.dateTime) &&
+    existing.transparency === desired.transparency &&
+    existing.visibility === desired.visibility &&
+    (existing.attendees?.length ?? 0) === 0 &&
+    desired.attendees.length === 0 &&
+    reminders?.useDefault === desired.reminders.useDefault &&
+    !reminders?.overrides?.length &&
+    properties(existing) === properties(desired)
+  );
+}
+
 /** Appointment statuses that get a Mirrored Event. Every other status means "the event must not exist". */
 export const MIRRORED_APPOINTMENT_STATUSES: ReadonlySet<Appointment['status']> = new Set([
   'booked',

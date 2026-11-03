@@ -164,6 +164,35 @@ describe('range-sync', () => {
     expect(upserts.map((e) => e.id)).toEqual([toGoogleEventId(good.id)]);
   });
 
+  test.each(['unchanged', 'rescheduled', 'cancelled', 'google-edit'] as const)(
+    'repair skips only unchanged discovered source versions (%s)',
+    async (change) => {
+      const source = await booked();
+      searched.appointments = [source];
+      const deps = fakeDeps(upserts);
+      const original = deps.createCalendarClient;
+      const remove = vi.fn(async () => undefined);
+      deps.createCalendarClient = (token) => ({
+        ...original(token),
+        listEvents: async () => {
+          if (change === 'rescheduled') {
+            await medplum.updateResource({ ...source, end: '2026-10-10T17:00:00Z' });
+          } else if (change === 'cancelled') {
+            await medplum.updateResource({ ...source, status: 'cancelled' });
+          }
+          return [{ ...upserts[0], ...(change === 'google-edit' ? { summary: 'External edit' } : {}) }];
+        },
+        deleteOwnedEvent: remove,
+      });
+      await run(deps);
+      expect(upserts).toHaveLength(change === 'rescheduled' || change === 'google-edit' ? 2 : 1);
+      expect(remove).toHaveBeenCalledTimes(change === 'cancelled' ? 1 : 0);
+      if (change === 'rescheduled') {
+        expect(upserts[1].end.dateTime).toBe('2026-10-10T17:00:00.000Z');
+      }
+    }
+  );
+
   test('repairs cancellations missed by Subscriptions, verifies sources outside the discovery window', async () => {
     const cancelled = await booked({ status: 'cancelled' });
     const outside = await booked({ start: '2027-06-01T16:00:00Z', end: '2027-06-01T16:30:00Z' });

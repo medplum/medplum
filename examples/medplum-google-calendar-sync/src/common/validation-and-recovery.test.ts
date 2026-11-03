@@ -12,7 +12,7 @@ import { busyInterval, importIdentifier } from './import';
 import { ConnectionBusyError, LEASE_URL, withConnectionLease } from './lease';
 import { DEFINITIONS, PROFILES } from './profiles';
 import { callerStatus } from './public-status';
-import { readState, repairCheckpoint, requestSync, STATE_URL, withState } from './state';
+import { mutateConnectionState, readState, repairCheckpoint, requestSync, STATE_URL, withState } from './state';
 import { ensureSyncSubscription } from './subscriptions';
 
 const profile = (name: keyof typeof PROFILES): { profile: StructureDefinition } => ({
@@ -340,4 +340,34 @@ test('imports and local refreshes keep conflicts stable when no active Schedule 
       valueInteger: 0,
     });
   }
+});
+
+test('queued state mutations rebase on a worker write and preserve its lease and checkpoints', async () => {
+  const medplum = new MockClient();
+  const connection = await saveConnection(medplum, {
+    practitionerRef: 'Practitioner/p',
+    accountSub: 'sub',
+    refreshToken: 'synthetic',
+  });
+  await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+    const update = medplum.updateResource.bind(medplum);
+    const before = await lease.read();
+    const competing = withState(before, { ...readState(before), lastInbound: '2026-11-02T00:00:00.000Z' });
+    const writes = vi.spyOn(medplum, 'updateResource').mockImplementationOnce(async () => {
+      await update(competing);
+      throw new OperationOutcomeError(preconditionFailed);
+    });
+    await mutateConnectionState(medplum, connection.basic.id, (basic) =>
+      withState(basic, { ...readState(basic), outboundRequest: 'new-request' })
+    );
+    const current = await lease.read();
+    expect(readState(current)).toMatchObject({
+      lastInbound: '2026-11-02T00:00:00.000Z',
+      outboundRequest: 'new-request',
+    });
+    expect(current.extension?.find((e) => e.url === LEASE_URL)).toEqual(
+      before.extension?.find((e) => e.url === LEASE_URL)
+    );
+    expect(writes.mock.calls[0][1]).toMatchObject({ headers: { 'If-Match': `W/"${before.meta?.versionId}"` } });
+  });
 });

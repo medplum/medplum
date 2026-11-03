@@ -31,18 +31,18 @@ set -a
 set +a
 ```
 
-| Variable | Used by | Meaning |
-| --- | --- | --- |
-| `PROJECT_ID` | Deploy, install, connect, smoke tests | Explicit target project; must match the authenticated session |
-| `MEDPLUM_PROFILE` | CLI-backed commands | Named CLI login; defaults to `default` |
-| `MEDPLUM_BASE_URL` | Deploy, install, connect, smoke tests | API server; defaults to hosted Medplum |
-| `BASE_URL` | All deployment/service scripts | Overrides `MEDPLUM_BASE_URL`; also used by the migration script |
-| `CLIENT_ID`, `CLIENT_SECRET` | Deploy without `--cli`, migration | Medplum service-client credentials |
-| `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET` | Install, migration | Google OAuth client credentials; these are different from Medplum credentials |
-| `GOOGLE_CALENDAR_DETAIL_LEVEL` | Install | Project ceiling: `busy-only`, `initials`, or `full`; omit on reinstall to preserve an existing ceiling |
-| `GOOGLE_CALENDAR_APPOINTMENT_URL` | Install | Optional authenticated app deep link containing `{id}` |
-| `E2E_MANIFEST` | Live tests and cleanup | Absolute path to a new ignored test manifest; reuse that path only for cleanup |
-| `CONNECTION_ID` | Mirror migration | Existing connection Basic ID; migration checks the authenticated project |
+| Variable                                                     | Used by                               | Meaning                                                                                                |
+| ------------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `PROJECT_ID`                                                 | Deploy, install, connect, smoke tests | Explicit target project; must match the authenticated session                                          |
+| `MEDPLUM_PROFILE`                                            | CLI-backed commands                   | Named CLI login; defaults to `default`                                                                 |
+| `MEDPLUM_BASE_URL`                                           | Deploy, install, connect, smoke tests | API server; defaults to hosted Medplum                                                                 |
+| `BASE_URL`                                                   | All deployment/service scripts        | Overrides `MEDPLUM_BASE_URL`; also used by the migration script                                        |
+| `CLIENT_ID`, `CLIENT_SECRET`                                 | Deploy without `--cli`, migration     | Medplum service-client credentials                                                                     |
+| `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET` | Install, migration                    | Google OAuth client credentials; these are different from Medplum credentials                          |
+| `GOOGLE_CALENDAR_DETAIL_LEVEL`                               | Install                               | Project ceiling: `busy-only`, `initials`, or `full`; omit on reinstall to preserve an existing ceiling |
+| `GOOGLE_CALENDAR_APPOINTMENT_URL`                            | Install                               | Optional authenticated app deep link containing `{id}`                                                 |
+| `E2E_MANIFEST`                                               | Live tests and cleanup                | Absolute path to a new ignored test manifest; reuse that path only for cleanup                         |
+| `CONNECTION_ID`                                              | Mirror migration                      | Existing connection Basic ID; migration checks the authenticated project                               |
 
 The local connection helper uses `GOOGLE_CALENDAR_CLIENT_ID` (or legacy `GOOGLE_CLIENT_ID`) and the selected CLI profile. It can instead use `MEDPLUM_ACCESS_TOKEN`, but still checks `PROJECT_ID`.
 
@@ -101,6 +101,8 @@ npm run connect-local --workspace=medplum-google-calendar-sync -- busy-only
 
 Open the printed Google consent URL on the same computer. The helper listens on `127.0.0.1:8765`, validates state and uses PKCE. Keep it running until Google redirects back. It sends the code to the deployed connect operation; it does not implement a production callback or user interface. Personal-account success is not Workspace acceptance.
 
+Disconnect and range-sync requests queue even while a worker is running. A running worker may finish before disconnect cleanup starts; cleanup uses the same worker lease. Reconnect writes credentials under that lease and can return "A calendar sync is running; try reconnecting again in a few minutes". Retry reconnect after the worker finishes.
+
 Read `Practitioner/$google-calendar-status` with empty Parameters to observe progress. `reauth-required` means the practitioner must reconnect. Lowering detail queues an asynchronous historical scrub; wait until `privacyCleanupPending` clears. Explicit disconnect removes imported blocks and can make those times bookable, subject to other availability rules.
 
 ## 5. Verify and recover
@@ -113,13 +115,13 @@ If a test fails or is interrupted, keep its manifest and run `test:e2e:cleanup` 
 
 ## Troubleshooting
 
-| Symptom | Next check |
-| --- | --- |
-| `Authenticated project differs from PROJECT_ID` | Select the intended CLI project and correct `PROJECT_ID`; do not remove the guard |
-| CLI authentication fails | Renew the selected profile with `medplum --profile NAME login`, then reselect the project |
-| Missing Bot or operation | Deploy all ten Bots and six operations; in linked mode inspect exported types and duplicate identifiers |
-| Installation cannot finish | Check admin rights, required features and the returned outcome; installation can be retried |
-| Google connection requires reauthorization | Repeat consent with all required scopes and offline access; confirm the client matches the installed client |
-| No inbound updates | Check connection status, Google watch registration/callback delivery, importer logs and the minute/hourly Crons |
-| Private-data or imported-Slot access is broader than expected | Review all matching AccessPolicy grants and legacy history access; profiles are not authorization |
-| Cleanup remains pending | Restore API access, wait for the worker lease to release, then retry the saved manifest; do not delete unrelated events by title |
+| Symptom                                                       | Next check                                                                                                                       |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `Authenticated project differs from PROJECT_ID`               | Select the intended CLI project and correct `PROJECT_ID`; do not remove the guard                                                |
+| CLI authentication fails                                      | Renew the selected profile with `medplum --profile NAME login`, then reselect the project                                        |
+| Missing Bot or operation                                      | Deploy all ten Bots and six operations; in linked mode inspect exported types and duplicate identifiers                          |
+| Installation cannot finish                                    | Check admin rights, required features and the returned outcome; installation can be retried                                      |
+| Google connection requires reauthorization                    | Repeat consent with all required scopes and offline access; confirm the client matches the installed client                      |
+| No inbound updates                                            | Check connection status, Google watch registration/callback delivery, importer logs and the minute/hourly Crons                  |
+| Private-data or imported-Slot access is broader than expected | Review all matching AccessPolicy grants and legacy history access; profiles are not authorization                                |
+| Cleanup remains pending                                       | Restore API access, wait for the worker lease to release, then retry the saved manifest; do not delete unrelated events by title |

@@ -8,8 +8,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
+import { withConnectionLease } from '../common/lease';
 import type * as RangeSyncModule from '../common/range-sync';
 import { readState } from '../common/state';
+import { SyncSession } from '../common/sync';
 import { empty, operationIdentity } from '../test-auth';
 import { handler } from './google-calendar-sync-range-bot';
 
@@ -73,6 +75,27 @@ describe('google-calendar-sync-range-bot', () => {
     await updateConnection(medplum, saved, { status: 'reauth-required' });
     await expect(handler(medplum, event())).rejects.toThrow('reconnect it first');
     expect(syncRange).not.toHaveBeenCalled();
+  });
+
+  test('queues a range while a worker runs and preserves it when the old generation completes', async () => {
+    const connection = await connected();
+    const session = new SyncSession(medplum, secrets, 'proj-1');
+    await session.withConnection(connection, async () => {
+      const result = await handler(medplum, event());
+      expect(result.parameter).toContainEqual({ name: 'queued', valueBoolean: true });
+      await session.recordOutbound(true);
+    });
+    const current = await findConnection(medplum, practitionerRef);
+    if (!current) {
+      throw new Error('Missing connection');
+    }
+    const state = readState(current.basic);
+    expect(state.requestedRangeStart).toBeDefined();
+    expect(state.outboundRequest).not.toBe(state.outboundCompleted);
+    expect(syncRange).not.toHaveBeenCalled();
+    await withConnectionLease(medplum, connection.basic.id, async () => {
+      await expect(handler(medplum, event())).rejects.toThrow('already pending');
+    });
   });
 
   test('queues the requested range without calling Google and rejects concurrent range requests', async () => {

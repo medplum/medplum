@@ -10,7 +10,7 @@ import { findConnection, saveConnection, updateConnection } from '../common/conn
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
 import { importIdentifier } from '../common/import';
 import { runInbound } from '../common/inbound';
-import { LEASE_URL } from '../common/lease';
+import { LEASE_URL, withConnectionLease } from '../common/lease';
 import { readState, withState } from '../common/state';
 import { operationIdentity } from '../test-auth';
 import { handler } from './google-calendar-disconnect-bot';
@@ -62,6 +62,19 @@ describe('google-calendar-disconnect-bot', () => {
     const basic = await medplum.updateResource({ ...saved.basic, meta: { ...saved.basic.meta, project: PROJECT_ID } });
     return { ...saved, basic };
   }
+
+  test('queues disconnect during a worker lease without losing it to a late reauth update', async () => {
+    const connection = await connected();
+    await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+      const result = await handler(medplum, event);
+      expect(result.parameter).toContainEqual({ name: 'status', valueCode: 'disconnecting' });
+      await lease.check();
+      await updateConnection(medplum, connection, { status: 'reauth-required' }, lease);
+      expect((await findConnection(medplum, practitionerRef))?.status).toBe('disconnecting');
+      expect(readState(await lease.read()).inboundRequest).not.toBe(readState(connection.basic).inboundRequest);
+    });
+    expect((await findConnection(medplum, practitionerRef))?.status).toBe('disconnecting');
+  });
 
   test('nothing to do when not connected', async () => {
     expect((await handler(medplum, event)).parameter).toEqual([{ name: 'connected', valueBoolean: false }]);

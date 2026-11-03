@@ -31,7 +31,7 @@ const EXTENSION = {
   eventDetailLevel: `${GOOGLE_CALENDAR_NAMESPACE}/event-detail-level`,
 } as const;
 
-const CONNECTION_STATUSES = ['active', 'reauth-required', 'disconnecting'] as const;
+export const CONNECTION_STATUSES = ['active', 'reauth-required', 'disconnecting'] as const;
 export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];
 
 export interface CalendarConnection {
@@ -52,7 +52,7 @@ export type CalendarConnectionInput = Omit<CalendarConnection, 'basic' | 'status
 };
 
 // A code extension is only trusted when it holds one of the known values.
-function readCode<T extends string>(basic: Basic, url: string, allowed: readonly T[]): T | undefined {
+export function readCode<T extends string>(basic: Basic, url: string, allowed: readonly T[]): T | undefined {
   const value = getExtensionValue(basic, url);
   return allowed.find((v) => v === value);
 }
@@ -168,6 +168,7 @@ export async function saveConnection(
       const state = readState(latest);
       // A replacement grant must be revoked during any still-pending disconnect.
       state.credentialRevoked = false;
+      state.inboundError = undefined;
       state.inboundRetryAt = undefined;
       state.inboundRequest = randomUUID();
       state.outboundRequest = randomUUID();
@@ -228,7 +229,7 @@ export async function updateConnection(
   const apply = async (held: ConnectionLease): Promise<void> => {
     await held.mutate((basic) => {
       const values: Extension[] = [];
-      if (changes.status) {
+      if (changes.status && readConnection(basic)?.status !== 'disconnecting') {
         values.push({ url: EXTENSION.status, valueCode: changes.status });
       }
       if (changes.eventDetailLevel) {

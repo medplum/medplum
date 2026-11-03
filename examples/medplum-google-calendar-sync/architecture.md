@@ -22,18 +22,18 @@ Shared modules separate installation concerns: `install.ts` manages Bot lookup, 
 
 ## Bot responsibilities
 
-| Bot identifier | Entry point | Execution context |
-| --- | --- | --- |
-| `install-google-calendar` | Customer installation | Authenticated administrator |
-| `google-calendar-connect-bot` | OAuth code exchange and credential persistence | Restricted connection membership |
-| `google-calendar-status-bot` | Read status and caller-visible conflicts | Authenticated practitioner |
-| `google-calendar-settings-bot` | Detail selection and scrub request | Restricted operation membership |
-| `google-calendar-disconnect-bot` | Queue disconnect cleanup | Restricted operation membership |
-| `google-calendar-sync-range-bot` | Queue an explicit outbound range | Restricted operation membership |
-| `google-calendar-sync-bot` | Appointment/native-block Subscription delivery | Restricted outbound worker |
-| `google-calendar-reconcile-bot` | Scheduled dispatch and outbound repair | Restricted outbound worker |
-| `google-calendar-import-bot` | Google import, watch renewal and disconnect cleanup | Restricted inbound worker |
-| `google-calendar-webhook-bot` | Authenticate Google notifications and queue import | Restricted public webhook membership |
+| Bot identifier                   | Entry point                                         | Execution context                    |
+| -------------------------------- | --------------------------------------------------- | ------------------------------------ |
+| `install-google-calendar`        | Customer installation                               | Authenticated administrator          |
+| `google-calendar-connect-bot`    | OAuth code exchange and credential persistence      | Restricted connection membership     |
+| `google-calendar-status-bot`     | Read status and caller-visible conflicts            | Authenticated practitioner           |
+| `google-calendar-settings-bot`   | Detail selection and scrub request                  | Restricted operation membership      |
+| `google-calendar-disconnect-bot` | Queue disconnect cleanup                            | Restricted operation membership      |
+| `google-calendar-sync-range-bot` | Queue an explicit outbound range                    | Restricted operation membership      |
+| `google-calendar-sync-bot`       | Appointment/native-block Subscription delivery      | Restricted outbound worker           |
+| `google-calendar-reconcile-bot`  | Scheduled dispatch and outbound repair              | Restricted outbound worker           |
+| `google-calendar-import-bot`     | Google import, watch renewal and disconnect cleanup | Restricted inbound worker            |
+| `google-calendar-webhook-bot`    | Authenticate Google notifications and queue import  | Restricted public webhook membership |
 
 Six type-level operations expose install, connect, status, settings, disconnect and range sync. Their declarations and Bot-side validation share `src/common/contracts.ts`. Background workers are not public custom operations. Installer policies separate caller-readable summaries from private worker state and credentials; the webhook cannot read the credential resource.
 

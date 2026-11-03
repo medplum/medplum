@@ -8,9 +8,8 @@ import { requireOperationBot } from '../common/authorization';
 import { findConnection, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_NAMESPACE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
-import { withConnectionLease } from '../common/lease';
 import { mutationStatus } from '../common/operations';
-import { readState, withState } from '../common/state';
+import { mutateConnectionState, readState, withState } from '../common/state';
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
   const connection = await findConnection(
@@ -21,31 +20,29 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     return mutationStatus(undefined);
   }
   const forget = event.input?.parameter?.some((p) => p.name === 'forgetRevoked' && p.valueBoolean === true) === true;
-  await withConnectionLease(medplum, connection.basic.id, async (lease) => {
-    await lease.mutate((basic) => {
-      const current = readConnection(basic);
-      const state = readState(basic);
-      if ((current?.status === 'reauth-required' || state.inboundError === 'reauth-required') && !forget) {
-        throw new Error('Reconnect for cleanup, or explicitly set forgetRevoked=true to leave residual Google events');
-      }
-      state.forgetRevoked = forget;
-      state.inboundRequest = randomUUID();
-      if (state.cleanupIssue) {
-        // An explicit retry follows an ownership repair; keep unrelated Google quota backoff.
-        state.inboundRetryAt = undefined;
-      }
-      const statusUrl = `${GOOGLE_CALENDAR_NAMESPACE}/status`;
-      return withState(
-        {
-          ...basic,
-          extension: [
-            ...(basic.extension ?? []).filter((e) => e.url !== statusUrl),
-            { url: statusUrl, valueCode: 'disconnecting' },
-          ],
-        },
-        state
-      );
-    });
+  await mutateConnectionState(medplum, connection.basic.id, (basic) => {
+    const current = readConnection(basic);
+    const state = readState(basic);
+    if ((current?.status === 'reauth-required' || state.inboundError === 'reauth-required') && !forget) {
+      throw new Error('Reconnect for cleanup, or explicitly set forgetRevoked=true to leave residual Google events');
+    }
+    state.forgetRevoked = forget;
+    state.inboundRequest = randomUUID();
+    if (state.cleanupIssue) {
+      // An explicit retry follows an ownership repair; keep unrelated Google quota backoff.
+      state.inboundRetryAt = undefined;
+    }
+    const statusUrl = `${GOOGLE_CALENDAR_NAMESPACE}/status`;
+    return withState(
+      {
+        ...basic,
+        extension: [
+          ...(basic.extension ?? []).filter((e) => e.url !== statusUrl),
+          { url: statusUrl, valueCode: 'disconnecting' },
+        ],
+      },
+      state
+    );
   });
   return mutationStatus(await findConnection(medplum, connection.practitionerRef));
 }
