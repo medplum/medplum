@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack, Textarea } from '@mantine/core';
+import { Alert, Button, Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { extractServiceTypeReferences, getSchedulingRequirements, normalizeErrorString } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
@@ -13,6 +13,7 @@ import {
   DEFAULT_PROCEDURE_VALUE_SET,
   hasRequiredValues,
 } from '../../AppointmentFinder/AppointmentFinder.requirements';
+import { AppointmentNotesInput } from '../../AppointmentFinder/AppointmentNotesInput';
 import { BookingRequirementFields } from '../../AppointmentFinder/BookingRequirementFields';
 import { buildAppointmentUpdate, isEdited, readRequirementValues } from './AppointmentDetails.utils';
 
@@ -20,6 +21,11 @@ export interface AppointmentDetailsFormProps {
   readonly appointment: WithId<Appointment>;
   readonly procedureBinding?: string;
   readonly diagnosisBinding?: string;
+  /**
+   * See {@link AppointmentProposalFormProps.commentMaxLength}. Notes already longer than this
+   * have to be shortened before anything can be saved.
+   */
+  readonly commentMaxLength?: number;
   readonly onCancel?: () => void;
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
@@ -38,6 +44,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     appointment,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
+    commentMaxLength,
     onUpdated,
     onCancel,
   } = props;
@@ -55,6 +62,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
 
   const edited = isEdited(appointment, values, requirements) || comment.trim() !== (appointment.comment ?? '');
   const complete = hasRequiredValues(values, requirements);
+  const commentTooLong = commentMaxLength !== undefined && comment.length > commentMaxLength;
 
   function chooseValues(next: BookingRequirementValues): void {
     setValues(next);
@@ -62,7 +70,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
   }
 
   async function save(): Promise<void> {
-    if (!complete) {
+    if (!complete || commentTooLong) {
       return;
     }
     setSaving(true);
@@ -88,13 +96,11 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
 
   return (
     <Stack gap="sm">
-      <Textarea
-        label="Notes"
-        autosize
-        minRows={2}
+      <AppointmentNotesInput
         value={comment}
-        onChange={(event) => {
-          setComment(event.currentTarget.value);
+        maxLength={commentMaxLength}
+        onChange={(value) => {
+          setComment(value);
           setSaved(false);
         }}
       />
@@ -114,7 +120,12 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
           {normalizeErrorString(saveError)}
         </Alert>
       )}
-      <Button variant="outline" loading={saving} disabled={!edited || !complete || saved} onClick={save}>
+      <Button
+        variant="outline"
+        loading={saving}
+        disabled={!edited || !complete || commentTooLong || saved}
+        onClick={save}
+      >
         Save Changes
       </Button>
       {onCancel && (

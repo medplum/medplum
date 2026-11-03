@@ -646,6 +646,20 @@ describe('SchedulingWorkspace booking', () => {
       expect(markedTime()).toBe('none');
     });
 
+    test('Caps the notes both when booking and when editing', async () => {
+      renderWithMedplum(<SchedulingWorkspace appointmentCommentMaxLength={50} />, medplum);
+      await settleAutocomplete();
+      await clickCalendar();
+      expect(screen.getByRole('textbox', { name: 'Notes' })).toHaveAttribute('maxlength', '50');
+
+      await clickBookedVisit();
+      const details = detailsPane() as HTMLElement;
+      await act(async () => {
+        fireEvent.click(within(details).getByRole('button', { name: 'Edit' }));
+      });
+      expect(within(details).getByRole('textbox', { name: 'Notes' })).toHaveAttribute('maxlength', '50');
+    });
+
     test('Clicking open time puts the booking form back over the details', async () => {
       await setupWithVisit();
       await clickBookedVisit();
