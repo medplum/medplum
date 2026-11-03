@@ -23,6 +23,16 @@ FHIRcast is a **lightweight, topic-based publish/subscribe protocol** that enabl
 4. **Notification**: Subscribers to that topic receive the event, which includes the new context (e.g., the Patient FHIR resource, which contains information like the patient's ID, name, date of birth, etc.).
 5. **Synchronization**: Upon receiving the event, the subscriber application can then update its own display or internal state to reflect the new context.
 
+## Naming a Subscriber
+
+A subscribe request may carry an optional [`subscriber.name`](https://build.fhir.org/ig/HL7/fhircast-docs/2-4-Subscribing.html) describing the subscribing application. It is the one subscribe parameter the spec does not prefix with `hub.`, and it is what identifies a subscriber in a `syncerror` when an event is refused or cannot be delivered.
+
+```ts
+await medplum.fhircastSubscribe(topic, ['Patient-open'], 'Acme Viewer');
+```
+
+A subscriber that does not name itself is named by the hub after the identity it subscribed with: the `ClientApplication` the access token was issued to, or else the name on the subscriber's own profile resource. Several applications commonly share a topic, so this is what tells them apart. On the STU2 hub the resulting name is returned as `hub.subscriber` in the subscription confirmation; STU3 dropped that field from the confirmation.
+
 ## Use Cases
 
 - **EHR to SMART App Integration**: An EHR system publishes Patient-open events, and a SMART on FHIR application automatically loads the newly selected patient's data.
