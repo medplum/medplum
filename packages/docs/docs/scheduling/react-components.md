@@ -51,6 +51,10 @@ When booking requires checks before it commits, use `AppointmentProposalForm.onS
 
 `canBypassSchedulingRules` exposes manual booking and rescheduling through FHIR writes. It does not grant permission or reproduce the scheduling operations' availability checks. Keep any such exceptions behind a controlled and authorized workflow.
 
+Manual booking submits the Appointment and its Slots in a transaction Bundle. Without the project's `transaction-bundles` feature, the server applies it as a batch: successful Slot writes can remain as blocked time if the Appointment fails to save. Enable the feature for an all-or-none booking. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+
+Manual rescheduling uses separate FHIR writes: create new Slots, conditionally update the Appointment, then delete the old Slots. If creation or the update fails, it attempts to delete the new Slots. Cleanup is best effort; failed deletions are logged and can leave new or old Slots blocking time without a visit. The transaction feature does not change this path. Inspect the Appointment and Slot records before retrying or removing unused Slots.
+
 ## Configuration ownership
 
 The configuration workspace edits `HealthcareService` defaults and each actor's `Schedule` offerings and per-service overrides. An actor can offer or stop offering visit types, and a visit-type page links to the actors offering it. Stopping an offering removes that service's Schedule overrides; it does not rewrite existing Appointments. Hours use the inheritance rules in [Defining Availability](/docs/scheduling/defining-availability).
@@ -66,7 +70,7 @@ The configuration workspace edits `HealthcareService` defaults and each actor's 
 
 Removing the last facility from the workspace-owned role deactivates that role. Turning off an actor in the workspace also turns off its Schedule. Turning off only the Schedule pauses booking while preserving the actor's status for other uses. The server checks Schedule and HealthcareService activity in scheduling operations; the React selectors additionally filter inactive actors.
 
-Configuration saves submit changed resources in a transaction Bundle, with version conditions on updates. Enable the project's `transaction-bundles` feature before relying on an all-or-none save, including saves that create cross-referencing resources. Without it, the server processes the Bundle as a batch and some entries may succeed while others fail. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+Configuration saves submit changed resources in one transaction Bundle, with version conditions on updates. Without the project's `transaction-bundles` feature, entries execute independently and a save can partially succeed. The actor configuration page shows the first failure, not a complete report of each resource's outcome. Inspect the stored resources and reload the latest state before retrying; a save error does not mean nothing was written. Enable the feature for all-or-none saves. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 
 ## Booking requirements
 
@@ -116,7 +120,9 @@ Source: [facility search criteria](https://github.com/medplum/medplum/blob/main/
 
 The workspace's Block Time action creates a `busy-unavailable` Slot on each selected Schedule. These blocks omit `serviceType` and apply to all services on those Schedules. They do not create an Appointment or change existing appointments.
 
-The multi-calendar action submits a transaction Bundle; enable transaction support for all-or-none writes. A saved block can be edited or deleted individually. The details pane disables those actions until it verifies that no Appointment holds the Slot. Appointment-owned Slots, including buffers, must be moved or released through the appointment workflow.
+The multi-calendar action submits one Slot per selected Schedule in a transaction Bundle. Without the project's `transaction-bundles` feature, some calendars can be blocked while others fail. The form reports how many were blocked; inspect the calendars and retry only those that were missed to avoid duplicate blocks. Enable the feature to write all the blocks or none. See [Batches vs. Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+
+A saved block can be edited or deleted individually. The details pane disables those actions until it verifies that no Appointment holds the Slot. Appointment-owned Slots, including buffers, must be moved or released through the appointment workflow.
 
 When a service facility or visit-type calendar filter is active, the workspace hides standalone blocked-time Slots. They still affect availability. Clear those filters to inspect the blocks.
 
