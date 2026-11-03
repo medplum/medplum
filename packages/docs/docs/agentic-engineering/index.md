@@ -1,5 +1,6 @@
 ---
-sidebar_label: Getting Started
+slug: /building-with-ai-coding-assistants
+sidebar_position: 0
 title: Building on Medplum with AI Coding Agents
 tags: [ai, agentic-engineering, best-practices, mcp]
 keywords: [vibe coding, agentic engineering, llm, agent, mcp, skills, cursor, claude, copilot]
