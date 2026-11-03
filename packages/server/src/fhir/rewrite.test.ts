@@ -265,6 +265,19 @@ describe('URL rewrite', () => {
     expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
   });
 
+  test('Storage URL without trailing slash in storageBaseUrl', async () => {
+    const storageBaseUrl = config.storageBaseUrl;
+    config.storageBaseUrl = storageBaseUrl.replace(/\/$/, '');
+    try {
+      const url = concatUrls(config.storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`);
+      const practitioner: Practitioner = { resourceType: 'Practitioner', photo: [{ url }] };
+      const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+      expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
+    } finally {
+      config.storageBaseUrl = storageBaseUrl;
+    }
+  });
+
   test('Presigned URL keeps its version', () =>
     withTestContext(async () => {
       const v1 = await systemRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });

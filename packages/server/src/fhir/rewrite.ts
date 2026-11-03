@@ -227,13 +227,14 @@ class Rewriter {
  */
 export function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
   const config = getConfig();
+  const storageBaseUrl = config.storageBaseUrl.endsWith('/') ? config.storageBaseUrl : config.storageBaseUrl + '/';
   let refStr: string | undefined;
   let isStorageUrl = false;
 
   if (url.startsWith(config.baseUrl + 'fhir/R4/Binary/')) {
     refStr = url.substring(config.baseUrl.length + 'fhir/R4/Binary/'.length);
-  } else if (url.startsWith(config.storageBaseUrl)) {
-    refStr = url.substring(config.storageBaseUrl.length);
+  } else if (url.startsWith(storageBaseUrl)) {
+    refStr = url.substring(storageBaseUrl.length);
     isStorageUrl = true;
   } else if (url.startsWith('Binary/')) {
     refStr = url.substring('Binary/'.length);
