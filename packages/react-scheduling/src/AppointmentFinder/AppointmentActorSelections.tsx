@@ -7,7 +7,7 @@ import { IconPlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import type { BookableActorType } from '../actors';
-import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel, isActorTypeRequired } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel } from '../actors';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import type { ActorRequirement, ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { createActorRequirement } from './AppointmentFinder.schedules';
@@ -89,7 +89,6 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
   const { actorType, service, serviceFacility, disabled, error, onChange } = props;
   const label = getActorTypeLabel(actorType);
   const lowercaseLabel = label.toLowerCase();
-  const required = isActorTypeRequired(actorType);
   const rows = props.requirements?.length ? props.requirements : [getBlankRequirement(actorType)];
   const several = rows.length > 1;
   const canAddAnother = (rows.at(-1)?.candidates.length ?? 0) > 0;
@@ -100,11 +99,7 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
 
   return (
     <Stack gap={4} role="group" aria-label={label}>
-      {several && (
-        <Input.Label labelElement="div" required={required}>
-          {label}
-        </Input.Label>
-      )}
+      {several && <Input.Label labelElement="div">{label}</Input.Label>}
 
       {rows.map((row, index) => (
         <Group key={row.id} align="flex-end" wrap="nowrap" gap="xs">
@@ -116,10 +111,6 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
               disabled={disabled}
               label={several ? <RowLabel actorType={actorType} index={index} label={label} /> : label}
               placeholder={row.candidates.length > 0 ? 'or…' : `Search ${lowercaseLabel}s`}
-              required={required}
-              // With several rows the asterisk belongs to the heading above them,
-              // since it is the type that has to be answered and not this row.
-              withAsterisk={!several && required}
               defaultValue={row.candidates}
               onChange={(candidates: readonly ScheduleCandidate[]) =>
                 change(rows.map((held) => (held.id === row.id ? { ...held, candidates } : held)))

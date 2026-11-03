@@ -538,11 +538,7 @@ For example, here's how the Patient resource would look:
 }
 ```
 
-Only project administrators can set or remove accounts directly, using the [`$set-accounts` operation](/docs/api/fhir/operations/set-accounts) or a write with the `X-Medplum: extended` header. For other users, the server manages accounts:
-
-- A new resource gets the creator's access policy `compartment`.
-- A resource that references a Patient also gets that Patient's accounts.
-- Edits never remove an existing account. A resource that is moved to a different Patient keeps the previous Patient's accounts until an administrator removes them.
+Because the account-tagging is handled within the resource, project administrators and API users can set the account directly.
 
 ### Patient Access
 

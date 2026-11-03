@@ -220,6 +220,26 @@ describe('AppointmentRescheduleForm', () => {
       expect(onRescheduled.mock.calls[0][0].appointments[0].end).toBe('2026-08-18T18:52:00.000Z');
     });
 
+    test('flashes a picked time, but not a typed one that takes its place', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      const shownTime = (): HTMLElement | undefined =>
+        screen.getAllByLabelText('Date & time').find((input) => input.hasAttribute('readonly'));
+      expect(shownTime()?.className).toMatch(/justPicked/);
+
+      // Another day takes the picked time down; a time typed for it comes up without a flash.
+      await openTimeFinder();
+      await chooseDay('19');
+      expect(shownTime()).toBeUndefined();
+      fireEvent.change(
+        screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly')) as HTMLElement,
+        { target: { value: '2026-08-19T14:07' } }
+      );
+      await settleAutocomplete();
+      expect(shownTime()?.className).not.toMatch(/justPicked/);
+    });
+
     test('opens the typed time on the appointment as it stands, proposing nothing until something changes', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await openTimeFinder();

@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -64,12 +64,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Login to Docker Hub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Login to Docker Hub Hardened Images
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: dhi.io
           username: ${{ secrets.STAGING_DOCKERHUB_USERNAME }}
@@ -83,8 +83,10 @@ jobs:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           DOCS_DESTINATION: www.medplum.com
           FOOMEDICAL_BUCKET: foomedical.com
-          FOOMEDICAL_GOOGLE_CLIENT_ID: 679052511930-8dqur4mmg8egbttgos5pmr4ljtf3etbb.apps.googleusercontent.com
-          FOOMEDICAL_RECAPTCHA_SITE_KEY: 6LfFd_8gAAAAAOCVrZQ_aF2CN5b7s91NEYIu5GxL
+          FOOMEDICAL_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          FOOMEDICAL_PROJECT_ID: ${{ vars.STAGING_FOOMEDICAL_PROJECT_ID }}
+          FOOMEDICAL_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
+          FOOMEDICAL_RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
           GRAPHIQL_BUCKET: graphiql.medplum.com
           GRAPHIQL_AWS_REGION: us-east-1
           PROVIDER_APP_BUCKET: provider.medplum.com

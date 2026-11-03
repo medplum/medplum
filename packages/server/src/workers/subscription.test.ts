@@ -17,6 +17,7 @@ import type {
   Binary,
   Bot,
   DocumentReference,
+  Login,
   Observation,
   Patient,
   Practitioner,
@@ -218,6 +219,36 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionsEnabled = false;
       await addSubscriptionJobs(patient, undefined, { project: repo.currentProject(), interaction: 'create' });
 
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
+  test('Does not send subscriptions for Login', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Login',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const project = repo.currentProject() as WithId<Project>;
+      const login: WithId<Login> = {
+        resourceType: 'Login',
+        id: randomUUID(),
+        meta: { project: project.id },
+        user: { reference: 'User/' + randomUUID() },
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        refreshSecret: randomUUID(),
+      };
+
+      const subscriptionQueue = getSubscriptionQueue();
+      (subscriptionQueue?.add as Mock).mockClear();
+      await addSubscriptionJobs(login, undefined, { project, interaction: 'create' });
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
     }));
 
@@ -1134,10 +1165,10 @@ describe('Subscription Worker', () => {
 
   test('Ignore resource changes in different account compartment', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id;
+      const project = randomUUID();
       const account = 'Organization/' + randomUUID();
 
-      const subscription = await systemRepo.createResource<Subscription>({
+      const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         meta: {
@@ -1155,7 +1186,7 @@ describe('Subscription Worker', () => {
       });
       expect(subscription).toBeDefined();
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
         meta: {
           project,
@@ -2786,7 +2817,7 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
 
-        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Not found');
+        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Job not found');
 
         // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
         // if the job had made its way to the queue previously under different logic
