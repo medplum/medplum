@@ -297,6 +297,44 @@ describe('calendar runtime', () => {
     );
   });
 
+  test('a channel registered to a previous webhook address is replaced, as is one without an address', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const first = watch.id;
+    expect(readState(await current()).channels[0].address).toBe(secrets?.GOOGLE_CALENDAR_WEBHOOK_URL?.valueString);
+
+    // The installer moved the webhook membership: the stored address no longer matches.
+    const moved: BotEvent = {
+      ...event,
+      secrets: {
+        ...secrets,
+        GOOGLE_CALENDAR_WEBHOOK_URL: {
+          name: 'webhook',
+          valueString: 'https://api.medplum.test/webhook/new-membership',
+        },
+      },
+    };
+    requests = [];
+    await runInbound(medplum, moved, connection.basic.id);
+    expect(watch.id).not.toBe(first);
+    expect(readState(await current()).channels.map((c) => [c.id, c.address])).toEqual([
+      [watch.id, 'https://api.medplum.test/webhook/new-membership'],
+    ]);
+    expect(requests.some((r) => r.url.includes('/channels/stop'))).toBe(true);
+
+    // A channel written by an earlier version has no address and is replaced the same way.
+    await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+      await lease.mutate((basic) => {
+        const state = readState(basic);
+        state.channels = state.channels.map((c) => ({ ...c, address: undefined }));
+        return withState(basic, state);
+      });
+    });
+    const legacy = watch.id;
+    await runInbound(medplum, moved, connection.basic.id);
+    expect(watch.id).not.toBe(legacy);
+    expect(readState(await current()).channels).toHaveLength(1);
+  });
+
   test('an outage or revocation preserves blocks, conflicts and last successful import', async () => {
     await runInbound(medplum, event, connection.basic.id);
     const before = readState(await current());

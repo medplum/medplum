@@ -19,6 +19,8 @@ export interface WatchChannel {
   resourceId?: string;
   expires: string;
   lastMessage?: string;
+  /** The webhook address the channel was registered with; absent on channels from earlier versions. */
+  address?: string;
 }
 export interface OutboundWork {
   start: string;
@@ -193,6 +195,7 @@ export function readState(basic: Basic): SyncState {
         resourceId: text('resourceId') || undefined,
         expires: instant('expires'),
         lastMessage: text('lastMessage') || undefined,
+        address: text('address') || undefined,
       });
     }
     if (field.url === 'conflict') {
@@ -253,6 +256,7 @@ export function withState(basic: Basic, state: SyncState): Basic {
         { url: 'expires', valueInstant: channel.expires },
         ...(channel.lastMessage ? [{ url: 'lastMessage', valueString: channel.lastMessage }] : []),
         ...(channel.resourceId ? [{ url: 'resourceId', valueString: channel.resourceId }] : []),
+        ...(channel.address ? [{ url: 'address', valueString: channel.address }] : []),
       ],
     });
   }

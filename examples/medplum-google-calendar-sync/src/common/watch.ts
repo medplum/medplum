@@ -25,8 +25,11 @@ export async function ensureWatch(
     throw new Error('Calendar webhook must use HTTPS');
   }
   let state = readState(await lease.read());
+  // A channel only counts when Google still delivers it to the address installed now: a
+  // reinstall can move the webhook membership, and Google keeps notifying the old URL for the
+  // channel's remaining life. Channels from earlier versions carry no address and are replaced.
   const live = state.channels
-    .filter((c) => c.resourceId && Date.parse(c.expires) > Date.now())
+    .filter((c) => c.resourceId && Date.parse(c.expires) > Date.now() && c.address === address)
     .sort((a, b) => Date.parse(b.expires) - Date.parse(a.expires));
   if (!live[0] || Date.parse(live[0].expires) < Date.now() + 24 * 60 * 60_000) {
     const id = randomUUID();
@@ -35,6 +38,7 @@ export async function ensureWatch(
       id,
       tokenHash: channelTokenHash(token),
       expires: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
+      address,
     };
     // Persist before watch: Google's initial callback may arrive before the response.
     await lease.mutate((basic) =>
@@ -56,7 +60,7 @@ export async function ensureWatch(
   }
   state = readState(await lease.read());
   const primary = [...state.channels]
-    .filter((c) => c.resourceId && Date.parse(c.expires) > Date.now())
+    .filter((c) => c.resourceId && Date.parse(c.expires) > Date.now() && c.address === address)
     .sort((a, b) => Date.parse(b.expires) - Date.parse(a.expires))[0];
   for (const old of state.channels) {
     if (old.id === primary?.id) {
