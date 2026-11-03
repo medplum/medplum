@@ -5024,5 +5024,3 @@ export function normalizeCreatePdfOptions(
 function isRetryable(response: Response): boolean {
   return response.status === 429 || response.status >= 500;
 }
-
-// Sonar blobless blame trial — DO NOT MERGE

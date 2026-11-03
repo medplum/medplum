@@ -184,5 +184,3 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
     </form>
   );
 }
-
-// Sonar blobless blame trial — DO NOT MERGE

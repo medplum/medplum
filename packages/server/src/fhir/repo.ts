@@ -3209,5 +3209,3 @@ function replaceSuperAdminProjectFields(project: Project, existing: Project | un
   }
   return result;
 }
-
-// Sonar blobless blame trial — DO NOT MERGE

@@ -1725,5 +1725,3 @@ export const EMPTY: readonly [] = Object.freeze([]);
 
 /** No operation function. */
 export const NOOP = (): void => {};
-
-// Sonar blobless blame trial — DO NOT MERGE

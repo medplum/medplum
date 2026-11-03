@@ -1970,5 +1970,3 @@ function splitChainedSearch(chain: string): string[] {
   }
   return params;
 }
-
-// Sonar blobless blame trial — DO NOT MERGE
