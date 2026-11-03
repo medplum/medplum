@@ -189,6 +189,10 @@ describe('AttachmentDisplay', () => {
   });
 
   test('Renders C-CDA', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      text: async () => '<ClinicalDocument xmlns="urn:hl7-org:v3"><title>Referral Note</title></ClinicalDocument>',
+    } as Response);
     await setup({
       value: {
         contentType: ContentType.CDA_XML,
@@ -196,7 +200,10 @@ describe('AttachmentDisplay', () => {
         title: 'c-cda.xml',
       },
     });
-    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(await screen.findByTestId('ccda-display')).toBeInTheDocument();
+    expect(await screen.findByText('Referral Note')).toBeInTheDocument();
     expect(screen.getByText('c-cda.xml')).toBeInTheDocument();
+    expect(fetchSpy).toHaveBeenCalledWith('https://example.com/c-cda.xml');
+    fetchSpy.mockRestore();
   });
 });
