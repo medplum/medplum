@@ -134,15 +134,16 @@ If a test fails or is interrupted, keep its manifest and run `test:e2e:cleanup` 
 
 ## Troubleshooting
 
-| Symptom                                                       | Next check                                                                                                                       |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `Authenticated project differs from PROJECT_ID`               | Select the intended CLI project and correct `PROJECT_ID`; do not remove the guard                                                |
-| CLI authentication fails                                      | Renew the selected profile with `medplum --profile NAME login`, then reselect the project                                        |
-| Missing Bot or operation                                      | Deploy all ten Bots and six operations; in linked mode inspect exported types and duplicate identifiers                          |
-| `GOOGLE_CALENDAR_CLIENT_ID is not a project secret`           | Add both Google client secrets in the Medplum app (Admin, Project, Secrets) with the exact names, or pass them as parameters     |
-| Shared Bots are not visible in the customer project           | Check the link on the customer project and that the shared project exports `Bot` and `OperationDefinition` (not `bots`)          |
-| Installation cannot finish                                    | Check admin rights, required features and the returned outcome; installation can be retried                                      |
-| Google connection requires reauthorization                    | Repeat consent with all required scopes and offline access; confirm the client matches the installed client                      |
-| No inbound updates                                            | Check connection status, Google watch registration/callback delivery, importer logs and the minute/hourly Crons                  |
-| Private-data or imported-Slot access is broader than expected | Review all matching AccessPolicy grants and legacy history access; profiles are not authorization                                |
-| Cleanup remains pending                                       | Restore API access, wait for the worker lease to release, then retry the saved manifest; do not delete unrelated events by title |
+| Symptom                                                        | Next check                                                                                                                                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Authenticated project differs from PROJECT_ID`                | Select the intended CLI project and correct `PROJECT_ID`; do not remove the guard                                                                                   |
+| CLI authentication fails                                       | Renew the selected profile with `medplum --profile NAME login`, then reselect the project                                                                           |
+| Missing Bot or operation                                       | Deploy all ten Bots and six operations; in linked mode inspect exported types and duplicate identifiers                                                             |
+| `GOOGLE_CALENDAR_CLIENT_ID is not a project secret`            | Add both Google client secrets in the Medplum app (Admin, Project, Secrets) with the exact names, or pass them as parameters                                        |
+| Shared Bots are not visible in the customer project            | Check the link on the customer project and that the shared project exports `Bot` and `OperationDefinition` (not `bots`)                                             |
+| Installation cannot finish                                     | Check admin rights, required features and the returned outcome; installation can be retried                                                                         |
+| Google connection requires reauthorization                     | Repeat consent with all required scopes and offline access; confirm the client matches the installed client                                                         |
+| Crons are active but never run after moving to the shared Bots | The scheduler drops a Cron whose old target vanished and ignores a retarget with the same schedule; re-run the installer, or set the Cron inactive and active again |
+| No inbound updates                                             | Check connection status, Google watch registration/callback delivery, importer logs and the minute/hourly Crons                                                     |
+| Private-data or imported-Slot access is broader than expected  | Review all matching AccessPolicy grants and legacy history access; profiles are not authorization                                                                   |
+| Cleanup remains pending                                        | Restore API access, wait for the worker lease to release, then retry the saved manifest; do not delete unrelated events by title                                    |

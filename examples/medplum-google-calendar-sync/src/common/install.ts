@@ -148,13 +148,24 @@ export async function ensureReconcileCron(
     'Cron',
     await projectQuery(medplum, { identifier: `${identifier.system}|${identifier.value}` })
   );
-  return existing
-    ? medplum.updateResource(
-        { ...desired, id: existing.id, meta: { ...existing.meta, ...desired.meta } },
-        ifMatch(existing)
-      )
-    : medplum.createResourceIfNoneExist(
-        desired,
-        await projectQuery(medplum, { identifier: `${identifier.system}|${identifier.value}` })
-      );
+  if (!existing) {
+    return medplum.createResourceIfNoneExist(
+      desired,
+      await projectQuery(medplum, { identifier: `${identifier.system}|${identifier.value}` })
+    );
+  }
+  let current = existing;
+  if (
+    existing.targetReference?.reference !== desired.targetReference?.reference ||
+    existing.onBehalfOf?.reference !== desired.onBehalfOf?.reference
+  ) {
+    // The scheduler drops a Cron whose previous target vanished and only re-registers on a
+    // schedule change, so a retargeted Cron with the same cron string would never run again.
+    // Passing through inactive makes the activation a schedule change.
+    current = await medplum.updateResource({ ...existing, active: false }, ifMatch(existing));
+  }
+  return medplum.updateResource(
+    { ...desired, id: current.id, meta: { ...current.meta, ...desired.meta } },
+    ifMatch(current)
+  );
 }

@@ -218,6 +218,34 @@ describe('install-google-calendar', () => {
     expect(await ours('Cron')).toHaveLength(2);
   });
 
+  test('repointing an existing Cron at the shared Bot passes through inactive so the scheduler re-registers it', async () => {
+    const retired = await medplum.createResource<Bot>({ resourceType: 'Bot', name: 'retired reconcile' });
+    const member = await medplum.createResource({
+      resourceType: 'ProjectMembership',
+      project: { reference: `Project/${project.id}` },
+      user: { reference: `Bot/${retired.id}` },
+      profile: { reference: `Bot/${retired.id}` },
+    });
+    const stale = await medplum.createResource({
+      resourceType: 'Cron',
+      identifier: [{ system: INSTALL_SYSTEM, value: 'work-cron' }],
+      active: true,
+      cronString: '* * * * *',
+      targetReference: { reference: `Bot/${retired.id}` },
+      onBehalfOf: { reference: `ProjectMembership/${member.id}` },
+    });
+    await handler(medplum, event(params(REQUIRED)));
+    const current = await medplum.readResource('Cron', stale.id);
+    expect(current).toMatchObject({ active: true, targetReference: { reference: `Bot/${reconcileBot.id}` } });
+    const versions = (await medplum.readHistory('Cron', stale.id)).entry?.map((e) => e.resource) ?? [];
+    expect(versions.some((v) => v?.active === false)).toBe(true);
+
+    // A second install changes nothing, so it does not bounce the schedule.
+    await handler(medplum, event(params(REQUIRED)));
+    const again = (await medplum.readHistory('Cron', stale.id)).entry?.length ?? 0;
+    expect(again).toBe(versions.length + 1);
+  });
+
   test('without the cron feature the Cron is still created and the result says so', async () => {
     await medplum.updateResource({ ...project, features: ['bots'] });
     const result = await handler(medplum, event(params(REQUIRED)));
