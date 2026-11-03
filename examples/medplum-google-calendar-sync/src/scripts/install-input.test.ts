@@ -22,6 +22,9 @@ test('missing secrets and invalid privacy levels fail before a request', () => {
   expect(() => installationInput({ ...credentials, GOOGLE_CALENDAR_DETAIL_LEVEL: 'full-with-invite' })).toThrow(
     'Invalid GOOGLE_CALENDAR_DETAIL_LEVEL'
   );
+  expect(() =>
+    installationInput({ ...credentials, GOOGLE_CALENDAR_CLIENT_SECRET: 'YOUR_GOOGLE_CLIENT_SECRET' })
+  ).toThrow('Replace the .env.example placeholder in GOOGLE_CALENDAR_CLIENT_SECRET');
 });
 test('explicit detail level and application link are included', () => {
   const input = installationInput({

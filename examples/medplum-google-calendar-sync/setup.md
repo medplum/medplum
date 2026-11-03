@@ -12,6 +12,16 @@ This guide packages the integration for installation into your own Medplum proje
 
 Request `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned` and `https://www.googleapis.com/auth/calendar.calendars.readonly`. Request offline access so Google returns a refresh token. The connect operation rejects missing scopes or a missing refresh token.
 
+### Create the Google OAuth client
+
+In the Google Cloud console, in the project that owns the integration:
+
+1. Enable the Google Calendar API under APIs & Services, Library.
+2. Configure the consent screen under Google Auth Platform. A Workspace customer chooses the Internal audience. A personal Google account can only choose External; while that app stays in Testing, add every Google account that will connect as a test user, and expect Google to expire its refresh tokens after seven days, so a sandbox connection needs reconnecting weekly.
+3. Add the four scopes above under Data Access. The two Calendar scopes are sensitive, so an External app needs Google verification before it leaves Testing.
+4. Create an OAuth client under Clients. The consuming application uses a Web application client with its callback URI registered. The local helper below uses a Desktop app client, which Google allows to redirect to a loopback address without registering one.
+5. Put the client ID and secret in `.env` as `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET`.
+
 ## 1. Build and configure locally
 
 Run the following from the repository root:
@@ -23,13 +33,7 @@ cp examples/medplum-google-calendar-sync/.env.example examples/medplum-google-ca
 chmod 600 examples/medplum-google-calendar-sync/.env
 ```
 
-Edit `.env` with your own values, then load it explicitly. The scripts do not load dotenv automatically:
-
-```sh
-set -a
-. examples/medplum-google-calendar-sync/.env
-set +a
-```
+Edit `.env` with your own values. The deploy, install, connect and live-test scripts read this file themselves; a variable already set in the shell takes precedence, so values can also be exported instead of written to the file.
 
 | Variable                                                     | Used by                               | Meaning                                                                                                |
 | ------------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -44,7 +48,7 @@ set +a
 | `E2E_MANIFEST`                                               | Live tests and cleanup                | Absolute path to a new ignored test manifest; reuse that path only for cleanup                         |
 | `CONNECTION_ID`                                              | Mirror migration                      | Existing connection Basic ID; migration checks the authenticated project                               |
 
-The deploy script also reads these from a gitignored `.env` in this package, as the enterprise packages do; a variable set in the shell takes precedence. The local connection helper uses `GOOGLE_CALENDAR_CLIENT_ID` (or legacy `GOOGLE_CLIENT_ID`) and the selected CLI profile. It can instead use `MEDPLUM_ACCESS_TOKEN`, but still checks `PROJECT_ID`.
+The local connection helper uses `GOOGLE_CALENDAR_CLIENT_ID` (or legacy `GOOGLE_CLIENT_ID`) and the selected CLI profile. It can instead use `MEDPLUM_ACCESS_TOKEN`, but still checks `PROJECT_ID`.
 
 ## 2. Authenticate and deploy
 

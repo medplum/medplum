@@ -17,9 +17,11 @@ import type { GoogleCalendarEvent } from '../common/mapping';
 import { toGoogleEventId } from '../common/mapping';
 import { projectQuery } from '../common/project';
 import { ifMatch } from '../common/versioning';
-import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
+import { assertDeploymentProject, cliAccessToken, loadPackageEnv } from './deployment-auth';
 import type { TestManifest } from './e2e-fixtures';
 import { cleanupFixtures, runWithCleanup, TEST_SYSTEM } from './e2e-fixtures';
+
+loadPackageEnv();
 
 function required(name: string): string {
   const value = process.env[name];

@@ -3,7 +3,20 @@
 
 import type { MedplumClient } from '@medplum/core';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { currentProjectId } from '../common/project';
+
+/**
+ * Loads the package's gitignored `.env` into `process.env`, as the enterprise packages do.
+ * A variable the shell already set takes precedence over the file.
+ */
+export function loadPackageEnv(): void {
+  const file = resolve(import.meta.dirname, '../../.env');
+  if (existsSync(file)) {
+    process.loadEnvFile(file);
+  }
+}
 
 /**
  * Capture CLI authentication in memory; never print the token or subprocess output.

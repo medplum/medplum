@@ -3,8 +3,10 @@
 
 import { MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
-import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
+import { assertDeploymentProject, cliAccessToken, loadPackageEnv } from './deployment-auth';
 import { installationInput } from './install-input';
+
+loadPackageEnv();
 
 async function main(): Promise<void> {
   const projectId = process.env.PROJECT_ID;
