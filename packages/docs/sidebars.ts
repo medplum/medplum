@@ -72,7 +72,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Building on Medplum with AI Agents',
+      label: 'AI Coding Agents',
       items: ['building-with-ai-coding-assistants'],
     },
     {
