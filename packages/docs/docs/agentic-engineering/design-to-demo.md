@@ -10,7 +10,7 @@ keywords: [agentic engineering, prototype, demo, design review, storybook, mock 
 Agentic engineering is not only for shipping features. The same setup that lets an agent build
 on Medplum lets a designer or product manager get a working screen to click through before the
 backend exists. This page is for the people who want that screen and for the coding agent that
-builds it. The [Getting Started guide](/docs/building-with-ai-coding-assistants) covers giving
+builds it. The [AI Coding Agents guide](/docs/building-with-ai-coding-assistants) covers giving
 the agent access to Medplum's docs and code. This page applies that setup to one job: turning a
 design into an interactive prototype on synthetic data, then reusing that prototype as a demo, a
 Storybook story, and a test fixture.
@@ -56,7 +56,7 @@ The full reference for these helpers, including what the generator can and canno
 ## Before You Start
 
 1. Set up your agent as described in the
-   [Getting Started guide](/docs/building-with-ai-coding-assistants#1-give-your-ai-tools-access-to-medplum).
+   [AI Coding Agents guide](/docs/building-with-ai-coding-assistants#1-give-your-ai-tools-access-to-medplum).
    The clone-and-link option works best here because the agent can read `@medplum/mock` and the
    React components directly instead of guessing at their behavior.
 2. Have somewhere to build: your application repository, or a throwaway Vite project with
@@ -275,7 +275,7 @@ generator fills required structure and nothing clinically meaningful, and it sup
 [subset of profile features](/docs/react/mock-screens#supported-profile-features). Before any
 of this reaches production, validate resources and queries against a real project and review
 access control using the
-[verification tiers in the Getting Started guide](/docs/building-with-ai-coding-assistants#4-verify-and-validate-the-output).
+[verification tiers in the AI Coding Agents guide](/docs/building-with-ai-coding-assistants#4-verify-and-validate-the-output).
 
 ## See Also
 
