@@ -21,14 +21,18 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "scripts": {
+    "build-deps": "RECAPTCHA_SITE_KEY= npx turbo run build --filter=@medplum/e2e^...",
     "docs:screenshots": "npx playwright test -c playwright.docs.config.ts",
+    "mailpit": "docker compose -f ../../docker-compose.yml up mailpit",
     "playwright:codegen": "npx playwright codegen http://localhost:3000",
     "playwright:install": "npx playwright install --with-deps chromium",
-    "test:e2e": "npx playwright test"
+    "test:e2e": "npm run build-deps && npx playwright test"
   },
   "devDependencies": {
+    "@medplum/app": "5.2.13",
     "@medplum/core": "5.2.13",
     "@medplum/fhirtypes": "5.2.13",
+    "@medplum/server": "5.2.13",
     "@peculiar/x509": "1.14.3",
     "@playwright/test": "1.64.1"
   },
