@@ -3,8 +3,9 @@
 
 import { createReference, MedplumClient } from '@medplum/core';
 import type { Bot, OperationDefinition } from '@medplum/fhirtypes';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { CONTRACTS } from '../common/contracts';
 import { projectQuery } from '../common/project';
@@ -15,6 +16,12 @@ import { assertDeploymentProject, cliAccessToken } from './deployment-auth';
  * Deploys the Google Calendar Bots and their OperationDefinitions into the shared Medplum
  * project that customers link to.
  */
+
+// Deployment settings may live in a gitignored `.env` in this package; the shell still wins.
+const ENV_FILE = resolve(import.meta.dirname, '../../.env');
+if (existsSync(ENV_FILE)) {
+  process.loadEnvFile(ENV_FILE);
+}
 
 const BASE_URL = process.env.BASE_URL ?? process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com/';
 

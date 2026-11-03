@@ -44,7 +44,7 @@ set +a
 | `E2E_MANIFEST`                                               | Live tests and cleanup                | Absolute path to a new ignored test manifest; reuse that path only for cleanup                         |
 | `CONNECTION_ID`                                              | Mirror migration                      | Existing connection Basic ID; migration checks the authenticated project                               |
 
-The local connection helper uses `GOOGLE_CALENDAR_CLIENT_ID` (or legacy `GOOGLE_CLIENT_ID`) and the selected CLI profile. It can instead use `MEDPLUM_ACCESS_TOKEN`, but still checks `PROJECT_ID`.
+The deploy script also reads these from a gitignored `.env` in this package, as the enterprise packages do; a variable set in the shell takes precedence. The local connection helper uses `GOOGLE_CALENDAR_CLIENT_ID` (or legacy `GOOGLE_CLIENT_ID`) and the selected CLI profile. It can instead use `MEDPLUM_ACCESS_TOKEN`, but still checks `PROJECT_ID`.
 
 ## 2. Authenticate and deploy
 
