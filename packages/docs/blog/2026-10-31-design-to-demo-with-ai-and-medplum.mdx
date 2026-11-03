@@ -1,0 +1,32 @@
+---
+slug: design-to-demo-with-ai-and-medplum
+title: 'From Design to Demo with AI Agents'
+authors:
+  - name: Aanish Sachdev
+    url: https://github.com/aanishs
+tags: [ai]
+draft: true
+---
+
+# From Design to Demo with AI Agents
+
+Designers and product managers can now get a working Medplum screen to click through before the
+backend exists. Describe the scenarios in plain language, and a coding agent builds the screen
+on synthetic data with `@medplum/mock`. The same scenario file then serves as the sales demo,
+the Storybook story, and the test fixture, so engineering does not rebuild it later.
+
+{/* truncate */}
+
+The full guide lives in the docs:
+[From Design to Demo with AI Agents](/docs/agentic-engineering/design-to-demo). It explains the
+mock-screen helpers in plain terms, walks through a patient summary prototype with a prompt per
+step, and ends with a prompt library and a demo checklist. Agents get their own companion
+instructions at [/ai/prototype.md](pathname:///ai/prototype.md), alongside the existing planning
+instructions.
+
+If your team has agreed on a [FHIR profile](/docs/fhir-datastore/profiles), the generator fills
+the fields it requires, and you supply only the values that make each scenario meaningful. The
+helper reference is [Build a screen with mock data](/docs/react/mock-screens).
+
+Start with the [Getting Started guide](/docs/building-with-ai-coding-assistants) if your agent
+does not yet have access to Medplum's docs and code.
