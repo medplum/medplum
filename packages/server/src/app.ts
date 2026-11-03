@@ -59,7 +59,7 @@ import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
-import { WEBHOOK_PATHS, webhookRouter } from './webhook/routes';
+import { webhookRouter } from './webhook/routes';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 import { closeWebSockets, initWebSockets } from './ws/routes';
@@ -67,6 +67,14 @@ import { closeWebSockets, initWebSockets } from './ws/routes';
 let server: http.Server | undefined = undefined;
 
 export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
+
+// Routes that can invoke a Bot, under each mount point.
+// FHIR operation paths cover both Bot $execute and Bot-backed custom operations.
+const BOT_EXECUTION_PATHS = ['', '/api', '/projects/:projectId', '/api/projects/:projectId'].flatMap((prefix) => [
+  prefix + '/webhook/:id',
+  prefix + '/fhir/R4{/*splat}/$:operation',
+  prefix + '/fhir/R4{/*splat}/%24:operation',
+]);
 
 /**
  * Sets standard headers for all requests.
@@ -233,13 +241,14 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
     asyncBatchHandler(config)
   );
 
+  // Keep the unparsed JSON, which a Bot with Bot.rawBody set gets as its input
   app.use(
-    WEBHOOK_PATHS,
+    BOT_EXECUTION_PATHS,
     json({
       type: JSON_TYPE,
       limit: config.maxJsonSize,
-      verify: (req, _res, buf) => {
-        (req as any).rawBody = buf;
+      verify: (_req, res, buf) => {
+        (res as Response).locals.rawBody = buf;
       },
     })
   );

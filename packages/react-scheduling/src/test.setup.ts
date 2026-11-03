@@ -38,6 +38,23 @@ class ResizeObserver {
 
 window.ResizeObserver = ResizeObserver;
 
+// jsdom has no AnimationEvent, and without one React listens for `webkitAnimationEnd`, so
+// `fireEvent.animationEnd` would reach no `onAnimationEnd`. Must be set before react-dom loads.
+class AnimationEvent extends Event {
+  readonly animationName: string;
+  readonly elapsedTime: number;
+  readonly pseudoElement: string;
+
+  constructor(type: string, init: AnimationEventInit = {}) {
+    super(type, init);
+    this.animationName = init.animationName ?? '';
+    this.elapsedTime = init.elapsedTime ?? 0;
+    this.pseudoElement = init.pseudoElement ?? '';
+  }
+}
+
+window.AnimationEvent = AnimationEvent;
+
 // jsdom does not implement scrollIntoView, which Mantine's Combobox calls when it
 // moves the active option.
 // See: https://github.com/jsdom/jsdom/issues/1695#issuecomment-449931788

@@ -749,15 +749,6 @@ describe('AppointmentDetails editing', () => {
     await settleAutocomplete();
   }
 
-  test('offers no Edit when the visit type asks for no codes', async () => {
-    renderDetails(BOOKED_APPOINTMENT);
-    // Named from the HealthcareService, so its requirements are known by now.
-    await screen.findByText('Ultrasound Imaging');
-
-    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-    expect(rescheduleButton()).toBeInTheDocument();
-  });
-
   test('asks for what the visit type asked for, filled with what is on file', async () => {
     await renderEditable(AUTHORIZED_APPOINTMENT);
 
@@ -979,6 +970,27 @@ describe('AppointmentDetails editing', () => {
     expect(stored.serviceType).toEqual(AUTHORIZED_APPOINTMENT.serviceType);
     expect(stored.reasonCode).toEqual(AUTHORIZED_APPOINTMENT.reasonCode);
     expect(stored.extension).toEqual(AUTHORIZED_APPOINTMENT.extension);
+  });
+
+  test('edits the notes in place of showing them, and clears them', async () => {
+    await renderEditable(BOOKED_APPOINTMENT);
+
+    const notes = screen.getByRole('textbox', { name: 'Notes' });
+    expect(notes).toHaveValue('Bring prior films');
+    // Only in the field: the detail line it replaces is gone.
+    expect(screen.getByText('Bring prior films')).toBe(notes);
+    expect(saveButton()).toBeDisabled();
+
+    fireEvent.change(notes, { target: { value: '  Bring prior films and referral  ' } });
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBe(
+      'Bring prior films and referral'
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Notes' }), { target: { value: ' ' } });
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBeUndefined();
   });
 
   test('discards unsaved changes when editing is cancelled', async () => {
