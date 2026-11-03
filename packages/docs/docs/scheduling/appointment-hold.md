@@ -303,6 +303,16 @@ does: it reads the template under the same
 occurrence with the same [series identifier and `recurrenceId`](/docs/scheduling/appointment-book#identifying-the-series).
 Each occurrence is created `pending`, with its own `busy-tentative` Slot.
 
+To confirm a held series, [`$confirm`](/docs/scheduling/appointment-confirm#confirming-a-recurring-series)
+any of its pending Appointments with `occurrences` set to `all`; `this-and-following` confirms only
+that Appointment and the occurrences after it.
+[`$cancel`](/docs/scheduling/appointment-cancel) acts on one occurrence at a time; the series
+identifier finds them all:
+
+```
+[base]/R4/Appointment?identifier=https://medplum.com/fhir/recurring-appointment-series|<series id>
+```
+
 ## Hold Logic
 
 `$hold` performs the following steps atomically inside a database transaction, ensuring safety when concurrent scheduling requests are received.
