@@ -12,35 +12,64 @@ import { getParam } from '../common/operations';
 import { parseSyncRange } from '../common/range-sync';
 import { mutateConnectionState, readState, withState } from '../common/state';
 
-async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
-  const practitioner = await requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.syncRange);
-  const range = parseSyncRange(getParam(event.input, 'start'), getParam(event.input, 'end'), new Date());
-  const connection = await findConnection(medplum, practitioner);
-  if (!connection) {
-    throw new Error('Google Calendar is not connected; connect it first');
+/** Thrown inside the state mutation to stop it without writing; the queued range is reported. */
+class AlreadyQueued extends Error {
+  constructor(readonly range: { start: string; end: string }) {
+    super('A range sync is already queued');
   }
-  await mutateConnectionState(medplum, connection.basic.id, (basic) => {
-    if (readConnection(basic)?.status !== 'active') {
-      throw new Error('Google access is paused; reconnect it first');
-    }
-    const state = readState(basic);
-    // A range retained after an incomplete run is replaced; one still being worked is not.
-    if (state.requestedRangeStart && state.outboundRequest !== state.outboundCompleted) {
-      throw new Error('A range sync is already pending; wait for completion');
-    }
-    state.requestedRangeStart = range.start.toISOString();
-    state.requestedRangeEnd = range.end.toISOString();
-    state.outboundRequest = randomUUID();
-    return withState(basic, state);
-  });
+}
+
+function queuedResult(start: string, end: string): Parameters {
   return {
     resourceType: 'Parameters',
     parameter: [
       { name: 'queued', valueBoolean: true },
-      { name: 'start', valueDateTime: range.start.toISOString() },
-      { name: 'end', valueDateTime: range.end.toISOString() },
+      { name: 'start', valueDateTime: start },
+      { name: 'end', valueDateTime: end },
     ],
   };
+}
+
+async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
+  const practitioner = await requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.syncRange);
+  const requestedStart = getParam(event.input, 'start');
+  const requestedEnd = getParam(event.input, 'end');
+  const range = parseSyncRange(requestedStart, requestedEnd, new Date());
+  const connection = await findConnection(medplum, practitioner);
+  if (!connection) {
+    throw new Error('Google Calendar is not connected; connect it first');
+  }
+  try {
+    await mutateConnectionState(medplum, connection.basic.id, (basic) => {
+      if (readConnection(basic)?.status !== 'active') {
+        throw new Error('Google access is paused; reconnect it first');
+      }
+      const state = readState(basic);
+      // A range retained after an incomplete run is replaced; one still being worked is not.
+      if (state.requestedRangeStart && state.outboundRequest !== state.outboundCompleted) {
+        const pending = { start: state.requestedRangeStart, end: state.requestedRangeEnd ?? state.requestedRangeStart };
+        // A default request (Sync now), or a range the queued one already covers, joins the queued
+        // work. A range reaching outside it would be dropped, so that is still refused.
+        const covered =
+          (!requestedStart && !requestedEnd) ||
+          (Date.parse(pending.start) <= range.start.getTime() && range.end.getTime() <= Date.parse(pending.end));
+        if (covered) {
+          throw new AlreadyQueued(pending);
+        }
+        throw new Error('A different range sync is already pending; wait for it to finish');
+      }
+      state.requestedRangeStart = range.start.toISOString();
+      state.requestedRangeEnd = range.end.toISOString();
+      state.outboundRequest = randomUUID();
+      return withState(basic, state);
+    });
+  } catch (err) {
+    if (err instanceof AlreadyQueued) {
+      return queuedResult(err.range.start, err.range.end);
+    }
+    throw err;
+  }
+  return queuedResult(range.start.toISOString(), range.end.toISOString());
 }
 
 export const handler = operationHandler('sync', execute);

@@ -81,7 +81,7 @@ All operations are type-level and use FHIR Parameters. Definitions and explicit 
 | `Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked` valueBoolean                                                                                                | Cleanup queued; status remains disconnecting until finished            |
 | `Practitioner/$google-calendar-sync`       | Optional `start` and `end` ISO date-time valueString                                                                                 | `queued=true` and the accepted range; no synchronous Google work       |
 
-The practitioner always comes from the server's authenticated requester. Supplying another practitioner in the body is rejected. Status accepts no settings mutation. A second explicit range request is rejected while one is pending. Mutation summaries omit conflict details; read status afterward for those. See [state and status](state-and-status.md) for the fields and notification recipes.
+The practitioner always comes from the server's authenticated requester. Supplying another practitioner in the body is rejected. Status accepts no settings mutation. While a range sync is queued, a request without a range, or one inside the queued range, returns the queued range; a range reaching outside it is rejected. Mutation summaries omit conflict details; read status afterward for those. See [state and status](state-and-status.md) for the fields and notification recipes.
 
 ## Storage and permissions
 

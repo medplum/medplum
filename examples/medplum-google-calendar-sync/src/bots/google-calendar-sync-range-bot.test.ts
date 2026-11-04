@@ -94,8 +94,12 @@ describe('google-calendar-sync-range-bot', () => {
     expect(state.outboundRequest).not.toBe(state.outboundCompleted);
     expect(syncRange).not.toHaveBeenCalled();
     await withConnectionLease(medplum, connection.basic.id, async () => {
-      await expect(handler(medplum, event())).rejects.toThrow('already pending');
+      const again = await handler(medplum, event());
+      expect(again.parameter).toContainEqual({ name: 'queued', valueBoolean: true });
+      expect(again.parameter).toContainEqual({ name: 'start', valueDateTime: state.requestedRangeStart });
     });
+    const after = await findConnection(medplum, practitionerRef);
+    expect(after && readState(after.basic).outboundRequest).toBe(state.outboundRequest);
   });
 
   test('queues the requested range without calling Google and rejects concurrent range requests', async () => {
@@ -115,6 +119,31 @@ describe('google-calendar-sync-range-bot', () => {
       requestedRangeEnd: '2026-11-30T00:00:00.000Z',
     });
     expect(syncRange).not.toHaveBeenCalled();
-    await expect(handler(medplum, event(input))).rejects.toThrow('already pending');
+
+    // The same or a narrower range joins the queued one; Sync now (no range) does too.
+    const again = await handler(medplum, event(input));
+    expect(again.parameter).toContainEqual({ name: 'start', valueDateTime: '2026-11-01T00:00:00.000Z' });
+    const inside: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'start', valueString: '2026-11-05T00:00:00Z' },
+        { name: 'end', valueString: '2026-11-10T00:00:00Z' },
+      ],
+    };
+    expect((await handler(medplum, event(inside))).parameter).toContainEqual({
+      name: 'end',
+      valueDateTime: '2026-11-30T00:00:00.000Z',
+    });
+    expect((await handler(medplum, event())).parameter).toContainEqual({ name: 'queued', valueBoolean: true });
+
+    // A range reaching outside the queued one would be lost, so it is refused.
+    const wider: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'start', valueString: '2026-10-01T00:00:00Z' },
+        { name: 'end', valueString: '2026-11-30T00:00:00Z' },
+      ],
+    };
+    await expect(handler(medplum, event(wider))).rejects.toThrow('different range sync is already pending');
   });
 });
