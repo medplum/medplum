@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Flex } from '@mantine/core';
 import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { IntegrationCard } from '../../components/IntegrationCard';
+import { GOOGLE_CALENDAR_PATH } from '../../utils/googleCalendar';
 
 interface Integration {
   name: string;
@@ -11,9 +13,21 @@ interface Integration {
   displayUrl: string;
   url: string;
   imageUrl: string;
+  /** In-app setup page. Cards without one open a request email. */
+  setupPath?: string;
 }
 
-const integrations = [
+const integrations: Integration[] = [
+  {
+    name: 'Google Calendar',
+    tags: ['Scheduling'],
+    description:
+      'Show your appointments on Google Calendar and block Medplum booking during your Google Calendar busy time.',
+    displayUrl: 'calendar.google.com',
+    url: 'https://calendar.google.com',
+    imageUrl: 'google.png',
+    setupPath: GOOGLE_CALENDAR_PATH,
+  },
   {
     name: 'Okta',
     tags: ['Authentication'],
@@ -197,6 +211,8 @@ const integrations = [
 ];
 
 export function IntegrationsPage(): JSX.Element {
+  const navigate = useNavigate();
+
   function requestIntegration(integration: Integration): void {
     const subject = `Integration Request: ${integration.name}`;
     const body = `Hello Medplum team,\n\nI would like to request an integration with ${integration.name}.\n\nHere are the details:\n\nName: ${integration.name}\nDescription: ${integration.description}\nURL: ${integration.url}\n\nThank you!`;
@@ -214,7 +230,8 @@ export function IntegrationsPage(): JSX.Element {
           tags={i.tags}
           description={i.description}
           imageUrl={`/img/integrations/${i.imageUrl}`}
-          onClick={() => requestIntegration(i)}
+          actionLabel={i.setupPath ? 'Set Up' : undefined}
+          onClick={() => (i.setupPath ? navigate(i.setupPath)?.catch(console.error) : requestIntegration(i))}
         />
       ))}
     </Flex>

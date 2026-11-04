@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { fireEvent, render, screen } from '../../test-utils/render';
 import { IntegrationsPage } from './IntegrationsPage';
@@ -37,7 +38,14 @@ describe('IntegrationsPage', () => {
   });
 
   function setup(): void {
-    render(<IntegrationsPage />);
+    render(
+      <MemoryRouter initialEntries={['/integrations']}>
+        <Routes>
+          <Route path="/integrations" element={<IntegrationsPage />} />
+          <Route path="/integrations/google-calendar" element={<div>Google Calendar setup</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
   }
 
   test('Renders all integrations', () => {
@@ -180,6 +188,15 @@ describe('IntegrationsPage', () => {
     }
   });
 
+  test('Google Calendar opens its setup page', () => {
+    setup();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set Up' }));
+
+    expect(screen.getByText('Google Calendar setup')).toBeInTheDocument();
+    expect(mockLocationHref).toBe('');
+  });
+
   test('Renders integration display URLs', () => {
     setup();
 
@@ -225,6 +242,7 @@ describe('IntegrationsPage', () => {
       'DeepSeek',
       'Azure',
       'Healthie',
+      'Google Calendar',
     ];
 
     integrationNames.forEach((name) => {

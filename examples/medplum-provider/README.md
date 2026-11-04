@@ -57,6 +57,16 @@ MEDPLUM_BASE_URL=http://localhost:8103/
 
 Restart `npm run dev` after changing `.env`.
 
+### Google Calendar
+
+Integrations > Google Calendar lets a practitioner connect their Google Calendar. It needs the [Google Calendar sync example](../medplum-google-calendar-sync) installed in the project. Set the Google OAuth client ID that the project installed in `.env`:
+
+```
+GOOGLE_CALENDAR_CLIENT_ID=1234567890-example.apps.googleusercontent.com
+```
+
+Register `<app origin>/integrations/google-calendar/callback` as an authorized redirect URI on that client, for example `http://localhost:3001/integrations/google-calendar/callback`. The client secret stays in the project secrets; the app never sees it.
+
 ### A note on value sets
 
 Some fields in this app (diagnoses, medications, race/ethnicity, and others) autocomplete against clinical terminologies such as ICD-10, RxNorm, and US Core / VSAC value sets. On hosted Medplum, these are provided by shared projects [linked](https://www.medplum.com/docs/access/projects#project-linking) into your project. A fresh self-hosted or local server includes only the base FHIR R4 terminology, so these fields will show a "ValueSet not found" message inline and you will need to enter codes manually. To enable them, upload the value sets and import their code systems into a shared project (see [`CodeSystem/$import`](https://www.medplum.com/docs/api/fhir/operations/codesystem-import)) and link that project, or contact Medplum for access to the hosted terminology.

@@ -34,6 +34,8 @@ import { FaxPage } from './pages/fax/FaxPage';
 import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
+import { GoogleCalendarCallbackPage } from './pages/integrations/GoogleCalendarCallbackPage';
+import { GoogleCalendarPage } from './pages/integrations/GoogleCalendarPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
@@ -310,6 +312,8 @@ export function App(): JSX.Element | null {
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/integrations/google-calendar" element={<GoogleCalendarPage />} />
+              <Route path="/integrations/google-calendar/callback" element={<GoogleCalendarCallbackPage />} />
               {/* Must precede the /:resourceType catch-alls below */}
               {hasBilling && <Route path="/Settings/Billing/*" element={<BillingSetupPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
