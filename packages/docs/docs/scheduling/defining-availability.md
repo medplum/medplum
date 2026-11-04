@@ -556,7 +556,7 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
 
 </details>
 
-**Result**: When booking a bariatric surgery, the system queries all three schedules, calculates the intersection of availability, and creates atomic transaction bundles to book all required resources simultaneously.
+**Result**: Query all three schedules for a common time, then call [`$book`](/docs/scheduling/appointment-book) with the selected slots. The operation rechecks availability and commits the Appointment and its Slots together using its own database transaction. This does not require the `transaction-bundles` feature. A batch of direct Appointment/Slot writes would not provide the same conflict checks or atomicity.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
@@ -573,7 +573,7 @@ graph TD
     B2 --> D2[Slot<br/>*status: busy*]
     B3 --> D3[Slot<br/>*status: busy*]
 
-    subgraph "Transaction Bundle"
+    subgraph "Appointment $book operation"
         D1 --> E1[Appointment 1<br/>*status: booked*]
         D2 --> E1
         D3 --> E1
@@ -598,11 +598,13 @@ This is a complete, uploadable seed bundle for the common case of a single servi
 
 It demonstrates the patterns from [Common Pitfalls](#common-pitfalls):
 
-- **`type: transaction`** so a single bad entry rolls back the whole bundle (see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests)).
+- **`type: transaction`** as the linked-resource request format. On hosted Medplum, it has batch semantics: a failed entry does not roll back successful writes. Inspect every entry before using the seed data (see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests)).
 - **`urn:uuid` `fullUrl`s** so resources can cross-reference each other before they have server-assigned IDs.
 - **`comment`, not `name`,** on each `Schedule`.
 - **`Practitioner`/`Location` actors each carrying a timezone extension.**
 - **`ifNoneExist`** on the `Organization` and `HealthcareService` so re-running the seed is idempotent for those resources.
+
+Seeding configuration does not require an atomic commit when incomplete setup can be repaired before booking is enabled. For a repeatable production setup, use staged conditional writes: save actors and services, confirm success, then save Schedules with their returned references. Only some entries in this illustrative seed have `ifNoneExist`; blindly rerunning the whole Bundle can duplicate other resources.
 
 Each `Schedule` sets only its own `availability` and inherits `duration`, buffers, and alignment from the `HealthcareService`. Add more practitioners or rooms by duplicating the Practitioner/Location + Schedule pair.
 

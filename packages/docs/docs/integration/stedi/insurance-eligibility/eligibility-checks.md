@@ -167,11 +167,19 @@ POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility
 ### Stedi sandbox testing
 
 :::note[]
-The Stedi sandbox successfully validates only a few payloads. **We recommend using the transaction Bundle below** when testing against the sandbox.
+The Stedi sandbox successfully validates only a few payloads. Use the sample data below when testing against the sandbox; the sample values are independent of the choice of atomicity.
+:::
+
+:::note[Sample data and partial failures]
+
+This Bundle uses `type: transaction` to submit linked sample resources. Atomic transaction processing is currently unavailable on hosted Medplum; the request can partially succeed. Inspect every response entry and confirm that all required resources exist before continuing. Do not blindly rerun the sample's POST creates after a failure.
+
+For a repeatable production import, use identifier-based conditional writes in dependency stages: save prerequisites, then save dependents with the returned references. Independent entries within each stage can be batched. This setup workflow does not require atomicity if incomplete setup can be repaired before use. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+
 :::
 
 <details>
-<summary>Example transaction Bundle for Eligibility Checks (recommended for Stedi sandbox testing)</summary>
+<summary>Example linked-resource Bundle for Eligibility Checks (recommended for Stedi sandbox testing)</summary>
 
 ```json
 {

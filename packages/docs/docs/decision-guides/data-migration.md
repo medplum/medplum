@@ -140,7 +140,7 @@ Use these factors to identify where the migration needs additional design and va
 | Cross-source or existing-record patient matching | Identity workflow and reference sequencing | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work) |
 | Automated merge execution during migration | Review thresholds, audit, and reversal risk | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work) |
 | Custom profiles, extensions, or implementation-guide conformance | Mapping approval and validation configuration | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Validation](#what-evidence-establishes-correctness-and-acceptance) |
-| One source record producing several linked FHIR resources | Stable IDs, all-or-nothing writes, and reconciliation | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs) |
+| One source record producing several linked FHIR resources | Stable IDs, dependency ordering, explicit atomicity requirements, and reconciliation | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs) |
 | Expected load time may exceed the cutover window or service limits | Import path, throughput testing, and recovery | [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate) |
 | The source remains active while data moves | Incremental changes, write authority, and conflicts | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled) |
 | Little or no downtime is acceptable | Change capture, rehearsal depth, and rollback | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate) |
@@ -217,7 +217,7 @@ Decide whether a source record remains distinct, maps to an existing resource, o
 | Source patient may match an existing Patient | Run the approved identity workflow before loading dependent records.                                                      |
 | Match is ambiguous                           | Keep records separate and route to human review.                                                                          |
 | Existing target ID is not known              | Use a conditional reference only when the identifier finds exactly one resource and the migration identity can search it. |
-| Related resources are created together       | Use a transaction with `urn:uuid` references.                                                                             |
+| Related resources are created together       | Load prerequisites first, then batch dependent upserts with saved references; reconcile partial progress.                                                                             |
 | Related resource was loaded earlier          | Use a source-to-target ID lookup or a conditional reference that resolves uniquely.                                       |
 | Keys are missing or unstable                 | Define a governed replacement key before loading; do not use mutable demographics as the key for repeated runs.           |
 
@@ -301,7 +301,7 @@ Do not prescribe a universal verification percentage. Choose samples after exact
 
 Decide which writes must succeed or fail together, how the pipeline resumes, and how much throughput the cutover requires. Implementation details and project prerequisites are covered in [Building Migration Pipelines](/docs/migration/migration-pipelines).
 
-**Recommendation:** Use asynchronous batches for high-volume independent writes and synchronous transactions only for small groups that must succeed or fail together. Make every path safe to rerun, observable, and resumable.
+**Recommendation:** Use asynchronous batches for high-volume independent writes, and stage related writes in dependency order. Inspect each result and make recovery safe to rerun, observable, and resumable. If a group must commit atomically, resolve that requirement before choosing a hosted load path: atomic transaction Bundles are currently unavailable on hosted Medplum.
 
 **Questions:**
 

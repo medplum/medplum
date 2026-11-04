@@ -98,14 +98,22 @@ The required fields below note which apply to each case.
 
 The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the supervising `Practitioner`, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim` (whose `provider` points at the billing `Organization` and whose `careTeam` references the two practitioners). The values are chosen to pass the validations described above — checksum-valid NPIs, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
 
-POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
+POST the Bundle, check every response entry, and confirm the Claim and all prerequisites were saved before invoking `$stedi-submit-claim` on the returned `Claim` ID (see [Executing the claim submission](#executing-the-claim-submission)).
 
 :::tip[Billing as an individual]
 To bill under the rendering provider instead, point `Claim.provider` at the `Practitioner` and move the EIN/SSN, `telecom` (phone), and `address` onto that `Practitioner`.
 :::
 
+:::note[Sample data and partial failures]
+
+This Bundle uses `type: transaction` to submit linked sample resources. Atomic transaction processing is currently unavailable on hosted Medplum; the request can partially succeed. Inspect every response entry and confirm that all required resources exist before continuing. Do not blindly rerun the sample's POST creates after a failure.
+
+For a repeatable production import, use identifier-based conditional writes in dependency stages: save prerequisites, then save dependents with the returned references. Independent entries within each stage can be batched. This setup workflow does not require atomicity if incomplete setup can be repaired before use. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+
+:::
+
 <details>
-<summary>Example transaction Bundle (organization billing, Stedi test payer)</summary>
+<summary>Example linked-resource Bundle (organization billing, Stedi test payer)</summary>
 
 ```json
 {

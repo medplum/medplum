@@ -49,7 +49,7 @@ Before the external call, persist the intended send and a stable correlation key
 
 :::caution[Check an uncertain send before trying again]
 
-A FHIR transaction can make linked resource writes atomic. It cannot undo a fax or email already sent by another system. See [Automating Care Workflows](/docs/careplans/automating-workflows) for the distinction between repeatable FHIR writes and external side effects.
+Atomic transaction Bundles are currently unavailable on hosted Medplum. Even where enabled, a FHIR transaction cannot undo a fax or email already sent by another system. Recover FHIR writes and reconcile delivery outcomes separately. See [Automating Care Workflows](/docs/careplans/automating-workflows) for the distinction between repeatable FHIR writes and external side effects.
 
 :::
 

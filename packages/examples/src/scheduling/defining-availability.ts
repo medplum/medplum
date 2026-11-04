@@ -973,7 +973,8 @@ const seedBundle: Bundle =
   // start-block seedBundle
   {
     resourceType: 'Bundle',
-    // type: transaction so a bad entry rolls back instead of silently partial-committing
+    // Linked-resource request format only. Hosted processing is not atomic.
+    // Inspect every entry; do not blindly rerun POST creates after a partial failure.
     type: 'transaction',
     entry: [
       {

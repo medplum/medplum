@@ -85,6 +85,14 @@ For this guide, we will take the first approach: creating a Care Template, then 
 
 Medplum provides a sample Care Template for testing and prototyping. Copy the example below and upload it to the [batch](https://app.medplum.com/batch) tool to create a PlanDefinition you can use for testing.
 
+:::note[Sample data and partial failures]
+
+This Bundle uses `type: transaction` to submit linked sample resources. Atomic transaction processing is currently unavailable on hosted Medplum; the request can partially succeed. Inspect every response entry and confirm that all required resources exist before continuing. Do not blindly rerun the sample's POST creates after a failure.
+
+For a repeatable production import, use identifier-based conditional writes in dependency stages: save prerequisites, then save dependents with the returned references. Independent entries within each stage can be batched. This setup workflow does not require atomicity if incomplete setup can be repaired before use. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+
+:::
+
 <details>
 <summary>Example Care Template Bundle</summary>
 

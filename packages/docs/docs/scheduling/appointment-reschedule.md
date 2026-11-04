@@ -11,13 +11,15 @@ The `$reschedule` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
-The `$reschedule` operation moves an existing [`Appointment`](/docs/api/fhir/resources/appointment) to a new time, a new set of [`Schedule`](/docs/api/fhir/resources/schedule) resources, or both. In a single FHIR transaction it releases the [`Slot`](/docs/api/fhir/resources/slot) resources the appointment currently holds, validates that the new time is genuinely available, creates the new Slots, and updates the Appointment in place.
+The `$reschedule` operation moves an existing [`Appointment`](/docs/api/fhir/resources/appointment) to a new time, a new set of [`Schedule`](/docs/api/fhir/resources/schedule) resources, or both. In a single database transaction it releases the [`Slot`](/docs/api/fhir/resources/slot) resources the appointment currently holds, validates that the new time is genuinely available, creates the new Slots, and updates the Appointment in place.
 
 Because the old Slots are released **before** availability is checked, an appointment never blocks its own move. Reassigning an 11am visit from one room to another works even though the practitioner's schedule is already busy at 11am — that block belongs to the appointment being moved.
 
 `$reschedule` is the write path for [`$find`](/docs/scheduling/appointment-find) results obtained with the `ignore-appointment` parameter. [`$book`](/docs/scheduling/appointment-book) and [`$hold`](/docs/scheduling/appointment-hold) validate against the original Slots and will reject those times.
 
 Its inputs are the same `schedule` values you searched `$find` with, plus the `start` you chose. The visit type is not among them — the operation reads the one the Appointment is already on file for. See [What the operation writes](#what-the-operation-writes) for exactly which attributes change.
+
+The operation manages its own database transaction. It does not require the `transaction-bundles` Project feature, which controls general Bundle submissions and is currently unavailable on hosted Medplum.
 
 ## Use Cases
 

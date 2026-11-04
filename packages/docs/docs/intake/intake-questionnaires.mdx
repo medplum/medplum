@@ -110,7 +110,9 @@ Once a patient submits their intake form, the [`QuestionnaireResponse`](/docs/ap
 1. Add template resources to `Questionnaire.contained` (e.g., a Patient template, an AllergyIntolerance template)
 2. Annotate the Questionnaire with `templateExtract`, `templateExtractValue`, and `templateExtractContext` extensions that define FHIRPath rules for populating each template field
 3. Call `$extract` on the QuestionnaireResponse to get a transaction Bundle
-4. Submit the Bundle to create/update the resources
+4. Save the extracted resources, inspect every write result, and reconcile failed entries before treating extraction as complete
+
+The returned Bundle is a payload for a separate write step. Atomic transaction processing is currently unavailable on hosted Medplum. Independent outputs can use batches of conditional writes; linked outputs need dependency handling, and generated POSTs must not be blindly replayed. See [Results Bundle](/docs/questionnaires/parsing-questionnaire-responses#results-bundle). If the outputs must all commit together, this hosted write path does not provide that guarantee.
 
 **When to use SDC extraction:**
 

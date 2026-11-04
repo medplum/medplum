@@ -19,49 +19,35 @@ If you want to create a copy of a project, say for a new environment, this can b
 
 ## Batches vs Transactions
 
-When bundling multiple operations together, FHIR provides two modes of operation controlled by the `Bundle.type` field:
+Use a `batch` Bundle for operations that can succeed independently. Some entries may succeed while others fail. For imports and synchronization, prefer [conditional upserts](#performing-upserts) keyed by stable identifiers, inspect every response entry, and retry failed operations when appropriate.
 
-- `batch`: Each operation in the bundle is processed independently. Some operations may succeed while others fail. This is useful when the operations are not dependent on each other.
-- `transaction`: All operations in the bundle are processed atomically - either all operations succeed, or none of them do. This ensures data consistency when operations are dependent on each other.
+FHIR also defines `transaction` for an all-or-nothing commit: every operation succeeds or the entire group rolls back. Use atomicity only when a partially committed group would violate a business rule, even temporarily. Resources referring to one another does not, by itself, establish that requirement. See [References in Bundles](#references-in-bundles) for dependency handling.
 
-Here's a simple example showing the difference:
+:::caution[Atomic transaction Bundles are unavailable on hosted Medplum]
 
-```typescript
-// Batch example - operations processed independently
-const batchBundle = {
-  resourceType: 'Bundle',
-  type: 'batch',
-  entry: [
-    /* operations */
-  ],
-};
+The `transaction-bundles` feature is currently unavailable on Medplum-hosted deployments.
 
-// Transaction example - operations processed atomically
-const transactionBundle = {
-  resourceType: 'Bundle',
-  type: 'transaction',
-  entry: [
-    /* operations */
-  ],
-};
-```
+Without this feature, a Bundle with `type: "transaction"` is processed with batch semantics. Entries can fail independently, successful writes are not rolled back, and the server returns no warning about the loss of atomicity. The response can still be labeled `transaction-response`; that label does not prove atomic processing occurred.
 
-:::caution[Transaction Support]
-Transaction bundles are generally available and production-ready, but they require the `transaction-bundles` feature flag to be enabled on your Medplum `Project`.
+Use `type: "batch"` when partial success is acceptable. If your workflow requires an all-or-nothing commit, a batch with retries does not satisfy that requirement. Revisit the workflow before relying on it in a hosted deployment.
 
-A Medplum super administrator must enable the feature flag for each `Project`. For Medplum-hosted environments, contact Medplum support because Medplum manages super administrator access. For self-hosted environments, ask one of your internal Medplum super administrators to enable the feature flag.
-
-If the feature flag is not enabled, a bundle with `type: "transaction"` is processed as a `batch`. Entries execute independently with no atomicity guarantee, and the server does not return an error or warning. Verify the flag is enabled on your project before relying on transaction semantics.
 :::
+
+### Choosing a write pattern
+
+| Requirement | Pattern |
+| --- | --- |
+| Import or synchronize independent records | Batch conditional upserts; inspect each result and handle failures individually |
+| Link new resources | Write dependencies first, confirm success, then write dependents using the saved references |
+| Prevent another writer's changes from being overwritten | Version checking with `ifMatch`, including on individual batch entries |
+| Book or hold an appointment across schedules | Use the [scheduling operations](/docs/scheduling), which validate availability and manage their own database transactions |
+| Commit several resource changes together with no partially committed state | Requires atomic transaction support; currently unavailable for general Bundle submissions on hosted Medplum |
+
+Atomicity does not replace idempotency, conflict handling, or response inspection. It also does not make downstream subscriptions, external services, or separate client reads observe all changes simultaneously.
 
 ### Transaction Limits
 
-Transactions are subject to the following limits. Exceeding either limit causes the entire transaction to be rejected with a `400 Bad Request` error.
-
-- A transaction may contain at most **50 update operations**.
-- A transaction that contains conditional operations (a conditional create using `ifNoneExist`, a conditional update, or a conditional delete) runs under serializable database isolation and is limited to **8 entries**.
-
-To keep a larger transaction out of serializable mode, resolve conditional lookups before submitting it: search for the target resources first, then use plain creates and updates with known IDs inside the transaction.
+For deployments that enable atomic transactions, configuration and limits are documented in the [administrator reference](/docs/self-hosting/project-settings#atomic-transaction-bundles). These settings do not change hosted availability.
 
 ## How to Perform a Batch Request
 
@@ -119,10 +105,10 @@ Synchronous batch requests are subject to an 8 MB request size limit (Medplum-ho
 1. **Large or slow bundles** — Bundles that exceed the 8 MB size limit or take more than 15 seconds to process may fail mid-request due to the request timeout. Async processing raises the size limit to 50 MB and removes the timeout by enqueuing the bundle for background processing.
 2. **FHIR quota avoidance** — Asynchronous batch requests do not count against a user's [FHIR interaction quota](/docs/rate-limits#fhir-interaction-load-rate-limit). This makes async the preferred approach for large data seeding or import jobs where quota limits would otherwise be a concern.
 
-In both cases, the `Bundle` is enqueued on the server and a response is sent back to the client immediately with a URL where it can receive status updates around the batch processing job. All resources are written to the FHIR store upon job completion — no additional step is required to apply the results.
+In both cases, the `Bundle` is enqueued on the server and a response is sent back to the client immediately with a URL where it can receive status updates around the batch processing job. Successful entries are written as the job runs; no additional step is required to apply those writes. Job completion does not mean every entry succeeded.
 
 :::caution[Data availability]
-Because async batches are processed in the background, data is not immediately available after the request returns. Poll the `AsyncJob` status URL and wait for `completed` status before assuming data is ready. This makes async batches best suited for scheduled or pre-planned jobs rather than last-minute operations where changes are needed immediately.
+Because async batches are processed in the background, data is not immediately available after the request returns. Poll the `AsyncJob` status URL, then inspect every entry in the result Bundle and resolve failures before treating the import as complete. This makes async batches best suited for scheduled or pre-planned jobs rather than last-minute operations where changes are needed immediately.
 :::
 
 #### When to use async vs. sync
@@ -157,7 +143,7 @@ See the [FHIR Asynchronous Request pattern](http://hl7.org/fhir/R5/async-bundle.
 
 ## Response Structure
 
-When you submit a batch request, the server returns a `Bundle` with `type` set to `batch-response` (or `transaction-response` if the request was a transaction).
+When you submit a batch request, the server returns a `Bundle` with `type` set to `batch-response`. A request labeled `transaction` produces a `transaction-response` label even when the feature is disabled. Always apply the [availability and atomicity rules](#batches-vs-transactions), rather than inferring guarantees from the response label.
 
 The response Bundle contains an `entry` array that corresponds one-to-one with the entries in the request Bundle. The order of entries in the response matches the order in the request.
 
@@ -173,7 +159,7 @@ If the operation returned a resource (e.g., a `read` or `search` operation, or a
 
 ### Error Handling
 
-How errors are handled depends on whether the Bundle is a `batch` or a `transaction`.
+Error handling depends on whether atomic transaction processing is enabled, as well as the requested Bundle type. On hosted Medplum, handle partial failures for both request types.
 
 **Batch Requests (`type: batch`)**
 
@@ -221,7 +207,7 @@ Example of a batch response with one success and one failure:
 
 **Transaction Requests (`type: transaction`)**
 
-In a transaction request, operations are atomic. If **any** operation fails, the entire transaction is rolled back, and the server returns an error for the whole request.
+The following behavior applies **only when atomic transaction support is enabled**. It is currently unavailable on hosted Medplum. If **any** operation fails, the entire transaction is rolled back, and the server returns an error for the whole request.
 
 -   **Success**: All operations succeeded. The response Bundle contains results for all entries.
 -   **Failure**: The server returns an `OperationOutcome` describing the error that caused the transaction to fail. No partial results are returned.
@@ -232,11 +218,11 @@ When using batch requests, it is common to require resources to refer to one ano
 
 ### Internal References
 
-Resources within the same Bundle often need to link to one another: for example, you may create a `Patient` resource that is the `subject` of an `Encounter` created in the same batch request.
+Resources within the same Bundle often need to link to one another, such as an Encounter referring to a new Patient. On hosted Medplum, prefer writing the Patient first, confirming success, and then writing the Encounter with the saved Patient reference. This separates dependency ordering from atomicity.
 
 Creating internal references is done by assigning temporary IDs to each bundle entry. The `fullUrl` field is set to `'urn:uuid:'` followed by a temporary UUID.
 
-Other bundle entries can refer to this resource using the temporary `urn:uuid:` string, which is replaced by the real reference during batch processing.
+Other bundle entries can refer to this resource using the temporary `urn:uuid:` string, which is replaced by the real reference during Bundle processing. The example below uses `type: transaction` for linked-resource submission; it does not provide atomicity on hosted Medplum. Inspect every entry before using the created resources. For batches containing internal references, use `reorderBundle()` from `@medplum/core` to order dependencies, and handle partial failures explicitly. Ordering does not provide rollback or prevent a dependent write after a prerequisite fails.
 
 <details>
   <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
@@ -265,6 +251,8 @@ There may be situations where you would only like to create a a resource as part
 
 You can conditionally perform batch actions by adding the `ifNoneExist` property to the `request` element of your `Bundle`.
 
+Conditional creates do not require atomic transaction support. The linked-resource example below uses `type: transaction` for reference resolution; on hosted Medplum it can partially succeed. Prefer saving the Organization first and then writing the Patient with its returned reference when you need to recover the steps independently.
+
 The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#search-parameters) to search existing resources and only performs the action if no match is found. Since you are already defining the `url` to send the request to, you only need to enter the actual parameter in this field (i.e., everything that would come after the `?` when submitting an actual search).
 
 <details>
@@ -276,28 +264,34 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 
 ### Preventing Lost Updates with Version Checking
 
-When updating resources in a transaction bundle, you can prevent **lost updates** by using the `ifMatch` property in the bundle entry request. This ensures that your update only succeeds if the resource hasn't been modified by another user since you last read it.
+Use the `ifMatch` property on individual batch entry requests to prevent **lost updates**. Each update succeeds only if the resource has not changed since the version you read. This protection does not require the `transaction-bundles` feature.
 
 <details>
-  <summary>Example: Version Checking in Transaction Bundle</summary>
+  <summary>Example: Version Checking in a Batch</summary>
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
-      <MedplumCodeBlock language="ts" selectBlocks="transactionIfMatchTs">
+      <MedplumCodeBlock language="ts" selectBlocks="batchIfMatchTs">
         {UpdatingDataExampleCode}
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
 </details>
 
-If any resource in the transaction has been modified by another user (the version doesn't match), the transaction will fail with a `412 Precondition Failed` error, allowing you to retry after re-reading the current state.
+If a resource version no longer matches, that entry returns `412 Precondition Failed`; other batch entries can still succeed. Inspect each response, reload conflicting resources, and review the intended changes before trying again. Do not replay stale resource bodies automatically.
 
 `ifMatch` works the same way on `DELETE` entries, so a delete only succeeds if the resource is still at the version you read.
 
 ## Performing Upserts
 
-Previously, performing an "upsert" (i.e. either creating or updating a resource based on whether it already exists)
-required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/working-with-fhir#upsert)
-to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
+An upsert creates or updates one resource through a [conditional update](/docs/fhir-datastore/working-with-fhir#upsert). Group independent upserts in a batch to reduce HTTP requests. Match on a stable `identifier` and include that identifier in the resource body. Each upsert is a separate operation; the batch has no all-or-nothing guarantee.
+
+<MedplumCodeBlock language="ts" selectBlocks="batchUpserts">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Persist the submitted entries and their results. Retry the selected transient failures with bounded exponential backoff, honoring `Retry-After` when available. Correct validation or authorization failures before retrying; reload and review version conflicts. A missing response is an unknown outcome that needs reconciliation, not proof of failure.
+
+This example assumes independent records and that the source still owns the fields being replaced. Upserts avoid duplicate resource identities; they can still overwrite newer edits or retrigger automation. If a request times out before returning results, reconcile outcomes before retrying. For linked resources, confirm prerequisite writes and replace temporary references with saved IDs before retrying dependent entries.
 
 :::note[Upsert URLs]
 
@@ -307,6 +301,8 @@ be used in the `Bundle.entry.request.url` for a conditional update within a batc
 
 Instead, upsert URLs should link to other resources within the Bundle consistently through conditions on the target
 resource itself, not its server-assigned ID.
+
+The examples below illustrate URL construction. For a batch containing internal references, call `reorderBundle()` before submission. Ordering alone does not stop a dependent write after its prerequisite fails; prefer separate dependency stages when that failure needs to be handled before continuing.
 
 <details>
 <summary>Example</summary>

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient } from '@medplum/core';
-import type { Bundle, Patient } from '@medplum/fhirtypes';
+import { createReference, MedplumClient } from '@medplum/core';
+import type { Bundle, ClinicalImpression, Encounter, Patient } from '@medplum/fhirtypes';
 const medplum = new MedplumClient();
 
 /*
@@ -71,7 +71,7 @@ const patientData: Patient = {
   gender: 'male',
 };
 
-await medplum.upsertResource(patientData, {
+const savedPatient = await medplum.upsertResource(patientData, {
   identifier: 'http://your-source-system.com/patientId|P001',
 });
 // end-block medplum-sdk-upsert
@@ -112,79 +112,43 @@ const createPatientsBatch: Bundle =
 // end-block create-patients-batch
 await medplum.executeBatch(createPatientsBatch);
 
-// Transactions
-const encounterAndImpressionTransaction: Bundle =
-  // start-block encounter-and-impression-transaction
+// start-block encounter-and-impression-upserts
+// Continue from the savedPatient returned by the Patient upsert above.
+// This example permits an Encounter to exist before its assessment is loaded.
+const savedEncounter = await medplum.upsertResource<Encounter>(
   {
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry: [
+    resourceType: 'Encounter',
+    identifier: [{ system: 'http://your-source-system.com/encounterId', value: 'E001' }],
+    status: 'finished',
+    class: {
+      system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+      code: 'AMB',
+      display: 'ambulatory',
+    },
+    subject: createReference(savedPatient),
+    period: { start: '2023-06-15' },
+    type: [
       {
-        fullUrl: 'urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1',
-        request: {
-          method: 'PUT',
-          url: 'Encounter?identifier=http://your-source-system.com/encounterId|E001',
-        },
-        resource: {
-          resourceType: 'Encounter',
-          identifier: [
-            {
-              system: 'http://your-source-system.com/encounterId',
-              value: 'E001',
-            },
-          ],
-          status: 'finished',
-          class: {
-            system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
-            code: 'AMB',
-            display: 'ambulatory',
-          },
-          subject: {
-            reference: 'Patient?identifier=http://your-source-system.com/patientId|P001',
-          },
-          period: {
-            start: '2023-06-15',
-          },
-          type: [
-            {
-              coding: [
-                {
-                  system: 'http://your-source-system.com/encounterTypeId',
-                  code: 'checkup',
-                  display: 'Check-up',
-                },
-              ],
-            },
-          ],
-        },
-      },
-      {
-        request: {
-          method: 'PUT',
-          url: 'ClinicalImpression?identifier=http://your-source-system.com/clinicalImpressionId|CI001',
-        },
-        resource: {
-          resourceType: 'ClinicalImpression',
-          identifier: [
-            {
-              system: 'http://your-source-system.com/clinicalImpressionId',
-              value: 'CI001',
-            },
-          ],
-          status: 'completed',
-          subject: {
-            reference: 'Patient?identifier=http://your-source-system.com/patientId|P001',
-          },
-          encounter: {
-            reference: 'urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1',
-          },
-          summary: 'Patient presented with mild flu-like symptoms. Recommended rest and fluids.',
-        },
+        coding: [{ system: 'http://your-source-system.com/encounterTypeId', code: 'checkup', display: 'Check-up' }],
       },
     ],
-  };
-// end-block encounter-and-impression-transaction
-await medplum.executeBatch(encounterAndImpressionTransaction);
+  },
+  { identifier: 'http://your-source-system.com/encounterId|E001' }
+);
+// Persist the saved reference in the migration manifest before the dependent write.
+await medplum.upsertResource<ClinicalImpression>(
+  {
+    resourceType: 'ClinicalImpression',
+    identifier: [{ system: 'http://your-source-system.com/clinicalImpressionId', value: 'CI001' }],
+    status: 'completed',
+    subject: createReference(savedPatient),
+    encounter: createReference(savedEncounter),
+    summary: 'Patient presented with mild flu-like symptoms. Recommended rest and fluids.',
+  },
+  { identifier: 'http://your-source-system.com/clinicalImpressionId|CI001' }
+);
+// If the assessment fails, reconcile/retry that write; the Encounter remains saved.
+// end-block encounter-and-impression-upserts
 
 // End to End Example
 const createConditionsBatch: Bundle =

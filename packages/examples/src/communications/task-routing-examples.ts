@@ -39,6 +39,8 @@ export async function claimTask(
 // end-block claimTaskTs
 
 // start-block rerouteToProviderTs
+// Requires atomic transaction processing, which is unavailable on hosted Medplum.
+// Use only when Task ownership and thread membership must commit together.
 export async function rerouteToProvider(
   medplum: MedplumClient,
   current: Task,

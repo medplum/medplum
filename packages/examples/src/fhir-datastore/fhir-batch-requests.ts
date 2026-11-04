@@ -3,7 +3,7 @@
 
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import type { Bundle } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Patient } from '@medplum/fhirtypes';
 import { readFile } from 'fs/promises';
 // end-block imports
 
@@ -236,7 +236,7 @@ const externalReference: Bundle =
   // start-block externalReference
   {
     resourceType: 'Bundle',
-    type: 'transaction',
+    type: 'batch',
     entry: [
       {
         resource: {
@@ -304,7 +304,7 @@ const conditional: Bundle =
           method: 'POST',
           url: 'Organization',
           // highlight-next-line
-          ifNoneExist: 'identifier=https://example-org.com/organizations|example-organization',
+          ifNoneExist: 'identifier=http://example-org.com/organizations|example-organization',
         },
       },
       {
@@ -333,6 +333,54 @@ const conditional: Bundle =
     ],
   };
 // end-block conditionalCreate
+
+// start-block batchUpserts
+const sourcePatients: Patient[] = [
+  {
+    resourceType: 'Patient',
+    identifier: [{ system: 'https://example.org/source-patients', value: 'P001' }],
+    name: [{ family: 'Doe', given: ['Jane'] }],
+  },
+  {
+    resourceType: 'Patient',
+    identifier: [{ system: 'https://example.org/source-patients', value: 'P002' }],
+    name: [{ family: 'Smith', given: ['Alex'] }],
+  },
+];
+const upsertEntries: BundleEntry[] = sourcePatients.map((resource) => {
+  const identifier = resource.identifier?.[0];
+  if (!identifier?.system || !identifier.value) {
+    throw new Error('Source patient must have a stable identifier');
+  }
+  return {
+    resource,
+    request: {
+      method: 'PUT',
+      url: `Patient?identifier=${encodeURIComponent(`${identifier.system}|${identifier.value}`)}`,
+    },
+  };
+});
+const upsertResults = await medplum.executeBatch({
+  resourceType: 'Bundle',
+  type: 'batch',
+  entry: upsertEntries,
+});
+const retryEntries: BundleEntry[] = [];
+const reviewEntries: { request: BundleEntry; response: BundleEntry | undefined }[] = [];
+for (const [index, request] of upsertEntries.entries()) {
+  const response = upsertResults.entry?.[index];
+  const status = Number.parseInt(response?.response?.status ?? '', 10);
+  if (status >= 200 && status < 300) {
+    continue; // Record success; do not resubmit this entry.
+  }
+  if (status === 429 || (status >= 500 && status < 600)) {
+    retryEntries.push(request); // Retry with a bounded backoff policy.
+  } else {
+    reviewEntries.push({ request, response }); // Includes missing/unknown results.
+  }
+}
+// Persist results, schedule bounded retries, and surface reviewEntries to the operator.
+// end-block batchUpserts
 
 // start-block autobatchingWrong
 // Main thread pauses and waits for Promise to resolve. This request cannot be added to a batch

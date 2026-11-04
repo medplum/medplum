@@ -13,6 +13,8 @@ The `$hold` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 The `$hold` operation places a hold on one or more schedules by atomically creating an [`Appointment`](/docs/api/fhir/resources/appointment) and [`Slot`](/docs/api/fhir/resources/slot) resources. The operation validates that the requested time is genuinely available before committing. It can also hold every occurrence of a [weekly recurring series](#holding-a-recurring-series) in the same transaction.
 
+The operation manages its own database transaction. It does not require the `transaction-bundles` Project feature, which controls general Bundle submissions and is currently unavailable on hosted Medplum.
+
 ## Booking Lifecycle
 
 `$hold` is the second step in a three-step booking flow:
