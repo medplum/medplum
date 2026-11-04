@@ -83,9 +83,11 @@ Claiming establishes ownership. Set `in-progress` when the response work begins.
 
 For the same response obligation, update the existing Task's `owner` with a version check. Record why it moved so the next person can pick up the conversation. If that person is joining the thread, update the participant list to include them while preserving the remaining members.
 
-Use a transaction Bundle when linked resource updates must succeed together. Apply version checks to both records. See [FHIR Batch and Transaction Requests](/docs/fhir-datastore/fhir-batch-requests).
+If membership may change independently of assignment, first add the eligible participant with a version check, then update the Task's owner with its own version check. If the second write fails, keep the Task with its current owner and surface the incomplete transfer for reconciliation. This pattern is appropriate only when the participant may remain in the thread even if the transfer fails. Membership and access must still follow AccessPolicy.
 
-This example also adds the assignee to the thread. Pass the Practitioner who will participate in the conversation, even if a PractitionerRole owns the Task. Check eligibility and permission to join before calling it. The transaction requires the project's [transaction support](/docs/fhir-datastore/fhir-batch-requests) to be enabled. On a version conflict, reload both records and review the proposed transfer; retrying must preserve any intervening membership changes.
+If your business rule requires both changes to commit together, independent writes or a batch of upserts are insufficient. **Atomic transaction Bundles are currently unavailable on hosted Medplum.** The example below illustrates this stricter requirement only for a deployment with atomic processing enabled; it is not a hosted implementation. See [availability and limits](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+
+This example also adds the assignee to the thread. Pass the Practitioner who will participate in the conversation, even if a PractitionerRole owns the Task. Check eligibility and permission to join before calling it. Confirm atomic processing is enabled before using this example; the `transaction` request type alone does not provide that guarantee. On a version conflict, reload both records and review the proposed transfer; retrying must preserve any intervening membership changes.
 
 <MedplumCodeBlock language="ts" selectBlocks="rerouteToProviderTs">
   {RoutingCode}
