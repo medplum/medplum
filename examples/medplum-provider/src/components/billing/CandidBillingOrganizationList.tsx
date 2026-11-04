@@ -79,7 +79,6 @@ export function CandidBillingOrganizationList(props: CandidBillingOrganizationLi
       <SearchControl
         key={savedVersion}
         search={search}
-        elements={['identifier']}
         additionalColumns={additionalColumns}
         hideToolbar
         hideFilters

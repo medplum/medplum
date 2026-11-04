@@ -74,31 +74,36 @@ export function getFieldElements(resourceType: string, fields: SearchControlFiel
       continue;
     }
 
-    const paths: string[] = [];
+    const topLevel: string[] = [];
     if (field.elementDefinition?.path === `${resourceType}.${field.name}`) {
-      paths.push(field.elementDefinition.path);
+      topLevel.push(field.name.replace('[x]', ''));
     } else if (field.searchParams?.length === 1 && field.searchParams[0].code === field.name) {
-      const details = getSearchParameterDetails(resourceType, field.searchParams[0]);
-      for (const elementDefinition of details.elementDefinitions ?? []) {
-        paths.push(elementDefinition.path);
-      }
+      topLevel.push(...getExpressionElements(resourceType, field.searchParams[0].expression));
     }
-    if (paths.length === 0) {
+    if (topLevel.length === 0) {
       return undefined;
     }
 
-    for (const path of paths) {
-      const topLevel = path.split('.')[1];
-      if (!topLevel) {
-        return undefined;
-      }
-      elements.add(topLevel.replace('[x]', ''));
+    for (const element of topLevel) {
+      elements.add(element);
     }
     if (field.name === 'name' && PROFILE_RESOURCE_TYPES.includes(resourceType)) {
       elements.add('photo');
     }
   }
   return elements.size > 0 ? Array.from(elements) : ['id'];
+}
+
+/**
+ * Returns the top-level elements a search parameter expression reads from the resource,
+ * e.g. `Patient.address.country` → `address`.
+ * @param resourceType - The resource type.
+ * @param expression - The search parameter FHIRPath expression.
+ * @returns The top-level element names.
+ */
+function getExpressionElements(resourceType: string, expression: string | undefined): string[] {
+  const pattern = new RegExp(`(?<![\\w.])${resourceType}\\.(\\w+)`, 'g');
+  return Array.from(expression?.matchAll(pattern) ?? [], (match) => match[1]);
 }
 
 /**

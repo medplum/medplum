@@ -234,7 +234,6 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
       )}
       <SearchControl
         search={search}
-        elements={['user']}
         onClick={(e) => navigate(`./${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}
         onLoad={handleLoad}

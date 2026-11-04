@@ -10,7 +10,6 @@ import type {
   Organization,
   Parameters,
   Practitioner,
-  Resource,
 } from '@medplum/fhirtypes';
 import {
   CANDID_BILLING_ORGANIZATION_PROFILE,
@@ -433,14 +432,4 @@ export function withCandidProviderId<T extends Organization | Practitioner>(
       { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: candidProviderId },
     ],
   };
-}
-
-/**
- * Returns true when the resource is a search result trimmed to a subset of its elements (`_fields`/`_elements`).
- * Such a resource must be read in full before it is edited.
- * @param resource - The resource to check.
- * @returns True when the resource carries the `SUBSETTED` tag.
- */
-export function isSubsetted(resource: Resource): boolean {
-  return !!resource.meta?.tag?.some((t) => t.code === 'SUBSETTED');
 }

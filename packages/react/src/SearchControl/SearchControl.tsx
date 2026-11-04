@@ -101,7 +101,6 @@ export interface SearchControlProps {
   readonly hideToolbar?: boolean;
   /** Hides the per-column filter description row under the column headers. */
   readonly hideFilters?: boolean;
-  readonly elements?: readonly string[];
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
   readonly onClick?: (e: SearchClickEvent) => void;
@@ -159,7 +158,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const [activeRowId, setActiveRowId] = useState<string>();
 
   const total = memoizedSearch.total ?? 'accurate';
-  const elementsKey = props.elements?.join(',');
+  const hasAdditionalColumns = !!props.additionalColumns?.length;
 
   const loadResults = useCallback(
     (options?: RequestInit) => {
@@ -172,7 +171,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             formatSearchQuery({
               ...memoizedSearch,
               total,
-              fields: getRequestElements(memoizedSearch, elementsKey),
+              fields: hasAdditionalColumns ? undefined : getRequestElements(memoizedSearch),
             }),
             options
           )
@@ -188,7 +187,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(normalizeOperationOutcome(reason));
         });
     },
-    [medplum, memoizedSearch, total, elementsKey, onLoad]
+    [medplum, memoizedSearch, total, hasAdditionalColumns, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -732,20 +731,14 @@ function getTotal(search: SearchRequest, lastResult: Bundle): number {
 }
 
 /**
- * Returns the elements to request: the elements behind the search's fields plus the caller's extra
- * elements. Full resources are fetched when the search has no fields, or a field can't be mapped.
+ * Returns the elements behind the search's fields, to request via `_fields`.
+ * Full resources are fetched when the search has no fields or a field can't be mapped.
  * @param search - The search request.
- * @param elementsKey - The caller's extra elements, comma-separated.
  * @returns The elements to request, or undefined to fetch full resources.
  */
-function getRequestElements(search: SearchRequest, elementsKey: string | undefined): string[] | undefined {
+function getRequestElements(search: SearchRequest): string[] | undefined {
   if (!search.fields?.length) {
     return undefined;
   }
-  const columnElements = getFieldElements(search.resourceType, getFieldDefinitions(search));
-  if (!columnElements) {
-    return undefined;
-  }
-  const extraElements = elementsKey ? elementsKey.split(',') : [];
-  return Array.from(new Set([...columnElements, ...extraElements]));
+  return getFieldElements(search.resourceType, getFieldDefinitions(search));
 }
