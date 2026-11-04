@@ -607,20 +607,11 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Patient: Feeling Better')).toBeInTheDocument();
   });
 
-  test('offers no cancellation for an appointment $cancel would refuse', async () => {
-    renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+  test.each(['cancelled', 'fulfilled'] as const)('offers no cancellation for a %s appointment', async (status) => {
+    renderDetails({ ...BOOKED_APPOINTMENT, status });
     await screen.findByText('Miles Cooper');
 
-    expect(cancelButton()).toHaveAttribute('disabled');
-    expect(screen.getByText('This appointment is cancelled.')).toBeInTheDocument();
-  });
-
-  test('says why an appointment already seen cannot be cancelled', async () => {
-    renderDetails({ ...BOOKED_APPOINTMENT, status: 'fulfilled' });
-    await screen.findByText('Miles Cooper');
-
-    expect(cancelButton()).toHaveAttribute('disabled');
-    expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
   });
 
   test('links to the visit in the external system', async () => {

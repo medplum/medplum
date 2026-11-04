@@ -18,7 +18,13 @@ import {
 import type { Appointment, Bundle, CodeableConcept, Parameters, Reference, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconCalendarCancel,
+  IconCalendarCheck,
+  IconCalendarEvent,
+  IconExternalLink,
+} from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
@@ -327,9 +333,10 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
 
   const cancelable = isCancelable(appointment);
   const locked = isPastEditWindow(appointment);
+  const reschedulable = isReschedulable(appointment);
+  const externalUrl = getExternalUrl(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
-  const externalUrl = getExternalUrl(appointment);
   const site = getAppointmentSite(appointment);
   const { primary, providers, rooms, devices, others } = partitionActors(appointment);
   const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
@@ -416,7 +423,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               <Button variant="outline" onClick={() => setEditing(true)}>
                 Edit
               </Button>
-              {isReschedulable(appointment) && (
+              {reschedulable && (
                 <Button
                   variant="outline"
                   leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
@@ -425,15 +432,15 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
                   Reschedule
                 </Button>
               )}
-              <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
-                Cancel Appointment
-              </Button>
-              {!cancelable && (
-                <Text size="sm" c="dimmed">
-                  {appointment.status === 'cancelled'
-                    ? 'This appointment is cancelled.'
-                    : `An appointment in '${appointment.status}' status cannot be cancelled.`}
-                </Text>
+              {cancelable && (
+                <Button
+                  variant="outline"
+                  color="red"
+                  leftSection={<IconCalendarCancel size={16} stroke={1.8} />}
+                  onClick={() => setCancelling(true)}
+                >
+                  Cancel Appointment
+                </Button>
               )}
             </>
           )}
