@@ -1798,10 +1798,12 @@ describe('FHIR resource validation', () => {
     };
     expect(() => validateResource(cron)).not.toThrow();
     expect(() => validateResource({ ...cron, cronString: '10-2 * * * *' })).toThrow('cron-4');
+    expect(() => validateResource({ ...cron, cronString: '0 */5 * * * *' })).toThrow('cron-4');
 
     const bot: Bot = { resourceType: 'Bot', cronString: '0 0 * * MON-FRI' };
     expect(() => validateResource(bot)).not.toThrow();
     expect(() => validateResource({ ...bot, cronString: 'not a cron' })).toThrow('bot-1');
+    expect(() => validateResource({ ...bot, cronString: '30 0 0 * * MON-FRI' })).toThrow('bot-1');
     expect(() =>
       validateResource({ resourceType: 'Bot', cronTiming: { repeat: { period: 1, periodUnit: 'h' } } })
     ).not.toThrow();
