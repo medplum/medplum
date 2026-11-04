@@ -78,7 +78,6 @@ describe('Default access policies', () => {
     ).map((resourceType) => [resourceType, 'write'])
   );
 
-  // Access to each non-admin resource type: `others` applies to every type not in `except`
   const expectedAccess: Record<
     DefaultAccessPolicyProfileType,
     { others: Access; except: Partial<Record<ResourceType, Access>> }
@@ -112,7 +111,7 @@ describe('Default access policies', () => {
     }
   });
 
-  // Every hidden field in every default. Adding or removing one must be a deliberate change here.
+  // Intentionally exhaustive instead of partial: changing a hidden fields must be reflected here
   const expectedHiddenFields: Record<DefaultAccessPolicyProfileType, Partial<Record<ResourceType, string[]>>> = {
     Patient: {},
     RelatedPerson: {},
@@ -131,8 +130,8 @@ describe('Default access policies', () => {
     );
     expect(declared).toStrictEqual(expected);
 
-    // The server applies hidden fields from the first entry matching the interaction. Reads must hide them, and
-    // updates must match an entry that has them too, so the server restores them instead of saving new values.
+    // Hidden fields come from the first entry matching the interaction, so updates must also match an entry with them,
+    // or new values would be saved over them
     for (const [resourceType, fields] of Object.entries(declared)) {
       for (const interaction of [AccessPolicyInteraction.READ, AccessPolicyInteraction.UPDATE]) {
         if (accessPolicySupportsInteraction(policy, interaction, resourceType as ResourceType)) {

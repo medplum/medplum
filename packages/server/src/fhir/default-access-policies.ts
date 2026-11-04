@@ -17,10 +17,7 @@ export type DefaultAccessPolicy = Pick<AccessPolicy, 'name' | 'compartment' | 'r
 
 const CLIENT_SECRET_FIELDS = ['secret', 'retiringSecret'];
 
-/**
- * Curated knowledge, terminology, and conformance resources that non-admin Practitioners can read but not edit.
- * These are typically managed at the project/admin level rather than by front-line users.
- */
+/** Knowledge, terminology, and conformance resources managed by admins rather than front-line users. */
 const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'MedicationKnowledge',
   'PlanDefinition',
@@ -31,10 +28,7 @@ const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'CodeSystem',
 ];
 
-/**
- * The default access policy for each profile type, in the order they are listed on `Project.defaultAccessPolicies`.
- * Typed as a complete record so that adding a profile type code requires adding its default here.
- */
+/** The default access policy for each profile type, in the order they are listed on `Project.defaultAccessPolicies`. */
 export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfileType, () => DefaultAccessPolicy>> = {
   Patient: () => ({
     name: 'Default Patient Access Policy',
@@ -57,14 +51,12 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
   Bot: () => ({
     name: 'Default Bot Access Policy',
     resource: writableExcept({
-      readonly: ['AccessPolicy'],
+      readonly: ['AccessPolicy', 'Bot', 'ClientApplication'],
       hiddenFields: { ClientApplication: CLIENT_SECRET_FIELDS },
     }),
   }),
   ClientApplication: () => ({
     name: 'Default ClientApplication Access Policy',
-    // ClientApplication is read-only: credential fields such as jwksUri and identityProvider would otherwise let a
-    // client take over another client's identity.
     resource: writableExcept({
       readonly: ['AccessPolicy', 'Bot', 'ClientApplication'],
       hiddenFields: { ClientApplication: CLIENT_SECRET_FIELDS },
@@ -88,19 +80,17 @@ export function getDefaultAccessPolicy(
 /**
  * Compiles "read/write everything, except these restrictions" into access policy entries.
  *
- * This is the only place that should depend on how entries are evaluated:
- * - Permissions are additive: an interaction is allowed if *any* entry grants it. A write wildcard would therefore
- *   override any read-only entry, so when a non-admin type must be read-only, the policy instead grants read via a
- *   readonly wildcard and lists every writable resource type explicitly.
- * - The server applies `hiddenFields` from the first entry matching the resource and interaction (read or update).
+ * - Permissions are additive, so a write wildcard would override any read-only entry. When a non-admin type must be
+ *   read-only, read comes from a readonly wildcard and each writable type is listed, so the policy only covers types
+ *   that exist when it is created.
+ * - The server takes `hiddenFields` from the first entry matching the resource and interaction (read or update).
  *   Entries with hidden fields go before the wildcard, or the wildcard would match first and expose the fields.
  *   Those types also get no `{ resourceType }` entry, the writable entry with no hidden fields that other types get:
  *   if the hidden-fields entry is read-only, updates skip it, match that entry instead, and could overwrite the
  *   hidden fields.
- * - The wildcard never matches project admin or protected resource types, which non-admins cannot write. Read-only
- *   project admin types get their own readonly entry.
- *
- * Because writable types are listed explicitly, the policy only covers resource types that exist when it is created.
+ * - `'*'` never matches project admin types, so read-only ones get their own entry. Project admin and protected types
+ *   are never listed as writable: the server replaces project admin entries at login and allows protected types only
+ *   for super admins.
  * @param options - The restrictions.
  * @param options.readonly - Resource types that can be read but not written.
  * @param options.hiddenFields - Fields hidden from reads (and preserved on writes), by resource type.
@@ -122,9 +112,8 @@ function writableExcept(options: {
     .filter((resourceType) => projectAdminResourceTypes.includes(resourceType))
     .map((resourceType) => ({ resourceType, readonly: true }));
 
-  // If every read-only type is a project admin type (or there are none), a write wildcard is safe: '*' never matches
-  // project admin types, so it can't make them writable. This skips listing each writable type, so the policy also
-  // covers resource types added later. Field entries still come first, so their fields apply on both read and update.
+  // With no non-admin read-only types, a write wildcard is safe ('*' never matches project admin types), and unlike a
+  // list of writable types it also covers resource types added later.
   if (readonly.every((resourceType) => projectAdminResourceTypes.includes(resourceType))) {
     return [...fieldEntries, ...projectAdminReadonlyEntries, { resourceType: '*' }];
   }
