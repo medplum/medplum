@@ -327,8 +327,10 @@ async function createClientApplicationAccessPolicy(
   projectId: string,
   name: string
 ): Promise<WithId<AccessPolicy>> {
+  // ClientApplication is read-only: credential fields such as jwksUri and identityProvider would otherwise let a client
+  // take over another client's identity.
   return createWritableExceptAccessPolicy(systemRepo, projectId, name, CLIENT_APPLICATION_READONLY_RESOURCE_TYPES, [
-    { resourceType: 'ClientApplication', hiddenFields: ['secret', 'retiringSecret'] },
+    { resourceType: 'ClientApplication', readonly: true, hiddenFields: ['secret', 'retiringSecret'] },
   ]);
 }
 

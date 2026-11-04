@@ -232,7 +232,7 @@ describe('Project $init', () => {
       await expect(repo.readResource('AccessPolicy', accessPolicy.id)).resolves.toBeDefined();
       await expect(repo.updateResource({ ...accessPolicy, name: 'Changed' })).rejects.toThrow('Forbidden');
 
-      // ClientApplication secrets are hidden and cannot be overwritten
+      // ClientApplication is readable with secrets hidden, but not writable
       const otherClient = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         meta: { project: testProject.id },
@@ -244,11 +244,14 @@ describe('Project $init', () => {
       expect(readClient.name).toBe('Other Client');
       expect(readClient.secret).toBeUndefined();
       expect(readClient.retiringSecret).toBeUndefined();
-      await repo.updateResource({ ...readClient, name: 'Renamed', secret: 'overwritten' });
-      const updatedClient = await systemRepo.readResource<ClientApplication>('ClientApplication', otherClient.id);
-      expect(updatedClient.name).toBe('Renamed');
-      expect(updatedClient.secret).toBe('secret');
-      expect(updatedClient.retiringSecret).toBe('retiring');
+      await expect(
+        repo.updateResource({ ...readClient, jwksUri: 'https://attacker.example.com/jwks.json' })
+      ).rejects.toThrow('Forbidden');
+      await expect(
+        repo.createResource<ClientApplication>({ resourceType: 'ClientApplication', name: 'New Client' })
+      ).rejects.toThrow('Forbidden');
+      const unchangedClient = await systemRepo.readResource<ClientApplication>('ClientApplication', otherClient.id);
+      expect(unchangedClient.jwksUri).toBeUndefined();
     }));
 
   test('Requires project name', async () => {
