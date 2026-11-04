@@ -26,17 +26,17 @@ Click Ok in the bottom of the page, and your bot will be added to the queue.
 
 Medplum schedules jobs with [BullMQ](https://docs.bullmq.io/guide/job-schedulers/repeat-strategies),
 which parses schedules with [cron-parser](https://github.com/harrisiirak/cron-parser), and validates
-`cronString` with the same rules. An expression has five fields, or six when it starts with seconds:
+`cronString` with the same rules apart from [seconds](#minute-granularity-only). An expression has
+five fields:
 
 ```text
-┌───────────── second (0-59, optional)
-│ ┌─────────── minute (0-59)
-│ │ ┌───────── hour (0-23)
-│ │ │ ┌─────── day of month (1-31, L)
-│ │ │ │ ┌───── month (1-12, JAN-DEC)
-│ │ │ │ │ ┌─── day of week (0-7, SUN-SAT, 0 and 7 are Sunday, L, #)
-│ │ │ │ │ │
-* * * * * *
+┌─────────── minute (0-59)
+│ ┌───────── hour (0-23)
+│ │ ┌─────── day of month (1-31, L)
+│ │ │ ┌───── month (1-12, JAN-DEC)
+│ │ │ │ ┌─── day of week (0-7, SUN-SAT, 0 and 7 are Sunday, L, #)
+│ │ │ │ │
+* * * * *
 ```
 
 | Syntax                | Meaning                                     | Example                        |
@@ -50,7 +50,14 @@ which parses schedules with [cron-parser](https://github.com/harrisiirak/cron-pa
 | `n#k` (day of week)   | The `k`th given weekday of the month (1-5)  | `0 0 * * 1#2`: second Monday   |
 
 The shorthands `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@hourly`, `@minutely`,
-`@secondly`, `@weekdays`, and `@weekends` are also accepted.
+`@weekdays`, and `@weekends` are also accepted.
+
+:::note Minute granularity only
+
+Medplum does not run cron jobs more than once a minute. Unlike cron-parser, it rejects the optional
+sixth (seconds) field, such as `*/10 * * * * *`, and the `@secondly` shorthand.
+
+:::
 
 An expression that can never fire is invalid, such as `0 0 31 2 *` (February 31st), as is one with an
 out-of-range value, an inverted range such as `10-2`, or a value listed twice (including `0,7` for

@@ -94,12 +94,17 @@ const MAX_EXPRESSION_LENGTH = 1024;
 /**
  * Returns true if the input is a cron expression the Medplum job scheduler can run.
  *
- * Accepts exactly what cron-parser accepts in its default, non-strict mode: five or six fields (seconds first when
- * six), the `@daily`-style shorthands, month and weekday names, and the `L`, `#`, `?`, and `H` extensions.
+ * Accepts what cron-parser accepts in its default, non-strict mode -- the `@daily`-style shorthands, month and weekday
+ * names, and the `L`, `#`, `?`, and `H` extensions -- except that schedules are limited to minute granularity, so the
+ * optional sixth (seconds) field and `@secondly` are rejected.
  * @param cronString - The cron expression to check.
  * @returns True if the cron expression is valid.
  */
 export function isValidCronString(cronString: string): boolean {
+  // Deliberate divergence from cron-parser: Medplum does not run jobs more than once a minute
+  if (cronString === '@secondly' || cronString.trim().split(/\s+/).length > 5) {
+    return false;
+  }
   try {
     parseCronExpression(cronString);
     return true;
@@ -115,9 +120,6 @@ function parseCronExpression(input: string): void {
   }
 
   const atoms = expression.trim().split(/\s+/);
-  if (atoms.length > 6) {
-    throw new Error('Too many fields');
-  }
   const [rawSecond, rawMinute, rawHour, rawDayOfMonth, rawMonth, rawDayOfWeek] = [
     ...['0', '*', '*', '*', '*', '*'].slice(0, 6 - atoms.length),
     ...atoms,

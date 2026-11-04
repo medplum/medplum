@@ -7,7 +7,6 @@ describe('isValidCronString', () => {
     '* * * * *',
     '*/20 * * * *',
     '0 */3 * * *',
-    '30 * * * * *',
     '0 0 * * MON-FRI',
     '0 0 1 jan,Jul *',
     '@daily',
@@ -28,6 +27,9 @@ describe('isValidCronString', () => {
   });
 
   test.each([
+    '* * * * * *',
+    '0 * * * * *',
+    '@secondly',
     ' ',
     'testing',
     '60 * * * *',
@@ -52,7 +54,7 @@ describe('isValidCronString', () => {
     'H(1-3)/0 * * * *',
     Array.from({ length: 300 }, (_, i) => i % 60).join(',') + ' * * * *',
     'H/1,H/1,H/1,H/1,H/1 * * * *',
-    '* '.repeat(600),
+    '0'.repeat(1100) + ' * * * *',
   ])('rejects %j', (cronString) => {
     expect(isValidCronString(cronString)).toBe(false);
   });
