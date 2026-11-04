@@ -527,14 +527,13 @@ describe('SchedulingWorkspace booking', () => {
       await openTimeFinder();
     }
 
-    test('Starts on the time clicked, and moves to the next one clicked', async () => {
+    test('Starts on the time clicked, and keeps it when another time is clicked', async () => {
       await openTypedTime('tuesday morning');
       expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(TUESDAY_MORNING, 'America/New_York'));
-      fireEvent.change(typedTimeField(), { target: { value: '2026-08-18T13:07' } });
 
       await clickCalendar('tuesday afternoon');
 
-      expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(TUESDAY_AFTERNOON, 'America/New_York'));
+      expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(TUESDAY_MORNING, 'America/New_York'));
     });
 
     test('Starts empty for a whole day picked in month view', async () => {

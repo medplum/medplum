@@ -162,10 +162,10 @@ export interface AppointmentProposalFormProps {
   readonly defaultStart?: Date;
   /**
    * Where a typed time starts out, such as the time clicked on a calendar, for those who
-   * may bypass scheduling rules. Ignored once it has passed, and when rescheduling, which
-   * starts from the visit's own time. A later value replaces whatever was typed or chosen.
+   * may bypass scheduling rules. Read when the form opens, and ignored if it has passed by
+   * then or when rescheduling, which starts from the visit's own time.
    */
-  readonly defaultTime?: Date;
+  readonly defaultDateTime?: Date;
   /**
    * The `Identifier.system` a project issues medical record numbers under.
    *
@@ -255,7 +255,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     ignoreAppointment,
     ignoreAppointmentSchedules,
     defaultStart,
-    defaultTime,
+    defaultDateTime,
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
@@ -289,8 +289,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
-  // Held with the opening time it was typed over, so a new opening time is offered afresh.
-  const [manualDateTime, setManualDateTime] = useState<{ value: string; over: number | undefined }>();
+  const [manualDateTime, setManualDateTime] = useState<string | undefined>(undefined);
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
@@ -554,21 +553,18 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
   // A move starts from where the visit is now, so only what changes needs typing.
   const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
-  const openingTime = mode === 'reschedule' ? storedStart : upcoming(defaultTime);
-  const openingTimeValue = openingTime?.getTime();
-  const typedDateTime = manualDateTime?.over === openingTimeValue ? manualDateTime?.value : undefined;
-  const effectiveDateTime = typedDateTime ?? (openingTime ? formatZonedDateTimeInput(openingTime, timezone) : '');
+  const [bookingStart] = useState(() => upcoming(defaultDateTime));
+  const openingTime = mode === 'reschedule' ? storedStart : bookingStart;
+  const effectiveDateTime = manualDateTime ?? (openingTime ? formatZonedDateTimeInput(openingTime, timezone) : '');
 
   // Proposes the time and length on screen, typed or prefilled, against whichever schedules
-  // are chosen, so a reassignment needs nothing retyped. A searched time is replaced only
-  // by a new opening time, which is a new time asked for.
+  // are chosen, so a reassignment needs nothing retyped. A searched time is never replaced.
   const reproposeKey =
     searching && canBypassSchedulingRules && (mode === 'book' || storedStart) ? scheduleKey : undefined;
-  const [reproposed, setReproposed] = useState<{ key?: string; openingTime?: number }>({});
-  if (reproposeKey !== reproposed.key || openingTimeValue !== reproposed.openingTime) {
-    const reopened = openingTimeValue !== reproposed.openingTime;
-    setReproposed({ key: reproposeKey, openingTime: openingTimeValue });
-    if (reproposeKey !== undefined && (reopened || !picked || picked === manualChoice)) {
+  const [reproposedKey, setReproposedKey] = useState<string>();
+  if (reproposeKey !== reproposedKey) {
+    setReproposedKey(reproposeKey);
+    if (reproposeKey !== undefined && (!picked || picked === manualChoice)) {
       proposeManualTime(effectiveDateTime, effectiveDurationMinutes);
     }
   }
@@ -586,7 +582,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
    * @param durationMinutes - How long the visit runs.
    */
   function enterManualTime(dateTime: string, durationMinutes: number | undefined): void {
-    setManualDateTime({ value: dateTime, over: openingTimeValue });
+    setManualDateTime(dateTime);
     setManualDurationMinutes(durationMinutes);
     proposeManualTime(dateTime, durationMinutes);
   }
@@ -908,7 +904,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   date={day.date}
                   groups={day.groups}
                   timezone={timezone}
-                  selected={chosen}
+                  // A typed time stays in its field, even when the search offers the same time.
+                  selected={picked === manualChoice ? undefined : picked}
                   onSelectAppointment={chooseTime}
                 />
               ))}

@@ -726,7 +726,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             <Tabs.Panel value="appointment">
               <AppointmentBookingForm
                 defaultStart={bookingSelection.start}
-                defaultTime={bookingSelection.allDay ? undefined : bookingSelection.start}
+                defaultDateTime={bookingSelection.allDay ? undefined : bookingSelection.start}
                 procedureBinding={procedureBinding}
                 diagnosisBinding={diagnosisBinding}
                 mrnSystem={mrnSystem}

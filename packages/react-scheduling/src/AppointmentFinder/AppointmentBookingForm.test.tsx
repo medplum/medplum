@@ -27,7 +27,7 @@ import {
   setupBookingClient,
   typedTimeField,
 } from '../test-utils/bookingForm';
-import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
 import { formatZonedDateTimeInput } from './AppointmentFinder.times';
@@ -344,10 +344,14 @@ describe('AppointmentBookingForm', () => {
       test('Books it through $book when the search offers it', async () => {
         const executeBatch = vi.spyOn(medplum, 'executeBatch');
         const post = vi.spyOn(medplum, 'post');
-        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: OFFERED });
         await fillWithoutTime();
 
         expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(OFFERED, 'America/New_York'));
+        const timeButtons = screen
+          .getAllByTestId(/^slot-group-/)
+          .flatMap((group) => within(group).getAllByRole('button'));
+        expect(timeButtons.filter((button) => button.getAttribute('data-variant') === 'filled')).toHaveLength(0);
         await clickBook();
         expect(bookCount(post)).toBe(1);
         expect(executeBatch).not.toHaveBeenCalled();
@@ -356,7 +360,7 @@ describe('AppointmentBookingForm', () => {
       test('Books it through $book with either of two providers in one row', async () => {
         const executeBatch = vi.spyOn(medplum, 'executeBatch');
         const post = vi.spyOn(medplum, 'post');
-        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: OFFERED });
         await chooseImagingService();
         await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
         await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
@@ -373,7 +377,7 @@ describe('AppointmentBookingForm', () => {
           .spyOn(medplum, 'executeBatch')
           .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
         const post = vi.spyOn(medplum, 'post');
-        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: OFFERED });
         await fillWithoutTime();
         fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
         await clickBook();
@@ -385,7 +389,7 @@ describe('AppointmentBookingForm', () => {
       test('Looks up conflicts only for a time the search does not offer', async () => {
         const searchResources = vi.spyOn(medplum, 'searchResources');
         const slotSearches = (): number => searchResources.mock.calls.filter(([type]) => type === 'Slot').length;
-        setup(medplum, { canBypassSchedulingRules: true, defaultTime: OFFERED });
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: OFFERED });
         await fillWithoutTime();
         await act(async () => {
           await vi.advanceTimersByTimeAsync(1000);
@@ -429,7 +433,7 @@ describe('AppointmentBookingForm', () => {
       });
 
       test('Starts empty when that time has passed', async () => {
-        setup(medplum, { canBypassSchedulingRules: true, defaultTime: new Date(2026, 7, 17, 7, 0, 0) });
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: new Date(2026, 7, 17, 7, 0, 0) });
         await fillWithoutTime();
 
         expect(typedTimeField()).toHaveValue('');
