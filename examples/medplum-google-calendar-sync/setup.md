@@ -96,7 +96,7 @@ The project defaults to `busy-only` on first install. Re-run installation to rot
 
 ## 5. Connect a practitioner
 
-In the consuming app, authenticate the practitioner to Medplum, complete Google's consent flow, and send the authorization result to `Practitioner/$google-calendar-connect`:
+In the consuming app, authenticate the practitioner to Medplum and read `Practitioner/$google-calendar-status`. Its `clientId` output is the installed Google client ID, so the app does not need its own copy. Complete Google's consent flow with that client ID, then send the authorization result to `Practitioner/$google-calendar-connect`:
 
 ```json
 {

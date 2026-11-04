@@ -186,3 +186,21 @@ test.each([
   ]);
   expect(writes).not.toHaveBeenCalled();
 });
+
+test('status returns the installed public client ID but never the client secret', async () => {
+  const withoutClient = await handler(medplum, event);
+  expect(withoutClient.parameter?.some((p) => p.name === 'clientId')).toBe(false);
+
+  const result = await handler(medplum, {
+    ...event,
+    secrets: {
+      GOOGLE_CALENDAR_CLIENT_ID: {
+        name: 'GOOGLE_CALENDAR_CLIENT_ID',
+        valueString: 'client-1.apps.googleusercontent.com',
+      },
+      GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'GOOGLE_CALENDAR_CLIENT_SECRET', valueString: 'do-not-return' },
+    },
+  });
+  expect(result.parameter?.find((p) => p.name === 'clientId')?.valueString).toBe('client-1.apps.googleusercontent.com');
+  expect(JSON.stringify(result)).not.toContain('do-not-return');
+});

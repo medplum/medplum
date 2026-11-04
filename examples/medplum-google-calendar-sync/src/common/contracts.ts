@@ -67,7 +67,12 @@ const entries = [
     ],
     summary,
   ],
-  ['status', BOT_IDENTIFIER_VALUE.status, [], [...summary, param('activeConflictCount', 'integer'), conflict]],
+  [
+    'status',
+    BOT_IDENTIFIER_VALUE.status,
+    [],
+    [...summary, param('activeConflictCount', 'integer'), conflict, param('clientId', 'string')],
+  ],
   ['settings', BOT_IDENTIFIER_VALUE.settings, [param('eventDetailLevel', 'string', 1)], summary],
   ['disconnect', BOT_IDENTIFIER_VALUE.disconnect, [param('forgetRevoked', 'boolean')], summary],
   [

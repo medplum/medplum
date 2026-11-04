@@ -75,6 +75,7 @@ An outboundWork record has `start`/`end` valueInstant, `phase` valueCode (`disco
 | activeConflictCount                           | valueInteger           | Count of conflicts whose Appointment the caller can currently read                            |
 | conflict                                      | repeated part          | Authorized conflict fields below                                                              |
 | disconnectWarning                             | valueString            | Explains that removing imported blocks makes time bookable                                    |
+| clientId                                      | valueString, optional  | Installed public Google OAuth client ID, for starting consent; never the client secret        |
 
 Each conflict part contains `key` valueString (SHA-256 of the internal key), `appointment` valueReference, `start`/`end` valueInstant, and zero or more authorized `schedule` valueReferences. A denied or deleted reference is omitted; a transient authorization/read failure fails the operation instead of claiming resolution.
 
