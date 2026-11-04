@@ -1,0 +1,2986 @@
+{
+  "resourceType": "Bundle",
+  "id": "cms-access-model-bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+        "version": "1.0.0",
+        "name": "AccessModelTrack",
+        "title": "CMS ACCESS Model Clinical Track",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "The four clinical tracks of the CMS ACCESS Model. Used to scope PlanDefinitions, ChargeItemDefinitions, and billing ActivityDefinitions to a single track.",
+        "caseSensitive": true,
+        "content": "complete",
+        "count": 4,
+        "concept": [
+          {
+            "code": "eckm",
+            "display": "Early cardio-kidney-metabolic",
+            "definition": "Hypertension, dyslipidemia, obesity or overweight with a marker of central obesity, and prediabetes."
+          },
+          {
+            "code": "ckm",
+            "display": "Cardio-kidney-metabolic",
+            "definition": "Diabetes, chronic kidney disease (stage 3a or 3b), and atherosclerotic cardiovascular disease, including heart disease."
+          },
+          {
+            "code": "msk",
+            "display": "Musculoskeletal",
+            "definition": "Chronic musculoskeletal pain."
+          },
+          {
+            "code": "bh",
+            "display": "Behavioral health",
+            "definition": "Depression and anxiety."
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "CodeSystem?url=https://www.medplum.com/fhir/CodeSystem/access-model-track"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ValueSet/access-model-track",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://www.medplum.com/fhir/ValueSet/access-model-track",
+        "version": "1.0.0",
+        "name": "AccessModelTrackValueSet",
+        "title": "CMS ACCESS Model Clinical Tracks",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "All four ACCESS Model clinical tracks.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=https://www.medplum.com/fhir/ValueSet/access-model-track"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+        "version": "1.0.0",
+        "name": "AccessModelTask",
+        "title": "CMS ACCESS Model Task Type",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Task types for operating the CMS ACCESS Model. Every ActivityDefinition in this bundle carries one of these codes, so Tasks generated from them can be searched with Task?code=.",
+        "caseSensitive": true,
+        "content": "complete",
+        "count": 13,
+        "concept": [
+          {
+            "code": "mbi-lookup",
+            "display": "Medicare Beneficiary Identifier lookup",
+            "definition": "Find the patient's MBI from demographics when it is not already on file. An MBI is required for every CMS eligibility check."
+          },
+          {
+            "code": "eligibility-check",
+            "display": "Medicare eligibility check",
+            "definition": "Run a CMS eligibility check and record Part A and Part B coverage, hospice election, ESRD, and primary payer status."
+          },
+          {
+            "code": "diagnosis-review",
+            "display": "Qualifying diagnosis review",
+            "definition": "Confirm the patient carries a diagnosis that qualifies for the track. The qualifying diagnosis list is published by CMS and is not returned in an eligibility response."
+          },
+          {
+            "code": "alignment-verification",
+            "display": "ACCESS alignment verification",
+            "definition": "Confirm through the CMS ACCESS Model APIs that the patient is aligned to this Participant for this track."
+          },
+          {
+            "code": "roster-check",
+            "display": "Clinician Roster check",
+            "definition": "Confirm the rendering clinician is on the Participant's Clinician Roster registered with CMS."
+          },
+          {
+            "code": "enrollment",
+            "display": "ACCESS track enrollment",
+            "definition": "Enroll the aligned patient onto the track and open the initial 12-month period."
+          },
+          {
+            "code": "outcome-measurement",
+            "display": "Monthly outcome measurement",
+            "definition": "Capture the track's outcome measures for the month. Outcome performance determines the variable 20 percent of the OAP."
+          },
+          {
+            "code": "oap-claim",
+            "display": "Outcome-Aligned Payment claim",
+            "definition": "Assemble and submit the monthly OAP claim. One service line, one unit of service, dated the first day ACCESS services were provided that month."
+          },
+          {
+            "code": "remittance-reconciliation",
+            "display": "OAP remittance reconciliation",
+            "definition": "Reconcile the $0 ERA against the separate Outcome-Aligned Payment issued by CMS."
+          },
+          {
+            "code": "care-update",
+            "display": "Care update to the primary clinician",
+            "definition": "Send the monthly care update to the patient's primary care physician or referring clinician."
+          },
+          {
+            "code": "comanagement-review",
+            "display": "Co-management review",
+            "definition": "Primary or referring clinician reviews the ACCESS care update and performs at least one care-coordination activity."
+          },
+          {
+            "code": "cmp-claim",
+            "display": "Co-Management Payment claim",
+            "definition": "Assemble and submit the CMP claim. Capped at three payments per patient, per track, every 12 months."
+          },
+          {
+            "code": "followon-transition",
+            "display": "Follow-on period transition",
+            "definition": "Move the patient from the initial-period G-code to the follow-on G-code at the 12-month mark."
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "CodeSystem?url=https://www.medplum.com/fhir/CodeSystem/access-model-task"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ValueSet/access-model-task",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://www.medplum.com/fhir/ValueSet/access-model-task",
+        "version": "1.0.0",
+        "name": "AccessModelTaskValueSet",
+        "title": "CMS ACCESS Model Task Types",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "All ACCESS Model task types.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=https://www.medplum.com/fhir/ValueSet/access-model-task"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ValueSet/access-oap-initial-codes",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://www.medplum.com/fhir/ValueSet/access-oap-initial-codes",
+        "version": "1.0.0",
+        "name": "AccessOapInitialCodes",
+        "title": "CMS ACCESS Outcome-Aligned Payment G-codes, initial period",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "HCPCS G-codes an ACCESS Participant bills for the initial 12-month period, one per clinical track.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "concept": [
+                {
+                  "code": "G0669",
+                  "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, initial 12-month period"
+                },
+                {
+                  "code": "G0671",
+                  "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, initial 12-month period"
+                },
+                {
+                  "code": "G0673",
+                  "display": "Monthly outcome-aligned payment for managing musculoskeletal conditions, initial 12-month period"
+                },
+                {
+                  "code": "G0674",
+                  "display": "Monthly outcome-aligned payment for managing behavioral health conditions, initial 12-month period"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=https://www.medplum.com/fhir/ValueSet/access-oap-initial-codes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ValueSet/access-oap-followon-codes",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://www.medplum.com/fhir/ValueSet/access-oap-followon-codes",
+        "version": "1.0.0",
+        "name": "AccessOapFollowonCodes",
+        "title": "CMS ACCESS Outcome-Aligned Payment G-codes, follow-on period",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "HCPCS G-codes an ACCESS Participant bills for follow-on 12-month periods. The musculoskeletal track has no follow-on period.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "concept": [
+                {
+                  "code": "G0670",
+                  "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, follow-on 12-month period"
+                },
+                {
+                  "code": "G0672",
+                  "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, follow-on 12-month period"
+                },
+                {
+                  "code": "G0675",
+                  "display": "Monthly outcome-aligned payment for managing behavioral health conditions, follow-on 12-month period"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=https://www.medplum.com/fhir/ValueSet/access-oap-followon-codes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ValueSet/access-cmp-codes",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://www.medplum.com/fhir/ValueSet/access-cmp-codes",
+        "version": "1.0.0",
+        "name": "AccessCmpCodes",
+        "title": "CMS ACCESS Co-Management Payment G-codes",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "HCPCS G-codes a primary care physician or referring clinician bills for co-management of an ACCESS patient.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "concept": [
+                {
+                  "code": "G0676",
+                  "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+                },
+                {
+                  "code": "G0677",
+                  "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+                },
+                {
+                  "code": "G0678",
+                  "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=https://www.medplum.com/fhir/ValueSet/access-cmp-codes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ValueSet/access-cmp-modifiers",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://www.medplum.com/fhir/ValueSet/access-cmp-modifiers",
+        "version": "1.0.0",
+        "name": "AccessCmpModifiers",
+        "title": "CMS ACCESS Co-Management Payment modifiers",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Procedure modifier for the one-time onboarding payment, added to the first CMP claim per patient, per track.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "concept": [
+                {
+                  "code": "AC",
+                  "display": "ACCESS Model co-management onboarding"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=https://www.medplum.com/fhir/ValueSet/access-cmp-modifiers"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ValueSet/access-hcpcs-codes",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://www.medplum.com/fhir/ValueSet/access-hcpcs-codes",
+        "version": "1.0.0",
+        "name": "AccessHcpcsCodes",
+        "title": "CMS ACCESS Model HCPCS G-codes",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Every HCPCS G-code used to bill the CMS ACCESS Model: Outcome-Aligned Payment codes for the initial and follow-on periods, and Co-Management Payment codes.",
+        "compose": {
+          "include": [
+            {
+              "valueSet": ["https://www.medplum.com/fhir/ValueSet/access-oap-initial-codes"]
+            },
+            {
+              "valueSet": ["https://www.medplum.com/fhir/ValueSet/access-oap-followon-codes"]
+            },
+            {
+              "valueSet": ["https://www.medplum.com/fhir/ValueSet/access-cmp-codes"]
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=https://www.medplum.com/fhir/ValueSet/access-hcpcs-codes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0669",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0669",
+        "version": "1.0.0",
+        "title": "ACCESS OAP - Early cardio-kidney-metabolic, initial period (G0669)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for the monthly Outcome-Aligned Payment claim on the Early cardio-kidney-metabolic track during the initial 12-month period. CMS pays 80 percent of the allowed amount as the base OAP and ties the remaining 20 percent to the Participant's outcome performance. The claim itself remits at $0.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0669",
+              "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, initial 12-month period"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0669",
+                      "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, initial 12-month period"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 30.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0669"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0671",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0671",
+        "version": "1.0.0",
+        "title": "ACCESS OAP - Cardio-kidney-metabolic, initial period (G0671)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for the monthly Outcome-Aligned Payment claim on the Cardio-kidney-metabolic track during the initial 12-month period. CMS pays 80 percent of the allowed amount as the base OAP and ties the remaining 20 percent to the Participant's outcome performance. The claim itself remits at $0.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0671",
+              "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, initial 12-month period"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0671",
+                      "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, initial 12-month period"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 35.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0671"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0673",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0673",
+        "version": "1.0.0",
+        "title": "ACCESS OAP - Musculoskeletal, initial period (G0673)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for the monthly Outcome-Aligned Payment claim on the Musculoskeletal track during the initial 12-month period. CMS pays 80 percent of the allowed amount as the base OAP and ties the remaining 20 percent to the Participant's outcome performance. The claim itself remits at $0.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0673",
+              "display": "Monthly outcome-aligned payment for managing musculoskeletal conditions, initial 12-month period"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0673",
+                      "display": "Monthly outcome-aligned payment for managing musculoskeletal conditions, initial 12-month period"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 15.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "msk",
+                  "display": "Musculoskeletal"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0673"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0674",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0674",
+        "version": "1.0.0",
+        "title": "ACCESS OAP - Behavioral health, initial period (G0674)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for the monthly Outcome-Aligned Payment claim on the Behavioral health track during the initial 12-month period. CMS pays 80 percent of the allowed amount as the base OAP and ties the remaining 20 percent to the Participant's outcome performance. The claim itself remits at $0.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0674",
+              "display": "Monthly outcome-aligned payment for managing behavioral health conditions, initial 12-month period"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0674",
+                      "display": "Monthly outcome-aligned payment for managing behavioral health conditions, initial 12-month period"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 15.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0674"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0670",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0670",
+        "version": "1.0.0",
+        "title": "ACCESS OAP - Early cardio-kidney-metabolic, follow-on period (G0670)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for the monthly Outcome-Aligned Payment claim on the Early cardio-kidney-metabolic track during a follow-on 12-month period. CMS pays 80 percent of the allowed amount as the base OAP and ties the remaining 20 percent to the Participant's outcome performance. The claim itself remits at $0.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0670",
+              "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, follow-on 12-month period"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0670",
+                      "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, follow-on 12-month period"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 15.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0670"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0672",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0672",
+        "version": "1.0.0",
+        "title": "ACCESS OAP - Cardio-kidney-metabolic, follow-on period (G0672)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for the monthly Outcome-Aligned Payment claim on the Cardio-kidney-metabolic track during a follow-on 12-month period. CMS pays 80 percent of the allowed amount as the base OAP and ties the remaining 20 percent to the Participant's outcome performance. The claim itself remits at $0.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0672",
+              "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, follow-on 12-month period"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0672",
+                      "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, follow-on 12-month period"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 17.5,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0672"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0675",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0675",
+        "version": "1.0.0",
+        "title": "ACCESS OAP - Behavioral health, follow-on period (G0675)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for the monthly Outcome-Aligned Payment claim on the Behavioral health track during a follow-on 12-month period. CMS pays 80 percent of the allowed amount as the base OAP and ties the remaining 20 percent to the Participant's outcome performance. The claim itself remits at $0.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0675",
+              "display": "Monthly outcome-aligned payment for managing behavioral health conditions, follow-on 12-month period"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0675",
+                      "display": "Monthly outcome-aligned payment for managing behavioral health conditions, follow-on 12-month period"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 7.5,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0675"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0676",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0676",
+        "version": "1.0.0",
+        "title": "ACCESS CMP - Early cardio-kidney-metabolic and cardio-kidney-metabolic (G0676)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for a Co-Management Payment claim on the Early cardio-kidney-metabolic and cardio-kidney-metabolic track. Capped at three payments per patient, per track, every 12 months, and not subject to patient cost-sharing. Add the AC modifier to the first CMP claim per patient per track for the one-time onboarding payment.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0676",
+              "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0676",
+                      "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 30.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          },
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0676"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0677",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0677",
+        "version": "1.0.0",
+        "title": "ACCESS CMP - Musculoskeletal (G0677)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for a Co-Management Payment claim on the Musculoskeletal track. Capped at three payments per patient, per track, every 12 months, and not subject to patient cost-sharing. Add the AC modifier to the first CMP claim per patient per track for the one-time onboarding payment.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0677",
+              "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0677",
+                      "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 30.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "msk",
+                  "display": "Musculoskeletal"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0677"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0678",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0678",
+        "version": "1.0.0",
+        "title": "ACCESS CMP - Behavioral health (G0678)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Allowed amount for a Co-Management Payment claim on the Behavioral health track. Capped at three payments per patient, per track, every 12 months, and not subject to patient cost-sharing. Add the AC modifier to the first CMP claim per patient per track for the one-time onboarding payment.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0678",
+              "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "G0678",
+                      "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 30.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-g0678"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ChargeItemDefinition/access-ac",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/fhir/ChargeItemDefinition/access-ac",
+        "version": "1.0.0",
+        "title": "ACCESS CMP onboarding add-on (AC modifier)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One-time onboarding payment added to the first Co-Management Payment claim per patient, per track, by appending the AC procedure modifier to the CMP G-code.",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "AC",
+              "display": "ACCESS Model co-management onboarding"
+            }
+          ]
+        },
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+                      "code": "AC",
+                      "display": "ACCESS Model co-management onboarding"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 10.0,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ChargeItemDefinition?url=https://www.medplum.com/fhir/ChargeItemDefinition/access-ac"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-mbi-lookup",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-mbi-lookup",
+        "version": "1.0.0",
+        "name": "AccessMbiLookup",
+        "title": "Look up the patient's Medicare Beneficiary Identifier",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "A Medicare Beneficiary Identifier is required for every CMS eligibility check. When the MBI is not on file, run an MBI lookup from demographics: name, date of birth, and optionally SSN. A successful lookup returns the same information as an eligibility response, including the MBI.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "mbi-lookup",
+              "display": "Medicare Beneficiary Identifier lookup"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-mbi-lookup"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-medicare-eligibility-check",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-medicare-eligibility-check",
+        "version": "1.0.0",
+        "name": "AccessMedicareEligibilityCheck",
+        "title": "Run the CMS eligibility check",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Submit a CoverageEligibilityRequest to CMS and record four things from the response: active Part A and Part B coverage (benefit code 1 with insurance type MA and MB), hospice election periods (benefit code X, service type 45), end-stage renal disease (benefit code D, service type RN), and any other primary payer (benefit code R). An eligibility check cannot confirm full ACCESS eligibility.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "eligibility-check",
+              "display": "Medicare eligibility check"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-medicare-eligibility-check"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-qualifying-diagnosis-review",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-qualifying-diagnosis-review",
+        "version": "1.0.0",
+        "name": "AccessQualifyingDiagnosisReview",
+        "title": "Confirm a qualifying diagnosis for the track",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Review the patient's Condition list against the qualifying diagnoses CMS publishes for this track. This is not returned in an eligibility response and has to be established from the chart.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "diagnosis-review",
+              "display": "Qualifying diagnosis review"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-qualifying-diagnosis-review"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-alignment-verification",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-alignment-verification",
+        "version": "1.0.0",
+        "name": "AccessAlignmentVerification",
+        "title": "Verify ACCESS alignment through the CMS ACCESS Model APIs",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Patients complete an alignment process that matches them to a specific ACCESS Participant. Confirm alignment through the CMS ACCESS Model APIs before opening a billing period. Without alignment the OAP claim is not payable.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "alignment-verification",
+              "display": "ACCESS alignment verification"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-alignment-verification"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-clinician-roster-check",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-clinician-roster-check",
+        "version": "1.0.0",
+        "name": "AccessClinicianRosterCheck",
+        "title": "Confirm the rendering clinician is on the Clinician Roster",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "On an OAP claim the rendering provider must appear on the Participant's Clinician Roster registered with CMS, and the billing provider must use the Participant's Type 2 NPI.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "roster-check",
+              "display": "Clinician Roster check"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-clinician-roster-check"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-patient-enrollment",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-patient-enrollment",
+        "version": "1.0.0",
+        "name": "AccessPatientEnrollment",
+        "title": "Enroll the patient onto the ACCESS track",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Open the initial 12-month period for the patient on this track and record the enrollment date. The date of service on each monthly OAP claim is the first day ACCESS services were provided in that month.",
+        "kind": "EnrollmentRequest",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "enrollment",
+              "display": "ACCESS track enrollment"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-patient-enrollment"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-remittance-reconciliation",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-remittance-reconciliation",
+        "version": "1.0.0",
+        "name": "AccessRemittanceReconciliation",
+        "title": "Reconcile the $0 ERA against the OAP payment",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "CMS does not pay OAP claims directly. The ERA shows a payment of $0 and the Outcome-Aligned Payment arrives separately. Post the ERA as acknowledgment that the claim was accepted, and reconcile the OAP against the month's accepted claims rather than against individual remittances.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "remittance-reconciliation",
+              "display": "OAP remittance reconciliation"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-remittance-reconciliation"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-pcp-care-update",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-pcp-care-update",
+        "version": "1.0.0",
+        "name": "AccessPcpCareUpdate",
+        "title": "Send the monthly care update to the primary clinician",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Send the patient's progress and any recommended follow-up to their primary care physician or referring clinician. This update is what the clinician reviews to bill a Co-Management Payment.",
+        "kind": "CommunicationRequest",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "care-update",
+              "display": "Care update to the primary clinician"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-pcp-care-update"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-comanagement-review",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-comanagement-review",
+        "version": "1.0.0",
+        "name": "AccessComanagementReview",
+        "title": "Review the care update and perform a care-coordination activity",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "The primary or referring clinician reviews the ACCESS Participant's care update and performs at least one care-coordination activity, such as documenting a follow-up action. Both are required before billing a CMP.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "comanagement-review",
+              "display": "Co-management review"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-comanagement-review"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-followon-transition",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-followon-transition",
+        "version": "1.0.0",
+        "name": "AccessFollowonTransition",
+        "title": "Transition the patient to the follow-on period",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "At the 12-month mark, close the initial period and open a follow-on period so monthly claims move to the follow-on G-code. The musculoskeletal track has no follow-on period.",
+        "kind": "Task",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "followon-transition",
+              "display": "Follow-on period transition"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-followon-transition"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0669",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0669",
+        "version": "1.0.0",
+        "name": "AccessOapG0669",
+        "title": "Submit the monthly OAP claim - Early cardio-kidney-metabolic, initial period (G0669)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One professional claim per patient per month with a single service line: G0669, one unit of service, dated the first day ACCESS services were provided that month. Claims submitted more than 90 days after the date of service are not payable. Submit to the Medicare Administrative Contractor for the patient's jurisdiction, not to CMS directly.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0669"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "oap-claim",
+              "display": "Outcome-Aligned Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0669",
+              "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, initial 12-month period"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0669"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0671",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0671",
+        "version": "1.0.0",
+        "name": "AccessOapG0671",
+        "title": "Submit the monthly OAP claim - Cardio-kidney-metabolic, initial period (G0671)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One professional claim per patient per month with a single service line: G0671, one unit of service, dated the first day ACCESS services were provided that month. Claims submitted more than 90 days after the date of service are not payable. Submit to the Medicare Administrative Contractor for the patient's jurisdiction, not to CMS directly.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0671"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "oap-claim",
+              "display": "Outcome-Aligned Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0671",
+              "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, initial 12-month period"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0671"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0673",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0673",
+        "version": "1.0.0",
+        "name": "AccessOapG0673",
+        "title": "Submit the monthly OAP claim - Musculoskeletal, initial period (G0673)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One professional claim per patient per month with a single service line: G0673, one unit of service, dated the first day ACCESS services were provided that month. Claims submitted more than 90 days after the date of service are not payable. Submit to the Medicare Administrative Contractor for the patient's jurisdiction, not to CMS directly.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0673"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "oap-claim",
+              "display": "Outcome-Aligned Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0673",
+              "display": "Monthly outcome-aligned payment for managing musculoskeletal conditions, initial 12-month period"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "msk",
+                  "display": "Musculoskeletal"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0673"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0674",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0674",
+        "version": "1.0.0",
+        "name": "AccessOapG0674",
+        "title": "Submit the monthly OAP claim - Behavioral health, initial period (G0674)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One professional claim per patient per month with a single service line: G0674, one unit of service, dated the first day ACCESS services were provided that month. Claims submitted more than 90 days after the date of service are not payable. Submit to the Medicare Administrative Contractor for the patient's jurisdiction, not to CMS directly.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0674"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "oap-claim",
+              "display": "Outcome-Aligned Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0674",
+              "display": "Monthly outcome-aligned payment for managing behavioral health conditions, initial 12-month period"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0674"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0670",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0670",
+        "version": "1.0.0",
+        "name": "AccessOapG0670",
+        "title": "Submit the monthly OAP claim - Early cardio-kidney-metabolic, follow-on period (G0670)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One professional claim per patient per month with a single service line: G0670, one unit of service, dated the first day ACCESS services were provided that month. Claims submitted more than 90 days after the date of service are not payable. Submit to the Medicare Administrative Contractor for the patient's jurisdiction, not to CMS directly.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0670"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "oap-claim",
+              "display": "Outcome-Aligned Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0670",
+              "display": "Monthly outcome-aligned payment for managing early cardio-kidney-metabolic conditions, follow-on 12-month period"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0670"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0672",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0672",
+        "version": "1.0.0",
+        "name": "AccessOapG0672",
+        "title": "Submit the monthly OAP claim - Cardio-kidney-metabolic, follow-on period (G0672)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One professional claim per patient per month with a single service line: G0672, one unit of service, dated the first day ACCESS services were provided that month. Claims submitted more than 90 days after the date of service are not payable. Submit to the Medicare Administrative Contractor for the patient's jurisdiction, not to CMS directly.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0672"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "oap-claim",
+              "display": "Outcome-Aligned Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0672",
+              "display": "Monthly outcome-aligned payment for managing cardio-kidney-metabolic conditions, follow-on 12-month period"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0672"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0675",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0675",
+        "version": "1.0.0",
+        "name": "AccessOapG0675",
+        "title": "Submit the monthly OAP claim - Behavioral health, follow-on period (G0675)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "One professional claim per patient per month with a single service line: G0675, one unit of service, dated the first day ACCESS services were provided that month. Claims submitted more than 90 days after the date of service are not payable. Submit to the Medicare Administrative Contractor for the patient's jurisdiction, not to CMS directly.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0675"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "oap-claim",
+              "display": "Outcome-Aligned Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0675",
+              "display": "Monthly outcome-aligned payment for managing behavioral health conditions, follow-on 12-month period"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0675"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0676",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0676",
+        "version": "1.0.0",
+        "name": "AccessCmpG0676",
+        "title": "Submit the CMP claim - Early cardio-kidney-metabolic and cardio-kidney-metabolic (G0676)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Professional claim billed by the patient's primary care physician or referring clinician after reviewing an ACCESS care update and performing a care-coordination activity. Unlike an OAP claim, a CMP claim may carry additional service lines for non-ACCESS services such as an office visit. Add the AC modifier to the first CMP claim per patient per track.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0676"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "cmp-claim",
+              "display": "Co-Management Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0676",
+              "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          },
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0676"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0677",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0677",
+        "version": "1.0.0",
+        "name": "AccessCmpG0677",
+        "title": "Submit the CMP claim - Musculoskeletal (G0677)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Professional claim billed by the patient's primary care physician or referring clinician after reviewing an ACCESS care update and performing a care-coordination activity. Unlike an OAP claim, a CMP claim may carry additional service lines for non-ACCESS services such as an office visit. Add the AC modifier to the first CMP claim per patient per track.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0677"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "cmp-claim",
+              "display": "Co-Management Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0677",
+              "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "msk",
+                  "display": "Musculoskeletal"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0677"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0678",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0678",
+        "version": "1.0.0",
+        "name": "AccessCmpG0678",
+        "title": "Submit the CMP claim - Behavioral health (G0678)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Professional claim billed by the patient's primary care physician or referring clinician after reviewing an ACCESS care update and performing a care-coordination activity. Unlike an OAP claim, a CMP claim may carry additional service lines for non-ACCESS services such as an office visit. Add the AC modifier to the first CMP claim per patient per track.",
+        "kind": "Claim",
+        "intent": "order",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/fhir/ChargeItemDefinition/access-g0678"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+              "code": "cmp-claim",
+              "display": "Co-Management Payment claim"
+            },
+            {
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "code": "G0678",
+              "display": "Review of a care update from the ACCESS Participant, plus at least one care-coordination activity"
+            }
+          ]
+        },
+        "quantity": {
+          "value": 1,
+          "unit": "unit of service"
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ActivityDefinition?url=https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0678"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/Questionnaire/access-eckm-outcomes",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "url": "https://www.medplum.com/fhir/Questionnaire/access-eckm-outcomes",
+        "version": "1.0.0",
+        "name": "AccessEckmOutcomes",
+        "title": "ACCESS eCKM monthly outcomes",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "subjectType": ["Patient"],
+        "description": "Monthly outcome capture for the Early cardio-kidney-metabolic track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ],
+        "code": [
+          {
+            "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+            "code": "outcome-measurement",
+            "display": "Monthly outcome measurement"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "systolic",
+            "text": "Systolic blood pressure",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "8480-6",
+                "display": "Systolic blood pressure"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mm[Hg]"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "diastolic",
+            "text": "Diastolic blood pressure",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "8462-4",
+                "display": "Diastolic blood pressure"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mm[Hg]"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "weight",
+            "text": "Body weight",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "29463-7",
+                "display": "Body weight"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "kg"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "bmi",
+            "text": "Body mass index",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "39156-5",
+                "display": "Body mass index (BMI) [Ratio]"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "kg/m2"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "ldl",
+            "text": "LDL cholesterol",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "13457-7",
+                "display": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mg/dL"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "a1c",
+            "text": "Hemoglobin A1c",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "4548-4",
+                "display": "Hemoglobin A1c/Hemoglobin.total in Blood"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "%"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "notes",
+            "text": "Care notes for this month",
+            "type": "text"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?url=https://www.medplum.com/fhir/Questionnaire/access-eckm-outcomes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/Questionnaire/access-ckm-outcomes",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "url": "https://www.medplum.com/fhir/Questionnaire/access-ckm-outcomes",
+        "version": "1.0.0",
+        "name": "AccessCkmOutcomes",
+        "title": "ACCESS CKM monthly outcomes",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "subjectType": ["Patient"],
+        "description": "Monthly outcome capture for the Cardio-kidney-metabolic track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ],
+        "code": [
+          {
+            "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+            "code": "outcome-measurement",
+            "display": "Monthly outcome measurement"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "a1c",
+            "text": "Hemoglobin A1c",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "4548-4",
+                "display": "Hemoglobin A1c/Hemoglobin.total in Blood"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "%"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "egfr",
+            "text": "Estimated glomerular filtration rate (CKD-EPI)",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "62238-1",
+                "display": "Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (CKD-EPI)"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mL/min/{1.73_m2}"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "uacr",
+            "text": "Urine albumin/creatinine ratio",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "9318-7",
+                "display": "Albumin/Creatinine [Mass Ratio] in Urine"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mg/g"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "systolic",
+            "text": "Systolic blood pressure",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "8480-6",
+                "display": "Systolic blood pressure"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mm[Hg]"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "diastolic",
+            "text": "Diastolic blood pressure",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "8462-4",
+                "display": "Diastolic blood pressure"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "mm[Hg]"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "weight",
+            "text": "Body weight",
+            "type": "decimal",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "29463-7",
+                "display": "Body weight"
+              }
+            ],
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-unit",
+                "valueCoding": {
+                  "system": "http://unitsofmeasure.org",
+                  "code": "kg"
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "notes",
+            "text": "Care notes for this month",
+            "type": "text"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?url=https://www.medplum.com/fhir/Questionnaire/access-ckm-outcomes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/Questionnaire/access-msk-outcomes",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "url": "https://www.medplum.com/fhir/Questionnaire/access-msk-outcomes",
+        "version": "1.0.0",
+        "name": "AccessMskOutcomes",
+        "title": "ACCESS MSK monthly outcomes",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "subjectType": ["Patient"],
+        "description": "Monthly outcome capture for the Musculoskeletal track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "msk",
+                  "display": "Musculoskeletal"
+                }
+              ]
+            }
+          }
+        ],
+        "code": [
+          {
+            "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+            "code": "outcome-measurement",
+            "display": "Monthly outcome measurement"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "pain",
+            "text": "Pain severity, 0-10 numeric rating",
+            "type": "integer",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "72514-3",
+                "display": "Pain severity - 0-10 verbal numeric rating [Score] - Reported"
+              }
+            ]
+          },
+          {
+            "linkId": "function",
+            "text": "Change in function since last month",
+            "type": "text"
+          },
+          {
+            "linkId": "adherence",
+            "text": "Program sessions completed this month",
+            "type": "integer"
+          },
+          {
+            "linkId": "notes",
+            "text": "Care notes for this month",
+            "type": "text"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?url=https://www.medplum.com/fhir/Questionnaire/access-msk-outcomes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/Questionnaire/access-bh-outcomes",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "url": "https://www.medplum.com/fhir/Questionnaire/access-bh-outcomes",
+        "version": "1.0.0",
+        "name": "AccessBhOutcomes",
+        "title": "ACCESS BH monthly outcomes",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "subjectType": ["Patient"],
+        "description": "Monthly outcome capture for the Behavioral health track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ],
+        "code": [
+          {
+            "system": "https://www.medplum.com/fhir/CodeSystem/access-model-task",
+            "code": "outcome-measurement",
+            "display": "Monthly outcome measurement"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "phq9",
+            "text": "PHQ-9 total score",
+            "type": "integer",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "44261-6",
+                "display": "Patient Health Questionnaire 9 item (PHQ-9) total score [Reported]"
+              }
+            ]
+          },
+          {
+            "linkId": "gad7",
+            "text": "GAD-7 total score",
+            "type": "integer",
+            "code": [
+              {
+                "system": "http://loinc.org",
+                "code": "70274-6",
+                "display": "Generalized anxiety disorder 7 item (GAD-7) total score [Reported.PHQ]"
+              }
+            ]
+          },
+          {
+            "linkId": "sessions",
+            "text": "Sessions completed this month",
+            "type": "integer"
+          },
+          {
+            "linkId": "notes",
+            "text": "Care notes for this month",
+            "type": "text"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?url=https://www.medplum.com/fhir/Questionnaire/access-bh-outcomes"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/PlanDefinition/access-patient-onboarding",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "url": "https://www.medplum.com/fhir/PlanDefinition/access-patient-onboarding",
+        "version": "1.0.0",
+        "name": "AccessPatientOnboarding",
+        "title": "ACCESS patient onboarding",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "Everything that has to be true before an ACCESS Participant opens a billing period for a patient. Run this once per patient per track. An eligibility check screens for Medicare coverage, hospice, ESRD, and primary payer, but the qualifying diagnosis and the alignment status only come from the chart and from the CMS ACCESS Model APIs.",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "clinical-protocol",
+              "display": "Clinical Protocol"
+            }
+          ]
+        },
+        "action": [
+          {
+            "id": "mbi",
+            "title": "Look up the Medicare Beneficiary Identifier",
+            "description": "Only when the MBI is not already on file.",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-mbi-lookup"
+          },
+          {
+            "id": "eligibility",
+            "title": "Run the CMS eligibility check",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-medicare-eligibility-check"
+          },
+          {
+            "id": "diagnosis",
+            "title": "Confirm a qualifying diagnosis",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-qualifying-diagnosis-review"
+          },
+          {
+            "id": "alignment",
+            "title": "Verify ACCESS alignment",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-alignment-verification"
+          },
+          {
+            "id": "roster",
+            "title": "Confirm the rendering clinician is on the Clinician Roster",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-clinician-roster-check"
+          },
+          {
+            "id": "enroll",
+            "title": "Enroll the patient onto the track",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-patient-enrollment"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PlanDefinition?url=https://www.medplum.com/fhir/PlanDefinition/access-patient-onboarding"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/PlanDefinition/access-eckm-monthly",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "url": "https://www.medplum.com/fhir/PlanDefinition/access-eckm-monthly",
+        "version": "1.0.0",
+        "name": "AccessEckmMonthly",
+        "title": "ACCESS monthly cycle - Early cardio-kidney-metabolic",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "The monthly Outcome-Aligned Payment cycle for the Early cardio-kidney-metabolic track. Run once per patient per month: capture outcomes, submit one professional claim with a single service line, reconcile the $0 remittance, and send the care update that lets the patient's primary clinician bill a Co-Management Payment.",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "clinical-protocol",
+              "display": "Clinical Protocol"
+            }
+          ]
+        },
+        "action": [
+          {
+            "id": "outcomes",
+            "title": "Capture this month's outcome measures",
+            "definitionCanonical": "https://www.medplum.com/fhir/Questionnaire/access-eckm-outcomes"
+          },
+          {
+            "id": "oap-claim",
+            "title": "Submit the monthly OAP claim",
+            "description": "Bill the code for the period the patient is currently in.",
+            "selectionBehavior": "exactly-one",
+            "action": [
+              {
+                "id": "bill-initial",
+                "title": "Bill the initial-period OAP (G0669)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0669"
+              },
+              {
+                "id": "bill-followon",
+                "title": "Bill the follow-on-period OAP (G0670)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0670"
+              }
+            ]
+          },
+          {
+            "id": "reconcile",
+            "title": "Reconcile the $0 ERA against the OAP",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-remittance-reconciliation"
+          },
+          {
+            "id": "care-update",
+            "title": "Send the care update to the primary clinician",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-pcp-care-update"
+          },
+          {
+            "id": "followon",
+            "title": "Transition to the follow-on period at 12 months",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-followon-transition"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "eckm",
+                  "display": "Early cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PlanDefinition?url=https://www.medplum.com/fhir/PlanDefinition/access-eckm-monthly"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/PlanDefinition/access-ckm-monthly",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "url": "https://www.medplum.com/fhir/PlanDefinition/access-ckm-monthly",
+        "version": "1.0.0",
+        "name": "AccessCkmMonthly",
+        "title": "ACCESS monthly cycle - Cardio-kidney-metabolic",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "The monthly Outcome-Aligned Payment cycle for the Cardio-kidney-metabolic track. Run once per patient per month: capture outcomes, submit one professional claim with a single service line, reconcile the $0 remittance, and send the care update that lets the patient's primary clinician bill a Co-Management Payment.",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "clinical-protocol",
+              "display": "Clinical Protocol"
+            }
+          ]
+        },
+        "action": [
+          {
+            "id": "outcomes",
+            "title": "Capture this month's outcome measures",
+            "definitionCanonical": "https://www.medplum.com/fhir/Questionnaire/access-ckm-outcomes"
+          },
+          {
+            "id": "oap-claim",
+            "title": "Submit the monthly OAP claim",
+            "description": "Bill the code for the period the patient is currently in.",
+            "selectionBehavior": "exactly-one",
+            "action": [
+              {
+                "id": "bill-initial",
+                "title": "Bill the initial-period OAP (G0671)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0671"
+              },
+              {
+                "id": "bill-followon",
+                "title": "Bill the follow-on-period OAP (G0672)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0672"
+              }
+            ]
+          },
+          {
+            "id": "reconcile",
+            "title": "Reconcile the $0 ERA against the OAP",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-remittance-reconciliation"
+          },
+          {
+            "id": "care-update",
+            "title": "Send the care update to the primary clinician",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-pcp-care-update"
+          },
+          {
+            "id": "followon",
+            "title": "Transition to the follow-on period at 12 months",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-followon-transition"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "ckm",
+                  "display": "Cardio-kidney-metabolic"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PlanDefinition?url=https://www.medplum.com/fhir/PlanDefinition/access-ckm-monthly"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/PlanDefinition/access-msk-monthly",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "url": "https://www.medplum.com/fhir/PlanDefinition/access-msk-monthly",
+        "version": "1.0.0",
+        "name": "AccessMskMonthly",
+        "title": "ACCESS monthly cycle - Musculoskeletal",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "The monthly Outcome-Aligned Payment cycle for the Musculoskeletal track. Run once per patient per month: capture outcomes, submit one professional claim with a single service line, reconcile the $0 remittance, and send the care update that lets the patient's primary clinician bill a Co-Management Payment.",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "clinical-protocol",
+              "display": "Clinical Protocol"
+            }
+          ]
+        },
+        "action": [
+          {
+            "id": "outcomes",
+            "title": "Capture this month's outcome measures",
+            "definitionCanonical": "https://www.medplum.com/fhir/Questionnaire/access-msk-outcomes"
+          },
+          {
+            "id": "oap-claim",
+            "title": "Submit the monthly OAP claim",
+            "description": "The musculoskeletal track has no follow-on period, so every month bills G0673.",
+            "selectionBehavior": "all",
+            "action": [
+              {
+                "id": "bill-initial",
+                "title": "Bill the initial-period OAP (G0673)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0673"
+              }
+            ]
+          },
+          {
+            "id": "reconcile",
+            "title": "Reconcile the $0 ERA against the OAP",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-remittance-reconciliation"
+          },
+          {
+            "id": "care-update",
+            "title": "Send the care update to the primary clinician",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-pcp-care-update"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "msk",
+                  "display": "Musculoskeletal"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PlanDefinition?url=https://www.medplum.com/fhir/PlanDefinition/access-msk-monthly"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/PlanDefinition/access-bh-monthly",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "url": "https://www.medplum.com/fhir/PlanDefinition/access-bh-monthly",
+        "version": "1.0.0",
+        "name": "AccessBhMonthly",
+        "title": "ACCESS monthly cycle - Behavioral health",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "The monthly Outcome-Aligned Payment cycle for the Behavioral health track. Run once per patient per month: capture outcomes, submit one professional claim with a single service line, reconcile the $0 remittance, and send the care update that lets the patient's primary clinician bill a Co-Management Payment.",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "clinical-protocol",
+              "display": "Clinical Protocol"
+            }
+          ]
+        },
+        "action": [
+          {
+            "id": "outcomes",
+            "title": "Capture this month's outcome measures",
+            "definitionCanonical": "https://www.medplum.com/fhir/Questionnaire/access-bh-outcomes"
+          },
+          {
+            "id": "oap-claim",
+            "title": "Submit the monthly OAP claim",
+            "description": "Bill the code for the period the patient is currently in.",
+            "selectionBehavior": "exactly-one",
+            "action": [
+              {
+                "id": "bill-initial",
+                "title": "Bill the initial-period OAP (G0674)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0674"
+              },
+              {
+                "id": "bill-followon",
+                "title": "Bill the follow-on-period OAP (G0675)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-oap-g0675"
+              }
+            ]
+          },
+          {
+            "id": "reconcile",
+            "title": "Reconcile the $0 ERA against the OAP",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-remittance-reconciliation"
+          },
+          {
+            "id": "care-update",
+            "title": "Send the care update to the primary clinician",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-pcp-care-update"
+          },
+          {
+            "id": "followon",
+            "title": "Transition to the follow-on period at 12 months",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-followon-transition"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "program"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://www.medplum.com/fhir/CodeSystem/access-model-track",
+                  "code": "bh",
+                  "display": "Behavioral health"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PlanDefinition?url=https://www.medplum.com/fhir/PlanDefinition/access-bh-monthly"
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/fhir/PlanDefinition/access-comanagement",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "url": "https://www.medplum.com/fhir/PlanDefinition/access-comanagement",
+        "version": "1.0.0",
+        "name": "AccessComanagement",
+        "title": "ACCESS co-management (CMP)",
+        "status": "active",
+        "experimental": false,
+        "publisher": "Medplum",
+        "description": "The primary care physician or referring clinician side of ACCESS. Review the care update from the ACCESS Participant, perform at least one care-coordination activity, then bill the Co-Management Payment for the patient's track. Capped at three payments per patient, per track, every 12 months.",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "clinical-protocol",
+              "display": "Clinical Protocol"
+            }
+          ]
+        },
+        "action": [
+          {
+            "id": "review",
+            "title": "Review the care update and perform a care-coordination activity",
+            "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-comanagement-review"
+          },
+          {
+            "id": "cmp-claim",
+            "title": "Bill the Co-Management Payment for the patient's track",
+            "description": "G0676 covers both the eCKM and CKM tracks. Add the AC modifier to the first CMP claim per patient per track for the one-time onboarding payment.",
+            "selectionBehavior": "exactly-one",
+            "action": [
+              {
+                "id": "cmp-g0676",
+                "title": "eCKM or CKM track (G0676)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0676"
+              },
+              {
+                "id": "cmp-g0677",
+                "title": "MSK track (G0677)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0677"
+              },
+              {
+                "id": "cmp-g0678",
+                "title": "BH track (G0678)",
+                "definitionCanonical": "https://www.medplum.com/fhir/ActivityDefinition/access-cmp-g0678"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "PlanDefinition?url=https://www.medplum.com/fhir/PlanDefinition/access-comanagement"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:8f1d6a2c-0f4e-4a1e-9a7b-1c2d3e4f5a60",
+      "resource": {
+        "resourceType": "Organization",
+        "identifier": [
+          {
+            "system": "https://www.stedi.com/healthcare/network",
+            "value": "CMS"
+          }
+        ],
+        "active": true,
+        "name": "Centers for Medicare & Medicaid Services",
+        "alias": ["CMS", "Medicare"],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Organization?identifier=https://www.stedi.com/healthcare/network|CMS"
+      }
+    }
+  ]
+}
