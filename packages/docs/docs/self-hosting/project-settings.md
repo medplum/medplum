@@ -85,6 +85,9 @@ requirement if it has an `accessPolicy` or at least one `access` entry. While th
 The requirement applies to Project Admin memberships too, so make sure every admin has an access policy before enabling
 it.
 
+Projects created with the `Project/$init` operation have `requireAccessPolicy` enabled by default. Their default
+`ClientApplication` and owner memberships are assigned the Project's Default Admin Access Policy.
+
 ## Project SMTP
 
 Projects can send email through their own SMTP relay instead of the server-wide email provider, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for the full configuration reference. Operators can disable this fleet-wide with the [`allowProjectSmtp`](/docs/self-hosting/server-config#allowprojectsmtp) server config setting.
