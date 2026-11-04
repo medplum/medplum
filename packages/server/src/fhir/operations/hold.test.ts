@@ -704,7 +704,9 @@ describe('Appointment/$hold', () => {
     expect(response.body).toHaveProperty('issue', [
       expect.objectContaining({
         severity: 'error',
-        details: { text: 'Requested time slot is not available' },
+        details: expect.objectContaining({
+          text: 'This time is not available on the schedule because it is outside the available hours or has been blocked off.',
+        }),
       }),
     ]);
   });
@@ -811,7 +813,9 @@ describe('Appointment/$hold', () => {
       );
 
     expect(response).toHaveStatus(400);
-    expect(response.body.issue[0].details.text).toBe('Requested time slot is not available');
+    expect(response.body.issue[0].details.text).toBe(
+      'This time is no longer available because another appointment was booked or held at this time.'
+    );
   });
 
   test('rejects when a busy slot already exists at the requested time', async () => {
@@ -838,7 +842,9 @@ describe('Appointment/$hold', () => {
     expect(response.body).toHaveProperty('issue', [
       expect.objectContaining({
         severity: 'error',
-        details: { text: 'Requested time slot is not available' },
+        details: expect.objectContaining({
+          text: 'This time is no longer available because another appointment was booked or held at this time.',
+        }),
       }),
     ]);
 
@@ -1098,7 +1104,9 @@ describe('Appointment/$hold', () => {
       expect(response.body).toHaveProperty('issue', [
         expect.objectContaining({
           severity: 'error',
-          details: { text: 'Requested time slot is not available' },
+          details: expect.objectContaining({
+            text: 'This time is no longer available because another appointment was booked or held at this time.',
+          }),
         }),
       ]);
       expect(response).toHaveStatus(400);

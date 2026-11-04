@@ -7,6 +7,7 @@ import {
   isDefined,
   MEDPLUM_VERSION,
   parseSearchRequest,
+  SCHEDULING_UNAVAILABLE_REASON_SYSTEM,
   SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
   toServiceTypeCodeableConcepts,
@@ -769,7 +770,15 @@ describe('Appointment/$book', () => {
 
     expect(response.body).toMatchObject({
       resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: 'Requested time slot is not available' } }],
+      issue: [
+        {
+          severity: 'error',
+          code: 'conflict',
+          details: {
+            text: 'This time is no longer available because another appointment was booked or held at this time.',
+          },
+        },
+      ],
     });
     expect(response).toHaveStatus(400);
 
@@ -909,7 +918,15 @@ describe('Appointment/$book', () => {
     const bookB = await book(serviceB);
     expect(bookB.body).toMatchObject({
       resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: 'Requested time slot is not available' } }],
+      issue: [
+        {
+          severity: 'error',
+          code: 'conflict',
+          details: {
+            text: 'This time is no longer available because another appointment was booked or held at this time.',
+          },
+        },
+      ],
     });
     expect(bookB).toHaveStatus(400);
 
@@ -1148,7 +1165,9 @@ describe('Appointment/$book', () => {
         {
           severity: 'error',
           code: 'invalid',
-          details: { text: 'Requested time slot is not available' },
+          details: {
+            text: 'This time is not available on the schedule because it is outside the available hours or has been blocked off.',
+          },
         },
       ],
     });
@@ -1964,7 +1983,9 @@ describe('Appointment/$book', () => {
 
       const response = await bookRequest(schedule, start, end);
       expect(response).toHaveStatus(400);
-      expect(response.body.issue[0].details.text).toBe('Requested time slot is not available');
+      expect(response.body.issue[0].details.text).toBe(
+        'This time is no longer available because another appointment was booked or held at this time.'
+      );
     });
   });
 
@@ -2344,7 +2365,94 @@ describe('Appointment/$book', () => {
       });
 
     expect(response).toHaveStatus(400);
-    expect(response.body.issue[0].details.text).toBe('Requested time slot is not available');
+    expect(response.body.issue[0].details.text).toBe(
+      'This time is no longer available because another appointment was booked or held at this time.'
+    );
+  });
+
+  describe('says why a time is unavailable', () => {
+    async function bookAt(schedule: WithId<Schedule>, start: string, end: string): Promise<supertest.Response> {
+      const contained: Slot[] = [
+        { resourceType: 'Slot', status: 'busy', schedule: createReference(schedule), start, end },
+        {
+          resourceType: 'Slot',
+          status: 'busy-unavailable',
+          schedule: createReference(schedule),
+          start: new Date(new Date(start).getTime() - 20 * 60_000).toISOString(),
+          end: start,
+        },
+      ];
+      return request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'appointment',
+              resource: {
+                resourceType: 'Appointment',
+                status: 'proposed',
+                start,
+                end,
+                serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+                participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+                contained,
+              } satisfies Appointment,
+            },
+          ],
+        });
+    }
+
+    test('slot-taken when the time overlaps the buffer of another booking', async () => {
+      const schedule = await makeSchedule({
+        actor: practitioner1,
+        extension: [makeSchedulingExtension({ service: officeVisitService, bufferBefore: 20 })],
+      });
+      // Its buffer is 12:40–13:00 ET, a busy-unavailable Slot referenced by the Appointment.
+      expect(await bookAt(schedule, '2026-01-15T18:00:00.000Z', '2026-01-15T19:00:00.000Z')).toHaveStatus(201);
+
+      const response = await bookAt(schedule, '2026-01-15T17:00:00.000Z', '2026-01-15T18:00:00.000Z');
+      expect(response).toHaveStatus(400);
+      expect(response.body.issue).toMatchObject([
+        {
+          code: 'conflict',
+          details: {
+            coding: [{ system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: 'slot-taken' }],
+            text: 'This time is no longer available because another appointment was booked or held at this time.',
+          },
+          expression: ['Parameters.appointment.contained[0]'],
+        },
+      ]);
+    });
+
+    test('outside-availability when the time is blocked off', async () => {
+      const schedule = await makeSchedule({
+        actor: practitioner1,
+        extension: [makeSchedulingExtension({ service: officeVisitService, bufferBefore: 20 })],
+      });
+      await systemRepo.createResource<Slot>({
+        resourceType: 'Slot',
+        meta: { project: project.project.id },
+        schedule: createReference(schedule),
+        status: 'busy-unavailable',
+        start: '2026-01-15T17:00:00.000Z',
+        end: '2026-01-15T19:00:00.000Z',
+        comment: 'Out of office',
+      });
+
+      const response = await bookAt(schedule, '2026-01-15T18:00:00.000Z', '2026-01-15T19:00:00.000Z');
+      expect(response).toHaveStatus(400);
+      expect(response.body.issue).toMatchObject([
+        {
+          code: 'invalid',
+          details: {
+            coding: [{ system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: 'outside-availability' }],
+          },
+          expression: ['Parameters.appointment.contained[0]', 'Parameters.appointment.contained[1]'],
+        },
+      ]);
+    });
   });
 });
 

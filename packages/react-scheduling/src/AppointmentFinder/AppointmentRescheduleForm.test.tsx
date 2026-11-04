@@ -5,6 +5,8 @@ import {
   createReference,
   getAppointmentSite,
   getReferenceString,
+  OperationOutcomeError,
+  SCHEDULING_UNAVAILABLE_REASON_SYSTEM,
   setPrimaryProvider,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -665,6 +667,31 @@ describe('AppointmentRescheduleForm', () => {
       expect(screen.getByText('That time is no longer available')).toBeInTheDocument();
       expect(chosenTimeField()).not.toBeNull();
       expect(onRescheduled).not.toHaveBeenCalled();
+    });
+
+    test('Offers to refresh the times when the new time was taken', async () => {
+      vi.spyOn(medplum, 'post').mockRejectedValueOnce(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'conflict',
+              details: {
+                coding: [{ system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: 'slot-taken' }],
+                text: 'Taken',
+              },
+              expression: ['Parameters.schedule[0]'],
+            },
+          ],
+        })
+      );
+      await setup(medplum);
+
+      await moveToAnotherTime();
+
+      expect(screen.getByText('Taken')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Refresh times' })).toBeInTheDocument();
     });
 
     test('Reports a move the host callback threw over as written', async () => {

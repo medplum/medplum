@@ -25,10 +25,14 @@ import {
   isDefined,
   isResource,
   normalizeErrorString,
+  normalizeOperationOutcome,
+  OUTSIDE_AVAILABILITY_CODE,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_UNAVAILABLE_REASON_SYSTEM,
   SchedulingMedicalNecessityURI,
+  SLOT_TAKEN_CODE,
   toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
@@ -275,6 +279,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [writing, setWriting] = useState(false);
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
+  const [refusedChoice, setRefusedChoice] = useState<Appointment | undefined>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
   const [manualDateTime, setManualDateTime] = useState<string | undefined>(undefined);
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
@@ -283,6 +288,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [pickCount, setPickCount] = useState(0);
 
   const manual = chosen !== undefined && chosen === manualChoice;
+  const timeRefused = refusedChoice !== undefined && chosen === refusedChoice;
 
   // Settles once the time and length fields stop moving; only the conflict lookup waits.
   const [debouncedChoice] = useDebouncedValue(manualChoice, CONFLICT_DEBOUNCE_MS);
@@ -659,6 +665,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     };
   }
 
+  function refreshTimes(): void {
+    setWriteError(undefined);
+    setRefusedChoice(undefined);
+    setChosen(undefined);
+    setFinding(true);
+    daySearch.refresh();
+  }
+
   async function handleSubmit(): Promise<void> {
     if (!chosen || detailsOutstanding) {
       return;
@@ -696,6 +710,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       // Left on screen with every answer still filled in: a refusal is usually
       // somebody else taking the time, and the next attempt is one field away.
       setWriteError(error);
+      setRefusedChoice(isTimeRefusal(error) ? chosen : undefined);
     } finally {
       setWriting(false);
     }
@@ -799,8 +814,28 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
-        {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
-        <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
+        {/* A refused time's alert goes once another time is picked: it was about that one. */}
+        {writeError !== undefined && (refusedChoice === undefined || timeRefused) && (
+          <Alert color="red">
+            {timeRefused ? (
+              <Stack gap="xs" align="flex-start">
+                <Text size="sm">{normalizeErrorString(writeError, { omitDiagnostics: true })}</Text>
+                <Text size="sm">Refresh to see the latest availability, then pick another time.</Text>
+                <Button size="xs" variant="white" color="red" onClick={refreshTimes}>
+                  Refresh times
+                </Button>
+              </Stack>
+            ) : (
+              normalizeErrorString(writeError, { omitDiagnostics: true })
+            )}
+          </Alert>
+        )}
+        <Button
+          fullWidth
+          disabled={!chosen || written || detailsOutstanding || timeRefused}
+          loading={writing}
+          onClick={handleSubmit}
+        >
           {getSubmitLabel(mode, effectiveOccurrenceCount)}
         </Button>
       </Stack>
@@ -1259,4 +1294,26 @@ function formatZonedDateTime(value: Date, timezone: string | undefined): string 
     minute: '2-digit',
     timeZoneName: isViewerTimezone(timezone) ? undefined : 'shortGeneric',
   }).format(value);
+}
+
+const REFUSED_TIME_CODES = new Set([SLOT_TAKEN_CODE, OUTSIDE_AVAILABILITY_CODE]);
+
+// Postgres serialization failure, which a write gives up on once its retries run out.
+const SERIALIZATION_FAILURE_CODE = '40001';
+
+/**
+ * Whether a write was refused because the time it asked for can no longer be had, so that
+ * another time is what's needed rather than another try.
+ *
+ * @param error - What the write threw.
+ * @returns True for a time taken, off the schedule, or lost in a race.
+ */
+function isTimeRefusal(error: unknown): boolean {
+  return normalizeOperationOutcome(error).issue.some((issue) =>
+    issue.details?.coding?.some(
+      (coding) =>
+        (coding.system === SCHEDULING_UNAVAILABLE_REASON_SYSTEM && REFUSED_TIME_CODES.has(coding.code ?? '')) ||
+        (issue.code === 'conflict' && coding.code === SERIALIZATION_FAILURE_CODE)
+    )
+  );
 }

@@ -39,6 +39,18 @@ export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSyste
 /** The eligibility code marking a visit type that cannot be booked without procedure codes. */
 export const REQUIRES_PROCEDURE_CODE = 'requires-procedure';
 
+/**
+ * Code system for why `$book`, `$hold`, or `$reschedule` refused a requested time, recorded on
+ * `OperationOutcome.issue.details.coding`.
+ */
+export const SCHEDULING_UNAVAILABLE_REASON_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-unavailable-reason';
+
+/** Another appointment or hold already took the requested time. */
+export const SLOT_TAKEN_CODE = 'slot-taken';
+
+/** The requested time is outside the schedule's available hours, or has been blocked off. */
+export const OUTSIDE_AVAILABILITY_CODE = 'outside-availability';
+
 /** The eligibility code marking a visit type that cannot be booked without diagnosis codes. */
 export const REQUIRES_DIAGNOSIS_CODE = 'requires-diagnosis';
 

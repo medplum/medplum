@@ -86,6 +86,8 @@ export interface UseDaySearchResult {
   readonly hasMoreCombinations: boolean;
   /** Takes in another round of actor combinations. */
   readonly searchMoreCombinations: () => void;
+  /** Asks again about every day on show, for times that may have been taken since. */
+  readonly refresh: () => void;
   /** A window `$find` will not answer, caught before the request is made. */
   readonly windowError: string | undefined;
   /**
@@ -131,6 +133,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
   const [combinationLimit, setCombinationLimit] = useState(COMBINATION_WAVE);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   const searchedCombinations = useMemo(() => combinations.slice(0, combinationLimit), [combinations, combinationLimit]);
 
@@ -145,6 +148,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     count: TIMES_PER_DAY * getDayCount(siteWindow.start, siteWindow.end),
     ignoreAppointment,
     occurrenceCount,
+    refreshCount,
   });
 
   const selectedDayRange = useMemo(
@@ -195,8 +199,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   // paged in are kept and asked again rather than dropped, since asking for more
   // actors is not asking about fewer days — unless together they are more than `$find`
   // answers at once, as a series' week soon is, when the days first picked are asked alone.
-  const searchMoreCombinations = useCallback((): void => {
-    setCombinationLimit((limit) => limit + COMBINATION_WAVE);
+  const reaskDaysOnShow = useCallback((): void => {
     setDaySearch((previous) => {
       const everyDay = reaskEveryDayOnShow(previous);
       return getFindWindowError(toSiteWindow(everyDay.range, timezone), occurrenceCount)
@@ -205,6 +208,16 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     });
     onResultsReplaced?.();
   }, [onResultsReplaced, timezone, occurrenceCount]);
+
+  const searchMoreCombinations = useCallback((): void => {
+    setCombinationLimit((limit) => limit + COMBINATION_WAVE);
+    reaskDaysOnShow();
+  }, [reaskDaysOnShow]);
+
+  const refresh = useCallback((): void => {
+    setRefreshCount((count) => count + 1);
+    reaskDaysOnShow();
+  }, [reaskDaysOnShow]);
 
   // A spinner rather than empty days: only while the first window is still out, before
   // "Show more days" has moved the search past it.
@@ -222,6 +235,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     totalCombinationCount: combinations.length,
     hasMoreCombinations: combinations.length > searchedCombinations.length,
     searchMoreCombinations,
+    refresh,
     chooseDayRange,
     isDayOnShow,
     showMoreDays,
