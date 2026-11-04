@@ -19,7 +19,11 @@ export default defineConfig({
       // Tests of code that must also work without jsdom
       {
         extends: true,
-        test: { name: '@medplum/core-node', environment: 'node', include: ['src/base64.test.ts', 'src/utils.test.ts'] },
+        test: {
+          name: '@medplum/core-node',
+          environment: 'node',
+          include: ['src/base64.test.ts', 'src/client.test.ts', 'src/utils.test.ts'],
+        },
       },
     ],
   },

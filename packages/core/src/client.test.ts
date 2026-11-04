@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+// Also runs in the `@medplum/core-node` project (see vite.config.ts)
 import type {
   Bot,
   Bundle,
@@ -51,8 +52,8 @@ import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/typ
 import type { ProfileResource, WithId } from './utils';
 import { createReference, sleep } from './utils';
 
-// Mock the environment module
-vi.mock('./environment');
+// Spy without replacing, so tests run against the real runtime; `locationUtils` is stubbed per test
+vi.mock('./environment', { spy: true });
 
 const mockEnvironment = environment as Mocked<typeof environment> & {
   locationUtils: {
@@ -62,6 +63,11 @@ const mockEnvironment = environment as Mocked<typeof environment> & {
     getOrigin: MockedFunction<() => string>;
   };
 };
+
+const isBrowser = typeof window !== 'undefined';
+
+// Node defaults to no caching, so tests of cache behavior opt in
+const cacheTime = 60000;
 
 const EXAMPLE_XML = `
 <note>
@@ -206,7 +212,6 @@ const profileExtensionSD = {
     ],
   },
 };
-// Default environment mocks - will be overridden in specific tests
 
 describe('Client', () => {
   beforeAll(() => {
@@ -215,13 +220,10 @@ describe('Client', () => {
   });
 
   beforeEach(() => {
-    localStorage.clear();
+    if (isBrowser) {
+      localStorage.clear();
+    }
     vi.resetAllMocks();
-    // Default to browser environment for most tests
-    mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
-    mockEnvironment.getWindow.mockReturnValue(window);
-    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
-    mockEnvironment.getBuffer.mockReturnValue(undefined);
   });
 
   test('Constructor', () => {
@@ -260,7 +262,6 @@ describe('Client', () => {
         })
     ).not.toThrow();
 
-    window.fetch = vi.fn();
     expect(() => new MedplumClient()).not.toThrow();
   });
 
@@ -321,7 +322,7 @@ describe('Client', () => {
     expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
   });
 
-  test('storagePrefix option', () => {
+  test.runIf(isBrowser)('storagePrefix option', () => {
     localStorage.clear();
 
     // Create client with custom storage prefix
@@ -360,7 +361,7 @@ describe('Client', () => {
     localStorage.clear();
   });
 
-  test('Restore from localStorage', async () => {
+  test.runIf(isBrowser)('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',
       JSON.stringify({
@@ -417,7 +418,7 @@ describe('Client', () => {
     expect(client.isProjectAdmin()).toBe(false);
   });
 
-  test('Admin check', async () => {
+  test.runIf(isBrowser)('Admin check', async () => {
     window.localStorage.setItem(
       'activeLogin',
       JSON.stringify({
@@ -459,7 +460,7 @@ describe('Client', () => {
     expect(client.isProjectAdmin()).toBe(true);
   });
 
-  test('syncStoredLoginProject updates stale project name after refresh', async () => {
+  test.runIf(isBrowser)('syncStoredLoginProject updates stale project name after refresh', async () => {
     // Stored login captured the project name at login time; it has since been renamed.
     window.localStorage.setItem(
       'activeLogin',
@@ -741,8 +742,10 @@ describe('Client', () => {
     let client: MedplumClient;
 
     beforeAll(() => {
-      // Earlier tests leave an active login behind, which the client would try to resume
-      localStorage.clear();
+      if (isBrowser) {
+        // Earlier tests leave an active login behind, which the client would try to resume
+        localStorage.clear();
+      }
       const fetch = mockFetch(200, {});
       client = new MedplumClient({ fetch });
     });
@@ -763,8 +766,10 @@ describe('Client', () => {
       );
       expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
 
-      const codeVerifier = localStorage.getItem('codeVerifier');
-      expect(codeVerifier).toHaveLength(128);
+      if (isBrowser) {
+        const codeVerifier = localStorage.getItem('codeVerifier');
+        expect(codeVerifier).toHaveLength(128);
+      }
 
       const { searchParams } = new URL(result);
       expect(searchParams.get('response_type')).toBe('code');
@@ -1029,43 +1034,7 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
-  test('Basic auth in browser', async () => {
-    // Mock browser environment (already set in beforeEach, but explicit for clarity)
-    mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
-    mockEnvironment.getWindow.mockReturnValue(window);
-    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
-    mockEnvironment.getBuffer.mockReturnValue(undefined);
-
-    const fetch = mockFetch(200, () => {
-      return { resourceType: 'Patient', id: '123' };
-    });
-
-    const client = new MedplumClient({ fetch });
-    client.setBasicAuth('test-client-id', 'test-client-secret');
-
-    const result2 = await client.readResource('Patient', '123');
-    expect(result2).toBeDefined();
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Patient/123',
-      expect.objectContaining({
-        method: 'GET',
-        headers: {
-          Accept: DEFAULT_ACCEPT,
-          Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
-          'X-Medplum': 'extended',
-        },
-      })
-    );
-  });
-
-  test('Basic auth in Node.js', async () => {
-    // Mock Node.js environment
-    mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
-    mockEnvironment.getWindow.mockReturnValue(undefined);
-    mockEnvironment.isNodeEnvironment.mockReturnValue(true);
-    mockEnvironment.getBuffer.mockReturnValue(Buffer);
-
+  test('Basic auth', async () => {
     const fetch = mockFetch(200, () => {
       return { resourceType: 'Patient', id: '123' };
     });
@@ -1362,7 +1331,7 @@ describe('Client', () => {
 
   test('HTTP GET', async () => {
     const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     const request1 = client.get('Practitioner/123');
     const request2 = client.get('Practitioner/123');
     expect(request2).toBe(request1);
@@ -1861,7 +1830,7 @@ describe('Client', () => {
 
   test('Read cached resource', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Nothing in the cache
     const readPromise = client.readResource('Patient', '123');
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Promise in the cache
@@ -1897,7 +1866,7 @@ describe('Client', () => {
 
   test('Read cached reference', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     const reference = { reference: 'Patient/123' };
     expect(client.getCachedReference(reference)).toBeUndefined();
     const readPromise = client.readReference(reference);
@@ -2273,7 +2242,7 @@ describe('Client', () => {
       );
     });
 
-    test('C-CDA -- File', async () => {
+    test.runIf(isBrowser)('C-CDA -- File', async () => {
       const fetch = mockFetch(200, {});
       const client = new MedplumClient({ fetch });
       const result = await client.createAttachment({
@@ -2393,7 +2362,7 @@ describe('Client', () => {
     );
   });
 
-  test('Create binary with progress event listener', async () => {
+  test.runIf(isBrowser)('Create binary with progress event listener', async () => {
     const xhrMock: Partial<XMLHttpRequest> = {
       open: vi.fn(),
       send: vi.fn(),
@@ -2629,7 +2598,7 @@ describe('Client', () => {
   test('Request schema', async () => {
     const fetch = mockFetch(200, schemaResponse);
 
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
 
     // Issue two requests simultaneously
     const request1 = client.requestSchema('Patient');
@@ -2646,7 +2615,7 @@ describe('Client', () => {
       entry: [{ resource: profileSD }],
     });
 
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
 
     // Issue two requests simultaneously
     const request1 = client.requestProfileSchema(patientProfileUrl);
@@ -2664,7 +2633,7 @@ describe('Client', () => {
       entry: [{ resource: profileSD }, { resource: profileExtensionSD }],
     });
 
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
 
     // Issue two requests simultaneously
     const request1 = client.requestProfileSchema(patientProfileUrl, { expandProfile: true });
@@ -2723,7 +2692,7 @@ describe('Client', () => {
       resourceType: 'Bundle',
       entry: [{ resource: { resourceType: 'Patient', id: '123' } }],
     });
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     const promise1 = client.searchOne('Patient', 'name:contains=alice');
     expect(() => promise1.read()).toThrow();
     const promise2 = client.searchOne('Patient', 'name:contains=alice');
@@ -2767,7 +2736,7 @@ describe('Client', () => {
       resourceType: 'Bundle',
       entry: [{ resource: { resourceType: 'Patient', id: '123' } }],
     });
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     const promise1 = client.searchResources('Patient', '_count=1&name:contains=alice');
     expect(() => promise1.read()).toThrow();
     const promise2 = client.searchResources('Patient', '_count=1&name:contains=alice');
@@ -2784,7 +2753,7 @@ describe('Client', () => {
       resourceType: 'Bundle',
       entry: [{ resource: { resourceType: 'Patient', id: '123' } }],
     });
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     const result = await client.search('Patient');
     expect(result).toBeDefined();
     expect(client.getCachedReference(createReference(result.entry?.[0]?.resource as Patient))).toBeDefined();
@@ -3294,7 +3263,7 @@ describe('Client', () => {
     );
   });
 
-  test('Storage events', async () => {
+  test.runIf(isBrowser)('Storage events', async () => {
     // Mock locationUtils.reload
     const mockReload = vi.fn();
     mockEnvironment.locationUtils.reload.mockImplementation(mockReload);
@@ -4766,7 +4735,7 @@ describe('Client', () => {
   test('Aborting after a request settles keeps the cached result', async () => {
     const patient: Patient = { resourceType: 'Patient', id: '123' };
     const fetch = mockFetch(200, () => patient);
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     const controller = new AbortController();
 
     await expect(client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal })).resolves.toEqual(patient);
@@ -4791,7 +4760,7 @@ describe('Client', () => {
       }) satisfies FetchLike)
       .mockImplementation(async () => mockFetchResponse(200, patient));
 
-    const client = new MedplumClient({ fetch });
+    const client = new MedplumClient({ fetch, cacheTime });
     const controller = new AbortController();
 
     const getPromise1 = client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal });
@@ -4972,7 +4941,7 @@ describe('Client', () => {
 
     test('notifyResourceModified dispatches and invalidates search cache', async () => {
       const fetch = mockFetch(200, { resourceType: 'Bundle', type: 'searchset', entry: [] });
-      const client = new MedplumClient({ fetch });
+      const client = new MedplumClient({ fetch, cacheTime });
       await client.search('Slot');
       await client.search('Slot');
       expect(fetch).toHaveBeenCalledTimes(1);
@@ -4990,7 +4959,7 @@ describe('Client', () => {
 
     test('notifyResourceModified caches the provided resource', async () => {
       const fetch = mockFetch(200, {});
-      const client = new MedplumClient({ fetch });
+      const client = new MedplumClient({ fetch, cacheTime });
       const patient: WithId<Patient> = { resourceType: 'Patient', id: 'p1' };
 
       client.notifyResourceModified({ resourceType: 'Patient', operation: 'update', id: 'p1', resource: patient });
