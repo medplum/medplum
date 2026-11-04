@@ -50,6 +50,7 @@ import {
   medicalNecessityBox,
 } from '../../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor } from '../../test-utils/render';
+import type { AppointmentDetailsProps } from './AppointmentDetails';
 import { AppointmentDetails } from './AppointmentDetails';
 
 const SERVICE: WithId<HealthcareService> = {
@@ -349,7 +350,7 @@ describe('AppointmentDetails', () => {
       participant: [{ status: 'accepted', actor: createReference(ElderJordanPatient) }],
     });
 
-    expect(await screen.findByText('MRN-0041')).toBeInTheDocument();
+    expect(await screen.findByText('100041')).toBeInTheDocument();
     expect(screen.getByText('MRN')).toBeInTheDocument();
   });
 
@@ -723,7 +724,8 @@ describe('AppointmentDetails editing', () => {
 
   async function renderEditable(
     appointment: WithId<Appointment>,
-    onUpdated?: (a: WithId<Appointment>) => void
+    onUpdated?: (a: WithId<Appointment>) => void,
+    props?: Partial<AppointmentDetailsProps>
   ): Promise<void> {
     installValueSetStub(medplum, AuthorizationValueSets);
     renderWithMedplum(
@@ -732,6 +734,7 @@ describe('AppointmentDetails editing', () => {
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onUpdated={onUpdated}
+        {...props}
       />,
       medplum
     );
@@ -991,6 +994,25 @@ describe('AppointmentDetails editing', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Notes' }), { target: { value: ' ' } });
     await clickSave();
     expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBeUndefined();
+  });
+
+  test('caps the notes, holding back a save until notes already past the cap are shortened', async () => {
+    // 'Bring prior films' is 17 characters.
+    await renderEditable(BOOKED_APPOINTMENT, undefined, { commentMaxLength: 10 });
+
+    const notes = screen.getByRole('textbox', { name: 'Notes' });
+    expect(notes).toHaveAttribute('maxlength', '10');
+    expect(screen.getByText('17/10')).toBeInTheDocument();
+    expect(screen.getByText('Notes are limited to 10 characters.')).toBeInTheDocument();
+
+    fireEvent.change(notes, { target: { value: 'Bring prior films!' } });
+    expect(saveButton()).toBeDisabled();
+
+    fireEvent.change(notes, { target: { value: 'Films' } });
+    expect(screen.getByText('5/10')).toBeInTheDocument();
+    expect(screen.queryByText('Notes are limited to 10 characters.')).not.toBeInTheDocument();
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBe('Films');
   });
 
   test('discards unsaved changes when editing is cancelled', async () => {

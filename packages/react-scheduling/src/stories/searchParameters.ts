@@ -159,6 +159,20 @@ export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Patient-identifier',
+        url: 'http://hl7.org/fhir/SearchParameter/Patient-identifier',
+        name: 'identifier',
+        status: 'active',
+        description: 'A patient identifier',
+        code: 'identifier',
+        base: ['Patient'],
+        type: 'token',
+        expression: 'Patient.identifier',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Location-name',
         url: 'http://hl7.org/fhir/SearchParameter/Location-name',
         name: 'name',
