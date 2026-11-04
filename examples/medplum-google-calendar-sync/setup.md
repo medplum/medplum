@@ -92,7 +92,7 @@ The installer reads the Google client from the project secrets, installs profile
 
 Read the returned `outcome`, including warnings, even when `installed=true`. Apply the practitioner and ordinary Slot policy entries within the application's existing scopes. Replace broader grants: appending restrictive entries does not remove permissions granted elsewhere. Give practitioners access to the public operation Bots and OperationDefinitions. The installer reports broad access conservatively and does not rewrite practitioner policies. See [policy examples](state-and-status.md#permission-requirements).
 
-Event details are off on first install, so every event syncs as Busy. Re-run installation to rotate the Google client secret, turn event details on or off, or repair configuration. New projects need no migration or earlier integration. [Historical migration notes](migration-notes.md) apply only to prototype sandboxes.
+Event details are off on first install, so every event syncs as Busy. Changing a secret has no effect until installation runs again: re-run it after you rotate the Google client secret or turn event details on or off, and to repair configuration. New projects need no migration or earlier integration. [Historical migration notes](migration-notes.md) apply only to prototype sandboxes.
 
 ## 5. Connect a practitioner
 
