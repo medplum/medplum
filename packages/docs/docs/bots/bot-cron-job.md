@@ -26,7 +26,7 @@ Click Ok in the bottom of the page, and your bot will be added to the queue.
 
 Medplum schedules jobs with [BullMQ](https://docs.bullmq.io/guide/job-schedulers/repeat-strategies),
 which parses schedules with [cron-parser](https://github.com/harrisiirak/cron-parser), and validates
-`cronString` with the same rules, except that seconds are not supported. An expression has five
+`cronString` with the same rules, except for the two differences noted below. An expression has five
 fields:
 
 ```text
@@ -52,10 +52,14 @@ fields:
 The shorthands `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@hourly`, `@minutely`,
 `@weekdays`, and `@weekends` are also accepted.
 
-:::note Minute granularity only
+:::note Differences from cron-parser
 
-Medplum does not run cron jobs more than once a minute. Unlike cron-parser, it rejects the optional
-sixth (seconds) field, such as `*/10 * * * * *`, and the `@secondly` shorthand.
+- **Minute granularity only.** Medplum does not run cron jobs more than once a minute, so it rejects
+  the optional sixth (seconds) field, such as `*/10 * * * * *`, and the `@secondly` shorthand.
+- **No hashed (`H`) values.** cron-parser's `H`, `H(a-b)`, and `H/n` pick a pseudo-random value to
+  stagger jobs that share a schedule. Medplum rejects them: staggering is left to the scheduler as an
+  implementation detail, which keeps the syntax for `Cron` and `Bot` authors small and means a
+  schedule runs exactly when it says.
 
 :::
 

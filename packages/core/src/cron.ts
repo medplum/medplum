@@ -1,7 +1,8 @@
 /* eslint-disable header/header */
 /*
  * Validation logic ported from cron-parser 5.10.2 (https://github.com/harrisiirak/cron-parser), the parser BullMQ uses
- * to schedule jobs. Only the parse-time checks are kept, which drops cron-parser's dependency on luxon.
+ * to schedule jobs. Only the parse-time checks are kept, which drops cron-parser's dependency on luxon, and Medplum
+ * narrows what it accepts (see `isValidCronString`).
  *
  * Copyright (c) 2014-2023 Harri Siirak
  *
@@ -29,8 +30,8 @@ interface CronFieldSpec {
   readonly dayOfWeek?: boolean;
 }
 
-const HASHED_CHARS = String.raw`|^.*H\(\d+-\d+\)\/\d+.*$|^.*H\(\d+-\d+\).*$|^.*H\/\d+.*$`;
-const DEFAULT_VALID_CHARS = new RegExp(String.raw`^[?,*\dH/-]+$` + HASHED_CHARS);
+// Unlike cron-parser, no field accepts `H` (hashed) terms; see `isValidCronString`
+const DEFAULT_VALID_CHARS = /^[?,*\d/-]+$/;
 
 const SECOND: CronFieldSpec = { min: 0, max: 59, chars: [], validChars: DEFAULT_VALID_CHARS };
 const MINUTE: CronFieldSpec = SECOND;
@@ -39,14 +40,14 @@ const DAY_OF_MONTH: CronFieldSpec = {
   min: 1,
   max: 31,
   chars: ['L'],
-  validChars: new RegExp(String.raw`^[?,*\dLH/-]+$` + HASHED_CHARS),
+  validChars: /^[?,*\dL/-]+$/,
 };
 const MONTH: CronFieldSpec = { min: 1, max: 12, chars: [], validChars: DEFAULT_VALID_CHARS, aliases: true };
 const DAY_OF_WEEK: CronFieldSpec = {
   min: 0,
   max: 7,
   chars: ['L'],
-  validChars: new RegExp(String.raw`^[?,*\dLH#/-]+$` + HASHED_CHARS),
+  validChars: /^[?,*\dL#/-]+$/,
   aliases: true,
   dayOfWeek: true,
 };
@@ -95,8 +96,13 @@ const MAX_EXPRESSION_LENGTH = 1024;
  * Returns true if the input is a cron expression the Medplum job scheduler can run.
  *
  * Accepts what cron-parser accepts in its default, non-strict mode -- the `@daily`-style shorthands, month and weekday
- * names, and the `L`, `#`, `?`, and `H` extensions -- except that schedules are limited to minute granularity, so the
- * optional sixth (seconds) field and `@secondly` are rejected.
+ * names, and the `L`, `#`, and `?` extensions -- with two deliberate restrictions:
+ *
+ * - Schedules are limited to minute granularity, so the optional sixth (seconds) field and `@secondly` are rejected.
+ * - `H` (hashed) terms are rejected. They exist to stagger jobs that share a schedule; leaving them out keeps
+ *   staggering an implementation detail of the scheduler and keeps the syntax authors of `Cron` and `Bot` resources
+ *   must learn small. cron-parser also draws them at random, so one expression could pass on one parse and fail on
+ *   the next.
  * @param cronString - The cron expression to check.
  * @returns True if the cron expression is valid.
  */
@@ -157,7 +163,7 @@ function parseCronExpression(input: string): void {
   const dayOfWeekIsWildcard = rawDayOfWeek === '*' || rawDayOfWeek === '?';
   if (month.length === 1 && !hasLastDay && dayOfWeekIsWildcard) {
     // Without L, every day of month is a number
-    if (!(Math.min(...dayOfMonth.map(Number)) <= DAYS_IN_MONTH[+month[0] - 1])) {
+    if (Math.min(...dayOfMonth.map(Number)) > DAYS_IN_MONTH[+month[0] - 1]) {
       throw new Error('Invalid explicit day of month');
     }
   }
@@ -177,59 +183,15 @@ function parseField(raw: string, spec: CronFieldSpec): CronValue[] {
   if (!spec.validChars.test(value)) {
     throw new Error('Invalid characters');
   }
-  value = value.replaceAll(/[*?]/g, `${spec.min}-${spec.max}`);
-  value = parseHashed(value, spec);
-  return parseSequence(value, spec);
-}
-
-/**
- * Expands `H` (hashed) values. cron-parser picks them at random, so a fixed draw keeps validation deterministic;
- * apart from lists whose hashed values may or may not collide, the draw cannot change whether an expression is valid.
- * @param value - The field value.
- * @param spec - The field being parsed.
- * @returns The field value with each hashed term replaced by concrete values.
- */
-function parseHashed(value: string, spec: CronFieldSpec): string {
-  let count = 0;
-  return value.replaceAll(/H(?:\((\d+)-(\d+)\))?(?:\/(\d+))?/g, (_, min?: string, max?: string, step?: string) => {
-    let rangeMin = spec.min;
-    let rangeMax = spec.max;
-    if (min && max) {
-      const minNum = Number.parseInt(min, 10);
-      const maxNum = Number.parseInt(max, 10);
-      if (minNum > maxNum) {
-        throw new Error('Invalid hashed range');
-      }
-      rangeMin = Math.max(minNum, spec.min);
-      rangeMax = Math.min(maxNum, spec.max);
-      if (rangeMin > rangeMax) {
-        throw new Error('Hashed range outside field');
-      }
-    }
-    if (!step) {
-      return String(rangeMin);
-    }
-
-    const stepNum = Number.parseInt(step, 10);
-    if (stepNum <= 0) {
-      throw new Error('Invalid hashed step');
-    }
-    count += Math.ceil((rangeMax - rangeMin + 1) / stepNum);
-    assertMaxFieldValues(count);
-    const values: number[] = [];
-    for (let i = Math.floor(rangeMin / stepNum) * stepNum; i <= rangeMax; i += stepNum) {
-      if (i >= rangeMin) {
-        values.push(i);
-      }
-    }
-    return values.length > 0 ? values.join(',') : String(rangeMin);
-  });
+  return parseSequence(value.replaceAll(/[*?]/g, `${spec.min}-${spec.max}`), spec);
 }
 
 function parseSequence(value: string, spec: CronFieldSpec): CronValue[] {
   const stack: CronValue[] = [];
   for (const atom of value.split(',')) {
-    assertMaxFieldValues(stack.length);
+    if (stack.length > MAX_FIELD_VALUES) {
+      throw new Error('Too many values');
+    }
     if (atom.length === 0) {
       throw new Error('Empty list value');
     }
@@ -271,7 +233,7 @@ function parseRange(value: string, repeatInterval: number, spec: CronFieldSpec):
   if (!(min >= spec.min && max <= spec.max) || min > max) {
     throw new Error('Invalid range');
   }
-  if (!(repeatInterval > 0)) {
+  if (Number.isNaN(repeatInterval) || repeatInterval <= 0) {
     throw new Error('Invalid repeat interval');
   }
 
@@ -292,7 +254,7 @@ function parseNthDayOfWeek(value: string): string {
   if (atoms.length <= 1) {
     return value;
   }
-  const nth = +atoms[atoms.length - 1];
+  const nth = Number(atoms.at(-1));
   if (/[,\-/]/.test(value) || atoms.length > 2 || !(nth >= 1 && nth <= 5)) {
     throw new Error('Invalid nth day of week');
   }
@@ -311,11 +273,5 @@ function validateFieldValues(values: CronValue[], spec: CronFieldSpec): void {
   }
   if (new Set(values).size !== values.length) {
     throw new Error('Duplicate values');
-  }
-}
-
-function assertMaxFieldValues(count: number): void {
-  if (count > MAX_FIELD_VALUES) {
-    throw new Error('Too many values');
   }
 }
