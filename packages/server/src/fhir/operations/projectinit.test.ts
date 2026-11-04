@@ -28,7 +28,7 @@ import {
   setupRecaptchaMock,
   withTestContext,
 } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import {
   CLIENT_APPLICATION_READONLY_RESOURCE_TYPES,
   createProject,
@@ -165,7 +165,8 @@ describe('Project $init', () => {
         accessPolicy: { resource: clientPolicy.resource },
         withRepo: true,
       });
-      const bot = await systemRepo.createResource<Bot>({
+      const projectSystemRepo = await getProjectSystemRepo(testProject);
+      const bot = await projectSystemRepo.createResource<Bot>({
         resourceType: 'Bot',
         meta: { project: testProject.id },
         name: 'Test Bot',
