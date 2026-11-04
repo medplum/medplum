@@ -133,8 +133,9 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     () => services.filter((service) => Object.hasOwn(fields.offerings, service.id)),
     [services, fields.offerings]
   );
-  const scheduleActive = schedule ? fields.active : undefined;
-  const status = actorWithId && getActorStatus(actorWithId, scheduleActive);
+  // The Schedule's fields as edited, or undefined when the actor has none.
+  const scheduleFields = schedule ? fields : undefined;
+  const status = actorWithId && getActorStatus(actorWithId, scheduleFields?.active);
   const alert = status && getBookingAlert(actorDraft, status);
 
   function errorsFor(service: WithId<HealthcareService>): ReturnType<typeof getBlockingErrors> {
@@ -332,8 +333,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           resource={actorDraft}
           value={general}
           onChange={handleGeneralChange}
-          scheduleActive={scheduleActive}
-          onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
+          schedule={scheduleFields}
+          onScheduleChange={(change) => setFields((current) => ({ ...current, ...change }))}
           nameErrors={triedToSave || !creating ? nameErrors : undefined}
         />
         {facilities.field && <ProviderFacilitiesFields {...facilities.field} />}

@@ -12,15 +12,19 @@ import { getTimezoneOptions, timezoneFilter } from '../../SchedulingParametersEd
 import { ServiceFacilityInput } from '../../ServiceFacilityInput';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
 import { hasEditableName, isOwnedBySchedulingWorkspace } from './actorDraft';
+import type { ScheduleFields } from './scheduleDraft';
+
+/** The Schedule's fields the General section edits. */
+type GeneralScheduleFields = Pick<ScheduleFields, 'active'>;
 
 export interface ActorGeneralProps {
   /** The actor as the page would store it. */
   readonly resource: ActorResource;
   readonly value: ActorGeneralFields;
   readonly onChange: (value: ActorGeneralFields) => void;
-  /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
-  readonly scheduleActive: boolean | undefined;
-  readonly onScheduleActiveChange: (active: boolean) => void;
+  /** The actor's Schedule's fields, as edited, or undefined when it has none. */
+  readonly schedule: GeneralScheduleFields | undefined;
+  readonly onScheduleChange: (change: Partial<GeneralScheduleFields>) => void;
   /** Why the name can't be saved, by field, once that should be said. */
   readonly nameErrors?: Partial<Record<'name' | 'given' | 'family', string>>;
 }
@@ -33,10 +37,10 @@ export interface ActorGeneralProps {
  * @returns The section's fields.
  */
 export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
-  const { resource, value, onChange, scheduleActive, onScheduleActiveChange, nameErrors } = props;
+  const { resource, value, onChange, schedule, onScheduleChange, nameErrors } = props;
   const typeLabel = getActorTypeLabel(resource.resourceType);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
-  const scheduleLocked = !value.active && !scheduleActive;
+  const scheduleLocked = !value.active && !schedule?.active;
   const statusLocked = resource.resourceType === 'Practitioner' && !isOwnedBySchedulingWorkspace(resource);
 
   function update(change: Partial<ActorGeneralFields>): void {
@@ -56,12 +60,12 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
             : undefined
         }
       />
-      {scheduleActive !== undefined && (
+      {schedule && (
         <StatusSwitch
           label="Schedule status"
-          value={scheduleActive ? 'Active' : 'Inactive'}
-          checked={scheduleActive}
-          onChange={onScheduleActiveChange}
+          value={schedule.active ? 'Active' : 'Inactive'}
+          checked={schedule.active}
+          onChange={(active) => onScheduleChange({ active })}
           disabledReason={
             scheduleLocked ? `Can't be switched on while the ${typeLabel.toLowerCase()} is inactive.` : undefined
           }
