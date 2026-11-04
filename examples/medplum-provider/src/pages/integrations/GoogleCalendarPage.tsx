@@ -122,7 +122,7 @@ export function GoogleCalendarPage(): JSX.Element {
     }
     setBusy(true);
     try {
-      window.location.assign(await startGoogleCalendarAuth(clientId, detailLevel));
+      window.location.assign(await startGoogleCalendarAuth(clientId, detailsAllowed ? detailLevel : 'busy-only'));
     } catch (err) {
       setBusy(false);
       showErrorNotification(err);
@@ -131,6 +131,8 @@ export function GoogleCalendarPage(): JSX.Element {
 
   const status = load.kind === 'ready' ? load.status : undefined;
   const clientId = getGoogleCalendarClientId(status);
+  // Older installs do not report the switch; they still cap detail on the server.
+  const detailsAllowed = status?.detailsAllowed !== false;
   const connected = status?.connected === true;
   const needsConsent = !connected || status?.status === 'reauth-required';
   const disconnecting = status?.status === 'disconnecting';
@@ -233,15 +235,21 @@ export function GoogleCalendarPage(): JSX.Element {
               </Table>
             )}
 
-            <Select
-              label="Event details on Google Calendar"
-              description="Patients are never added as guests. The project setting can limit this further."
-              data={DETAIL_OPTIONS}
-              value={detailLevel}
-              onChange={(v) => isEventDetailLevel(v) && setDetailLevel(v)}
-              allowDeselect={false}
-              disabled={busy || disconnecting}
-            />
+            {detailsAllowed ? (
+              <Select
+                label="Event details on Google Calendar"
+                description="Patients are never added as guests."
+                data={DETAIL_OPTIONS}
+                value={detailLevel}
+                onChange={(v) => isEventDetailLevel(v) && setDetailLevel(v)}
+                allowDeselect={false}
+                disabled={busy || disconnecting}
+              />
+            ) : (
+              <Text size="sm" c="dimmed">
+                Your organization shows appointments on Google Calendar as Busy, with no patient details.
+              </Text>
+            )}
 
             {needsConsent && !clientId && (
               <Alert color="yellow" icon={<IconAlertCircle />}>
@@ -259,15 +267,17 @@ export function GoogleCalendarPage(): JSX.Element {
               )}
               {connected && !disconnecting && (
                 <>
-                  <Button
-                    variant="default"
-                    disabled={busy || detailLevel === status.eventDetailLevel}
-                    onClick={() =>
-                      run(() => updateGoogleCalendarDetailLevel(medplum, detailLevel), 'Event detail setting saved')
-                    }
-                  >
-                    Save detail setting
-                  </Button>
+                  {detailsAllowed && (
+                    <Button
+                      variant="default"
+                      disabled={busy || detailLevel === status.eventDetailLevel}
+                      onClick={() =>
+                        run(() => updateGoogleCalendarDetailLevel(medplum, detailLevel), 'Event detail setting saved')
+                      }
+                    >
+                      Save detail setting
+                    </Button>
+                  )}
                   <Button
                     variant="default"
                     disabled={busy}

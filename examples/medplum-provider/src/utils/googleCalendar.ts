@@ -55,6 +55,8 @@ export interface GoogleCalendarStatus {
   readonly disconnectWarning?: string;
   /** The Google OAuth client ID installed in the project, from the project secrets. */
   readonly clientId?: string;
+  /** Whether the project lets practitioners choose more than Busy; absent from older installs. */
+  readonly detailsAllowed?: boolean;
   readonly conflicts: GoogleCalendarConflict[];
 }
 
@@ -122,6 +124,7 @@ export function parseGoogleCalendarStatus(params: Parameters): GoogleCalendarSta
     activeConflictCount: typeof count === 'number' ? count : undefined,
     disconnectWarning: str('disconnectWarning'),
     clientId: str('clientId'),
+    detailsAllowed: bool('detailsAllowed'),
     conflicts,
   };
 }

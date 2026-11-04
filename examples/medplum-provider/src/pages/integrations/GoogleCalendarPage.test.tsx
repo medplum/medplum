@@ -180,6 +180,20 @@ describe('GoogleCalendarPage', () => {
     );
   });
 
+  test('Hides the detail choice when the project keeps events Busy', async () => {
+    mockOperations({
+      status: () => ({
+        resourceType: 'Parameters',
+        parameter: [...(connectedStatus.parameter ?? []), { name: 'detailsAllowed', valueBoolean: false }],
+      }),
+    });
+    setup();
+
+    expect(await screen.findByText(/shows appointments on Google Calendar as Busy/)).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Busy only')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save detail setting' })).not.toBeInTheDocument();
+  });
+
   test('Reauth required offers reconnect', async () => {
     mockOperations({
       status: () => ({
