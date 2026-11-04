@@ -87,7 +87,7 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 ---
 
-The scheduling operations manage their own database transactions and do not require the `transaction-bundles` feature for general Bundle submissions. Their [Beta status and limitations](/docs/scheduling/appointment-book) still apply.
+The scheduling operations manage their own database transactions and do not require the `transaction-bundles` Project feature.
 
 ## Key FHIR Resources
 
@@ -124,7 +124,7 @@ Scheduling can be built in FHIR in many different ways. The key design decisions
 
 The minimum set of resources required for scheduling to work for a single provider is a [`Practitioner`](/docs/api/fhir/resources/practitioner) (the actor), a [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) (the bookable appointment type and its shared parameters), and a [`Schedule`](/docs/api/fhir/resources/schedule) (the actor's availability, linked to the service).
 
-This seed uses `type: transaction` to submit linked resources, but atomic transaction processing is unavailable on hosted Medplum. Inspect every response entry and complete setup before accepting bookings. For production, conditionally write actors and services first, then save Schedules using their returned references. Do not assume every POST in this sample is safe to repeat. See [batch recovery](/docs/fhir-datastore/fhir-batch-requests#performing-upserts).
+This seed can partially succeed on hosted Medplum. Inspect every response entry before accepting bookings; see [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before repeating POST creates.
 
 <details>
   <summary>Seed Bundle: Practitioner + HealthcareService + Schedule</summary>

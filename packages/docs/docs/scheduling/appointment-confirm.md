@@ -8,8 +8,6 @@ The `$confirm` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 The `$confirm` operation confirms a held [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `booked` and upgrading all `busy-tentative` [`Slot`](/docs/api/fhir/resources/slot) resources it references to `busy` in a single database transaction.
 
-The operation manages its own database transaction. It does not require the `transaction-bundles` Project feature, which controls general Bundle submissions and is currently unavailable on hosted Medplum.
-
 ## Booking Lifecycle
 
 `$confirm` is the final step in a hold-then-book flow:

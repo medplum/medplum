@@ -8,8 +8,6 @@ The `$cancel` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 The `$cancel` operation cancels an [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `cancelled` and deleting all [`Slot`](/docs/api/fhir/resources/slot) resources it references in a single database transaction. An optional `cancelationReason` records why the Appointment was canceled.
 
-The operation manages its own database transaction. It does not require the `transaction-bundles` Project feature, which controls general Bundle submissions and is currently unavailable on hosted Medplum.
-
 ## Use Cases
 
 - **Patient-initiated cancellation**: Cancel a scheduled appointment at the patient's request and free the provider's time

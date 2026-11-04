@@ -167,14 +167,12 @@ POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility
 ### Stedi sandbox testing
 
 :::note[]
-The Stedi sandbox successfully validates only a few payloads. Use the sample data below when testing against the sandbox; the sample values are independent of the choice of atomicity.
+The Stedi sandbox successfully validates only a few payloads. Use the sample data below when testing against the sandbox.
 :::
 
 :::note[Sample data and partial failures]
 
-This Bundle uses `type: transaction` to submit linked sample resources. Atomic transaction processing is currently unavailable on hosted Medplum; the request can partially succeed. Inspect every response entry and confirm that all required resources exist before continuing. Do not blindly rerun the sample's POST creates after a failure.
-
-For a repeatable production import, use identifier-based conditional writes in dependency stages: save prerequisites, then save dependents with the returned references. Independent entries within each stage can be batched. This setup workflow does not require atomicity if incomplete setup can be repaired before use. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+This sample can partially succeed on hosted Medplum. Check every response entry before continuing, and follow the [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before retrying POST creates.
 
 :::
 

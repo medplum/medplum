@@ -598,13 +598,13 @@ This is a complete, uploadable seed bundle for the common case of a single servi
 
 It demonstrates the patterns from [Common Pitfalls](#common-pitfalls):
 
-- **`type: transaction`** as the linked-resource request format. On hosted Medplum, it has batch semantics: a failed entry does not roll back successful writes. Inspect every entry before using the seed data (see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests)).
+- **`type: transaction`** for linked-resource submission. On hosted Medplum, successful entries are not rolled back when another fails; see [Bundle processing semantics](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 - **`urn:uuid` `fullUrl`s** so resources can cross-reference each other before they have server-assigned IDs.
 - **`comment`, not `name`,** on each `Schedule`.
 - **`Practitioner`/`Location` actors each carrying a timezone extension.**
 - **`ifNoneExist`** on the `Organization` and `HealthcareService` so re-running the seed is idempotent for those resources.
 
-Seeding configuration does not require an atomic commit when incomplete setup can be repaired before booking is enabled. For a repeatable production setup, use staged conditional writes: save actors and services, confirm success, then save Schedules with their returned references. Only some entries in this illustrative seed have `ifNoneExist`; blindly rerunning the whole Bundle can duplicate other resources.
+Inspect every response entry before using the seed data. Only some entries have `ifNoneExist`; see [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before repeating POST creates.
 
 Each `Schedule` sets only its own `availability` and inherits `duration`, buffers, and alignment from the `HealthcareService`. Add more practitioners or rooms by duplicating the Practitioner/Location + Schedule pair.
 

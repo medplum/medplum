@@ -19,8 +19,6 @@ Because the old Slots are released **before** availability is checked, an appoin
 
 Its inputs are the same `schedule` values you searched `$find` with, plus the `start` you chose. The visit type is not among them — the operation reads the one the Appointment is already on file for. See [What the operation writes](#what-the-operation-writes) for exactly which attributes change.
 
-The operation manages its own database transaction. It does not require the `transaction-bundles` Project feature, which controls general Bundle submissions and is currently unavailable on hosted Medplum.
-
 ## Use Cases
 
 - **Reassigning a resource**: Move an appointment to a different room, device, or provider at the same time

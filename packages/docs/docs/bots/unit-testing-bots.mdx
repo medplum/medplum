@@ -125,7 +125,7 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
 
-A transaction-shaped Bundle can be passed to `executeBatch` on your `MockClient` to populate test fixtures. This does not enable or verify server-side atomicity. Atomic transaction processing is currently unavailable on hosted Medplum; test partial-failure handling separately from fixture loading.
+A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.
 
 #### Cloning an Existing Projects
 
@@ -185,4 +185,4 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
 
-A transaction-shaped Bundle can be passed to `executeBatch` on your `MockClient` to populate test fixtures. This does not enable or verify server-side atomicity. Atomic transaction processing is currently unavailable on hosted Medplum; test partial-failure handling separately from fixture loading.
+A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.

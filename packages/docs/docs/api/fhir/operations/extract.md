@@ -36,7 +36,7 @@ This is a key component of the [Structured Data Capture][data-capture] workflow,
 
 ## Output
 
-The operation returns a `Bundle` resource containing the resources populated from templates in the Questionnaire, derived from values in the QuestionnaireResponse. It does not persist the extracted resources. The returned `type: transaction` describes the write payload, not an atomicity guarantee. Atomic transaction processing is currently unavailable on hosted Medplum. When saving the outputs, inspect each result and recover partial failures; see [Results Bundle](/docs/questionnaires/parsing-questionnaire-responses#results-bundle).
+The operation returns a `Bundle` resource containing the resources populated from templates in the Questionnaire, derived from values in the QuestionnaireResponse. It does not persist the extracted resources; see [saving the results](/docs/questionnaires/parsing-questionnaire-responses#results-bundle).
 
 **Request**:
 
