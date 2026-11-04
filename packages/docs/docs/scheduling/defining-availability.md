@@ -556,7 +556,7 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
 
 </details>
 
-**Result**: Query all three schedules for a common time, then call [`$book`](/docs/scheduling/appointment-book) with the selected slots. The operation rechecks availability and commits the Appointment and its Slots together using its own database transaction. This does not require the `transaction-bundles` feature. A batch of direct Appointment/Slot writes would not provide the same conflict checks or atomicity.
+**Result**: Query all three schedules for a common time, then call [`$book`](/docs/scheduling/appointment-book) with the proposed Appointment returned by [`$find`](/docs/scheduling/appointment-find), including its contained Slots. The operation rechecks availability and commits the Appointment and its Slots together using its own database transaction. This does not require the `transaction-bundles` feature. A batch of direct Appointment/Slot writes would not provide the same conflict checks or atomicity.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%

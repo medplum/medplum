@@ -239,9 +239,9 @@ Before loading data, profile the source and approve each transformation. The [ma
 
 ### Step 1: Create Patients
 
-Use a batch request to upload [`Patients`][patient] independently, using the primary key from the source system as the identifier.
+For this single-patient example, upsert the [`Patient`][patient] using the primary key from the source system as the identifier. Keep the returned `savedPatient` for the dependent writes in Step 3. At scale, batch independent Patient upserts and record each successful result before loading dependents.
 
-<MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
+<MedplumCodeBlock language="ts" selectBlocks="medplum-sdk-upsert">
     {ExampleCode}
 </MedplumCodeBlock>
 
@@ -263,7 +263,7 @@ Upsert each [`Encounter`][encounter] before its [`ClinicalImpression`][clinicali
 
 This example demonstrates:
 
-1. Using separate batch requests for different resource types ([`Patients`][patient] and [`Conditions`][condition]).
+1. Loading [`Patients`][patient] and [`Conditions`][condition] in separate stages.
 2. Employing conditional updates for idempotency.
 3. Using conditional references to link [`Conditions`][condition] to [`Patients`][patient].
 4. Saving each [`Encounter`][encounter] before its dependent [`ClinicalImpression`][clinicalimpression].
