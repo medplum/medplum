@@ -126,7 +126,11 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const actorDirty = !deepEquals(general, initialGeneral);
   // Compares the fields rather than the Schedule draft, so edits the draft can't store yet, like an emptied
   // week, still count and the save bar can say why it refuses.
-  const dirty = creating || actorDirty || !deepEquals(fields, initial) || facilities.changes.length > 0;
+  const scheduleDirty = !deepEquals(
+    { ...fields, comment: fields.comment.trim() },
+    { ...initial, comment: initial.comment.trim() }
+  );
+  const dirty = creating || actorDirty || scheduleDirty || facilities.changes.length > 0;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = useMemo(

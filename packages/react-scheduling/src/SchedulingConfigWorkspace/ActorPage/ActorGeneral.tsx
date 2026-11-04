@@ -15,7 +15,7 @@ import { hasEditableName, isOwnedBySchedulingWorkspace } from './actorDraft';
 import type { ScheduleFields } from './scheduleDraft';
 
 /** The Schedule's fields the General section edits. */
-type GeneralScheduleFields = Pick<ScheduleFields, 'active'>;
+type GeneralScheduleFields = Pick<ScheduleFields, 'active' | 'comment'>;
 
 export interface ActorGeneralProps {
   /** The actor as the page would store it. */
@@ -74,6 +74,16 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
     </FieldGrid>
   );
 
+  const comment = schedule && (
+    <TextInput
+      label="Schedule comment"
+      description={`Extra information about this ${typeLabel.toLowerCase()}'s availability.`}
+      value={schedule.comment}
+      onChange={(event) => onScheduleChange({ comment: event.currentTarget.value })}
+      placeholder="Not set"
+    />
+  );
+
   if (resource.resourceType === 'Practitioner') {
     return (
       <>
@@ -82,6 +92,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
           <ProviderNameFields resource={resource} value={value} errors={nameErrors} onChange={update} />
           <TimezoneField value={value.timezone} onChange={(timezone) => update({ timezone })} />
         </FieldGrid>
+        {comment}
       </>
     );
   }
@@ -116,6 +127,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
           onChange={(timezone) => update({ timezone })}
         />
       </FieldGrid>
+      {comment}
     </>
   );
 }
