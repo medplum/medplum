@@ -157,7 +157,27 @@ describe('GoogleCalendarPage', () => {
     setup();
 
     expect(await screen.findByRole('button', { name: 'Connect Google Calendar' })).toBeDisabled();
-    expect(screen.getByText(/Set GOOGLE_CALENDAR_CLIENT_ID/)).toBeInTheDocument();
+    expect(screen.getByText(/no Google OAuth client installed/)).toBeInTheDocument();
+  });
+
+  test('Connect uses the client ID installed in the project when no override is set', async () => {
+    vi.stubEnv('GOOGLE_CALENDAR_CLIENT_ID', '');
+    mockOperations({
+      status: () => ({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'connected', valueBoolean: false },
+          { name: 'clientId', valueString: 'installed-client.apps.googleusercontent.com' },
+        ],
+      }),
+    });
+    setup();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Connect Google Calendar' }));
+    await waitFor(() => expect(assign).toHaveBeenCalled());
+    expect(new URL(assign.mock.calls[0][0] as string).searchParams.get('client_id')).toBe(
+      'installed-client.apps.googleusercontent.com'
+    );
   });
 
   test('Reauth required offers reconnect', async () => {

@@ -53,6 +53,8 @@ export interface GoogleCalendarStatus {
   readonly lastSuccessfulOutbound?: string;
   readonly activeConflictCount?: number;
   readonly disconnectWarning?: string;
+  /** The Google OAuth client ID installed in the project, from the project secrets. */
+  readonly clientId?: string;
   readonly conflicts: GoogleCalendarConflict[];
 }
 
@@ -63,8 +65,14 @@ interface PendingAuth {
   readonly eventDetailLevel: EventDetailLevel;
 }
 
-export function getGoogleCalendarClientId(): string | undefined {
-  return import.meta.env.GOOGLE_CALENDAR_CLIENT_ID || undefined;
+/**
+ * The Google OAuth client ID to start consent with. The project's installed client, returned by
+ * the status operation, is the default; GOOGLE_CALENDAR_CLIENT_ID overrides it for development.
+ * @param status - The caller's Google Calendar status.
+ * @returns The client ID, or undefined when neither source has one.
+ */
+export function getGoogleCalendarClientId(status: GoogleCalendarStatus | undefined): string | undefined {
+  return import.meta.env.GOOGLE_CALENDAR_CLIENT_ID || status?.clientId || undefined;
 }
 
 export function getGoogleCalendarRedirectUri(): string {
@@ -113,6 +121,7 @@ export function parseGoogleCalendarStatus(params: Parameters): GoogleCalendarSta
     lastSuccessfulOutbound: str('lastSuccessfulOutbound'),
     activeConflictCount: typeof count === 'number' ? count : undefined,
     disconnectWarning: str('disconnectWarning'),
+    clientId: str('clientId'),
     conflicts,
   };
 }

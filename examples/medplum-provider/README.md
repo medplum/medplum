@@ -59,13 +59,9 @@ Restart `npm run dev` after changing `.env`.
 
 ### Google Calendar
 
-Integrations > Google Calendar lets a practitioner connect their Google Calendar. It needs the [Google Calendar sync example](../medplum-google-calendar-sync) installed in the project. Set the Google OAuth client ID that the project installed in `.env`:
+Integrations > Google Calendar lets a practitioner connect their Google Calendar. It needs the [Google Calendar sync example](../medplum-google-calendar-sync) installed in the project. The page reads the project's installed Google OAuth client ID from the status operation; the client secret stays in the project secrets.
 
-```
-GOOGLE_CALENDAR_CLIENT_ID=1234567890-example.apps.googleusercontent.com
-```
-
-Register `<app origin>/integrations/google-calendar/callback` as an authorized redirect URI on that client, for example `http://localhost:3001/integrations/google-calendar/callback`. The client secret stays in the project secrets; the app never sees it.
+Register `<app origin>/integrations/google-calendar/callback` as an authorized redirect URI on that client, for example `http://localhost:3001/integrations/google-calendar/callback`. To test against a different client, set `GOOGLE_CALENDAR_CLIENT_ID` in `.env`.
 
 ### A note on value sets
 

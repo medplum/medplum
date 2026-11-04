@@ -82,7 +82,6 @@ function statusBadge(status: GoogleCalendarStatus): JSX.Element {
 
 export function GoogleCalendarPage(): JSX.Element {
   const medplum = useMedplum();
-  const clientId = getGoogleCalendarClientId();
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
   const [detailLevel, setDetailLevel] = useState<EventDetailLevel>('busy-only');
   const [busy, setBusy] = useState(false);
@@ -131,6 +130,7 @@ export function GoogleCalendarPage(): JSX.Element {
   }
 
   const status = load.kind === 'ready' ? load.status : undefined;
+  const clientId = getGoogleCalendarClientId(status);
   const connected = status?.connected === true;
   const needsConsent = !connected || status?.status === 'reauth-required';
   const disconnecting = status?.status === 'disconnecting';
@@ -245,8 +245,9 @@ export function GoogleCalendarPage(): JSX.Element {
 
             {needsConsent && !clientId && (
               <Alert color="yellow" icon={<IconAlertCircle />}>
-                Set GOOGLE_CALENDAR_CLIENT_ID to the Google OAuth client ID installed in this project to connect from
-                this app.
+                This project has no Google OAuth client installed. A project administrator adds
+                GOOGLE_CALENDAR_CLIENT_ID and GOOGLE_CALENDAR_CLIENT_SECRET to the project secrets and reruns the Google
+                Calendar installer.
               </Alert>
             )}
 
