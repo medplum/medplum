@@ -360,6 +360,9 @@ const upsertEntries: BundleEntry[] = sourcePatients.map((resource) => {
     },
   };
 });
+// A request-level failure can throw before returning a result Bundle.
+// Handle it separately; reconcile unknown outcomes (such as timeouts) before retrying.
+// The loop below handles per-entry results only.
 const upsertResults = await medplum.executeBatch({
   resourceType: 'Bundle',
   type: 'batch',

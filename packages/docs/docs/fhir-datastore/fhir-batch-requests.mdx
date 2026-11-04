@@ -222,7 +222,9 @@ Resources within the same Bundle often need to link to one another, such as an E
 
 Creating internal references is done by assigning temporary IDs to each bundle entry. The `fullUrl` field is set to `'urn:uuid:'` followed by a temporary UUID.
 
-Other bundle entries can refer to this resource using the temporary `urn:uuid:` string, which is replaced by the real reference during Bundle processing. The example below uses `type: transaction` for linked-resource submission; it does not provide atomicity on hosted Medplum. Inspect every entry before using the created resources. For batches containing internal references, use `reorderBundle()` from `@medplum/core` to order dependencies, and handle partial failures explicitly. Ordering does not provide rollback or prevent a dependent write after a prerequisite fails.
+Other Bundle entries can refer to this resource using the temporary `urn:uuid:` string. Medplum replaces these placeholders with real references in both `batch` and `transaction` Bundles. The transaction example below can partially succeed on hosted Medplum; inspect every response entry before using the created resources.
+
+`reorderBundle()` from `@medplum/core` can help put prerequisites before dependents. The server also groups entries by interaction type; resolving a reference does not confirm that its target was saved. Ordering does not provide rollback or prevent a dependent write after a prerequisite fails.
 
 <details>
   <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
@@ -251,7 +253,7 @@ There may be situations where you would only like to create a a resource as part
 
 You can conditionally perform batch actions by adding the `ifNoneExist` property to the `request` element of your `Bundle`.
 
-Conditional creates do not require atomic transaction support. The linked-resource example below uses `type: transaction` for reference resolution; on hosted Medplum it can partially succeed. Prefer saving the Organization first and then writing the Patient with its returned reference when you need to recover the steps independently.
+Conditional creates do not require atomic transaction support. The linked-resource example below can partially succeed on hosted Medplum. Prefer saving the Organization first and then writing the Patient with its returned reference when you need to recover the steps independently.
 
 The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#search-parameters) to search existing resources and only performs the action if no match is found. Since you are already defining the `url` to send the request to, you only need to enter the actual parameter in this field (i.e., everything that would come after the `?` when submitting an actual search).
 
@@ -302,7 +304,7 @@ be used in the `Bundle.entry.request.url` for a conditional update within a batc
 Instead, upsert URLs should link to other resources within the Bundle consistently through conditions on the target
 resource itself, not its server-assigned ID.
 
-The examples below illustrate URL construction. For a batch containing internal references, call `reorderBundle()` before submission. Ordering alone does not stop a dependent write after its prerequisite fails; prefer separate dependency stages when that failure needs to be handled before continuing.
+The examples below illustrate URL construction. For dependency ordering and partial-failure handling, see [Internal References](#internal-references).
 
 <details>
 <summary>Example</summary>
