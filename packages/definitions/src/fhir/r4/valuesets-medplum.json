@@ -383,6 +383,11 @@
             "definition": "Project administrator"
           },
           {
+            "code": "Bot",
+            "display": "Bot",
+            "definition": "Bot"
+          },
+          {
             "code": "ClientApplication",
             "display": "ClientApplication",
             "definition": "ClientApplication"

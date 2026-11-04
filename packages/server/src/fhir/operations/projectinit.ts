@@ -167,6 +167,7 @@ export async function createProject(
         projectId,
         'Default Practitioner Access Policy'
       );
+      const botAccessPolicy = await createBotAccessPolicy(txRepo, projectId, 'Default Bot Access Policy');
       const clientApplicationAccessPolicy = await createClientApplicationAccessPolicy(
         txRepo,
         projectId,
@@ -187,6 +188,7 @@ export async function createProject(
             { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
             { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
             { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
+            { profileType: 'Bot', accessPolicy: createReference(botAccessPolicy) },
             { profileType: 'ClientApplication', accessPolicy: createReference(clientApplicationAccessPolicy) },
           ],
         },
@@ -270,6 +272,25 @@ async function createAdminAccessPolicy(
     name,
     // Full read/write access to all resource types (essentially no policy).
     resource: [{ resourceType: '*' }],
+  });
+}
+
+async function createBotAccessPolicy(
+  systemRepo: SystemRepository,
+  projectId: string,
+  name: string
+): Promise<WithId<AccessPolicy>> {
+  return systemRepo.createResource<AccessPolicy>({
+    resourceType: 'AccessPolicy',
+    meta: { project: projectId },
+    name,
+    // The first matching entry wins, so the specific entries must come before the wildcard.
+    // AccessPolicy is a project admin resource type, which the wildcard never matches.
+    resource: [
+      { resourceType: 'AccessPolicy', readonly: true },
+      { resourceType: 'ClientApplication', hiddenFields: ['secret', 'retiringSecret'] },
+      { resourceType: '*' },
+    ],
   });
 }
 
