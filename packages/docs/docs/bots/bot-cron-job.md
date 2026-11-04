@@ -26,8 +26,8 @@ Click Ok in the bottom of the page, and your bot will be added to the queue.
 
 Medplum schedules jobs with [BullMQ](https://docs.bullmq.io/guide/job-schedulers/repeat-strategies),
 which parses schedules with [cron-parser](https://github.com/harrisiirak/cron-parser), and validates
-`cronString` with the same rules apart from [seconds](#minute-granularity-only). An expression has
-five fields:
+`cronString` with the same rules, except that seconds are not supported. An expression has five
+fields:
 
 ```text
 ┌─────────── minute (0-59)
