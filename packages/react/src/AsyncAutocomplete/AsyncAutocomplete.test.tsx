@@ -76,6 +76,20 @@ describe('AsyncAutocomplete', () => {
     expect(screen.getByPlaceholderText('Search fruit')).toBeInTheDocument();
   });
 
+  test('aria-label names the search field without drawing a label', () => {
+    render(
+      <AsyncAutocomplete<TestOption>
+        aria-label="Add fruit"
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('searchbox', { name: 'Add fruit' })).toBeInTheDocument();
+    expect(document.querySelector('label')).toBeNull();
+  });
+
   test('renders a single defaultValue as a pill', () => {
     render(
       <AsyncAutocomplete<TestOption>
