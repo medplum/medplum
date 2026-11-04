@@ -17,7 +17,7 @@ This guide assumes you're comfortable with the basics of writing and deploying b
 
 :::note[Coming from Python or C#?]
 
-This guide is TypeScript-only — Medplum's built-in bot runtime executes JavaScript.
+This guide is TypeScript-only — Medplum's built-in bot runtime executes JavaScript. If you want to write bot logic in another language, see [External Lambda Functions](/docs/bots/external-function), where you host your own Lambda and Medplum calls it via HTTP.
 
 If you're writing TypeScript for the first time, the build step may feel unfamiliar. Think of it like a compiler output: you write modular source files, and the toolchain produces a single deployable artifact per bot. You never ship your `src/` folder — only the compiled output.
 

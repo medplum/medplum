@@ -8,7 +8,6 @@ import * as awsConfigModule from '../cloud/aws/config';
 import * as azureConfigModule from '../cloud/azure/config';
 import * as gcpConfigModule from '../cloud/gcp/config';
 import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
-import { globalLogger } from '../logger';
 import { getConfig, loadConfig, loadTestConfig } from './loader';
 
 describe('Config', () => {
@@ -134,24 +133,11 @@ describe('Config', () => {
     expect(config.appBaseUrl).toStrictEqual('http://localhost:4000');
   });
 
-  test('Warns about unsupported botCustomFunctionsEnabled setting', async () => {
-    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
-    setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
-    const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
-    try {
-      await loadConfig('env');
-      expect(warnSpy).toHaveBeenCalledWith(
-        'The botCustomFunctionsEnabled config setting is no longer supported and is ignored'
-      );
-    } finally {
-      warnSpy.mockRestore();
-    }
-  });
-
   test('Env config boolean values', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_REGISTER_ENABLED', 'true');
     setEnv('MEDPLUM_LOG_REQUESTS', 'false');
+    setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
     setEnv('MEDPLUM_RATE_LIMITS_ENABLED', 'false');
     setEnv('MEDPLUM_AUTO_DOWNLOAD_ENABLED', 'false');
     setEnv('MEDPLUM_REQUIRE_VERIFIED_EMAIL_FOR_PROJECT_CREATION', 'false');
@@ -159,6 +145,7 @@ describe('Config', () => {
     const config = await loadConfig('env');
     expect(config.registerEnabled).toBe(true);
     expect(config.logRequests).toBe(false);
+    expect(config.botCustomFunctionsEnabled).toBe(true);
     expect(config.rateLimitsEnabled).toBe(false);
     expect(config.autoDownloadEnabled).toBe(false);
     expect(config.requireVerifiedEmailForProjectCreation).toBe(false);
