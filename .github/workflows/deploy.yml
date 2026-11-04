@@ -26,9 +26,13 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     steps:
+      - name: Compute fetch depth
+        id: depth
+        # One past the pushed commits so cicd-deploy.sh has github.event.before to diff against; 2 (HEAD~1) for workflow_dispatch
+        run: echo "depth=$(jq '[(.commits // [] | length), 1] | max + 1' "$GITHUB_EVENT_PATH")" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ steps.depth.outputs.depth }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
