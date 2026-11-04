@@ -8,7 +8,6 @@ import {
   IconHealthRecognition,
   IconPencil,
   IconQuestionMark,
-  IconRobot,
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
@@ -36,7 +35,7 @@ export function App(): JSX.Element | null {
     }
 
     medplum
-      .searchOne('Questionnaire', { name: 'patient-intake' })
+      .searchOne('Questionnaire', { name: 'patient-intake-full-sdc' })
       .then((intakeQuestionnaire) => {
         setIntakeQuestionnaire(intakeQuestionnaire);
       })
@@ -78,7 +77,6 @@ export function App(): JSX.Element | null {
           links: [
             { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
             { icon: <IconQuestionMark />, label: 'Upload Questionnaires', href: '/upload/questionnaire' },
-            { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
             { icon: <IconHealthRecognition />, label: 'Upload Example Data', href: '/upload/example' },
           ],
         },

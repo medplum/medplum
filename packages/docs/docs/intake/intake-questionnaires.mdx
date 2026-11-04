@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: "Intake Questionnaires: Design and Extraction"
 tags: [intake, questionnaire, SDC, bot, extraction]
-keywords: [Questionnaire, QuestionnaireResponse, linkId, repeats, group, SDC, extract, bot, getQuestionnaireAnswers, getGroupRepeatedAnswers, upsert]
+keywords: [Questionnaire, QuestionnaireResponse, linkId, repeats, group, SDC, extract, bot, upsert]
 ---
 
 # Intake Questionnaires: Design and Extraction
@@ -83,14 +83,7 @@ The [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/
 
 **Why this matters:** When your extraction logic (whether SDC or Bot) looks up `answers['allergy-substance']`, the linkId immediately tells you what resource and field it maps to. When conventions break down — for example, using generic names like `field1` or `question3` — the extraction logic becomes fragile and hard to maintain.
 
-**Group linkIds as resource-type identifiers:** The group-level linkId (`allergies`, `medications`, `medical-history`, `vaccination-history`, `coverage-information`) acts as the key for extracting all entries of that type. These map directly to the loop structure in the processing logic:
-
-```ts
-const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
-for (const allergy of allergies) {
-  await addAllergy(medplum, patient, allergy);
-}
-```
+**Group linkIds as resource-type identifiers:** The group-level linkId (`allergies`, `medications`, `medical-history`, `vaccination-history`, `coverage-information`) identifies the response items that are mapped to a resource template. In SDC extraction, placing `templateExtract` on the group causes the template to be evaluated once for each repeated response item.
 
 For general Questionnaire mechanics (item types, enableWhen, nested items), see [Questionnaires & Assessments](/docs/questionnaires).
 
@@ -130,34 +123,7 @@ A [Medplum Bot](/docs/bots/bot-basics) triggered by a [Subscription](/docs/subsc
 2. Create a Subscription on `QuestionnaireResponse` with criteria that matches your intake form
 3. When a response is created, the Bot runs and transforms the answers into FHIR resources
 
-The Bot uses two key utility functions from the intake demo:
-
-**`getQuestionnaireAnswers()`** — Flattens the QuestionnaireResponse into a dictionary keyed by linkId. Use this for top-level, non-repeating fields like demographics:
-
-```ts
-import { getQuestionnaireAnswers } from '@medplum/core';
-
-const answers = getQuestionnaireAnswers(response);
-
-// Access flat fields directly
-const birthDate = answers['dob']?.valueDate;
-const gender = answers['gender-identity']?.valueCoding?.code;
-```
-
-**`getGroupRepeatedAnswers()`** — Extracts an array of answer dictionaries from a repeating group. Use this for multi-entry sections like allergies and medications:
-
-```ts
-import { getGroupRepeatedAnswers } from './intake-utils';
-
-// Returns one dictionary per allergy the patient reported
-const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
-
-for (const allergy of allergies) {
-  const substance = allergy['allergy-substance']?.valueCoding;
-  const reaction = allergy['allergy-reaction']?.valueString;
-  // ... create AllergyIntolerance resource
-}
-```
+Bots can traverse `QuestionnaireResponse.item` and `answer` directly, or use application-specific parsing helpers. This is useful when the transformation needs branching, external lookups, or side effects that cannot be represented cleanly as SDC FHIRPath mappings.
 
 **When to use Bot-based extraction:**
 
@@ -166,7 +132,7 @@ for (const allergy of allergies) {
 - You need custom validation beyond what FHIR validation provides
 - Your extraction logic involves business rules that don't fit SDC's declarative model
 
-For a complete Bot implementation, see the [intake-form.ts](https://github.com/medplum/medplum/blob/main/examples/medplum-patient-intake-demo/src/bots/core/intake-form.ts) in the Patient Intake Demo.
+For a complete SDC implementation, see the [Patient Intake Questionnaire](https://github.com/medplum/medplum/blob/main/examples/medplum-patient-intake-demo/data/core/patient-intake-questionnaire-full-sdc.json) in the Patient Intake Demo. It keeps the extraction templates and FHIRPath mappings alongside the form.
 
 ### Idempotent Processing with Upserts
 
