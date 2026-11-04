@@ -171,7 +171,7 @@ Give patient documents their own patient context and govern Binary access throug
 | Audit trail needed (free text) | Append to `Task.note` on each reroute with author and timestamp |
 | Audit trail needed (structured/queryable) | Create a `Provenance` resource on each reroute with a coded reason — queryable via `Provenance?target=Task/{id}` |
 
-Task ownership, conversation membership, and authorization are separate decisions. The application checks assignment eligibility and performs the updates; changing a Task does not automatically synchronize the thread. Use a transaction with version checks when the Task and header must change together. See [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing).
+Task ownership, conversation membership, and authorization are separate decisions. The application checks assignment eligibility and performs the updates; changing a Task does not automatically synchronize the thread. Use version-checked writes with explicit recovery if membership and assignment can change independently. If both must commit together, a batch is insufficient; atomic transaction Bundles are currently unavailable on hosted Medplum. See [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing).
 
 <div id="37-automations"></div>
 

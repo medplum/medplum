@@ -83,6 +83,11 @@ export interface SchedulingWorkspaceProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
+  /**
+   * The most characters an appointment's notes may hold, when booking and when editing. See
+   * {@link AppointmentProposalFormProps.commentMaxLength}.
+   */
+  readonly appointmentCommentMaxLength?: number;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   /** Called with the Slots written when time is blocked from the pane's Block Time tab. */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
@@ -175,6 +180,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     procedureBinding,
     diagnosisBinding,
     mrnSystem,
+    appointmentCommentMaxLength,
     onBooked,
     onBlocked,
     appointmentCancellationReasonValueSet,
@@ -654,6 +660,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
             mrnSystem={mrnSystem}
+            commentMaxLength={appointmentCommentMaxLength}
           />
         </SidePane>
       )}
@@ -707,6 +714,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 procedureBinding={procedureBinding}
                 diagnosisBinding={diagnosisBinding}
                 mrnSystem={mrnSystem}
+                commentMaxLength={appointmentCommentMaxLength}
                 canBypassSchedulingRules={canBypassSchedulingRules}
                 appointmentExtensions={appointmentExtensions}
                 allowRecurring

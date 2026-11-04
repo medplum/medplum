@@ -213,7 +213,7 @@ Decide when booking is allowed and how exceptions are maintained. Use implicit a
 | Fixed appointment grid | Set alignment interval and offset deliberately. The default is 60 minutes with offset zero, not automatic back-to-back placement. |
 | Local hours and daylight saving time | Resolve availability timezone from Schedule parameters, then service parameters, then the actor extension. Configure `alignmentTimezone` separately if the grid must follow local midnight; its default is `Etc/UTC`. Test relevant DST transitions. |
 | One-off absence or holiday | Create `busy-unavailable` Slots on affected Schedules. Omit Slot `serviceType` to block all services; set it only for an intentionally service-specific block. |
-| Staff maintain blocked time in the calendar | `SchedulingWorkspace` can block several calendars in one action and edit or delete individual blocks. Appointment-owned Slots, including buffers, must be changed by rescheduling or cancelling the appointment. Enable transaction support for all-or-none multi-calendar writes. |
+| Staff maintain blocked time in the calendar | `SchedulingWorkspace` can block several calendars in one action and edit or delete individual blocks. Appointment-owned Slots, including buffers, must be changed by rescheduling or cancelling the appointment. Inspect each block write and reconcile partial success. All-or-nothing custom Bundle writes are currently unavailable on hosted Medplum; a batch cannot satisfy that requirement. |
 | Facility closure | Include the facility as a required schedulable resource, or apply blocks to each affected Schedule. A facility block does not automatically propagate to practitioners. |
 | Maximum booking window | Use `Schedule.planningHorizon`. A rolling horizon requires application maintenance. |
 | Minimum lead time or daily/weekly caps | The scheduling server does not enforce these policies. Implement and validate them in the application's controlled booking path, not just search filters. |
@@ -389,7 +389,7 @@ Decide how the user experiences a changed result and who can bypass ordinary sch
 | Routine capacity greater than one | Configure capacity rather than implementing an override path. |
 | Privileged exception | Define a controlled write path, required reason, access restrictions, consistency checks, and downstream notification. Direct FHIR writes do not inherit the scheduling operation's validation. |
 
-The React workspace's `canBypassSchedulingRules` option exposes controls; it does not enforce permission. A transaction can keep custom Appointment/Slot writes together, but does not by itself reproduce `$book`'s conflict checks. Ensure transaction support is enabled for cross-referencing writes; do not rely on a batch fallback for atomicity.
+The React workspace's `canBypassSchedulingRules` option exposes controls; it does not enforce permission. Prefer the scheduling operations for supported booking and rescheduling paths: they manage their own database transactions without requiring `transaction-bundles`. Atomic custom Bundle submissions are currently unavailable on hosted Medplum, and direct batched Appointment/Slot writes do not reproduce `$book`'s conflict checks or atomicity. A custom override path must address both requirements explicitly.
 
 <div id="310-cancellation-rescheduling-and-clinical-lifecycle"></div>
 
