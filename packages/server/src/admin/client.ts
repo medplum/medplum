@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, singularize } from '@medplum/core';
+import { createReference, forbidden, OperationOutcomeError, singularize } from '@medplum/core';
 import type { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
+import { getDefaultAccessPolicy } from '../fhir/default-access-policies';
 import type { Repository } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
@@ -15,15 +16,14 @@ export const createClientValidator = makeValidationMiddleware([
 ]);
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
-  let project: Project;
-  const { project: localsProject, repo } = getAuthenticatedContext();
-  if (localsProject.superAdmin) {
-    project = await repo.readResource<Project>('Project', singularize(req.params.projectId) as string);
-  } else {
-    project = localsProject;
+  const ctx = getAuthenticatedContext();
+  const projectId = singularize(req.params.projectId) as string;
+  if (!ctx.project.superAdmin && projectId !== ctx.project.id) {
+    throw new OperationOutcomeError(forbidden);
   }
-
-  const client = await createClient(repo, {
+  const project =
+    projectId === ctx.project.id ? ctx.project : await ctx.repo.readResource<Project>('Project', projectId);
+  const client = await createClient(ctx.repo, {
     ...req.body,
     project,
   });
@@ -59,8 +59,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     project: createReference(project),
     user: createReference(client),
     profile: createReference(client),
-    accessPolicy:
-      accessPolicy ?? project.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication')?.accessPolicy,
+    accessPolicy: accessPolicy ?? getDefaultAccessPolicy(project, 'ClientApplication'),
   });
 
   return client;

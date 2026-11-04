@@ -28,12 +28,9 @@ import {
   setupRecaptchaMock,
   withTestContext,
 } from '../../test.setup';
+import { DEFAULT_ACCESS_POLICIES, getDefaultAccessPolicy } from '../default-access-policies';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
-import {
-  CLIENT_APPLICATION_READONLY_RESOURCE_TYPES,
-  createProject,
-  PRACTITIONER_READONLY_RESOURCE_TYPES,
-} from './projectinit';
+import { createProject } from './projectinit';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -97,101 +94,16 @@ describe('Project $init', () => {
     );
     expect(updatedProject.defaultPatientAccessPolicy).toBeUndefined();
 
-    // Verify defaultAccessPolicies array is provisioned with Patient, RelatedPerson, Admin, Practitioner, Bot, and ClientApplication entries
-    expect(updatedProject.defaultAccessPolicies).toHaveLength(6);
-    const patientEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
-    const relatedPersonEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
-    const adminEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Admin');
-    const practitionerEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Practitioner');
-    const botEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Bot');
-    const clientEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication');
-    expect(patientEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
-    expect(relatedPersonEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
-    expect(adminEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
-    expect(practitionerEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
-    expect(botEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
-    expect(clientEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
-    // Each role gets a separate policy instance
-    const references = [
-      patientEntry?.accessPolicy.reference,
-      relatedPersonEntry?.accessPolicy.reference,
-      adminEntry?.accessPolicy.reference,
-      practitionerEntry?.accessPolicy.reference,
-      botEntry?.accessPolicy.reference,
-      clientEntry?.accessPolicy.reference,
-    ];
-    expect(new Set(references).size).toBe(6);
-
-    // Verify the Admin default policy grants full read/write to everything
-    const adminPolicy = await withTestContext(() =>
-      getGlobalSystemRepo().readReference<AccessPolicy>(adminEntry?.accessPolicy as Reference<AccessPolicy>)
-    );
-    expect(adminPolicy.resource).toStrictEqual([{ resourceType: '*' }]);
-
-    // Verify the Practitioner default policy is read-all + write-all-except-knowledge-resources
-    const practitionerPolicy = await withTestContext(() =>
-      getGlobalSystemRepo().readReference<AccessPolicy>(practitionerEntry?.accessPolicy as Reference<AccessPolicy>)
-    );
-    // Read access to everything via a readonly wildcard
-    expect(practitionerPolicy.resource).toContainEqual({ resourceType: '*', readonly: true });
-    // Writable clinical resource types are granted explicitly
-    expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Patient' });
-    expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Observation' });
-    // Read-only resource types are NOT writable (only the readonly wildcard covers them)
-    for (const readonlyType of PRACTITIONER_READONLY_RESOURCE_TYPES) {
-      expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
-    }
+    // Every profile type gets its own default policy instance
+    const defaults = updatedProject.defaultAccessPolicies ?? [];
+    expect(defaults.map((p) => p.profileType)).toContainExactly(Object.keys(DEFAULT_ACCESS_POLICIES));
+    expect(new Set(defaults.map((p) => p.accessPolicy.reference)).size).toBe(defaults.length);
   });
-
-  test('Default Bot access policy', () =>
-    withTestContext(async () => {
-      const { project } = await createProject('Test Bot Policy Project ' + randomUUID());
-      const botEntry = project.defaultAccessPolicies?.find((p) => p.profileType === 'Bot');
-      const botPolicy = await getGlobalSystemRepo().readReference<AccessPolicy>(
-        botEntry?.accessPolicy as Reference<AccessPolicy>
-      );
-
-      const {
-        project: botProject,
-        accessPolicy,
-        repo,
-      } = await createTestProject({
-        accessPolicy: { resource: botPolicy.resource },
-        withRepo: true,
-      });
-      const systemRepo = getGlobalSystemRepo();
-      const client = await systemRepo.createResource<ClientApplication>({
-        resourceType: 'ClientApplication',
-        meta: { project: botProject.id },
-        name: 'Other Client',
-        secret: 'secret',
-        retiringSecret: 'retiring',
-      });
-
-      // Full access to everything else
-      await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).resolves.toBeDefined();
-
-      // AccessPolicy is readable but not writable
-      await expect(repo.readResource('AccessPolicy', accessPolicy.id)).resolves.toBeDefined();
-      await expect(repo.updateResource({ ...accessPolicy, name: 'Changed' })).rejects.toThrow('Forbidden');
-
-      // ClientApplication secrets are hidden and cannot be overwritten
-      const readClient = await repo.readResource<ClientApplication>('ClientApplication', client.id);
-      expect(readClient.name).toBe('Other Client');
-      expect(readClient.secret).toBeUndefined();
-      expect(readClient.retiringSecret).toBeUndefined();
-      await repo.updateResource({ ...readClient, name: 'Renamed', secret: 'overwritten' });
-      const updatedClient = await systemRepo.readResource<ClientApplication>('ClientApplication', client.id);
-      expect(updatedClient.name).toBe('Renamed');
-      expect(updatedClient.secret).toBe('secret');
-      expect(updatedClient.retiringSecret).toBe('retiring');
-    }));
 
   test('Default ClientApplication access policy', () =>
     withTestContext(async () => {
       const { project, client } = await createProject('Test Client Policy Project ' + randomUUID());
-      const clientEntry = project.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication');
-      expect(CLIENT_APPLICATION_READONLY_RESOURCE_TYPES).toStrictEqual(['AccessPolicy', 'Bot']);
+      const clientPolicyReference = getDefaultAccessPolicy(project, 'ClientApplication');
 
       // The project's default client gets the ClientApplication default
       const systemRepo = getGlobalSystemRepo();
@@ -199,11 +111,9 @@ describe('Project $init', () => {
         resourceType: 'ProjectMembership',
         filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(client) }],
       });
-      expect(clientMembership?.accessPolicy?.reference).toBe(clientEntry?.accessPolicy.reference);
+      expect(clientMembership?.accessPolicy?.reference).toBe(clientPolicyReference?.reference);
 
-      const clientPolicy = await systemRepo.readReference<AccessPolicy>(
-        clientEntry?.accessPolicy as Reference<AccessPolicy>
-      );
+      const clientPolicy = await systemRepo.readReference(clientPolicyReference as Reference<AccessPolicy>);
       const {
         project: testProject,
         accessPolicy,

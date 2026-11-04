@@ -232,4 +232,16 @@ describe('Client admin', () => {
     });
     expect(membership3?.accessPolicy?.reference).toBe(defaultPolicy?.accessPolicy.reference);
   });
+
+  test('Project admin cannot create client in another project', async () => {
+    const { project: otherProject } = await createTestProject();
+    const { accessToken } = await createTestProject({ membership: { admin: true }, withAccessToken: true });
+
+    const res = await request(app)
+      .post('/admin/projects/' + otherProject.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Cross project client' });
+    expect(res).toHaveStatus(403);
+  });
 });

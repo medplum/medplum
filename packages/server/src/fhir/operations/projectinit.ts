@@ -1,23 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import {
-  badRequest,
-  createReference,
-  created,
-  getResourceTypes,
-  projectAdminResourceTypes,
-  protectedResourceTypes,
-} from '@medplum/core';
+import { badRequest, createReference, created } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
-  AccessPolicyResource,
   ClientApplication,
   Project,
+  ProjectDefaultAccessPolicies,
   ProjectMembership,
   Reference,
-  ResourceType,
   User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
@@ -28,6 +20,8 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
+import type { DefaultAccessPolicyProfileType } from '../default-access-policies';
+import { DEFAULT_ACCESS_POLICIES } from '../default-access-policies';
 import type { SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
@@ -151,28 +145,7 @@ export async function createProject(
       // default policies already set.
       const projectId = txRepo.generateId();
 
-      const patientAccessPolicy = await createPatientCompartmentAccessPolicy(
-        txRepo,
-        projectId,
-        'Default Patient Access Policy'
-      );
-      const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
-        txRepo,
-        projectId,
-        'Default RelatedPerson Access Policy'
-      );
-      const adminAccessPolicy = await createAdminAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
-      const practitionerAccessPolicy = await createPractitionerAccessPolicy(
-        txRepo,
-        projectId,
-        'Default Practitioner Access Policy'
-      );
-      const botAccessPolicy = await createBotAccessPolicy(txRepo, projectId, 'Default Bot Access Policy');
-      const clientApplicationAccessPolicy = await createClientApplicationAccessPolicy(
-        txRepo,
-        projectId,
-        'Default ClientApplication Access Policy'
-      );
+      const defaultAccessPolicies = await createDefaultAccessPolicies(txRepo, projectId);
 
       const project = await txRepo.createResource<Project>(
         {
@@ -183,14 +156,7 @@ export async function createProject(
           strictMode: true,
           features: config.defaultProjectFeatures,
           systemSetting: config.defaultProjectSystemSetting,
-          defaultAccessPolicies: [
-            { profileType: 'Patient', accessPolicy: createReference(patientAccessPolicy) },
-            { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
-            { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
-            { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
-            { profileType: 'Bot', accessPolicy: createReference(botAccessPolicy) },
-            { profileType: 'ClientApplication', accessPolicy: createReference(clientApplicationAccessPolicy) },
-          ],
+          defaultAccessPolicies,
         },
         { assignedId: true }
       );
@@ -224,151 +190,21 @@ export async function createProject(
   );
 }
 
-async function createPatientCompartmentAccessPolicy(
+async function createDefaultAccessPolicies(
   systemRepo: SystemRepository,
-  projectId: string,
-  name: string
-): Promise<WithId<AccessPolicy>> {
-  return systemRepo.createResource<AccessPolicy>({
-    resourceType: 'AccessPolicy',
-    meta: { project: projectId },
-    name,
-    compartment: { reference: '%patient' },
-    resource: [
-      { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
-      { resourceType: 'AllergyIntolerance', criteria: 'AllergyIntolerance?_compartment=%patient' },
-      { resourceType: 'Appointment', criteria: 'Appointment?_compartment=%patient' },
-      { resourceType: 'CarePlan', criteria: 'CarePlan?_compartment=%patient' },
-      { resourceType: 'CareTeam', criteria: 'CareTeam?_compartment=%patient' },
-      { resourceType: 'Communication', criteria: 'Communication?sender=%patient' },
-      { resourceType: 'Communication', criteria: 'Communication?recipient=%patient' },
-      { resourceType: 'Condition', criteria: 'Condition?_compartment=%patient' },
-      { resourceType: 'Coverage', criteria: 'Coverage?_compartment=%patient' },
-      { resourceType: 'DiagnosticReport', criteria: 'DiagnosticReport?_compartment=%patient' },
-      { resourceType: 'DocumentReference', criteria: 'DocumentReference?_compartment=%patient' },
-      { resourceType: 'Encounter', criteria: 'Encounter?_compartment=%patient' },
-      { resourceType: 'Goal', criteria: 'Goal?_compartment=%patient' },
-      { resourceType: 'Immunization', criteria: 'Immunization?_compartment=%patient' },
-      { resourceType: 'MedicationRequest', criteria: 'MedicationRequest?_compartment=%patient' },
-      { resourceType: 'MedicationStatement', criteria: 'MedicationStatement?_compartment=%patient' },
-      { resourceType: 'Observation', criteria: 'Observation?_compartment=%patient' },
-      { resourceType: 'Procedure', criteria: 'Procedure?_compartment=%patient' },
-      { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?_compartment=%patient' },
-      { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient' },
-      { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
-      { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
-    ],
-  });
-}
-
-async function createAdminAccessPolicy(
-  systemRepo: SystemRepository,
-  projectId: string,
-  name: string
-): Promise<WithId<AccessPolicy>> {
-  return systemRepo.createResource<AccessPolicy>({
-    resourceType: 'AccessPolicy',
-    meta: { project: projectId },
-    name,
-    // Full read/write access to all resource types (essentially no policy).
-    resource: [{ resourceType: '*' }],
-  });
-}
-
-async function createBotAccessPolicy(
-  systemRepo: SystemRepository,
-  projectId: string,
-  name: string
-): Promise<WithId<AccessPolicy>> {
-  return systemRepo.createResource<AccessPolicy>({
-    resourceType: 'AccessPolicy',
-    meta: { project: projectId },
-    name,
-    // The first matching entry wins, so the specific entries must come before the wildcard.
-    // AccessPolicy is a project admin resource type, which the wildcard never matches.
-    resource: [
-      { resourceType: 'AccessPolicy', readonly: true },
-      { resourceType: 'ClientApplication', hiddenFields: ['secret', 'retiringSecret'] },
-      { resourceType: '*' },
-    ],
-  });
-}
-
-/**
- * Resource types that non-admin Practitioners can read but not edit. These are curated knowledge,
- * terminology, and conformance resources typically managed at the project/admin level rather than
- * by front-line users.
- */
-export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
-  'MedicationKnowledge',
-  'PlanDefinition',
-  'ActivityDefinition',
-  'ObservationDefinition',
-  'ValueSet',
-  'StructureDefinition',
-  'CodeSystem',
-];
-
-/**
- * Resource types that ClientApplications can read but not edit by default.
- */
-export const CLIENT_APPLICATION_READONLY_RESOURCE_TYPES: ResourceType[] = ['AccessPolicy', 'Bot'];
-
-async function createPractitionerAccessPolicy(
-  systemRepo: SystemRepository,
-  projectId: string,
-  name: string
-): Promise<WithId<AccessPolicy>> {
-  return createWritableExceptAccessPolicy(systemRepo, projectId, name, PRACTITIONER_READONLY_RESOURCE_TYPES);
-}
-
-async function createClientApplicationAccessPolicy(
-  systemRepo: SystemRepository,
-  projectId: string,
-  name: string
-): Promise<WithId<AccessPolicy>> {
-  // ClientApplication is read-only: credential fields such as jwksUri and identityProvider would otherwise let a client
-  // take over another client's identity.
-  return createWritableExceptAccessPolicy(systemRepo, projectId, name, CLIENT_APPLICATION_READONLY_RESOURCE_TYPES, [
-    { resourceType: 'ClientApplication', readonly: true, hiddenFields: ['secret', 'retiringSecret'] },
-  ]);
-}
-
-async function createWritableExceptAccessPolicy(
-  systemRepo: SystemRepository,
-  projectId: string,
-  name: string,
-  readonlyResourceTypes: ResourceType[],
-  leadingEntries: AccessPolicyResource[] = []
-): Promise<WithId<AccessPolicy>> {
-  // Access policies are additive (a resource is writable if *any* entry grants it), so a
-  // "write everything except the read-only resources" policy cannot use a wildcard write entry.
-  // Instead, grant read to everything via a readonly wildcard, then grant full access to every
-  // writable resource type explicitly. The read-only resource types are omitted from the writable
-  // set, leaving them read-only. Project admin and protected resource types are excluded as well,
-  // since non-admins cannot write those. The wildcard never matches project admin resource types,
-  // so any of those in the read-only set need their own readonly entry.
-  // Hidden fields come from the first matching entry, so leading entries go before the wildcard and
-  // replace the plain writable entry for their resource type.
-  const writableResourceTypes = getResourceTypes().filter(
-    (resourceType) =>
-      !readonlyResourceTypes.includes(resourceType) &&
-      !leadingEntries.some((entry) => entry.resourceType === resourceType) &&
-      !projectAdminResourceTypes.includes(resourceType) &&
-      !protectedResourceTypes.includes(resourceType)
-  );
-  const readonlyAdminResourceTypes = readonlyResourceTypes.filter((resourceType) =>
-    projectAdminResourceTypes.includes(resourceType)
-  );
-  return systemRepo.createResource<AccessPolicy>({
-    resourceType: 'AccessPolicy',
-    meta: { project: projectId },
-    name,
-    resource: [
-      ...leadingEntries,
-      { resourceType: '*', readonly: true },
-      ...readonlyAdminResourceTypes.map((resourceType) => ({ resourceType, readonly: true })),
-      ...writableResourceTypes.map((resourceType) => ({ resourceType })),
-    ],
-  });
+  projectId: string
+): Promise<ProjectDefaultAccessPolicies[]> {
+  const result: ProjectDefaultAccessPolicies[] = [];
+  for (const [profileType, buildAccessPolicy] of Object.entries(DEFAULT_ACCESS_POLICIES)) {
+    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      ...buildAccessPolicy(),
+      resourceType: 'AccessPolicy',
+      meta: { project: projectId },
+    });
+    result.push({
+      profileType: profileType as DefaultAccessPolicyProfileType,
+      accessPolicy: createReference(accessPolicy),
+    });
+  }
+  return result;
 }

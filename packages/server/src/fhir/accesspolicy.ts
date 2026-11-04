@@ -28,6 +28,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { getDefaultAccessPolicy } from './default-access-policies';
 import { membershipProfileTypes, readMembershipReference } from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
@@ -205,14 +206,13 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
  * @returns The membership, with its `accessPolicy` swapped to the matching role default if needed.
  */
 export function reconcileDefaultAccessPolicy<T extends ProjectMembership>(project: Project, membership: T): T {
-  const defaults = project.defaultAccessPolicies;
   const currentPolicy = membership.accessPolicy?.reference;
-  if (!defaults || !currentPolicy) {
+  if (!currentPolicy) {
     return membership;
   }
 
-  const practitionerDefault = defaults.find((p) => p.profileType === 'Practitioner')?.accessPolicy;
-  const adminDefault = defaults.find((p) => p.profileType === 'Admin')?.accessPolicy;
+  const practitionerDefault = getDefaultAccessPolicy(project, 'Practitioner');
+  const adminDefault = getDefaultAccessPolicy(project, 'Admin');
 
   if (membership.admin && adminDefault && currentPolicy === practitionerDefault?.reference) {
     return { ...membership, accessPolicy: adminDefault };
