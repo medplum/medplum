@@ -421,7 +421,7 @@ This eliminates the multi-turn admin/provider coordination required by the admin
 
 ### Prerequisites
 
-- The `DOSESPOT_USER_ID` project secret must be configured with an admin-level DoseSpot clinician ID (typically a Proxy/Clinic Admin user). For Medplum-hosted deployments, contact Medplum support to have this configured.
+- Enrollment authenticates to DoseSpot with an administrative identity configured for your project. For Medplum-hosted deployments, contact Medplum support to have this configured.
 - An active `PractitionerRole` resource must exist for the provider with at least one code from system `https://dosespot.com/practitionerrole-type`
 
 ### Step 1: Create a PractitionerRole for the Provider
