@@ -509,7 +509,7 @@ describe('SchedulingWorkspace booking', () => {
       const proposed = proposedTime();
       expect(markedTime()).toBe(TUESDAY_MORNING.toISOString());
 
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       await clickBook();
 
       // Drawn at the instant that got booked, not merely somewhere else.
@@ -644,6 +644,20 @@ describe('SchedulingWorkspace booking', () => {
       expect(detailsPane()).toBeInTheDocument();
       expect(bookingPaneHeading()).not.toBeInTheDocument();
       expect(markedTime()).toBe('none');
+    });
+
+    test('Caps the notes both when booking and when editing', async () => {
+      renderWithMedplum(<SchedulingWorkspace appointmentCommentMaxLength={50} />, medplum);
+      await settleAutocomplete();
+      await clickCalendar();
+      expect(screen.getByRole('textbox', { name: 'Notes' })).toHaveAttribute('maxlength', '50');
+
+      await clickBookedVisit();
+      const details = detailsPane() as HTMLElement;
+      await act(async () => {
+        fireEvent.click(within(details).getByRole('button', { name: 'Edit' }));
+      });
+      expect(within(details).getByRole('textbox', { name: 'Notes' })).toHaveAttribute('maxlength', '50');
     });
 
     test('Clicking open time puts the booking form back over the details', async () => {

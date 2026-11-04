@@ -11,7 +11,7 @@ export function SignInPage(): JSX.Element {
     <SimpleGrid cols={2}>
       <Box pt={100} pb={200}>
         <SignInForm
-          projectId={import.meta.env.MEDPLUM_PROJECT_ID}
+          projectId={import.meta.env.FOOMEDICAL_PROJECT_ID}
           googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
           clientId={import.meta.env.MEDPLUM_CLIENT_ID}
           onSuccess={() => navigate('/')?.catch(console.error)}
