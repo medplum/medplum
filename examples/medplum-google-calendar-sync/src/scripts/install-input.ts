@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Parameters } from '@medplum/fhirtypes';
-import { EVENT_DETAIL_LEVELS, SECRET } from '../common/constants';
+import { SECRET } from '../common/constants';
 
 /**
  * The install parameters from the environment. The Google client is optional here: a customer
@@ -11,15 +11,15 @@ import { EVENT_DETAIL_LEVELS, SECRET } from '../common/constants';
  * @returns The `Parameters` body for `Project/$google-calendar-install`.
  */
 export function installationInput(env: Record<string, string | undefined>): Parameters {
-  const names = [SECRET.clientId, SECRET.clientSecret, SECRET.detailLevel, SECRET.appointmentUrl];
+  const names = [SECRET.clientId, SECRET.clientSecret, SECRET.allowEventDetails, SECRET.appointmentUrl];
   for (const name of [SECRET.clientId, SECRET.clientSecret]) {
     if (env[name]?.trim().startsWith('YOUR_')) {
       throw new Error(`Replace or remove the .env.example placeholder in ${name}`);
     }
   }
-  const level = env[SECRET.detailLevel]?.trim();
-  if (level && !EVENT_DETAIL_LEVELS.some((allowed) => allowed === level)) {
-    throw new Error('Invalid GOOGLE_CALENDAR_DETAIL_LEVEL');
+  const allow = env[SECRET.allowEventDetails]?.trim().toLowerCase();
+  if (allow && allow !== 'true' && allow !== 'false') {
+    throw new Error(`Invalid ${SECRET.allowEventDetails}; use true or false`);
   }
   return {
     resourceType: 'Parameters',

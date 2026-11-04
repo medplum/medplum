@@ -4,7 +4,7 @@
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import { allOk } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { writeProjectCeiling } from '../common/configuration';
+import { writeProjectCeiling, ceilingFromAllowEventDetails } from '../common/configuration';
 import { CONNECTION_SEARCH, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, SECRET } from '../common/constants';
 import { operationHandler } from '../common/contracts';
@@ -15,8 +15,7 @@ import {
   requireSharedBot,
   writeProjectSecrets,
 } from '../common/install';
-import { resolveDetailLevel } from '../common/mapping';
-import { getParam, parseDetailLevel } from '../common/operations';
+import { getParam } from '../common/operations';
 import {
   auditPolicyGrants,
   ensureInboundPolicy,
@@ -58,7 +57,9 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       );
     }
   }
-  parseDetailLevel(secrets[SECRET.detailLevel]);
+  const allowEventDetails =
+    secrets[SECRET.allowEventDetails] ?? project.secret?.find((s) => s.name === SECRET.allowEventDetails)?.valueString;
+  const ceiling = ceilingFromAllowEventDetails(allowEventDetails) ?? 'busy-only';
 
   await installProfiles(medplum);
   const syncBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.sync);
@@ -79,12 +80,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   const webhookMembership = await ensureBotMembership(medplum, projectId, webhookBot, webhookPolicy);
   secrets[SECRET.webhookUrl] = new URL(`webhook/${webhookMembership.id}`, medplum.getBaseUrl()).toString();
   await writeProjectSecrets(medplum, project, secrets);
-  await writeProjectCeiling(
-    medplum,
-    resolveDetailLevel(
-      secrets[SECRET.detailLevel] ?? project.secret?.find((s) => s.name === SECRET.detailLevel)?.valueString
-    )
-  );
+  await writeProjectCeiling(medplum, ceiling);
   for (const value of [
     BOT_IDENTIFIER_VALUE.connect,
     BOT_IDENTIFIER_VALUE.settings,

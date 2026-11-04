@@ -12,7 +12,7 @@ export const SECRET = {
   clientId: 'GOOGLE_CALENDAR_CLIENT_ID',
   clientSecret: 'GOOGLE_CALENDAR_CLIENT_SECRET',
   appointmentUrl: 'GOOGLE_CALENDAR_APPOINTMENT_URL',
-  detailLevel: 'GOOGLE_CALENDAR_DETAIL_LEVEL',
+  allowEventDetails: 'GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS',
   webhookUrl: 'GOOGLE_CALENDAR_WEBHOOK_URL',
 } as const;
 

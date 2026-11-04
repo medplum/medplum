@@ -16,7 +16,7 @@ Top-level connection extensions are:
 | `/worker-lease`       | extension   | `owner` valueString UUID; `expires` valueInstant               |
 | `/sync-state`         | extension   | Fields below                                                   |
 
-The project settings Basic has code `N|calendar-settings`, identifier `N/settings|Project/<customer-project-id>`, and extension `N/project-detail-level` with valueCode `busy-only`, `initials`, or `full`. Workers and practitioners read it; installation writes it. It contains no credential. A settings read failure is an error, not permission to fall back to a broader ceiling.
+The project settings Basic has code `N|calendar-settings`, identifier `N/settings|Project/<customer-project-id>`, and extension `N/project-detail-level` with valueCode `busy-only` (event details off) or `full` (on); `initials` from an earlier installation is still honored until reinstall. Workers and practitioners read it; installation writes it from `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS`. It contains no credential. A settings read failure is an error, not permission to fall back to a broader ceiling.
 
 Credentials use Basic code `N|calendar-credential`, identifier `N/credential|Basic/<connection-id>`, the same practitioner subject and Google account identifier, and `N/refresh-token` valueString. Only authorized workers and connect can read them. Migration removes the token from the connection's current version; history/vread must remain denied to practitioner and webhook memberships.
 
@@ -76,6 +76,7 @@ An outboundWork record has `start`/`end` valueInstant, `phase` valueCode (`disco
 | conflict                                      | repeated part          | Authorized conflict fields below                                                              |
 | disconnectWarning                             | valueString            | Explains that removing imported blocks makes time bookable                                    |
 | clientId                                      | valueString, optional  | Installed public Google OAuth client ID, for starting consent; never the client secret        |
+| detailsAllowed                                | valueBoolean           | Whether the project lets practitioners choose more than Busy                                  |
 
 Each conflict part contains `key` valueString (SHA-256 of the internal key), `appointment` valueReference, `start`/`end` valueInstant, and zero or more authorized `schedule` valueReferences. A denied or deleted reference is omitted; a transient authorization/read failure fails the operation instead of claiming resolution.
 

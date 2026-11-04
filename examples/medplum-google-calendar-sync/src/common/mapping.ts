@@ -87,7 +87,7 @@ export function toGoogleEventId(resourceId: string): string | undefined {
  * Resolves the effective Event Detail Level: the stricter of the project ceiling and the
  * practitioner's own choice. An unknown ceiling is the default; an unknown override is no
  * restriction.
- * @param ceiling - The project's `GOOGLE_CALENDAR_DETAIL_LEVEL` secret.
+ * @param ceiling - The project ceiling: `busy-only` when event details are off, `full` when on.
  * @param override - The practitioner's `event-detail-level` on their connection.
  * @returns The level to build events at.
  */

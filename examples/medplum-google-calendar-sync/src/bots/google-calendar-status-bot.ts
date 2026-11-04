@@ -3,6 +3,7 @@
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
+import { readProjectCeiling } from '../common/configuration';
 import { SECRET } from '../common/constants';
 import { operationHandler } from '../common/contracts';
 import { requirePractitionerRequester } from '../common/operations';
@@ -21,6 +22,9 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   if (clientId) {
     status.parameter = [...(status.parameter ?? []), { name: 'clientId', valueString: clientId }];
   }
+  // Whether the project lets practitioners choose more than Busy, so the app can offer the choice.
+  const detailsAllowed = (await readProjectCeiling(medplum)) !== 'busy-only';
+  status.parameter = [...(status.parameter ?? []), { name: 'detailsAllowed', valueBoolean: detailsAllowed }];
   return status;
 }
 

@@ -6,6 +6,7 @@ import { OperationOutcomeError, forbidden } from '@medplum/core';
 import type { Appointment, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
+import { writeProjectCeiling } from '../common/configuration';
 import { findConnection, saveConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
 import { importIdentifier } from '../common/import';
@@ -183,6 +184,7 @@ test.each([
     { name: 'connected', valueBoolean: true },
     { name: 'stale', valueBoolean: true },
     { name: 'staleReason', valueCode: 'invalid-public-status' },
+    { name: 'detailsAllowed', valueBoolean: false },
   ]);
   expect(writes).not.toHaveBeenCalled();
 });
@@ -203,4 +205,13 @@ test('status returns the installed public client ID but never the client secret'
   });
   expect(result.parameter?.find((p) => p.name === 'clientId')?.valueString).toBe('client-1.apps.googleusercontent.com');
   expect(JSON.stringify(result)).not.toContain('do-not-return');
+});
+
+test('status reports whether the project lets practitioners choose event details', async () => {
+  const before = await handler(medplum, event);
+  expect(before.parameter).toContainEqual({ name: 'detailsAllowed', valueBoolean: false });
+
+  await writeProjectCeiling(medplum, 'full');
+  const after = await handler(medplum, event);
+  expect(after.parameter).toContainEqual({ name: 'detailsAllowed', valueBoolean: true });
 });

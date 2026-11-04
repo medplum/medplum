@@ -17,8 +17,8 @@ test('installation forwards only declared inputs and preserves an omitted projec
 });
 test('an omitted Google client defers to the project secrets; placeholders and bad levels fail first', () => {
   expect(installationInput({})).toEqual({ resourceType: 'Parameters', parameter: [] });
-  expect(() => installationInput({ ...credentials, GOOGLE_CALENDAR_DETAIL_LEVEL: 'full-with-invite' })).toThrow(
-    'Invalid GOOGLE_CALENDAR_DETAIL_LEVEL'
+  expect(() => installationInput({ ...credentials, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'initials' })).toThrow(
+    'Invalid GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS'
   );
   expect(() =>
     installationInput({ ...credentials, GOOGLE_CALENDAR_CLIENT_SECRET: 'YOUR_GOOGLE_CLIENT_SECRET' })
@@ -27,10 +27,10 @@ test('an omitted Google client defers to the project secrets; placeholders and b
 test('explicit detail level and application link are included', () => {
   const input = installationInput({
     ...credentials,
-    GOOGLE_CALENDAR_DETAIL_LEVEL: 'initials',
+    GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'true',
     GOOGLE_CALENDAR_APPOINTMENT_URL: 'https://example.com/appointments/{id}',
   });
-  expect(input.parameter).toContainEqual({ name: 'GOOGLE_CALENDAR_DETAIL_LEVEL', valueString: 'initials' });
+  expect(input.parameter).toContainEqual({ name: 'GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS', valueString: 'true' });
   expect(input.parameter).toContainEqual({
     name: 'GOOGLE_CALENDAR_APPOINTMENT_URL',
     valueString: 'https://example.com/appointments/{id}',

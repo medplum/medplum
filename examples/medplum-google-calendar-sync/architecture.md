@@ -41,7 +41,7 @@ Six type-level operations expose install, connect, status, settings, disconnect 
 
 Medplum owns Appointments and native blocks. Google import writes only owned `busy-unavailable` Slots on active practitioner Schedules. Those Slots are excluded from outbound sync. The importer discovers existing Schedules; it does not create scheduling configuration for the application.
 
-The effective outbound detail is the stricter of the project ceiling and practitioner choice. There is one bound detail-level value, not three profiles:
+The project switch `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` sets the ceiling: off is `busy-only`, on is `full`. The effective outbound detail is the stricter of that ceiling and the practitioner's choice. There is one bound detail-level value, not three profiles:
 
 - `busy-only`: Appointment title, time and authenticated application link, without a patient name.
 - `initials`: patient initials for a single-patient Appointment, with the application link.

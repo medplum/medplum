@@ -195,9 +195,9 @@ describe('SyncSession', () => {
     await connect(rivera, 'rt-rivera', 'initials');
     await connect(chen, 'rt-chen');
     const appt = await appointment({ serviceType: [{ text: 'Follow-up' }] });
-    await session(fakeDeps(calendars), { GOOGLE_CALENDAR_DETAIL_LEVEL: { name: 'l', valueString: 'full' } }).syncSource(
-      { resource: appt, deleted: false }
-    );
+    await session(fakeDeps(calendars), {
+      GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: { name: 'l', valueString: 'true' },
+    }).syncSource({ resource: appt, deleted: false });
     expect(calendars.get('access-for-rt-rivera')?.upserts[0]?.summary).toBe('Appointment · J.S.');
     expect(calendars.get('access-for-rt-chen')?.upserts[0]?.summary).toBe('Jane Smith · Follow-up');
   });
@@ -330,9 +330,9 @@ describe('SyncSession', () => {
         },
       ],
     });
-    await session(fakeDeps(calendars), { GOOGLE_CALENDAR_DETAIL_LEVEL: { name: 'l', valueString: 'full' } }).syncSource(
-      { resource: appt, deleted: false }
-    );
+    await session(fakeDeps(calendars), {
+      GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: { name: 'l', valueString: 'true' },
+    }).syncSource({ resource: appt, deleted: false });
     expect(calendars.get('access-for-rt-rivera')?.upserts[0]?.summary).toBe('Jane Smith · Follow-up visit');
   });
 });

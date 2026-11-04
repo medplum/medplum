@@ -52,7 +52,7 @@ const entries = [
       param(SECRET.clientId, 'string'),
       param(SECRET.clientSecret, 'string'),
       param(SECRET.appointmentUrl, 'string'),
-      param(SECRET.detailLevel, 'string'),
+      param(SECRET.allowEventDetails, 'string'),
     ],
     [param('installed', 'boolean', 1), param('outcome', 'OperationOutcome', 1)],
   ],
@@ -71,7 +71,13 @@ const entries = [
     'status',
     BOT_IDENTIFIER_VALUE.status,
     [],
-    [...summary, param('activeConflictCount', 'integer'), conflict, param('clientId', 'string')],
+    [
+      ...summary,
+      param('activeConflictCount', 'integer'),
+      conflict,
+      param('clientId', 'string'),
+      param('detailsAllowed', 'boolean'),
+    ],
   ],
   ['settings', BOT_IDENTIFIER_VALUE.settings, [param('eventDetailLevel', 'string', 1)], summary],
   ['disconnect', BOT_IDENTIFIER_VALUE.disconnect, [param('forgetRevoked', 'boolean')], summary],
@@ -153,10 +159,13 @@ function validateParts(actual: ParametersParameter[], definitions: OperationDefi
       throw new Error(`Empty or invalid parameter: ${p.name}`);
     }
     if (
-      ['eventDetailLevel', 'effectiveDetailLevel', SECRET.detailLevel].includes(p.name) &&
+      ['eventDetailLevel', 'effectiveDetailLevel'].includes(p.name) &&
       !EVENT_DETAIL_LEVELS.includes(value as (typeof EVENT_DETAIL_LEVELS)[number])
     ) {
       throw new Error(`eventDetailLevel must be one of ${EVENT_DETAIL_LEVELS.join(', ')}`);
+    }
+    if (p.name === SECRET.allowEventDetails && !['true', 'false'].includes(String(value).trim().toLowerCase())) {
+      throw new Error(`${SECRET.allowEventDetails} must be true or false`);
     }
     if (['instant', 'dateTime'].includes(d.type ?? '') && !Number.isFinite(Date.parse(String(value)))) {
       throw new Error(`Invalid date: ${p.name}`);

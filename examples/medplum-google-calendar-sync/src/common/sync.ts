@@ -19,7 +19,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { readProjectCeiling } from './configuration';
+import { ceilingFromAllowEventDetails, readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, readConnection, updateConnection } from './connection';
 import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM, SECRET } from './constants';
@@ -130,7 +130,7 @@ export class SyncSession {
     private readonly deps: SyncDeps = DEFAULT_DEPS
   ) {
     this.oauth = getOAuthClient(secrets);
-    this.detailCeiling = secrets?.[SECRET.detailLevel]?.valueString?.trim() || undefined;
+    this.detailCeiling = ceilingFromAllowEventDetails(secrets?.[SECRET.allowEventDetails]?.valueString);
     this.appointmentUrlTemplate = secrets?.[SECRET.appointmentUrl]?.valueString?.trim() || undefined;
   }
 

@@ -36,18 +36,18 @@ chmod 600 examples/medplum-google-calendar-sync/.env
 
 Edit `.env` with your own values. The deploy, install, connect and live-test scripts read this file themselves; a variable already set in the shell takes precedence, so values can also be exported instead of written to the file.
 
-| Variable                                                     | Used by                                | Meaning                                                                                                |
-| ------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `PROJECT_ID`                                                 | Deploy, install, connect, smoke tests  | Explicit target project; must match the authenticated session                                          |
-| `MEDPLUM_PROFILE`                                            | CLI-backed commands                    | Named CLI login; defaults to `default`                                                                 |
-| `MEDPLUM_BASE_URL`                                           | Deploy, install, connect, smoke tests  | API server; defaults to hosted Medplum                                                                 |
-| `BASE_URL`                                                   | All deployment/service scripts         | Overrides `MEDPLUM_BASE_URL`; also used by the migration script                                        |
-| `CLIENT_ID`, `CLIENT_SECRET`                                 | Deploy without `--cli`, migration      | Medplum service-client credentials                                                                     |
-| `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET` | Install (optional), connect, migration | Google OAuth client; the installer reads it from project secrets when these are unset                  |
-| `GOOGLE_CALENDAR_DETAIL_LEVEL`                               | Install                                | Project ceiling: `busy-only`, `initials`, or `full`; omit on reinstall to preserve an existing ceiling |
-| `GOOGLE_CALENDAR_APPOINTMENT_URL`                            | Install                                | Optional authenticated app deep link containing `{id}`                                                 |
-| `E2E_MANIFEST`                                               | Live tests and cleanup                 | Absolute path to a new ignored test manifest; reuse that path only for cleanup                         |
-| `CONNECTION_ID`                                              | Mirror migration                       | Existing connection Basic ID; migration checks the authenticated project                               |
+| Variable                                                     | Used by                                | Meaning                                                                                                         |
+| ------------------------------------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `PROJECT_ID`                                                 | Deploy, install, connect, smoke tests  | Explicit target project; must match the authenticated session                                                   |
+| `MEDPLUM_PROFILE`                                            | CLI-backed commands                    | Named CLI login; defaults to `default`                                                                          |
+| `MEDPLUM_BASE_URL`                                           | Deploy, install, connect, smoke tests  | API server; defaults to hosted Medplum                                                                          |
+| `BASE_URL`                                                   | All deployment/service scripts         | Overrides `MEDPLUM_BASE_URL`; also used by the migration script                                                 |
+| `CLIENT_ID`, `CLIENT_SECRET`                                 | Deploy without `--cli`, migration      | Medplum service-client credentials                                                                              |
+| `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET` | Install (optional), connect, migration | Google OAuth client; the installer reads it from project secrets when these are unset                           |
+| `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS`                        | Install                                | `true` lets each practitioner choose `busy-only`, `initials` or `full`; `false` or unset keeps every event Busy |
+| `GOOGLE_CALENDAR_APPOINTMENT_URL`                            | Install                                | Optional authenticated app deep link containing `{id}`                                                          |
+| `E2E_MANIFEST`                                               | Live tests and cleanup                 | Absolute path to a new ignored test manifest; reuse that path only for cleanup                                  |
+| `CONNECTION_ID`                                              | Mirror migration                       | Existing connection Basic ID; migration checks the authenticated project                                        |
 
 The local connection helper uses `GOOGLE_CALENDAR_CLIENT_ID` (or legacy `GOOGLE_CLIENT_ID`) and the selected CLI profile. It can instead use `MEDPLUM_ACCESS_TOKEN`, but still checks `PROJECT_ID`.
 
@@ -78,7 +78,7 @@ A Medplum super admin adds the shared project to the customer project's `link` l
 
 ## 4. Enter the Google client and install (customer administrator)
 
-In the Medplum app, open the customer project's admin page, choose the Secrets tab, and add two secrets with these exact names: `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET`. Optionally add `GOOGLE_CALENDAR_DETAIL_LEVEL` (`busy-only`, `initials` or `full`; the default is `busy-only`) and `GOOGLE_CALENDAR_APPOINTMENT_URL`. The client secret never leaves the project.
+In the Medplum app, open the customer project's admin page, choose the Secrets tab, and add two secrets with these exact names: `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET`. Optionally add `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` and `GOOGLE_CALENDAR_APPOINTMENT_URL`. Leave event details off unless your organization has approved sending patient details to Google: initials or names next to an appointment time count as protected health information, so turn this on only for Google Workspace accounts covered by a business associate agreement. The client secret never leaves the project.
 
 Then, as that administrator, invoke `Project/$google-calendar-install` with an empty `Parameters` body. From a terminal with the Medplum CLI logged in to the customer project:
 
@@ -92,7 +92,7 @@ The installer reads the Google client from the project secrets, installs profile
 
 Read the returned `outcome`, including warnings, even when `installed=true`. Apply the practitioner and ordinary Slot policy entries within the application's existing scopes. Replace broader grants: appending restrictive entries does not remove permissions granted elsewhere. Give practitioners access to the public operation Bots and OperationDefinitions. The installer reports broad access conservatively and does not rewrite practitioner policies. See [policy examples](state-and-status.md#permission-requirements).
 
-The project defaults to `busy-only` on first install. Re-run installation to rotate the Google client secret, change the ceiling, or repair configuration. New projects need no migration or earlier integration. [Historical migration notes](migration-notes.md) apply only to prototype sandboxes.
+Event details are off on first install, so every event syncs as Busy. Re-run installation to rotate the Google client secret, turn event details on or off, or repair configuration. New projects need no migration or earlier integration. [Historical migration notes](migration-notes.md) apply only to prototype sandboxes.
 
 ## 5. Connect a practitioner
 

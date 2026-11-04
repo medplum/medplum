@@ -5,7 +5,7 @@ import type { MedplumClient } from '@medplum/core';
 import { getExtensionValue } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import type { EventDetailLevel } from './constants';
-import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
+import { GOOGLE_CALENDAR_NAMESPACE, SECRET } from './constants';
 import { resolveDetailLevel } from './mapping';
 import { PROFILES } from './profiles';
 import { currentProjectId, projectQuery } from './project';
@@ -13,6 +13,23 @@ import { ifMatch } from './versioning';
 
 export const CONFIG_SEARCH = `code=${GOOGLE_CALENDAR_NAMESPACE}|calendar-settings`;
 const LEVEL_URL = `${GOOGLE_CALENDAR_NAMESPACE}/project-detail-level`;
+
+/**
+ * The project switch `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` as the stored ceiling. Off keeps every
+ * mirror Busy; on lets each practitioner choose busy-only, initials or full.
+ * @param value - The secret or parameter value, `true` or `false`.
+ * @returns The ceiling, or undefined when the value is absent.
+ */
+export function ceilingFromAllowEventDetails(value: string | undefined): EventDetailLevel | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  if (normalized !== 'true' && normalized !== 'false') {
+    throw new Error(`${SECRET.allowEventDetails} must be true or false`);
+  }
+  return normalized === 'true' ? 'full' : 'busy-only';
+}
 
 export async function readProjectCeiling(medplum: MedplumClient, fallback?: string): Promise<EventDetailLevel> {
   const matches = await medplum.searchResources('Basic', await projectQuery(medplum, `${CONFIG_SEARCH}&_count=2`), {

@@ -20,7 +20,7 @@ export const INSTALL_SECRETS: { name: string; required: boolean }[] = [
   { name: SECRET.clientId, required: true },
   { name: SECRET.clientSecret, required: true },
   { name: SECRET.appointmentUrl, required: false },
-  { name: SECRET.detailLevel, required: false },
+  { name: SECRET.allowEventDetails, required: false },
 ];
 
 /**

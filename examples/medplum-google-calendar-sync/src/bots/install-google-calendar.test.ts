@@ -118,13 +118,13 @@ describe('install-google-calendar', () => {
     expect(readState(saved).outboundRequest).toBeTruthy();
   });
 
-  test('requires the client credentials as parameters or project secrets, and a valid detail level', async () => {
+  test('requires the client credentials as parameters or project secrets, and a true/false detail switch', async () => {
     await expect(handler(medplum, event(params({ GOOGLE_CALENDAR_CLIENT_ID: 'cid' })))).rejects.toThrow(
       'GOOGLE_CALENDAR_CLIENT_SECRET is not a project secret'
     );
     await expect(
-      handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_DETAIL_LEVEL: 'everything' })))
-    ).rejects.toThrow('must be one of');
+      handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'initials' })))
+    ).rejects.toThrow('must be true or false');
   });
 
   test('installs from the Google client a customer admin entered as project secrets', async () => {
@@ -159,7 +159,7 @@ describe('install-google-calendar', () => {
   });
 
   test('wires the project up, and re-running repairs rather than duplicates', async () => {
-    const first = await handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_DETAIL_LEVEL: 'initials' })));
+    const first = await handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'true' })));
     expect(isOk(outcome(first))).toBe(true);
     expect(outcome(first).issue[0].details?.text).toContain('subject=%profile');
     expect(outcome(first).issue[0].details?.text).not.toContain('DetectedIssue');
@@ -170,7 +170,7 @@ describe('install-google-calendar', () => {
       expect.arrayContaining([
         { name: 'GOOGLE_CALENDAR_CLIENT_ID', valueString: 'cid' },
         { name: 'GOOGLE_CALENDAR_CLIENT_SECRET', valueString: 'secret-1' },
-        { name: 'GOOGLE_CALENDAR_DETAIL_LEVEL', valueString: 'initials' },
+        { name: 'GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS', valueString: 'true' },
       ])
     );
 
