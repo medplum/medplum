@@ -123,6 +123,10 @@ Optional ARN of the WAF IP Set to use for the storage CloudFront Distribution. W
 
 Optional number of days after which bot inputs written by the server [`storeBotInput`](/docs/self-hosting/server-config#storebotinput) setting are deleted. When set, the storage bucket gets lifecycle rules scoped to the `bot/` prefix; other objects, such as Binary content, are unaffected. Because the bucket is versioned, the expired version is permanently removed one day after expiration. By default, bot inputs are kept indefinitely.
 
+### botLambdaLoggingEnabled
+
+Optional flag (default `false`). When `true`, the IAM role that bot Lambdas run under gets an inline policy allowing `logs:CreateLogGroup`, `logs:CreateLogStream` and `logs:PutLogEvents` on the bot functions' own log groups (`/aws/lambda/medplum-bot-lambda-*`) in the stack's account and region, so bot output reaches CloudWatch Logs. By default the role has no permissions at all, which keeps bot code isolated from other AWS resources; enable this only if you trust the bots deployed in your environment.
+
 ### maxAzs
 
 The maximum number of availability zones to use. If you want to use all availability zones, choose a large number such as 99. If you want to restrict the number, for example to manage EIP limits, then choose a small number such as 1 or 2.

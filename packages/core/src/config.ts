@@ -99,6 +99,8 @@ export interface MedplumSourceInfraConfig {
   guardDutyMalwareProtectionOnDemandOnly?: ValueOrExternalSecret<boolean>;
   /** Delete bot inputs written by the server's `storeBotInput` setting (`bot/` prefix) after this many days. */
   storageBotInputExpirationDays?: ValueOrExternalSecret<number>;
+  /** Allow bot Lambdas to write to CloudWatch Logs. Off by default, so the bot Lambda role has no permissions. */
+  botLambdaLoggingEnabled?: ValueOrExternalSecret<boolean>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled?: ValueOrExternalSecret<boolean>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
@@ -278,6 +280,8 @@ export interface MedplumInfraConfig {
   guardDutyMalwareProtectionOnDemandOnly?: boolean;
   /** Delete bot inputs written by the server's `storeBotInput` setting (`bot/` prefix) after this many days. */
   storageBotInputExpirationDays?: number;
+  /** Allow bot Lambdas to write to CloudWatch Logs. Off by default, so the bot Lambda role has no permissions. */
+  botLambdaLoggingEnabled?: boolean;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled: boolean;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
