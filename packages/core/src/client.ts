@@ -625,6 +625,10 @@ export interface InviteRequest {
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
+  /**
+   * Additional FHIR search parameters used to identify an existing ProjectMembership during an upsert.
+   */
+  membershipSearchCriteria?: Record<string, string | string[]>;
   upsert?: boolean;
   forceNewMembership?: boolean;
   mfaRequired?: boolean;
