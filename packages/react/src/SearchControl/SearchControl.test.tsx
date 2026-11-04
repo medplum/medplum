@@ -585,99 +585,78 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
-  test('Field editor onOk', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-      },
+  test('Columns editor opens and hides a column', async () => {
+    let currSearch: SearchRequest | undefined;
+    await setup({
+      search: { resourceType: 'Patient', fields: ['name', 'birthDate'] },
       onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Fields'));
+      onChange: (e) => {
+        currSearch = e.definition;
+      },
     });
 
-    expect(await screen.findByText('OK')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Columns'));
+    });
+    expect(await screen.findByText('Reset Default')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByTestId('column-birthDate'));
     });
+    expect(currSearch?.fields).toEqual(['name']);
   });
 
-  test('Field editor onCancel', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-      },
+  test('Columns editor reset restores the default fields', async () => {
+    let currSearch: SearchRequest | undefined;
+    await setup({
+      search: { resourceType: 'Patient', fields: ['name'] },
+      defaultFields: ['name', 'gender'],
       onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Fields'));
+      onChange: (e) => {
+        currSearch = e.definition;
+      },
     });
 
-    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
-
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Close'));
+      fireEvent.click(screen.getByText('Columns'));
     });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Reset Default'));
+    });
+
+    expect(currSearch?.fields).toEqual(['name', 'gender']);
   });
 
-  async function openFieldOptions(): Promise<void> {
+  async function openColumnOptions(): Promise<void> {
     await setup({ search: { resourceType: 'Patient', fields: ['name'] }, onLoad: vi.fn() });
     await act(async () => {
-      fireEvent.click(screen.getByText('Fields'));
+      fireEvent.click(screen.getByText('Columns'));
     });
-    await act(async () => {
-      fireEvent.focus(await screen.findByPlaceholderText('Select fields to display'));
-    });
-    await screen.findByRole('option', { name: 'Name', hidden: true });
+    await screen.findByText('Reset Default');
   }
 
-  function fieldOption(name: string): HTMLElement | null {
-    return screen.queryByRole('option', { name, hidden: true });
+  function columnOption(name: string): HTMLElement | null {
+    return screen.queryByRole('button', { name, hidden: true });
   }
 
-  test('Field editor offers resource properties that have no search parameter', async () => {
-    await openFieldOptions();
-    expect(fieldOption('Photo')).toBeInTheDocument();
-    expect(fieldOption('Marital Status')).toBeInTheDocument();
-    expect(fieldOption('Meta')).toBeInTheDocument();
+  test('Columns editor offers resource properties that have no search parameter', async () => {
+    await openColumnOptions();
+    expect(columnOption('Photo')).toBeInTheDocument();
+    expect(columnOption('Marital Status')).toBeInTheDocument();
+    expect(columnOption('Meta')).toBeInTheDocument();
   });
 
-  test('Field editor offers a property once, even when a search parameter shares its name', async () => {
-    await openFieldOptions();
-    expect(fieldOption('Birth Date')).toBeInTheDocument();
-    expect(fieldOption('Birthdate')).toBeNull();
-    expect(screen.getAllByRole('option', { name: 'ID', hidden: true })).toHaveLength(1);
+  test('Columns editor offers a property once, even when a search parameter shares its name', async () => {
+    await openColumnOptions();
+    expect(columnOption('Birth Date')).toBeInTheDocument();
+    expect(columnOption('Birthdate')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'ID', hidden: true })).toHaveLength(1);
   });
 
-  test('Field editor still offers search parameters that are not properties', async () => {
-    await openFieldOptions();
-    expect(fieldOption('Last Updated')).toBeInTheDocument();
-    expect(fieldOption('Phone')).toBeInTheDocument();
+  test('Columns editor still offers search parameters that are not properties', async () => {
+    await openColumnOptions();
+    expect(columnOption('_lastUpdated')).toBeInTheDocument();
+    expect(columnOption('Phone')).toBeInTheDocument();
   });
 
   test('Filter popover applies a removed filter to the search', async () => {

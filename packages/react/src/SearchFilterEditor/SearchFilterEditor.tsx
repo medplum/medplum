@@ -28,6 +28,12 @@ export interface SearchFilterEditorProps {
   readonly onCancel: () => void;
 }
 
+/**
+ * Modal for editing the filters of a search.
+ * @deprecated Use `SearchFilterPopover`, the popover that replaces this modal in the `SearchControl` toolbar.
+ * @param props - The filter editor props.
+ * @returns The filter editor modal, or null when not visible.
+ */
 export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
   const [search, setSearch] = useState(deepClone(props.search));
 
