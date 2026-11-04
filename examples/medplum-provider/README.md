@@ -59,9 +59,64 @@ Restart `npm run dev` after changing `.env`.
 
 ### Google Calendar
 
-Integrations > Google Calendar lets a practitioner connect their Google Calendar. It needs the [Google Calendar sync example](../medplum-google-calendar-sync) installed in the project. The page reads the project's installed Google OAuth client ID from the status operation; the client secret stays in the project secrets.
+Integrations > Google Calendar lets a practitioner connect their Google Calendar. Once connected:
 
-Register `<app origin>/integrations/google-calendar/callback` as an authorized redirect URI on that client, for example `http://localhost:3001/integrations/google-calendar/callback`. To test against a different client, set `GOOGLE_CALENDAR_CLIENT_ID` in `.env`.
+- Appointments and blocked time on the practitioner's Schedules appear on their primary Google Calendar.
+- Busy time on that Google Calendar appears as blocked time on their Schedules, so it can't be booked through `$find` and `$book`.
+- Patients are never added to Google events as guests.
+
+The page is a front end for the [Google Calendar sync example](../medplum-google-calendar-sync), which does the work in Bots. The app stores nothing itself: it calls the `Practitioner/$google-calendar-*` operations, and the Google client secret stays in the project.
+
+#### Project setup
+
+A project administrator does this once per project. [The sync example's setup guide](../medplum-google-calendar-sync/setup.md) has the details.
+
+1. **Link the shared Bots project.** The Google Calendar Bots live in one shared project, which an operator deploys once for all customer projects. A Medplum super admin links that project to yours and turns on the `bots` and `cron` features. Without the link, the page says Google Calendar sync is not installed.
+2. **Create a Google OAuth client.** In Google Cloud, enable the Google Calendar API and create a Web application client. Add `<app origin>/integrations/google-calendar/callback` as an authorized redirect URI, for example `https://provider.example.com/integrations/google-calendar/callback`. For local development, a Desktop client also accepts `http://localhost:3001/integrations/google-calendar/callback`.
+3. **Add the project secrets.** In the Medplum app, open Admin > Project > Secrets:
+
+   | Secret                                | Required | Value                                                                                                                                           |
+   | ------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `GOOGLE_CALENDAR_CLIENT_ID`           | Yes      | The OAuth client ID. The page reads it from the status operation, so the app needs no copy.                                                     |
+   | `GOOGLE_CALENDAR_CLIENT_SECRET`       | Yes      | The OAuth client secret. Only the Bots read it.                                                                                                 |
+   | `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` | No       | `true` lets each practitioner choose Busy only, Initials or Full details. `false` or unset shows every appointment as Busy. See the note below. |
+   | `GOOGLE_CALENDAR_APPOINTMENT_URL`     | No       | A link added to each Google event, with `{id}` replaced by the Appointment ID, for example `https://provider.example.com/Appointment/{id}`.     |
+
+4. **Run the installer.** As a project administrator:
+
+   ```sh
+   medplum post 'Project/$google-calendar-install' '{"resourceType":"Parameters"}'
+   ```
+
+   The installer copies the secrets into the integration's settings. Changing a secret later does nothing until you run the installer again.
+
+   The installer also creates the address Google sends calendar changes to and saves it as the secret `GOOGLE_CALENDAR_WEBHOOK_URL`. Don't set or edit it yourself; running the installer again recreates it. Nothing needs configuring in Google Cloud for it.
+
+5. **Grant practitioner access.** The installer's response lists the AccessPolicy entries practitioners need: read access to the operation Bots and OperationDefinitions, and their own status. See [permission requirements](../medplum-google-calendar-sync/state-and-status.md#permission-requirements). To book visits from the Schedule page, practitioners also need to create Appointments and Encounters; without that, Create Visit fails.
+
+Event details are off by default. Patient initials or names next to an appointment time count as protected health information, so turn on `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` only if your organization has approved sending patient details to Google, for example for Google Workspace accounts covered by a business associate agreement.
+
+#### Connecting a calendar
+
+1. Open Integrations, find the Google Calendar card and click **Set Up**.
+2. Click **Connect Google Calendar**, then approve access in Google.
+3. Back in the app, the page shows the connected account, the last sync in each direction, and any appointments that overlap Google busy time.
+
+From the same page a practitioner can change how much detail Google events show (when the project allows it), queue a sync with **Sync now**, or disconnect. Disconnecting removes the blocked time imported from Google, so those times can be booked again.
+
+The first sync takes a few minutes. Events already in the past keep the detail level they were sent with when a practitioner raises it.
+
+#### Troubleshooting
+
+| What you see                            | What to check                                                                                                                            |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| "Google Calendar sync is not installed" | The shared project is linked, the installer has run, and the practitioner's policy can read the operation Bots and OperationDefinitions. |
+| "No Google OAuth client installed"      | Both client secrets are set, then the installer was run again.                                                                           |
+| Google shows `redirect_uri_mismatch`    | The callback URL for this app's origin is registered on the OAuth client.                                                                |
+| "Reconnect required"                    | Google revoked access or the consent was incomplete. Click **Reconnect Google Calendar** and approve all scopes.                         |
+| The detail choice is missing            | `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` is `true`, and the installer was run after setting it.                                             |
+
+To test against a different OAuth client without changing the project, set `GOOGLE_CALENDAR_CLIENT_ID` in `.env`. It overrides the client ID the page reads from the project.
 
 ### A note on value sets
 
