@@ -10,6 +10,7 @@ import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
 import type { RedisWithoutDuplicate } from './redis';
 import { getAllRedisInstances } from './redis';
+import { testQueueBackend } from './workers/backend';
 
 const hostname = os.hostname();
 const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
@@ -51,6 +52,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     postgresReader: globalShardResults.readerOk,
     redis: redisResult.default,
     redisInstances: redisResult,
+    backgroundJobs: (await testQueueBackend()) ?? redisResult.backgroundJobs ?? redisResult.default,
   });
 }
 

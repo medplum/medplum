@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Reference, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
 import { getAuthenticatedContext } from '../context';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import type { AuthState } from '../oauth/middleware';
+import { Queue, Worker } from './backend';
 import type { AsyncJobTracking } from './base';
 import { getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';

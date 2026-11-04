@@ -36,5 +36,6 @@ Learn how to build and deploy Medplum from source code on bare metal infrastruct
 
 ## Additional Resources
 
+- Configure [background job storage](/docs/self-hosting/background-jobs), including the optional PostgreSQL backend.
 - Explore [self-hosting articles](/blog/tags/self-host) on the Medplum blog
 - Track [self-hosting features and improvements](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on GitHub

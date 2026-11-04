@@ -5,6 +5,7 @@ import type { Resource } from '@medplum/fhirtypes';
 import type { WorkerName } from '../config/types';
 import type { ServerConfig } from '../config/utils';
 import { getLogger, globalLogger } from '../logger';
+import { closeQueueBackend, initQueueBackend } from './backend';
 import { initBatchWorker } from './batch';
 import { initBulkExportWorker } from './bulk-export';
 import { initCronWorker } from './cron';
@@ -42,16 +43,29 @@ export async function initWorkers(config: ServerConfig): Promise<void> {
   const enabledWorkers = config.workers?.enabled;
   const enableAll = config.workers?.enabled?.includes('*');
 
-  for (const { name, init } of workerDefs) {
-    const workerEnabled = enableAll || enabledWorkers === undefined || enabledWorkers.includes(name);
-    const { name: queueName, queue, worker } = init(config, { workerEnabled });
-    // a queue can be disabled, in which case, don't register it
-    if (queue) {
-      queueRegistry.add(queueName, queue, worker);
-      // Fail startup if the global concurrency limit cannot be applied: it is unsafe to run the
-      // workers without it configured correctly.
-      await applyGlobalConcurrency(queue, getMedplumBullmqConfig(config, name));
+  await initQueueBackend(
+    config,
+    workerDefs.filter(({ name }) => enableAll || enabledWorkers === undefined || enabledWorkers.includes(name)).length
+  );
+  try {
+    for (const { name, init } of workerDefs) {
+      const workerEnabled = enableAll || enabledWorkers === undefined || enabledWorkers.includes(name);
+      const { name: queueName, queue, worker } = init(config, { workerEnabled });
+      // a queue can be disabled, in which case, don't register it
+      if (queue) {
+        queueRegistry.add(queueName, queue, worker);
+        // Fail startup if the global concurrency limit cannot be applied: it is unsafe to run the
+        // workers without it configured correctly.
+        await applyGlobalConcurrency(queue, getMedplumBullmqConfig(config, name));
+      }
     }
+  } catch (err) {
+    try {
+      await closeWorkers();
+    } catch (cleanupError) {
+      globalLogger.error('Error cleaning up background jobs after startup failure', { err: cleanupError });
+    }
+    throw err;
   }
   globalLogger.debug('Workers initialized');
 }
@@ -60,7 +74,11 @@ export async function initWorkers(config: ServerConfig): Promise<void> {
  * Shuts down all background workers.
  */
 export async function closeWorkers(): Promise<void> {
-  await queueRegistry.closeAll();
+  try {
+    await queueRegistry.closeAll();
+  } finally {
+    await closeQueueBackend();
+  }
 }
 
 /**

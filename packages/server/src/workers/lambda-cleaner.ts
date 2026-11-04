@@ -6,7 +6,6 @@ import type { WithId } from '@medplum/core';
 import { EMPTY } from '@medplum/core';
 import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
 import type { DeleteLambdaVersionOptions, DeleteOldLambdaVersionStats } from '../cloud/aws/lambda';
 import {
   DeleteLambdaVersionOptionsDefaults,
@@ -15,6 +14,7 @@ import {
 } from '../cloud/aws/lambda';
 import { tryRunInRequestContext } from '../context';
 import { globalLogger } from '../logger';
+import { Queue, Worker } from './backend';
 import type { AsyncJobTracking } from './base';
 import { getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';

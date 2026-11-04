@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Subscription } from '@medplum/fhirtypes';
-import type { Job, QueueOptions, Worker } from 'bullmq';
-import { DelayedError, Queue } from 'bullmq';
+import type { Job, QueueOptions } from 'bullmq';
+import { DelayedError } from 'bullmq';
 import EventEmitter from 'node:events';
 import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
@@ -12,6 +12,8 @@ import type { ServerConfig } from '../config/utils';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
 import { withTestContext } from '../test.setup';
+import type { Worker } from './backend';
+import { Queue } from './backend';
 import {
   addVerboseQueueLogging,
   applyGlobalConcurrency,
@@ -160,7 +162,7 @@ describe('worker utils', () => {
     }
 
     beforeEach(() => {
-      queue = new Queue(queueName);
+      queue = new Queue(queueName, { connection: {} });
       worker = new MockWorker(workerName) as unknown as Worker;
     });
 
@@ -179,7 +181,7 @@ describe('worker utils', () => {
       expect(queueRegistry.isClosing(queueName)).toBe(false);
 
       // Add second queue
-      const queue2 = new Queue(queueName + '2');
+      const queue2 = new Queue(queueName + '2', { connection: {} });
       const worker2 = new MockWorker(workerName + '2') as unknown as Worker;
       queueRegistry.add(queueName + '2', queue2, worker2);
 
@@ -232,6 +234,27 @@ describe('worker utils', () => {
       expect(queueRegistry.isClosing(queueName)).toBe(false);
     });
 
+    test('continues closing all queues and workers after a worker fails', async () => {
+      const registry = new DefaultQueueRegistry();
+      const queue2 = new Queue(queueName + '2', { connection: {} });
+      const worker2 = new MockWorker(workerName + '2');
+      const failure = new Error('worker close failed');
+      worker2.close.mockRejectedValueOnce(failure);
+      registry.add(queueName, queue, worker);
+      registry.add(queueName + '2', queue2, worker2 as unknown as Worker);
+
+      await expect(registry.closeAll()).rejects.toEqual(
+        new AggregateError([failure], 'Failed to close background job queues')
+      );
+      expect(worker2.close).toHaveBeenCalledOnce();
+      expect(queue2.close).toHaveBeenCalledOnce();
+      expect(worker.close).toHaveBeenCalledOnce();
+      expect(queue.close).toHaveBeenCalledOnce();
+      expect(registry.get(queueName)).toBeUndefined();
+      expect(registry.get(queueName + '2')).toBeUndefined();
+      await expect(registry.closeAll()).resolves.toBeUndefined();
+    });
+
     test('add with worker undefined (queue-only mode)', async () => {
       const queueRegistry = new DefaultQueueRegistry();
 
@@ -252,7 +275,7 @@ describe('worker utils', () => {
   describe('addVerboseQueueLogging', () => {
     test('logs appropriate messages for each worker event', () => {
       const queueName = 'TestLoggingQueue';
-      // const queue = new Queue(queueName);
+      // const queue = new Queue(queueName, { connection: {} });
       const queue = { name: queueName } as Queue;
       const worker = new EventEmitter() as unknown as Worker;
 

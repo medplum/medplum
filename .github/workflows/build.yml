@@ -482,6 +482,14 @@ jobs:
         run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
         env:
           PGPASSWORD: medplum
+      - name: Test PostgreSQL background jobs
+        working-directory: packages/server
+        run: |
+          PGPASSWORD=medplum psql -h 127.0.0.1 -U medplum -d medplum -v ON_ERROR_STOP=1 -c 'CREATE DATABASE medplum_jobs_test'
+          npx vitest run --config vite.postgres.config.ts
+        env:
+          MEDPLUM_TEST_QUEUE_DATABASE_URL: postgres://medplum:medplum@127.0.0.1:5432/medplum_jobs_test
+          MEDPLUM_TEST_QUEUE_REDIS_URL: redis://:medplum@127.0.0.1:6379/12
       - name: Test
         run: ./scripts/test.sh
         env:

@@ -46,3 +46,10 @@ export const Job = vi.fn().mockImplementation(function Job(
   };
 }) as Mock;
 export class UnrecoverableError extends Error {}
+
+export const createRedisBackend: Mock = vi.fn();
+export const createPostgresBackend: Mock = vi.fn();
+export const runMigrations: Mock = vi.fn();
+export function withBackend(): { Queue: typeof Queue; Worker: typeof Worker } {
+  return { Queue, Worker };
+}

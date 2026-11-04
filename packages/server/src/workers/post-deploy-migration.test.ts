@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { DelayedError, Job, Queue } from 'bullmq';
+import { DelayedError, Job } from 'bullmq';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -23,6 +23,7 @@ import * as serverRegistry from '../server-registry';
 import { TEST_SHARD_ID, withTestContext } from '../test.setup';
 import * as versionModule from '../util/version';
 import { getServerVersion } from '../util/version';
+import { Queue } from './backend';
 import { getAsyncJobTracking } from './base';
 import {
   addPostDeployMigrationJobData,

@@ -65,7 +65,7 @@ export function initRedis(config: ServerConfig): void {
       reconnectOnError,
     }) as RedisWithoutDuplicate;
   }
-  if (config.backgroundJobsRedis) {
+  if (config.backgroundJobs?.backend !== 'postgres' && config.backgroundJobsRedis) {
     redisInstances.backgroundJobs.redis = new Redis({
       ...config.backgroundJobsRedis,
       reconnectOnError,

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
 import type { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import type { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import type * as Pg from 'pg';
@@ -31,6 +30,7 @@ import {
   waitForAsyncJob,
   withTestContext,
 } from '../test.setup';
+import type { Queue } from '../workers/backend';
 import type { CronJobData } from '../workers/cron';
 import { getCronQueue } from '../workers/cron';
 import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';

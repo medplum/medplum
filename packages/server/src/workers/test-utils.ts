@@ -3,10 +3,11 @@
 import type { BackgroundJobInteraction } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Resource, Subscription } from '@medplum/fhirtypes';
-import type { Job, Queue } from 'bullmq';
+import type { Job } from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
+import type { Queue } from './backend';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';

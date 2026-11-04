@@ -13,7 +13,6 @@ import {
 } from '@medplum/core';
 import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { canProjectReadBot } from '../bots/utils';
@@ -21,6 +20,7 @@ import { findProjectMembership, getInactiveReason } from '../fhir/projectmembers
 import type { Repository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { Queue, Worker } from './backend';
 import type { ProjectJobTarget } from './base';
 import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';

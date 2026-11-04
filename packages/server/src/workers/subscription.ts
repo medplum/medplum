@@ -34,7 +34,7 @@ import type {
   Subscription,
 } from '@medplum/fhirtypes';
 import type { Job, MinimalJob } from 'bullmq';
-import { Queue, UnrecoverableError, Worker } from 'bullmq';
+import { UnrecoverableError } from 'bullmq';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
 import { canProjectReadBot } from '../bots/utils';
@@ -58,6 +58,7 @@ import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditev
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventEntry, SubEventPayload } from '../ws/subscriptions';
+import { Queue, Worker } from './backend';
 import type { ProjectJobTarget } from './base';
 import { getJobSystemRepo } from './base';
 import {

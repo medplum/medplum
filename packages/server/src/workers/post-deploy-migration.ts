@@ -3,7 +3,6 @@
 import { capitalize, getReferenceString, normalizeErrorString, PropertyType, toTypedValue } from '@medplum/core';
 import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job, JobsOptions } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -32,6 +31,7 @@ import {
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
+import { Queue, Worker } from './backend';
 import { getAsyncJobTracking, getTrackingAsyncJobExecutor, normalizeJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {

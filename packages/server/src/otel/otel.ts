@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions, UpDownCounter } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
-import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
 import type { WorkerName } from '../config/types';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getAllShards } from '../fhir/sharding';
 import { heartbeat } from '../heartbeat';
+import type { Queue } from '../workers/backend';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
 import { getDownloadQueue } from '../workers/download';

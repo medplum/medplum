@@ -247,6 +247,7 @@ export function isBooleanConfig(key: string): boolean {
 }
 
 const objectKeys = new Set([
+  'backgroundJobs',
   'capabilityStatement',
   'tls',
   'ssl',

@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { getExtension } from '@medplum/core';
 import type { AsyncJob, Parameters, Subscription } from '@medplum/fhirtypes';
-import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
+import type { ConnectionOptions, Job, Processor, QueueOptions, WorkerOptions } from 'bullmq';
 import { DelayedError, UnrecoverableError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, WorkerName } from '../config/types';
@@ -16,6 +16,8 @@ import type { AuthState } from '../oauth/middleware';
 import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
+import type { Queue, QueueConnection, Worker } from './backend';
+import { getQueueBackendOptions } from './backend';
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
@@ -141,21 +143,32 @@ export class DefaultQueueRegistry implements QueueRegistry {
   }
 
   async closeAll(): Promise<void> {
-    // Close workers in reverse registration order
+    const errors: unknown[] = [];
+    // Close workers in reverse registration order. Continue closing the remaining
+    // resources if one fails, so checked-out PostgreSQL listeners are released.
     for (let i = this.queues.length - 1; i >= 0; i--) {
       const entry = this.queues[i];
-      // Drain worker first, so any jobs that need to finish can enqueue the next job before exiting
       if (entry.worker) {
-        await entry.worker.close();
+        try {
+          await entry.worker.close();
+        } catch (err) {
+          errors.push(err);
+        }
         entry.worker = undefined;
       }
-
       if (entry.queue) {
-        await entry.queue.close();
+        try {
+          await entry.queue.close();
+        } catch (err) {
+          errors.push(err);
+        }
         entry.queue = undefined;
       }
     }
     this.queues = [];
+    if (errors.length) {
+      throw new AggregateError(errors, 'Failed to close background job queues');
+    }
   }
 
   isClosing(name: string): boolean | undefined {
@@ -376,9 +389,9 @@ export function getMedplumBullmqConfig(
 export function getWorkerBullmqConfig(
   config: ServerConfig,
   workerName: WorkerName,
-  queueOptions: QueueOptions,
+  queueOptions: QueueOptions<QueueConnection>,
   workerDefaults?: Partial<MedplumBullmqConfig>
-): WorkerOptions {
+): WorkerOptions<QueueConnection> {
   // `queueOptions.defaultJobOptions` field and potentially others is not a valid `WorkerOptions`
   // property. It rides along as an inert excess key on the returned object (harmless, since `Worker`
   // ignores unrecognized options)
@@ -389,9 +402,9 @@ export function getBullmqRedisConnectionOptions(config: ServerConfig): Connectio
   return { ...(config.backgroundJobsRedis ?? config.redis), reconnectOnError };
 }
 
-export function defaultQueueOptions(config: ServerConfig): QueueOptions {
+export function defaultQueueOptions(config: ServerConfig): QueueOptions<QueueConnection> {
   return {
-    connection: getBullmqRedisConnectionOptions(config),
+    connection: getQueueBackendOptions(config),
     defaultJobOptions: {
       attempts: 3,
       backoff: {

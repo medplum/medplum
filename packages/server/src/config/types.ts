@@ -53,6 +53,10 @@ export interface MedplumServerConfig {
    * Separating background job queues from other purposes can improve performance under high load by isolating job queue operations.
    */
   backgroundJobsRedis?: MedplumRedisConfig;
+  /** Queue storage. Redis is used when omitted. PostgreSQL requires a dedicated connection string. */
+  backgroundJobs?:
+    | { backend: 'redis' }
+    | { backend: 'postgres'; postgres: { connectionString: string; maxConnections?: number } };
   shards?: Record<string, MedplumShardConfig>;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;

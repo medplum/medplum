@@ -78,8 +78,33 @@ export async function loadConfig(configName: string): Promise<ServerConfig> {
   }
 
   validateShardingConfig(config);
+  validateBackgroundJobsConfig(config);
   cachedConfig = addDefaults(config);
   return cachedConfig;
+}
+
+/** Validate queue storage settings from untyped configuration sources. */
+function validateBackgroundJobsConfig(config: MedplumServerConfig): void {
+  const jobs: unknown = config.backgroundJobs;
+  if (jobs === undefined) {
+    return;
+  }
+  if (!isObject(jobs) || (jobs.backend !== 'redis' && jobs.backend !== 'postgres')) {
+    throw new Error('Invalid backgroundJobs config: backend must be redis or postgres');
+  }
+  if (jobs.backend === 'postgres') {
+    if (
+      !isObject(jobs.postgres) ||
+      typeof jobs.postgres.connectionString !== 'string' ||
+      !jobs.postgres.connectionString.trim()
+    ) {
+      throw new Error('Invalid backgroundJobs config: postgres.connectionString is required');
+    }
+    const max = jobs.postgres.maxConnections;
+    if (max !== undefined && (!Number.isInteger(max) || (max as number) < 2)) {
+      throw new Error('Invalid backgroundJobs config: postgres.maxConnections must be an integer of at least 2');
+    }
+  }
 }
 
 /**

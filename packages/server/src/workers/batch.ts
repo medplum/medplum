@@ -14,7 +14,7 @@ import type { BatchEvent, BatchInitialState, FhirRequest } from '@medplum/fhir-r
 import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/fhir-router';
 import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import { DelayedError, Queue, Worker } from 'bullmq';
+import { DelayedError } from 'bullmq';
 import { getAuthenticatedContext } from '../context';
 import { addBatchTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
@@ -23,6 +23,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { BASE_METRIC_OPTIONS, incrementCounter } from '../otel/otel';
+import { Queue, Worker } from './backend';
 import type { AsyncJobTracking } from './base';
 import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
