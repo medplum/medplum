@@ -667,6 +667,12 @@ New projects are created with a set of **default access policies**, one per prof
 
 When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a ClientApplication](/docs/auth/client-credentials) without specifying an access policy, it receives the `ClientApplication` default. This includes the default client created with each new project.
 
+:::note[Deploying Bots with a ClientApplication]
+
+Because the `ClientApplication` default makes `Bot` read-only, a client with that policy cannot save or deploy Bots, for example with `medplum bot save` or `medplum bot deploy` (`Bot/$deploy` returns `403 Forbidden`). This applies to the default client of new projects. To deploy Bots from the CLI or a CI/CD pipeline, use a ClientApplication whose access policy grants write access to `Bot`.
+
+:::
+
 ### Switching a user to (or from) admin
 
 The `admin` flag does **not** bypass a user's access policy — it only grants access to project administration resource types (such as [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) and [`User`](/docs/api/fhir/medplum/user)) on top of the existing policy. This means that promoting a Practitioner to admin without also changing their policy would leave them "half-upgraded": still restricted by the read-only rules of the `Practitioner` default.
