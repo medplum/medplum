@@ -308,7 +308,7 @@
       "min": 1,
       "max": "1",
       "short": "The schedule on which the job runs",
-      "definition": "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write.",
+      "definition": "A schedule for the job to be executed, as a cron expression. An expression that is not a valid cron expression is rejected on write.",
       "comment": "",
       "inherited": false
     },
