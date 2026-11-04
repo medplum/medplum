@@ -111,6 +111,7 @@ import { logAsyncJobAccess } from './operations/utils/asyncjobexecutor';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
+import { hasAccessPolicy, isAccessPolicyRequired } from './projectmembership';
 import { getResourceTypesFromReferences, replaceConditionalReferences, validateResourceReferences } from './references';
 import type {
   ExecuteSqlOptions,
@@ -1078,6 +1079,15 @@ export class Repository extends FhirRepository implements Disposable {
     const projectId = this.getProjectId(existing, updated);
     if (projectId) {
       resultMeta.project = projectId;
+    }
+    if (
+      result.resourceType === 'ProjectMembership' &&
+      !hasAccessPolicy(result) &&
+      isAccessPolicyRequired(await this.getProjectById(projectId))
+    ) {
+      throw new OperationOutcomeError(
+        badRequest('Project requires an access policy', 'ProjectMembership.accessPolicy')
+      );
     }
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {

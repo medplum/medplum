@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, isUUID } from '@medplum/core';
-import type { AccessPolicy, Practitioner, Project, Reference } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, isUUID, Operator } from '@medplum/core';
+import type { AccessPolicy, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -120,6 +120,22 @@ describe('Project $init', () => {
     // Read-only resource types are NOT writable (only the readonly wildcard covers them)
     for (const readonlyType of PRACTITIONER_READONLY_RESOURCE_TYPES) {
       expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
+    }
+
+    // New projects require access policies, so the default client and owner get the Admin default policy
+    expect(updatedProject.setting).toContainEqual({ name: 'requireAccessPolicy', valueBoolean: true });
+    const memberships = await withTestContext(() =>
+      getGlobalSystemRepo().searchResources<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        filters: [{ code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) }],
+      })
+    );
+    expect(memberships.map((m) => m.profile.reference?.split('/')[0]).sort()).toStrictEqual([
+      'ClientApplication',
+      'Practitioner',
+    ]);
+    for (const membership of memberships) {
+      expect(membership.accessPolicy).toStrictEqual(adminEntry?.accessPolicy);
     }
   });
 

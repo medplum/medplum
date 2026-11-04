@@ -71,6 +71,23 @@ The MFA methods users in a Project can enroll in are controlled by the `allowedM
 
 The `appName` key in `Project.setting` white-labels the MFA content Medplum generates: emailed verification codes and the authenticator app entries created by enrollment QR codes. When unset, both name Medplum. See [Branding MFA emails and authenticator apps](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps).
 
+## Requiring access policies
+
+Set the `requireAccessPolicy` key in `Project.setting` to `valueBoolean: true` to require an
+[`AccessPolicy`](/docs/access/access-policies) on every `ProjectMembership` in the Project. A membership meets the
+requirement if it has an `accessPolicy` or at least one `access` entry. While the setting is enabled:
+
+- Creating or updating a `ProjectMembership` without an access policy fails, including when creating a new
+  `ClientApplication` or `Bot`.
+- `ClientApplication`, `Bot`, `Patient`, `Practitioner`, and `RelatedPerson` members without an access policy cannot
+  sign in, and their existing access tokens are rejected.
+
+The requirement applies to Project Admin memberships too, so make sure every admin has an access policy before enabling
+it.
+
+Projects created with the `Project/$init` operation have `requireAccessPolicy` enabled by default. Their default
+`ClientApplication` and owner memberships are assigned the Project's Default Admin Access Policy.
+
 ## Project SMTP
 
 Projects can send email through their own SMTP relay instead of the server-wide email provider, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for the full configuration reference. Operators can disable this fleet-wide with the [`allowProjectSmtp`](/docs/self-hosting/server-config#allowprojectsmtp) server config setting.

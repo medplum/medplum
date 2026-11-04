@@ -57,6 +57,10 @@ interface ProjectInitParameters {
   ownerEmail?: string;
 }
 
+export interface CreateProjectOptions {
+  readonly requireAccessPolicy?: boolean;
+}
+
 /**
  * Handles a request to create a new Project.
  *
@@ -100,7 +104,7 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
       return [badRequest('Project owner must not belong to another Project')];
     }
   }
-  const { project } = await createProject(params.name, owner);
+  const { project } = await createProject(params.name, owner, { requireAccessPolicy: true });
   return [created, buildOutputParameters(projectInitOperation, project)];
 }
 
@@ -108,11 +112,14 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
  * Creates a new project.
  * @param projectName - The new project name.
  * @param admin - The Project admin user.
+ * @param options - Optional project creation options.
+ * @param options.requireAccessPolicy - If true, enables the `requireAccessPolicy` project setting.
  * @returns The new project, and associated data.  Profile and membership are returned if and only if an admin user is specified.
  */
 export async function createProject(
   projectName: string,
-  admin: User
+  admin: User,
+  options?: CreateProjectOptions
 ): Promise<{
   project: WithId<Project>;
   client: WithId<ClientApplication>;
@@ -121,7 +128,8 @@ export async function createProject(
 }>;
 export async function createProject(
   projectName: string,
-  admin?: User
+  admin?: User,
+  options?: CreateProjectOptions
 ): Promise<{
   project: WithId<Project>;
   client: WithId<ClientApplication>;
@@ -130,7 +138,8 @@ export async function createProject(
 }>;
 export async function createProject(
   projectName: string,
-  admin?: User
+  admin?: User,
+  options?: CreateProjectOptions
 ): Promise<{
   project: WithId<Project>;
   client: WithId<ClientApplication>;
@@ -167,6 +176,9 @@ export async function createProject(
         'Default Practitioner Access Policy'
       );
 
+      // The default client and owner memberships need an access policy when the project requires one
+      const memberAccessPolicy = options?.requireAccessPolicy ? createReference(adminAccessPolicy) : undefined;
+
       const project = await txRepo.createResource<Project>(
         {
           resourceType: 'Project',
@@ -176,6 +188,7 @@ export async function createProject(
           strictMode: true,
           features: config.defaultProjectFeatures,
           systemSetting: config.defaultProjectSystemSetting,
+          setting: options?.requireAccessPolicy ? [{ name: 'requireAccessPolicy', valueBoolean: true }] : undefined,
           defaultAccessPolicies: [
             { profileType: 'Patient', accessPolicy: createReference(patientAccessPolicy) },
             { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
@@ -195,6 +208,7 @@ export async function createProject(
         project,
         name: project.name + ' Default Client',
         description: 'Default client for ' + project.name,
+        accessPolicy: memberAccessPolicy,
       });
 
       if (admin) {
@@ -206,7 +220,10 @@ export async function createProject(
           admin.lastName,
           admin.email
         );
-        const membership = await createProjectMembership(txRepo, admin, project, profile, { admin: true });
+        const membership = await createProjectMembership(txRepo, admin, project, profile, {
+          admin: true,
+          accessPolicy: memberAccessPolicy,
+        });
         return { project, profile, membership, client };
       }
       return { project, client };

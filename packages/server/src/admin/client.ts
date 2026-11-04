@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, singularize } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, singularize } from '@medplum/core';
 import type { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
+import { isAccessPolicyRequired } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
@@ -38,6 +39,9 @@ export interface CreateClientRequest extends Partial<ClientApplication> {
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
   const { project, accessPolicy, meta, ...rest } = request;
+  if (!accessPolicy && isAccessPolicyRequired(project)) {
+    throw new OperationOutcomeError(badRequest('Project requires an access policy', 'accessPolicy'));
+  }
 
   const systemRepo = repo.getSystemRepo();
   const client = await systemRepo.createResource<ClientApplication>({
