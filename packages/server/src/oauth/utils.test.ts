@@ -14,6 +14,7 @@ import { verifyJwt } from './keys';
 import {
   getAuthTokens,
   getClientApplication,
+  getClientApplicationMembership,
   getMembershipsForLogin,
   isSmartScopeSubset,
   tryLogin,
@@ -550,6 +551,47 @@ describe('OAuth utils', () => {
 
       const memberships = await getMembershipsForLogin(login);
       expect(memberships).toHaveLength(2);
+    });
+  });
+
+  test('Memberships in another Project do not resolve a client', async () => {
+    await withTestContext(async () => {
+      const home = await createTestProject({ withClient: true });
+      const other = await createTestProject({ withRepo: true });
+      const systemRepo = other.repo.getSystemRepo();
+
+      // Rows like this could be written through the FHIR API while project admins could create memberships
+      const otherClientMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(other.project),
+        user: createReference(home.client),
+        profile: createReference(home.client),
+      });
+      // The client's own membership is updated after the other one, so an unfiltered search could return either
+      await systemRepo.updateResource({ ...home.membership, externalId: randomUUID() });
+
+      await expect(getClientApplicationMembership(systemRepo, home.client)).resolves.toMatchObject({
+        id: home.membership.id,
+      });
+      await expect(getClientApplicationMembership(systemRepo, home.client, other.project.id)).resolves.toMatchObject({
+        id: otherClientMembership.id,
+      });
+
+      // A client without a membership in its own Project still resolves its membership elsewhere
+      const awayClient = await systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        meta: { project: home.project.id },
+      });
+      const awayMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(other.project),
+        user: createReference(awayClient),
+        profile: createReference(awayClient),
+      });
+      await expect(getClientApplicationMembership(systemRepo, awayClient)).resolves.toMatchObject({
+        id: awayMembership.id,
+      });
+      await expect(getClientApplicationMembership(systemRepo, awayClient, home.project.id)).resolves.toBeUndefined();
     });
   });
 

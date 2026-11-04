@@ -20,7 +20,6 @@ import type {
   AccessPolicyResource,
   Bot,
   ClientApplication,
-  Expression,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
@@ -356,18 +355,15 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
   }
 }
 
-/**
- * Returns a write constraint that requires a new resource's `project` element, if present, to be the admin's own Project.
- * Updates are covered by `readonlyFields`, which restores `project` from the previous version.
- * @param membership - The project admin's membership.
- * @returns The write constraint expression.
- */
-function ownProjectWriteConstraint(membership: ProjectMembership): Expression {
-  return {
-    language: 'text/fhirpath',
-    expression: `%before.exists() or project.empty() or project.reference = 'Project/${resolveId(membership.project)}'`,
-  };
-}
+// Project admins manage Users and memberships, but cannot create them through the FHIR API
+const adminNoCreateInteractions: AccessPolicyResource['interaction'] = [
+  'read',
+  'vread',
+  'update',
+  'delete',
+  'history',
+  'search',
+];
 
 /**
  * Updates the access policy to include project admin rules.
@@ -414,10 +410,12 @@ function applyProjectAdminAccessPolicy(
         interaction: ['read', 'vread', 'history', 'search'], // Read-only access to linked projects
       },
       {
+        // Memberships and Users are created through invite and the client and bot endpoints, which check
+        // the principal and credentials
         resourceType: 'ProjectMembership',
         criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
-        readonlyFields: ['project', 'user'],
-        writeConstraint: [ownProjectWriteConstraint(membership)],
+        readonlyFields: ['project', 'user', 'profile'],
+        interaction: adminNoCreateInteractions,
       },
       {
         resourceType: 'UserSecurityRequest',
@@ -429,7 +427,7 @@ function applyProjectAdminAccessPolicy(
         criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
-        writeConstraint: [ownProjectWriteConstraint(membership)],
+        interaction: adminNoCreateInteractions,
       },
       {
         resourceType: 'Cron',

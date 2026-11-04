@@ -149,6 +149,7 @@ The `interaction` array can contain any of the supported interaction types:
 Some FHIR interactions are used in concert by the server, and so should be considered together:
 
 - [Upserts](/docs/fhir-datastore/working-with-fhir#upsert) require `search` to identify existing resources, in addition to both `create` and `update`
+- A `PUT` to a deleted resource is a `create`: it requires `create` in addition to `update`
 - `search` access may be required as part of a `create` or `update` if the resource contains any [Conditional references](/docs/migration/convert-to-fhir#linking-data-using-conditional-references), in order to resolve references to individual resources
 - `read` access to referenced resource types is required in `create` and `update` interactions, if [`Project.checkReferencesOnWrite`](/docs/api/fhir/medplum/project) is set
 - `history` and `vread` are often specified together, to grant access to the entire [version history](/docs/fhir-datastore/resource-history) of resources
