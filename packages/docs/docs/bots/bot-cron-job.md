@@ -63,9 +63,11 @@ The shorthands `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@hourly
 
 :::
 
-An expression that can never fire is invalid, such as `0 0 31 2 *` (February 31st), as is one with an
-out-of-range value, an inverted range such as `10-2`, or a value listed twice (including `0,7` for
-Sunday). A `Cron` with an invalid `cronString` is always rejected on write. A `Bot` with an invalid
+An expression that can never fire is invalid, such as `0 0 31 2 *` (February 31st) or `0 0 31 4,6 *`
+(neither April nor June has a 31st), as is one with an out-of-range value, an inverted range such as
+`10-2`, or a value listed twice (including `0,7` for Sunday). The 5th weekday of February alone, such
+as `0 0 * 2 1#5`, is also invalid: it occurs only in some leap years, decades apart, which is further
+ahead than the scheduler looks for a next run. A `Cron` with an invalid `cronString` is always rejected on write. A `Bot` with an invalid
 `cronString` is rejected in projects with [`strictMode`](/docs/api/fhir/medplum/project) enabled, the
 default.
 

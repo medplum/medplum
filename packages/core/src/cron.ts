@@ -96,8 +96,11 @@ const MAX_EXPRESSION_LENGTH = 1024;
  * Returns true if the input is a cron expression the Medplum job scheduler can run.
  *
  * Accepts what cron-parser accepts in its default, non-strict mode -- the `@daily`-style shorthands, month and weekday
- * names, and the `L`, `#`, and `?` extensions -- with two deliberate restrictions:
+ * names, and the `L`, `#`, and `?` extensions -- with these restrictions:
  *
+ * - The empty string, which cron-parser reads as every minute but BullMQ refuses as a missing pattern, is rejected.
+ * - An expression BullMQ cannot compute a next run for is rejected, since it would silently schedule nothing: one
+ *   that can never fire, such as `0 0 31 4,6 *`, or the 5th weekday of February, such as `0 0 * 2 1#5`.
  * - Schedules are limited to minute granularity, so the optional sixth (seconds) field and `@secondly` are rejected.
  * - `H` (hashed) terms are rejected. They exist to stagger jobs that share a schedule; leaving them out keeps
  *   staggering an implementation detail of the scheduler and keeps the syntax authors of `Cron` and `Bot` resources
@@ -108,7 +111,7 @@ const MAX_EXPRESSION_LENGTH = 1024;
  */
 export function isValidCronString(cronString: string): boolean {
   // Deliberate divergence from cron-parser: Medplum does not run jobs more than once a minute
-  if (cronString === '@secondly' || cronString.trim().split(/\s+/).length > 5) {
+  if (!cronString || cronString === '@secondly' || cronString.trim().split(/\s+/).length > 5) {
     return false;
   }
   try {
@@ -120,7 +123,7 @@ export function isValidCronString(cronString: string): boolean {
 }
 
 function parseCronExpression(input: string): void {
-  const expression = PREDEFINED_EXPRESSIONS[input] ?? (input || '0 * * * * *');
+  const expression = PREDEFINED_EXPRESSIONS[input] ?? input;
   if (expression.length > MAX_EXPRESSION_LENGTH) {
     throw new Error('Expression too long');
   }
@@ -158,14 +161,23 @@ function parseCronExpression(input: string): void {
     throw new Error('Standalone L in day of week');
   }
 
-  // An explicit day of month that never occurs in the only month is unschedulable, unless day of week rescues it
+  // Explicit days of month that occur in none of the months never fire, unless day of week rescues them; a restricted
+  // day of week always fires eventually. cron-parser only rejects this at parse time for a single month, and for
+  // several months its next() gives up, which BullMQ swallows and schedules nothing.
   const hasLastDay = rawDayOfMonth.includes('L') || dayOfMonth.includes('L');
   const dayOfWeekIsWildcard = rawDayOfWeek === '*' || rawDayOfWeek === '?';
-  if (month.length === 1 && !hasLastDay && dayOfWeekIsWildcard) {
+  if (!hasLastDay && dayOfWeekIsWildcard) {
     // Without L, every day of month is a number
-    if (Math.min(...dayOfMonth.map(Number)) > DAYS_IN_MONTH[+month[0] - 1]) {
-      throw new Error('Invalid explicit day of month');
+    const longestMonth = Math.max(...month.map((m) => DAYS_IN_MONTH[+m - 1]));
+    if (Math.min(...dayOfMonth.map(Number)) > longestMonth) {
+      throw new Error('Day of month never occurs');
     }
+  }
+
+  // February has a 5th weekday only in leap years, so that weekday can be 40 years apart -- past the step limit of
+  // cron-parser's next(), which BullMQ swallows, leaving the job silently unscheduled after it first fires
+  if (month.length === 1 && month[0] === 2 && Number(rawDayOfWeek.split('#')[1]) === 5) {
+    throw new Error('No reliable 5th weekday in February');
   }
 }
 

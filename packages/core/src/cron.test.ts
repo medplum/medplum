@@ -20,7 +20,10 @@ describe('isValidCronString', () => {
     '5/15 * * * *',
     '0 0 31 2 1',
     '0 0 29,31 2 *',
-    '',
+    '0 0 31 2,3 *',
+    '0 0 31 4 1',
+    '0 0 * 1,2 1#5',
+    '0 0 * 2 1#4',
   ])('accepts %j', (cronString) => {
     expect(isValidCronString(cronString)).toBe(true);
   });
@@ -40,7 +43,12 @@ describe('isValidCronString', () => {
     '1/ * * * *',
     '0 0 0 0 0 0',
     '* * * * * * *',
+    '',
     '0 0 31 2 *',
+    '0 0 31 4,6 *',
+    '0 0 * 2 1#5',
+    '0 0 30 FEB sun#5',
+    '0 0 31 2,4,6,9,11 *',
     '0 0 * foo *',
     '0 0 * * 0,7',
     '0 0 * * L',
