@@ -77,7 +77,6 @@
     "compression": "1.8.2",
     "cookie-parser": "1.4.7",
     "cors": "2.8.6",
-    "cron-validator": "1.4.0",
     "dataloader": "2.2.3",
     "dcmjs": "0.52.2",
     "dicomweb-multipart-parser": "0.0.2",

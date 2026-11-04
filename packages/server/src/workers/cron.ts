@@ -7,6 +7,7 @@ import {
   DEFAULT_MAX_SEARCH_COUNT,
   isGone,
   isNotFound,
+  isValidCronString,
   normalizeErrorString,
   normalizeOperationOutcome,
   resolveId,
@@ -14,7 +15,6 @@ import {
 import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { canProjectReadBot } from '../bots/utils';
 import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
@@ -195,7 +195,7 @@ function getCronString(resource: Bot | Cron): string | undefined {
  * @returns The cron string, or undefined if the job should not be scheduled.
  */
 function getCronStringForCron(cron: Cron): string | undefined {
-  if (!cron.active || isPastEndTime(cron) || !isValidCron(cron.cronString)) {
+  if (!cron.active || isPastEndTime(cron) || !isValidCronString(cron.cronString)) {
     return undefined;
   }
 
@@ -214,7 +214,7 @@ function getCronStringForBot(bot: Bot | undefined): string | undefined {
     }
   }
 
-  if (bot?.cronString && isValidCron(bot.cronString)) {
+  if (bot?.cronString && isValidCronString(bot.cronString)) {
     return bot.cronString;
   }
 

@@ -93,21 +93,12 @@ describe('Cron Worker', () => {
     expect(queue.upsertJobScheduler).toHaveBeenCalled();
   });
 
-  test('should not add a job to the queue when a bot with cronString', async () => {
-    // Add the bot and check that a job was added to the queue.
-    const queue = getCronQueue() as any;
-    queue.upsertJobScheduler.mockClear();
-    const bot = await withTestContext(() =>
-      botRepo.createResource<Bot>({
-        resourceType: 'Bot',
-        name: 'bot-1',
-        cronString: 'testing',
-      })
-    );
-    expect(bot).toBeDefined();
-    await findAndExecDispatchJob(bot, 'create');
-    expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
-  });
+  test('should reject a bot with an invalid cronString', () =>
+    withTestContext(async () => {
+      await expect(
+        botRepo.createResource<Bot>({ resourceType: 'Bot', name: 'bot-1', cronString: 'testing' })
+      ).rejects.toThrow('Constraint bot-1 not met');
+    }));
 
   test('should not have added a job to the queue due to a cron not created', async () => {
     // Add the bot and check that a job was added to the queue.
