@@ -3,10 +3,10 @@
 import { MantineProvider } from '@mantine/core';
 import type { DiagnosticReport, DocumentReference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test } from 'vitest';
-import { render, screen, waitFor } from '../../test-utils/render';
+import { render, screen, waitFor } from '../test-utils/render';
 import { LabResultDetails } from './LabResultDetails';
 
 function createMockDiagnosticReport(overrides?: Partial<DiagnosticReport>): DiagnosticReport {

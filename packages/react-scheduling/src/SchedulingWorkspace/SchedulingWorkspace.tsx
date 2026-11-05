@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Anchor, Box, Tabs, Text, useMantineTheme } from '@mantine/core';
+import { ActionIcon, Alert, Anchor, Box, Tabs, Text, Tooltip, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -19,9 +19,10 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
+import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX } from 'react';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -82,6 +83,11 @@ export interface SchedulingWorkspaceProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
+  /**
+   * The most characters an appointment's notes may hold, when booking and when editing. See
+   * {@link AppointmentProposalFormProps.commentMaxLength}.
+   */
+  readonly appointmentCommentMaxLength?: number;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   /** Called with the Slots written when time is blocked from the pane's Block Time tab. */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
@@ -152,7 +158,7 @@ export interface SchedulingWorkspaceProps {
  *   delete it.
  * - Highlights the time clicked, and draws the visit the form would book as a draft
  *   appointment beside it, from whenever the form holds a time until it drops it. The
- *   calendar is never moved to reach either; one off the week on screen is drawn again
+ *   calendar is never moved to reach either; one off the days on screen is drawn again
  *   on paging back to it.
  * - Filters calendars and what is booked on them: the Service facility and Visit Type filters
  *   narrow the calendars listed to the ones held at that site and offering that service type,
@@ -174,6 +180,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     procedureBinding,
     diagnosisBinding,
     mrnSystem,
+    appointmentCommentMaxLength,
     onBooked,
     onBlocked,
     appointmentCancellationReasonValueSet,
@@ -219,6 +226,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What the calendar highlights while blocking: the block form's time, which a click resets.
   const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
+  const [calendarsOpen, setCalendarsOpen] = useState(true);
+  const sidebarId = useId();
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per bookable actor type.
@@ -279,7 +288,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     const isSettled = (reference: string): boolean =>
       services.has(reference) || medplum.getCachedReference({ reference }) !== undefined;
     // The color the HealthcareService names, or else one picked by its reference, so it holds
-    // whichever week is on show, for everyone, and as other service types come and go.
+    // whichever days are on show, for everyone, and as other service types come and go.
     const serviceColor = (reference: string): keyof typeof theme.colors => {
       const service = services.get(reference) ?? medplum.getCachedReference<HealthcareService>({ reference });
       return resolveThemeColor(theme, getSchedulingColor(service), fallbackColorIndex(reference));
@@ -356,7 +365,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         appointment: group[0],
         color,
       }))
-      // By reference, so the order holds from week to week; the names load only as the legend
+      // By reference, so the order holds from page to page; the names load only as the legend
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return {
@@ -377,6 +386,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setBookingSelection(interval);
     setBlockHighlight(interval);
   }, []);
+
+  const startBookingNow = useCallback((): void => {
+    const durationMinutes = 30;
+    const start = new Date();
+    start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
+    const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+    setPaneTab('appointment');
+    startBooking({ start, end });
+    calendarRef.current?.gotoDate(start);
+  }, [startBooking]);
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
@@ -424,7 +443,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   );
 
   // Opens what was booked, the first visit of a recurring series, and brings it on screen,
-  // so it isn't lost on the calendar or in a week off screen.
+  // so it isn't lost on the calendar or in days off screen.
   const finishBooking = useCallback(
     (booking: AppointmentBooking): void | Promise<void> => {
       const [first] = booking.appointments;
@@ -503,7 +522,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const openAppointment = loadedAppointment ?? selectedAppointment;
 
   // Only the filters and hidden calendars get a notice: a status the calendar doesn't load, such as
-  // cancelled, or a time in another week, already says why it isn't drawn.
+  // cancelled, or a time off screen, already says why it isn't drawn.
   let hiddenNotice: string | undefined;
   const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
   if (openAppointment && statuses.includes(openAppointment.status)) {
@@ -523,7 +542,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const openSlot = currentSlot ?? selectedSlot;
 
   // The calendar loads only the Slots on calendars shown, so one loaded and not drawn is hidden by
-  // the filters. One in another week isn't loaded, and its time already says why.
+  // the filters. One off screen isn't loaded, and its time already says why.
   let slotNotice: string | undefined;
   if (openSlot && !schedules.some((schedule) => getReferenceString(schedule) === openSlot.schedule.reference)) {
     slotNotice = "This blocked time's calendar isn't shown.";
@@ -555,6 +574,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   ) as Record<BookableActorType, CalendarsPanelItem[]>;
 
   const displayError = resourcesError ?? schedulesLoadingError;
+  const calendarsLabel = calendarsOpen ? 'Hide calendars' : 'Show calendars';
 
   // The pane beside the calendar shows one thing at a time. Opening any of them already
   // closes the others, so this only decides which wins if they ever hold something together.
@@ -564,7 +584,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
-      <Box className={classes.sidebar}>
+      {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
+      <Box id={sidebarId} className={classes.sidebar} display={calendarsOpen ? undefined : 'none'}>
         <CalendarsPanel
           items={panelItems}
           candidatesLoading={candidatesLoading}
@@ -583,6 +604,30 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
+          toolbarStart={
+            <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
+              <ActionIcon
+                className={classes.calendarsToggle}
+                variant="default"
+                size={32}
+                radius="xl"
+                c="dimmed"
+                aria-label={calendarsLabel}
+                aria-expanded={calendarsOpen}
+                aria-controls={sidebarId}
+                onClick={() => setCalendarsOpen((open) => !open)}
+              >
+                <IconFilter2Search size={16} />
+              </ActionIcon>
+            </Tooltip>
+          }
+          toolbarEnd={
+            <Tooltip label="New appointment" position="bottom" openDelay={500}>
+              <ActionIcon size={32} radius="xl" aria-label="New appointment" onClick={startBookingNow}>
+                <IconPlus size={16} />
+              </ActionIcon>
+            </Tooltip>
+          }
           loading={resourcesLoading || servicesPending}
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
@@ -596,11 +641,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         </div>
       </div>
       {openAppointment && (
-        <section
-          key={openAppointment.id}
-          className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
-          aria-label="Appointment details"
-        >
+        <SidePane key={openAppointment.id} label="Appointment details" wide={rescheduleFinderOpen}>
           <PaneHeader title="Appointment Details" closeLabel="Close appointment details" onClose={closeAppointment} />
           {hiddenNotice && (
             <Alert color="blue" mb="sm">
@@ -619,11 +660,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
             mrnSystem={mrnSystem}
+            commentMaxLength={appointmentCommentMaxLength}
           />
-        </section>
+        </SidePane>
       )}
       {showSlot && (
-        <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
+        <SidePane key={openSlot.id} label="Blocked time details">
           <PaneHeader title="Blocked Time" closeLabel="Close blocked time details" onClose={closeSlot} />
           {slotNotice && (
             <Alert color="blue" mb="sm">
@@ -644,13 +686,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             </Text>
           )}
           <SlotDetails slot={openSlot} />
-        </section>
+        </SidePane>
       )}
       {showBooking && (
-        <section
-          className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
-          aria-label="Book appointment"
-        >
+        <SidePane label="Book appointment" wide={timeFinderOpen && !blocking}>
           {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
           <Tabs
             value={paneTab}
@@ -675,6 +714,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 procedureBinding={procedureBinding}
                 diagnosisBinding={diagnosisBinding}
                 mrnSystem={mrnSystem}
+                commentMaxLength={appointmentCommentMaxLength}
                 canBypassSchedulingRules={canBypassSchedulingRules}
                 appointmentExtensions={appointmentExtensions}
                 allowRecurring
@@ -694,8 +734,65 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
               />
             </Tabs.Panel>
           </Tabs>
-        </section>
+        </SidePane>
       )}
+    </div>
+  );
+}
+
+interface SidePaneProps {
+  /** Names the pane for assistive technology. */
+  readonly label: string;
+  /** Whether the pane widens over the calendar, as it does for a time search. */
+  readonly wide?: boolean;
+  readonly children: ReactNode;
+}
+
+/**
+ * The pane beside the calendar. Widened, it slides out over the calendar like a drawer, and
+ * stays wide while it slides back.
+ * @param props - The React props.
+ * @returns The pane.
+ */
+function SidePane(props: SidePaneProps): JSX.Element {
+  const { label, wide = false, children } = props;
+  // Out over the calendar from widening until the slide back ends.
+  const [extended, setExtended] = useState(wide);
+  if (wide && !extended) {
+    setExtended(true);
+  }
+  const closing = extended && !wide;
+  const paneRef = useRef<HTMLElement>(null);
+  // Before paint, as the slide back starts then and a reduced-motion one can end a frame later.
+  useLayoutEffect(() => {
+    const pane = paneRef.current;
+    if (!closing || !pane) {
+      return undefined;
+    }
+    // Only the slide back ends it, not an animation inside the pane, nor the slide open it cut
+    // short. A cancelled slide back (the pane hidden, or its animation removed) ends it too, so
+    // the pane can't stay wide. Listened for natively, as React has no `onAnimationCancel`.
+    const settle = (event: AnimationEvent): void => {
+      if (event.animationName === classes.paneSlideOut) {
+        setExtended(false);
+      }
+    };
+    pane.addEventListener('animationend', settle);
+    pane.addEventListener('animationcancel', settle);
+    return () => {
+      pane.removeEventListener('animationend', settle);
+      pane.removeEventListener('animationcancel', settle);
+    };
+  }, [closing]);
+  return (
+    <div className={classes.paneSlot}>
+      <section
+        ref={paneRef}
+        className={cx(classes.pane, { [classes.paneWide]: extended, [classes.paneClosing]: closing })}
+        aria-label={label}
+      >
+        {children}
+      </section>
     </div>
   );
 }

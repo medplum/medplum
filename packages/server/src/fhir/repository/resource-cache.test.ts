@@ -32,7 +32,7 @@ describe('Repository resource cache', () => {
   });
 
   test('Returns resource cache key', () => {
-    expect(getResourceCacheKey('Patient', '123')).toStrictEqual('Patient/123');
+    expect(getResourceCacheKey('Patient', 'ABC123')).toStrictEqual('Patient/abc123');
   });
 
   test('Sets, reads, and deletes resource cache entry', async () => {
@@ -41,7 +41,7 @@ describe('Repository resource cache', () => {
     try {
       await setResourceCacheEntry(patient, shardId);
 
-      const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id);
+      const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id.toUpperCase());
       expect(cacheEntry).toStrictEqual({
         resource: patient,
         projectId: patient.meta?.project,

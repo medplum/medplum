@@ -127,5 +127,5 @@ export async function deleteResourceCacheEntries(resourceType: string, ids: stri
  * @returns The Redis cache key.
  */
 export function getResourceCacheKey(resourceType: string, id: string): string {
-  return `${resourceType}/${id}`;
+  return `${resourceType}/${id.toLowerCase()}`;
 }

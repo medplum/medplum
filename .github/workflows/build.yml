@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
@@ -74,6 +74,7 @@ jobs:
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          FOOMEDICAL_PROJECT_ID: '__FOOMEDICAL_PROJECT_ID__'
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
@@ -153,7 +154,7 @@ jobs:
             echo "deploy_storybook=$deploy_storybook"
             echo "deploy_any=$deploy_any"
           } >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
@@ -179,6 +180,7 @@ jobs:
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          FOOMEDICAL_PROJECT_ID: '__FOOMEDICAL_PROJECT_ID__'
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
@@ -211,9 +213,10 @@ jobs:
         env:
           AWS_REGION: 'us-east-1'
           FOOMEDICAL_BUCKET: preview.medplum.dev/previews/foomedical-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          FOOMEDICAL_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          FOOMEDICAL_PROJECT_ID: ${{ vars.STAGING_FOOMEDICAL_PROJECT_ID }}
           FOOMEDICAL_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           FOOMEDICAL_RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
-          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
       - name: Deploy provider app preview
         if: steps.changes.outputs.deploy_provider == 'true'
         run: './scripts/deploy-provider-app.sh'
@@ -312,7 +315,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -436,7 +439,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
@@ -521,7 +524,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
@@ -606,7 +609,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
@@ -721,7 +724,7 @@ jobs:
           popd
       - name: Upload test results
         if: ${{ failure() || (matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
           path: |
@@ -744,7 +747,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
@@ -779,6 +782,7 @@ jobs:
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          FOOMEDICAL_PROJECT_ID: '__FOOMEDICAL_PROJECT_ID__'
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'

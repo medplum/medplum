@@ -62626,7 +62626,7 @@
           "$ref": "#/definitions/boolean"
         },
         "rawBody": {
-          "description": "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
+          "description": "Whether public webhooks, $execute, and custom operations provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
           "$ref": "#/definitions/boolean"
         },
         "streamingEnabled": {
@@ -63484,6 +63484,10 @@
         "request": {
           "description": "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
           "$ref": "#/definitions/uri"
+        },
+        "requester": {
+          "description": "The user or client application that started the job. Assigned by the server when the job is created.",
+          "$ref": "#/definitions/Reference"
         },
         "output": {
           "description": "Outputs resulting from the async job.",

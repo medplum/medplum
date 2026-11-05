@@ -136,6 +136,8 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
    */
   readonly defaultValue?: (T | Reference<T>)[];
   readonly searchCriteria?: Record<string, string>;
+  /** The search parameter, with any modifier, that the typed text is sent as (e.g. `name:contains`). Defaults to one chosen by resource type. */
+  readonly searchParam?: string;
   readonly placeholder?: string;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
@@ -156,7 +158,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
   props: MultiResourceInputProps<T>
 ): JSX.Element | null {
   const medplum = useMedplum();
-  const { resourceType, searchCriteria } = props;
+  const { resourceType, searchCriteria, searchParam } = props;
   const ItemComponent = props.itemComponent ?? DefaultResourceItemComponent;
   const onChange = props.onChange;
 
@@ -201,9 +203,8 @@ export function MultiResourceInput<T extends Resource = Resource>(
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<T[]> => {
-      const searchCode = getSearchParamForResourceType(resourceType);
       const searchParams = new URLSearchParams({
-        [searchCode]: input ?? '',
+        [searchParam ?? getSearchParamForResourceType(resourceType)]: input ?? '',
         _count: '10',
         ...searchCriteria,
       });
@@ -211,7 +212,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
       const resources = await medplum.searchResources(resourceType, searchParams, { signal });
       return resources as unknown as T[];
     },
-    [medplum, resourceType, searchCriteria]
+    [medplum, resourceType, searchCriteria, searchParam]
   );
 
   const handleChange = useCallback(

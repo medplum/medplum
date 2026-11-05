@@ -1151,7 +1151,7 @@ function buildPatient(id: string, given: string, family: string, birthDate: stri
 /** Typed as a medical record number, which is how it is read without configuration. */
 export const ElderJordanPatient = buildPatient('jordan-elder', 'Jordan', 'Reyes', '1961-04-02', {
   type: { coding: [{ system: HL7_V2_0203, code: 'MR' }] },
-  value: 'MRN-0041',
+  value: '100041',
 });
 
 /** Same name, different person, and no medical record number on file. */
@@ -1160,7 +1160,7 @@ export const YoungerJordanPatient = buildPatient('jordan-younger', 'Jordan', 'Re
 /** Identified only by the system that issued it, which is what `mrnSystem` names. */
 export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield', '1978-06-14', {
   system: MRN_SYSTEM,
-  value: 'MRN-0099',
+  value: '100099',
 });
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
@@ -1180,9 +1180,9 @@ export const AppointmentPatientFixtures = [
 ];
 
 /**
- * Appointments and Slots for the calendar view, dated within the week of Monday,
- * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
- * always renders Sun May 3 through Sat May 9.
+ * Appointments and Slots for the calendar view, dated Monday, May 4 2020 — the date
+ * `MockDateWrapper` freezes the clock to — through Thursday, May 7, so they all fall within
+ * the four days `MultiCalendar` opens on.
  */
 
 /**
@@ -1221,6 +1221,7 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  comment: 'Bring prior films',
   slot: RiveraImagingHeldSlots.map(createReference),
   supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
@@ -1307,10 +1308,10 @@ export const ExamRoomABlockedSlot: WithId<Slot> = {
 /** Availability at the satellite site, for when the service facility filter is switched. */
 export const SatelliteRoomFreeSlot: WithId<Slot> = {
   resourceType: 'Slot',
-  id: 'slot-satellite-room-free-fri',
+  id: 'slot-satellite-room-free-thu',
   status: 'free',
-  start: '2020-05-08T13:00:00Z',
-  end: '2020-05-08T15:00:00Z',
+  start: '2020-05-07T13:00:00Z',
+  end: '2020-05-07T15:00:00Z',
   schedule: createReference(SatelliteRoomSchedule),
 };
 
@@ -1559,6 +1560,7 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  comment: 'Prefers the recliner by the window; allow extra time for IV access',
   slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
   supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(

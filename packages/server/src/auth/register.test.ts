@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -31,5 +33,8 @@ describe('Register', () => {
 
       expect(result.profile).toBeDefined();
       expect(result.accessToken).toBeDefined();
+
+      const login = await getGlobalSystemRepo().readResource<Login>('Login', result.login.id);
+      expect(login.meta?.project).toBe(result.project.id);
     }));
 });

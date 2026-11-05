@@ -209,7 +209,7 @@ export async function chooseSite(query: string, name: string): Promise<void> {
 /** Opens the time search, which is what sends the `$find` request. */
 export async function openTimeFinder(): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /find a time/i }));
+    fireEvent.click(screen.getByRole('button', { name: /find a time|change time/i }));
   });
   await settleAutocomplete();
 }
@@ -481,7 +481,7 @@ export async function fillBooking(): Promise<void> {
   await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /**
@@ -496,7 +496,7 @@ export async function fillAuthorizedBooking(): Promise<void> {
   await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /** Confirms the booking. */

@@ -51,7 +51,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
-import { parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
+import { getPartialPermissionScopes, parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import {
@@ -67,6 +67,8 @@ import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
 import type { AuthenticationResult, AuthState } from './middleware';
 import { isExtendedMode } from './middleware';
+
+const INVALID_CREDENTIALS_MESSAGE = 'Email or password is invalid';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -187,6 +189,11 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
 
   if (!user) {
     getLogger().warn('tryLogin User not found', { ...request, password: undefined, codeChallenge: undefined });
+    if (request.password) {
+      // Spend the same bcrypt time as a real check, so the response does not reveal whether the email exists
+      await verifyPassword(request.password, undefined);
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
+    }
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
@@ -280,11 +287,22 @@ export function validatePkce(request: LoginRequest, client: ClientApplication | 
   }
 }
 
+/**
+ * Verifies a password against a bcrypt hash using timing-safe comparison.
+ * @param password - The password provided by the client.
+ * @param passwordHash - The user's bcrypt password hash, if any.
+ * @returns True if the password matches the user's hash.
+ */
+async function verifyPassword(password: string, passwordHash: string | undefined): Promise<boolean> {
+  const hash = passwordHash || bcrypt.genSaltSync(getConfig().bcryptHashSalt) + '.'.repeat(31);
+  const matches = await bcrypt.compare(password, hash);
+  return Boolean(matches && passwordHash?.length);
+}
+
 async function authenticate(request: LoginRequest, user: User): Promise<void> {
-  if (request.password && user.passwordHash) {
-    const bcryptResult = await bcrypt.compare(request.password, user.passwordHash);
-    if (!bcryptResult) {
-      throw new OperationOutcomeError(badRequest('Email or password is invalid'));
+  if (request.password) {
+    if (!(await verifyPassword(request.password, user.passwordHash))) {
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
     }
     return;
   }
@@ -739,6 +757,23 @@ export async function getAuthTokens(
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
+  }
+
+  const partialPermissionScopes = getPartialPermissionScopes(login.scope);
+  if (partialPermissionScopes.length > 0) {
+    let projectId = resolveId(login.project);
+    if (!projectId) {
+      // A logging lookup must not prevent token issuance.
+      const membership = await getGlobalSystemRepo()
+        .readReference(login.membership)
+        .catch(() => undefined);
+      projectId = resolveId(membership?.project);
+    }
+    getLogger().warn('SMART scopes with partial permissions', {
+      clientId,
+      projectId,
+      scopes: partialPermissionScopes,
+    });
   }
 
   if (!login.granted) {
@@ -1291,9 +1326,21 @@ async function makeAuthResult(
   // Resolve "on behalf of" before building the repository, so that the access policy is built from
   // the effective membership.  Resolving it afterwards would require a repository to already exist,
   // which cannot be built for a login whose scopes depend on the on-behalf-of membership.
-  await tryAddOnBehalfOf(systemRepo, req, authState);
-  const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  return { authState, repo };
+  try {
+    await tryAddOnBehalfOf(systemRepo, req, authState);
+    const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
+    return { authState, repo };
+  } catch (err) {
+    // The caller is known here, but the "Authentication error" log line does not include it
+    getLogger().warn('Authentication failed for known caller', {
+      login: login.id,
+      project: project.id,
+      membership: membership.id,
+      profile: membership.profile?.reference,
+      onBehalfOf: req?.headers?.['x-medplum-on-behalf-of'],
+    });
+    throw err;
+  }
 }
 
 /**

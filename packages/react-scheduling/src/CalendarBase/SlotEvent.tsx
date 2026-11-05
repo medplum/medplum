@@ -5,6 +5,7 @@ import type { WithId } from '@medplum/core';
 import type { Schedule, Slot } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
 import { IconSquareXFilled } from '@tabler/icons-react';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { Fragment } from 'react';
 // Its own sheet, for the same reason as AppointmentEvent's: CalendarBase's would load ahead of
@@ -24,7 +25,8 @@ export interface SlotEventProps {
  * booked appointment.
  *
  * A time grid says when the slot is by where it is drawn, so there the line under the title names
- * whose time it is, when the schedule is known; elsewhere that line is the slot's time.
+ * whose time it is, when the schedule is known; elsewhere that line is the slot's time. Blocked
+ * time too short for two lines puts that line beside the title.
  *
  * @param props - The React props.
  * @returns The event's content.
@@ -32,12 +34,18 @@ export interface SlotEventProps {
 export function SlotEvent(props: SlotEventProps): JSX.Element {
   const { slot, schedule, info } = props;
   const blocked = ['busy', 'busy-unavailable', 'busy-tentative'].includes(slot.status);
-  const actors = info.view.type.startsWith('timeGrid') ? schedule?.actor : undefined;
+  const inTimeGrid = info.view.type.startsWith('timeGrid');
+  const actors = inTimeGrid ? schedule?.actor : undefined;
+  const oneLine = blocked && inTimeGrid && info.isShort;
 
   return (
-    <>
+    <div
+      className={classes.eventContent}
+      data-blocked={(blocked && inTimeGrid) || undefined}
+      data-one-line={oneLine || undefined}
+    >
       {actors ? (
-        <div className={info.timeClass}>
+        <div className={cx(info.timeClass, classes.detail)}>
           {actors.map((actor, index) => (
             <Fragment key={actor.reference ?? `actor-${index}`}>
               {index > 0 && ', '}
@@ -46,9 +54,9 @@ export function SlotEvent(props: SlotEventProps): JSX.Element {
           ))}
         </div>
       ) : (
-        info.timeText && <div className={info.timeClass}>{info.timeText}</div>
+        info.timeText && <div className={cx(info.timeClass, classes.detail)}>{info.timeText}</div>
       )}
-      <div className={info.titleClass}>
+      <div className={cx(info.titleClass, classes.title)}>
         {blocked ? (
           <span className={classes.blocked}>
             <IconSquareXFilled size="1em" className={classes.icon} aria-hidden />
@@ -58,6 +66,6 @@ export function SlotEvent(props: SlotEventProps): JSX.Element {
           info.event.title
         )}
       </div>
-    </>
+    </div>
   );
 }

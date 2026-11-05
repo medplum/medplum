@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AsyncJob } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config/loader';
+import { runInAuthenticatedContext } from '../../../context';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../../test.setup';
 import { getTestProjectSystemRepo } from '../../repository/test-utils';
 import { AsyncJobExecutor } from './asyncjobexecutor';
@@ -96,6 +98,34 @@ describe('AsyncJobExecutor', () => {
 
     expect(callback).not.toHaveBeenCalled();
   });
+
+  test.each(['completeJob', 'failJob'] as const)('%s keeps the requester of the AsyncJob', (method) =>
+    withTestContext(async () => {
+      const { client, project, login, membership, repo } = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        withRepo: true,
+      });
+      const exec = new AsyncJobExecutor(repo);
+      const authState = { login, project, membership, userConfig: { resourceType: 'UserConfiguration' } } as const;
+      const { id } = await runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
+        exec.init('http://example.com/async')
+      );
+
+      const output: Parameters = { resourceType: 'Parameters', parameter: [{ name: 'result', valueString: 'test' }] };
+      const finishedJob = await (method === 'completeJob' ? exec.completeJob(output) : exec.failJob(undefined, output));
+
+      expect(finishedJob.requester?.reference).toStrictEqual(getReferenceString(client));
+      await expect(repo.readResource('AsyncJob', id)).resolves.toMatchObject({ status: finishedJob.status, output });
+    })
+  );
+
+  test('Jobs started outside of an authenticated request have no requester', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const job = await new AsyncJobExecutor(repo).init('http://example.com/async');
+      expect(job.requester).toBeUndefined();
+    }));
 
   test('getContentLocation', () =>
     withTestContext(async () => {
