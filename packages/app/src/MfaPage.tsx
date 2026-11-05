@@ -60,9 +60,13 @@ export function MfaPage(): JSX.Element | null {
           markEnrolled('totp');
           showNotification({ color: 'green', message: 'Authenticator app enabled' });
         })
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+        .catch((err) => {
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+          // Enrollment offers expire, so refresh the QR code
+          fetchStatus();
+        });
     },
-    [medplum, markEnrolled]
+    [medplum, markEnrolled, fetchStatus]
   );
 
   // Email a verification code to the current user so they can prove control of

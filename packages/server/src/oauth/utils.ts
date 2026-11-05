@@ -43,6 +43,7 @@ import type { IncomingMessage } from 'node:http';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
+import { getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
@@ -328,9 +329,10 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * On error, throws an error.
  * @param login - The login resource.
  * @param token - The user supplied MFA token.
+ * @param enrollSecret - The authenticator (TOTP) secret offered to this login, when the token confirms an enrollment.
  * @returns The updated login resource.
  */
-export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
+export async function verifyMfaToken(login: Login, token: string, enrollSecret?: string): Promise<Login> {
   assertMfaLoginActive(login);
 
   if (login.emailMfa && new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
@@ -340,7 +342,8 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
 
-  const secret = user.mfaSecret;
+  // The stored authenticator secret is only a factor once TOTP is enrolled
+  const secret = enrollSecret ?? (getEnrolledMfaMethods(user).includes('totp') ? user.mfaSecret : undefined);
   if (!login.emailMfa && !secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
