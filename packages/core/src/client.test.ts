@@ -3119,6 +3119,81 @@ describe('Client', () => {
         })
       );
     });
+
+    function mockBatchFetch(): FetchLike & Mock {
+      return mockFetch(200, (url: string, options?: any) => {
+        if (options?.method === 'POST') {
+          return { resourceType: 'Bundle', type: 'transaction-response', entry: [] };
+        }
+        if (url.includes('?')) {
+          return { resourceType: 'Bundle', type: 'searchset', entry: [] };
+        }
+        const [resourceType, id] = url.replace('https://api.medplum.com/fhir/R4/', '').split('/');
+        return { resourceType, id };
+      });
+    }
+
+    function countGets(fetch: FetchLike & Mock, url: string): number {
+      return fetch.mock.calls.filter(([callUrl, options]) => callUrl === url && options.method === 'GET').length;
+    }
+
+    test('Execute batch invalidates cached searches for created resource types', async () => {
+      const fetch = mockBatchFetch();
+      const client = new MedplumClient({ fetch, cacheTime: 60000 });
+      const searchUrl = 'https://api.medplum.com/fhir/R4/Patient?name=Smith';
+
+      await client.search('Patient', 'name=Smith');
+      await client.search('Patient', 'name=Smith');
+      expect(countGets(fetch, searchUrl)).toBe(1);
+
+      await client.executeBatch(bundle);
+
+      await client.search('Patient', 'name=Smith');
+      expect(countGets(fetch, searchUrl)).toBe(2);
+    });
+
+    test('Execute batch invalidates cached reads and searches for updated and deleted resources', async () => {
+      const fetch = mockBatchFetch();
+      const client = new MedplumClient({ fetch, cacheTime: 60000 });
+      const readUrl = 'https://api.medplum.com/fhir/R4/Observation/456';
+      const searchUrl = 'https://api.medplum.com/fhir/R4/Encounter?status=finished';
+
+      await client.readResource('Observation', '456');
+      await client.search('Encounter', 'status=finished');
+
+      await client.executeBatch({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            resource: { resourceType: 'Observation', id: '456', status: 'final', code: { text: 'test' } },
+            request: { method: 'PUT', url: 'Observation/456' },
+          },
+          { request: { method: 'DELETE', url: 'Encounter/789' } },
+        ],
+      });
+
+      await client.readResource('Observation', '456');
+      await client.search('Encounter', 'status=finished');
+      expect(countGets(fetch, readUrl)).toBe(2);
+      expect(countGets(fetch, searchUrl)).toBe(2);
+    });
+
+    test('Execute batch with only reads keeps cached searches', async () => {
+      const fetch = mockBatchFetch();
+      const client = new MedplumClient({ fetch, cacheTime: 60000 });
+      const searchUrl = 'https://api.medplum.com/fhir/R4/Patient?name=Smith';
+
+      await client.search('Patient', 'name=Smith');
+      await client.executeBatch({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [{ request: { method: 'GET', url: 'Patient?name=Jones' } }],
+      });
+
+      await client.search('Patient', 'name=Smith');
+      expect(countGets(fetch, searchUrl)).toBe(1);
+    });
   });
 
   test('Send email', async () => {
