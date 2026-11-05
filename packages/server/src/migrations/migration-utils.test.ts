@@ -67,11 +67,26 @@ describe('withLongRunningDatabaseClient', () => {
     getVersionSpy.mockRestore();
   });
 
-  test.each<[string, Partial<AsyncJob>]>([
-    ['a project-owned data migration', { meta: { project: 'project-1' } }],
-    ['a project-owned job without a type', { meta: { project: 'project-1' }, type: undefined, dataVersion: undefined }],
-    ['a data migration without a data version', { dataVersion: undefined }],
-  ])('rejects completing %s', async (_label, overrides) => {
+  test.each<[string, Partial<AsyncJob>, string, boolean]>([
+    [
+      'a project-owned data migration',
+      { meta: { project: 'project-1' } },
+      'Unexpected AsyncJob owner for AsyncJob/data-migration-job',
+      true,
+    ],
+    [
+      'a project-owned job without a type',
+      { meta: { project: 'project-1' }, type: undefined, dataVersion: undefined },
+      'Unexpected AsyncJob owner for AsyncJob/data-migration-job',
+      true,
+    ],
+    [
+      'a data migration without a data version',
+      { dataVersion: undefined },
+      'Invalid post-deploy migration job AsyncJob/data-migration-job',
+      false,
+    ],
+  ])('rejects completing %s', async (_label, overrides, message, failsJob) => {
     const asyncJob: WithId<AsyncJob> = {
       resourceType: 'AsyncJob',
       id: 'data-migration-job',
@@ -85,15 +100,15 @@ describe('withLongRunningDatabaseClient', () => {
     const exec = {
       getAsyncJob: vi.fn(() => asyncJob),
       completeJob: vi.fn(),
+      failJob: vi.fn(),
     } as unknown as AsyncJobExecutor;
     const markCompletedSpy = vi.spyOn(migrationSql, 'markPostDeployMigrationCompleted');
 
-    await expect(completePostDeployMigration(exec, GLOBAL_SHARD_ID)).rejects.toThrow(
-      'Invalid post-deploy migration job AsyncJob/data-migration-job'
-    );
+    await expect(completePostDeployMigration(exec, GLOBAL_SHARD_ID)).rejects.toThrow(message);
 
     expect(markCompletedSpy).not.toHaveBeenCalled();
     expect(exec.completeJob).not.toHaveBeenCalled();
+    expect(exec.failJob).toHaveBeenCalledTimes(failsJob ? 1 : 0);
     markCompletedSpy.mockRestore();
   });
 });
