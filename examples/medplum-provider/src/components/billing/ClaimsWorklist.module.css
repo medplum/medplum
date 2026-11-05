@@ -15,3 +15,7 @@
   flex: 1;
   min-height: 560px;
 }
+
+.agingDivider {
+  --divider-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}

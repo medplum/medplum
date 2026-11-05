@@ -141,7 +141,7 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
               selected={isAgingQueue(queue) ? queue.id : undefined}
               onSelect={(bucketId) => onNavigate(path(bucketId ?? ALL_OPEN_QUEUE_ID, claimId))}
             />
-            <Divider my="md" />
+            <Divider my="md" className={classes.agingDivider} />
           </>
         )}
         {queue.id === 'ready' && (

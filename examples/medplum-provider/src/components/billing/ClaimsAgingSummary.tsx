@@ -31,8 +31,10 @@ export function ClaimsAgingSummary(props: ClaimsAgingSummaryProps): JSX.Element 
           data-active={selected === bucket.id || undefined}
           onClick={() => onSelect(selected === bucket.id ? undefined : bucket.id)}
         >
-          <Text size="sm">{bucket.label}</Text>
-          <Text size="xl" fw={800}>
+          <Text size="sm" className={classes.label}>
+            {bucket.label}
+          </Text>
+          <Text size="xl" fw={800} className={classes.amount}>
             {totals ? formatMoney({ value: totals[i].amount, currency: 'USD' }) : '–'}
           </Text>
           <Text size="xs" c="dimmed">

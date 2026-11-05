@@ -338,7 +338,7 @@ function RemitDetail(props: {
 
   return (
     <Stack gap="md" p="lg">
-      <Group justify="space-between" wrap="nowrap" gap="sm" align="flex-start">
+      <Group justify="space-between" wrap="nowrap" gap="sm" align="center">
         <Stack gap={0} miw={0}>
           <Text size="xl" fw={800} truncate>
             {remit.paymentIssuer?.display ?? 'Unknown payer'}
@@ -351,8 +351,15 @@ function RemitDetail(props: {
           <Badge color={status.color} variant="light">
             {status.label}
           </Badge>
-          <ActionIcon variant="subtle" color="gray" radius="xl" aria-label="Close" onClick={onClose}>
-            <IconX size={16} stroke={2} />
+          <ActionIcon
+            variant="transparent"
+            radius="xl"
+            size={32}
+            className="outline-icon-button"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <IconX size={16} />
           </ActionIcon>
         </Group>
       </Group>

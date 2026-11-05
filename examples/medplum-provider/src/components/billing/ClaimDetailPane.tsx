@@ -22,10 +22,12 @@ import { Loading, ResourceName, useMedplum } from '@medplum/react';
 import {
   IconAlertTriangle,
   IconArrowRight,
+  IconBan,
   IconCheck,
   IconClock,
   IconDots,
   IconExternalLink,
+  IconFileDiff,
   IconPencil,
   IconRefresh,
   IconX,
@@ -55,7 +57,6 @@ import {
   isRemitResponse,
   sumAdjudicationAmount,
 } from './claimStatus';
-import { ComingSoon } from './ComingSoon';
 import pillTabs from './PillTabs.module.css';
 
 type DetailTab = 'lines' | 'activity';
@@ -163,7 +164,7 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
   return (
     <div className={classes.root}>
       <Stack className={classes.header} gap="md">
-        <Group justify="space-between" wrap="nowrap" gap="sm" align="flex-start">
+        <Group justify="space-between" wrap="nowrap" gap="sm" align="center">
           <Stack gap={0} className={classes.title}>
             <Text size="xl" fw={800} truncate>
               <ResourceName value={claim.patient} inherit />
@@ -172,7 +173,7 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
               {[getPayerName(responses), getServiceDate(claim)].filter(Boolean).join(' • ')}
             </Text>
           </Stack>
-          <Group gap="calc(var(--mantine-spacing-xs) / 2.5)" wrap="nowrap">
+          <Group gap="xs" wrap="nowrap">
             {status.stage !== 'ready' && status.stage !== 'voided' && (
               <Tooltip label="Refresh status" position="bottom" openDelay={500}>
                 <ActionIcon
@@ -194,8 +195,15 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
               editUrl={editable ? encounterUrl : undefined}
               onFollowUp={() => setFollowUpOpen(true)}
             />
-            <ActionIcon variant="subtle" color="gray" radius="xl" aria-label="Close" onClick={onClose}>
-              <IconX size={16} stroke={2} className={classes.headerIcon} />
+            <ActionIcon
+              variant="transparent"
+              radius="xl"
+              size={32}
+              className="outline-icon-button"
+              aria-label="Close"
+              onClick={onClose}
+            >
+              <IconX size={16} />
             </ActionIcon>
           </Group>
         </Group>
@@ -295,39 +303,53 @@ function ClaimMoreMenu(props: {
   };
 
   return (
-    <Menu position="bottom-end" shadow="md" width={220}>
+    <Menu position="bottom-end" shadow="md" width={220} radius="md">
       <Menu.Target>
-        <ActionIcon variant="subtle" color="gray" radius="xl" aria-label="More actions">
-          <IconDots size={16} stroke={2} className={classes.headerIcon} />
+        <ActionIcon
+          variant="transparent"
+          radius="xl"
+          size={32}
+          className="outline-icon-button"
+          aria-label="More actions"
+        >
+          <IconDots size={16} />
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
         {editUrl && (
-          <Menu.Item leftSection={<IconPencil size={16} />} component="a" href={editUrl}>
-            Edit claim
+          <Menu.Item
+            leftSection={<IconPencil size={16} color="var(--mantine-color-dimmed)" />}
+            component="a"
+            href={editUrl}
+          >
+            <Text size="sm">Edit claim</Text>
           </Menu.Item>
         )}
-        <Menu.Item leftSection={<IconClock size={16} />} onClick={onFollowUp}>
-          Set follow-up
+        <Menu.Item leftSection={<IconClock size={16} color="var(--mantine-color-dimmed)" />} onClick={onFollowUp}>
+          <Text size="sm">Set follow-up</Text>
         </Menu.Item>
-        <Menu.Item disabled rightSection={<ComingSoon />}>
-          Corrected claim
+        <Menu.Item disabled leftSection={<IconFileDiff size={16} color="var(--mantine-color-dimmed)" />}>
+          <Text size="sm">Corrected claim</Text>
         </Menu.Item>
-        <Menu.Item disabled rightSection={<ComingSoon />}>
-          Void claim
+        <Menu.Item disabled leftSection={<IconBan size={16} color="var(--mantine-color-dimmed)" />}>
+          <Text size="sm">Void claim</Text>
         </Menu.Item>
         <Menu.Divider />
         {response && isCandidClaimResponse(response) && (
           <Menu.Item
-            leftSection={<IconExternalLink size={16} />}
+            leftSection={<IconExternalLink size={16} color="var(--mantine-color-dimmed)" />}
             onClick={() => openInCandid().catch(showErrorNotification)}
           >
-            View on Candid
+            <Text size="sm">View on Candid</Text>
           </Menu.Item>
         )}
         {patientRef && (
-          <Menu.Item leftSection={<IconExternalLink size={16} />} component="a" href={`/${patientRef}`}>
-            Open patient chart
+          <Menu.Item
+            leftSection={<IconExternalLink size={16} color="var(--mantine-color-dimmed)" />}
+            component="a"
+            href={`/${patientRef}`}
+          >
+            <Text size="sm">Open patient chart</Text>
           </Menu.Item>
         )}
       </Menu.Dropdown>

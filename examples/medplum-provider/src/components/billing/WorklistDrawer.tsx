@@ -52,6 +52,7 @@ export function WorklistDrawer(props: WorklistDrawerProps): JSX.Element {
       trapFocus={false}
       lockScroll={false}
     >
+      <Drawer.Overlay className={classes.overlay} />
       <Drawer.Content aria-label={label} ref={contentRef}>
         <Drawer.Body className={classes.body}>{children}</Drawer.Body>
       </Drawer.Content>
