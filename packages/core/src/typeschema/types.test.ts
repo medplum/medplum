@@ -432,4 +432,55 @@ describe('FHIR resource and data type representations', () => {
     expect(profile.elements['specialty']).toBeDefined();
     expect(profile.elements['specialty'].slicing?.slices.length).toBe(1);
   });
+
+  test('contentReference to a sliced element resolves to the unsliced element', () => {
+    const profile = parseStructureDefinition({
+      resourceType: 'StructureDefinition',
+      url: 'http://example.com/StructureDefinition/sliced-agent',
+      name: 'SlicedAgent',
+      status: 'active',
+      kind: 'resource',
+      abstract: false,
+      type: 'Provenance',
+      snapshot: {
+        element: [
+          { id: 'Provenance', path: 'Provenance' },
+          {
+            id: 'Provenance.agent',
+            path: 'Provenance.agent',
+            slicing: { discriminator: [{ type: 'value', path: 'type' }], rules: 'open' },
+            min: 1,
+            max: '*',
+            type: [{ code: 'BackboneElement' }],
+          },
+          {
+            id: 'Provenance.agent.type',
+            path: 'Provenance.agent.type',
+            min: 0,
+            max: '1',
+            type: [{ code: 'CodeableConcept' }],
+          },
+          { id: 'Provenance.agent.who', path: 'Provenance.agent.who', min: 1, max: '1', type: [{ code: 'Reference' }] },
+          { id: 'Provenance.agent:transmitter', path: 'Provenance.agent', sliceName: 'transmitter', min: 0, max: '1' },
+          {
+            id: 'Provenance.agent:transmitter.type',
+            path: 'Provenance.agent.type',
+            min: 1,
+            max: '1',
+            type: [{ code: 'CodeableConcept' }],
+          },
+          { id: 'Provenance.target', path: 'Provenance.target', min: 1, max: '*', type: [{ code: 'Reference' }] },
+          { id: 'Provenance.other', path: 'Provenance.other', min: 0, max: '*', contentReference: '#Provenance.agent' },
+        ],
+      },
+    });
+
+    expect(profile.elements['agent'].slicing?.slices.map((s) => s.name)).toStrictEqual(['transmitter']);
+    // The reference gets the unsliced element's definition, not the slice's
+    const other = profile.elements['other'];
+    expect(other).toBeDefined();
+    expect(other.type.map((t) => t.code)).toStrictEqual(['ProvenanceAgent']);
+    expect(other.min).toBe(0);
+    expect(other.max).toBe(Number.POSITIVE_INFINITY);
+  });
 });
