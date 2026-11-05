@@ -18,7 +18,7 @@ All the containers present are configured to work together out of the box with n
 
 Medplum uses a Redis-compatible datastore for caching and background jobs. [Valkey](https://valkey.io/) is the recommended open-source implementation for self-hosted deployments. Redis and other compatible implementations may also be used. The Compose service is named `redis` and the server connects to it with the `MEDPLUM_REDIS_*` settings, which refer to the Redis protocol rather than a specific server. To use Redis instead, change the `image`, `command`, and `healthcheck` of that service.
 
-Google reCAPTCHA is an optional integration for protecting public registration workflows. It is not required for Medplum authentication or self-hosted deployments. The default Compose file does not configure it. To enable it, see [Set up reCAPTCHA](/docs/user-management/custom-emails#setup-recaptcha) and set `MEDPLUM_RECAPTCHA_SITE_KEY` and `MEDPLUM_RECAPTCHA_SECRET_KEY` on the server and `RECAPTCHA_SITE_KEY` on the app.
+Google reCAPTCHA is an optional integration for protecting registration and password reset workflows. It is not required for Medplum authentication or self-hosted deployments. The default Compose file does not configure it. To enable it, see [Set up reCAPTCHA](/docs/user-management/custom-emails#setup-recaptcha) and set `MEDPLUM_RECAPTCHA_SITE_KEY` and `MEDPLUM_RECAPTCHA_SECRET_KEY` on the server and `RECAPTCHA_SITE_KEY` on the app.
 
 :::info[]
 

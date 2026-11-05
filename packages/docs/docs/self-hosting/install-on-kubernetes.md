@@ -15,7 +15,7 @@ This installation method is ideal for organizations already using Kubernetes or 
 - **kubectl** https://kubernetes.io/docs/tasks/tools/
 - **Helm** https://helm.sh/docs/intro/install/
 
-## Setup PostgreSQL and Redis
+## Setup PostgreSQL and Valkey
 
 Medplum uses **PostgreSQL** for its primary data store and a **Redis-compatible datastore** for caching and queues. [Valkey](https://valkey.io/) is the recommended open-source implementation for self-hosted deployments. Redis and other compatible implementations may also be used. For production deployments, you must provision these services separately. This provides the scalability, high availability, and data durability required for enterprise applications.
 

@@ -431,6 +431,7 @@ jobs:
         image: ${{ matrix.datastore-image }}
         # Fork PRs don't get secrets; empty username/password (or null) fail template validation, so fall back to an empty mapping
         credentials: ${{ secrets.DOCKERHUB_USERNAME && fromJSON(format('{{"username":{0},"password":{1}}}', toJSON(secrets.DOCKERHUB_USERNAME), toJSON(secrets.DOCKERHUB_TOKEN))) || fromJSON('{}') }}
+        # The Valkey image ships redis-server/redis-cli symlinks, so one command and health check serve both images
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
@@ -605,6 +606,7 @@ jobs:
         image: ${{ matrix.datastore-image }}
         # Fork PRs don't get secrets; empty username/password (or null) fail template validation, so fall back to an empty mapping
         credentials: ${{ secrets.DOCKERHUB_USERNAME && fromJSON(format('{{"username":{0},"password":{1}}}', toJSON(secrets.DOCKERHUB_USERNAME), toJSON(secrets.DOCKERHUB_TOKEN))) || fromJSON('{}') }}
+        # The Valkey image ships redis-server/redis-cli symlinks, so one command and health check serve both images
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"

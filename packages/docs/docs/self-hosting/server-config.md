@@ -147,7 +147,7 @@ If using Google Authentication, this is the Google Client Secret.
 
 ### recaptchaSiteKey
 
-Google reCAPTCHA is an optional integration for protecting public registration workflows. It is not required for Medplum authentication or self-hosted deployments. If using reCAPTCHA, this is the reCAPTCHA site key. When `recaptchaSecretKey` is not set, the server does not verify reCAPTCHA tokens.
+Google reCAPTCHA is an optional integration for protecting registration and password reset workflows. It is not required for Medplum authentication or self-hosted deployments. If using reCAPTCHA, this is the reCAPTCHA site key. When `recaptchaSecretKey` is not set, the server does not verify reCAPTCHA tokens.
 
 **Default:** None
 
