@@ -3,6 +3,7 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import type { SearchRequest, WithId } from '@medplum/core';
 import {
+  badRequest,
   ContentType,
   createReference,
   generateId,
@@ -1593,6 +1594,179 @@ describe('Subscription Worker', () => {
         filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
       });
       expect(bundle.entry?.map((e) => e.resource?.type.code)).toStrictEqual(['execute']);
+    }));
+
+  test('Bot subscription without subscription-max-attempts does not retry on failure', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { throw new Error('Bot failed'); }`,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+
+      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
+        FunctionError: 'Unhandled',
+        LogResult: Buffer.from('ERROR Unhandled error: Bot failed\nEND RequestId: 123').toString('base64'),
+        Payload: new TextEncoder().encode(JSON.stringify({ errorType: 'Error', errorMessage: 'Bot failed' })),
+      }));
+
+      const patient = await botRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(1);
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('4');
+    }));
+
+  test('Bot subscription retries on failure when subscription-max-attempts is configured', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+            valueInteger: 3,
+          },
+        ],
+      });
+
+      let callCount = 0;
+      mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            FunctionError: 'Unhandled',
+            LogResult: Buffer.from('ERROR Unhandled error: attempt 1\nEND RequestId: 123').toString('base64'),
+            Payload: new TextEncoder().encode(JSON.stringify({ errorType: 'Error', errorMessage: 'attempt 1' })),
+          };
+        }
+        if (callCount === 2) {
+          return {
+            LogResult: Buffer.from('INFO Returning error outcome\nEND RequestId: 123').toString('base64'),
+            Payload: new TextEncoder().encode(JSON.stringify(badRequest('attempt 2'))),
+          };
+        }
+        const event = JSON.parse(new TextDecoder().decode(Payload));
+        return {
+          LogResult: Buffer.from('INFO Success\nEND RequestId: 123').toString('base64'),
+          Payload: new TextEncoder().encode(JSON.stringify(event.input)),
+        };
+      });
+
+      const patient = await botRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const jobs = await findAndExecSubscriptionJob(patient, 'create');
+      expect(jobs).toHaveLength(3);
+      expect(jobs[0].changePriority).toHaveBeenCalledWith({ priority: 1 });
+      expect(jobs[1].changePriority).toHaveBeenCalledWith({ priority: 2 });
+      expect(jobs[2].changePriority).not.toHaveBeenCalled();
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(3);
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(bundle.entry).toHaveLength(3);
+      expect(bundle.entry?.map((e) => e.resource?.outcome).sort()).toStrictEqual(['0', '4', '4']);
+    }));
+
+  test('Bot subscription stops retrying after subscription-max-attempts exhausted', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { throw new Error('Bot failed'); }`,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+            valueInteger: 1,
+          },
+        ],
+      });
+
+      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
+        FunctionError: 'Unhandled',
+        LogResult: Buffer.from('ERROR Unhandled error: Bot failed\nEND RequestId: 123').toString('base64'),
+        Payload: new TextEncoder().encode(JSON.stringify({ errorType: 'Error', errorMessage: 'Bot failed' })),
+      }));
+
+      const patient = await botRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(2);
     }));
 
   test('Execute Bot from linked Project', () =>

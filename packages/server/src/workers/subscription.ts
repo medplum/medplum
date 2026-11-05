@@ -37,7 +37,7 @@ import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
-import { canProjectReadBot } from '../bots/utils';
+import { canProjectReadBot, isBotEnabledForProject } from '../bots/utils';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
@@ -991,7 +991,7 @@ async function execBot(
   const body = interaction === 'delete' ? { deletedResource: resource } : resource;
   const headers = buildRestHookHeaders(job, subscription, resource, interaction, JSON.stringify(body));
 
-  await executeBot({
+  const result = await executeBot({
     subscription,
     bot,
     runAs,
@@ -1003,6 +1003,10 @@ async function execBot(
     traceId: ctx.traceId,
     headers,
   });
+
+  if (!result.success && (!project || isBotEnabledForProject(project))) {
+    throw new Error(result.logResult || 'Bot execution failed');
+  }
 }
 
 async function catchJobError(
@@ -1012,9 +1016,10 @@ async function catchJobError(
   job: Job<SubscriptionJobData>,
   err: unknown
 ): Promise<void> {
+  const defaultAttempts = subscription.channel?.endpoint?.startsWith('Bot/') ? 0 : DEFAULT_ATTEMPTS;
   const maxJobAttempts =
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
-      ?.valueInteger ?? DEFAULT_ATTEMPTS;
+      ?.valueInteger ?? defaultAttempts;
 
   if (job.attemptsMade >= maxJobAttempts) {
     // All retries exhausted - record as a final failure for auto-disable tracking
