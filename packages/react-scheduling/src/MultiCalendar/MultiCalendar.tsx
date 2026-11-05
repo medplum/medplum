@@ -81,6 +81,9 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
     });
   }, [sources, theme]);
 
+  // A weekend today has no column in Weekdays, so open on the whole week.
+  const today = new Date().getDay();
+
   return (
     <CalendarBase
       ref={ref}
@@ -109,7 +112,7 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
         omitZeroMinute: true,
         meridiem: 'lowercase',
       }}
-      initialView="timeGridFourDay"
+      initialView={today === 0 || today === 6 ? 'timeGridWeek' : 'timeGridWeekdays'}
     />
   );
 });
