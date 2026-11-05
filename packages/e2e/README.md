@@ -9,16 +9,8 @@ End-to-end tests that run against a real Medplum server and app.
 
 ## Prerequisites
 
-1. Postgres, Redis and [Mailpit](https://mailpit.axllent.org/) running on their default ports. From the repository root, `docker compose up` starts all three.
-2. Medplum built with reCAPTCHA disabled, from the repository root:
-
-   ```bash
-   RECAPTCHA_SITE_KEY= npm run build:fast
-   ```
-
-   The e2e server config disables reCAPTCHA, so the app must not render it either.
-
-3. Chromium for Playwright, from this directory:
+1. Postgres, Redis and [Mailpit](https://mailpit.axllent.org/) running on their default ports. From the repository root, `docker compose up` starts all three. To run only Mailpit in the foreground, use `npm run mailpit` from this directory; it starts the same `docker-compose.yml` service and stops it on Ctrl-C.
+2. Chromium for Playwright, from this directory:
 
    ```bash
    npm run playwright:install
@@ -32,7 +24,7 @@ From this directory:
 npm run test:e2e
 ```
 
-Playwright starts the server (with `medplum.e2e.config.json` layered over `packages/server/medplum.config.json`) and the app, runs the tests, then stops both. Server logs are written to `logs/server.log`.
+`test:e2e` first runs `npm run build-deps`, which builds the server, the app and their dependencies with turbo. It builds the app with reCAPTCHA disabled to match the e2e server config, so use `npm run build-deps` rather than a plain build when building for these tests. Playwright then starts the server (with `medplum.e2e.config.json` layered over `packages/server/medplum.config.json`) and the app, runs the tests, then stops both. Server logs are written to `logs/server.log`.
 
 To run part of the suite, pass Playwright arguments through, for example:
 

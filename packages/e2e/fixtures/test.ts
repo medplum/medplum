@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { LoginAuthenticationResponse, WithId } from '@medplum/core';
 import { MedplumClient } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import type { Page } from '@playwright/test';
@@ -37,7 +37,8 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   superAdmin: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, provide) => {
-      await provide(await signInClient('admin@example.com', 'medplum_admin'));
+      // A local database may give the seeded admin more projects than Super Admin
+      await provide(await signInClient('admin@example.com', 'medplum_admin', 'Super Admin'));
     },
     { scope: 'worker' },
   ],
@@ -89,11 +90,22 @@ export async function createTestProject(superAdmin: MedplumClient, name: string)
  * Signs in through the API with email and password.
  * @param email - The user's email.
  * @param password - The user's password.
+ * @param projectName - The project to sign in to, when the user belongs to more than one.
  * @returns A client signed in as the user.
  */
-export async function signInClient(email: string, password: string): Promise<MedplumClient> {
+export async function signInClient(email: string, password: string, projectName?: string): Promise<MedplumClient> {
   const medplum = new MedplumClient({ baseUrl: SERVER_URL });
-  const login = await medplum.startLogin({ email, password });
+  let login = await medplum.startLogin({ email, password });
+  if (!login.code) {
+    const membership = login.memberships?.find((m) => m.project?.display === projectName);
+    if (!membership) {
+      throw new Error(`${email} belongs to several projects; none is named ${JSON.stringify(projectName)}`);
+    }
+    login = await medplum.post<LoginAuthenticationResponse>('auth/profile', {
+      login: login.login,
+      profile: membership.id,
+    });
+  }
   await medplum.processCode(login.code as string);
   return medplum;
 }
