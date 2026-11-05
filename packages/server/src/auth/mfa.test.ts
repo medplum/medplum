@@ -2086,6 +2086,34 @@ describe('MFA', () => {
     expect(status.body.enrolledMethods).toEqual(['totp']);
   });
 
+  test('verify with a code for the login offer enrolls the user', async () => {
+    const email = `totp-verify-offer${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Totp',
+        lastName: 'Verify',
+        projectName: `Totp Verify ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+    await setMfaRequired(user);
+
+    const login = (await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' })).body;
+    expect(login.mfaEnrollRequired).toBe(true);
+    const secret = new URL(login.enrollUri).searchParams.get('secret') as string;
+
+    const res = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: login.login, token: authenticator.generate(secret) });
+    expect(res).toHaveStatus(200);
+    expect(res.body.code).toBeDefined();
+    const stored = await getGlobalSystemRepo().readResource<User>('User', user.id);
+    expect(stored).toMatchObject({ mfaEnrolled: true, mfaMethod: ['totp'], mfaSecret: secret });
+  });
+
   test('An offered TOTP secret is only stored when its own login confirms it', async () => {
     const email = `totp-offer${randomUUID()}@example.com`;
     const password = 'password!@#';
@@ -2140,7 +2168,7 @@ describe('MFA', () => {
   });
 
   test.each([
-    ['not enrolled', { mfaRequired: true }, 'User not enrolled in MFA'],
+    ['not enrolled', { mfaRequired: true }, 'Invalid MFA token'],
     ['enrolled in email only', { mfaEnrolled: true, mfaMethod: ['email'] }, 'Invalid MFA token'],
   ] as [string, Partial<User>, string][])(
     'verify ignores the stored TOTP secret of a user %s',

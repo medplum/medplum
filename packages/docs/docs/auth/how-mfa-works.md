@@ -87,7 +87,7 @@ POST /auth/mfa/verify  { login, token }  ──▶  { login, code, ... }
 Exchange `code` for tokens (or handle `memberships` if profile selection is required)
 ```
 
-`token` in `/auth/mfa/verify` is accepted as either a TOTP code or an emailed code, so a single verify call works regardless of which factor the user chose. A TOTP code is only accepted once the user is enrolled in `totp`; to enroll at login, use `/auth/mfa/login-enroll`.
+`token` in `/auth/mfa/verify` is accepted as either a TOTP code or an emailed code, so a single verify call works regardless of which factor the user chose. A TOTP code is checked against the user's enrolled authenticator, or, for a user not yet enrolled, against the secret offered to that `login`, which enrolls the user as `/auth/mfa/login-enroll` does.
 
 ## Flow: Forced enrollment at first login
 

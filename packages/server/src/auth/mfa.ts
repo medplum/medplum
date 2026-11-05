@@ -264,6 +264,17 @@ mfaRouter.post(
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
+
+    // A code for this login's own enrollment offer enrolls the user, as /login-enroll does
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+    const secret = user.mfaEnrolled ? undefined : await getTotpEnrollmentSecret(login, user);
+    if (secret && getAllowedMfaMethods(await getLoginProject(login)).includes('totp')) {
+      const result = await verifyMfaToken(login, req.body.token, secret);
+      await enrollTotp(login, user, secret);
+      await sendLoginResult(res, result);
+      return;
+    }
+
     const result = await verifyMfaToken(login, req.body.token);
     await sendLoginResult(res, result);
   }
