@@ -116,7 +116,11 @@ describe('PatientSummary', () => {
     const readSpy = vi.spyOn(client, 'readResource');
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Refresh'));
+      fireEvent.click(screen.getByLabelText('Patient actions'));
+    });
+    const refreshItem = await screen.findByRole('menuitem', { name: 'Refresh' });
+    await act(async () => {
+      fireEvent.click(refreshItem);
     });
 
     expect(await screen.findByText('Shellfish')).toBeInTheDocument();
@@ -141,7 +145,11 @@ describe('PatientSummary', () => {
     vi.spyOn(client, 'readResource').mockRejectedValueOnce(new Error('Network down'));
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Refresh'));
+      fireEvent.click(screen.getByLabelText('Patient actions'));
+    });
+    const refreshItem = await screen.findByRole('menuitem', { name: 'Refresh' });
+    await act(async () => {
+      fireEvent.click(refreshItem);
     });
 
     expect(await screen.findByText('Network down')).toBeInTheDocument();

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { formatDate, formatHumanName, normalizeErrorString, resolveId } from '@medplum/core';
@@ -100,35 +100,33 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           ) : (
             headerContent
           )}
-          <Tooltip label="Refresh" position="bottom" openDelay={500}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="md"
-              radius="xl"
-              aria-label="Refresh"
-              className={styles.actionsButton}
-              onClick={handleRefresh}
-            >
-              <IconReload size={16} />
-            </ActionIcon>
-          </Tooltip>
-          {headerMenuItems && (
-            <Menu shadow="md" radius="md" width={240} position="bottom-end">
-              <Menu.Target>
-                <ActionIcon
-                  variant="subtle"
-                  size="md"
-                  radius="xl"
-                  aria-label="Patient actions"
-                  className={styles.actionsButton}
-                >
-                  <IconDots size={18} />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown>{headerMenuItems}</Menu.Dropdown>
-            </Menu>
-          )}
+          <Menu shadow="md" radius="md" width={240} position="bottom-end">
+            <Menu.Target>
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                radius="xl"
+                aria-label="Patient actions"
+                className={styles.actionsButton}
+              >
+                <IconDots size={18} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {headerMenuItems && (
+                <>
+                  {headerMenuItems}
+                  <Menu.Divider />
+                </>
+              )}
+              <Menu.Item
+                leftSection={<IconReload size={16} color="var(--mantine-color-dimmed)" />}
+                onClick={handleRefresh}
+              >
+                <Text size="sm">Refresh</Text>
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
         <Divider />
       </Box>
