@@ -24,7 +24,7 @@ import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
 import { getConfig } from '../../config/loader';
-import { getAuthenticatedContext } from '../../context';
+import { requireSuperAdmin } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import type { SystemRepository } from '../repo';
@@ -67,12 +67,7 @@ interface ProjectInitParameters {
  * @returns The FHIR response.
  */
 export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
-  const ctx = getAuthenticatedContext();
-  if (getConfig().newProjectRegistrationEnabled === false && !ctx.project.superAdmin) {
-    return [badRequest('New project registration is disabled')];
-  }
-
-  const login = ctx.login;
+  const { systemRepo } = requireSuperAdmin();
 
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
 
@@ -88,11 +83,9 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
       lastName: 'Admin',
     });
     ownerRef = createReference(user);
-  } else if (login.user.reference?.startsWith('User/')) {
-    ownerRef = login.user;
   }
 
-  const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
+  const owner = ownerRef ? await systemRepo.readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
       return [badRequest('Only Users are permitted to be the owner of a new Project')];
