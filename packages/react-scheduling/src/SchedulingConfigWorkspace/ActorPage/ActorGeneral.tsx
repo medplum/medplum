@@ -81,6 +81,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
       value={schedule.comment}
       onChange={(event) => onScheduleChange({ comment: event.currentTarget.value })}
       placeholder="Not set"
+      maxLength={50}
     />
   );
 
