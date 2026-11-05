@@ -5,10 +5,16 @@ import type {
   Bundle,
   CodeableConcept,
   Coding,
+  Coverage,
   Device,
   Extension,
   ExtensionValue,
   Identifier,
+  Medication,
+  MedicationAdministration,
+  MedicationDispense,
+  MedicationRequest,
+  MedicationStatement,
   Meta,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
@@ -194,7 +200,10 @@ export function isProfileResource(resource: Resource): resource is ProfileResour
  * @param resource - The input resource.
  * @returns Human friendly display string.
  */
-export function getDisplayString(resource: Resource): string {
+export function getDisplayString(resource: Resource | undefined): string {
+  if (!resource) {
+    return '';
+  }
   if (isProfileResource(resource)) {
     const profileName = getProfileResourceDisplayString(resource);
     if (profileName) {
@@ -211,26 +220,43 @@ export function getDisplayString(resource: Resource): string {
     }
   }
   if (resource.resourceType === 'DocumentReference') {
-    if (resource.description) {
+    if (typeof resource.description === 'string' && resource.description) {
       return resource.description;
     }
     if (resource.type) {
       return formatCodeableConcept(resource.type);
     }
   }
-  if (resource.resourceType === 'MedicationRequest' && resource.medicationCodeableConcept) {
-    return formatCodeableConcept(resource.medicationCodeableConcept);
+  if (resource.resourceType === 'Coverage') {
+    const coverageName = getCoverageDisplayString(resource);
+    if (coverageName) {
+      return coverageName;
+    }
   }
-  if (resource.resourceType === 'MedicationStatement' && resource.medicationCodeableConcept) {
-    return formatCodeableConcept(resource.medicationCodeableConcept);
+  if (resource.resourceType === 'Immunization') {
+    const vaccineName = formatCodeableConcept(resource.vaccineCode);
+    if (vaccineName) {
+      return vaccineName;
+    }
+  }
+  if (
+    resource.resourceType === 'MedicationAdministration' ||
+    resource.resourceType === 'MedicationDispense' ||
+    resource.resourceType === 'MedicationRequest' ||
+    resource.resourceType === 'MedicationStatement'
+  ) {
+    const medicationName = getMedicationDisplayString(resource);
+    if (medicationName) {
+      return medicationName;
+    }
   }
   if (resource.resourceType === 'Slot' && (resource.start || resource.end)) {
     return `${formatDateTime(resource.start)} - ${formatDateTime(resource.end)}`;
   }
-  if (resource.resourceType === 'Subscription' && resource.criteria) {
+  if (resource.resourceType === 'Subscription' && typeof resource.criteria === 'string' && resource.criteria) {
     return resource.criteria;
   }
-  if (resource.resourceType === 'User' && resource.email) {
+  if (resource.resourceType === 'User' && typeof resource.email === 'string' && resource.email) {
     return resource.email;
   }
   if ('name' in resource && resource.name && typeof resource.name === 'string') {
@@ -271,8 +297,53 @@ function getProfileResourceDisplayString(resource: ProfileResource): string | un
  */
 function getDeviceDisplayString(device: Device): string | undefined {
   const names = device.deviceName;
-  if (names && names.length > 0) {
+  if (Array.isArray(names) && typeof names[0]?.name === 'string') {
     return names[0].name;
+  }
+  return undefined;
+}
+
+/**
+ * Returns a display string for a coverage: the payor organization's display name, or else the coverage type.
+ * Self-pay payors (Patient or RelatedPerson) are skipped, so a coverage doesn't display as a person's name.
+ * @param coverage - The coverage resource.
+ * @returns The display string if one is found.
+ */
+function getCoverageDisplayString(coverage: Coverage): string | undefined {
+  const payors = Array.isArray(coverage.payor) ? coverage.payor : [];
+  const payor = payors.find(
+    (p) =>
+      typeof p?.display === 'string' &&
+      p.display &&
+      p.type !== 'Patient' &&
+      p.type !== 'RelatedPerson' &&
+      !/(^|\/)(Patient|RelatedPerson)\//.test(typeof p.reference === 'string' ? p.reference : '')
+  );
+  return payor?.display || formatCodeableConcept(coverage.type) || undefined;
+}
+
+/**
+ * Returns a display string for the medication in a medication resource: the medication code, the reference
+ * display, or the code of a contained Medication.
+ * @param resource - The medication administration, dispense, request, or statement.
+ * @returns The display string if one is found.
+ */
+function getMedicationDisplayString(
+  resource: MedicationAdministration | MedicationDispense | MedicationRequest | MedicationStatement
+): string | undefined {
+  if (resource.medicationCodeableConcept) {
+    return formatCodeableConcept(resource.medicationCodeableConcept) || undefined;
+  }
+  const reference = resource.medicationReference;
+  if (typeof reference?.display === 'string' && reference.display) {
+    return reference.display;
+  }
+  const referenceString = reference?.reference;
+  if (typeof referenceString === 'string' && referenceString.startsWith('#')) {
+    const id = referenceString.slice(1);
+    const contained = Array.isArray(resource.contained) ? resource.contained : [];
+    const medication = contained.find((r): r is Medication => r?.resourceType === 'Medication' && r.id === id);
+    return formatCodeableConcept(medication?.code) || undefined;
   }
   return undefined;
 }

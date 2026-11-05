@@ -14,15 +14,16 @@ The examples use fictional IDs and text labels. Configure validated terminology 
 
 ## 1. Create the Request and Initial Work
 
-Assume `Patient/example`, `PractitionerRole/referring-clinician`, `Organization/referral-coordination`, and `Organization/receiving-clinic` already exist. The transaction creates an active order and a Task to coordinate it. The Task's `focus` uses the request's `urn:uuid` fullUrl so the server can resolve the new reference.
+Assume `Patient/example`, `PractitionerRole/referring-clinician`, `Organization/referral-coordination`, and `Organization/receiving-clinic` already exist. Create the active order first, then create its coordination Task using the saved reference. This example permits the order to exist temporarily without the Task, but the workflow must recover that partial state before advancing the referral. If that intermediate state is unacceptable, staged writes are insufficient; atomic transaction Bundles are currently unavailable on hosted Medplum.
+
+First, submit the request as a conditional create:
 
 ```json
 {
   "resourceType": "Bundle",
-  "type": "transaction",
+  "type": "batch",
   "entry": [
     {
-      "fullUrl": "urn:uuid:2bcb56d0-993c-4e86-9ae2-3ca0c5dfa093",
       "resource": {
         "resourceType": "ServiceRequest",
         "identifier": [{ "system": "https://example.org/referrals", "value": "REF-2026-001" }],
@@ -40,16 +41,26 @@ Assume `Patient/example`, `PractitionerRole/referring-clinician`, `Organization/
         "url": "ServiceRequest",
         "ifNoneExist": "identifier=https%3A%2F%2Fexample.org%2Freferrals%7CREF-2026-001"
       }
-    },
+    }
+  ]
+}
+```
+
+Inspect the response and record the saved ServiceRequest ID. Only after that entry succeeds, submit the Task using that ID in `focus.reference`. The following example assumes the returned reference was `ServiceRequest/referral-001`:
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
     {
-      "fullUrl": "urn:uuid:74418b81-843b-4763-8b30-90782d85f290",
       "resource": {
         "resourceType": "Task",
         "identifier": [{ "system": "https://example.org/referral-work", "value": "REF-2026-001-coordinate" }],
         "status": "ready",
         "intent": "order",
         "code": { "text": "Coordinate referral through returned-note review" },
-        "focus": { "reference": "urn:uuid:2bcb56d0-993c-4e86-9ae2-3ca0c5dfa093" },
+        "focus": { "reference": "ServiceRequest/referral-001" },
         "for": { "reference": "Patient/example" },
         "owner": { "reference": "Organization/referral-coordination" }
       },
@@ -63,11 +74,11 @@ Assume `Patient/example`, `PractitionerRole/referring-clinician`, `Organization/
 }
 ```
 
-Submit with `medplum.executeBatch` using the transaction Bundle, and read the resulting resource locations from the transaction response. The SDK method name does not change the Bundle's transaction semantics. See [FHIR Batch and Transaction Requests](/docs/fhir-datastore/fhir-batch-requests).
+Submit each stage with `medplum.executeBatch` and inspect every entry in its `batch-response`. At scale, batch independent requests in the first stage and Tasks for successful requests in the second. If Task creation fails, retain the request reference and recover only the failed work. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
 
 Conditional creates make replaying this initial submission safe for FHIR resource creation. A match leaves the existing resource unchanged. Handle a multiple-match error as a data-quality issue rather than silently picking a request.
 
-For the remaining snapshots, assume the transaction returned `ServiceRequest/referral-001` and `Task/coordinate-001`. Each snapshot shows a later persisted state in the workflow.
+For the remaining snapshots, assume these writes returned `ServiceRequest/referral-001` and `Task/coordinate-001`. Each snapshot shows a later persisted state in the workflow.
 
 <span id="documentreference-example" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
 

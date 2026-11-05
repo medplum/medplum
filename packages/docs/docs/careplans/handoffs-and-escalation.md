@@ -41,7 +41,7 @@ The review is complete; the follow-up ServiceRequest still has its own fulfillme
 
 When preparation completes, the application or a scoped transition Subscription can initiate review. Derive a stable identifier from the source work and next step, and conditionally create the review Task. Replaying the same transition should find that same Task.
 
-For changes that must succeed together, use a [transaction Bundle](/docs/fhir-datastore/fhir-batch-requests), version-check the update, and conditionally create the successor. Newly created resources that reference one another use `urn:uuid` fullUrls. A batch does not provide those transactional guarantees.
+If a completed Task may temporarily exist before its successor, version-check the completion and conditionally create the next Task using a stable identifier. Track incomplete handoffs and retry the successor creation without replaying completion. If the workflow requires completion and successor creation to commit together, independent writes and batches are insufficient. Atomic transaction Bundles are currently unavailable on hosted Medplum; resolve that requirement before deployment. See [Batches vs Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 
 :::caution[A parent link does not start the next Task]
 

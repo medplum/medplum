@@ -6,7 +6,7 @@ import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconSearch, IconTrash } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { ConfirmModal } from '../ConfirmModal';
+import { ConfirmModal } from '../../ConfirmModal/ConfirmModal';
 import { isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
 import { OfferingMenu } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';

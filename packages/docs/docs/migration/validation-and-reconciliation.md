@@ -86,7 +86,7 @@ A successful request or completed asynchronous job does not prove that every ope
 
 For a synchronous `batch`, inspect every `entry.response` in the returned `batch-response`, including its status, location, and `OperationOutcome`. One batch can contain both successful and failed entries.
 
-For a synchronous `transaction` with the `transaction-bundles` Project feature enabled, persist the `transaction-response` when it succeeds. If an operation fails, the server rolls back the transaction and returns an `OperationOutcome`; mark every intended operation in that transaction with an explained outcome. Without the feature, Medplum processes a transaction Bundle as a batch without atomic rollback.
+On hosted Medplum, apply per-entry result handling even if an import tool submits `type: transaction`. Atomic transaction Bundles are currently unavailable, and a `transaction-response` label does not prove rollback protection. For self-hosted deployments with atomic processing enabled, a failed transaction instead returns an `OperationOutcome` and rolls back the group; account for every intended operation. See [availability and response semantics](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 
 For an [asynchronous batch](/docs/fhir-datastore/processing-async-bundles):
 
