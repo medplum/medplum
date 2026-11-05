@@ -753,7 +753,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Tabs>
         </SidePane>
       )}
-      <DiscardChangesModal {...discard.modalProps}>What's been entered hasn't been saved.</DiscardChangesModal>
+      <DiscardChangesModal {...discard.modalProps}>Your changes haven't been saved.</DiscardChangesModal>
     </div>
   );
 }
