@@ -52,6 +52,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const requester = useResource(order.requester);
   const selectedReportResource = useResource(selectedReport);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
+  const [reportsFetched, setReportsFetched] = useState(false);
   const [labOrderRequisitionDocs, setLabOrderRequisitionDocs] = useState<DocumentReference[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
@@ -71,7 +72,6 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
   const isDraft = order.status === 'draft';
   const hideProgress = isDraft || order.status === 'revoked';
-  const detailTab = hideProgress ? 'order' : activeDetailTab;
 
   const handleRevoke = useCallback(async (): Promise<void> => {
     try {
@@ -99,6 +99,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
         _count: '1',
       });
       setDiagnosticReports(reports);
+      setReportsFetched(true);
     };
 
     fetchReports().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
@@ -109,6 +110,25 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   // recently updated report.
   const latestReport = diagnosticReports.length > 0 ? diagnosticReports[0] : undefined;
   const primaryReport = selectedReport ? selectedReportResource : latestReport;
+  // While this is true, we don't yet know whether a report exists - keep the Report tab visible
+  // (with a loader) rather than flipping it away only to potentially flip it back once the fetch
+  // resolves, and don't bounce the user off the Report tab just because it isn't resolved yet.
+  const isLoadingPrimaryReport = selectedReport ? selectedReportResource === undefined : !reportsFetched;
+
+  // The tab actually shown, derived from the requested tab plus two corrections:
+  // - once loading finishes with no report found, a request for 'report' has nothing to show, so
+  //   fall back to a tab that does (e.g. a completed order whose report search came back empty);
+  // - 'progress' is requested but genuinely hidden (hideProgress), so fall back to 'order'. This
+  //   never overrides a 'report' request on a draft/revoked order - the report tab's own
+  //   availability is governed separately, by whether a report exists (see primaryReport above),
+  //   so a draft or revoked order with a report (e.g. a preliminary result opened from Completed)
+  //   must still be able to select and view it instead of being stuck on Order Details.
+  let detailTab: 'report' | 'progress' | 'order' = activeDetailTab;
+  if (!isLoadingPrimaryReport && !primaryReport && activeDetailTab === 'report') {
+    detailTab = hideProgress ? 'order' : 'progress';
+  } else if (hideProgress && activeDetailTab === 'progress') {
+    detailTab = 'order';
+  }
 
   // Progress tracker logic
   const getProgressSteps = useMemo((): ProgressStep[] => {
@@ -351,7 +371,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             className={classes.pillTabs}
           >
             <Tabs.List>
-              {primaryReport && <Tabs.Tab value="report">Report</Tabs.Tab>}
+              {(isLoadingPrimaryReport || primaryReport) && <Tabs.Tab value="report">Report</Tabs.Tab>}
               {!hideProgress && <Tabs.Tab value="progress">Progress Tracker</Tabs.Tab>}
               <Tabs.Tab value="order">Order Details</Tabs.Tab>
             </Tabs.List>
@@ -651,7 +671,14 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       )}
 
       {/* Report Tab Content - for completed items */}
-      {detailTab === 'report' && primaryReport && <LabReportContent report={primaryReport} />}
+      {detailTab === 'report' && isLoadingPrimaryReport && (
+        <Group justify="center" p="xl">
+          <Loader size="sm" />
+        </Group>
+      )}
+      {detailTab === 'report' && !isLoadingPrimaryReport && primaryReport && (
+        <LabReportContent report={primaryReport} />
+      )}
     </LabDetailLayout>
   );
 }
