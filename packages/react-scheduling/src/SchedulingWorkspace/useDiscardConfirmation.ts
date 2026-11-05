@@ -7,7 +7,7 @@ export interface DiscardConfirmation {
   readonly onBlockDirtyChange: (dirty: boolean) => void;
   /** Runs `proceed` at once when nothing would be lost, otherwise once the viewer confirms. */
   readonly guard: (proceed: () => void) => void;
-  /** Forgets what the forms reported, for a pane that has closed. */
+  /** Forgets what the forms reported, and any action waiting on them, for a pane that has closed. */
   readonly reset: () => void;
   readonly modalProps: { readonly opened: boolean; readonly onCancel: () => void; readonly onConfirm: () => void };
 }
@@ -39,6 +39,7 @@ export function useDiscardConfirmation(): DiscardConfirmation {
   const reset = useCallback((): void => {
     setBookingDirty(false);
     setBlockDirty(false);
+    setPending(undefined);
   }, []);
 
   return {

@@ -17,6 +17,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
+  deepEquals,
   getAppointmentSite,
   getDisplayString,
   getReferenceString,
@@ -442,7 +443,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const dirty =
     serviceFacility !== initial.serviceFacility ||
     service !== initial.service ||
-    selections !== initial.selections ||
+    !deepEquals(selections, initial.selections) ||
     patient !== initial.patient ||
     requirementValues !== EMPTY_REQUIREMENT_VALUES ||
     comment !== '' ||

@@ -760,7 +760,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         confirmLabel="Discard changes"
         destructive
       >
-        What's been entered in the booking form hasn't been saved.
+        What's been entered hasn't been saved.
       </ConfirmModal>
     </div>
   );

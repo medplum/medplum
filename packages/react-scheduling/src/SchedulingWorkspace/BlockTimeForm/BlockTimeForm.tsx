@@ -61,19 +61,19 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>();
 
-  const dirty =
-    startValue !== formatZonedDateTimeInput(defaultRange.start) ||
-    endValue !== formatZonedDateTimeInput(defaultRange.end) ||
-    chosen !== NONE_CHOSEN ||
-    comment !== '';
-  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
-
   const defaultRangeChanged = useChanged(defaultRange);
   if (defaultRangeChanged) {
     setStartValue(formatZonedDateTimeInput(defaultRange.start));
     setEndValue(formatZonedDateTimeInput(defaultRange.end));
     setWritten(false);
   }
+
+  const dirty =
+    startValue !== formatZonedDateTimeInput(defaultRange.start) ||
+    endValue !== formatZonedDateTimeInput(defaultRange.end) ||
+    chosen !== NONE_CHOSEN ||
+    comment !== '';
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const start = parseZonedDateTimeInput(startValue);
   const end = parseZonedDateTimeInput(endValue);
