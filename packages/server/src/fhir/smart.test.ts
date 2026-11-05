@@ -393,6 +393,8 @@ describe('SMART on FHIR', () => {
           { resourceType: 'Observation', criteria: 'Patient?name=x' },
           // The deprecated compartment is converted to a criteria filter
           { resourceType: 'Observation', compartment: { reference: org } },
+          // Unless it is not a single literal reference, which search would parse as `org` OR the other Organization
+          { resourceType: 'Observation', compartment: { reference: `${org},Organization/${randomUUID()}` } },
         ],
       };
 
@@ -445,6 +447,24 @@ describe('SMART on FHIR', () => {
               id: randomUUID(),
               patient: { reference: `Group/${randomUUID()}` },
             },
+          }),
+        ],
+        [
+          'multiple Patients in launch context',
+          'openid patient/Observation.rs',
+          () => ({
+            smartAppLaunch: {
+              resourceType: 'SmartAppLaunch',
+              id: randomUUID(),
+              patient: { reference: `Patient/${randomUUID()},Patient/${randomUUID()}` },
+            },
+          }),
+        ],
+        [
+          'multiple Patients in profile',
+          'openid patient/Observation.rs',
+          () => ({
+            membership: { ...membership, profile: { reference: `Patient/${randomUUID()},Patient/${randomUUID()}` } },
           }),
         ],
         [

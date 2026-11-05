@@ -19,7 +19,7 @@ import {
   readInteractions,
   splitN,
 } from '@medplum/core';
-import type { AccessPolicy, AccessPolicyResource, Patient, Reference } from '@medplum/fhirtypes';
+import type { AccessPolicy, AccessPolicyResource, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { getConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
@@ -40,6 +40,9 @@ export const SMART_SCOPES_SUPPORTED = [
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 
 const missingPatientContext = 'Missing patient context for patient/ scope';
+
+// `Type/id`, with the FHIR id format; excludes search syntax such as `,` (OR) and `\` (escape)
+const literalReferenceFormat = /^[A-Z][A-Za-z]*\/[A-Za-z0-9\-.]{1,64}$/;
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
@@ -241,23 +244,34 @@ export function applySmartScopes(accessPolicy: PopulatedAccessPolicy, authState:
 /**
  * Resolves the Patient context for the login, from the SMART App Launch context or the user's own profile.
  * @param authState - The user's authentication state.
- * @returns The Patient context reference, if a valid one is available.
+ * @returns The Patient context reference string, if a valid one is available.
  */
-function getPatientContext(authState: AuthState): Reference<Patient> | undefined {
+function getPatientContext(authState: AuthState): string | undefined {
   const membership = authState.onBehalfOfMembership ?? authState.membership;
   for (const candidate of [authState.smartAppLaunch?.patient, membership.profile]) {
-    const [resourceType, id] = splitN(candidate?.reference ?? '', '/', 2);
-    if (resourceType === 'Patient' && id) {
-      return candidate as Reference<Patient>;
+    const reference = getLiteralReference(candidate);
+    if (reference?.startsWith('Patient/')) {
+      return reference;
     }
   }
   return undefined;
 }
 
+/**
+ * Returns the reference string if it is a single literal `Type/id` reference, which is safe to use as a search value.
+ * Any other string could be parsed as search syntax, e.g. `Patient/a,Patient/b` would match either Patient.
+ * @param reference - The reference to check.
+ * @returns The reference string, or undefined if it is not a single literal reference.
+ */
+function getLiteralReference(reference: Reference | undefined): string | undefined {
+  const value = reference?.reference;
+  return value && literalReferenceFormat.test(value) ? value : undefined;
+}
+
 function intersectSmartScopes(
   accessPolicy: AccessPolicy,
   smartScopes: SmartScope[],
-  context?: Reference<Patient>
+  context?: string
 ): PopulatedAccessPolicy {
   const result: PopulatedAccessPolicy = { ...accessPolicy, resource: [] };
   for (const entry of accessPolicy.resource ?? EMPTY) {
@@ -290,7 +304,7 @@ function narrowEntry(
   entry: AccessPolicyResource,
   resourceType: string,
   scope: SmartScope,
-  context?: Reference<Patient>
+  context?: string
 ): AccessPolicyResource | undefined {
   if (!scope.scope) {
     // A scope with no permissions grants no access
@@ -304,11 +318,11 @@ function narrowEntry(
     params.append(key, value);
   }
   if (scope.permissionType === 'patient') {
-    if (!context?.reference) {
+    if (!context) {
       // Should be unreachable: applySmartScopes rejects `patient/` scopes without a context
       throw new OperationOutcomeError(badRequest(missingPatientContext));
     }
-    params.append('_compartment', context.reference);
+    params.append('_compartment', context);
   }
 
   const result = deepClone(entry);
@@ -344,10 +358,11 @@ function getEntryParams(entry: AccessPolicyResource): URLSearchParams | undefine
   const params = new URLSearchParams(entry.criteria?.split('?')[1]);
   if (entry.compartment) {
     // The repository ignores criteria on an entry with the deprecated compartment, so it must become a filter
-    if (!entry.compartment.reference) {
+    const compartment = getLiteralReference(entry.compartment);
+    if (!compartment) {
       return undefined;
     }
-    params.append('_compartment', entry.compartment.reference);
+    params.append('_compartment', compartment);
   }
   return params;
 }
