@@ -339,6 +339,7 @@ async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: 
     resourceType: 'Login',
     authMethod: 'execute',
     user: runAs.user,
+    project: runAs.project,
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
     scope: 'openid',

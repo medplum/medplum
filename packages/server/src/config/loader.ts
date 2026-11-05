@@ -227,6 +227,9 @@ export async function loadTestConfig(opts?: { sharded?: boolean }): Promise<Serv
     ...config.redis,
     db: 10,
   };
+  // reCAPTCHA is off by default; enable it in tests so the verification paths are exercised.
+  config.recaptchaSiteKey = 'test-recaptcha-site-key';
+  config.recaptchaSecretKey = 'test-recaptcha-secret-key';
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';

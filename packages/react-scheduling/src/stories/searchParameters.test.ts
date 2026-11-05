@@ -25,7 +25,7 @@ const CODES_IN_USE: Partial<Record<ResourceType, string[]>> = {
   Device: ['device-name', 'status'],
   PractitionerRole: ['active', 'practitioner'],
   HealthcareService: ['active', 'location', 'name'],
-  Patient: ['birthdate', 'name'],
+  Patient: ['birthdate', 'identifier', 'name'],
   // `end` is `findConflicts.ts`, which brackets a typed time against reserved Slots.
   Slot: ['end', 'schedule', 'start', 'status'],
   Appointment: ['actor', 'date'],

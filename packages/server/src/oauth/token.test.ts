@@ -292,6 +292,10 @@ describe('OAuth2 Token', () => {
     expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
+
+    const loginId = decodeJwt(res.body.access_token).login_id as string;
+    const login = await systemRepo.readResource<Login>('Login', loginId);
+    expect(login.meta?.project).toBe(project.id);
   });
 
   test.each(['ProjectMembership', 'Project'] as const)(

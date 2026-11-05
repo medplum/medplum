@@ -338,8 +338,8 @@ export async function addSubscriptionJobs(
     return;
   }
 
-  if (resource.resourceType === 'AuditEvent') {
-    // Never send subscriptions for audit events
+  if (resource.resourceType === 'AuditEvent' || resource.resourceType === 'Login') {
+    // Never send subscriptions for audit events or logins
     return;
   }
 

@@ -11,7 +11,7 @@ The `$reschedule` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
-The `$reschedule` operation moves an existing [`Appointment`](/docs/api/fhir/resources/appointment) to a new time, a new set of [`Schedule`](/docs/api/fhir/resources/schedule) resources, or both. In a single FHIR transaction it releases the [`Slot`](/docs/api/fhir/resources/slot) resources the appointment currently holds, validates that the new time is genuinely available, creates the new Slots, and updates the Appointment in place.
+The `$reschedule` operation moves an existing [`Appointment`](/docs/api/fhir/resources/appointment) to a new time, a new set of [`Schedule`](/docs/api/fhir/resources/schedule) resources, or both. In a single database transaction it releases the [`Slot`](/docs/api/fhir/resources/slot) resources the appointment currently holds, validates that the new time is genuinely available, creates the new Slots, and updates the Appointment in place.
 
 Because the old Slots are released **before** availability is checked, an appointment never blocks its own move. Reassigning an 11am visit from one room to another works even though the practitioner's schedule is already busy at 11am — that block belongs to the appointment being moved.
 

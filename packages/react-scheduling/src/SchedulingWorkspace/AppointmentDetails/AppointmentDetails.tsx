@@ -86,6 +86,8 @@ export interface AppointmentDetailsProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
+  /** See {@link AppointmentDetailsFormProps.commentMaxLength}. */
+  readonly commentMaxLength?: number;
   /** Called with the appointment as written, after the visit type's codes or the notes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
@@ -190,6 +192,7 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
  * @param props.procedureBinding - The value set the procedure code field binds to
  * @param props.diagnosisBinding - The value set the diagnosis code field binds to
  * @param props.mrnSystem - The system a project issues medical record numbers under
+ * @param props.commentMaxLength - The most characters the notes may be edited to hold
  * @param props.onToggleTimeFinder - A callback told when the reschedule form's time search
  * opens or closes, for a host that has to widen to fit it
  * @returns The details component
@@ -205,6 +208,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     procedureBinding,
     diagnosisBinding,
     mrnSystem,
+    commentMaxLength,
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
   const patientResource = useResource(patient);
@@ -353,6 +357,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           appointment={appointment}
           procedureBinding={procedureBinding}
           diagnosisBinding={diagnosisBinding}
+          commentMaxLength={commentMaxLength}
           onUpdated={(updated) => {
             setEditing(false);
             return onUpdated?.(updated);
