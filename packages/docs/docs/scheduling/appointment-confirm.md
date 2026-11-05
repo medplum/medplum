@@ -6,7 +6,7 @@ The `$confirm` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
-The `$confirm` operation confirms a held [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `booked` and upgrading all `busy-tentative` [`Slot`](/docs/api/fhir/resources/slot) resources it references to `busy` in a single FHIR transaction.
+The `$confirm` operation confirms a held [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `booked` and upgrading all `busy-tentative` [`Slot`](/docs/api/fhir/resources/slot) resources it references to `busy` in a single database transaction.
 
 ## Booking Lifecycle
 

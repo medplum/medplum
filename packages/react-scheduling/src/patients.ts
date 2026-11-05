@@ -19,3 +19,25 @@ export function getMedicalRecordNumber(patient: Patient, mrnSystem: string | und
     getIdentifierByType(patient, MRN_IDENTIFIER_TYPE) ?? (mrnSystem ? getIdentifier(patient, mrnSystem) : undefined)
   );
 }
+
+/**
+ * Tells whether a patient holds a medical record number.
+ *
+ * Where {@link getMedicalRecordNumber} reads one, this checks them all: a
+ * patient can hold more than one, from more than one issuer.
+ *
+ * @param patient - The patient to check.
+ * @param mrnSystem - The system a project issues medical record numbers under.
+ * @param mrn - The number to look for.
+ * @returns True when one of the patient's medical record numbers is `mrn`.
+ */
+export function hasMedicalRecordNumber(patient: Patient, mrnSystem: string | undefined, mrn: string): boolean {
+  return (patient.identifier ?? []).some(
+    (identifier) =>
+      identifier.value === mrn &&
+      ((mrnSystem !== undefined && identifier.system === mrnSystem) ||
+        identifier.type?.coding?.some(
+          (coding) => coding.system === MRN_IDENTIFIER_TYPE.system && coding.code === MRN_IDENTIFIER_TYPE.code
+        ) === true)
+  );
+}
