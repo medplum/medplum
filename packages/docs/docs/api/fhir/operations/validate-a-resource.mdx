@@ -14,7 +14,7 @@ The `$validate` operation checks whether a FHIR resource conforms to the base sp
 - **Form validation**: Validate resources as users complete forms to provide immediate feedback on data entry errors before submission
 - **Integration testing**: Pre-validate incoming data from external systems to catch structural issues before attempting to persist records
 - **Development and debugging**: Test resource structures during development to ensure compliance with FHIR specifications and custom profiles
-- **Two-phase commits**: Check validity of proposed changes before executing transactions, enabling rollback-safe workflows
+- **Preflight checks**: Check proposed resources before writing them. Successful validation does not guarantee that a later write will succeed.
 
 Medplum implements the FHIR [`$validate` operation](https://www.hl7.org/fhir/resource-operation-validate.html)
 

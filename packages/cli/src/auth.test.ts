@@ -277,4 +277,94 @@ describe('CLI auth', () => {
     await expect(main(['node', 'index.js', 'token'])).rejects.toThrow('Process exited with exit code 1');
     expect(processError).toHaveBeenLastCalledWith(expect.stringContaining('Error: Not logged in'));
   });
+
+  describe('Logout', () => {
+    const alice = {
+      accessToken: 'alice-access',
+      refreshToken: 'alice-refresh',
+      profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+      project: { reference: 'Project/456', display: 'My Project' },
+    };
+    const bob = {
+      accessToken: 'bob-access',
+      refreshToken: 'bob-refresh',
+      profile: { reference: 'Practitioner/789', display: 'Bob Jones' },
+      project: { reference: 'Project/456', display: 'My Project' },
+    };
+    let file: string;
+
+    beforeEach(() => {
+      file = JSON.stringify({
+        options: JSON.stringify({ baseUrl: 'https://example.com/' }),
+        activeLogin: JSON.stringify(alice),
+        logins: JSON.stringify([alice, bob]),
+      });
+      (fs.existsSync as unknown as Mock).mockReturnValue(true);
+      (fs.readFileSync as unknown as Mock).mockImplementation(() => file);
+      (fs.writeFileSync as unknown as Mock).mockImplementation((_path: string, data: string) => {
+        file = data;
+      });
+    });
+
+    function mockSignOutResponse(status: number): void {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(null, { status }))
+      );
+      vi.spyOn(medplum, 'signOut').mockImplementation(async () => {
+        const options = (createMedplumClient as unknown as Mock).mock.calls[0][0];
+        await options.fetch('https://example.com/oauth2/token', {});
+        throw new Error(`HTTP ${status}`);
+      });
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    test('Revokes every stored session and keeps profile settings', async () => {
+      const signOut = vi.spyOn(medplum, 'signOut');
+
+      await main(['node', 'index.js', 'logout']);
+
+      expect(signOut).toHaveBeenCalledTimes(2);
+      expect((console.log as unknown as Mock).mock.calls).toStrictEqual([
+        ['Revoked session: Alice Smith (Practitioner/124)'],
+        ['Revoked session: Bob Jones (Practitioner/789)'],
+        ['Logged out'],
+      ]);
+      expect(JSON.parse(file)).toStrictEqual({ options: JSON.stringify({ baseUrl: 'https://example.com/' }) });
+    });
+
+    test('Treats tokens rejected by the server as already invalid', async () => {
+      mockSignOutResponse(400);
+
+      await main(['node', 'index.js', 'logout']);
+
+      expect(console.log).toHaveBeenCalledWith('Session already invalid: Alice Smith (Practitioner/124)');
+      expect(console.log).toHaveBeenLastCalledWith('Logged out');
+      expect(JSON.parse(file).activeLogin).toBeUndefined();
+    });
+
+    test('Keeps stored tokens when the server is unavailable', async () => {
+      mockSignOutResponse(503);
+      const original = file;
+
+      await expect(main(['node', 'index.js', 'logout'])).rejects.toThrow('Process exited with exit code 1');
+
+      expect(processError).toHaveBeenLastCalledWith(
+        expect.stringContaining('Logout failed; stored credentials were kept')
+      );
+      expect(file).toBe(original);
+    });
+
+    test('Not logged in', async () => {
+      file = JSON.stringify({});
+
+      await main(['node', 'index.js', 'logout']);
+
+      expect(console.log).toHaveBeenCalledWith('Not logged in');
+      expect(createMedplumClient).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -499,6 +499,20 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test('Invalid compressed body', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app)
+      .post('/')
+      .set('Content-Type', ContentType.JSON)
+      .set('Content-Encoding', 'br')
+      .send(Buffer.from('not brotli'));
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Decompression failed'));
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
   test('Database disconnect', async () => {
     const app = express();
     const config = await loadTestConfig();
