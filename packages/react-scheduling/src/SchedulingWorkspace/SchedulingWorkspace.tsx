@@ -33,7 +33,7 @@ import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.wr
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
-import { ConfirmModal } from '../ConfirmModal/ConfirmModal';
+import { DiscardChangesModal } from '../ConfirmModal/DiscardChangesModal';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
@@ -51,7 +51,7 @@ import { PaneHeader } from './PaneHeader';
 import classes from './SchedulingWorkspace.module.css';
 import { getCalendarTimezones, groupAppointmentsByService, matchesCalendarFilters } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
-import { useDiscardConfirmation } from './useDiscardConfirmation';
+import { useBookingPaneGuard } from './useBookingPaneGuard';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -399,7 +399,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     calendarRef.current?.gotoDate(start);
   }, [startBooking]);
 
-  const discard = useDiscardConfirmation();
+  const discard = useBookingPaneGuard();
   const { guard, reset: resetDirty } = discard;
 
   const closeBooking = useCallback((): void => {
@@ -753,15 +753,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Tabs>
         </SidePane>
       )}
-      <ConfirmModal
-        {...discard.modalProps}
-        title="Discard unsaved changes?"
-        cancelLabel="Keep editing"
-        confirmLabel="Discard changes"
-        destructive
-      >
-        What's been entered hasn't been saved.
-      </ConfirmModal>
+      <DiscardChangesModal {...discard.modalProps}>What's been entered hasn't been saved.</DiscardChangesModal>
     </div>
   );
 }
