@@ -68,6 +68,16 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE NOT ("name" = $1)');
     });
 
+    test('Select offset', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable"');
+
+      const sql2 = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').offset(0).buildSql(sql2);
+      expect(sql2.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" OFFSET 0');
+    });
+
     describe('array contains', () => {
       test('single value', () => {
         const sql = new SqlBuilder();

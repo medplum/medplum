@@ -64,11 +64,11 @@ import { Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
 import { getTestProjectSystemRepo } from './repository/test-utils';
 import type { ChainedSearchLink } from './search';
-import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
+import { clampEstimateCount, Direction, getCount, getSelectQueryForSearch, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
-import { SelectQuery } from './sql';
+import { SelectQuery, SqlBuilder } from './sql';
 import { loadStructureDefinitions } from './structure';
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
@@ -2583,6 +2583,62 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(result.entry).toHaveLength(1);
       expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
+
+  describe('Chained search optimization fence', () => {
+    let fencedRepo: Repository;
+
+    beforeAll(async () => {
+      ({ repo: fencedRepo } = await createTestProject({
+        project: { features, systemSetting: [{ name: 'chainedSearchOptimizationFence', valueBoolean: true }] },
+        withRepo: true,
+      }));
+    });
+
+    function getSearchSql(searchRepo: Repository, url: string): string {
+      const sql = new SqlBuilder();
+      getSelectQueryForSearch(searchRepo, parseSearchRequest(url)).buildSql(sql);
+      return sql.toString();
+    }
+
+    test('Fences chained search when outer query has a reference equality filter', () => {
+      const url = 'Encounter?subject=Patient/123&service-provider.name=Acme';
+      expect(getSearchSql(fencedRepo, url)).toContain('OFFSET 0');
+      expect(getSearchSql(repo, url)).not.toContain('OFFSET 0');
+      expect(getSearchSql(fencedRepo, 'Encounter?status=finished&service-provider.name=Acme')).not.toContain(
+        'OFFSET 0'
+      );
+      expect(getSearchSql(fencedRepo, 'Encounter?subject:not=Patient/123&service-provider.name=Acme')).not.toContain(
+        'OFFSET 0'
+      );
+    });
+
+    test('Fenced chained search returns correct results', () =>
+      withTestContext(async () => {
+        const orgName = randomUUID();
+        const patient = await fencedRepo.createResource<Patient>({ resourceType: 'Patient' });
+        const matchOrg = await fencedRepo.createResource<Organization>({ resourceType: 'Organization', name: orgName });
+        const otherOrg = await fencedRepo.createResource<Organization>({ resourceType: 'Organization' });
+        const match = await fencedRepo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'finished',
+          class: { code: 'AMB' },
+          subject: createReference(patient),
+          serviceProvider: createReference(matchOrg),
+        });
+        await fencedRepo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'finished',
+          class: { code: 'AMB' },
+          subject: createReference(patient),
+          serviceProvider: createReference(otherOrg),
+        });
+
+        const result = await fencedRepo.search(
+          parseSearchRequest(`Encounter?subject=${getReferenceString(patient)}&service-provider.name=${orgName}`)
+        );
+        expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual([match.id]);
+      }));
+  });
 
   test('Token search deduplication', () =>
     withTestContext(async () => {

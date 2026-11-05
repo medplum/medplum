@@ -746,7 +746,7 @@ function applyExpansionFilters(
     query = addAbstractFilter(query, codeSystem);
   }
 
-  query.limit((params.count ?? MAX_EXPANSION_SIZE) + 1).offset(params.offset ?? 0);
+  query.limit((params.count ?? MAX_EXPANSION_SIZE) + 1).offset(params.offset);
   return query;
 }
 
