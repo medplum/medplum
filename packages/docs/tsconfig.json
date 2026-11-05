@@ -1,10 +1,14 @@
 {
   "extends": "@docusaurus/tsconfig",
   "compilerOptions": {
-    "baseUrl": ".",
+    "baseUrl": null,
+    "paths": {
+      "@site/*": ["./*"]
+    },
     "jsx": "react-jsx",
     "esModuleInterop": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "types": ["@docusaurus/module-type-aliases", "@docusaurus/theme-classic"]
   },
   "include": ["./blog", "./docs", "./src"]
 }
