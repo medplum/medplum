@@ -8,6 +8,13 @@ The `$init` operation creates a new Medplum Project with an admin user in a sing
 
 This operation streamlines the onboarding process for multi-tenant platforms, allowing you to programmatically provision new customer environments without manual setup steps.
 
+:::note
+
+This operation requires super admin privileges, for example a [`ClientApplication`](/docs/api/fhir/medplum/clientapplication)
+in the Super Admin project. All other callers receive a `403 Forbidden` response.
+
+:::
+
 ## Use Cases
 
 - **Customer Onboarding**: Automatically create isolated project environments when new customers sign up

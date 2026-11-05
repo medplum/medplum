@@ -5,6 +5,7 @@ import {
   badRequest,
   createReference,
   created,
+  forbidden,
   getResourceTypes,
   projectAdminResourceTypes,
   protectedResourceTypes,
@@ -68,8 +69,8 @@ interface ProjectInitParameters {
  */
 export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  if (getConfig().newProjectRegistrationEnabled === false && !ctx.project.superAdmin) {
-    return [badRequest('New project registration is disabled')];
+  if (!ctx.project.superAdmin) {
+    return [forbidden];
   }
 
   const login = ctx.login;
