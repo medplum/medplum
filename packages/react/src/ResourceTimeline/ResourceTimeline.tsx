@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Button, Group, ScrollArea, TextInput } from '@mantine/core';
-import { showNotification, updateNotification } from '@mantine/notifications';
+import { ActionIcon, Button, Group, RingProgress, ScrollArea, TextInput } from '@mantine/core';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type {
   Attachment,
   AuditEvent,
@@ -11,13 +10,12 @@ import type {
   Communication,
   DiagnosticReport,
   Media,
-  OperationOutcome,
   Reference,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
+import { IconCloudUpload, IconMessage } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
@@ -181,59 +179,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     medplum
       .createResource(props.createMedia(resource, sender, attachment))
       .then((result) => addResource(result))
-      .then(() =>
-        updateNotification({
-          id: 'upload-notification',
-          color: 'teal',
-          title: 'Upload complete',
-          message: '',
-          icon: <IconCheck size={16} />,
-          autoClose: 2000,
-        })
-      )
-      .catch((reason) =>
-        updateNotification({
-          id: 'upload-notification',
-          color: 'red',
-          title: 'Upload error',
-          message: normalizeErrorString(reason),
-          icon: <IconFileAlert size={16} />,
-          autoClose: 2000,
-        })
-      );
-  }
-
-  function onUploadStart(): void {
-    showNotification({
-      id: 'upload-notification',
-      loading: true,
-      title: 'Initializing upload...',
-      message: 'Please wait...',
-      autoClose: false,
-      withCloseButton: false,
-    });
-  }
-
-  function onUploadProgress(e: ProgressEvent): void {
-    updateNotification({
-      id: 'upload-notification',
-      loading: true,
-      title: 'Uploading...',
-      message: getProgressMessage(e),
-      autoClose: false,
-      withCloseButton: false,
-    });
-  }
-
-  function onUploadError(outcome: OperationOutcome): void {
-    updateNotification({
-      id: 'upload-notification',
-      color: 'red',
-      title: 'Upload error',
-      message: normalizeErrorString(outcome),
-      icon: <IconFileAlert size={16} />,
-      autoClose: 2000,
-    });
+      .catch(console.error);
   }
 
   if (!resource) {
@@ -274,17 +220,27 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
                 <IconMessage size={16} />
               </ActionIcon>
-              <AttachmentButton
-                securityContext={createReference(resource)}
-                onUpload={createMedia}
-                onUploadStart={onUploadStart}
-                onUploadProgress={onUploadProgress}
-                onUploadError={onUploadError}
-              >
+              <AttachmentButton securityContext={createReference(resource)} onUpload={createMedia}>
                 {(props) => (
-                  <ActionIcon {...props} radius="xl" color="blue" variant="filled">
-                    <IconCloudUpload size={16} />
-                  </ActionIcon>
+                  <Group gap={6} wrap="nowrap">
+                    <ActionIcon
+                      onClick={props.onClick}
+                      disabled={props.disabled || props.uploading}
+                      radius="xl"
+                      color="blue"
+                      variant="filled"
+                    >
+                      <IconCloudUpload size={16} />
+                    </ActionIcon>
+                    {props.uploading && (
+                      <RingProgress
+                        size={28}
+                        thickness={3}
+                        roundCaps
+                        sections={[{ value: props.progress, color: 'blue' }]}
+                      />
+                    )}
+                  </Group>
                 )}
               </AttachmentButton>
             </Group>
@@ -420,20 +376,4 @@ function DiagnosticReportTimelineItem(props: TimelineItemProps<DiagnosticReport>
       <DiagnosticReportDisplay value={props.resource} />
     </TimelineItem>
   );
-}
-
-function getProgressMessage(e: ProgressEvent): string {
-  if (e.lengthComputable) {
-    const percent = (100 * e.loaded) / e.total;
-    return `Uploaded: ${formatFileSize(e.loaded)} / ${formatFileSize(e.total)} ${percent.toFixed(2)}%`;
-  }
-  return `Uploaded: ${formatFileSize(e.loaded)}`;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) {
-    return '0.00 B';
-  }
-  const e = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, e)).toFixed(2) + ' ' + ' KMGTP'.charAt(e) + 'B';
 }
