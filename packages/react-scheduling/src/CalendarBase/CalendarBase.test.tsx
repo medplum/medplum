@@ -693,5 +693,26 @@ describe('CalendarBase', () => {
       expect(range.start.getTime()).toBeLessThanOrEqual(threeWeeksOut.getTime());
       expect(range.end.getTime()).toBeGreaterThan(threeWeeksOut.getTime());
     });
+
+    test('stays put in the 4 Day view when the date is already on screen', async () => {
+      const onRangeChange = vi.fn();
+      const ref = createRef<CalendarHandle>();
+      renderWithMedplum(
+        <CalendarBase
+          ref={ref}
+          eventSources={[]}
+          onRangeChange={onRangeChange}
+          views={{ timeGridFourDay: { type: 'timeGrid', duration: { days: 4 } } }}
+          initialView="timeGridFourDay"
+        />,
+        new MockClient()
+      );
+      const initialStart = onRangeChange.mock.lastCall?.[0].start.getTime();
+      const twoDaysOut = new Date(baseDate.getTime() + 2 * 24 * 60 * 60 * 1000);
+
+      act(() => ref.current?.gotoDate(twoDaysOut));
+
+      expect(onRangeChange.mock.lastCall?.[0].start.getTime()).toBe(initialStart);
+    });
   });
 });
