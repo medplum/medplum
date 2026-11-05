@@ -13,7 +13,9 @@ Navigate to "Project Admin" and then "Clients".
 
 Find your Client Application.
 
-Set `ClientApplication.identityProvider.useSubject` to `true`
+Set `ClientApplication.identityProvider.useSubject` to `true`.
+
+The external IDP callback also supports explicit `identitySource` and `identityMappingMode` settings. If supplied, keep them set to `subject` and `project-membership-external-id` for subject matching. Token exchange selects its matching mode using `useSubject`.
 
 ## Invite user
 
@@ -30,7 +32,7 @@ Prepare JSON payload:
 
 :::tip[]
 
-Use the complete `sub` value returned by your provider, including any prefix. For example, provision an Auth0 subject of `google-oauth2|110925489055200000000` with that exact external ID. Both the external IDP callback and token exchange use the complete subject for matching.
+Use the complete `sub` value returned by your provider, including any prefix. For example, provision an Auth0 subject of `google-oauth2|110925489055200000000` with that exact external ID. With the subject-matching configuration above, both the external IDP callback and token exchange use the complete subject.
 
 :::
 
@@ -42,6 +44,12 @@ curl 'https://api.medplum.com/admin/projects/MY_PROJECT_ID/invite' \
   -H 'Content-Type: application/json' \
   --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","externalId":"google-oauth2|110925489055200000000"}'
 ```
+
+## Updating existing external IDs
+
+Earlier documentation advised stripping the Auth0 provider prefix. If you followed that guidance, verify the complete `sub` returned by your provider and have a project administrator update the existing `ProjectMembership.externalId` to match it. Preserve the membership's user and profile links, then test sign-in.
+
+The project-admin endpoint supports reading and updating a membership at `/admin/projects/{projectId}/members/{membershipId}`. Use `GET` to read the current membership, change its `externalId`, and `POST` the complete updated resource to the same URL.
 
 ## Login example
 

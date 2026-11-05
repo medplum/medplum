@@ -15,14 +15,14 @@ Use this directory to find setup instructions, SDK examples, and authentication 
 
 These pages explain login flows and provider configuration. Provider routing selects where the user authenticates; the login flow determines how your application obtains Medplum credentials.
 
-| Implementation task | Documentation |
-| --- | --- |
-| Redirect users to a Medplum-hosted login page | [Medplum Redirect Login](/docs/auth/medplum-as-idp) |
-| Render the Medplum email/password form inside your application | [Embedded Login](/docs/auth/embedded-login) |
+| Implementation task                                                       | Documentation                                                                                          |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Redirect users to a Medplum-hosted login page                             | [Medplum Redirect Login](/docs/auth/medplum-as-idp)                                                    |
+| Render the Medplum email/password form inside your application            | [Embedded Login](/docs/auth/embedded-login)                                                            |
 | Authenticate through an external IDP and have Medplum handle its callback | [External IDP authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow) |
-| Configure an external IDP for a particular application | [Application-based routing](/docs/auth/external-identity-providers#application-based-routing) |
-| Route users to corporate SSO by email domain | [Domain-level Identity Providers](/docs/auth/domain-level-identity-providers) |
-| Configure Medplum's Google sign-in integration | [Google Authentication](/docs/auth/google-auth) |
+| Configure an external IDP for a particular application                    | [Application-based routing](/docs/auth/external-identity-providers#application-based-routing)          |
+| Route users to corporate SSO by email domain                              | [Domain-level Identity Providers](/docs/auth/domain-level-identity-providers)                          |
+| Configure Medplum's Google sign-in integration                            | [Google Authentication](/docs/auth/google-auth)                                                        |
 
 :::caution[Patient Login]
 The Medplum App (https://app.medplum.com) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. To provide patient access, you must build a custom patient portal using the Medplum SDK.
@@ -32,23 +32,23 @@ The Medplum App (https://app.medplum.com) is an administrative tool for clinical
 
 Use these pages when your application already authenticates the user or a trusted system establishes the user context. Token exchange can run in either the client or backend. On-Behalf-Of uses an application's credentials with a user context supplied on each request.
 
-| Implementation task | Documentation |
-| --- | --- |
-| Exchange an external user access token, then call Medplum from the client | [Token Exchange: client-held Medplum tokens](/docs/auth/token-exchange#client-held-medplum-tokens) |
+| Implementation task                                                           | Documentation                                                                                      |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Exchange an external user access token, then call Medplum from the client     | [Token Exchange: client-held Medplum tokens](/docs/auth/token-exchange#client-held-medplum-tokens) |
 | Exchange an external user access token and keep Medplum calls in your backend | [Token Exchange: server-held Medplum tokens](/docs/auth/token-exchange#server-held-medplum-tokens) |
-| Have a privileged application delegate individual requests to a user | [On-Behalf-Of](/docs/auth/on-behalf-of) |
-| Create a one-time code after user authentication and consent have occurred | [Pre-Authorized Code](/docs/auth/pre-authorized-code) |
-| Accept external JWTs directly on a self-hosted Medplum server | [Direct External Authentication](/docs/auth/direct-external-auth) |
+| Have a privileged application delegate individual requests to a user          | [On-Behalf-Of](/docs/auth/on-behalf-of)                                                            |
+| Create a one-time code after user authentication and consent have occurred    | [Pre-Authorized Code](/docs/auth/pre-authorized-code)                                              |
+| Accept external JWTs directly on a self-hosted Medplum server                 | [Direct External Authentication](/docs/auth/direct-external-auth)                                  |
 
 ## Application Authentication {/* #server-side-authentication */}
 
 These pages explain how a trusted service authenticates as a `ClientApplication`. A backend using a user's exchanged token follows the [server-held token instructions](/docs/auth/token-exchange#server-held-medplum-tokens) instead.
 
-| Implementation task | Documentation |
-| --- | --- |
-| Obtain an application token using a client ID and secret | [Client Credentials](/docs/auth/client-credentials) |
-| Authenticate the application using a signed JWT | [Client Assertion](/docs/auth/client-assertion) |
-| Authenticate the application using a client certificate | [Mutual TLS (mTLS)](/docs/auth/mtls), including infrastructure prerequisites |
+| Implementation task                                      | Documentation                                                                |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Obtain an application token using a client ID and secret | [Client Credentials](/docs/auth/client-credentials)                          |
+| Authenticate the application using a signed JWT          | [Client Assertion](/docs/auth/client-assertion)                              |
+| Authenticate the application using a client certificate  | [Mutual TLS (mTLS)](/docs/auth/mtls), including infrastructure prerequisites |
 
 For delegated user requests, first authenticate the application, then follow [On-Behalf-Of](/docs/auth/on-behalf-of#how-to-use). Include the resolved user context on each delegated request.
 

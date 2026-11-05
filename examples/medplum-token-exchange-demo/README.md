@@ -102,16 +102,16 @@ npm run exchange-for-medplum-token
 
 ### Configuration (`.env`)
 
-| Variable                   | Required | Description                                                                                         |
-| -------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
-| `MEDPLUM_BASE_URL`         | No       | Medplum server URL. Defaults to `http://localhost:8103/`.                                           |
-| `MEDPLUM_AUTH_PROVIDER_ID` | Yes      | External auth provider selector (server `externalAuthProviders` clientId, or ClientApplication id). |
-| `MEDPLUM_MEMBERSHIP_ID` | Conditional | Selects an eligible membership of the authenticated user. Required for server-level subject matching. |
-| `EXTERNAL_ACCESS_TOKEN`    | Maybe    | Access token from your external IdP. Provide this **or** the `EXTERNAL_*` fetch fields below.       |
-| `EXTERNAL_TOKEN_URL`       | Maybe    | External IdP token endpoint, used to fetch a token via `client_credentials`.                        |
-| `EXTERNAL_CLIENT_ID`       | Maybe    | External IdP client ID for the `client_credentials` fetch.                                          |
-| `EXTERNAL_CLIENT_SECRET`   | Maybe    | External IdP client secret for the `client_credentials` fetch.                                      |
-| `EXTERNAL_SCOPE`           | No       | Optional scope for the `client_credentials` fetch.                                                  |
+| Variable                   | Required    | Description                                                                                           |
+| -------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| `MEDPLUM_BASE_URL`         | No          | Medplum server URL. Defaults to `http://localhost:8103/`.                                             |
+| `MEDPLUM_AUTH_PROVIDER_ID` | Yes         | External auth provider selector (server `externalAuthProviders` clientId, or ClientApplication id).   |
+| `MEDPLUM_MEMBERSHIP_ID`    | Conditional | Selects an eligible membership of the authenticated user. Required for server-level subject matching. |
+| `EXTERNAL_ACCESS_TOKEN`    | Maybe       | Access token from your external IdP. Provide this **or** the `EXTERNAL_*` fetch fields below.         |
+| `EXTERNAL_TOKEN_URL`       | Maybe       | External IdP token endpoint, used to fetch a token via `client_credentials`.                          |
+| `EXTERNAL_CLIENT_ID`       | Maybe       | External IdP client ID for the `client_credentials` fetch.                                            |
+| `EXTERNAL_CLIENT_SECRET`   | Maybe       | External IdP client secret for the `client_credentials` fetch.                                        |
+| `EXTERNAL_SCOPE`           | No          | Optional scope for the `client_credentials` fetch.                                                    |
 
 You must supply the external token in one of three ways:
 

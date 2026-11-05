@@ -62,11 +62,13 @@ For this adapter, the exchange request still requires `subject_token_type=urn:ie
 
 `membership_id` selects an existing membership of the authenticated user. Provision the user, profile, and membership before exchanging tokens. The provider configuration determines which memberships are eligible:
 
-| Provider configuration | Eligible memberships | When to supply `membership_id` |
-| --- | --- | --- |
-| `ClientApplication`, on hosted or self-hosted Medplum | The user's memberships in the client's project, for either project-scoped or server-scoped users | Supply it to select a particular membership. If omitted, Medplum selects the first matching membership in that project. |
-| Server-level provider with email matching | The user's memberships in the selected project; without a selection, the server-scoped user's memberships | Supply it to select the project and membership. If omitted, Medplum looks up the server-scoped user by email and selects their first membership. |
-| Server-level provider with subject matching (`useSubject`) | The user's memberships in the selected project | Required. Medplum derives the project from the membership before looking up the external ID. |
+| Provider configuration                                     | Eligible memberships                                                                                      | When to supply `membership_id`                                                                                                                   |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ClientApplication`, on hosted or self-hosted Medplum      | The user's memberships in the client's project, for either project-scoped or server-scoped users          | Supply it to select a particular membership. If omitted, Medplum selects the first matching membership in that project.                          |
+| Server-level provider with email matching                  | The user's memberships in the selected project; without a selection, the server-scoped user's memberships | Supply it to select the project and membership. If omitted, Medplum looks up the server-scoped user by email and selects their first membership. |
+| Server-level provider with subject matching (`useSubject`) | The user's memberships in the selected project                                                            | Required. Medplum derives the project from the membership before looking up the external ID.                                                     |
+
+An unreadable `membership_id` with a server-level provider returns `invalid_request` with the description `Invalid membership`. If the selected membership belongs to another user or falls outside the eligible project, login fails with `User not found`. Check the provider selection, identity mapping, and target project when troubleshooting these errors.
 
 ### Configure a server-level external auth provider
 
@@ -93,6 +95,8 @@ For cross-project token exchange on a self-hosted server, configure the identity
 This example uses email matching. For subject matching or adapter settings, supply an `identityProvider` object with `userInfoUrl` and the relevant fields, such as `useSubject: true`.
 
 Use the configured `clientId` as `client_id` in the exchange request. If the top-level `clientId` is omitted, the server uses `identityProvider.clientId`. Restart the server after updating the configuration.
+
+Choose a selector distinct from your `ClientApplication` IDs: a matching server-level provider takes precedence over a `ClientApplication` with the same ID.
 
 <span id="why-you-must-pass-membership_id" />
 

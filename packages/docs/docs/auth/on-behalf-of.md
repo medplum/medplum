@@ -43,12 +43,16 @@ Without the header, Medplum uses the application's own access. A valid header fo
 
 Treat a rejected delegation request as a failure; do not retry it without the header. Keep privileged application operations separate from handlers serving user requests.
 
+### Live updates
+
+Do not use On-Behalf-Of for WebSocket subscriptions. Use a user-scoped Medplum token, or deliver updates through a backend that enforces each recipient's resource and field-level access. WebSocket notification authorization does not preserve the HTTP request's delegation context.
+
 ## How it Works
 
 When the Medplum Server receives a request with the `X-Medplum-On-Behalf-Of` header, it will:
 
 1. Authenticate the application and check its Project Admin authority.
-2. Resolve the header to a `ProjectMembership` and its profile. The membership must be active and in the application's project; super admin context can delegate across projects.
+2. Resolve the header to a `ProjectMembership` and its profile. The membership and its project must be active. Project Admin delegation stays within the application's project. Super admin context can delegate across projects using an explicit `ProjectMembership/{id}` reference; profile references always resolve in the application's project.
 3. Apply the delegated membership's access policy and any SMART resource scopes on the application's login.
 4. Execute the request. On resource creates and updates, record the application in `meta.author` and the delegated profile reference in `meta.onBehalfOf`. Read responses retain the attribution stored on the resource version.
 
