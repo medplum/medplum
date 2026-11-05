@@ -13,11 +13,12 @@
   min-width: 0;
 }
 
-/* Very narrow 7-column calendars are impossible to read. Set a larger minimum
+/* Very narrow multi-day calendars are impossible to read. Set a larger minimum
  * width even if that requires scrolling on small viewports.
  */
 :global(.dayGridMonth).calendar,
-:global(.timeGridWeek).calendar {
+:global(.timeGridWeek).calendar,
+:global(.timeGridFourDay).calendar {
   min-width: 480px;
 }
 

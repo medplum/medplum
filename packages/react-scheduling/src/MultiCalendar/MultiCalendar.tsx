@@ -17,14 +17,6 @@ import classes from './MultiCalendar.module.css';
 
 export type { CalendarHandle } from '../CalendarBase/CalendarBase';
 
-// Fewer, wider days than a week, so overlapping events from several calendars have room.
-const VIEWS = {
-  timeGridFourDay: {
-    type: 'timeGrid',
-    duration: { days: 4 },
-  },
-};
-
 export interface MultiCalendarSource {
   schedule?: WithId<Schedule>;
   slots: Slot[];
@@ -117,7 +109,6 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
         omitZeroMinute: true,
         meridiem: 'lowercase',
       }}
-      views={VIEWS}
       initialView="timeGridFourDay"
     />
   );

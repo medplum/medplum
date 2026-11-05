@@ -270,10 +270,11 @@ describe('CalendarBase', () => {
       expect(screen.getByLabelText('Previous')).toBeInTheDocument();
     });
 
-    test('renders view switcher with Month, Week, Day options', async () => {
+    test('renders view switcher with Month, Week, 4 Day, Day options', async () => {
       setup({ eventSources: [] });
       expect(screen.getByText('Month')).toBeInTheDocument();
       expect(screen.getByText('Week')).toBeInTheDocument();
+      expect(screen.getByText('4 Day')).toBeInTheDocument();
       expect(screen.getByText('Day')).toBeInTheDocument();
     });
 
@@ -376,6 +377,11 @@ describe('CalendarBase', () => {
       expect(select).toHaveValue('timeGridWeek');
       expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
       expect(screen.getAllByRole('columnheader')).toHaveLength(7);
+
+      // Switch to 4 day view — four columns of the time grid
+      await userEvent.selectOptions(select, '4 Day');
+      expect(select).toHaveValue('timeGridFourDay');
+      expect(screen.getAllByRole('columnheader')).toHaveLength(4);
 
       // Switch to day view — single column (one columnheader for the day), with "Timed" rowheader
       await userEvent.selectOptions(select, 'Day');

@@ -122,6 +122,21 @@ function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
   );
 }
 
+// Fewer, wider days than a week, so overlapping events have room.
+const VIEWS = {
+  timeGridFourDay: {
+    type: 'timeGrid',
+    duration: { days: 4 },
+  },
+};
+
+const VIEW_OPTIONS = [
+  { label: 'Month', value: 'dayGridMonth' },
+  { label: 'Week', value: 'timeGridWeek' },
+  { label: '4 Day', value: 'timeGridFourDay' },
+  { label: 'Day', value: 'timeGridDay' },
+] as const;
+
 function slotTitle(slot: Slot): string {
   if (slot.status === 'free') {
     return 'Available';
@@ -161,6 +176,8 @@ export interface CalendarBaseProps extends Omit<
   | 'eventClick'
   | 'loading'
   | 'ref'
+  | 'views'
+  | 'initialView'
 > {
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
@@ -171,6 +188,8 @@ export interface CalendarBaseProps extends Omit<
   /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
   selectedId?: string;
   eventSources: FhirEventSource[];
+  /** The view the calendar opens on, which has to be one the view dropdown offers. */
+  initialView?: (typeof VIEW_OPTIONS)[number]['value'];
 
   onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
@@ -229,7 +248,6 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     loading,
     toolbarStart,
     toolbarEnd,
-    views,
     initialView = 'timeGridWeek',
     ...fullCalendarProps
   } = props;
@@ -405,12 +423,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
             styles={{ wrapper: { '--input-height-sm': '32px' } }}
             value={controller.view?.type ?? initialView}
             onChange={(e) => controller.changeView(e.currentTarget.value)}
-            data={[
-              { label: 'Month', value: 'dayGridMonth' },
-              { label: 'Week', value: 'timeGridWeek' },
-              ...(views?.timeGridFourDay ? [{ label: '4 Day', value: 'timeGridFourDay' }] : []),
-              { label: 'Day', value: 'timeGridDay' },
-            ]}
+            data={VIEW_OPTIONS}
           />
           {toolbarEnd}
         </Group>
@@ -425,7 +438,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         displayEventEnd={false}
         eventTimeFormat={{ timeStyle: 'short' }}
         allDaySlot={false}
-        views={views}
+        views={VIEWS}
         selectable={selectable}
         unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
         select={(eventInfo) => {
