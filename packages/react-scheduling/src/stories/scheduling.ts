@@ -1221,6 +1221,7 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  comment: 'Bring prior films',
   slot: RiveraImagingHeldSlots.map(createReference),
   supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
@@ -1559,6 +1560,7 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  comment: 'Prefers the recliner by the window; allow extra time for IV access',
   slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
   supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(

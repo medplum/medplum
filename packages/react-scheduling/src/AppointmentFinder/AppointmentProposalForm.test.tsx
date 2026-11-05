@@ -1536,6 +1536,17 @@ describe('AppointmentProposalForm', () => {
       expect(proposal.comment).toBe('Bring prior films');
     });
 
+    test('Caps the notes at commentMaxLength, counting them as typed', async () => {
+      setup(medplum, { commentMaxLength: 50 });
+      await fillBooking();
+      const notes = screen.getByRole('textbox', { name: 'Notes' });
+      expect(notes).toHaveAttribute('maxlength', '50');
+      expect(screen.getByText('0/50')).toBeInTheDocument();
+
+      fireEvent.change(notes, { target: { value: 'Bring prior films' } });
+      expect(screen.getByText('17/50')).toBeInTheDocument();
+    });
+
     test('Offers to book again once the time changes', async () => {
       setup(medplum);
       await fillBooking();

@@ -11,7 +11,7 @@ import { DARK_MODE_EVENT_NAME } from '@vueless/storybook-dark-mode';
 import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { useFakeTimers } from 'sinon';
-import { addons } from 'storybook/preview-api';
+import { addons, useMemo } from 'storybook/preview-api';
 import { withSchedulingHeader } from '../src/decorators';
 import { themePresetMap, themePresets } from './themes';
 
@@ -74,15 +74,21 @@ function ColorSchemeWrapper({ children }: { children: React.ReactNode }) {
 
 export const decorators: Decorator[] = [
   withSchedulingHeader,
-  (Story, ctx) => (
-    <BrowserRouter>
-      <MedplumProvider
-        medplum={ctx.parameters.skipDefaultSeeding ? new MockClient({ seedDefaultData: false }) : medplum}
-      >
-        <Story />
-      </MedplumProvider>
-    </BrowserRouter>
-  ),
+  (Story, ctx) => {
+    // Kept for the story's lifetime: a client made per render would come back empty
+    // every time a control changed, with whatever the story had stored gone.
+    const client = useMemo(
+      () => (ctx.parameters.skipDefaultSeeding ? new MockClient({ seedDefaultData: false }) : medplum),
+      [ctx.parameters.skipDefaultSeeding]
+    );
+    return (
+      <BrowserRouter>
+        <MedplumProvider medplum={client}>
+          <Story />
+        </MedplumProvider>
+      </BrowserRouter>
+    );
+  },
   (Story) => (
     <ColorSchemeWrapper>
       <Story />
