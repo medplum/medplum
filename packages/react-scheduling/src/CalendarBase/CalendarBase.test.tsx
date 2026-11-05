@@ -212,7 +212,7 @@ describe('CalendarBase', () => {
       expect(headers).toHaveLength(1);
       expect(headers[0]).toHaveTextContent(today);
 
-      await userEvent.click(screen.getByText('Month'));
+      await userEvent.selectOptions(screen.getByLabelText('View'), 'Month');
       const cells = document.querySelectorAll('[aria-current=date] .dayCellTopInner');
       expect(cells).toHaveLength(1);
       expect(cells[0]).toHaveTextContent(today);
@@ -235,11 +235,11 @@ describe('CalendarBase', () => {
       expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
       expect(screen.getByText(/Available/)).toBeInTheDocument();
 
-      await userEvent.click(screen.getByText('Month'));
+      await userEvent.selectOptions(screen.getByLabelText('View'), 'Month');
       expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
       expect(screen.queryByText(/Available/)).not.toBeInTheDocument();
 
-      await userEvent.click(screen.getByText('Week'));
+      await userEvent.selectOptions(screen.getByLabelText('View'), 'Week');
       expect(screen.getByText(/Available/)).toBeInTheDocument();
     });
 
@@ -350,8 +350,7 @@ describe('CalendarBase', () => {
 
       const initialCallCount = onRangeChange.mock.calls.length;
 
-      // Click on the Day option in the SegmentedControl
-      await userEvent.click(screen.getByText('Day'));
+      await userEvent.selectOptions(screen.getByLabelText('View'), 'Day');
 
       // Day view should trigger a range change with different range
       expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
@@ -359,42 +358,28 @@ describe('CalendarBase', () => {
 
     test('switches between views', async () => {
       setup({ eventSources: [] });
-
-      const monthRadio = screen.getByLabelText<HTMLInputElement>('Month');
-      const weekRadio = screen.getByLabelText<HTMLInputElement>('Week');
-      const dayRadio = screen.getByLabelText<HTMLInputElement>('Day');
-      expect(monthRadio).toBeInTheDocument();
-      expect(weekRadio).toBeInTheDocument();
-      expect(dayRadio).toBeInTheDocument();
+      const select = screen.getByLabelText<HTMLSelectElement>('View');
 
       // defaults to Week view on first render — time grid has a "Timed" rowheader
-      expect(monthRadio).toHaveProperty('checked', false);
-      expect(weekRadio).toHaveProperty('checked', true);
-      expect(dayRadio).toHaveProperty('checked', false);
+      expect(select).toHaveValue('timeGridWeek');
       expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
       expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
       // Switch to month view — column headers become day names ("Sunday", "Monday", …)
-      await userEvent.click(screen.getByText('Month'));
-      expect(monthRadio).toHaveProperty('checked', true);
-      expect(weekRadio).toHaveProperty('checked', false);
-      expect(dayRadio).toHaveProperty('checked', false);
+      await userEvent.selectOptions(select, 'Month');
+      expect(select).toHaveValue('dayGridMonth');
       expect(screen.getByRole('columnheader', { name: 'Sunday' })).toBeInTheDocument();
       expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
       // Switch back to week view — time grid returns
-      await userEvent.click(screen.getByText('Week'));
-      expect(monthRadio).toHaveProperty('checked', false);
-      expect(weekRadio).toHaveProperty('checked', true);
-      expect(dayRadio).toHaveProperty('checked', false);
+      await userEvent.selectOptions(select, 'Week');
+      expect(select).toHaveValue('timeGridWeek');
       expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
       expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
       // Switch to day view — single column (one columnheader for the day), with "Timed" rowheader
-      await userEvent.click(screen.getByText('Day'));
-      expect(monthRadio).toHaveProperty('checked', false);
-      expect(weekRadio).toHaveProperty('checked', false);
-      expect(dayRadio).toHaveProperty('checked', true);
+      await userEvent.selectOptions(select, 'Day');
+      expect(select).toHaveValue('timeGridDay');
       expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
       expect(screen.getAllByRole('columnheader')).toHaveLength(1);
     });
@@ -514,7 +499,7 @@ describe('CalendarBase', () => {
       const initialCallCount = onRangeChange.mock.calls.length;
 
       // Switch to month view
-      await userEvent.click(screen.getByText('Month'));
+      await userEvent.selectOptions(screen.getByLabelText('View'), 'Month');
       expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
     });
   });

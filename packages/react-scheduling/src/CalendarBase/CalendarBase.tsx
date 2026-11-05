@@ -17,7 +17,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { ActionIcon, Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
+import { ActionIcon, Button, Group, Loader, NativeSelect, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -230,6 +230,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     toolbarStart,
     toolbarEnd,
     views,
+    initialView = 'timeGridWeek',
     ...fullCalendarProps
   } = props;
 
@@ -398,10 +399,12 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
           </Group>
         </Group>
         <Group gap="sm">
-          <SegmentedControl
-            size="xs"
-            value={controller.view?.type}
-            onChange={(newView) => controller.changeView(newView)}
+          <NativeSelect
+            aria-label="View"
+            // Match the toolbar's 32px buttons. Mantine sets `--input-height` from the size itself.
+            styles={{ wrapper: { '--input-height-sm': '32px' } }}
+            value={controller.view?.type ?? initialView}
+            onChange={(e) => controller.changeView(e.currentTarget.value)}
             data={[
               { label: 'Month', value: 'dayGridMonth' },
               { label: 'Week', value: 'timeGridWeek' },
@@ -415,7 +418,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
       <FullCalendar
         height="100%"
         plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView={initialView}
         slotMinHeight={38}
         eventShortHeight={33}
         colorScheme={colorScheme}

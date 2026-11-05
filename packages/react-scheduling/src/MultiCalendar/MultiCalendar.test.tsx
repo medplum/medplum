@@ -249,7 +249,7 @@ describe('MultiCalendar', () => {
 
     // A month has no hours to sit in, so there the event says when it is itself, with room for
     // the service type beside it and not the patient.
-    await userEvent.click(screen.getByText('Month'));
+    await userEvent.selectOptions(screen.getByLabelText('View'), 'Month');
     const monthEvent = within((await screen.findByText('Ultrasound imaging')).closest('.event') as HTMLElement);
     expect(monthEvent.getByText(time)).toBeInTheDocument();
     expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
