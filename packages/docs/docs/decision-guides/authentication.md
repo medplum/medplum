@@ -71,7 +71,7 @@ Implementation: [Domain-level Identity Providers](/docs/auth/domain-level-identi
 
 **For applications using external or existing authentication.** Choose how the application obtains Medplum credentials. Here, "client" means your browser or native app; "server" means your application backend.
 
-Both the authorization-code flow and token exchange can use the same external IDP. The difference is whether Medplum handles the IDP callback or your application obtains an external access token and exchanges it.
+Both the authorization-code flow and token exchange can use the same external IDP. Choose whether Medplum handles the IDP callback or your application obtains an external user token and exchanges it.
 
 ### Option A: External IDP authorization-code flow (three-legged OAuth)
 
@@ -89,17 +89,17 @@ Implementation: [External IDP authorization-code flow](/docs/auth/external-ident
 
 ### Option B: Token exchange
 
-Your application obtains an external access token through its own login flow. Medplum validates it with the configured IDP and issues a user-scoped Medplum token.
+Your application obtains an external user token through its own login flow. Medplum validates it with the configured IDP and issues a user-scoped Medplum token.
 
 - **Advantages:**
   - Adds Medplum access to an existing login without a second interactive sign-in.
   - Your application retains control of the external login and can use external credentials with other services that accept them.
 - **Tradeoffs:**
-  - Requires an external access token that the IDP's UserInfo endpoint can validate.
+  - Requires a user token that the configured IDP endpoint can validate. Standard UserInfo endpoints use access tokens; the [GCIP/Firebase adapter](/docs/auth/token-exchange#gcip-and-firebase) uses ID tokens.
   - Your application manages both external and Medplum credential lifecycles.
-- **Best fit:** Your application already obtains an external access token and needs to add Medplum access, potentially alongside other services.
+- **Best fit:** Your application already obtains an external user token and needs to add Medplum access, potentially alongside other services.
 
-**Other integrations alone do not require token exchange.** Integrations running in Bots or your backend with service credentials do not require the client to hold an external token.
+Choose token exchange when you need to exchange a user's external credential. Integrations running in Bots or your backend can authenticate to other services with their own service credentials.
 
 **Select the intended membership.** A user can have several memberships in the client's project. Pass `membership_id` when needed; otherwise token exchange selects the first matching membership. Bind token storage and caches to the user, selected membership, and application session so a tenant switch cannot reuse another membership's token. Cross-project exchange has separate [server-level configuration requirements](/docs/auth/token-exchange#configure-a-server-level-external-auth-provider).
 
@@ -144,7 +144,7 @@ Your backend uses a single machine-to-machine application identity (`ClientAppli
   - The backend's `ClientApplication` requires Project Admin authority. Treat its credential as privileged.
   - Your backend must authorize each requested user context and reject missing or unauthorized contexts before calling Medplum; a request without the On-Behalf-Of header uses the application's own permissions.
   - Proxying adds latency and infrastructure to operate.
-  - Medplum WebSocket subscriptions do not support this On-Behalf-Of pattern.
+  - Live updates need user-token authentication or a backend delivery path. WebSocket notification authorization does not preserve the HTTP request's On-Behalf-Of context.
 - **Best fit:** A backend must mediate Medplum access and cannot use supported user-token exchange.
 
 With server-held token exchange, the Medplum credential represents the user. With On-Behalf-Of, it represents the application, which selects the user context for each request. Prefer user-scoped exchange when either approach meets your requirements.
@@ -172,7 +172,7 @@ Medplum matches users by email by default, including with external IDPs.
 
 Use the IDP's subject identifier. Enable subject-based matching and include the corresponding `externalId` when provisioning through the [Invite API](/docs/api/project-admin/invite).
 
-For token exchange with `useSubject`, provision the complete `sub` value, including any provider prefix. Do not strip an Auth0 prefix or otherwise transform it independently of the login flow.
+With `useSubject`, provision the complete `sub` value, including any provider prefix, so provisioning and login use the same identifier.
 
 - **Advantages:**
   - Identity remains stable when contact email changes.
@@ -189,7 +189,7 @@ Implementation: [Using External IDs](/docs/user-management/external-ids), [Updat
 
 ### How will users join your application?
 
-A `Patient` or `Practitioner` record alone does not create a login. `User` and `ProjectMembership` are protected resources. For administrator-led provisioning, use the [Invite API](/docs/api/project-admin/invite) to create or link the user, profile, and membership. Other supported entry points include [SCIM](/docs/api/scim/overview) and [patient self-registration](/docs/user-management/open-patient-registration).
+A login requires a `User` and `ProjectMembership` linked to the person's profile, such as a `Patient` or `Practitioner`. `User` and `ProjectMembership` are protected resources. For administrator-led provisioning, use the [Invite API](/docs/api/project-admin/invite) to create or link the user, profile, and membership. Other supported entry points include [SCIM](/docs/api/scim/overview) and [patient self-registration](/docs/user-management/open-patient-registration).
 
 Choose [project-scoped or server-scoped users](/docs/user-management/project-vs-server-scoped-users) based on whether identities belong to one project or need access across projects. For patient and caregiver applications, give each person their own identity and explicitly grant access to the appropriate records.
 
@@ -197,7 +197,7 @@ Choose [project-scoped or server-scoped users](/docs/user-management/project-vs-
 
 Use Medplum's MFA for Medplum-managed password login and the external IDP's MFA for external login. Decide how recovery and offboarding work, including ending both external and Medplum sessions where applicable.
 
-Medplum's [MFA settings flows](/docs/auth/how-mfa-works#flow-self-enrolling-from-a-settings-page) require an authenticated human user without SMART resource scopes and do not accept On-Behalf-Of. If the app uses SMART-scoped clinical access, plan a supported user authentication context for account settings. Test both flows separately.
+Medplum's [MFA settings flows](/docs/auth/how-mfa-works#flow-self-enrolling-from-a-settings-page) require an authenticated human user without SMART resource scopes or On-Behalf-Of delegation. Server-scoped users must sign in with a password or Google to manage these settings. Plan a supported account-settings login alongside clinical access and test both flows.
 
 Implementation: [MFA](/docs/auth/mfa), [Access Token Management](/docs/auth/session-management), [Logout](/docs/auth/logout).
 

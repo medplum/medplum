@@ -8,7 +8,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # External Identity Providers
 
-Configure an external identity provider (IDP), such as Auth0 or AWS Cognito, and use the authorization-code flow to sign users in. This page covers both [provider routing](#idp-routing-strategies) and the [authorization-code flow](#authorization-code-flow), including Medplum handling the external IDP callback. For Medplum's Google-specific setup, see [Google Authentication](/docs/auth/google-auth).
+Configure an OpenID Connect (OIDC) identity provider (IDP), such as Auth0 or AWS Cognito, and use the authorization-code flow to sign users in. This page covers both [provider routing](#idp-routing-strategies) and the [authorization-code flow](#authorization-code-flow), including Medplum handling the external IDP callback. For Medplum's Google-specific setup, see [Google Authentication](/docs/auth/google-auth).
 
 If your application obtains an external access token through its own login flow, use [Token Exchange](/docs/auth/token-exchange) to obtain a Medplum token. Both approaches can use the same external IDP.
 
@@ -52,7 +52,7 @@ The callback and code exchange are shown below:
 
 ## Example repo
 
-Medplum provides a minimal example application which demonstrates using Auth0 as an external identity provider. The example is approximately 100 lines of TypeScript code, and can be used as a starting point for any standard OAuth2/OpenID identity provider.
+Medplum provides a minimal example application which demonstrates using Auth0 as an external identity provider. The example is approximately 100 lines of TypeScript code, and can be used as a starting point for an OIDC identity provider.
 
 > [https://github.com/medplum/medplum-client-external-idp-demo](https://github.com/medplum/medplum-client-external-idp-demo)
 
@@ -60,7 +60,9 @@ Medplum provides a minimal example application which demonstrates using Auth0 as
 
 Setup your external authentication provider (Auth0, AWS Cognito, Okta, etc). Use "https://api.medplum.com/auth/external" as the "redirect URI" (also known as the "callback URL" in some systems).
 
-Also make sure that your provider accepts the `profile` OIDC scope.
+The provider must support OIDC and return an `id_token` from its token endpoint. Request the `openid` scope; the SDK helper defaults to `openid profile email`. Configure the provider to return `email` for email matching or `sub` for subject matching.
+
+Configure `jwksUrl` and `issuer` on the identity provider to enable ID-token signature and issuer verification. Medplum checks the audience against `audience` when configured, otherwise against the provider's `clientId`.
 
 Note the following details:
 

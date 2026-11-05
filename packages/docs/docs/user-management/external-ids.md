@@ -24,23 +24,23 @@ Prepare JSON payload:
   "resourceType": "Patient",
   "firstName": "Homer",
   "lastName": "Simpson",
-  "externalId": "MY_EXTERNAL_ID"
+  "externalId": "google-oauth2|110925489055200000000"
 }
 ```
 
 :::tip[]
 
-Auth0 can optionally prefix subject with the identity provider, such as "google-oauth2|110925489055200000000". Only use the portion after the "|" such as "110925489055200000000".
+Use the complete `sub` value returned by your provider, including any prefix. For example, provision an Auth0 subject of `google-oauth2|110925489055200000000` with that exact external ID. Both the external IDP callback and token exchange use the complete subject for matching.
 
 :::
 
 Then POST to the `/invite` endpoint:
 
 ```bash
-curl 'https://${baseUrl}/admin/projects/${projectId}/invite' \
-  -H 'Authorization: Bearer ${accessToken}' \
+curl 'https://api.medplum.com/admin/projects/MY_PROJECT_ID/invite' \
+  -H 'Authorization: Bearer MY_ACCESS_TOKEN' \
   -H 'Content-Type: application/json' \
-  --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","externalId":"110925489055200000000"}'
+  --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","externalId":"google-oauth2|110925489055200000000"}'
 ```
 
 ## Login example

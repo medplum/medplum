@@ -8,14 +8,9 @@ grant. It can optionally target a specific `ProjectMembership` via `membership_i
 `ClientApplication` can select memberships in its own project; a self-hosted server-level provider
 can resolve memberships across projects.
 
-Unlike the browser based [medplum-client-external-idp-demo](../medplum-client-external-idp-demo),
-the token exchange itself can be a direct server-to-server call. This demo shows how to do that.
-
-The catch is that you still need a token from your external IdP to exchange. In production that
-token comes from your own sign-in flow (e.g. a browser login); for local testing this example ships an optional
-`get-external-token` helper that performs an interactive browser login (authorization code + PKCE)
-just to mint one. That interactive step is only a convenience for obtaining the input token — the
-token exchange demonstrated here remains a non-interactive, machine-to-machine operation.
+The exchange is a direct server-to-server call using a user token from your external IdP. In production,
+obtain that token through your application's sign-in flow. For local testing, the optional
+`get-external-token` helper performs an interactive browser login with authorization code and PKCE.
 
 ## How it works
 
@@ -76,8 +71,10 @@ A minimal provider with only a `userInfoUrl` is also supported:
 Restart the server after updating the config. Then set `MEDPLUM_AUTH_PROVIDER_ID` to the provider's
 `clientId` (or its `identityProvider.clientId`).
 
-> Because the provider is defined at the server level, you can pass any `membership_id` and the
-> server derives the project from that membership — the identity is not tied to a single project.
+Pass `membership_id` to select an existing membership of the authenticated user. The server derives
+the project from that membership before matching the user. With email matching and no membership ID,
+it looks up the server-scoped user and selects their first membership. Subject matching (`useSubject`)
+requires a membership ID to establish the project. See the [membership-selection rules](https://www.medplum.com/docs/auth/token-exchange#selecting-a-project-membership).
 
 ### Hosted Medplum: `ClientApplication` in your project
 
@@ -109,7 +106,7 @@ npm run exchange-for-medplum-token
 | -------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
 | `MEDPLUM_BASE_URL`         | No       | Medplum server URL. Defaults to `http://localhost:8103/`.                                           |
 | `MEDPLUM_AUTH_PROVIDER_ID` | Yes      | External auth provider selector (server `externalAuthProviders` clientId, or ClientApplication id). |
-| `MEDPLUM_MEMBERSHIP_ID`    | No       | A specific `ProjectMembership` id to authenticate into.                                             |
+| `MEDPLUM_MEMBERSHIP_ID` | Conditional | Selects an eligible membership of the authenticated user. Required for server-level subject matching. |
 | `EXTERNAL_ACCESS_TOKEN`    | Maybe    | Access token from your external IdP. Provide this **or** the `EXTERNAL_*` fetch fields below.       |
 | `EXTERNAL_TOKEN_URL`       | Maybe    | External IdP token endpoint, used to fetch a token via `client_credentials`.                        |
 | `EXTERNAL_CLIENT_ID`       | Maybe    | External IdP client ID for the `client_credentials` fetch.                                          |
@@ -150,8 +147,9 @@ npm run get-external-token   # log in via browser -> writes EXTERNAL_ACCESS_TOKE
 npm run exchange-for-medplum-token       # run the token exchange
 ```
 
-The user you log in as must resolve to a Medplum `User`/`ProjectMembership` (matched by email) in the
-target project, or pass `MEDPLUM_MEMBERSHIP_ID`.
+Provision the Medplum user, profile, and project membership before running the exchange. Match the
+external identity by email or the complete subject, according to your provider configuration.
+`MEDPLUM_MEMBERSHIP_ID` selects an eligible membership of that user.
 
 ### Example output
 
@@ -164,6 +162,5 @@ Obtained external access token.
 Token exchange succeeded.
 Profile: Practitioner/abc123 (Alice Smith)
 Project: Project/def456
-Membership: ProjectMembership/1a2b3c4d-...
 Access token (truncated): eyJhbGciOiJSUzI1...
 ```
