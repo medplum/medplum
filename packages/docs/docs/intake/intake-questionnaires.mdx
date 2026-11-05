@@ -110,7 +110,9 @@ Once a patient submits their intake form, the [`QuestionnaireResponse`](/docs/ap
 1. Add template resources to `Questionnaire.contained` (e.g., a Patient template, an AllergyIntolerance template)
 2. Annotate the Questionnaire with `templateExtract`, `templateExtractValue`, and `templateExtractContext` extensions that define FHIRPath rules for populating each template field
 3. Call `$extract` on the QuestionnaireResponse to get a transaction Bundle
-4. Submit the Bundle to create/update the resources
+4. Save the extracted resources, inspect every write result, and reconcile failed entries before treating extraction as complete
+
+Extraction returns a Bundle without saving its resources. See [saving the results](/docs/questionnaires/parsing-questionnaire-responses#results-bundle) for dependency handling and recovery.
 
 **When to use SDC extraction:**
 

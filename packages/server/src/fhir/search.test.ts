@@ -5852,6 +5852,34 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
       expect(bundleContains(presentBundle, patient2)).toBeDefined();
     }));
 
+  test.each([true, false])('Sort by _project; desc=%s', (descending) =>
+    withTestContext(async () => {
+      const idValue = randomUUID();
+      const projectA = await systemRepo.createResource<Project>({ resourceType: 'Project' });
+      const projectB = await systemRepo.createResource<Project>({ resourceType: 'Project' });
+      const [project1, project2] = [projectA.id, projectB.id].sort();
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'id', value: idValue }],
+        meta: { project: project1 },
+      });
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'id', value: idValue }],
+        meta: { project: project2 },
+      });
+
+      const bundle = await systemRepo.search<Patient>({
+        resourceType: 'Patient',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: idValue }],
+        sortRules: [{ code: '_project', descending }],
+      });
+
+      const expected = descending ? [patient2.id, patient1.id] : [patient1.id, patient2.id];
+      expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual(expected);
+    })
+  );
+
   test('Filter by _lastUpdated', () =>
     withTestContext(async () => {
       // Create 2 patients

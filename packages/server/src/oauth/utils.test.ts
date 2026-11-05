@@ -3,6 +3,7 @@
 import type { OperationOutcomeError, WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -88,21 +89,26 @@ describe('OAuth utils', () => {
     }
   });
 
-  test('User not found', async () => {
+  test.each([
+    ['user-not-found@example.com', 'medplum_admin'],
+    ['admin@example.com', 'wrong_password'],
+  ])('Unknown email and wrong password are indistinguishable (%s)', async (email, password) => {
+    const bcryptSpy = vi.spyOn(bcrypt, 'compare');
     try {
-      await tryLogin({
-        clientId: client.id,
-        authMethod: 'password',
-        email: 'user-not-found@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-      });
-      expect.fail('Expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User not found');
+      await expect(
+        tryLogin({
+          clientId: client.id,
+          authMethod: 'password',
+          email,
+          password,
+          scope: 'openid',
+          nonce: 'nonce',
+        })
+      ).rejects.toThrow('Email or password is invalid');
+      expect(bcryptSpy).toHaveBeenCalledTimes(1);
+      expect(bcryptSpy).toHaveBeenCalledWith(password, expect.stringMatching(/^\$2b\$\d{2}\$.{53}$/));
+    } finally {
+      bcryptSpy.mockRestore();
     }
   });
 

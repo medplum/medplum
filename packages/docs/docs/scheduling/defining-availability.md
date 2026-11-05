@@ -556,7 +556,7 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
 
 </details>
 
-**Result**: When booking a bariatric surgery, the system queries all three schedules, calculates the intersection of availability, and creates atomic transaction bundles to book all required resources simultaneously.
+**Result**: Query all three schedules for a common time, then call [`$book`](/docs/scheduling/appointment-book) with the proposed Appointment returned by [`$find`](/docs/scheduling/appointment-find), including its contained Slots. The operation rechecks availability and commits the Appointment and its Slots together using its own database transaction. This does not require the `transaction-bundles` feature. A batch of direct Appointment/Slot writes would not provide the same conflict checks or atomicity.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
@@ -573,7 +573,7 @@ graph TD
     B2 --> D2[Slot<br/>*status: busy*]
     B3 --> D3[Slot<br/>*status: busy*]
 
-    subgraph "Transaction Bundle"
+    subgraph "Appointment $book operation"
         D1 --> E1[Appointment 1<br/>*status: booked*]
         D2 --> E1
         D3 --> E1
@@ -598,11 +598,13 @@ This is a complete, uploadable seed bundle for the common case of a single servi
 
 It demonstrates the patterns from [Common Pitfalls](#common-pitfalls):
 
-- **`type: transaction`** so a single bad entry rolls back the whole bundle (see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests)).
+- **`type: transaction`** for linked-resource submission. On hosted Medplum, successful entries are not rolled back when another fails; see [Bundle processing semantics](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 - **`urn:uuid` `fullUrl`s** so resources can cross-reference each other before they have server-assigned IDs.
 - **`comment`, not `name`,** on each `Schedule`.
 - **`Practitioner`/`Location` actors each carrying a timezone extension.**
 - **`ifNoneExist`** on the `Organization` and `HealthcareService` so re-running the seed is idempotent for those resources.
+
+Inspect every response entry before using the seed data. Only some entries have `ifNoneExist`; see [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before repeating POST creates.
 
 Each `Schedule` sets only its own `availability` and inherits `duration`, buffers, and alignment from the `HealthcareService`. Add more practitioners or rooms by duplicating the Practitioner/Location + Schedule pair.
 

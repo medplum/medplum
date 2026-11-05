@@ -68,6 +68,8 @@ import { generateAccessToken, generateIdToken, generateRefreshToken, generateSec
 import type { AuthenticationResult, AuthState } from './middleware';
 import { isExtendedMode } from './middleware';
 
+const INVALID_CREDENTIALS_MESSAGE = 'Email or password is invalid';
+
 export type CodeChallengeMethod = 'plain' | 'S256';
 
 export interface LoginRequest {
@@ -187,6 +189,11 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
 
   if (!user) {
     getLogger().warn('tryLogin User not found', { ...request, password: undefined, codeChallenge: undefined });
+    if (request.password) {
+      // Spend the same bcrypt time as a real check, so the response does not reveal whether the email exists
+      await verifyPassword(request.password, undefined);
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
+    }
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
@@ -280,11 +287,22 @@ export function validatePkce(request: LoginRequest, client: ClientApplication | 
   }
 }
 
+/**
+ * Verifies a password against a bcrypt hash using timing-safe comparison.
+ * @param password - The password provided by the client.
+ * @param passwordHash - The user's bcrypt password hash, if any.
+ * @returns True if the password matches the user's hash.
+ */
+async function verifyPassword(password: string, passwordHash: string | undefined): Promise<boolean> {
+  const hash = passwordHash || bcrypt.genSaltSync(getConfig().bcryptHashSalt) + '.'.repeat(31);
+  const matches = await bcrypt.compare(password, hash);
+  return Boolean(matches && passwordHash?.length);
+}
+
 async function authenticate(request: LoginRequest, user: User): Promise<void> {
-  if (request.password && user.passwordHash) {
-    const bcryptResult = await bcrypt.compare(request.password, user.passwordHash);
-    if (!bcryptResult) {
-      throw new OperationOutcomeError(badRequest('Email or password is invalid'));
+  if (request.password) {
+    if (!(await verifyPassword(request.password, user.passwordHash))) {
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
     }
     return;
   }
