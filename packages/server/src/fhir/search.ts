@@ -461,7 +461,7 @@ function getBaseSelectQueryForResourceType(
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
+  repo.addSecurityFilters(builder, resourceType, [AccessPolicyInteraction.SEARCH]);
   addSearchFilters(repo, builder, resourceType, searchRequest, opts?.trackedResourceTypes);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
@@ -474,7 +474,7 @@ function getBaseSelectQueryForResourceType(
 }
 
 function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
-  repo.removeHiddenFields(resource);
+  repo.removeHiddenFields(resource, [AccessPolicyInteraction.READ, AccessPolicyInteraction.SEARCH]);
   if (searchRequest.fields) {
     const schema = getDataType(resource.resourceType);
     subsetResource(
