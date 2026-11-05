@@ -47,7 +47,7 @@ import {
   unauthorizedTokenAudience,
   unauthorizedTokenExpired,
 } from './outcomes';
-import { MockAsyncClientStorage } from './storage';
+import { ClientStorage, MemoryStorage, MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import type { ProfileResource, WithId } from './utils';
 import { createReference, sleep } from './utils';
@@ -235,16 +235,18 @@ describe('Client', () => {
         })
     ).toThrow('Base URL must start with http or https');
 
-    const savedFetch = globalThis.fetch;
     vi.stubGlobal('fetch', undefined);
-    expect(
-      () =>
-        new MedplumClient({
-          clientId: 'xyz',
-          baseUrl: 'https://x/',
-        })
-    ).toThrow('Fetch not available in this environment');
-    vi.stubGlobal('fetch', savedFetch);
+    try {
+      expect(
+        () =>
+          new MedplumClient({
+            clientId: 'xyz',
+            baseUrl: 'https://x/',
+          })
+      ).toThrow('Fetch not available in this environment');
+    } finally {
+      vi.unstubAllGlobals();
+    }
 
     expect(
       () =>
@@ -322,43 +324,46 @@ describe('Client', () => {
     expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
   });
 
-  test.runIf(isBrowser)('storagePrefix option', () => {
-    localStorage.clear();
+  test('storagePrefix option', () => {
+    // Back both clients with one shared store, standing in for browser localStorage
+    const backingStorage = new MemoryStorage();
+    vi.stubGlobal('localStorage', backingStorage);
+    try {
+      // Create client with custom storage prefix
+      const client = new MedplumClient({
+        baseUrl: 'https://example.com/',
+        storagePrefix: '@myapp:',
+        fetch: mockFetch(200, {}),
+      });
 
-    // Create client with custom storage prefix
-    const client = new MedplumClient({
-      baseUrl: 'https://example.com/',
-      storagePrefix: '@myapp:',
-      fetch: mockFetch(200, {}),
-    });
+      // Set some data through the client's storage
+      const storage = (client as any).storage;
+      storage.setString('testKey', 'testValue');
 
-    // Set some data through the client's storage
-    const storage = (client as any).storage;
-    storage.setString('testKey', 'testValue');
+      // Verify it's stored with the correct prefix in the backing storage
+      expect(backingStorage.getItem('@myapp:testKey')).toBe('testValue');
+      expect(backingStorage.getItem('testKey')).toBeNull();
 
-    // Verify it's stored with the correct prefix in localStorage
-    expect(localStorage.getItem('@myapp:testKey')).toBe('testValue');
-    expect(localStorage.getItem('testKey')).toBeNull();
+      // Verify we can retrieve it through the storage
+      expect(storage.getString('testKey')).toBe('testValue');
 
-    // Verify we can retrieve it through the storage
-    expect(storage.getString('testKey')).toBe('testValue');
+      // Test with objects
+      const testObject = { foo: 'bar', nested: { value: 123 } };
+      storage.setObject('config', testObject);
+      expect(backingStorage.getItem('@myapp:config')).toBeTruthy();
+      expect(storage.getObject('config')).toMatchObject(testObject);
 
-    // Test with objects
-    const testObject = { foo: 'bar', nested: { value: 123 } };
-    storage.setObject('config', testObject);
-    expect(localStorage.getItem('@myapp:config')).toBeTruthy();
-    expect(storage.getObject('config')).toMatchObject(testObject);
-
-    // Create another client without prefix - should not see prefixed data
-    const clientWithoutPrefix = new MedplumClient({
-      baseUrl: 'https://example.com/',
-      fetch: mockFetch(200, {}),
-    });
-    const unprefixedStorage = (clientWithoutPrefix as any).storage;
-    expect(unprefixedStorage.getString('testKey')).toBeUndefined();
-    expect(unprefixedStorage.getObject('config')).toBeUndefined();
-
-    localStorage.clear();
+      // Create another client without prefix - should not see prefixed data
+      const clientWithoutPrefix = new MedplumClient({
+        baseUrl: 'https://example.com/',
+        fetch: mockFetch(200, {}),
+      });
+      const unprefixedStorage = (clientWithoutPrefix as any).storage;
+      expect(unprefixedStorage.getString('testKey')).toBeUndefined();
+      expect(unprefixedStorage.getObject('config')).toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   test.runIf(isBrowser)('Restore from localStorage', async () => {
@@ -740,14 +745,12 @@ describe('Client', () => {
 
   describe('Get external auth redirect URI', () => {
     let client: MedplumClient;
+    let storage: MemoryStorage;
 
     beforeAll(() => {
-      if (isBrowser) {
-        // Earlier tests leave an active login behind, which the client would try to resume
-        localStorage.clear();
-      }
+      storage = new MemoryStorage();
       const fetch = mockFetch(200, {});
-      client = new MedplumClient({ fetch });
+      client = new MedplumClient({ fetch, storage: new ClientStorage(storage) });
     });
 
     beforeEach(() => {
@@ -766,10 +769,7 @@ describe('Client', () => {
       );
       expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
 
-      if (isBrowser) {
-        const codeVerifier = localStorage.getItem('codeVerifier');
-        expect(codeVerifier).toHaveLength(128);
-      }
+      expect(storage.getItem('codeVerifier')).toHaveLength(128);
 
       const { searchParams } = new URL(result);
       expect(searchParams.get('response_type')).toBe('code');
@@ -2242,7 +2242,7 @@ describe('Client', () => {
       );
     });
 
-    test.runIf(isBrowser)('C-CDA -- File', async () => {
+    test('C-CDA -- File', async () => {
       const fetch = mockFetch(200, {});
       const client = new MedplumClient({ fetch });
       const result = await client.createAttachment({
@@ -2262,6 +2262,27 @@ describe('Client', () => {
           },
         })
       );
+    });
+
+    test('C-CDA -- File read error', async () => {
+      class FailingFileReader {
+        error = new Error('read failed');
+        onerror: (() => void) | null = null;
+        readAsText(): void {
+          queueMicrotask(() => this.onerror?.());
+        }
+      }
+      vi.stubGlobal('FileReader', FailingFileReader);
+      try {
+        const fetch = mockFetch(200, {});
+        const client = new MedplumClient({ fetch });
+        await expect(
+          client.createAttachment({ data: new File([EXAMPLE_CCDA], 'cda.xml'), contentType: ContentType.XML })
+        ).rejects.toThrow('read failed');
+        expect(fetch).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
   });
 
