@@ -115,3 +115,66 @@ export async function supersedePriorSecurityRequests(
     }
   }
 }
+
+/**
+ * The longest time that a security request of any type stays valid, in milliseconds.
+ */
+const MAX_EXPIRATION_MS = Math.max(...Object.values(USER_SECURITY_REQUEST_EXPIRATION_MS));
+
+/**
+ * Marks all of the user's unused requests that match the predicate as used.
+ *
+ * Walks every request updated within the longest validity window, rather than a fixed number of
+ * the most recent ones, so that a burst of newer requests cannot leave an older one redeemable.
+ * @param systemRepo - The system repository to use.
+ * @param user - The user whose requests should be retired.
+ * @param predicate - Returns true for requests that should be retired.
+ */
+async function retireSecurityRequests(
+  systemRepo: SystemRepository,
+  user: WithId<User>,
+  predicate: (securityRequest: UserSecurityRequest) => boolean
+): Promise<void> {
+  const since = new Date(Date.now() - MAX_EXPIRATION_MS).toISOString();
+  await systemRepo.processAllResources<UserSecurityRequest>(
+    {
+      resourceType: 'UserSecurityRequest',
+      count: 1000,
+      sortRules: [{ code: '_lastUpdated' }],
+      filters: [
+        { code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) },
+        { code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since },
+      ],
+    },
+    async (securityRequest) => {
+      if (!securityRequest.used && predicate(securityRequest)) {
+        // Patch rather than update, so that a request being consumed concurrently is not clobbered
+        await systemRepo.patchResource<UserSecurityRequest>('UserSecurityRequest', securityRequest.id, [
+          { op: 'add', path: '/used', value: true },
+        ]);
+      }
+    }
+  );
+}
+
+/**
+ * Marks all of the user's unused password requests (invite and reset) as used.
+ *
+ * Called when the user's password changes, so that links issued before the change cannot be used to
+ * replace the new password.
+ * @param systemRepo - The system repository to use.
+ * @param user - The user whose password requests should be retired.
+ */
+export async function retirePasswordSecurityRequests(systemRepo: SystemRepository, user: WithId<User>): Promise<void> {
+  // Matches what /auth/setpassword accepts: every type except verify-email, including requests without a type
+  await retireSecurityRequests(systemRepo, user, (securityRequest) => securityRequest.type !== 'verify-email');
+}
+
+/**
+ * Marks all of the user's unused security requests as used.
+ * @param systemRepo - The system repository to use.
+ * @param user - The user whose requests should be retired.
+ */
+export async function retireAllSecurityRequests(systemRepo: SystemRepository, user: WithId<User>): Promise<void> {
+  await retireSecurityRequests(systemRepo, user, () => true);
+}

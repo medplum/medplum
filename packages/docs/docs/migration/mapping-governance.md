@@ -18,7 +18,7 @@ This page covers:
 
 :::tip[Planning the mapping work?]
 
-Use the [Data Migration Decision Guide](/docs/decision-guides/data-migration#33-mapping--terminology-governance) to identify the participants and decisions before completing the register on this page.
+Use the [Data Migration Decision Guide](/docs/decision-guides/data-migration#how-will-fhir-mappings-and-terminology-be-governed) to identify the participants and decisions before completing the register on this page.
 
 :::
 
@@ -86,7 +86,7 @@ Before defining a custom extension:
 
 Do not combine unrelated source fields under one generic extension URL. If a field has no approved FHIR representation, mark it as unsupported or out of scope rather than hiding it in an extension. Changing an extension URL or meaning after applications depend on it can require both a data migration and an application migration.
 
-See [Profiles](/docs/fhir-datastore/profiles) and [Mapping and Terminology Governance](/docs/decision-guides/data-migration#33-mapping--terminology-governance) for the design and approval process.
+See [Profiles](/docs/fhir-datastore/profiles) and [Mapping and Terminology Governance](/docs/decision-guides/data-migration#how-will-fhir-mappings-and-terminology-be-governed) for the design and approval process.
 
 ## Choose How Profiles Apply
 
@@ -164,7 +164,7 @@ One source record can produce zero, one, or multiple FHIR resources. For each on
 - Partial-failure and retry behavior
 - Reconciliation counts at source and target levels
 
-When newly created resources reference one another, use a FHIR transaction with `urn:uuid` full URLs and confirm the `transaction-bundles` Project feature is enabled. Use batches only for independent entries. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+When newly created resources reference one another, define dependency stages: save prerequisites, inspect each result, then submit dependents with the saved references. Batch independent writes within each stage and use stable identifiers for conditional upserts. A reference relationship alone does not require atomicity. If partial commits are unacceptable, document that requirement explicitly; atomic transaction Bundles are currently unavailable on hosted Medplum. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
 
 ## Preserve Provenance and Traceability
 

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { EventDisplayInfo } from '@fullcalendar/react';
 import { Badge, Divider, Group, Popover, Stack, Text } from '@mantine/core';
-import { getPrimaryProvider } from '@medplum/core';
+import { getExtension, getPrimaryProvider, RecurrenceIdExtensionURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
+import { IconRepeat } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -20,13 +21,15 @@ import { AppointmentPatientName } from './AppointmentPatientName';
 
 export interface AppointmentEventProps {
   readonly appointment: Appointment;
+  /** Shown in place of the patient's name. */
+  readonly label?: string;
   /** What FullCalendar hands its event content, to draw the event as it would. */
   readonly info: EventDisplayInfo;
 }
 
 /**
- * An appointment event, titled by its service type over its patient, with a card naming
- * everyone it is held on while it is hovered.
+ * An appointment event, titled by its service type over its patient (beside it, when the event is
+ * too short for two lines), with a card naming everyone it is held on while it is hovered.
  *
  * The event is drawn on one calendar only, so the card is where the rest of them are named.
  *
@@ -34,11 +37,13 @@ export interface AppointmentEventProps {
  * @returns The event's content.
  */
 export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
-  const { appointment, info } = props;
+  const { appointment, label, info } = props;
   const hasServiceType = !!partitionServiceTypes(appointment).visitType;
   // A time grid says when the visit is by where it is drawn, so there the line under the service
   // type names the patient; a month's row has room for the service type and its time alone.
   const inTimeGrid = info.view.type.startsWith('timeGrid');
+  const oneLine = inTimeGrid && info.isShort;
+  const recurring = getExtension(appointment, RecurrenceIdExtensionURI) !== undefined;
   // Each card is mounted only while its event is hovered: a card per event costs about twice
   // what drawing the event does, on every render, and most events are never hovered.
   const [opened, setOpened] = useState(false);
@@ -47,23 +52,21 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
     <div
       className={classes.eventContent}
       data-time-grid={inTimeGrid || undefined}
+      data-one-line={oneLine || undefined}
       onMouseEnter={() => setOpened(true)}
       onMouseLeave={() => setOpened(false)}
     >
       {inTimeGrid ? (
-        <div className={info.timeClass}>
-          <AppointmentPatientName appointment={appointment} />
+        <div className={cx(info.timeClass, classes.patient)}>
+          {label ?? <AppointmentPatientName appointment={appointment} />}
         </div>
       ) : (
         info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
       )}
       <div className={cx(info.titleClass, classes.title)}>
+        {recurring && <IconRepeat size="1em" className={classes.recurring} role="img" aria-label="Recurring" />}
         {/* With no service type, a placeholder holds the title's place, so the patient stays under it. */}
-        {hasServiceType ? (
-          <ServiceTypeDisplay appointment={appointment} inherit />
-        ) : (
-          <span className={classes.untyped}>Appointment (no service type)</span>
-        )}
+        {hasServiceType ? <ServiceTypeDisplay appointment={appointment} inherit /> : 'Appointment (no service type)'}
       </div>
       {opened && (
         <Popover opened shadow="md" position="right-start">
@@ -73,7 +76,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
           </Popover.Target>
           {/* A floor on the width so most cards come out the same size. */}
           <Popover.Dropdown miw={260}>
-            <AppointmentCard appointment={appointment} info={info} />
+            <AppointmentCard appointment={appointment} label={label} info={info} />
           </Popover.Dropdown>
         </Popover>
       )}
@@ -88,7 +91,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
  * @returns The card's content.
  */
 function AppointmentCard(props: AppointmentEventProps): JSX.Element {
-  const { appointment, info } = props;
+  const { appointment, label, info } = props;
   const primary = getPrimaryProvider(appointment);
   const { start, end } = info.event;
   const hasServiceType = !!partitionServiceTypes(appointment).visitType;
@@ -97,9 +100,7 @@ function AppointmentCard(props: AppointmentEventProps): JSX.Element {
   return (
     <Stack gap={4}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
-        <Text fw={500}>
-          <AppointmentPatientName appointment={appointment} />
-        </Text>
+        <Text fw={500}>{label ?? <AppointmentPatientName appointment={appointment} />}</Text>
         <AppointmentStatusBadge status={appointment.status} size="sm" />
       </Group>
       <Divider />

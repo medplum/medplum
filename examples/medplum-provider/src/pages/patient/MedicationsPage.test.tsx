@@ -8,13 +8,15 @@ import type {
   MedicationCheckoutResponse,
   WithId,
 } from '@medplum/core';
+import { forbidden, gone, OperationOutcomeError } from '@medplum/core';
 import type { Bundle, MedicationRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import type { JSX } from 'react';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MedicationsPage } from './MedicationsPage';
 
@@ -40,6 +42,18 @@ vi.mock('@medplum/scriptsure-react', async () => {
     }),
   };
 });
+
+const ORDER_SET_LAUNCH_URL = 'https://ssu.example/widgets/order-set/253312?sessiontoken=order-set';
+
+// The order form is exercised by its own tests; here it only needs to hand the page
+// an order-set launch, which carries a URL but no MedicationRequest of its own.
+vi.mock('../meds/OrderMedicationPage', () => ({
+  OrderMedicationPage: (props: { onOrderComplete?: (result: { launchUrl: string }) => void }) => (
+    <button type="button" onClick={() => props.onOrderComplete?.({ launchUrl: ORDER_SET_LAUNCH_URL })}>
+      Launch order set
+    </button>
+  ),
+}));
 
 function createDoseSpotMembership(): ReturnType<MockClient['getProjectMembership']> {
   return {
@@ -105,6 +119,16 @@ function LocationCapture(props: { sink: SetupHandle['location'] }): null {
   return null;
 }
 
+// The list tabs are MedplumLinks, which navigate through MedplumProvider rather than react-router.
+function RouterMedplumProvider(props: { medplum: MockClient; children: React.ReactNode }): JSX.Element {
+  const navigate = useNavigate();
+  return (
+    <MedplumProvider medplum={props.medplum} navigate={(path) => navigate(path)?.catch(console.error)}>
+      {props.children}
+    </MedplumProvider>
+  );
+}
+
 async function setup(url: string, medplum = new MockClient()): Promise<SetupHandle> {
   const searchSpy = vi.spyOn(medplum, 'search') as unknown as ReturnType<typeof vi.fn>;
   if (!searchSpy.getMockImplementation()) {
@@ -113,8 +137,8 @@ async function setup(url: string, medplum = new MockClient()): Promise<SetupHand
   const location: SetupHandle['location'] = { current: null };
   await act(async () => {
     render(
-      <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+      <MemoryRouter initialEntries={[url]} initialIndex={0}>
+        <RouterMedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
             <LocationCapture sink={location} />
@@ -123,8 +147,8 @@ async function setup(url: string, medplum = new MockClient()): Promise<SetupHand
               <Route path="/Patient/:patientId/MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
             </Routes>
           </MantineProvider>
-        </MemoryRouter>
-      </MedplumProvider>
+        </RouterMedplumProvider>
+      </MemoryRouter>
     );
   });
   return { medplum, location };
@@ -259,18 +283,19 @@ describe('MedicationsPage', () => {
     const handle = await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/${fullMedicationRequest.id}`, medplum);
 
     expect(await screen.findByText('Full current detail')).toBeInTheDocument();
+    const countDetailReads = (): number =>
+      readResource.mock.calls.filter(
+        ([resourceType, id]) => resourceType === 'MedicationRequest' && id === fullMedicationRequest.id
+      ).length;
+    const readsBeforeTabChange = countDetailReads();
 
     fireEvent.click(screen.getByText('Draft'));
 
     await waitFor(() => {
       expect(handle.location.current?.search).toContain('status=draft');
       expect(screen.getByText('Full current detail')).toBeInTheDocument();
+      expect(countDetailReads()).toBeGreaterThan(readsBeforeTabChange);
     });
-    expect(
-      readResource.mock.calls.filter(
-        ([resourceType, id]) => resourceType === 'MedicationRequest' && id === fullMedicationRequest.id
-      )
-    ).toHaveLength(2);
   });
 
   test('Pagination control changes the URL _offset and re-queries', async () => {
@@ -484,19 +509,50 @@ describe('MedicationsPage', () => {
     expect(screen.queryByText('Approve queued prescriptions')).not.toBeInTheDocument();
   });
 
-  test('Per-row trash removes a draft via $remove-cart-medication', async () => {
+  /**
+   * Seeds a ScriptSure cart whose drafts disappear once removed: the cart bot hard-deletes
+   * them, so later list searches omit them and a read of a removed id fails with 410 Gone.
+   *
+   * @param drafts - The draft MedicationRequests initially in the cart.
+   * @returns The client and a setter marking ids as removed.
+   */
+  function setupCartWithHardDeletes(drafts: WithId<MedicationRequest>[]): {
+    medplum: MockClient;
+    markRemoved: (...ids: string[]) => void;
+  } {
     const medplum = new MockClient();
-    const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet')];
-    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, drafts));
+    const removed = new Set<string>();
     vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
-    removeFromCartMock.mockResolvedValue({
-      vendorPatientId: 24057,
-      removedCount: 1,
-      items: [{ medicationRequestId: 'mr-a', status: 'removed' }],
+    vi.spyOn(medplum, 'search').mockImplementation((async () => {
+      const remaining = drafts.filter((d) => !removed.has(d.id));
+      return emptyMrBundle(remaining.length, remaining);
+    }) as unknown as typeof medplum.search);
+    const realRead = medplum.readResource.bind(medplum);
+    vi.spyOn(medplum, 'readResource').mockImplementation((async (rt: string, id: string, opts?: unknown) => {
+      if (rt === 'MedicationRequest') {
+        const draft = drafts.find((d) => d.id === id);
+        if (!draft || removed.has(id)) {
+          throw new OperationOutcomeError(gone);
+        }
+        return draft;
+      }
+      return realRead(rt as 'Patient', id, opts as undefined);
+    }) as unknown as typeof medplum.readResource);
+    return { medplum, markRemoved: (...ids) => ids.forEach((id) => removed.add(id)) };
+  }
+
+  test('Per-row trash removes the selected draft via $remove-cart-medication and drops it from the URL without an error toast', async () => {
+    const { medplum, markRemoved } = setupCartWithHardDeletes([draftMr('mr-a', 'Aspirin 81 mg tablet')]);
+    removeFromCartMock.mockImplementation(async ({ medicationRequestId }) => {
+      markRemoved(medicationRequestId);
+      return { vendorPatientId: 24057, removedCount: 1, items: [{ medicationRequestId, status: 'removed' }] };
     });
 
     const user = userEvent.setup();
-    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+    const handle = await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+    await waitFor(() => {
+      expect(handle.location.current?.pathname).toBe(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-a`);
+    });
 
     await user.click(await screen.findByLabelText('Remove medication from cart'));
 
@@ -505,31 +561,91 @@ describe('MedicationsPage', () => {
         patientId: HomerSimpson.id,
         medicationRequestId: 'mr-a',
       });
+      expect(handle.location.current?.pathname).toBe(`/Patient/${HomerSimpson.id}/MedicationRequest`);
+      expect(handle.location.current?.search).toBe('?status=draft');
     });
+    expect(await screen.findByText('Removed from cart')).toBeInTheDocument();
+    expect(screen.queryByText('Gone')).not.toBeInTheDocument();
+    expect(screen.queryByText('Aspirin 81 mg tablet')).not.toBeInTheDocument();
   });
 
-  test('Clear cart removes every draft via $clear-cart', async () => {
-    const medplum = new MockClient();
+  test('Clear cart removes every draft via $clear-cart and drops the selected draft from the URL', async () => {
     const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet'), draftMr('mr-b', 'Lisinopril 10 mg tablet')];
-    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(2, drafts));
-    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
-    clearCartMock.mockResolvedValue({
-      vendorPatientId: 24057,
-      removedCount: 2,
-      items: [
-        { medicationRequestId: 'mr-a', status: 'removed' },
-        { medicationRequestId: 'mr-b', status: 'removed' },
-      ],
+    const { medplum, markRemoved } = setupCartWithHardDeletes(drafts);
+    clearCartMock.mockImplementation(async () => {
+      markRemoved('mr-a', 'mr-b');
+      return {
+        vendorPatientId: 24057,
+        removedCount: 2,
+        items: [
+          { medicationRequestId: 'mr-a', status: 'removed' },
+          { medicationRequestId: 'mr-b', status: 'removed' },
+        ],
+      };
     });
 
     const user = userEvent.setup();
-    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+    const handle = await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+    await waitFor(() => {
+      expect(handle.location.current?.pathname).toBe(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-a`);
+    });
 
     await user.click(await screen.findByRole('button', { name: /^Clear cart \(2\)$/ }));
 
     await waitFor(() => {
       expect(clearCartMock).toHaveBeenCalledWith({ patientId: HomerSimpson.id });
+      expect(handle.location.current?.pathname).toBe(`/Patient/${HomerSimpson.id}/MedicationRequest`);
     });
+    expect(await screen.findByText('Cart cleared')).toBeInTheDocument();
+    expect(screen.queryByText('Gone')).not.toBeInTheDocument();
+  });
+
+  test('A detail read that fails for a reason other than Gone/NotFound surfaces an error toast', async () => {
+    const medplum = new MockClient();
+    const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet')];
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, drafts));
+    const realRead = medplum.readResource.bind(medplum);
+    vi.spyOn(medplum, 'readResource').mockImplementation((async (rt: string, id: string, opts?: unknown) => {
+      if (rt === 'MedicationRequest') {
+        throw new OperationOutcomeError(forbidden);
+      }
+      return realRead(rt as 'Patient', id, opts as undefined);
+    }) as unknown as typeof medplum.readResource);
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-a?status=draft`, medplum);
+
+    expect((await screen.findAllByText('Forbidden')).length).toBeGreaterThan(0);
+  });
+
+  test('Launching an order set opens its own URL and never orders the auto-selected draft', async () => {
+    const medplum = new MockClient();
+    const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet')];
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, drafts));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    const realRead = medplum.readResource.bind(medplum);
+    vi.spyOn(medplum, 'readResource').mockImplementation((async (rt: string, id: string, opts?: unknown) => {
+      if (rt === 'MedicationRequest') {
+        return drafts[0];
+      }
+      return realRead(rt as 'Patient', id, opts as undefined);
+    }) as unknown as typeof medplum.readResource);
+    const postSpy = vi.spyOn(medplum, 'post');
+
+    const user = userEvent.setup();
+    const handle = await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+    await waitFor(() => {
+      expect(handle.location.current?.pathname).toBe(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-a`);
+    });
+
+    await user.click(await screen.findByLabelText('Order medication'));
+    await user.click(await screen.findByRole('button', { name: 'Launch order set' }));
+
+    const iframe = await screen.findByTitle('Complete prescription');
+    expect(iframe.getAttribute('src')).toContain(ORDER_SET_LAUNCH_URL);
+    expect(handle.location.current?.search).toBe('?status=draft');
+    const orderCalls = postSpy.mock.calls.filter(([url]) => String(url).includes('$order-medication'));
+    expect(orderCalls).toHaveLength(0);
   });
 
   test('Pure cart model: no per-row selection checkboxes are rendered on the Draft tab', async () => {

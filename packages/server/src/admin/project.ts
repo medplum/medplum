@@ -228,6 +228,10 @@ projectAdminRouter.post(
 
     const systemRepo = ctx.systemRepo;
     const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+    if (user.project?.reference !== getReferenceString(ctx.project)) {
+      sendOutcome(res, forbidden);
+      return;
+    }
 
     const enrolled = getEnrolledMfaMethods(user);
     if (!enrolled.includes(method)) {
@@ -289,6 +293,10 @@ projectAdminRouter.post('/:projectId/members/:membershipId/resetpassword', async
 
   const systemRepo = ctx.systemRepo;
   const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+  if (user.project?.reference !== getReferenceString(ctx.project)) {
+    sendOutcome(res, forbidden);
+    return;
+  }
 
   if (!user.email) {
     sendOutcome(res, badRequest('User does not have an email address'));

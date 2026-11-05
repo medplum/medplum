@@ -9,6 +9,7 @@ import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
 import { isReservedShardId, isValidShardId } from '../fhir/sharding';
+import { globalLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
 import {
@@ -70,6 +71,10 @@ export async function loadConfig(configName: string): Promise<ServerConfig> {
 
   if (!config.baseUrl || typeof config.baseUrl !== 'string' || config.baseUrl.trim() === '') {
     throw new Error('Missing required config setting: baseUrl. Please set "baseUrl" in your configuration.');
+  }
+
+  if ('botCustomFunctionsEnabled' in config) {
+    globalLogger.warn('The botCustomFunctionsEnabled config setting is no longer supported and is ignored');
   }
 
   validateShardingConfig(config);

@@ -35,7 +35,7 @@ export async function getResourceCacheEntry<T extends Resource>(
  * @param references - Array of FHIR references.
  * @returns Array of cache entries or undefined.
  */
-export async function getResourceCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+export async function getResourceCacheEntries(references: readonly Reference[]): Promise<(CacheEntry | undefined)[]> {
   const referenceKeys: string[] = [];
 
   // Build referenceKeys only for valid input references and track
@@ -127,5 +127,5 @@ export async function deleteResourceCacheEntries(resourceType: string, ids: stri
  * @returns The Redis cache key.
  */
 export function getResourceCacheKey(resourceType: string, id: string): string {
-  return `${resourceType}/${id}`;
+  return `${resourceType}/${id.toLowerCase()}`;
 }

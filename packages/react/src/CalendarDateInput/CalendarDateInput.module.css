@@ -1,7 +1,17 @@
-.table {
-  width: 100%;
+/* Sizes the calendar as a whole, so the month row and the grid under it stay the same
+   width and the month buttons sit over the last column. */
+.root {
   min-width: 260px;
   max-width: 350px;
+}
+
+/* Mantine fills a disabled ActionIcon, which a subtle one has no fill to fall back from. */
+.monthButton:disabled {
+  background-color: transparent;
+}
+
+.table {
+  width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
   user-select: none;

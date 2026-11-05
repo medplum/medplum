@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, resolveId } from '@medplum/core';
-import type { UserConfiguration } from '@medplum/fhirtypes';
+import { ContentType, createReference, resolveId } from '@medplum/core';
+import type { Binary, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -197,6 +197,26 @@ describe('Me', () => {
     expect(res.body.error).toBeUndefined();
   });
 
+  test('Profile in another project', async () => {
+    const { membership, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const { client } = await withTestContext(() => createTestProject({ withClient: true }));
+
+    const systemRepo = await getProjectSystemRepo(membership.project);
+    await withTestContext(() => systemRepo.updateResource({ ...membership, profile: createReference(client) }));
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(404);
+    expect(res.text).not.toContain(client.secret);
+  });
+
   test('AccessPolicy.basedOn', async () => {
     const { accessToken, accessPolicy } = await withTestContext(() =>
       createTestProject({
@@ -296,6 +316,65 @@ describe('Me', () => {
     expect(res4.body.security.memberships).toHaveLength(1);
   });
 
+  test('Logins in progress are not listed as sessions', async () => {
+    const email = `alex${randomUUID()}@example.com`;
+    const password = randomUUID();
+
+    const { login, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Sessions in /auth/me',
+        email,
+        password,
+      })
+    );
+
+    // Sign in again, but do not redeem the code yet
+    const res1 = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ email, password, scope: 'openid', codeChallenge: 'xyz', codeChallengeMethod: 'plain' });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.code).toBeDefined();
+
+    // The pending login is not listed
+    const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.security.sessions.map((s: any) => s.id)).toStrictEqual([login.id]);
+
+    // Redeem the code
+    const res4 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({ grant_type: 'authorization_code', code: res1.body.code, code_verifier: 'xyz' });
+    expect(res4).toHaveStatus(200);
+
+    // Now it is a session
+    const res5 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res5).toHaveStatus(200);
+    expect(res5.body.security.sessions.map((s: any) => s.id)).toContainExactly([login.id, res1.body.login]);
+  });
+
+  test('SMART-scoped login does not get security details', async () => {
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'SMART-scoped /auth/me',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        scope: 'openid user/Observation.rs',
+      })
+    );
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.profile.resourceType).toBe('Practitioner');
+    expect(res.body.user).toBeDefined();
+    expect(res.body.security).toBeUndefined();
+  });
+
   test('Project features are returned in /auth/me', async () => {
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();
@@ -371,5 +450,33 @@ describe('Me', () => {
     );
     const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res3.body.security.mfaRequired).toBe(true);
+  });
+
+  test('Only signs attachments that the user can read', async () => {
+    const { repo, client, accessToken } = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      withAccessToken: true,
+    });
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const { binary, otherBinary } = await withTestContext(async () => {
+      const binary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      const otherBinary = await otherRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+      await repo.updateResource({
+        ...client,
+        signInForm: { logo: { url: `Binary/${binary.id}` } },
+        extension: [{ url: `Binary/${otherBinary.id}`, valueBoolean: true }],
+      });
+      return { binary, otherBinary };
+    });
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.profile.signInForm.logo.url).toContain(`/storage/${binary.id}/`);
+    expect(res.body.profile.signInForm.logo.url).toContain('Signature=');
+    expect(res.body.profile.extension[0].url).toBe(`Binary/${otherBinary.id}`);
   });
 });

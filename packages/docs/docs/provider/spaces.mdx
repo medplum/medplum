@@ -44,7 +44,7 @@ The translator bot can issue any FHIR request the requester's AccessPolicy permi
 The first four bullets are read-only and end at the summary bot. The visualization and reporting prompts additionally invoke the visualizer bot to render an interactive chart in the side panel. The last two bullets trigger live FHIR writes through the same loop.
 
 :::caution
-Writes happen as soon as the loop reaches them. Treat clinically significant prompts (orders, referrals, status changes) the same way you would any draft – review the resulting resource before relying on it, and consider scoping the `ai` feature to AccessPolicies that do not include write access to high-risk resource types.
+Writes happen as soon as the loop reaches them. Treat clinically significant prompts (orders, referrals, status changes) the same way you would any draft – review the resulting resource before relying on it, and consider giving Spaces users AccessPolicies that do not include write access to high-risk resource types.
 :::
 
 ## How Spaces Works
@@ -287,7 +287,7 @@ A prompt that contradicts the tool schema (for example, telling the translator n
 ## Security And Cost
 
 - The OpenAI API key lives only in `Project.secret`. The browser cannot read it, and bots receive it only inside their handler scope.
-- AccessPolicy applies to every FHIR request the loop executes. The assistant cannot read or write resources the requester is not entitled to. Audit-sensitive deployments should also restrict which `Practitioner` accounts have the `ai` feature exposed in their session.
+- AccessPolicy applies to every FHIR request the loop executes. The assistant cannot read or write resources the requester is not entitled to. Audit-sensitive deployments should also use AccessPolicies to restrict which accounts can execute the Spaces bots.
 - Every loop iteration is one OpenAI call. A user asking a multi-hop question can drive five to ten model calls per prompt. Monitor your OpenAI usage dashboard and consider rate-limiting the bot endpoints in production.
 - All Spaces activity is recorded as standard FHIR [`AuditEvent`](/docs/api/fhir/resources/auditevent) resources, the same way every other Medplum write is.
 

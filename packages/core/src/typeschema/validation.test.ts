@@ -1104,7 +1104,13 @@ describe('FHIR resource validation', () => {
     patient.birthDate = 'x';
     expect(() => validateResource(patient)).toThrow('Invalid date format');
 
+    patient.birthDate = '2023-02-29';
+    expect(() => validateResource(patient)).toThrow('Invalid date value');
+
     patient.birthDate = '2000-01-01';
+    expect(() => validateResource(patient)).not.toThrow();
+
+    patient.birthDate = '2024-02-29';
     expect(() => validateResource(patient)).not.toThrow();
   });
 
@@ -1206,7 +1212,20 @@ describe('FHIR resource validation', () => {
     sp.numberOfSubunits = 123.5;
     expect(() => validateResource(sp)).toThrow('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
 
-    sp.numberOfSubunits = 10;
+    sp.numberOfSubunits = -2_147_483_649;
+    expect(() => validateResource(sp)).toThrow(
+      'Expected number to be in the range -2147483648..2147483647 (SubstanceProtein.numberOfSubunits)'
+    );
+
+    sp.numberOfSubunits = 2_147_483_648;
+    expect(() => validateResource(sp)).toThrow(
+      'Expected number to be in the range -2147483648..2147483647 (SubstanceProtein.numberOfSubunits)'
+    );
+
+    sp.numberOfSubunits = -2_147_483_648;
+    expect(() => validateResource(sp)).not.toThrow();
+
+    sp.numberOfSubunits = 2_147_483_647;
     expect(() => validateResource(sp)).not.toThrow();
   });
 
@@ -1258,12 +1277,24 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.minutesDuration)');
 
     appt.minutesDuration = -1;
-    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
 
     appt.minutesDuration = 0;
-    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
 
-    appt.minutesDuration = 10;
+    appt.minutesDuration = 2_147_483_648;
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
+
+    appt.minutesDuration = 1;
+    expect(() => validateResource(appt)).not.toThrow();
+
+    appt.minutesDuration = 2_147_483_647;
     expect(() => validateResource(appt)).not.toThrow();
   });
 
@@ -1293,12 +1324,19 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.priority)');
 
     appt.priority = -1;
-    expect(() => validateResource(appt)).toThrow('Expected number to be non-negative (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 0..2147483647 (Appointment.priority)'
+    );
+
+    appt.priority = 2_147_483_648;
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 0..2147483647 (Appointment.priority)'
+    );
 
     appt.priority = 0;
     expect(() => validateResource(appt)).not.toThrow();
 
-    appt.priority = 10;
+    appt.priority = 2_147_483_647;
     expect(() => validateResource(appt)).not.toThrow();
   });
 

@@ -16,13 +16,19 @@ export interface SmartAppLaunchLinkProps extends AnchorProps {
   readonly children?: ReactNode;
 }
 
-export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element | null {
+export function SmartAppLaunchLink(props: Readonly<SmartAppLaunchLinkProps>): JSX.Element | null {
   const medplum = useMedplum();
   const { client, patient, encounter, children, ...rest } = props;
   const patientResource = useResource(patient);
   const encounterResource = useResource(encounter);
 
   function launchApp(): void {
+    const launchUrl = parseLaunchUrl(client.launchUri);
+    if (!launchUrl) {
+      showNotification({ color: 'red', message: 'Invalid launch URI', autoClose: false });
+      return;
+    }
+
     // Build the patient reference, potentially including an identifier
     let patientRef: Reference<Patient> | undefined = patient;
     let encounterRef: Reference<Encounter> | undefined = encounter;
@@ -66,10 +72,9 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
         fhirContext: props.fhirContext,
       })
       .then((result) => {
-        const url = new URL(client.launchUri as string);
-        url.searchParams.set('iss', ensureTrailingSlash(medplum.fhirUrl().toString()));
-        url.searchParams.set('launch', result.id);
-        window.open(url.toString(), '_blank');
+        launchUrl.searchParams.set('iss', ensureTrailingSlash(medplum.fhirUrl().toString()));
+        launchUrl.searchParams.set('launch', result.id);
+        window.open(launchUrl.toString(), '_blank');
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
@@ -79,4 +84,12 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
       {children}
     </Anchor>
   );
+}
+
+function parseLaunchUrl(launchUri: string | undefined): URL | undefined {
+  if (!launchUri || !URL.canParse(launchUri)) {
+    return undefined;
+  }
+  const url = new URL(launchUri);
+  return url.protocol === 'https:' || url.protocol === 'http:' ? url : undefined;
 }

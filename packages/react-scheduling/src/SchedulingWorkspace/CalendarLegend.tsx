@@ -25,7 +25,7 @@ export interface CalendarLegendProps {
 const PREVIEW_COUNT = 4;
 
 /**
- * The shade MultiCalendar fills appointments with.
+ * The shade MultiCalendar draws the bar down an appointment's edge in.
  * @param color - The service type's color.
  * @returns The CSS color.
  */

@@ -36,7 +36,7 @@ function isOriginAllowed(origin: string | undefined): boolean {
   }
 
   const config = getConfig();
-  if (config.appBaseUrl.startsWith(origin) || config.allowedOrigins === '*') {
+  if (origin === new URL(config.appBaseUrl).origin || config.allowedOrigins === '*') {
     return true;
   }
 

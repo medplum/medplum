@@ -27,12 +27,12 @@ export default {
  *
  * @param props - The React props.
  * @param props.service - The service being booked.
- * @param props.location - The site being booked at, if one was chosen.
+ * @param props.serviceFacility - The site being booked at, if one was chosen.
  * @returns The fields, once the fixtures are in.
  */
 function Fields(props: {
   readonly service: WithId<HealthcareService>;
-  readonly location?: WithId<Location>;
+  readonly serviceFacility?: WithId<Location>;
 }): JSX.Element {
   const [value, setValue] = useState<ActorSelections>({});
   const ways = countActorCombinations(value);
@@ -44,7 +44,7 @@ function Fields(props: {
         <AppointmentActorSelections
           value={value}
           service={props.service}
-          location={props.location}
+          serviceFacility={props.serviceFacility}
           onChange={setValue}
         />
         <div>
@@ -67,4 +67,4 @@ export const AllRoles = (): JSX.Element => <Fields service={UltrasoundImagingSer
  * Narrowed to one site, so the rooms and devices on offer are the ones kept there.
  * @returns The story.
  */
-export const AtAClinic = (): JSX.Element => <Fields service={UltrasoundImagingService} location={MainClinic} />;
+export const AtAClinic = (): JSX.Element => <Fields service={UltrasoundImagingService} serviceFacility={MainClinic} />;

@@ -12,6 +12,7 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { Column, Condition, SelectQuery } from '../sql';
 import { importConceptMapResource } from './conceptmapimport';
 
@@ -19,6 +20,7 @@ const app = express();
 const ICD10 = 'http://hl7.org/fhir/sid/icd-10-us';
 
 describe('importConceptMap()', () => {
+  const shardId = GLOBAL_SHARD_ID;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -62,7 +64,7 @@ describe('importConceptMap()', () => {
       ],
     };
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, shardId);
     const db = await pool.connect();
     await importConceptMapResource(db, resource);
     db.release();
@@ -127,7 +129,7 @@ describe('importConceptMap()', () => {
       ],
     };
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, shardId);
     const db = await pool.connect();
     await importConceptMapResource(db, resource);
     db.release();
@@ -254,7 +256,7 @@ describe('ConceptMap/$import', () => {
       } satisfies Parameters);
     expect(res).toHaveStatus(200);
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
 
     const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
@@ -273,6 +275,32 @@ describe('ConceptMap/$import', () => {
       type: 'Coding',
       value: `{"system":"http://snomed.info/sct","code":"403625006"}`,
     });
+  });
+
+  test('Imports by ID without extended mode', async () => {
+    const conceptMap = await repo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      name: 'Test Imported ConceptMap',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: SNOMED, code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
   });
 
   test('Requires admin privileges', async () => {
@@ -346,7 +374,7 @@ describe('ConceptMap/$import', () => {
       } satisfies Parameters);
     expect(res).toHaveStatus(403);
 
-    const results = await getMappingRows(getDatabasePool(DatabaseMode.READER), conceptMap);
+    const results = await getMappingRows(getDatabasePool(DatabaseMode.READER, repo.shardId), conceptMap);
     expect(results).toHaveLength(0);
   });
 
@@ -488,7 +516,7 @@ describe('ConceptMap/$import', () => {
       ],
     });
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
     const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
   });
@@ -505,7 +533,7 @@ describe('ConceptMap/$import', () => {
       status: 'active',
     });
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
     const results = await getMappingRows(pool, map);
     expect(results).toHaveLength(0);
   });
@@ -533,7 +561,7 @@ describe('ConceptMap/$import', () => {
     };
 
     const map = await repo.createResource(resource);
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
 
     const initial = await getMappingRows(pool, map);
     expect(initial).toHaveLength(2);

@@ -58,9 +58,10 @@ describe('Welcome email', () => {
       expect(text).toContain('support@example.com');
     });
 
-    test('Indents nested sub-bullets with four leading spaces', () => {
+    test('Includes planning as a top-level next step and indents the contribution link', () => {
       const text = welcomeEmailText(CTX);
-      expect(text).toContain('\n    - Agentic Coding Guide:');
+      expect(text).toContain('\n- Plan your application with an AI agent\n');
+      expect(text).toContain('https://www.medplum.com/docs/building-with-ai-coding-assistants#plan-your-application');
       expect(text).toContain('\n    - Contribute:');
     });
 

@@ -1,5 +1,9 @@
 # Labs & Imaging
 
+:::tip[Designing an ordering and results workflow?]
+The [Diagnostic Orders Decision Guide](/docs/decision-guides/diagnostic-orders) helps you choose integration, fulfillment, result-matching, and review approaches for your application.
+:::
+
 Lab orders and imaging results in FHIR follow a request-and-report pattern. A [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) represents the order, and a [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) captures the results. Individual measurements are stored as [`Observation`](/docs/api/fhir/resources/observation) resources linked to the report.
 
 ```mermaid

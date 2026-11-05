@@ -21,10 +21,13 @@ import {
   useSearchResources,
 } from '@medplum/react';
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useEligibilityServiceTypes } from '../../hooks/useEligibilityServiceTypes';
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
+import { buildEligibilityServiceTypeItems, pickServiceTypes } from '../../utils/eligibility';
 import { showErrorNotification } from '../../utils/notifications';
+import { EligibilityServiceTypeSelect } from './EligibilityServiceTypeSelect';
 import { getErrorMessage } from './utils';
 
 /**
@@ -47,7 +50,8 @@ export interface CheckEligibilityModalProps {
  * Picks one of the patient's active coverages and runs an eligibility check against it: creates a
  * CoverageEligibilityRequest and posts `$submit`. A failed `$submit` is reported but the request is kept.
  * The provider defaults to the organization on the signed-in practitioner's PractitionerRole and can be
- * changed to any billing organization or cleared, in which case the practitioner themselves is the provider.
+ * changed to any billing organization or cleared, in which case the practitioner themselves is the provider. The
+ * request asks about the service types saved in Billing Settings, all of them unless some are removed for this check.
  * The selections reset to their defaults every time the modal closes.
  * @param props - The CheckEligibilityModal React props.
  * @returns The CheckEligibilityModal React node.
@@ -59,6 +63,7 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
   const [chosenId, setChosenId] = useState<string>();
   const [chosenProvider, setChosenProvider] = useState<Organization>();
   const [providerEdited, setProviderEdited] = useState(false);
+  const [chosenCodes, setChosenCodes] = useState<string[]>();
   const [submitting, setSubmitting] = useState(false);
 
   const defaultCoverage = useResource<Coverage>(
@@ -74,6 +79,17 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
     profile ? { practitioner: getReferenceString(profile) } : undefined,
     { enabled: opened && !!profile }
   );
+  const { serviceTypes, loading: serviceTypesLoading, error: serviceTypesError } = useEligibilityServiceTypes(opened);
+  const selectedCodes = useMemo(
+    () => chosenCodes ?? serviceTypes.map((serviceType) => serviceType.code),
+    [chosenCodes, serviceTypes]
+  );
+
+  useEffect(() => {
+    if (serviceTypesError) {
+      showErrorNotification(serviceTypesError);
+    }
+  }, [serviceTypesError]);
 
   const coverages = useMemo(() => {
     const result = (activeCoverages ?? []).filter((c) => !isSelfPayCoverage(c));
@@ -93,6 +109,7 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
     setChosenId(undefined);
     setChosenProvider(undefined);
     setProviderEdited(false);
+    setChosenCodes(undefined);
     onClose();
   };
 
@@ -113,6 +130,7 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
         insurer: selectedCoverage.payor?.[0] as Reference<Organization>,
         provider,
         insurance: [{ focal: true, coverage: createReference(selectedCoverage) }],
+        item: buildEligibilityServiceTypeItems(pickServiceTypes(serviceTypes, selectedCodes)),
       });
       try {
         await medplum.post(medplum.fhirUrl('CoverageEligibilityRequest', savedRequest.id, '$submit'));
@@ -136,7 +154,7 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
       actions={
         <Button
           loading={submitting}
-          disabled={!selectedCoverage || practitionerRoleLoading}
+          disabled={!selectedCoverage || practitionerRoleLoading || serviceTypesLoading || selectedCodes.length === 0}
           onClick={() => handleSubmit().catch(showErrorNotification)}
         >
           Check Eligibility
@@ -169,6 +187,9 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
               setProviderEdited(true);
             }}
           />
+        )}
+        {!serviceTypesLoading && (
+          <EligibilityServiceTypeSelect serviceTypes={serviceTypes} value={selectedCodes} onChange={setChosenCodes} />
         )}
       </Stack>
     </Modal>

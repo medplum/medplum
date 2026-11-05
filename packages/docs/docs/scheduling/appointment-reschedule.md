@@ -11,7 +11,7 @@ The `$reschedule` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
-The `$reschedule` operation moves an existing [`Appointment`](/docs/api/fhir/resources/appointment) to a new time, a new set of [`Schedule`](/docs/api/fhir/resources/schedule) resources, or both. In a single FHIR transaction it releases the [`Slot`](/docs/api/fhir/resources/slot) resources the appointment currently holds, validates that the new time is genuinely available, creates the new Slots, and updates the Appointment in place.
+The `$reschedule` operation moves an existing [`Appointment`](/docs/api/fhir/resources/appointment) to a new time, a new set of [`Schedule`](/docs/api/fhir/resources/schedule) resources, or both. In a single database transaction it releases the [`Slot`](/docs/api/fhir/resources/slot) resources the appointment currently holds, validates that the new time is genuinely available, creates the new Slots, and updates the Appointment in place.
 
 Because the old Slots are released **before** availability is checked, an appointment never blocks its own move. Reassigning an 11am visit from one room to another works even though the practitioner's schedule is already busy at 11am — that block belongs to the appointment being moved.
 
@@ -79,14 +79,15 @@ Unlike `$find`, `$reschedule` takes no `service-type-reference`. The service who
 
 ### What the operation writes
 
-`$reschedule` is not an update of the whole resource. It changes exactly four attributes of the stored Appointment:
+`$reschedule` is not an update of the whole resource. It changes only these attributes of the stored Appointment:
 
-| Attribute     | Effect                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------- |
-| `start`       | Set from the `start` parameter                                                              |
-| `end`         | Derived from `start` plus the `duration` in the scheduling parameters — not an input        |
-| `participant` | Reconciled, see below                                                                       |
-| `slot`        | Set to references to the newly created Slots                                                |
+| Attribute     | Effect                                                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `start`       | Set from the `start` parameter                                                                                                                      |
+| `end`         | Derived from `start` plus the `duration` in the scheduling parameters — not an input                                                                |
+| `participant` | Reconciled, see below                                                                                                                               |
+| `slot`        | Set to references to the newly created Slots                                                                                                        |
+| `extension`   | On an occurrence of a [recurring series](/docs/scheduling/appointment-book#booking-a-recurring-series) whose time changes, R5's `occurrenceChanged` |
 
 Everything else is left exactly as it was — `serviceType`, `reasonCode`, `comment`, `basedOn`, `supportingInformation`, and anything else you have set. To change any of those, use a normal FHIR update on the Appointment.
 

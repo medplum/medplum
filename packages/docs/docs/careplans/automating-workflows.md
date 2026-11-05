@@ -53,7 +53,7 @@ The [Subscription Extensions guide](/docs/subscriptions/subscription-extensions)
 
 If the same event arrives twice, both runs should lead to the same work item. Use conditional create keyed by `identifier`, such as `createResourceIfNoneExist`, for generated work. Do not search and then create: concurrent runs can both observe no match. Use version checking when advancing an existing Task so a stale event cannot overwrite a later decision.
 
-When linked writes must succeed together, use a transaction Bundle with conditional creates and version-checked updates. A transaction covers FHIR writes; it cannot roll back an external fax, email, or payer submission.
+For related writes that can tolerate partial progress, save prerequisites first, then conditionally create or version-check dependents, recording each result for recovery. Atomic transaction Bundles are currently unavailable on hosted Medplum. If several writes must commit together, batches with retries are insufficient. Even an atomic FHIR transaction cannot roll back an external fax, email, or payer submission. See [Batches vs Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 
 :::tip[Track the send as well as the Task]
 

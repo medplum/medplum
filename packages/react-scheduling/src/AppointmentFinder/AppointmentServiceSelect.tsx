@@ -28,7 +28,7 @@ export interface AppointmentServiceSelectProps {
   readonly defaultValue?: WithId<HealthcareService>;
   readonly onChange: (service: WithId<HealthcareService> | undefined) => void;
   /** A chosen site, which narrows the services on offer to the ones held there. */
-  readonly location?: WithId<Location> | Reference<Location>;
+  readonly serviceFacility?: WithId<Location> | Reference<Location>;
   readonly label?: string;
   readonly placeholder?: string;
   readonly required?: boolean;
@@ -51,7 +51,7 @@ export interface AppointmentServiceSelectProps {
  */
 export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): JSX.Element {
   const {
-    location,
+    serviceFacility,
     defaultValue,
     onChange,
     label = 'Visit type',
@@ -62,7 +62,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
   } = props;
   const medplum = useMedplum();
 
-  const locationReference = location && getReferenceString(location);
+  const serviceFacilityReference = serviceFacility && getReferenceString(serviceFacility);
 
   const loadOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
@@ -73,8 +73,8 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       // A reference search needs the element present, so what names no location cannot
       // ride on the site's own search and the field asks twice, together. With no site
       // it asks once: `location:missing=true` alone would hide every sited visit type.
-      const searches = locationReference
-        ? [withParam(criteria, 'location', locationReference), withParam(criteria, 'location:missing', 'true')]
+      const searches = serviceFacilityReference
+        ? [withParam(criteria, 'location', serviceFacilityReference), withParam(criteria, 'location:missing', 'true')]
         : [criteria];
       const pages = await Promise.all(
         searches.map(async (params) => medplum.searchResources('HealthcareService', params, { signal }))
@@ -88,7 +88,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       services.sort((left, right) => (left.name ?? '').localeCompare(right.name ?? ''));
       return services.slice(0, SERVICE_PAGE_SIZE);
     },
-    [medplum, locationReference]
+    [medplum, serviceFacilityReference]
   );
 
   const handleChange = useCallback((services: WithId<HealthcareService>[]) => onChange(services[0]), [onChange]);

@@ -1,8 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
-import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
+import {
+  extractServiceTypeReferences,
+  getAppointmentSite,
+  isDefined,
+  normalizeErrorString,
+  resolveId,
+} from '@medplum/core';
 import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -12,7 +18,11 @@ import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
-import { getProposedSchedules, writeElevatedReschedule } from './writeElevatedReschedule';
+import {
+  getMovedSupportingInformation,
+  getProposedSchedules,
+  writeElevatedReschedule,
+} from './writeElevatedReschedule';
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
@@ -25,6 +35,7 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'onSubmit'
   | 'mode'
   | 'defaultService'
+  | 'defaultServiceFacility'
   | 'defaultSelections'
   | 'defaultPatient'
   | 'ignoreAppointment'
@@ -56,19 +67,19 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * moved off, so `$find` is told to ignore it, which is what lets the same hour in a
  * different room be found.
  *
- * Searched times use `Appointment/[id]/$reschedule`, keeping the configured length. Manually
- * entered times and lengths create the new Slots, move the appointment onto them, then delete
- * the old Slots.
+ * Searched times use `Appointment/[id]/$reschedule`, keeping the configured length, after a
+ * separate update moves the appointment to a newly chosen service facility. Manually entered
+ * times and lengths create the new Slots, move the appointment onto them and to its facility,
+ * then delete the old Slots.
  * Announces the appointment, the times it gave up and the times it took, so views reading
  * them refresh, then reports what was written through `onRescheduled`.
  *
- * Only the time and the actors are asked for. Everything else on the appointment — who
- * it is for, its status, its visit type, whatever clinical detail it carries — is left
- * exactly as it was, because that is all the operation will write. The visit type is
- * shown rather than offered: `$reschedule` takes none, reading the one the appointment
- * is on file for instead, since changing what a visit *is* would leave its required
- * codes, its authorization, and anything applied at booking keyed to a type it no
- * longer has.
+ * Only the time, the actors and the service facility are asked for. Everything else on the
+ * appointment — who it is for, its status, its visit type, whatever clinical detail it
+ * carries — is left exactly as it was. The visit type is shown rather than offered:
+ * `$reschedule` takes none, reading the one the appointment is on file for instead, since
+ * changing what a visit *is* would leave its required codes, its authorization, and
+ * anything applied at booking keyed to a type it no longer has.
  *
  * @param props - The React props.
  * @returns The form.
@@ -95,6 +106,10 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         // Written through CRUD methods, which announce their own changes.
         result = await writeElevatedReschedule(medplum, appointment, proposal);
       } else {
+        // Before the move, which keeps whatever site it finds, so a refusal here leaves the
+        // visit as it was.
+        await writeMovedSite(medplum, appointment, proposal);
+
         // Read before the request: the operation deletes these, and the appointment comes
         // back pointing at the times it took instead.
         const releasedSlotIds = (appointment.slot ?? []).map(resolveId).filter(isDefined);
@@ -179,6 +194,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         {...formProps}
         mode="reschedule"
         canBypassSchedulingRules={canBypassSchedulingRules}
+        defaultServiceFacility={getAppointmentSite(appointment)}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}
@@ -188,6 +204,32 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       />
     </>
   );
+}
+
+/**
+ * Moves an appointment to the proposal's site, which `$reschedule` leaves alone.
+ * @param medplum - The client to write through.
+ * @param appointment - The appointment as the form opened on it, which says whether the site was changed.
+ * @param proposal - The time it is moving to, carrying the site chosen for it.
+ */
+async function writeMovedSite(
+  medplum: MedplumClient,
+  appointment: WithId<Appointment>,
+  proposal: Appointment
+): Promise<void> {
+  if (!getMovedSupportingInformation(appointment, proposal)) {
+    return;
+  }
+  // Written onto a fresh copy, so an edit made elsewhere since the form opened is neither
+  // lost nor a reason to refuse the move.
+  const existing = await medplum.readResource('Appointment', appointment.id, { cache: 'no-cache' });
+  const supportingInformation = getMovedSupportingInformation(existing, proposal);
+  if (supportingInformation) {
+    await medplum.updateResource(
+      { ...existing, supportingInformation },
+      { headers: { 'If-Match': `W/"${existing.meta?.versionId}"` } }
+    );
+  }
 }
 
 /**

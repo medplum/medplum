@@ -16,6 +16,7 @@ import {
   getNativeInputType,
   parseZonedDateTimeInput,
 } from '../../AppointmentFinder/AppointmentFinder.times';
+import { useChanged } from '../../hooks/useChanged';
 import type { DateTimeRange } from '../../types';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, readonly ScheduleCandidate[]>>;
@@ -58,9 +59,8 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>();
 
-  const [shownRange, setShownRange] = useState(defaultRange);
-  if (shownRange !== defaultRange) {
-    setShownRange(defaultRange);
+  const defaultRangeChanged = useChanged(defaultRange);
+  if (defaultRangeChanged) {
     setStartValue(formatZonedDateTimeInput(defaultRange.start));
     setEndValue(formatZonedDateTimeInput(defaultRange.end));
     setWritten(false);

@@ -32,7 +32,7 @@ export interface ReadAppointmentWriteOptions {
  * Reads what a scheduling operation wrote out of the bundle it answers with.
  *
  * `$book` and `$reschedule` both answer with the appointment and every Slot they
- * created, in one transaction bundle.
+ * created, in one transaction bundle; `$confirm` with the appointment and the Slots it holds.
  *
  * @param written - The bundle the operation returned.
  * @param operation - What was called, for the error a bundle without an appointment raises.

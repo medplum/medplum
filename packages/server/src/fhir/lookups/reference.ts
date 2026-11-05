@@ -15,8 +15,8 @@ import {
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
-import type { PgQueryable } from '../sql';
-import { InsertQuery, SelectQuery } from '../sql';
+import type { Expression, PgQueryable, SqlBuilder } from '../sql';
+import { DeleteQuery, InsertQuery, SelectQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
 
@@ -77,63 +77,39 @@ export class ReferenceTable extends LookupTable {
       return;
     }
 
-    const existingRows = create ? undefined : await this.getExistingRows(client, resources);
-    if (existingRows === undefined || existingRows.length === 0) {
-      const newRows: ReferenceTableRow[] = [];
-      await this.extractAllValues(newRows, resources, resourceBatchSize);
-
-      // nothing to delete since no existing rows
-
-      if (newRows.length > 0) {
-        await this.batchInsertRows(client, resourceType, newRows);
-      }
-      return;
-    }
-
-    const existingHashesByResource = new Map<string, Set<string>>();
+    const existingRows = create ? [] : await this.getExistingRows(client, resources);
+    const staleRows = new Map<string, ReferenceTableRow>();
     for (const row of existingRows) {
-      let hashes = existingHashesByResource.get(row.resourceId);
-      if (!hashes) {
-        hashes = new Set<string>();
-        existingHashesByResource.set(row.resourceId, hashes);
-      }
-      hashes.add(hashRow(row));
+      staleRows.set(hashRow(row), row);
     }
 
-    const newRowsByResource = new Map<string, ReferenceTableRow[]>();
-    await this.extractAllValues(newRowsByResource, resources, resourceBatchSize);
+    const newRows: ReferenceTableRow[] = [];
+    await this.extractAllValues(newRows, resources, resourceBatchSize);
 
-    const resourcesWithChangedReferences: Resource[] = [];
-    const rowsToInsert: LookupTableRow[] = [];
-    for (const resource of resources) {
-      const existingHashes = existingHashesByResource.get(resource.id);
-      const newRowsForResource = newRowsByResource.get(resource.id);
-      const newHashes = newRowsForResource && new Set(newRowsForResource.map(hashRow));
+    // Rows that already exist are left untouched; whatever remains in staleRows afterward is deleted
+    const rowsToInsert = staleRows.size > 0 ? newRows.filter((row) => !staleRows.delete(hashRow(row))) : newRows;
+    const rowsToDelete = [...staleRows.values()];
 
-      const identical =
-        (existingHashes?.size ?? 0) === (newHashes?.size ?? 0) &&
-        (!existingHashes || !newHashes || existingHashes.values().every((h) => newHashes.has(h)));
-
-      if (!identical) {
-        resourcesWithChangedReferences.push(resource);
-        if (newRowsForResource) {
-          rowsToInsert.push(...newRowsForResource);
-        }
+    if (existingRows.length > 0 && (rowsToDelete.length > 0 || rowsToInsert.length > 0)) {
+      const changedIds = new Set<string>();
+      for (const row of rowsToDelete) {
+        changedIds.add(row.resourceId);
       }
-    }
-
-    if (resourcesWithChangedReferences.length > 0) {
+      for (const row of rowsToInsert) {
+        changedIds.add(row.resourceId);
+      }
       getLogger().info('Reference changes detected', {
         resourceType,
-        unchangedCount: resources.length - resourcesWithChangedReferences.length,
-        changedCount: resourcesWithChangedReferences.length,
+        unchangedCount: resources.length - changedIds.size,
+        changedCount: changedIds.size,
+        rowsToDelete: rowsToDelete.length,
         rowsToInsert: rowsToInsert.length,
-        sampleIds: resourcesWithChangedReferences.slice(0, 5).map((r) => r.id),
+        sampleIds: changedIds.values().take(5).toArray(),
       });
     }
 
-    if (resourcesWithChangedReferences.length > 0) {
-      await this.batchDeleteValuesForResources(client, resourcesWithChangedReferences);
+    if (rowsToDelete.length > 0) {
+      await this.batchDeleteRows(client, resourceType, rowsToDelete);
     }
 
     if (rowsToInsert.length > 0) {
@@ -148,7 +124,7 @@ export class ReferenceTable extends LookupTable {
    * @param resourceBatchSize - (optional) The resource batch size to yield to the event loop between. Default is 200.
    */
   private async extractAllValues<T extends Resource>(
-    result: ReferenceTableRow[] | Map<string, ReferenceTableRow[]>,
+    result: ReferenceTableRow[],
     resources: WithId<T>[],
     resourceBatchSize: number
   ): Promise<void> {
@@ -165,16 +141,7 @@ export class ReferenceTable extends LookupTable {
           );
         }
         try {
-          if (result instanceof Map) {
-            let rowArray = result.get(resource.id);
-            if (!rowArray) {
-              rowArray = [];
-              result.set(resource.id, rowArray);
-            }
-            this.extractValues(rowArray, resource);
-          } else {
-            this.extractValues(result, resource);
-          }
+          this.extractValues(result, resource);
         } catch (err) {
           getLogger().error('Error extracting values for resource', {
             resource: `${resourceType}/${resource.id}`,
@@ -186,8 +153,8 @@ export class ReferenceTable extends LookupTable {
 
       // Yield to event loop between batches
       if (i + resourceBatchSize < resources.length) {
-        await new Promise<void>((resolve) => {
-          setImmediate(() => resolve());
+        await new Promise((resolve) => {
+          setImmediate(resolve);
         });
       }
     }
@@ -232,15 +199,57 @@ export class ReferenceTable extends LookupTable {
       await insert.execute(client);
     }
   }
+
+  private async batchDeleteRows(
+    client: PgQueryable,
+    resourceType: ResourceType,
+    rows: ReferenceTableRow[]
+  ): Promise<void> {
+    const tableName = this.getTableName(resourceType);
+    for (let i = 0; i < rows.length; i += 10_000) {
+      const batchedRows = rows.slice(i, i + 10_000);
+      await new DeleteQuery(tableName).whereExpr(new RowsInArrays(batchedRows)).execute(client);
+    }
+  }
+}
+
+/**
+ * Matches rows whose full key is in the given set, passing one array parameter per column.
+ * Unlike an OR of per-row equality checks, this plans as a nested loop of primary key lookups
+ * at constant planning cost regardless of row count.
+ */
+class RowsInArrays implements Expression {
+  private static readonly columnTypes = { resourceId: 'uuid', targetId: 'uuid', code: 'text' } as const;
+  private readonly rows: ReferenceTableRow[];
+
+  constructor(rows: ReferenceTableRow[]) {
+    this.rows = rows;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    const columns = ReferenceTable.allColumnNames;
+    sql.append('(');
+    columns.forEach((c, i) => {
+      sql.append(i === 0 ? '' : ', ').appendIdentifier(c);
+    });
+    sql.append(') IN (SELECT * FROM unnest(');
+    columns.forEach((c, i) => {
+      sql.append(i === 0 ? '' : ', ');
+      sql.param(this.rows.map((row) => row[c]));
+      sql.append(`::${RowsInArrays.columnTypes[c]}[]`);
+    });
+    sql.append('))');
+  }
 }
 
 /**
  * Creates a hash string for a reference row for efficient comparison.
+ * UUIDs are lowercased to match how Postgres returns them, so a casing-only change is not a diff.
  * @param row - The reference table row.
  * @returns A hash string combining resourceId, targetId, and code.
  */
 function hashRow(row: ReferenceTableRow): string {
-  return ReferenceTable.allColumnNames.map((c) => row[c]).join('|');
+  return `${row.resourceId.toLowerCase()}|${row.targetId.toLowerCase()}|${row.code}`;
 }
 
 /**
@@ -290,7 +299,7 @@ function addSearchReferenceResult(
   searchParam: SearchParameter,
   targetId: string
 ): void {
-  result.set(`${searchParam.code}|${targetId}`, {
+  result.set(`${searchParam.code}|${targetId.toLowerCase()}`, {
     resourceId: resource.id,
     targetId: targetId,
     code: searchParam.code,

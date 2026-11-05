@@ -99,15 +99,21 @@ export function getDefaultShardId(): string {
 }
 
 /**
- * Returns all shard configurations, starting with the global shard unless `excludeGlobal` is set.
- * @param excludeGlobal - If true, the global shard will not be included in the iteration. (default: false)
+ * Returns all shard configurations starting with the global shard.
  * @returns An iterator over the shard configurations.
  * @yields Each shard configuration.
  */
-export function* getAllShards(excludeGlobal: boolean = false): Generator<ShardConfig> {
-  if (!excludeGlobal) {
-    yield getGlobalShardConfig();
-  }
+export function* getAllShards(): Generator<ShardConfig> {
+  yield getGlobalShardConfig();
+  yield* getAllShardsExceptGlobal();
+}
+
+/**
+ * Returns all shard configurations except the global shard.
+ * @returns An iterator over the shard configurations.
+ * @yields Each shard configuration.
+ */
+export function* getAllShardsExceptGlobal(): Generator<ShardConfig> {
   const shards = getConfig().shards;
   if (shards) {
     for (const config of Object.values(shards)) {

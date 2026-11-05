@@ -7,7 +7,7 @@ import { IconPlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import type { BookableActorType } from '../actors';
-import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel, isActorTypeRequired } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel } from '../actors';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import type { ActorRequirement, ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { createActorRequirement } from './AppointmentFinder.schedules';
@@ -21,7 +21,7 @@ export interface AppointmentActorSelectionsProps {
   /** The service being booked. Nothing is offered until it resolves. */
   readonly service: Reference<HealthcareService> | WithId<HealthcareService> | undefined;
   /** The site being booked at. Actors sited elsewhere are left out. */
-  readonly location?: Reference<Location> | WithId<Location>;
+  readonly serviceFacility?: Reference<Location> | WithId<Location>;
   readonly disabled?: boolean;
   /** What is wrong with a type's rows, shown under them. None by default. */
   readonly errors?: Partial<Record<BookableActorType, string>>;
@@ -43,7 +43,7 @@ export interface AppointmentActorSelectionsProps {
  * @returns One group of rows per bookable actor type.
  */
 export function AppointmentActorSelections(props: AppointmentActorSelectionsProps): JSX.Element {
-  const { value, service, location, disabled, errors, onChange } = props;
+  const { value, service, serviceFacility, disabled, errors, onChange } = props;
 
   const changeRequirements = useCallback(
     (actorType: BookableActorType, requirements: readonly ActorRequirement[]): void => {
@@ -60,7 +60,7 @@ export function AppointmentActorSelections(props: AppointmentActorSelectionsProp
           actorType={actorType}
           requirements={value[actorType]}
           service={service}
-          location={location}
+          serviceFacility={serviceFacility}
           disabled={disabled}
           error={errors?.[actorType]}
           onChange={changeRequirements}
@@ -74,7 +74,7 @@ interface ActorTypeRowsProps {
   readonly actorType: BookableActorType;
   readonly requirements: readonly ActorRequirement[] | undefined;
   readonly service: Reference<HealthcareService> | WithId<HealthcareService> | undefined;
-  readonly location?: Reference<Location> | WithId<Location>;
+  readonly serviceFacility?: Reference<Location> | WithId<Location>;
   readonly disabled?: boolean;
   readonly error?: string;
   readonly onChange: (actorType: BookableActorType, requirements: readonly ActorRequirement[]) => void;
@@ -86,10 +86,9 @@ interface ActorTypeRowsProps {
  * @returns The group of rows.
  */
 function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
-  const { actorType, service, location, disabled, error, onChange } = props;
+  const { actorType, service, serviceFacility, disabled, error, onChange } = props;
   const label = getActorTypeLabel(actorType);
   const lowercaseLabel = label.toLowerCase();
-  const required = isActorTypeRequired(actorType);
   const rows = props.requirements?.length ? props.requirements : [getBlankRequirement(actorType)];
   const several = rows.length > 1;
   const canAddAnother = (rows.at(-1)?.candidates.length ?? 0) > 0;
@@ -100,11 +99,7 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
 
   return (
     <Stack gap={4} role="group" aria-label={label}>
-      {several && (
-        <Input.Label labelElement="div" required={required}>
-          {label}
-        </Input.Label>
-      )}
+      {several && <Input.Label labelElement="div">{label}</Input.Label>}
 
       {rows.map((row, index) => (
         <Group key={row.id} align="flex-end" wrap="nowrap" gap="xs">
@@ -112,14 +107,10 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
             <AppointmentActorSelect
               actorType={actorType}
               service={service}
-              location={location}
+              serviceFacility={serviceFacility}
               disabled={disabled}
               label={several ? <RowLabel actorType={actorType} index={index} label={label} /> : label}
               placeholder={row.candidates.length > 0 ? 'or…' : `Search ${lowercaseLabel}s`}
-              required={required}
-              // With several rows the asterisk belongs to the heading above them,
-              // since it is the type that has to be answered and not this row.
-              withAsterisk={!several && required}
               defaultValue={row.candidates}
               onChange={(candidates: readonly ScheduleCandidate[]) =>
                 change(rows.map((held) => (held.id === row.id ? { ...held, candidates } : held)))

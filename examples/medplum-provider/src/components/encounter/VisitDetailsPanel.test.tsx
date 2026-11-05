@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import type { PatchOperation, WithId } from '@medplum/core';
-import type { Encounter, Organization, Practitioner } from '@medplum/fhirtypes';
+import type { Encounter, Location, Organization, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -234,6 +234,64 @@ describe('VisitDetailsPanel', () => {
       },
       { timeout: 5000 }
     );
+  });
+
+  test('patches the encounter location when a service facility is selected', async () => {
+    const onEncounterChange = vi.fn();
+    const clinic: Location = {
+      resourceType: 'Location',
+      id: 'loc-1',
+      name: 'Main Clinic',
+      address: { line: ['9 Clinic St'], city: 'Cambridge', state: 'MA', postalCode: '02139' },
+    };
+    await medplum.createResource(clinic);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([clinic] as any);
+
+    setup({ onEncounterChange });
+
+    const facilityInput = await screen.findByPlaceholderText('Search for location');
+    await act(async () => {
+      fireEvent.change(facilityInput, { target: { value: 'Main' } });
+    });
+
+    // Dropdown options show the location name and its address
+    await waitFor(() => {
+      expect(medplum.searchResources).toHaveBeenCalledWith('Location', expect.any(URLSearchParams), expect.any(Object));
+      expect(screen.getByText('9 Clinic St, Cambridge, MA, 02139')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Main Clinic'));
+    });
+
+    await waitFor(() => {
+      expect(onEncounterChange).toHaveBeenLastCalledWith([
+        {
+          op: 'add',
+          path: '/location',
+          value: [{ location: expect.objectContaining({ reference: 'Location/loc-1' }) }],
+        },
+      ]);
+    });
+  });
+
+  test('shows the current service facility and removes it when cleared', async () => {
+    const onEncounterChange = vi.fn();
+    await medplum.createResource<Location>({ resourceType: 'Location', id: 'loc-1', name: 'Main Clinic' });
+
+    // No practitioner, so the only clear button belongs to the service facility picker
+    setup({
+      onEncounterChange,
+      encounter: { ...mockEncounter, location: [{ location: { reference: 'Location/loc-1' } }] },
+    });
+
+    expect(await screen.findByText('Main Clinic')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Clear all'));
+    });
+
+    expect(onEncounterChange).toHaveBeenLastCalledWith([{ op: 'remove', path: '/location' }]);
   });
 
   test('displays the default billing organization', async () => {

@@ -3,8 +3,9 @@
 import type { WithId } from '@medplum/core';
 import type { Bundle, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
-import type { JSX } from 'react';
-import { useEffect } from 'react';
+import type { JSX, Ref } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import type { CalendarHandle } from '../MultiCalendar/MultiCalendar';
 import { installFindStub } from '../stories/mockFind';
 import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
 import { chooseActor, chooseImagingService, MONDAY_MORNING, setupBookingClient } from '../test-utils/bookingForm';
@@ -24,14 +25,19 @@ const CALENDAR_WEEK = { start: new Date(2026, 7, 16), end: new Date(2026, 7, 22,
  * a drag, plus a line per Slot it was handed and a readout of what it highlights.
  */
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
-  MultiCalendar: (props: {
-    sources?: { slots: Slot[] }[];
-    onSelectInterval?: (interval: { start: Date; end: Date }) => void;
-    onRangeChange?: (range: { start: Date; end: Date }) => void;
-    selection?: { start: Date; end: Date };
-  }): JSX.Element => {
+  MultiCalendar: forwardRef(function MultiCalendar(
+    props: {
+      sources?: { slots: Slot[] }[];
+      onSelectInterval?: (interval: { start: Date; end: Date }) => void;
+      onRangeChange?: (range: { start: Date; end: Date }) => void;
+      selection?: { start: Date; end: Date };
+    },
+    ref: Ref<CalendarHandle>
+  ): JSX.Element {
     const { onRangeChange } = props;
     useEffect(() => onRangeChange?.(CALENDAR_WEEK), [onRangeChange]);
+    const [pagedTo, setPagedTo] = useState<Date>();
+    useImperativeHandle(ref, () => ({ gotoDate: setPagedTo }), []);
 
     return (
       <div>
@@ -53,10 +59,13 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
         <div data-testid="marked-time">
           {props.selection ? `${props.selection.start.toISOString()}/${props.selection.end.toISOString()}` : 'none'}
         </div>
+        <div data-testid="paged-to">{pagedTo?.toISOString() ?? 'none'}</div>
       </div>
     );
-  },
+  }),
 }));
+
+const FILTERED_NOTICE = 'The calendar filters hide this blocked time.';
 
 async function dragCalendar(): Promise<void> {
   await act(async () => {
@@ -64,7 +73,7 @@ async function dragCalendar(): Promise<void> {
   });
 }
 
-async function chooseTab(name: string): Promise<void> {
+async function chooseTab(name: 'Book Appointment' | 'Block Time'): Promise<void> {
   await act(async () => {
     fireEvent.click(screen.getByRole('tab', { name }));
   });
@@ -98,8 +107,7 @@ describe('SchedulingWorkspace blocking', () => {
     renderWithMedplum(<SchedulingWorkspace onBlocked={onBlocked} />, medplum);
 
     await dragCalendar();
-    await chooseTab('Block');
-    expect(within(pane() as HTMLElement).getByRole('heading', { name: 'Block time' })).toBeInTheDocument();
+    await chooseTab('Block Time');
     expect(screen.getByLabelText(/^Start/)).toHaveValue('2026-08-18T12:00');
     expect(screen.getByLabelText(/^End/)).toHaveValue('2026-08-18T13:00');
 
@@ -122,10 +130,75 @@ describe('SchedulingWorkspace blocking', () => {
     const [slot] = onBlocked.mock.calls[0][0] as WithId<Slot>[];
     expect(slot.schedule.reference).toBe('Schedule/schedule-dr-rivera');
 
-    // The pane is done with, and the block is on the calendar without a reload.
+    // The form is done with, and the block is on the calendar without a reload, open in the pane.
     expect(pane()).not.toBeInTheDocument();
     expect(markedTime()).toBe('none');
     expect(screen.getByText('slot Schedule/schedule-dr-rivera busy-unavailable')).toBeInTheDocument();
+    const details = screen.getByRole('region', { name: 'Blocked time details' });
+    expect(within(details).getByText('Lunch')).toBeInTheDocument();
+    expect(within(details).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
+  });
+
+  test('Opens a block over several calendars on one drawn, listing the others', async () => {
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
+    });
+
+    await dragCalendar();
+    await chooseTab('Block Time');
+    await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
+    await chooseActor(/Room/, 'exam', 'Exam Room A');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+    });
+
+    // Dr. Rivera's calendar is hidden, so the room's Slot opens, the one drawn.
+    const details = (): HTMLElement => screen.getByRole('region', { name: 'Blocked time details' });
+    expect(screen.getByText('slot Schedule/schedule-exam-room-a busy-unavailable')).toBeInTheDocument();
+    expect(within(details()).queryByRole('alert')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(within(details()).getByRole('button', { name: 'Dr. Maya Rivera' }));
+    });
+    expect(within(details()).getByText("This blocked time's calendar isn't shown.")).toBeInTheDocument();
+    expect(within(details()).getByRole('button', { name: 'Exam Room A' })).toBeInTheDocument();
+  });
+
+  test('Pages to a block written in another week', async () => {
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await dragCalendar();
+    await chooseTab('Block Time');
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/^Start/), { target: { value: '2026-08-25T12:00' } });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/^End/), { target: { value: '2026-08-25T13:00' } });
+    });
+    await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+    });
+
+    expect(screen.getByRole('region', { name: 'Blocked time details' })).toBeInTheDocument();
+    expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 25, 12, 0).toISOString());
+  });
+
+  test('Opens a block the filters hide, saying so', async () => {
+    renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={{ reference: 'Location/main-clinic' }} />, medplum);
+
+    await dragCalendar();
+    await chooseTab('Block Time');
+    await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+    });
+
+    // No appointment holds it, so under a filter it isn't drawn.
+    expect(screen.queryByText('slot Schedule/schedule-dr-rivera busy-unavailable')).not.toBeInTheDocument();
+    const details = screen.getByRole('region', { name: 'Blocked time details' });
+    expect(within(details).getByText(FILTERED_NOTICE)).toBeInTheDocument();
   });
 
   test('Keeps each tab’s answers and its own highlight across a switch, and the tab across clicks', async () => {
@@ -133,23 +206,23 @@ describe('SchedulingWorkspace blocking', () => {
     await dragCalendar();
     await chooseImagingService();
 
-    await chooseTab('Block');
+    await chooseTab('Block Time');
     await act(async () => {
       fireEvent.change(screen.getByLabelText(/^End/), { target: { value: '2026-08-18T15:00' } });
     });
     expect(markedTime()).toBe(`${TUESDAY_NOON.start.toISOString()}/${new Date(2026, 7, 18, 15).toISOString()}`);
 
     // The booking form's highlight is still the time clicked, and its visit type survives.
-    await chooseTab('Appointment');
+    await chooseTab('Book Appointment');
     expect(markedTime()).toBe(`${TUESDAY_NOON.start.toISOString()}/${TUESDAY_NOON.end.toISOString()}`);
     expect(within(pane() as HTMLElement).getByText('Ultrasound Imaging')).toBeInTheDocument();
 
     // A new click puts the block's times back to the time clicked, keeping the calendars
-    // named, and stays on the Block tab.
-    await chooseTab('Block');
+    // named, and stays on the Block Time tab.
+    await chooseTab('Block Time');
     await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
     await dragCalendar();
-    expect(screen.getByRole('tab', { name: 'Block' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Block Time' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByLabelText(/^End/)).toHaveValue('2026-08-18T13:00');
     expect(markedTime()).toBe(`${TUESDAY_NOON.start.toISOString()}/${TUESDAY_NOON.end.toISOString()}`);
     expect(screen.getByRole('button', { name: 'Block time' })).toBeEnabled();

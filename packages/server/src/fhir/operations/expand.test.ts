@@ -447,16 +447,11 @@ describe('Expand', () => {
 
     // with a filter parameter
     const res3 = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=p`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=pra`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3).toHaveStatus(200);
     expect(res3.body.expansion.contains).toStrictEqual(
       expect.arrayContaining([
-        {
-          system: HTTP_HL7_ORG + '/fhir/resource-types',
-          code: 'Patient',
-          display: 'Patient',
-        },
         {
           system: HTTP_HL7_ORG + '/fhir/resource-types',
           code: 'Practitioner',
@@ -897,6 +892,7 @@ describe('Expand', () => {
         { code: 'HTXY', display: 'Gamma' },
         { code: 'A_B', display: 'Delta' },
         { code: 'AXB', display: 'Epsilon' },
+        { code: 'MW1', display: 'Omega Psi' },
       ],
     };
     const flatValueSet: ValueSet = {
@@ -904,6 +900,23 @@ describe('Expand', () => {
       url: 'http://example.com/ValueSet/' + randomUUID(),
       status: 'active',
       compose: { include: [{ system: flatCodeSystem.url }] },
+    };
+    // Same concepts, but filtered in memory rather than in SQL
+    const flatConceptValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: flatCodeSystem.url, concept: flatCodeSystem.concept }] },
+    };
+    const flatExpandedValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      expansion: {
+        timestamp: '2024-05-02T06:30:00.000Z',
+        total: flatCodeSystem.concept?.length,
+        contains: flatCodeSystem.concept?.map(({ code, display }) => ({ system: flatCodeSystem.url, code, display })),
+      },
     };
 
     // Hierarchical CodeSystem for prefix-with-hierarchy tests. Codes share the 'MED' prefix so a
@@ -994,6 +1007,8 @@ describe('Expand', () => {
         synonymCodeSystem,
         orderingCodeSystem,
         flatValueSet,
+        flatConceptValueSet,
+        flatExpandedValueSet,
         isaValueSet,
         descendentValueSet,
         synonymValueSet,
@@ -1008,44 +1023,64 @@ describe('Expand', () => {
       }
     });
 
+    // The SQL and in-memory filter paths must agree, so each case runs against all three ValueSet shapes
+    describe.each<[string, ValueSet]>([
+      ['intensional', flatValueSet],
+      ['enumerated concepts', flatConceptValueSet],
+      ['stored expansion', flatExpandedValueSet],
+    ])('%s ValueSet shape has correct filter behavior', (_name, valueSet) => {
+      test.each([
+        {
+          name: 'Prefix match on code (>= 3 chars)',
+          filter: 'HTX',
+          expected: [
+            { code: 'HTX', display: 'Beta' },
+            { code: 'HTXY', display: 'Gamma' },
+          ],
+        },
+        {
+          name: 'Prefix match on code is case-insensitive',
+          filter: 'htx',
+          expected: [
+            { code: 'HTX', display: 'Beta' },
+            { code: 'HTXY', display: 'Gamma' },
+          ],
+        },
+        {
+          // Only the exact code 'HT' — the prefix siblings HTX/HTXY must NOT be returned below 3 chars.
+          name: 'Short filter (< 3 chars) falls back to exact code match',
+          filter: 'HT',
+          expected: [{ code: 'HT', display: 'Alpha' }],
+        },
+        {
+          // Below 3 chars the display-substring branch is dropped: 'et' is only in the display 'Beta'
+          name: 'Short filter (< 3 chars) does not match display substrings',
+          filter: 'et',
+          expected: [],
+        },
+        {
+          // The underscore must be treated literally, not as a wildcard
+          name: 'Escapes LIKE wildcards in code prefix filter',
+          filter: 'A_B',
+          expected: [{ code: 'A_B', display: 'Delta' }],
+        },
+        {
+          name: 'Each filter word matches the display independently',
+          filter: 'psi omega',
+          expected: [{ code: 'MW1', display: 'Omega Psi' }],
+        },
+      ])('$name', async ({ filter, expected }) => {
+        const res = await request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}&filter=${encodeURIComponent(filter)}`)
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res).toHaveStatus(200);
+        expect(res.body.expansion.contains ?? []).toStrictEqual(
+          expected.map((coding) => ({ system: flatCodeSystem.url, ...coding }))
+        );
+      });
+    });
+
     test.each([
-      {
-        name: 'Prefix match on code (>= 3 chars)',
-        valueSet: flatValueSet.url,
-        system: flatCodeSystem.url,
-        filter: 'HTX',
-        expected: [
-          { code: 'HTX', display: 'Beta' },
-          { code: 'HTXY', display: 'Gamma' },
-        ],
-      },
-      {
-        name: 'Prefix match on code is case-insensitive',
-        valueSet: flatValueSet.url,
-        system: flatCodeSystem.url,
-        filter: 'htx',
-        expected: [
-          { code: 'HTX', display: 'Beta' },
-          { code: 'HTXY', display: 'Gamma' },
-        ],
-      },
-      {
-        // Only the exact code 'HT' — the prefix siblings HTX/HTXY must NOT be returned below 3 chars.
-        name: 'Short filter (< 3 chars) falls back to exact code match',
-        valueSet: flatValueSet.url,
-        system: flatCodeSystem.url,
-        filter: 'HT',
-        expected: [{ code: 'HT', display: 'Alpha' }],
-      },
-      {
-        // The underscore must be treated literally, so 'AXB' (which would match if '_' were a
-        // wildcard) is excluded.
-        name: 'Escapes LIKE wildcards in code prefix filter',
-        valueSet: flatValueSet.url,
-        system: flatCodeSystem.url,
-        filter: 'A_B',
-        expected: [{ code: 'A_B', display: 'Delta' }],
-      },
       {
         name: 'Code prefix with is-a includes ancestor and matching descendants',
         valueSet: isaValueSet.url,
@@ -1101,17 +1136,6 @@ describe('Expand', () => {
       expect(res.body.expansion).toMatchObject<Partial<ValueSetExpansion>>({
         contains: expected.map((coding) => ({ system, ...coding })),
       });
-    });
-
-    test('Exact code match ranks ahead of longer prefix match', async () => {
-      const res = await request(app)
-        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=HTX`)
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(res).toHaveStatus(200);
-      const contains = (res.body.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
-      const codes = contains.map((c) => c.code);
-      expect(codes.indexOf('HTX')).toBeGreaterThanOrEqual(0);
-      expect(codes.indexOf('HTX')).toBeLessThan(codes.indexOf('HTXY'));
     });
 
     test('Sort order is deterministic when rows tie on relevance', async () => {
@@ -1852,55 +1876,6 @@ describe('Expand', () => {
     ]);
   });
 
-  test('Short filter (< 3 chars) does not match display substrings', async () => {
-    // Below 3 characters the display-substring branch is dropped (the trigram index can't serve a sub-trigram
-    // substring), so a 2-char filter matches only exact codes, never display substrings.
-    const codeSystem: CodeSystem = {
-      resourceType: 'CodeSystem',
-      url: 'http://example.com/CodeSystem/' + randomUUID(),
-      content: 'complete',
-      status: 'active',
-      concept: [
-        { code: 'HT', display: 'Alpha' },
-        { code: 'HTX', display: 'Beta' }, // display contains 'et' but code does not
-      ],
-    };
-    const valueSet: ValueSet = {
-      resourceType: 'ValueSet',
-      status: 'active',
-      url: 'https://example.com/ValueSet/' + randomUUID(),
-      compose: { include: [{ system: codeSystem.url }] },
-    };
-    expect(
-      await request(app)
-        .post('/fhir/R4/CodeSystem')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send(codeSystem)
-    ).toHaveStatus(201);
-    expect(
-      await request(app)
-        .post('/fhir/R4/ValueSet')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send(valueSet)
-    ).toHaveStatus(201);
-
-    // 'et' is a substring of display 'Beta' (code HTX) but of no code → no matches.
-    const displayOnly = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=et`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(displayOnly).toHaveStatus(200);
-    expect((displayOnly.body.expansion as ValueSetExpansion).contains ?? []).toHaveLength(0);
-
-    // The exact 2-char code 'HT' still matches.
-    const codeMatch = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=HT`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(codeMatch).toHaveStatus(200);
-    expect((codeMatch.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
-      { code: 'HT', display: 'Alpha', system: codeSystem.url },
-    ]);
-  });
-
   test('Honors ValueSet designation overrides', async () => {
     const codeSystem: CodeSystem = {
       resourceType: 'CodeSystem',
@@ -2249,6 +2224,12 @@ describe('Expand', () => {
       {
         name: 'Code prefix filter with displayLanguage',
         valueSet: flatValueSet,
+        query: 'filter=FVR&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'FVR', display: 'Fièvre' }],
+      },
+      {
+        name: 'Code prefix filter on enumerated concepts with displayLanguage',
+        valueSet: conceptValueSet,
         query: 'filter=FVR&displayLanguage=fr',
         expected: [{ system: flatSystem, code: 'FVR', display: 'Fièvre' }],
       },

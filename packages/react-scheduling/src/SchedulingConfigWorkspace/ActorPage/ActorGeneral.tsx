@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Select, SimpleGrid, Stack, Switch, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core';
 import { capitalize, createReference, getDisplayString } from '@medplum/core';
-import type { Location, Practitioner, Reference } from '@medplum/fhirtypes';
-import { ResourceInput } from '@medplum/react';
+import type { Practitioner } from '@medplum/fhirtypes';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { useId, useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
-import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
-import { getTimezoneOptions } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
+import { NPI_SYSTEM } from '../../constants';
+import { getTimezoneOptions, timezoneFilter } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
+import { ServiceFacilityInput } from '../../ServiceFacilityInput';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
-import { hasEditableName } from './actorDraft';
+import { hasEditableName, isOwnedBySchedulingWorkspace } from './actorDraft';
 
 export interface ActorGeneralProps {
   /** The actor as the page would store it. */
@@ -21,21 +21,23 @@ export interface ActorGeneralProps {
   /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
   readonly scheduleActive: boolean | undefined;
   readonly onScheduleActiveChange: (active: boolean) => void;
-  /** Why the name can't be saved, once that should be said. */
-  readonly nameError?: string;
+  /** Why the name can't be saved, by field, once that should be said. */
+  readonly nameErrors?: Partial<Record<'name' | 'given' | 'family', string>>;
 }
 
 /**
- * The General section of an actor's page. A provider's name and NPIs are read-only, since the system providers
- * come from keeps them, and where a provider works is recorded on their roles rather than here.
+ * The General section's own fields. A provider's status, name, and NPIs are read-only unless the workspace created
+ * them, since the system the provider comes from keeps them; where a provider works is edited below these, through
+ * their roles.
  * @param props - The actor, its fields, and the change handlers.
  * @returns The section's fields.
  */
 export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
-  const { resource, value, onChange, scheduleActive, onScheduleActiveChange, nameError } = props;
+  const { resource, value, onChange, scheduleActive, onScheduleActiveChange, nameErrors } = props;
   const typeLabel = getActorTypeLabel(resource.resourceType);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
   const scheduleLocked = !value.active && !scheduleActive;
+  const statusLocked = resource.resourceType === 'Practitioner' && !isOwnedBySchedulingWorkspace(resource);
 
   function update(change: Partial<ActorGeneralFields>): void {
     onChange({ ...value, ...change });
@@ -48,6 +50,11 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
         value={statusLabel(resource)}
         checked={value.active}
         onChange={(active) => update({ active })}
+        disabledReason={
+          statusLocked
+            ? 'Kept by the system this provider comes from. Switch their Schedule off to stop booking them.'
+            : undefined
+        }
       />
       {scheduleActive !== undefined && (
         <StatusSwitch
@@ -64,16 +71,11 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
   );
 
   if (resource.resourceType === 'Practitioner') {
-    const npis = getNpis(resource);
     return (
       <>
         {statuses}
         <FieldGrid>
-          <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-          <ReadOnlyField
-            label={npis.length > 1 ? 'NPIs' : 'NPI'}
-            value={npis.length > 0 ? npis.join(', ') : undefined}
-          />
+          <ProviderNameFields resource={resource} value={value} errors={nameErrors} onChange={update} />
           <TimezoneField value={value.timezone} onChange={(timezone) => update({ timezone })} />
         </FieldGrid>
       </>
@@ -91,16 +93,18 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
             required
             value={value.name}
             onChange={(event) => update({ name: event.currentTarget.value })}
-            error={nameError}
+            error={nameErrors?.name}
             placeholder={isRoom ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
           />
         ) : (
           <ReadOnlyField label="Name" value={getDisplayString(resource)} />
         )}
-        <ServiceFacilityField
+        <ServiceFacilityInput
+          label="Service facility"
           placeholder={isRoom ? 'Hidden when booking by service facility' : 'Shown at every service facility'}
-          value={value.location}
-          onChange={(location) => update({ location })}
+          defaultValue={value.location}
+          onChange={(location) => update({ location: location && createReference(location) })}
+          clearable
         />
         <TimezoneField
           description={`Used for this ${typeLabel.toLowerCase()}'s hours unless a visit type sets its own.`}
@@ -108,6 +112,45 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
           onChange={(timezone) => update({ timezone })}
         />
       </FieldGrid>
+    </>
+  );
+}
+
+// A provider the workspace created has editable names and never an NPI; any other has a read-only name and NPIs.
+function ProviderNameFields(props: {
+  readonly resource: Practitioner;
+  readonly value: ActorGeneralFields;
+  readonly errors: ActorGeneralProps['nameErrors'];
+  readonly onChange: (change: Partial<ActorGeneralFields>) => void;
+}): JSX.Element {
+  const { resource, value, errors, onChange } = props;
+  if (!isOwnedBySchedulingWorkspace(resource)) {
+    const npis = getNpis(resource);
+    return (
+      <>
+        <ReadOnlyField label="Name" value={getDisplayString(resource)} />
+        <ReadOnlyField label={npis.length > 1 ? 'NPIs' : 'NPI'} value={npis.length > 0 ? npis.join(', ') : undefined} />
+      </>
+    );
+  }
+  return (
+    <>
+      <TextInput
+        label="First name"
+        required
+        value={value.given ?? ''}
+        onChange={(event) => onChange({ given: event.currentTarget.value })}
+        error={errors?.given}
+        placeholder="e.g. Jane"
+      />
+      <TextInput
+        label="Last name"
+        required
+        value={value.family ?? ''}
+        onChange={(event) => onChange({ family: event.currentTarget.value })}
+        error={errors?.family}
+        placeholder="e.g. Smith"
+      />
     </>
   );
 }
@@ -193,6 +236,7 @@ function TimezoneField(props: {
       styles={warn ? { wrapper: WARNING_INPUT } : undefined}
       inputWrapperOrder={['label', 'input', 'description', 'error']}
       data={options}
+      filter={timezoneFilter}
       value={value ?? null}
       placeholder="Not set"
       onChange={(next) => onChange(next ?? undefined)}
@@ -201,32 +245,6 @@ function TimezoneField(props: {
       comboboxProps={{ keepMounted: false }}
       clearButtonProps={{ 'aria-label': 'Clear time zone' }}
       nothingFoundMessage="No matching time zone"
-    />
-  );
-}
-
-interface ServiceFacilityFieldProps {
-  readonly placeholder: string;
-  readonly value: Reference<Location> | undefined;
-  readonly onChange: (value: Reference<Location> | undefined) => void;
-}
-
-/**
- * Picks one of the service facilities booking's site filter offers.
- * @param props - What to show when blank, the Location referenced, and a change handler.
- * @returns The field.
- */
-function ServiceFacilityField(props: ServiceFacilityFieldProps): JSX.Element {
-  const { placeholder, value, onChange } = props;
-  return (
-    <ResourceInput<Location>
-      resourceType="Location"
-      name="service-facility"
-      label="Service facility"
-      placeholder={placeholder}
-      searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
-      defaultValue={value}
-      onChange={(location) => onChange(location && createReference(location))}
     />
   );
 }

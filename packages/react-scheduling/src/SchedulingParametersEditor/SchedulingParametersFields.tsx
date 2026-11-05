@@ -11,7 +11,7 @@ import type {
   SchedulingParameterErrors,
   SchedulingParameterLabels,
 } from './SchedulingParametersEditor.utils';
-import { getTimezoneOptions } from './SchedulingParametersEditor.utils';
+import { getTimezoneOptions, timezoneFilter } from './SchedulingParametersEditor.utils';
 
 /** How far an arrow press moves a minutes field. */
 const MINUTES_STEP = 5;
@@ -144,6 +144,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
         description={description}
         inputWrapperOrder={[...DESCRIPTION_BELOW]}
         data={timezoneOptions}
+        filter={timezoneFilter}
         value={values[key] ?? null}
         placeholder={placeholderFor(defaults, key, defaultLabels)}
         error={errors[key]}

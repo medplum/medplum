@@ -5,6 +5,7 @@ import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
+  getReferenceString,
   getSchedulingRequirements,
   isSchedulingRequirement,
   normalizeErrorString,
@@ -13,11 +14,13 @@ import {
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingColorURI,
 } from '@medplum/core';
 import type { Coding, HealthcareService, HealthcareServiceEligibility, Location, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useId, useState } from 'react';
+import { getSchedulingColor } from '../../colors';
 import type { SchedulingParameterValues } from '../../parameterValues';
 import {
   getHealthcareServiceSchedulingParameterValues,
@@ -44,10 +47,13 @@ import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPa
 import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
+import { ConfirmModal } from '../ConfirmModal';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
+import { getServiceFacilitiesConfirmation } from '../serviceFacilitiesConfirmation';
+import { ServiceFacilitiesField } from '../ServiceFacilitiesField';
 import { StatusBadge } from '../StatusBadge';
 import { OfferingSchedulesSection } from './OfferingSchedulesSection';
-import { ServiceFacilitiesField } from './ServiceFacilitiesField';
+import { ServiceColorField } from './ServiceColorField';
 
 export interface VisitTypePageProps {
   /** The visit type as stored. Omitted to create one. */
@@ -70,6 +76,7 @@ interface VisitTypeFields {
   readonly name: string;
   readonly active: boolean;
   readonly location: Reference<Location>[];
+  readonly color?: string;
   readonly parameters: SchedulingParameterValues;
   readonly availability: AvailabilityFieldsValue;
   /** What booking must collect for it, in `SCHEDULING_REQUIREMENT_CODES` order so equal sets compare equal. */
@@ -99,6 +106,7 @@ function fieldsOf(service: WithId<HealthcareService> | undefined): VisitTypeFiel
     name: service.name ?? '',
     active: service.active !== false,
     location: service.location ?? [],
+    color: getSchedulingColor(service),
     parameters: getHealthcareServiceSchedulingParameterValues(service),
     availability: initialAvailabilityFieldsValue(service),
     requirements: inRequirementOrder(getSchedulingRequirements(service)),
@@ -188,13 +196,24 @@ function buildVisitType(
       delete draft.eligibility;
     }
   }
+  if (fields.color !== initial.color) {
+    const extension = draft.extension?.filter((ext) => ext.url !== SchedulingColorURI) ?? [];
+    if (fields.color) {
+      extension.push({ url: SchedulingColorURI, valueString: fields.color });
+    }
+    if (extension.length > 0) {
+      draft.extension = extension;
+    } else {
+      delete draft.extension;
+    }
+  }
   return draft;
 }
 
 /**
  * The page for one visit type (`HealthcareService`): its name, whether it is active, the service facilities
- * it is offered at, its scheduling parameters, its default weekly hours, and what booking must collect for it,
- * edited in place and saved together.
+ * it is offered at, its calendar color, its scheduling parameters, its default weekly hours, and what booking
+ * must collect for it, edited in place and saved together.
  *
  * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
  * when the visit type it shows is replaced.
@@ -216,6 +235,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
   const [initial] = useState(() => fieldsOf(service));
   const [fields, setFields] = useState(initial);
   const [saving, setSaving] = useState(false);
+  const [confirmingFacilities, setConfirmingFacilities] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
   const [reloading, setReloading] = useState(false);
@@ -230,6 +250,10 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const serviceName = fields.name.trim() || initial.name || 'this visit type';
+  // A new visit type isn't offered anywhere yet, so its first service facilities limit nothing.
+  const facilitiesConfirmation = creating
+    ? undefined
+    : getServiceFacilitiesConfirmation(serviceName, initial.location, fields.location);
   // The weekly fields read only the name and the stored hours, which a new visit type doesn't have yet.
   const displayService: WithId<HealthcareService> = {
     resourceType: 'HealthcareService',
@@ -270,6 +294,19 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
       setTriedToSave(true);
       return;
     }
+    if (facilitiesConfirmation) {
+      setConfirmingFacilities(true);
+      return;
+    }
+    await save();
+  }
+
+  async function handleConfirmFacilities(): Promise<void> {
+    setConfirmingFacilities(false);
+    await save();
+  }
+
+  async function save(): Promise<void> {
     setSaving(true);
     setFailure(undefined);
     try {
@@ -352,7 +389,16 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         <ServiceFacilitiesField
           value={fields.location}
           onChange={(location) => update({ location })}
-          serviceName={serviceName}
+          description={
+            fields.location.length === 0
+              ? 'Available in all service facilities'
+              : 'Available in these service facilities'
+          }
+        />
+        <ServiceColorField
+          value={fields.color}
+          onChange={(color) => update({ color })}
+          serviceReference={service && getReferenceString(service)}
         />
         <Checkbox.Group
           label="Booking requirements"
@@ -416,6 +462,17 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
           onOpen={onOpenOffering}
         />
       </ConfigSection>
+
+      <ConfirmModal
+        opened={confirmingFacilities}
+        title={facilitiesConfirmation?.title}
+        cancelLabel="Cancel"
+        confirmLabel={facilitiesConfirmation?.confirmLabel ?? 'Save'}
+        onCancel={() => setConfirmingFacilities(false)}
+        onConfirm={handleConfirmFacilities}
+      >
+        {facilitiesConfirmation?.body}
+      </ConfirmModal>
 
       <SaveBar
         dirty={dirty}
