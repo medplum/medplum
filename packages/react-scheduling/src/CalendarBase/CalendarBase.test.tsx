@@ -270,14 +270,6 @@ describe('CalendarBase', () => {
       expect(screen.getByLabelText('Previous')).toBeInTheDocument();
     });
 
-    test('renders view switcher with Month, Week, 4 Day, Day options', async () => {
-      setup({ eventSources: [] });
-      expect(screen.getByText('Month')).toBeInTheDocument();
-      expect(screen.getByText('Week')).toBeInTheDocument();
-      expect(screen.getByText('4 Day')).toBeInTheDocument();
-      expect(screen.getByText('Day')).toBeInTheDocument();
-    });
-
     test('displays current month/year in title for non-day views', async () => {
       setup({ eventSources: [] });
 
@@ -378,6 +370,14 @@ describe('CalendarBase', () => {
       expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
       expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
+      // Switch to weekdays view — the week's time grid, Monday to Friday
+      await userEvent.selectOptions(select, 'Weekdays');
+      expect(select).toHaveValue('timeGridWeekdays');
+      expect(screen.getAllByRole('columnheader')).toHaveLength(5);
+      expect(
+        getWeekGridCells(document.body).map((cell) => new Date(`${cell.getAttribute('data-date')}T00:00`).getDay())
+      ).toEqual([1, 2, 3, 4, 5]);
+
       // Switch to 4 day view — four columns of the time grid
       await userEvent.selectOptions(select, '4 Day');
       expect(select).toHaveValue('timeGridFourDay');
@@ -388,6 +388,26 @@ describe('CalendarBase', () => {
       expect(select).toHaveValue('timeGridDay');
       expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
       expect(screen.getAllByRole('columnheader')).toHaveLength(1);
+    });
+
+    test('opens a month on its first weekday in the Weekdays view', async () => {
+      vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 5, 17, 10, 0, 0) });
+      try {
+        setup({ eventSources: [], initialView: 'timeGridWeekdays' });
+
+        // August 2026 starts on a Saturday, whose week is otherwise Monday to Friday of July.
+        await userEvent.click(screen.getByRole('button', { name: /2026/ }));
+        await userEvent.click(screen.getByRole('button', { name: 'Aug' }));
+        expect(getWeekGridCells(document.body).map((cell) => cell.getAttribute('data-date'))).toEqual([
+          '2026-08-03',
+          '2026-08-04',
+          '2026-08-05',
+          '2026-08-06',
+          '2026-08-07',
+        ]);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
@@ -693,7 +713,6 @@ describe('CalendarBase', () => {
           ref={ref}
           eventSources={[]}
           onRangeChange={onRangeChange}
-          views={{ timeGridFourDay: { type: 'timeGrid', duration: { days: 4 } } }}
           initialView="timeGridFourDay"
         />,
         new MockClient()
@@ -704,6 +723,20 @@ describe('CalendarBase', () => {
       act(() => ref.current?.gotoDate(twoDaysOut));
 
       expect(onRangeChange.mock.lastCall?.[0].start.getTime()).toBe(initialStart);
+    });
+
+    test('leaves Weekdays for Week only when the date is on a weekend', async () => {
+      const ref = createRef<CalendarHandle>();
+      renderWithMedplum(<CalendarBase ref={ref} eventSources={[]} initialView="timeGridWeekdays" />, new MockClient());
+      const select = screen.getByLabelText('View');
+
+      act(() => ref.current?.gotoDate(new Date(2030, 0, 2))); // A Wednesday
+      expect(select).toHaveValue('timeGridWeekdays');
+      expect(getWeekGridCells(document.body).map((cell) => cell.getAttribute('data-date'))).toContain('2030-01-02');
+
+      act(() => ref.current?.gotoDate(new Date(2030, 0, 5))); // A Saturday
+      expect(select).toHaveValue('timeGridWeek');
+      expect(getWeekGridCells(document.body).map((cell) => cell.getAttribute('data-date'))).toContain('2030-01-05');
     });
   });
 });

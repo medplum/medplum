@@ -122,8 +122,12 @@ function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
   );
 }
 
-// Fewer, wider days than a week, so overlapping events have room.
 const VIEWS = {
+  timeGridWeekdays: {
+    type: 'timeGridWeek',
+    weekends: false,
+  },
+  // Fewer, wider days than a week, so overlapping events have room.
   timeGridFourDay: {
     type: 'timeGrid',
     duration: { days: 4 },
@@ -133,6 +137,7 @@ const VIEWS = {
 const VIEW_OPTIONS = [
   { label: 'Month', value: 'dayGridMonth' },
   { label: 'Week', value: 'timeGridWeek' },
+  { label: 'Weekdays', value: 'timeGridWeekdays' },
   { label: '4 Day', value: 'timeGridFourDay' },
   { label: 'Day', value: 'timeGridDay' },
 ] as const;
@@ -205,7 +210,8 @@ export interface CalendarBaseProps extends Omit<
 export interface CalendarHandle {
   /**
    * Pages the calendar to the day holding `date`, such as that of an appointment just booked.
-   * Stays put when that day is already on screen.
+   * Stays put when that day is already on screen; switches the view from "Weekdays" to "Week"
+   * if the date is on a weekend.
    */
   readonly gotoDate: (date: Date) => void;
 }
@@ -227,6 +233,10 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         const view = controller.view;
         if (view && date >= view.activeStart && date < view.activeEnd) {
           return;
+        }
+        // Weekdays has no column for a weekend day, so show the whole week instead.
+        if (controller.view?.type === 'timeGridWeekdays' && (date.getDay() === 0 || date.getDay() === 6)) {
+          controller.changeView('timeGridWeek');
         }
         controller.gotoDate(date);
       },
@@ -411,7 +421,15 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
                 </Text>
               }
               date={controller.getDate() ?? new Date()}
-              onChange={(month) => controller.gotoDate(month)}
+              onChange={(month) => {
+                // Weekdays has no column for a weekend 1st, and a Saturday's week falls in the month
+                // before, so go to the month's first weekday.
+                if (viewType === 'timeGridWeekdays' && (month.getDay() === 0 || month.getDay() === 6)) {
+                  controller.gotoDate(new Date(month.getFullYear(), month.getMonth(), month.getDay() === 6 ? 3 : 2));
+                } else {
+                  controller.gotoDate(month);
+                }
+              }}
             />
             {loading && <Loader size="sm" />}
           </Group>
@@ -421,7 +439,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
             aria-label="View"
             // Match the toolbar's 32px buttons. Mantine sets `--input-height` from the size itself.
             styles={{ wrapper: { '--input-height-sm': '32px' } }}
-            value={controller.view?.type ?? initialView}
+            value={viewType ?? initialView}
             onChange={(e) => controller.changeView(e.currentTarget.value)}
             data={VIEW_OPTIONS}
           />

@@ -16,9 +16,7 @@
 /* Very narrow multi-day calendars are impossible to read. Set a larger minimum
  * width even if that requires scrolling on small viewports.
  */
-:global(.dayGridMonth).calendar,
-:global(.timeGridWeek).calendar,
-:global(.timeGridFourDay).calendar {
+.calendar:not(:global(.timeGridDay)) {
   min-width: 480px;
 }
 
