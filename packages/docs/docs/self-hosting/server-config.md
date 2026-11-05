@@ -147,7 +147,7 @@ If using Google Authentication, this is the Google Client Secret.
 
 ### recaptchaSiteKey
 
-If using reCAPTCHA, this is the reCAPTCHA site key.
+Google reCAPTCHA is an optional integration for protecting public registration workflows. It is not required for Medplum authentication or self-hosted deployments. If using reCAPTCHA, this is the reCAPTCHA site key. When `recaptchaSecretKey` is not set, the server does not verify reCAPTCHA tokens.
 
 **Default:** None
 
@@ -240,6 +240,8 @@ Optional database proxy URL, for example to use AWS RDS Proxy. This can be used 
 ### redis
 
 The redis connection details as a JSON object. Only available when using JSON config file.
+
+Medplum uses a Redis-compatible datastore for caching and background jobs. [Valkey](https://valkey.io/) is the recommended open-source implementation for self-hosted deployments. Redis and other compatible implementations may also be used.
 
 **Default:** None
 

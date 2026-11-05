@@ -17,12 +17,12 @@ This installation method is ideal for organizations already using Kubernetes or 
 
 ## Setup PostgreSQL and Redis
 
-Medplum uses **PostgreSQL** for its primary data store and **Redis** for caching and queues. For production deployments, you must provision these services separately. This provides the scalability, high availability, and data durability required for enterprise applications.
+Medplum uses **PostgreSQL** for its primary data store and a **Redis-compatible datastore** for caching and queues. [Valkey](https://valkey.io/) is the recommended open-source implementation for self-hosted deployments. Redis and other compatible implementations may also be used. For production deployments, you must provision these services separately. This provides the scalability, high availability, and data durability required for enterprise applications.
 
 The specific method you use to set up these services is a decision that should align with your organization's own cloud architecture, security, and operational policies. For example:
 
-- **On AWS**, you might use **Amazon RDS** for PostgreSQL and **Amazon ElastiCache** for Redis.
-- **On GCP**, you might use **Cloud SQL** for PostgreSQL and **Memorystore** for Redis.
+- **On AWS**, you might use **Amazon RDS** for PostgreSQL and **Amazon ElastiCache** for Valkey or Redis.
+- **On GCP**, you might use **Cloud SQL** for PostgreSQL and **Memorystore** for Valkey or Redis.
 - **On Azure**, you might use **Azure Database for PostgreSQL** and **Azure Cache for Redis**.
 
 This guide assumes you have already provisioned these services and have the necessary connection information. For detailed instructions on setting up these services on specific clouds, you can refer to our cloud-specific guides:
@@ -35,7 +35,7 @@ This guide assumes you have already provisioned these services and have the nece
 
 For local development, testing, and validation, you can get up and running quickly using Docker Compose. The Medplum Git repository includes a `docker-compose.yml` file at the root.
 
-To start PostgreSQL and Redis, simply run:
+To start PostgreSQL and Valkey, simply run:
 
 ```bash
 docker-compose up
