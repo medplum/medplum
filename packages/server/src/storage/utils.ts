@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, forbidden, OperationOutcomeError } from '@medplum/core';
-import type { Binary } from '@medplum/fhirtypes';
+import { badRequest, OperationOutcomeError } from '@medplum/core';
 
 /**
  * List of blocked file extensions.
@@ -113,41 +112,4 @@ function checkContentType(contentType: string | undefined): boolean {
   }
 
   return false;
-}
-
-/**
- * Binaries read by a user whose access policy hides `data`.
- * Removing `data` from the read result does not protect content held in binary storage, so the storage layer
- * refuses to read or sign content for these. Marking the object, rather than checking the current user's policy,
- * leaves Binaries read by other repositories, e.g. a system repo, unaffected.
- */
-const contentHiddenBinaries = new WeakSet<Binary>();
-
-/**
- * Records that access policy hides the content of a Binary from the user who read it.
- * @param binary - The Binary as returned to the user.
- */
-export function markBinaryContentHidden(binary: Binary): void {
-  contentHiddenBinaries.add(binary);
-}
-
-/**
- * Returns true if access policy hides the content of a Binary from the user who read it.
- * Copies of the Binary are not marked, so check the object returned by the repository.
- * @param binary - The Binary as returned to the user.
- * @returns True if the Binary content must not be served.
- */
-export function isBinaryContentHidden(binary: Binary): boolean {
-  return contentHiddenBinaries.has(binary);
-}
-
-/**
- * Throws forbidden if access policy hides the content of a Binary from the user who read it.
- * Anything that serves or signs stored content must check this; `readBinary()` and `getPresignedUrl()` do.
- * @param binary - The Binary as returned to the user.
- */
-export function assertBinaryContentReadable(binary: Binary): void {
-  if (isBinaryContentHidden(binary)) {
-    throw new OperationOutcomeError(forbidden);
-  }
 }

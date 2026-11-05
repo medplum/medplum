@@ -15,7 +15,6 @@ import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
-import { assertBinaryContentReadable } from '../../storage/utils';
 import { S3Storage } from './storage';
 
 export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse> {
@@ -67,8 +66,6 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
 
   const { awsRegion } = getConfig();
   const bucket = storage.bucket;
-  // The content is read by key, bypassing readBinary()
-  assertBinaryContentReadable(inputBinary);
   const key = storage.getKey(inputBinary);
 
   const textractClient = new TextractClient({ region: awsRegion });

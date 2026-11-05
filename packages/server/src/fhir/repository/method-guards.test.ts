@@ -85,7 +85,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'canWriteProtectedMeta',
   'canWriteAccount',
   'isResourceWriteable',
-  'satisfiesWriteConstraints',
+  'assertExternalFieldsWritable',
   'isCacheOnly',
   'restoreReadonlyFields',
   'logPostMetadataFieldMatch',

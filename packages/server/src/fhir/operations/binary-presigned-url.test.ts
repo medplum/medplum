@@ -130,35 +130,21 @@ describe('Binary/$presigned-url', () => {
     expect(writeUrlRes).toHaveStatus(403);
   });
 
-  test('Presigned links respect readonly and hidden data fields', async () => {
+  test('Upload link refused for readonly or hidden data field', async () => {
     const { project, accessToken: ownerToken } = await createTestProject({ withAccessToken: true });
-    const createBinary = async (): Promise<WithId<Binary>> => {
-      const res = await request(server)
-        .post('/fhir/R4/Binary')
-        .auth(ownerToken, { type: 'bearer' })
-        .set('Content-Type', 'application/fhir+json')
-        .send({ resourceType: 'Binary', contentType: 'text/plain' } satisfies Binary);
-      expect(res).toHaveStatus(201);
-      return res.body as WithId<Binary>;
-    };
+    const binRes = await request(server)
+      .post('/fhir/R4/Binary')
+      .auth(ownerToken, { type: 'bearer' })
+      .set('Content-Type', 'application/fhir+json')
+      .send({ resourceType: 'Binary', contentType: 'text/plain' } satisfies Binary);
+    expect(binRes).toHaveStatus(201);
 
-    for (const { fields, readStatus } of [
-      { fields: { readonlyFields: ['data'] }, readStatus: 200 },
-      { fields: { hiddenFields: ['data'] }, readStatus: 403 },
-    ]) {
-      const binary = await createBinary();
+    for (const fields of [{ readonlyFields: ['data'] }, { hiddenFields: ['data'] }]) {
       const { accessToken } = await addTestUser(project, {
         accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Binary', ...fields }] },
       });
-
-      const readUrlRes = await request(server)
-        .get(`/fhir/R4/Binary/${binary.id}/$presigned-url`)
-        .auth(accessToken, { type: 'bearer' })
-        .send();
-      expect(readUrlRes).toHaveStatus(readStatus);
-
       const writeUrlRes = await request(server)
-        .get(`/fhir/R4/Binary/${binary.id}/$presigned-url?upload=true`)
+        .get(`/fhir/R4/Binary/${binRes.body.id}/$presigned-url?upload=true`)
         .auth(accessToken, { type: 'bearer' })
         .send();
       expect(writeUrlRes).toHaveStatus(403);

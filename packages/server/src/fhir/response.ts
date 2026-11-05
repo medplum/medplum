@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, concatUrls, forbidden, getStatus, isCreated, notFound } from '@medplum/core';
+import { ContentType, concatUrls, getStatus, isCreated, notFound } from '@medplum/core';
 import type { FhirResponseOptions } from '@medplum/fhir-router';
 import type { Binary, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -9,7 +9,6 @@ import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { getLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { isBinaryContentHidden } from '../storage/utils';
 import { sendOutcome } from './outcomes';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 
@@ -46,11 +45,6 @@ export async function sendBinaryResponse(
       sendResponseHeaders(req, res, outcome, binaryResource);
       res.contentType(binaryResource.contentType);
       res.send(Buffer.from(binaryResource.data, 'base64'));
-      return;
-    }
-
-    if (isBinaryContentHidden(binaryResource)) {
-      sendOutcome(res, forbidden);
       return;
     }
 

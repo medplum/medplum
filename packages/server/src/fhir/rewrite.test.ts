@@ -289,23 +289,6 @@ describe('URL rewrite', () => {
     expect(url1).toBe(url2);
   });
 
-  test('Hidden data field', async () => {
-    const media: Media = { resourceType: 'Media', status: 'completed', content: { url: getReferenceString(binary) } };
-
-    for (const { fields, rewritten } of [
-      { fields: { readonlyFields: ['data'] }, rewritten: true },
-      { fields: { hiddenFields: ['data'] }, rewritten: false },
-    ]) {
-      const repo = new Repository({
-        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
-        author: { reference: 'Practitioner/' + randomUUID() },
-        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Binary', ...fields }] },
-      });
-      const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, media);
-      expect(result.content?.url?.includes('Expires=')).toBe(rewritten);
-    }
-  });
-
   test('Security context', async () => {
     const patient = await withTestContext(() => systemRepo.createResource<Patient>({ resourceType: 'Patient' }));
 

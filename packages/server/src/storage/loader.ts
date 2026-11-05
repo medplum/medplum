@@ -11,7 +11,6 @@ import type { PresignedUrlOptions } from './base';
 import { FileSystemStorage } from './filesystem';
 import { generatePresignedUrl } from './presign';
 import type { BinaryStorage } from './types';
-import { assertBinaryContentReadable } from './utils';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
@@ -61,9 +60,6 @@ export async function deleteBinaryStorageObjects(storageKeys: string[]): Promise
 }
 
 export async function getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
-  if (!opts?.upload) {
-    assertBinaryContentReadable(binary);
-  }
   const config = getConfig();
 
   if (config.storageBaseUrl.startsWith(config.baseUrl)) {
