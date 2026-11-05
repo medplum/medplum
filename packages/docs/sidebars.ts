@@ -101,6 +101,7 @@ const sidebars: SidebarsConfig = {
       label: 'Scheduling',
       link: { type: 'doc', id: 'scheduling/index' },
       items: [
+        { type: 'doc', id: 'scheduling/react-components' },
         { type: 'doc', id: 'scheduling/defining-availability' },
         { type: 'doc', id: 'scheduling/state-by-state-licensure' },
         { type: 'doc', id: 'scheduling/appointment-find' },
@@ -193,6 +194,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'administration/provider-directory/provider-credentials' },
       ],
     },
+    { type: 'doc', id: 'administration/locations-and-facilities' },
     {
       type: 'category',
       label: 'Questionnaires & Assessments',

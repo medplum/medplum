@@ -287,7 +287,7 @@ Decide how you build a valid claim from charges and coverage, and how it leaves 
 | :---- | :---- |
 | Build the claim | `Claim` referencing the `Coverage` (`Claim.insurance`), charges (`Claim.item`), and ICD-10 diagnoses (`Claim.diagnosis`) with item-level pointers. |
 | Billing provider | Set on `Claim.provider`: the billing `Organization` (or a `Practitioner` for individual billing). The rendering provider goes on `Claim.careTeam` with role `primary`. |
-| Service facility | Set `Claim.facility` to the service Location when required. Confirm the submission route's facility requirements and fallback behavior, including individual billing and telehealth |
+| Service facility | Set `Claim.facility` to the service Location when required. Confirm the submission route's facility requirements and fallback behavior, including individual billing and telehealth. See [Organizations and Locations](/docs/administration/locations-and-facilities#billing-facility-and-place-of-service) for its relationship to scheduling, encounter locations, and place of service. |
 | Electronic (you own the cycle) | The clearinghouse submit operation sends an 837P and writes a correlation id back to the `Claim`. |
 | RCM partner | Submit through the partner's supported interface; persist its acknowledgment and correlation identifiers. Agree which downstream workflows it owns and how billing tasks or status changes sync back ([Denials and appeals](#who-works-rejections-denials-resubmissions-and-appeals)). |
 | Manual / paper / portal | [`Claim/$export`](/docs/api/fhir/operations/claim-export) generates a [CMS-1500 PDF](/docs/billing/creating-cms1500) (`Binary`; experimental); log the outbound document. |

@@ -83,6 +83,21 @@ flowchart TD
 
 The dashed `Claim` → `Practitioner (supervising)` path is optional. The bot resolves the rendering provider from the `Claim.careTeam` member with role code `primary` (falling back to the first care team member that references a `Practitioner`), and the supervising provider from the member with role code `supervisor`.
 
+### Service Facility
+
+Set `Claim.facility` to a stored or contained Location when submitting a separate service facility. The bot maps that Location's name and address into the service-facility block and includes its NPI only when present and different from the billing provider's NPI. If `Claim.facility` is absent, the bot omits the separate block; validate the requirements of the intended payer and submission workflow.
+
+When `Claim.facility` is supplied, the referenced Location must pass the integration's validation. Invalid or incomplete details fail submission; correct them before retrying.
+
+| Location field | Requirement |
+| :--- | :--- |
+| `name`, `address.line[0]`, `address.city` | Each must contain a nonblank value. |
+| `address.country` | Omitted or blank defaults to US. Use a two-letter country code; common US and Canadian names are also normalized. |
+| `address.state` | Required for US and Canadian addresses. Whenever supplied, it must contain two characters after trimming. |
+| `address.postalCode` | Required for US addresses: five digits or ZIP+4, with or without the hyphen. For other countries, a supplied postal code must contain 3 to 15 letters or digits after spaces and punctuation are removed. |
+
+The facility is separate from the billing provider and the place-of-service code on `Claim.item.locationCodeableConcept`. See [Organizations and Locations](/docs/administration/locations-and-facilities#billing-facility-and-place-of-service) for the shared model and why the scheduled, actual, and billed locations can differ.
+
 ### Billing as an organization vs. an individual
 
 The 837P always requires a **billing provider**, taken from `Claim.provider`. You can bill either way:
