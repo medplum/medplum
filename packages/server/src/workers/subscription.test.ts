@@ -219,6 +219,7 @@ describe('Subscription Worker', () => {
       expect(body.id).toStrictEqual(binary.id);
       expect(body.contentType).toStrictEqual(ContentType.TEXT);
       expect(body.data).toBeUndefined();
+      expect(body.meta?.tag).toContainEqual({ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' });
     }));
 
   test('Does not send subscriptions when disabled', () =>
@@ -2743,6 +2744,45 @@ describe('Subscription Worker', () => {
       });
       return authorRef;
     }
+
+    test('Binary notification does not include embedded data', () =>
+      withTestContext(async () => {
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          membership,
+          login,
+        } = await createTestProject({
+          project: { name: 'WebSocket Binary Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+          withClient: true,
+          withAccessToken: true,
+        });
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Binary',
+          channel: { type: 'websocket' },
+        });
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
+
+        const nextArgsPromise = waitForNextSubNotification<Binary>();
+        const binary = await wsSubRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType: ContentType.TEXT,
+          data: 'SGVsbG8gV29ybGQh',
+        });
+        await findAndExecDispatchJob(binary, 'create');
+
+        const [resource] = await nextArgsPromise;
+        expect(resource.id).toStrictEqual(binary.id);
+        expect(resource.data).toBeUndefined();
+        expect(resource.meta?.tag).toContainEqual({
+          system: 'http://hl7.org/fhir/v3/ObservationValue',
+          code: 'SUBSETTED',
+        });
+      }));
 
     test('Enabled', () =>
       withTestContext(async () => {

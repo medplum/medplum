@@ -23,6 +23,7 @@ import {
 import type {
   Bot,
   ClientApplication,
+  Coding,
   Patient,
   Practitioner,
   Project,
@@ -450,9 +451,25 @@ export async function addSubscriptionJobs(
   if (wsSubEvents.length) {
     await publish(
       WEBSOCKET_SUB_PUBLISH_CHANNEL,
-      JSON.stringify({ resource, events: wsSubEvents } satisfies SubEventPayload)
+      JSON.stringify({ resource: removeBinaryData(resource), events: wsSubEvents } satisfies SubEventPayload)
     );
   }
+}
+
+const SUBSETTED_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
+
+/**
+ * Removes inline `Binary.data` from a resource sent to subscribers, and tags it as subsetted.
+ * Subscribers read the content from binary storage instead.
+ * @param resource - The resource to send.
+ * @returns The resource without `Binary.data`.
+ */
+function removeBinaryData<T extends Resource>(resource: T): T {
+  if (resource.resourceType !== 'Binary' || resource.data === undefined) {
+    return resource;
+  }
+  const { data: _data, ...rest } = resource;
+  return { ...rest, meta: { ...rest.meta, tag: [...(rest.meta?.tag ?? []), SUBSETTED_TAG] } } as T;
 }
 
 /**
@@ -695,6 +712,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       using projectRepo = await getRepoForProject(versionedResource.meta.project);
       rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, projectRepo, versionedResource);
     }
+    rewrittenResource = removeBinaryData(rewrittenResource);
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;
