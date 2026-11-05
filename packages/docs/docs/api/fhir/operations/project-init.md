@@ -48,10 +48,7 @@ Example outcome:
   "resourceType": "Project",
   "id": "59aa86af-9673-4862-a441-5200e6163bfb",
   "name": "Test Project",
-  "strictMode": true,
-  "owner": {
-    "reference": "User/eb0f26b9-1e42-4886-85fc-31919aeebc55"
-  }
+  "strictMode": true
 }
 ```
 
@@ -76,9 +73,9 @@ Example outcome when Project name not provided:
 
 ## Assigning Project Ownership
 
-By default, the API will attempt to use the `User` associated with the current access token as the Project `owner`.
-In cases where a different user should be the owner, or when the access token is not associated with a `User`, one
-can be manually assigned using a parameter: either `owner` for existing users, or `ownerEmail` to create the user.
+The new Project has no `owner` unless one is specified with a parameter: either `owner` for an existing `User`, or
+`ownerEmail` to use the `User` with that email address, creating it if it does not exist. The owner becomes an admin
+of the new Project.
 
 ```bash
 curl 'https://api.medplum.com/fhir/R4/Project/$init' \

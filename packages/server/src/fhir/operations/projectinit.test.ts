@@ -245,12 +245,13 @@ describe('Project $init', () => {
   });
 
   test('Defaults to no owner and applies defaultProjectSystemSetting', async () => {
+    const { project: superAdminProject } = await createTestProject({ superAdmin: true });
+    const { accessToken } = await withTestContext(() => addTestUser(superAdminProject));
+
     const originalDefaultProjectSystemSetting = config.defaultProjectSystemSetting;
     config.defaultProjectSystemSetting = [{ name: 'searchTokenColumns', valueBoolean: true }];
     try {
-      const res = await initProject(superAdminAccessToken, [
-        { name: 'name', valueString: 'Test Init Project ' + randomUUID() },
-      ]);
+      const res = await initProject(accessToken, [{ name: 'name', valueString: 'Test Init Project ' + randomUUID() }]);
       expect(res).toHaveStatus(201);
       const project = res.body as Project;
       expect(project.owner).toBeUndefined();

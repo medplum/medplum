@@ -67,7 +67,7 @@ interface ProjectInitParameters {
  * @returns The FHIR response.
  */
 export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { login, systemRepo } = requireSuperAdmin();
+  const { systemRepo } = requireSuperAdmin();
 
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
 
@@ -83,8 +83,6 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
       lastName: 'Admin',
     });
     ownerRef = createReference(user);
-  } else if (login.user.reference?.startsWith('User/')) {
-    ownerRef = login.user;
   }
 
   const owner = ownerRef ? await systemRepo.readReference(ownerRef) : undefined;
