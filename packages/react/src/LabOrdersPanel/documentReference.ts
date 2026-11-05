@@ -5,6 +5,29 @@ import type { Attachment, DocumentReference, Observation, Reference, ServiceRequ
 
 const HEALTH_GORILLA_REQUEST_SYSTEM = 'https://www.healthgorilla.com';
 
+/** DocumentReference.category code for a Medicare Advance Beneficiary Notice PDF. */
+export const LAB_ORDER_ABN_CATEGORY = 'ABN';
+
+async function fetchHealthGorillaOrderDocuments(
+  medplum: MedplumClient,
+  serviceRequest: ServiceRequest,
+  category: string
+): Promise<DocumentReference[]> {
+  const healthGorillaRequisitionId = getHealthGorillaRequisitionId(serviceRequest);
+
+  if (!healthGorillaRequisitionId) {
+    return [];
+  }
+
+  const searchParams = new URLSearchParams({
+    category,
+    identifier: `${HEALTH_GORILLA_REQUEST_SYSTEM}|${healthGorillaRequisitionId}`,
+    _sort: '-_lastUpdated',
+  });
+
+  return medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
+}
+
 /**
  * Fetches DocumentReference resources with LabOrderRequisition category that match a ServiceRequest's Health Gorilla Requisition ID
  * @param medplum - The Medplum client
@@ -15,20 +38,20 @@ export async function fetchLabOrderRequisitionDocuments(
   medplum: MedplumClient,
   serviceRequest: ServiceRequest
 ): Promise<DocumentReference[]> {
-  const healthGorillaRequisitionId = getHealthGorillaRequisitionId(serviceRequest);
+  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, 'LabOrderRequisition');
+}
 
-  if (!healthGorillaRequisitionId) {
-    return [];
-  }
-
-  const searchParams = new URLSearchParams({
-    category: 'LabOrderRequisition',
-    identifier: `${HEALTH_GORILLA_REQUEST_SYSTEM}|${healthGorillaRequisitionId}`,
-    _sort: '-_lastUpdated',
-  });
-
-  const results = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
-  return results;
+/**
+ * Fetches the Advance Beneficiary Notice PDFs Health Gorilla generates for a Medicare lab order.
+ * @param medplum - The Medplum client
+ * @param serviceRequest - The ServiceRequest to fetch the DocumentReference for
+ * @returns The ABN DocumentReference resources. Empty when the order has no ABN.
+ */
+export async function fetchLabOrderAbnDocuments(
+  medplum: MedplumClient,
+  serviceRequest: ServiceRequest
+): Promise<DocumentReference[]> {
+  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, LAB_ORDER_ABN_CATEGORY);
 }
 
 /**
