@@ -6,7 +6,7 @@ The `$cancel` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
-The `$cancel` operation cancels an [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `cancelled` and deleting all [`Slot`](/docs/api/fhir/resources/slot) resources it references in a single FHIR transaction. An optional `cancelationReason` records why the Appointment was canceled.
+The `$cancel` operation cancels an [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `cancelled` and deleting all [`Slot`](/docs/api/fhir/resources/slot) resources it references in a single database transaction. An optional `cancelationReason` records why the Appointment was canceled.
 
 ## Use Cases
 

@@ -10,7 +10,6 @@ import {
   Select,
   Stack,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -75,6 +74,7 @@ import {
   parseZonedDateTimeInput,
   startOfDay,
 } from './AppointmentFinder.times';
+import { AppointmentNotesInput } from './AppointmentNotesInput';
 import { AppointmentPatientInput } from './AppointmentPatientInput';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -186,6 +186,11 @@ export interface AppointmentProposalFormProps {
   /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
   readonly diagnosisBinding?: string;
   /**
+   * The most characters the notes (`Appointment.comment`) may hold, counted as typed. Enforced
+   * only in the form: the server accepts notes of any length.
+   */
+  readonly commentMaxLength?: number;
+  /**
    * Writes the proposal the form assembled.
    *
    * Resolving marks the form written, so it stops offering to write until an answer
@@ -245,6 +250,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onChangeProposal,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
+    commentMaxLength,
     onSubmit,
     canBypassSchedulingRules,
     appointmentExtensions,
@@ -771,13 +777,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         )}
 
         {takesDetails && (
-          <Textarea
-            label="Notes"
-            autosize
-            minRows={2}
+          <AppointmentNotesInput
             value={comment}
-            onChange={(event) => {
-              setComment(event.currentTarget.value);
+            maxLength={commentMaxLength}
+            onChange={(value) => {
+              setComment(value);
               setWritten(false);
             }}
           />

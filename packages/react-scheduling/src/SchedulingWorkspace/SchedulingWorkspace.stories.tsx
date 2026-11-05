@@ -149,10 +149,21 @@ export default {
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.
  *
+ * Set **appointmentCommentMaxLength** under Controls to cap the notes: the booking form and the
+ * details' "Edit" count them against it and take no more. At 50, Tuesday's imaging visit has
+ * notes within the cap, and Thursday's infusion has notes already past it, which have to be
+ * shortened before its details can be saved.
+ *
+ * @param args - The props set from the Controls panel.
  * @returns The story.
  */
-export const Basic = (): JSX.Element => <Workspace />;
+export const Basic = (args: WorkspaceProps): JSX.Element => <Workspace {...args} />;
 Basic.decorators = [withFixtures(LOCAL_FIXTURES)];
+Basic.argTypes = {
+  appointmentCommentMaxLength: { control: { type: 'number', min: 1 } },
+};
+// The workspace's other props are inferred from it too, but this story passes none of them on.
+Basic.parameters = { controls: { include: ['appointmentCommentMaxLength'] } };
 
 /**
  * The same workspace when the calendars are not kept on the viewer's clock.
@@ -236,11 +247,12 @@ AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
   readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
+  readonly appointmentCommentMaxLength?: number;
 }
 
 /**
  * Fills the viewport under the package banner, which is 72px.
- * @param props - Whether the story lets a time be typed, and the site it starts on.
+ * @param props - Whether the story lets a time be typed, the site it starts on, and the cap on notes.
  * @returns The workspace as a host would mount it.
  */
 function Workspace(props: WorkspaceProps): JSX.Element {
@@ -252,6 +264,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultServiceFacility={props.defaultServiceFacility}
+        appointmentCommentMaxLength={props.appointmentCommentMaxLength}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={({ appointments }) => {

@@ -68,6 +68,10 @@ interface ProjectInitParameters {
  */
 export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
+  if (getConfig().newProjectRegistrationEnabled === false && !ctx.project.superAdmin) {
+    return [badRequest('New project registration is disabled')];
+  }
+
   const login = ctx.login;
 
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
@@ -162,6 +166,7 @@ export async function createProject(
         projectId,
         'Default Practitioner Access Policy'
       );
+      const botAccessPolicy = await createBotAccessPolicy(txRepo, projectId, 'Default Bot Access Policy');
 
       const project = await txRepo.createResource<Project>(
         {
@@ -177,6 +182,7 @@ export async function createProject(
             { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
             { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
             { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
+            { profileType: 'Bot', accessPolicy: createReference(botAccessPolicy) },
           ],
         },
         { assignedId: true }
@@ -259,6 +265,25 @@ async function createAdminAccessPolicy(
     name,
     // Full read/write access to all resource types (essentially no policy).
     resource: [{ resourceType: '*' }],
+  });
+}
+
+async function createBotAccessPolicy(
+  systemRepo: SystemRepository,
+  projectId: string,
+  name: string
+): Promise<WithId<AccessPolicy>> {
+  return systemRepo.createResource<AccessPolicy>({
+    resourceType: 'AccessPolicy',
+    meta: { project: projectId },
+    name,
+    // The first matching entry wins, so the specific entries must come before the wildcard.
+    // AccessPolicy is a project admin resource type, which the wildcard never matches.
+    resource: [
+      { resourceType: 'AccessPolicy', readonly: true },
+      { resourceType: 'ClientApplication', hiddenFields: ['secret', 'retiringSecret'] },
+      { resourceType: '*' },
+    ],
   });
 }
 

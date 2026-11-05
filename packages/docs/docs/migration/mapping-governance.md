@@ -164,7 +164,7 @@ One source record can produce zero, one, or multiple FHIR resources. For each on
 - Partial-failure and retry behavior
 - Reconciliation counts at source and target levels
 
-When newly created resources reference one another, use a FHIR transaction with `urn:uuid` full URLs and confirm the `transaction-bundles` Project feature is enabled. Use batches only for independent entries. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+When newly created resources reference one another, define dependency stages: save prerequisites, inspect each result, then submit dependents with the saved references. Batch independent writes within each stage and use stable identifiers for conditional upserts. A reference relationship alone does not require atomicity. If partial commits are unacceptable, document that requirement explicitly; atomic transaction Bundles are currently unavailable on hosted Medplum. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
 
 ## Preserve Provenance and Traceability
 

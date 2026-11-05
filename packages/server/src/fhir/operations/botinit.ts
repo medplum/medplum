@@ -130,7 +130,8 @@ export async function createBot(
     project: createReference(project),
     user: createReference(bot),
     profile: createReference(bot),
-    accessPolicy: params.accessPolicy,
+    accessPolicy:
+      params.accessPolicy ?? project.defaultAccessPolicies?.find((p) => p.profileType === 'Bot')?.accessPolicy,
   });
 
   if (executableCode) {

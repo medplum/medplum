@@ -85,6 +85,12 @@ For this guide, we will take the first approach: creating a Care Template, then 
 
 Medplum provides a sample Care Template for testing and prototyping. Copy the example below and upload it to the [batch](https://app.medplum.com/batch) tool to create a PlanDefinition you can use for testing.
 
+:::note[Sample data and partial failures]
+
+This sample can partially succeed on hosted Medplum. Check every response entry before continuing, and follow the [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before retrying POST creates.
+
+:::
+
 <details>
 <summary>Example Care Template Bundle</summary>
 
