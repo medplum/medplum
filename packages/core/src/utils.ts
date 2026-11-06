@@ -1164,7 +1164,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferVi
   for (let i = 0; i < bytes.length; i++) {
     result[i] = String.fromCodePoint(bytes[i]);
   }
-  return window.btoa(result.join(''));
+  return globalThis.btoa(result.join(''));
 }
 
 /**
