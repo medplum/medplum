@@ -167,6 +167,9 @@ export interface MedplumServerConfig {
   /** Optional flag to enable the MCP server beta */
   mcpEnabled?: boolean;
 
+  /** Optional flag to enable the AI gateway, which serves Anthropic models on AWS Bedrock */
+  aiGatewayEnabled?: boolean;
+
   /** Optional config for Fission.io bots */
   fission?: MedplumFissionConfig;
 

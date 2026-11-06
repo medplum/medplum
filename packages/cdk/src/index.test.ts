@@ -624,6 +624,29 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('AI gateway grants the server Bedrock invoke permissions', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumAiGatewayStack',
+      aiGatewayBedrockEnabled: true,
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::IAM::Role', {
+      Description: 'Medplum Server Task Execution Role',
+      Policies: Match.arrayWith([
+        Match.objectLike({
+          PolicyDocument: Match.objectLike({
+            Statement: Match.arrayWith([
+              Match.objectLike({ Action: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'] }),
+            ]),
+          }),
+        }),
+      ]),
+    });
+  });
+
   test.each([false, true])('GuardDuty (on-demand only %s) grants the server scan permissions', async (onDemandOnly) => {
     const sourceConfig = {
       ...baseConfig,
