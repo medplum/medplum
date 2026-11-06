@@ -180,6 +180,7 @@ jobs:
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_PROJECT_ID: '__MEDPLUM_PROJECT_ID__'
           FOOMEDICAL_PROJECT_ID: '__FOOMEDICAL_PROJECT_ID__'
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
@@ -200,6 +201,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           MEDPLUM_REGISTER_ENABLED: ${{ vars.STAGING_MEDPLUM_REGISTER_ENABLED }}
+          MEDPLUM_PROJECT_ID: ${{ vars.STAGING_APP_PROJECT_ID }}
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
       - name: Deploy docs preview
         if: steps.changes.outputs.deploy_docs == 'true'
@@ -223,6 +225,7 @@ jobs:
         env:
           AWS_REGION: 'us-east-1'
           PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          PROVIDER_PROJECT_ID: ${{ vars.STAGING_PROVIDER_PROJECT_ID }}
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}

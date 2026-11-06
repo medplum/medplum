@@ -61,6 +61,30 @@ describe('SignInPage', () => {
     expect(screen.queryByText('Register')).not.toBeInTheDocument();
   });
 
+  test.each([
+    ['/signin', 'configured-project'],
+    ['/signin?project=url-project', 'url-project'],
+  ])('Signs in to the configured project unless the URL names one (%s)', async (url, projectId) => {
+    vi.stubEnv('MEDPLUM_PROJECT_ID', 'configured-project');
+    const client = setup(url);
+    const startLogin = vi.spyOn(client, 'startLogin').mockRejectedValue(new Error('Not signed in'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'admin@example.com' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    });
+    await act(async () => {
+      fireEvent.change(await screen.findByLabelText('Password *'), { target: { value: 'password' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Continue|Sign In/i }));
+    });
+
+    expect(startLogin).toHaveBeenCalledWith(expect.objectContaining({ projectId }));
+  });
+
   test('Success', async () => {
     const client = setup();
 

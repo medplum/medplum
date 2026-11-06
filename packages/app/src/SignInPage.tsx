@@ -33,7 +33,7 @@ export function SignInPage(): JSX.Element {
       onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
       googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
-      projectId={searchParams.get('project') || undefined}
+      projectId={searchParams.get('project') || config.projectId || undefined}
     >
       <Logo size={32} />
       {searchParams.get('project') !== 'new' && (
