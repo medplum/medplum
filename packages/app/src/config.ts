@@ -7,6 +7,7 @@ export interface MedplumAppConfig {
   recaptchaSiteKey?: string;
   registerEnabled?: boolean | string;
   awsTextractEnabled?: boolean | string;
+  projectId?: string;
 }
 
 const config: MedplumAppConfig = {
@@ -16,6 +17,7 @@ const config: MedplumAppConfig = {
   recaptchaSiteKey: import.meta.env?.RECAPTCHA_SITE_KEY,
   registerEnabled: import.meta.env?.MEDPLUM_REGISTER_ENABLED,
   awsTextractEnabled: import.meta.env?.MEDPLUM_AWS_TEXTRACT_ENABLED,
+  projectId: import.meta.env?.MEDPLUM_PROJECT_ID,
 };
 
 export function getConfig(): MedplumAppConfig {

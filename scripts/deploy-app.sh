@@ -19,6 +19,7 @@ fi
 : ${RECAPTCHA_SITE_KEY:=""}
 : ${MEDPLUM_REGISTER_ENABLED:="true"}
 : ${MEDPLUM_AWS_TEXTRACT_ENABLED:="true"}
+: ${MEDPLUM_PROJECT_ID:=""}
 
 # Inject the env vars into our build output
 # Find all JS files in the assets directory
@@ -32,6 +33,7 @@ find "packages/app/dist" -type f -exec sed -i \
   -e "s|__RECAPTCHA_SITE_KEY__|${RECAPTCHA_SITE_KEY}|g" \
   -e "s|__MEDPLUM_REGISTER_ENABLED__|${MEDPLUM_REGISTER_ENABLED}|g" \
   -e "s|__MEDPLUM_AWS_TEXTRACT_ENABLED__|${MEDPLUM_AWS_TEXTRACT_ENABLED}|g" \
+  -e "s|__MEDPLUM_PROJECT_ID__|${MEDPLUM_PROJECT_ID}|g" \
   {} \;
 
 echo "Environment variable replacement complete."
