@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, parseSearchRequest } from '@medplum/core';
+import type { MockClient } from '@medplum/mock';
 import type { LabItem, LabTab } from '@medplum/react';
-import { LabOrdersPanel } from '@medplum/react';
+import { LabOrdersPanel, MedplumProvider, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { OrderLabsModal } from '../../components/labs/OrderLabsModal';
 import { usePatient } from '../../hooks/usePatient';
 import { addDefaultLabSearchValues, getLabResourceType, LAB_REVOKED_ORDER_STATUS } from '../../utils/labSearch';
+import { createLabsProxyClient } from '../../utils/labsProxyClient';
 
 export interface LabsPageProps {
   tab: LabTab;
@@ -21,6 +23,13 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const patient = usePatient();
+  const medplum = useMedplum();
+  const [proxy, setProxy] = useState<MockClient>();
+  useEffect(() => {
+    createLabsProxyClient(medplum, patientId as string)
+      .then(setProxy)
+      .catch(console.error);
+  }, [medplum, patientId]);
 
   // The "Revoked" tab shares the ServiceRequest route with the "Open" tab, so
   // it is identified by the URL's status filter rather than by the route.
@@ -74,7 +83,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
     navigate(openUri)?.catch(console.error);
   }, [navigate, openUri]);
 
-  return (
+  const panel = (
     <LabOrdersPanel
       patient={patient}
       search={search}
@@ -96,5 +105,14 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         />
       )}
     />
+  );
+
+  if (!proxy) {
+    return <></>;
+  }
+  return (
+    <MedplumProvider medplum={proxy} navigate={(path) => navigate(path)?.catch(console.error)}>
+      {panel}
+    </MedplumProvider>
   );
 }
