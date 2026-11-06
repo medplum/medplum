@@ -47,6 +47,10 @@ describe('ClaimDetailPane', () => {
       patient: { reference: `Patient/${HomerSimpson.id}`, display: 'Homer Simpson' },
       insurance: [{ sequence: 1, focal: true, coverage: { reference: `Coverage/${coverage.id}` } }],
       total: { value: 310, currency: 'USD' },
+      diagnosis: [
+        { sequence: 1, diagnosisCodeableConcept: { coding: [{ code: 'E11.9', display: 'Type 2 diabetes' }] } },
+        { sequence: 2, diagnosisCodeableConcept: { coding: [{ code: 'I10', display: 'Hypertension' }] } },
+      ],
       item: [
         {
           sequence: 1,
@@ -104,7 +108,7 @@ describe('ClaimDetailPane', () => {
     return { onClose, onChanged };
   };
 
-  test('submits a ready claim and links to its encounter for edits', async () => {
+  test('submits a ready claim and links to its encounter', async () => {
     const claim = await createClaim({ status: 'draft' });
     const post = vi.spyOn(medplum, 'post').mockResolvedValue({});
     const user = userEvent.setup();
@@ -114,12 +118,10 @@ describe('ClaimDetailPane', () => {
     expect(within(nextStep).getByText('Next Steps')).toBeInTheDocument();
     expect(subtitle(/^DOS /)).toBeInTheDocument();
     expect(screen.getByText('Ready', { selector: '.mantine-Button-label' })).toBeInTheDocument();
-    expect(within(actions()).getByRole('link', { name: 'Edit claim' })).toHaveAttribute(
-      'href',
-      `/Patient/${HomerSimpson.id}/Encounter/e1`
-    );
+    expect(within(actions()).getByRole('button', { name: 'Edit claim' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'More actions' }));
-    expect(await screen.findByRole('menuitem', { name: 'Edit claim' })).toHaveAttribute(
+    expect(await screen.findByRole('menuitem', { name: 'Edit claim' })).toBeInTheDocument();
+    expect(screen.getByText('Open encounter').closest('a')).toHaveAttribute(
       'href',
       `/Patient/${HomerSimpson.id}/Encounter/e1`
     );
@@ -129,6 +131,53 @@ describe('ClaimDetailPane', () => {
     await waitFor(() => expect(post).toHaveBeenCalled());
     expect(String(post.mock.calls[0][0])).toContain(`Claim/${claim.id}/$candid-submit-claim`);
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
+  });
+
+  test('edits the diagnoses and service lines in place', async () => {
+    const claim = await createClaim({ status: 'draft' });
+    const user = userEvent.setup();
+    const { onChanged } = setup(claim.id);
+
+    await screen.findByRole('region', { name: 'Ready to submit' });
+    await user.click(within(actions()).getByRole('button', { name: 'Edit claim' }));
+    expect(screen.getByRole('group', { name: 'Edit actions' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Remove E11.9' }));
+    expect(screen.queryByText(/Type 2 diabetes/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add a Diagnosis' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add a Service Line' }));
+    expect(screen.getByRole('button', { name: 'Remove line 2' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove line 2' }));
+
+    const charge = screen.getByRole('textbox', { name: 'Charge' });
+    await user.clear(charge);
+    await user.type(charge, '200');
+    expect(screen.getByText('$200.00')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    const saved = await medplum.readResource('Claim', claim.id);
+    expect(saved.diagnosis?.map((d) => d.diagnosisCodeableConcept?.coding?.[0]?.code)).toEqual(['I10']);
+    expect(saved.item).toHaveLength(1);
+    expect(saved.item?.[0].diagnosisSequence).toEqual([1]);
+    expect(saved.item?.[0].net?.value).toBe(200);
+    expect(saved.total?.value).toBe(200);
+    expect(screen.queryByRole('group', { name: 'Edit actions' })).not.toBeInTheDocument();
+  });
+
+  test('cancels an edit without saving', async () => {
+    const claim = await createClaim({ status: 'draft' });
+    const user = userEvent.setup();
+    setup(claim.id);
+
+    const [edit] = await screen.findAllByRole('button', { name: 'Edit' });
+    await user.click(edit);
+    await user.click(screen.getByRole('button', { name: 'Remove I10' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(await screen.findByText('Hypertension')).toBeInTheDocument();
+    expect((await medplum.readResource('Claim', claim.id)).diagnosis).toHaveLength(2);
   });
 
   test('shows the lines with what the payer allowed and paid', async () => {
@@ -153,7 +202,9 @@ describe('ClaimDetailPane', () => {
     });
     setup(claim.id);
 
-    expect(await screen.findByRole('region', { name: 'Paid' })).toBeInTheDocument();
+    const nextStep = await screen.findByRole('region', { name: 'Patient balance' });
+    expect(nextStep).toHaveTextContent('The patient owes $20.00');
+    expect(screen.getByText('Patient').nextElementSibling).toHaveTextContent('$20.00');
     const row = screen.getByText('99214').closest('tr') as HTMLElement;
     expect(within(row).getByText('A, B')).toBeInTheDocument();
     expect(within(row).getByText('$245.00')).toBeInTheDocument();
@@ -162,6 +213,39 @@ describe('ClaimDetailPane', () => {
     expect(screen.getByText('Amount Paid').nextElementSibling).toHaveTextContent('$176.40');
     expect(screen.getByText('Payment Date').nextElementSibling).toHaveTextContent('10/6/2026');
     expect(screen.queryByRole('link', { name: 'Edit claim' })).not.toBeInTheDocument();
+    expect(within(actions()).getByRole('button', { name: 'Send statement' })).toBeDisabled();
+
+    await userEvent.setup().click(within(actions()).getByRole('button', { name: 'Mark collected' }));
+    expect(await screen.findByRole('region', { name: 'Paid' })).toBeInTheDocument();
+  });
+
+  test('lists what to fix on a draft claim before it can be submitted', async () => {
+    const claim = await createClaim({
+      status: 'draft',
+      insurance: [],
+      diagnosis: [
+        { sequence: 1, diagnosisCodeableConcept: { coding: [{ code: 'E11.9' }] } },
+        { sequence: 3, diagnosisCodeableConcept: { coding: [{ code: 'R51' }] } },
+      ],
+      item: [
+        {
+          sequence: 1,
+          productOrService: { coding: [{ code: '99214' }] },
+          diagnosisSequence: [1],
+          encounter: [{ reference: 'Encounter/e1' }],
+        },
+        { sequence: 2, productOrService: { coding: [{ code: '36415' }] } },
+      ],
+    });
+    setup(claim.id);
+
+    const nextStep = await screen.findByRole('region', { name: 'Needs fixing' });
+    expect(screen.getByText('Needs Fixing', { selector: '.mantine-Button-label' })).toBeInTheDocument();
+    expect(nextStep).toHaveTextContent("Add the patient's coverage to the claim.");
+    expect(nextStep).toHaveTextContent('1 line has no diagnosis pointer: 36415.');
+    expect(nextStep).toHaveTextContent('1 diagnosis is on no line: R51.');
+    expect(within(actions()).getByRole('button', { name: 'Fix claim' })).toBeInTheDocument();
+    expect(within(actions()).getByRole('button', { name: 'Submit to Candid' })).toBeDisabled();
   });
 
   test('links to the remittances that pay the claim', async () => {
@@ -222,7 +306,7 @@ describe('ClaimDetailPane', () => {
         },
       ],
     });
-    const noDiagnoses = await createClaim({});
+    const noDiagnoses = await createClaim({ diagnosis: undefined });
     setup(claim.id);
 
     const diagnoses = await screen.findByLabelText('Diagnoses');
@@ -315,7 +399,7 @@ describe('ClaimDetailPane', () => {
     setup(claim.id);
 
     expect(await screen.findByRole('region', { name: 'Rejected before adjudication' })).toBeInTheDocument();
-    expect(within(actions()).getByRole('link', { name: 'Fix claim' })).toBeInTheDocument();
+    expect(within(actions()).getByRole('button', { name: 'Fix claim' })).toBeInTheDocument();
     await user.click(within(actions()).getByRole('button', { name: 'Refresh status' }));
     expect(await screen.findByText('The Candid status bot is not deployed in this project')).toBeInTheDocument();
   });

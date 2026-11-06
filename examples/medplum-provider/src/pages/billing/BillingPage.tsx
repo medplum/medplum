@@ -3,15 +3,17 @@
 import { ActionIcon, Anchor, Group, Tabs, Tooltip } from '@mantine/core';
 import { useElementSize } from '@mantine/hooks';
 import { isAuxClick } from '@medplum/react';
-import { IconReportMoney, IconSettings } from '@tabler/icons-react';
+import { IconPlus, IconReportMoney, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { ClaimQueueNav } from '../../components/billing/ClaimQueueNav';
 import { ClaimsWorklist } from '../../components/billing/ClaimsWorklist';
 import { FeeSchedulesModal } from '../../components/billing/FeeSchedulesModal';
+import { NewClaimModal } from '../../components/billing/NewClaimModal';
 import pillTabs from '../../components/billing/PillTabs.module.css';
 import { RemitNav, RemitsWorklist } from '../../components/billing/RemitsWorklist';
+import { useClaimIssues } from '../../components/billing/claimIssues';
 import { getClaimQueue } from '../../components/billing/claimQueues';
 import { getRemitView } from '../../components/billing/remitViews';
 import { useClaimsAging } from '../../components/billing/useClaimsAging';
@@ -58,7 +60,9 @@ export function BillingPage(): JSX.Element {
   const { section, view, resourceId } = parseBillingPath(path);
   const [version, setVersion] = useState(0);
   const agingTotals = useClaimsAging(version);
+  const issues = useClaimIssues(version);
   const [feeSchedulesOpen, setFeeSchedulesOpen] = useState(false);
+  const [newClaimOpen, setNewClaimOpen] = useState(false);
   const { ref: contentRef, width: contentWidth } = useElementSize<HTMLElement>();
 
   const go = (url: string): void => {
@@ -106,6 +110,21 @@ export function BillingPage(): JSX.Element {
             </Tabs.List>
           </Tabs>
           <Group gap="xs" wrap="nowrap">
+            {section === 'Claims' && (
+              <Tooltip label="New claim" position="bottom" openDelay={500}>
+                <ActionIcon
+                  variant="transparent"
+                  color="gray"
+                  radius="xl"
+                  size={32}
+                  className="outline-icon-button"
+                  aria-label="New claim"
+                  onClick={() => setNewClaimOpen(true)}
+                >
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
             <Tooltip label="Fee Schedules" position="bottom" openDelay={500}>
               <ActionIcon
                 variant="transparent"
@@ -142,12 +161,21 @@ export function BillingPage(): JSX.Element {
           </Group>
         </Group>
         <FeeSchedulesModal opened={feeSchedulesOpen} onClose={() => setFeeSchedulesOpen(false)} />
+        <NewClaimModal
+          opened={newClaimOpen}
+          onClose={() => setNewClaimOpen(false)}
+          onCreated={(claim) => {
+            setVersion((v) => v + 1);
+            go(`${CLAIMS_URL}/ready/${claim.id}`);
+          }}
+        />
         <div className={classes.sidebarNav}>
           {section === 'Claims' && (
             <ClaimQueueNav
               baseUrl={CLAIMS_URL}
               queueId={queueId}
               agingTotals={agingTotals}
+              issueCount={issues?.ids.length}
               version={version}
               onNavigate={(id) => go(`${CLAIMS_URL}/${id}`)}
             />
@@ -164,6 +192,7 @@ export function BillingPage(): JSX.Element {
             claimId={resourceId}
             query={query}
             agingTotals={agingTotals}
+            issues={issues}
             areaWidth={contentWidth}
             onNavigate={(next) => go(`${CLAIMS_URL}/${next}`)}
             onChanged={() => setVersion((v) => v + 1)}

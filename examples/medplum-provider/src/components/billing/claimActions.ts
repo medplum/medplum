@@ -115,3 +115,13 @@ export function getClaimFollowUp(claimId: string): ClaimFollowUp | undefined {
 export function setClaimFollowUp(claimId: string, followUp: ClaimFollowUp): void {
   followUps.set(claimId, followUp);
 }
+
+const collectedBalances = new Set<string>();
+
+export function isPatientBalanceCollected(claimId: string): boolean {
+  return collectedBalances.has(claimId);
+}
+
+export function markPatientBalanceCollected(claimId: string): void {
+  collectedBalances.add(claimId);
+}

@@ -3,9 +3,11 @@
 import type { Claim, ClaimResponse, ClaimResponseItem, Money } from '@medplum/fhirtypes';
 import { getCandidClaimStatus } from '../../utils/candid';
 import { formatStediClaimStatus, getStediClaimStatus } from '../../utils/stedi';
+import { getPreSubmitIssues } from './preSubmitChecks';
 
 export type ClaimStage =
   | 'ready'
+  | 'needs-fixing'
   | 'submitted'
   | 'awaiting-payer'
   | 'awaiting-remit'
@@ -27,6 +29,7 @@ export interface ClaimDisplayStatus {
 
 const STAGES: Record<ClaimStage, Omit<ClaimDisplayStatus, 'stage' | 'detail'>> = {
   ready: { label: 'Ready', color: 'blue' },
+  'needs-fixing': { label: 'Needs fixing', color: 'orange' },
   submitted: { label: 'Submitted', color: 'violet' },
   'awaiting-payer': { label: 'Awaiting payer', color: 'violet' },
   'awaiting-remit': { label: 'Awaiting remit', color: 'violet' },
@@ -50,7 +53,7 @@ export function getClaimDisplayStatus(claim: Claim, response?: ClaimResponse): C
     return stage('voided');
   }
   if (claim.status === 'draft') {
-    return stage('ready');
+    return stage(getPreSubmitIssues(claim).length ? 'needs-fixing' : 'ready');
   }
   if (!response) {
     return stage('submitted');
@@ -78,6 +81,9 @@ export function getClaimDisplayStatus(claim: Claim, response?: ClaimResponse): C
   if (stedi) {
     if (stedi.code?.startsWith('E')) {
       return stage('rejected');
+    }
+    if (stedi.code === 'F2') {
+      return stage('denied', formatStediClaimStatus(stedi));
     }
     return stage(stedi.code?.startsWith('F') ? 'paid' : 'awaiting-payer', formatStediClaimStatus(stedi));
   }

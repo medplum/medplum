@@ -14,8 +14,16 @@ import {
   sumAdjudicationAmount,
 } from './claimStatus';
 
-const claim = (status: Claim['status']): Claim =>
-  ({ resourceType: 'Claim', status, patient: { reference: 'Patient/1' } }) as Claim;
+const claim = (status: Claim['status'], fields: Partial<Claim> = {}): Claim =>
+  ({
+    resourceType: 'Claim',
+    status,
+    patient: { reference: 'Patient/1' },
+    insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/1' } }],
+    diagnosis: [{ sequence: 1, diagnosisCodeableConcept: { coding: [{ code: 'E11.9' }] } }],
+    item: [{ sequence: 1, productOrService: { coding: [{ code: '99214' }] }, diagnosisSequence: [1] }],
+    ...fields,
+  }) as Claim;
 
 const response = (fields: Partial<ClaimResponse>): ClaimResponse =>
   ({ resourceType: 'ClaimResponse', status: 'active', outcome: 'queued', ...fields }) as ClaimResponse;
@@ -32,6 +40,15 @@ describe('getClaimDisplayStatus', () => {
     ['active', 'submitted'],
   ] as const)('a %s claim with no response is %s', (status, stage) => {
     expect(getClaimDisplayStatus(claim(status)).stage).toBe(stage);
+  });
+
+  test('a draft that would fail pre-submit checks needs fixing', () => {
+    expect(getClaimDisplayStatus(claim('draft', { diagnosis: [] }))).toMatchObject({
+      stage: 'needs-fixing',
+      label: 'Needs fixing',
+      color: 'orange',
+    });
+    expect(getClaimDisplayStatus(claim('draft', { insurance: [] })).stage).toBe('needs-fixing');
   });
 
   test.each([
@@ -58,6 +75,7 @@ describe('getClaimDisplayStatus', () => {
   test.each([
     ['E0', 'rejected'],
     ['F1', 'paid'],
+    ['F2', 'denied'],
     ['P1', 'awaiting-payer'],
   ])('maps Stedi category %s to %s', (code, stage) => {
     expect(

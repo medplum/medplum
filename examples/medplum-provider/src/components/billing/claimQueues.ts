@@ -3,6 +3,7 @@
 import type { Filter } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import { toLocalCalendarDate } from '../../utils/candid';
+import type { DotColor } from './BillingNavLink';
 
 /**
  * A claims worklist queue. A queue is a fixed set of search filters on Claim, so it reads and pages like any
@@ -12,11 +13,13 @@ export interface ClaimQueue {
   readonly id: string;
   readonly label: string;
   readonly group?: 'Aging' | 'Pre-Submission' | 'Submitted to Payer' | 'After Payment';
-  /** The Mantine color of the queue's dot in the nav. */
-  readonly color: string;
+  /** The queue's dot in the nav. */
+  readonly color: DotColor;
   readonly filters?: (today: Date) => Filter[];
   /** Why a queue without filters can't be listed yet. */
   readonly missing?: string;
+  /** Set when the queue's claims are found by checking each open claim in the browser, not by a search. */
+  readonly scanned?: boolean;
 }
 
 /** An accounts receivable aging bucket: open claims created between `minDays` and `maxDays` days ago. */
@@ -76,9 +79,23 @@ export function sameFilter(a: Filter, b: Filter): boolean {
 }
 
 export const ALL_OPEN_QUEUE_ID = 'all';
+export const ALL_ISSUES_QUEUE_ID = 'issues';
+
+/** Matches no claim, for a scanned queue with nothing in it. */
+const NO_CLAIM_ID = '00000000-0000-0000-0000-000000000000';
+
+/**
+ * The filter that lists a scanned queue's claims by ID.
+ * @param ids - The IDs of the claims in the queue.
+ * @returns The `_id` filter.
+ */
+export function getClaimIdFilter(ids: string[]): Filter {
+  return { code: '_id', operator: Operator.EQUALS, value: ids.length ? ids.join(',') : NO_CLAIM_ID };
+}
 
 export const CLAIM_QUEUES: ClaimQueue[] = [
   { id: ALL_OPEN_QUEUE_ID, label: 'All Open', color: 'dark', filters: () => [OPEN] },
+  { id: ALL_ISSUES_QUEUE_ID, label: 'All Issues', color: ['yellow', 'red'], scanned: true },
   ...AGING_BUCKETS.map((bucket, i): ClaimQueue => ({
     id: bucket.id,
     label: bucket.label,
@@ -86,13 +103,6 @@ export const CLAIM_QUEUES: ClaimQueue[] = [
     color: AGING_COLORS[i],
     filters: (today) => [ACTIVE, ...getAgingFilters(bucket, today)],
   })),
-  {
-    id: 'unbilled',
-    label: 'Unbilled',
-    group: 'Pre-Submission',
-    color: 'gray',
-    missing: 'Signed encounters with charges but no claim. This needs a billing status on ChargeItem.',
-  },
   {
     id: 'ready',
     label: 'Ready to Submit',

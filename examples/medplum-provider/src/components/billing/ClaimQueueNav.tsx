@@ -6,13 +6,15 @@ import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { Fragment, useEffect, useState } from 'react';
 import { BillingNavDivider, BillingNavGroup, BillingNavLink } from './BillingNavLink';
-import { AGING_BUCKETS, CLAIM_QUEUES, isAgingQueue } from './claimQueues';
+import { AGING_BUCKETS, ALL_ISSUES_QUEUE_ID, CLAIM_QUEUES, isAgingQueue } from './claimQueues';
 import type { AgingTotal } from './useClaimsAging';
 
 export interface ClaimQueueNavProps {
   readonly baseUrl: string;
   readonly queueId: string;
   readonly agingTotals: AgingTotal[] | undefined;
+  /** The number of claims in All Issues, once the open claims have been checked. */
+  readonly issueCount: number | undefined;
   readonly onNavigate: (queueId: string) => void;
   /** Bump to reload the counts. */
   readonly version: number;
@@ -24,7 +26,7 @@ export interface ClaimQueueNavProps {
  * @returns The ClaimQueueNav React node.
  */
 export function ClaimQueueNav(props: ClaimQueueNavProps): JSX.Element {
-  const { baseUrl, queueId, agingTotals, onNavigate, version } = props;
+  const { baseUrl, queueId, agingTotals, issueCount, onNavigate, version } = props;
   const counts = useQueueCounts(version);
 
   return (
@@ -32,7 +34,12 @@ export function ClaimQueueNav(props: ClaimQueueNavProps): JSX.Element {
       {CLAIM_QUEUES.map((queue, i) => {
         const showGroup = queue.group && CLAIM_QUEUES[i - 1]?.group !== queue.group;
         const agingIndex = AGING_BUCKETS.findIndex((b) => b.id === queue.id);
-        const count = isAgingQueue(queue) ? agingTotals?.[agingIndex]?.count : counts[queue.id];
+        let count: number | undefined = counts[queue.id];
+        if (isAgingQueue(queue)) {
+          count = agingTotals?.[agingIndex]?.count;
+        } else if (queue.id === ALL_ISSUES_QUEUE_ID) {
+          count = issueCount;
+        }
         return (
           <Fragment key={queue.id}>
             {showGroup && (queue.group === 'Aging' || queue.group === 'Pre-Submission') && <BillingNavDivider />}

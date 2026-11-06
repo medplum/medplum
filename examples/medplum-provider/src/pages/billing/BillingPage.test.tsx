@@ -91,6 +91,17 @@ describe('BillingPage', () => {
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('opens the new claim modal from the Claims tab only', async () => {
+    const user = userEvent.setup();
+    const { router } = setup('/Billing/Claims/all');
+
+    await user.click(screen.getByRole('button', { name: 'New claim' }));
+    expect(await screen.findByRole('dialog', { name: 'New claim' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Encounter' })).toBeDisabled();
+    await act(async () => router.navigate('/Billing/Remits'));
+    expect(screen.queryByRole('button', { name: 'New claim' })).not.toBeInTheDocument();
+  });
+
   test('aging cards and aging links select the same bucket', async () => {
     await medplum.createResource(newClaim({ created: daysAgo(45), total: { value: 80, currency: 'USD' } }));
     const user = userEvent.setup();
@@ -269,6 +280,54 @@ describe('BillingPage', () => {
     expect(router.state.location.pathname).toBe('/Billing/Claims/ready');
     await waitFor(() => expect(screen.getByRole('table').querySelectorAll('tbody tr')).toHaveLength(1));
     expect(within(screen.getByRole('table')).getByText('$77.00')).toBeInTheDocument();
+  });
+
+  test('lists every claim that needs attention under All Issues, with the reason', async () => {
+    await medplum.createResource(
+      newClaim({ status: 'draft', patient: { reference: 'Patient/2', display: 'Bart Simpson' } })
+    );
+    const denied = await medplum.createResource(
+      newClaim({ patient: { reference: 'Patient/3', display: 'Lisa Simpson' } })
+    );
+    await medplum.createResource<ClaimResponse>({
+      resourceType: 'ClaimResponse',
+      status: 'active',
+      type: { coding: [{ code: 'professional' }] },
+      use: 'claim',
+      patient: denied.patient,
+      created: daysAgo(1),
+      insurer: { display: 'Aetna' },
+      outcome: 'complete',
+      request: { reference: `Claim/${denied.id}` },
+      extension: [
+        {
+          url: SOURCE_CLAIM_STATUS_EXTENSION_URL,
+          valueCodeableConcept: { coding: [{ system: CANDID_CLAIM_STATUS_SYSTEM, code: 'denied' }] },
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    setup('/Billing/Claims/all');
+
+    const links = within(nav()).getAllByRole('link');
+    expect(links[0]).toHaveTextContent('All Open');
+    expect(links[1]).toHaveTextContent('All Issues');
+    await waitFor(() => expect(links[1]).toHaveTextContent('All Issues2'));
+    await user.click(links[1]);
+
+    const table = await screen.findByRole('table');
+    await waitFor(() => expect(table.querySelectorAll('tbody tr')).toHaveLength(2));
+    expect(within(table).queryByText('Homer Simpson')).not.toBeInTheDocument();
+    const bart = within(table).getByText('Bart Simpson').closest('tr') as HTMLElement;
+    expect(within(bart).getByText('No diagnoses')).toBeInTheDocument();
+    expect(within(bart).getByText('No coverage')).toBeInTheDocument();
+    expect(within(bart).getByText('Needs fixing')).toBeInTheDocument();
+    expect(within(bart).queryByText('Ready')).not.toBeInTheDocument();
+    const lisa = within(table).getByText('Lisa Simpson').closest('tr') as HTMLElement;
+    expect(within(lisa).getAllByText('Denied')).toHaveLength(2);
+
+    await user.click(within(bart).getByText('$125.50'));
+    expect(await screen.findByRole('region', { name: 'Needs fixing' })).toHaveTextContent(/Add at least one diagnosis/);
   });
 
   describe('Remits', () => {

@@ -1,0 +1,16 @@
+.addButton {
+  height: 44px;
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-primary-color-filled);
+}
+
+.lineFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--mantine-spacing-sm);
+}
+
+.total {
+  padding-top: var(--mantine-spacing-sm);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}

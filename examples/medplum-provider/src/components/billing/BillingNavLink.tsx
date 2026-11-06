@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Divider, Text } from '@mantine/core';
 import { isAuxClick } from '@medplum/react';
-import type { JSX, ReactNode } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
 import classes from './BillingNavLink.module.css';
+
+/** A Mantine color, or two that the dot fades between. */
+export type DotColor = string | readonly [string, string];
 
 export interface BillingNavLinkProps {
   readonly href: string;
@@ -11,8 +14,8 @@ export interface BillingNavLinkProps {
   readonly active: boolean;
   readonly onNavigate: () => void;
   readonly icon?: ReactNode;
-  /** A Mantine color for a status dot in place of an icon. */
-  readonly dotColor?: string;
+  /** A status dot in place of an icon. */
+  readonly dotColor?: DotColor;
   readonly count?: number;
   /** Set when the link is a tab of a tablist rather than a page link. */
   readonly tabProps?: { id: string; controls: string };
@@ -42,7 +45,12 @@ export function BillingNavLink(props: BillingNavLinkProps): JSX.Element {
       }}
     >
       {icon}
-      {dotColor && <span className={classes.dot} style={{ backgroundColor: `var(--mantine-color-${dotColor}-6)` }} />}
+      {dotColor && (
+        <span
+          className={typeof dotColor === 'string' ? classes.dot : `${classes.dot} ${classes.dotCycling}`}
+          style={getDotStyle(dotColor)}
+        />
+      )}
       <span className={classes.label}>{label}</span>
       {count !== undefined && <span className={classes.count}>{count.toLocaleString()}</span>}
     </Anchor>
@@ -65,4 +73,11 @@ export function BillingNavGroup(props: { readonly children: ReactNode }): JSX.El
  */
 export function BillingNavDivider(): JSX.Element {
   return <Divider mt="xs" className={classes.divider} />;
+}
+
+function getDotStyle(color: DotColor): CSSProperties {
+  if (typeof color === 'string') {
+    return { backgroundColor: `var(--mantine-color-${color}-6)` };
+  }
+  return Object.fromEntries(color.map((c, i) => [`--dot-color-${i}`, `var(--mantine-color-${c}-6)`]));
 }

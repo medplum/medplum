@@ -42,12 +42,16 @@ import {
   addClaimNote,
   getClaimFollowUp,
   getClaimNotes,
+  markPatientBalanceCollected,
   refreshClaim,
   setClaimFollowUp,
   submitClaim,
 } from './claimActions';
 import classes from './ClaimDetailPane.module.css';
+import { finishClaimEdit, getLineCharge } from './claimEditing';
+import { ClaimDiagnosesEditor, ClaimLinesEditor } from './ClaimEditor';
 import { ClaimFollowUpModal } from './ClaimFollowUpModal';
+import { getClaimIssues, getPatientResponsibility } from './claimIssues';
 import { ClaimNoteInput } from './ClaimNoteInput';
 import type { ClaimDisplayStatus } from './claimStatus';
 import {
@@ -58,6 +62,7 @@ import {
   sumAdjudicationAmount,
 } from './claimStatus';
 import pillTabs from './PillTabs.module.css';
+import type { ClaimIssue } from './preSubmitChecks';
 
 type DetailTab = 'lines' | 'activity';
 
@@ -86,6 +91,8 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
   const [followUp, setFollowUp] = useState<ClaimFollowUp | undefined>(() => getClaimFollowUp(claimId));
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** The claim being edited, while the diagnoses and lines are in edit mode. */
+  const [draft, setDraft] = useState<WithId<Claim>>();
 
   useEffect(() => {
     let active = true;
@@ -147,18 +154,36 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
   const remits = responses.filter(isRemitResponse);
   const response = responses.findLast((r) => !isRemitResponse(r)) ?? remits.at(-1);
   const status = getClaimStatus(claim, responses);
-  const editable = status.stage === 'ready' || status.stage === 'rejected';
+  const editable = status.stage === 'ready' || status.stage === 'needs-fixing' || status.stage === 'rejected';
   const encounterUrl = getEncounterUrl(claim);
+  const startEdit = editable ? () => setDraft(structuredClone(claim)) : undefined;
+  const saveEdit = (): Promise<void> =>
+    run(async () => {
+      if (draft) {
+        setClaim(await medplum.updateResource({ ...finishClaimEdit(draft), id: claim.id }));
+        setDraft(undefined);
+      }
+    }, 'Claim saved');
+  const editAction = startEdit && !draft && (
+    <Button variant="subtle" size="compact-sm" leftSection={<IconPencil size={14} />} onClick={startEdit}>
+      Edit
+    </Button>
+  );
   const nextAction = getNextAction({
-    claim,
     response,
     status,
+    issues: getClaimIssues(draft ?? claim, responses),
     followUp,
     busy,
-    encounterUrl,
+    onEdit: startEdit,
     onSubmit: () => run(() => submitClaim(medplum, claim), 'Claim submitted to Candid'),
     onRefresh: () => run(() => refreshClaim(medplum, claim), 'Status refreshed from Candid'),
     onFollowUp: () => setFollowUpOpen(true),
+    onCollected: () => {
+      markPatientBalanceCollected(claim.id);
+      setVersion((v) => v + 1);
+      onChanged();
+    },
   });
 
   return (
@@ -174,7 +199,7 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
             </Text>
           </Stack>
           <Group gap="xs" wrap="nowrap">
-            {status.stage !== 'ready' && status.stage !== 'voided' && (
+            {status.stage !== 'ready' && status.stage !== 'needs-fixing' && status.stage !== 'voided' && (
               <Tooltip label="Refresh status" position="bottom" openDelay={500}>
                 <ActionIcon
                   variant="transparent"
@@ -192,7 +217,8 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
             <ClaimMoreMenu
               claim={claim}
               response={responses.find(isCandidClaimResponse) ?? null}
-              editUrl={editable ? encounterUrl : undefined}
+              encounterUrl={encounterUrl}
+              onEdit={draft ? undefined : startEdit}
               onFollowUp={() => setFollowUpOpen(true)}
             />
             <ActionIcon
@@ -240,9 +266,21 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
             <Divider className={classes.sectionDivider} />
             <ClaimTotals claim={claim} remits={remits} />
             <Divider className={classes.sectionDivider} />
-            <ClaimDiagnoses claim={claim} />
+            {draft ? (
+              <DetailSection title="Diagnoses" description="The first diagnosis is the principal one.">
+                <ClaimDiagnosesEditor claim={draft} onChange={(next) => setDraft({ ...next, id: claim.id })} />
+              </DetailSection>
+            ) : (
+              <ClaimDiagnoses claim={claim} action={editAction} />
+            )}
             <Divider className={classes.sectionDivider} />
-            <ClaimLines claim={claim} remits={remits} />
+            {draft ? (
+              <DetailSection title="Service Lines">
+                <ClaimLinesEditor claim={draft} onChange={(next) => setDraft({ ...next, id: claim.id })} />
+              </DetailSection>
+            ) : (
+              <ClaimLines claim={claim} remits={remits} action={editAction} />
+            )}
             <Divider className={classes.sectionDivider} />
             <RemittanceDetails claimId={claimId} remits={remits} remittances={remittances} />
             <Divider className={classes.sectionDivider} />
@@ -251,7 +289,17 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
         )}
         {tab === 'activity' && <ClaimActivity claim={claim} responses={responses} notes={notes} followUp={followUp} />}
       </Stack>
-      {tab === 'lines' && nextAction.actions && (
+      {tab === 'lines' && draft && (
+        <Group grow gap="sm" className={classes.footer} role="group" aria-label="Edit actions">
+          <Button variant="default" disabled={busy} onClick={() => setDraft(undefined)}>
+            Cancel
+          </Button>
+          <Button loading={busy} onClick={saveEdit}>
+            Save changes
+          </Button>
+        </Group>
+      )}
+      {tab === 'lines' && !draft && nextAction.actions && (
         <Stack gap="sm" className={classes.footer} role="group" aria-label="Claim actions">
           {nextAction.actions}
         </Stack>
@@ -278,11 +326,12 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
 function ClaimMoreMenu(props: {
   readonly claim: WithId<Claim>;
   readonly response: WithId<ClaimResponse> | null;
-  /** The encounter to edit the claim in, while the claim can still be edited. */
-  readonly editUrl?: string;
+  readonly encounterUrl?: string;
+  /** Puts the diagnoses and lines in edit mode, while the claim can still be edited. */
+  readonly onEdit?: () => void;
   readonly onFollowUp: () => void;
 }): JSX.Element {
-  const { claim, response, editUrl, onFollowUp } = props;
+  const { claim, response, encounterUrl, onEdit, onFollowUp } = props;
   const medplum = useMedplum();
   const patientRef = claim.patient?.reference;
 
@@ -316,12 +365,8 @@ function ClaimMoreMenu(props: {
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
-        {editUrl && (
-          <Menu.Item
-            leftSection={<IconPencil size={16} color="var(--mantine-color-dimmed)" />}
-            component="a"
-            href={editUrl}
-          >
+        {onEdit && (
+          <Menu.Item leftSection={<IconPencil size={16} color="var(--mantine-color-dimmed)" />} onClick={onEdit}>
             <Text size="sm">Edit claim</Text>
           </Menu.Item>
         )}
@@ -343,6 +388,15 @@ function ClaimMoreMenu(props: {
             <Text size="sm">View on Candid</Text>
           </Menu.Item>
         )}
+        {encounterUrl && (
+          <Menu.Item
+            leftSection={<IconExternalLink size={16} color="var(--mantine-color-dimmed)" />}
+            component="a"
+            href={encounterUrl}
+          >
+            <Text size="sm">Open encounter</Text>
+          </Menu.Item>
+        )}
         {patientRef && (
           <Menu.Item
             leftSection={<IconExternalLink size={16} color="var(--mantine-color-dimmed)" />}
@@ -358,15 +412,18 @@ function ClaimMoreMenu(props: {
 }
 
 interface NextActionProps {
-  readonly claim: Claim;
   readonly response?: ClaimResponse;
   readonly status: ClaimDisplayStatus;
+  /** What needs attention on the claim, the same reasons All Issues shows. */
+  readonly issues: ClaimIssue[];
   readonly followUp?: ClaimFollowUp;
   readonly busy: boolean;
-  readonly encounterUrl?: string;
+  /** Puts the claim in edit mode, while it can still be edited. */
+  readonly onEdit?: () => void;
   readonly onSubmit: () => void;
   readonly onRefresh: () => void;
   readonly onFollowUp: () => void;
+  readonly onCollected: () => void;
 }
 
 interface NextAction {
@@ -383,7 +440,7 @@ interface NextAction {
  * @returns The alert and the actions.
  */
 function getNextAction(props: NextActionProps): NextAction {
-  const { claim, response, status, followUp, busy, encounterUrl, onSubmit, onRefresh, onFollowUp } = props;
+  const { response, status, issues, followUp, busy, onEdit, onSubmit, onRefresh, onFollowUp, onCollected } = props;
   const comingSoon = (...labels: string[]): ReactNode => (
     <Group grow gap="sm">
       {labels.map((label) => (
@@ -400,21 +457,49 @@ function getNextAction(props: NextActionProps): NextAction {
       <IconClock size={14} style={{ verticalAlign: -2 }} /> Follow up {formatDate(followUp.date)}: {followUp.note}
     </Text>
   );
+  const balance = issues.find((i) => i.code === 'patient-balance');
+  const balanceLine = balance && <Text size="sm">{balance.detail}</Text>;
 
   switch (status.stage) {
+    case 'needs-fixing':
+      return {
+        title: 'Needs fixing',
+        message: (
+          <Stack gap={4}>
+            {issues.map((issue) => (
+              <Text size="sm" key={issue.code}>
+                <IconAlertTriangle size={14} color="var(--mantine-color-orange-6)" style={{ verticalAlign: -2 }} />{' '}
+                {issue.detail}
+              </Text>
+            ))}
+          </Stack>
+        ),
+        actions: (
+          <>
+            {onEdit && (
+              <Button fullWidth onClick={onEdit}>
+                Fix claim
+              </Button>
+            )}
+            <Button fullWidth variant="default" disabled>
+              Submit to Candid
+            </Button>
+          </>
+        ),
+      };
     case 'ready':
       return {
         title: 'Ready to submit',
         message: (
-          <Text size="sm">Pre-submit checks aren't stored on claims yet. Review the lines before submitting.</Text>
+          <Text size="sm">Coverage, diagnoses and pointers are in place. Review the lines before submitting.</Text>
         ),
         actions: (
           <>
-            <Button fullWidth loading={busy} onClick={onSubmit} disabled={!claim.insurance?.length}>
+            <Button fullWidth loading={busy} onClick={onSubmit}>
               Submit to Candid
             </Button>
-            {encounterUrl && (
-              <Button fullWidth variant="default" component="a" href={encounterUrl}>
+            {onEdit && (
+              <Button fullWidth variant="default" onClick={onEdit}>
                 Edit claim
               </Button>
             )}
@@ -434,8 +519,8 @@ function getNextAction(props: NextActionProps): NextAction {
         ),
         actions: (
           <>
-            {encounterUrl && (
-              <Button fullWidth component="a" href={encounterUrl}>
+            {onEdit && (
+              <Button fullWidth onClick={onEdit}>
                 Fix claim
               </Button>
             )}
@@ -451,6 +536,7 @@ function getNextAction(props: NextActionProps): NextAction {
         message: (
           <Stack gap={4}>
             <Text size="sm">{getResponseMessage(response) ?? 'The payer denied this claim.'}</Text>
+            {balanceLine}
             {followUpLine}
           </Stack>
         ),
@@ -459,10 +545,29 @@ function getNextAction(props: NextActionProps): NextAction {
     case 'paid-incorrectly':
       return {
         title: 'Paid incorrectly',
-        message: <Text size="sm">The payer's allowed amount doesn't match the contracted rate.</Text>,
+        message: (
+          <Stack gap={4}>
+            <Text size="sm">The payer's allowed amount doesn't match the contracted rate.</Text>
+            {balanceLine}
+          </Stack>
+        ),
         actions: comingSoon('Appeal underpayment', 'Accept as paid'),
       };
     case 'paid':
+      if (balance) {
+        return {
+          title: 'Patient balance',
+          message: <Text size="sm">The payer finalized this claim. {balance.detail}</Text>,
+          actions: (
+            <>
+              <Button fullWidth onClick={onCollected}>
+                Mark collected
+              </Button>
+              {comingSoon('Send statement')}
+            </>
+          ),
+        };
+      }
       return {
         title: 'Paid',
         message: <Text size="sm">The payer finalized this claim.</Text>,
@@ -502,6 +607,7 @@ function getNextAction(props: NextActionProps): NextAction {
             <Text size="sm">
               {status.detail ? `Clearinghouse status: ${status.detail}.` : 'Waiting for the payer to adjudicate.'}
             </Text>
+            {balanceLine}
             {followUpLine}
           </Stack>
         ),
@@ -525,20 +631,26 @@ function getNextAction(props: NextActionProps): NextAction {
  * @param props - The section props.
  * @param props.title - The subhead.
  * @param props.description - The dimmed line under it.
+ * @param props.action - A button at the right of the subhead.
  * @param props.children - The section content.
  * @returns The section.
  */
 function DetailSection(props: {
   readonly title: string;
   readonly description?: ReactNode;
+  /** A button at the right of the subhead. */
+  readonly action?: ReactNode;
   readonly children: ReactNode;
 }): JSX.Element {
   return (
     <Stack gap="md">
       <div>
-        <Text fz="md" fw={800}>
-          {props.title}
-        </Text>
+        <Group justify="space-between" wrap="nowrap">
+          <Text fz="md" fw={800}>
+            {props.title}
+          </Text>
+          {props.action}
+        </Group>
         {props.description && (
           <Text size="sm" c="dimmed">
             {props.description}
@@ -577,19 +689,24 @@ function ClaimTotals(props: { readonly claim: Claim; readonly remits: ClaimRespo
         <MetaItem label="Billed" value={money(claim.total?.value)} />
         <MetaItem label="Allowed" value={money(sum('eligible'))} />
         <MetaItem label="Paid" value={money(paid)} />
-        <MetaItem label="Patient" value={money(sum('deductible', 'copay'))} />
+        <MetaItem label="Patient" value={money(getPatientResponsibility(remits))} />
       </div>
     </DetailSection>
   );
 }
 
-function ClaimLines(props: { readonly claim: Claim; readonly remits: ClaimResponse[] }): JSX.Element {
-  const { claim, remits } = props;
+function ClaimLines(props: {
+  readonly claim: Claim;
+  readonly remits: ClaimResponse[];
+  readonly action?: ReactNode;
+}): JSX.Element {
+  const { claim, remits, action } = props;
   const lines = claim.item ?? [];
   const remitItems = remits.flatMap((r) => r.item ?? []);
   return (
     <DetailSection
       title="Service Lines"
+      action={action}
       description={`${lines.length} ${lines.length === 1 ? 'line' : 'lines'}, with the payer's adjudication`}
     >
       <Table horizontalSpacing="sm" verticalSpacing="xs" className={classes.table}>
@@ -607,7 +724,7 @@ function ClaimLines(props: { readonly claim: Claim; readonly remits: ClaimRespon
           {lines.map((item) => {
             const coding = item.productOrService?.coding?.[0];
             const adjudicated = remitItems.filter((r) => r.itemSequence === item.sequence);
-            const billed = item.net?.value ?? (item.unitPrice?.value ?? 0) * (item.quantity?.value ?? 1);
+            const billed = getLineCharge(item);
             return (
               <Table.Tr key={item.sequence}>
                 <Table.Td>
@@ -668,14 +785,16 @@ function toDiagnosisLetter(sequence: number): string {
  * Flags a diagnosis that no line points to, and a claim with no diagnoses.
  * @param props - The component props.
  * @param props.claim - The claim.
+ * @param props.action - A button at the right of the subhead.
  * @returns The diagnoses section.
  */
-function ClaimDiagnoses(props: { readonly claim: Claim }): JSX.Element {
+function ClaimDiagnoses(props: { readonly claim: Claim; readonly action?: ReactNode }): JSX.Element {
   const diagnoses = props.claim.diagnosis ?? [];
   const pointed = new Set((props.claim.item ?? []).flatMap((item) => item.diagnosisSequence ?? []));
   return (
     <DetailSection
       title="Diagnoses"
+      action={props.action}
       description={diagnoses.length ? undefined : 'No diagnoses on this claim. Payers reject a claim without one.'}
     >
       {diagnoses.length > 0 && (

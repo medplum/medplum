@@ -50,10 +50,28 @@
 }
 
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex: none;
+}
+
+.dotCycling {
+  animation: dot-cycle 3s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes dot-cycle {
+  0%,
+  100% {
+    background-color: var(--dot-color-0);
+  }
+  50% {
+    background-color: var(--dot-color-1);
+  }
 }
 
 .count {

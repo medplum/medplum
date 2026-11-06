@@ -1,0 +1,170 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Button, Select, Stack, Text } from '@mantine/core';
+import type { WithId } from '@medplum/core';
+import { formatDate, getReferenceString } from '@medplum/core';
+import type { Claim, Encounter, Patient } from '@medplum/fhirtypes';
+import { Modal, ResourceInput, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
+import { createClaimFromEncounter, findEncounterClaim } from './newClaim';
+
+export interface NewClaimModalProps {
+  readonly opened: boolean;
+  readonly onClose: () => void;
+  /** Called with the encounter's claim: the new one, or the open one it already had. */
+  readonly onCreated: (claim: WithId<Claim>) => void;
+}
+
+interface EncounterOption {
+  readonly encounter: WithId<Encounter>;
+  /** The encounter's open claim, if it has one. */
+  readonly claimId?: string;
+}
+
+/**
+ * Creates a claim from an encounter. Pick the patient, then the encounter to bill; an encounter that already has an
+ * open claim opens that claim instead of making a second one.
+ * @param props - The NewClaimModal React props.
+ * @returns The NewClaimModal React node.
+ */
+export function NewClaimModal(props: NewClaimModalProps): JSX.Element {
+  const { opened, onClose, onCreated } = props;
+  const medplum = useMedplum();
+  const [patient, setPatient] = useState<WithId<Patient>>();
+  const [options, setOptions] = useState<EncounterOption[]>();
+  const [encounterId, setEncounterId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!patient) {
+      return undefined;
+    }
+    let active = true;
+    const load = async (): Promise<EncounterOption[]> => {
+      const encounters = await medplum.searchResources(
+        'Encounter',
+        { patient: getReferenceString(patient), _sort: '-date', _count: '50' },
+        { cache: 'no-cache' }
+      );
+      const claims = encounters.length
+        ? await medplum.searchResources(
+            'Claim',
+            { encounter: encounters.map(getReferenceString).join(','), status: 'active,draft', _count: '100' },
+            { cache: 'no-cache' }
+          )
+        : [];
+      return encounters.map((encounter) => ({
+        encounter,
+        claimId: claims.find((c) =>
+          c.item?.some((item) => item.encounter?.some((e) => e.reference === getReferenceString(encounter)))
+        )?.id,
+      }));
+    };
+    load()
+      .then((found) => {
+        if (active) {
+          setOptions(found);
+          setEncounterId(found.find((o) => !o.claimId)?.encounter.id ?? null);
+        }
+      })
+      .catch(showErrorNotification);
+    return () => {
+      active = false;
+    };
+  }, [medplum, patient]);
+
+  const close = (): void => {
+    setPatient(undefined);
+    setOptions(undefined);
+    setEncounterId(null);
+    onClose();
+  };
+
+  const selected = options?.find((o) => o.encounter.id === encounterId);
+
+  const create = async (): Promise<void> => {
+    if (!selected) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const claim =
+        (await findEncounterClaim(medplum, selected.encounter)) ??
+        (await createClaimFromEncounter(medplum, selected.encounter));
+      onCreated(claim);
+      close();
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={close}
+      title="New claim"
+      actions={
+        <Button disabled={!selected} loading={saving} onClick={create}>
+          {selected?.claimId ? 'Open claim' : 'Create claim'}
+        </Button>
+      }
+    >
+      <Stack gap="md">
+        <ResourceInput<Patient>
+          key={opened ? 'open' : 'closed'}
+          resourceType="Patient"
+          name="patient"
+          label="Patient"
+          required
+          placeholder="Search patients"
+          onChange={(value) => {
+            setOptions(undefined);
+            setEncounterId(null);
+            setPatient(value as WithId<Patient> | undefined);
+          }}
+        />
+        <Select
+          label="Encounter"
+          required
+          placeholder={getEncounterPlaceholder(patient, options)}
+          disabled={!options?.length}
+          data={(options ?? []).map((o) => ({
+            value: o.encounter.id,
+            label: `${getEncounterLabel(o.encounter)}${o.claimId ? ' · has a claim' : ''}`,
+          }))}
+          value={encounterId}
+          onChange={setEncounterId}
+          comboboxProps={{ withinPortal: true }}
+        />
+        <Text size="xs" c="dimmed">
+          {selected?.claimId
+            ? 'This encounter already has an open claim. Opening it instead of making a second one.'
+            : "The claim's lines and diagnoses come from the encounter's charge items and diagnoses. Edit them on the claim."}
+        </Text>
+      </Stack>
+    </Modal>
+  );
+}
+
+function getEncounterLabel(encounter: Encounter): string {
+  const date = encounter.period?.start ?? encounter.meta?.lastUpdated;
+  const type =
+    encounter.serviceType?.text ??
+    encounter.serviceType?.coding?.[0]?.display ??
+    encounter.type?.[0]?.text ??
+    encounter.type?.[0]?.coding?.[0]?.display ??
+    encounter.class?.display ??
+    'Encounter';
+  return [date ? formatDate(date) : undefined, type, encounter.status].filter(Boolean).join(' · ');
+}
+
+function getEncounterPlaceholder(patient: Patient | undefined, options: EncounterOption[] | undefined): string {
+  if (!patient) {
+    return 'Select a patient first';
+  }
+  return options?.length === 0 ? 'No encounters' : 'Select';
+}

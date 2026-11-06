@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Button, Center, Divider, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Badge, Button, Center, Divider, Group, Stack, Text, ThemeIcon, Title, Tooltip } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchRequest } from '@medplum/core';
 import type { Claim, ClaimResponse, Resource } from '@medplum/fhirtypes';
 import type { SearchLoadEvent } from '@medplum/react';
-import { SearchControl, useMedplum } from '@medplum/react';
+import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { IconHourglassEmpty, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -14,8 +14,10 @@ import { setClaimFollowUp } from './claimActions';
 import { ClaimActionsModal } from './ClaimActionsModal';
 import { ClaimDetailPane } from './ClaimDetailPane';
 import { ClaimFollowUpModal } from './ClaimFollowUpModal';
+import type { ClaimIssueScan } from './claimIssues';
+import { MAX_ISSUE_CLAIMS } from './claimIssues';
 import type { ClaimQueue } from './claimQueues';
-import { ALL_OPEN_QUEUE_ID, getClaimQueue, isAgingQueue, sameFilter } from './claimQueues';
+import { ALL_OPEN_QUEUE_ID, getClaimIdFilter, getClaimQueue, isAgingQueue, sameFilter } from './claimQueues';
 import { ClaimsAgingSummary } from './ClaimsAgingSummary';
 import { getClaimStatus } from './claimStatus';
 import classes from './ClaimsWorklist.module.css';
@@ -30,6 +32,8 @@ export interface ClaimsWorklistProps {
   /** The URL query, holding the table's own search: columns, filters and sort. */
   readonly query: string;
   readonly agingTotals: AgingTotal[] | undefined;
+  /** The open claims with issues, for All Issues, or undefined while they're being checked. */
+  readonly issues: ClaimIssueScan | undefined;
   /** The width of the area the worklist fills, which sizes the claim drawer. */
   readonly areaWidth: number;
   /** Navigates to a path below the claims root, e.g. `ready` or `all/:claimId?_sort=created`. */
@@ -45,7 +49,7 @@ export interface ClaimsWorklistProps {
  * @returns The ClaimsWorklist React node.
  */
 export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
-  const { queueId, claimId, query, agingTotals, areaWidth, onNavigate, onChanged } = props;
+  const { queueId, claimId, query, agingTotals, issues, areaWidth, onNavigate, onChanged } = props;
   const medplum = useMedplum();
   const queue = getClaimQueue(queueId);
   const [version, setVersion] = useState(0);
@@ -55,7 +59,12 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
   const [followUpIds, setFollowUpIds] = useState<string[]>();
   const responsesRequest = useRef(0);
 
-  const queueFilters = useMemo(() => queue.filters?.(new Date()) ?? [], [queue]);
+  const queueFilters = useMemo(() => {
+    if (queue.scanned) {
+      return issues ? [getClaimIdFilter(issues.ids.slice(0, MAX_ISSUE_CLAIMS))] : [];
+    }
+    return queue.filters?.(new Date()) ?? [];
+  }, [queue, issues]);
 
   const search = useMemo((): SearchRequest => {
     const parsed = parseSearchRequest(`Claim${query}`);
@@ -109,6 +118,24 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
 
   const statusColumns = useMemo(
     () => [
+      ...(queue.scanned
+        ? [
+            {
+              name: 'Issue',
+              renderCell: (resource: Resource) => (
+                <Group gap={4}>
+                  {(issues?.byClaim[resource.id as string] ?? []).map((issue) => (
+                    <Tooltip key={issue.code} label={issue.detail} multiline maw={280} openDelay={300}>
+                      <Badge color={issue.color} variant="light">
+                        {issue.label}
+                      </Badge>
+                    </Tooltip>
+                  ))}
+                </Group>
+              ),
+            },
+          ]
+        : []),
       {
         name: 'Status',
         renderCell: (resource: Resource) => {
@@ -121,7 +148,7 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
         },
       },
     ],
-    [responses]
+    [responses, queue.scanned, issues]
   );
 
   const changed = (): void => {
@@ -152,8 +179,14 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
             </Button>
           </Group>
         )}
+        {queue.scanned && issues && issues.ids.length > MAX_ISSUE_CLAIMS && (
+          <Text size="sm" c="dimmed" mb="sm">
+            Showing the oldest {MAX_ISSUE_CLAIMS} of {issues.ids.length} claims with issues.
+          </Text>
+        )}
         <div className={classes.listArea}>
-          {queue.filters ? (
+          {queue.scanned && !issues && <Loading />}
+          {(queue.filters || (queue.scanned && issues)) && (
             <SearchControl
               key={version}
               search={search}
@@ -166,9 +199,8 @@ export function ClaimsWorklist(props: ClaimsWorklistProps): JSX.Element {
               onBulk={(ids) => setActionIds(ids)}
               additionalColumns={statusColumns}
             />
-          ) : (
-            <ComingSoonQueue queue={queue} />
           )}
+          {!queue.filters && !queue.scanned && <ComingSoonQueue queue={queue} />}
         </div>
         <WorklistDrawer opened={!!claimId} label="Claim" areaWidth={areaWidth} onClose={closeClaim}>
           {claimId && <ClaimDetailPane key={claimId} claimId={claimId} onClose={closeClaim} onChanged={changed} />}

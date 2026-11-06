@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Operator } from '@medplum/core';
 import { describe, expect, test } from 'vitest';
-import { getClaimQueue } from './claimQueues';
+import { CLAIM_QUEUES, getClaimIdFilter, getClaimQueue } from './claimQueues';
 
 describe('claimQueues', () => {
   const noRemit = {
@@ -40,5 +40,13 @@ describe('claimQueues', () => {
       value: 'error',
     });
     expect(rejected).toContainEqual({ code: 'status', operator: Operator.NOT, value: 'draft,cancelled' });
+  });
+
+  test('All Issues sits right below All Open and lists the scanned claims by ID', () => {
+    expect(CLAIM_QUEUES.slice(0, 2).map((q) => q.label)).toEqual(['All Open', 'All Issues']);
+    expect(getClaimQueue('issues').scanned).toBe(true);
+    expect(getClaimQueue('issues').filters).toBeUndefined();
+    expect(getClaimIdFilter(['a', 'b'])).toEqual({ code: '_id', operator: Operator.EQUALS, value: 'a,b' });
+    expect(getClaimIdFilter([]).value).toMatch(/^0{8}-/);
   });
 });
