@@ -57,55 +57,6 @@ export function getFieldDefinitions(search: SearchRequest): SearchControlField[]
   return fields;
 }
 
-const META_FIELDS = ['id', '_lastUpdated', 'meta.versionId'];
-const PROFILE_RESOURCE_TYPES = ['Patient', 'Practitioner', 'RelatedPerson'];
-
-/**
- * Returns the top-level elements needed to render the given fields, for use as `_elements`.
- * `id` and `meta` are always returned by the server, so the meta columns contribute nothing.
- * @param resourceType - The resource type.
- * @param fields - The field definitions.
- * @returns The top-level element names, or undefined if any field cannot be mapped to an element.
- */
-export function getFieldElements(resourceType: string, fields: SearchControlField[]): string[] | undefined {
-  const elements = new Set<string>();
-  for (const field of fields) {
-    if (META_FIELDS.includes(field.name)) {
-      continue;
-    }
-
-    const topLevel: string[] = [];
-    if (field.elementDefinition?.path === `${resourceType}.${field.name}`) {
-      topLevel.push(field.name.replace('[x]', ''));
-    } else if (field.searchParams?.length === 1 && field.searchParams[0].code === field.name) {
-      topLevel.push(...getExpressionElements(resourceType, field.searchParams[0].expression));
-    }
-    if (topLevel.length === 0) {
-      return undefined;
-    }
-
-    for (const element of topLevel) {
-      elements.add(element);
-    }
-    if (field.name === 'name' && PROFILE_RESOURCE_TYPES.includes(resourceType)) {
-      elements.add('photo');
-    }
-  }
-  return elements.size > 0 ? Array.from(elements) : ['id'];
-}
-
-/**
- * Returns the top-level elements a search parameter expression reads from the resource,
- * e.g. `Patient.address.country` → `address`.
- * @param resourceType - The resource type.
- * @param expression - The search parameter FHIRPath expression.
- * @returns The top-level element names.
- */
-function getExpressionElements(resourceType: string, expression: string | undefined): string[] {
-  const pattern = new RegExp(`(?<![\\w.])${resourceType}\\.(\\w+)`, 'g');
-  return Array.from(expression?.matchAll(pattern) ?? [], (match) => match[1]);
-}
-
 /**
  * Return the field definition for a given field name.
  * Field names can be either property names or search parameter codes.
