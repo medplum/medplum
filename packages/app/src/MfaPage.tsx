@@ -61,8 +61,16 @@ export function MfaPage(): JSX.Element | null {
           showNotification({ color: 'green', message: 'Authenticator app enabled' });
         })
         .catch((err) => {
-          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
-          // Enrollment offers expire, so refresh the QR code
+          const message = normalizeErrorString(err);
+          showNotification({
+            color: 'red',
+            // Enrollment offers expire. The app may still hold an entry for the old QR code, which will not work.
+            message:
+              message === 'Secret not found'
+                ? 'This QR code has expired. Remove its entry from your authenticator app, then scan the new QR code.'
+                : message,
+            autoClose: false,
+          });
           fetchStatus();
         });
     },

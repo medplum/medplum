@@ -64,12 +64,11 @@ function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
  * @param secret - The offered secret.
  */
 async function enrollTotp(login: Login, user: WithId<User>, secret: string): Promise<void> {
-  await getGlobalSystemRepo().updateResource({
-    ...user,
-    mfaSecret: secret,
-    mfaEnrolled: true,
-    mfaMethod: addMfaMethod(user, 'totp'),
-  });
+  // If the user changed since it was read (e.g. another login enrolled), fail rather than overwrite it
+  await getGlobalSystemRepo().updateResource(
+    { ...user, mfaSecret: secret, mfaEnrolled: true, mfaMethod: addMfaMethod(user, 'totp') },
+    { ifMatch: user.meta?.versionId }
+  );
   await clearTotpEnrollmentSecret(login, user);
 }
 

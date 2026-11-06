@@ -191,6 +191,14 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
   return Boolean(projectMfaRequired) || Boolean(user.mfaRequired);
 }
 
+// Returns the stored offer, or stores and returns ARGV[1] if there is none
+const GET_OR_SET_TOTP_ENROLLMENT = `
+local secret = redis.call('GET', KEYS[1])
+if secret then return secret end
+redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
+return ARGV[1]
+`;
+
 /**
  * Builds the authenticator (TOTP) enrollment payload offered to a login.
  *
@@ -215,11 +223,13 @@ export async function buildTotpEnrollment(
   user: WithId<User>,
   project: Project | undefined
 ): Promise<{ enrollUri: string; enrollQrCode: string }> {
-  const redis = getCacheRedis();
-  const key = getTotpEnrollmentKey(login, user);
-  const offered = authenticator.generateSecret();
-  const stored = await redis.set(key, offered, 'PX', TOTP_ENROLLMENT_EXPIRATION_MS, 'NX');
-  const mfaSecret = stored ? offered : ((await redis.get(key)) ?? offered);
+  const mfaSecret = (await getCacheRedis().eval(
+    GET_OR_SET_TOTP_ENROLLMENT,
+    1,
+    getTotpEnrollmentKey(login, user),
+    authenticator.generateSecret(),
+    TOTP_ENROLLMENT_EXPIRATION_MS
+  )) as string;
   const issuer = (getProjectAppName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
   const enrollUri = authenticator.keyuri(user.email ?? user.id, issuer, mfaSecret);
   return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };

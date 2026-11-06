@@ -21,7 +21,13 @@ import { rotateLoginRefreshSecret } from '../oauth/token';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
-import { clearMfaEmailCode, clearTotpEnrollmentSecret, getEnrolledMfaMethods, sendMfaEmailCode } from './utils';
+import {
+  bcryptHashPassword,
+  clearMfaEmailCode,
+  clearTotpEnrollmentSecret,
+  getEnrolledMfaMethods,
+  sendMfaEmailCode,
+} from './utils';
 
 const app = express();
 
@@ -2112,6 +2118,57 @@ describe('MFA', () => {
     expect(res.body.code).toBeDefined();
     const stored = await getGlobalSystemRepo().readResource<User>('User', user.id);
     expect(stored).toMatchObject({ mfaEnrolled: true, mfaMethod: ['totp'], mfaSecret: secret });
+  });
+
+  test('An emailed code does not confirm an authenticator enrollment', async () => {
+    const email = `totp-email-code${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { user } = await withTestContext(() =>
+      registerNew({ firstName: 'Totp', lastName: 'Email', projectName: `Totp Email ${randomUUID()}`, email, password })
+    );
+    await setMfaRequired(user);
+
+    const login = (await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' })).body;
+    const emailMfa = {
+      codeHash: await bcryptHashPassword('123456'),
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    };
+    await getGlobalSystemRepo().patchResource<Login>('Login', login.login, [
+      { op: 'add', path: '/emailMfa', value: emailMfa },
+    ]);
+
+    for (const path of ['/auth/mfa/login-enroll', '/auth/mfa/verify']) {
+      const res = await request(app).post(path).type('json').send({ login: login.login, token: '123456' });
+      expect(res.body).toMatchObject(badRequest('Invalid MFA token'));
+    }
+    expect((await getGlobalSystemRepo().readResource<User>('User', user.id)).mfaEnrolled).toBeFalsy();
+  });
+
+  test('Only one of two logins enrolling at once stores its secret', async () => {
+    const email = `totp-two-logins${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { user } = await withTestContext(() =>
+      registerNew({ firstName: 'Totp', lastName: 'Two', projectName: `Totp Two ${randomUUID()}`, email, password })
+    );
+    await setMfaRequired(user);
+
+    const startLogin = async (): Promise<any> =>
+      (await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' })).body;
+    const logins = [await startLogin(), await startLogin()];
+    const secrets = logins.map((l) => new URL(l.enrollUri).searchParams.get('secret') as string);
+    const results = await Promise.all(
+      logins.map((l, i) =>
+        request(app)
+          .post('/auth/mfa/login-enroll')
+          .type('json')
+          .send({ login: l.login, token: authenticator.generate(secrets[i]) })
+      )
+    );
+
+    const succeeded = results.map((r) => r.status === 200);
+    expect(succeeded.filter(Boolean)).toHaveLength(1);
+    const stored = await getGlobalSystemRepo().readResource<User>('User', user.id);
+    expect(stored.mfaSecret).toBe(secrets[succeeded.indexOf(true)]);
   });
 
   test('An offered TOTP secret is only stored when its own login confirms it', async () => {
