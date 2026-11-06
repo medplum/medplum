@@ -97,7 +97,7 @@ describe('Default access policies', () => {
         ValueSet: 'read',
       },
     },
-    Bot: { others: 'write', except: {} },
+    Bot: { others: 'write', except: { Bot: 'read', ClientApplication: 'read' } },
     ClientApplication: { others: 'write', except: { Bot: 'read', ClientApplication: 'read' } },
   };
 
