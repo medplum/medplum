@@ -538,7 +538,44 @@ For example, here's how the Patient resource would look:
 }
 ```
 
-Because the account-tagging is handled within the resource, project administrators and API users can set the account directly.
+Only project administrators can set or remove accounts directly, using the [`$set-accounts` operation](/docs/api/fhir/operations/set-accounts) or a write with the `X-Medplum: extended` header. For other users, the server manages accounts:
+
+- A new resource gets the creator's access policy `compartment`.
+- A resource that references a Patient also gets that Patient's accounts.
+- On create, the user may request additional accounts in `meta.accounts` if their access policy allows them (see below). Requesting any other account rejects the create with `403 Forbidden`.
+- Edits never remove an existing account, and accounts requested on an update are ignored. A resource that is moved to a different Patient keeps the previous Patient's accounts until an administrator removes them.
+
+#### Choosing an account on create
+
+A user who belongs to several tenants can choose which tenant a new resource belongs to. List the accounts a user may request in `AccessPolicy.resource.allowedAccounts`. Like `criteria`, these values may use access policy parameters such as `%organization`.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Organization Tenant Access",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?_compartment=%organization",
+      "allowedAccounts": [{ "reference": "%organization" }]
+    },
+    {
+      "resourceType": "Observation",
+      "criteria": "Observation?_compartment=%organization"
+    }
+  ]
+}
+```
+
+With one `ProjectMembership.access` entry per Organization, the user can create a Patient with `"meta": { "accounts": [{ "reference": "Organization/clinic-b" }] }`. Resources that reference the Patient, such as the Observation, inherit its accounts.
+
+A requested account is accepted only when a single rule in the user's access policy meets all of these conditions:
+
+- The rule lists the account in `allowedAccounts`.
+- The rule permits creating the resource, including its `criteria`, as it will be stored with the requested accounts.
+- The resource satisfies the rule's `writeConstraint`.
+
+`allowedAccounts` applies only to creates. It does not let users add accounts to existing resources.
 
 ### Patient Access
 

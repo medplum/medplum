@@ -1165,10 +1165,10 @@ describe('Subscription Worker', () => {
 
   test('Ignore resource changes in different account compartment', () =>
     withTestContext(async () => {
-      const project = randomUUID();
+      const project = (await createTestProject()).project.id;
       const account = 'Organization/' + randomUUID();
 
-      const subscription = await repo.createResource<Subscription>({
+      const subscription = await systemRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         meta: {
@@ -1186,7 +1186,7 @@ describe('Subscription Worker', () => {
       });
       expect(subscription).toBeDefined();
 
-      const patient = await repo.createResource<Patient>({
+      const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: {
           project,

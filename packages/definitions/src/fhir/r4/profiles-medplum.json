@@ -4580,6 +4580,21 @@
             ]
           },
           {
+            "id" : "AccessPolicy.resource.allowedAccounts",
+            "path" : "AccessPolicy.resource.allowedAccounts",
+            "definition" : "Accounts that a user may request in meta.accounts when creating a resource that this rule permits. Values may use access policy parameters, e.g. %organization. Not applied to updates.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Reference"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.allowedAccounts",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "AccessPolicy.ipAccessRule",
             "path" : "AccessPolicy.ipAccessRule",
             "definition" : "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
