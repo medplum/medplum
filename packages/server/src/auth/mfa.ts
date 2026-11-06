@@ -17,9 +17,10 @@ import { sendValidationErrors } from '../util/validator';
 import { assertMfaLoginActive } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
+  addMfaMethod,
   buildTotpEnrollment,
   clearMfaEmailCode,
-  clearTotpEnrollmentSecret,
+  enrollTotp,
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
   getLoginProject,
@@ -41,35 +42,6 @@ export const mfaRouter = Router();
  */
 function parseMfaMethod(value: unknown): MfaMethod {
   return value === 'email' ? 'email' : 'totp';
-}
-
-/**
- * Returns the union of the user's existing MFA methods plus the new method.
- * @param user - The user.
- * @param method - The method to add.
- * @returns The updated list of MFA methods.
- */
-function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
-  const methods = getEnrolledMfaMethods(user);
-  if (!methods.includes(method)) {
-    methods.push(method);
-  }
-  return methods;
-}
-
-/**
- * Enrolls the user in TOTP with the secret that was offered to the login, and ends the offer.
- * @param login - The login that confirmed the offered secret.
- * @param user - The user.
- * @param secret - The offered secret.
- */
-async function enrollTotp(login: Login, user: WithId<User>, secret: string): Promise<void> {
-  // If the user changed since it was read (e.g. another login enrolled), fail rather than overwrite it
-  await getGlobalSystemRepo().updateResource(
-    { ...user, mfaSecret: secret, mfaEnrolled: true, mfaMethod: addMfaMethod(user, 'totp') },
-    { ifMatch: user.meta?.versionId }
-  );
-  await clearTotpEnrollmentSecret(login, user);
 }
 
 /**
@@ -182,7 +154,6 @@ mfaRouter.post(
     }
 
     const result = await verifyMfaToken(login, req.body.token, secret);
-    await enrollTotp(login, user, secret);
     await sendLoginResult(res, result);
   }
 );
@@ -267,14 +238,9 @@ mfaRouter.post(
     // A code for this login's own enrollment offer enrolls the user, as /login-enroll does
     const user = await systemRepo.readReference<User>(login.user as Reference<User>);
     const secret = user.mfaEnrolled ? undefined : await getTotpEnrollmentSecret(login, user);
-    if (secret && getAllowedMfaMethods(await getLoginProject(login)).includes('totp')) {
-      const result = await verifyMfaToken(login, req.body.token, secret);
-      await enrollTotp(login, user, secret);
-      await sendLoginResult(res, result);
-      return;
-    }
-
-    const result = await verifyMfaToken(login, req.body.token);
+    const enrollSecret =
+      secret && getAllowedMfaMethods(await getLoginProject(login)).includes('totp') ? secret : undefined;
+    const result = await verifyMfaToken(login, req.body.token, enrollSecret);
     await sendLoginResult(res, result);
   }
 );

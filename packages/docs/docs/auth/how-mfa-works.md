@@ -127,7 +127,7 @@ const status = await medplum.get('auth/mfa/status', { cache: 'no-cache' });
 
 `/auth/mfa/status` returns a TOTP `enrollQrCode`/`enrollUri` while the user is not enrolled in TOTP, so you can offer authenticator enrollment at any time — including adding TOTP to an account that currently only has email. Once TOTP is enrolled, they are no longer returned.
 
-Each session (and, at login, each `login`) is offered its own TOTP secret, which is returned unchanged on repeated reads for 20 minutes. It becomes the user's authenticator secret only when that same session or `login` confirms it with a code. After that, enrollment fails with `Secret not found` and the QR code must be fetched again.
+Each session (and, at login, each `login`) is offered its own TOTP secret, which is returned unchanged on repeated reads for 20 minutes. It becomes the user's authenticator secret only when that same session or `login` confirms it with a code. After 20 minutes, enrollment fails with `Secret not found` and the QR code must be fetched again.
 
 **Enroll in TOTP (authenticator app):**
 

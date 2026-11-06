@@ -6,6 +6,7 @@ import {
   createReference,
   forbidden,
   getReferenceString,
+  getStatus,
   OperationOutcomeError,
   Operator,
   resolveId,
@@ -191,14 +192,6 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
   return Boolean(projectMfaRequired) || Boolean(user.mfaRequired);
 }
 
-// Returns the stored offer, or stores and returns ARGV[1] if there is none
-const GET_OR_SET_TOTP_ENROLLMENT = `
-local secret = redis.call('GET', KEYS[1])
-if secret then return secret end
-redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
-return ARGV[1]
-`;
-
 /**
  * Builds the authenticator (TOTP) enrollment payload offered to a login.
  *
@@ -223,13 +216,17 @@ export async function buildTotpEnrollment(
   user: WithId<User>,
   project: Project | undefined
 ): Promise<{ enrollUri: string; enrollQrCode: string }> {
-  const mfaSecret = (await getCacheRedis().eval(
-    GET_OR_SET_TOTP_ENROLLMENT,
-    1,
-    getTotpEnrollmentKey(login, user),
-    authenticator.generateSecret(),
-    TOTP_ENROLLMENT_EXPIRATION_MS
-  )) as string;
+  const offered = authenticator.generateSecret();
+  // Stores the new secret unless the login already has one, which is returned instead
+  const mfaSecret =
+    (await getCacheRedis().set(
+      getTotpEnrollmentKey(login, user),
+      offered,
+      'PX',
+      TOTP_ENROLLMENT_EXPIRATION_MS,
+      'NX',
+      'GET'
+    )) ?? offered;
   const issuer = (getProjectAppName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
   const enrollUri = authenticator.keyuri(user.email ?? user.id, issuer, mfaSecret);
   return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };
@@ -252,6 +249,42 @@ export async function getTotpEnrollmentSecret(login: Login, user: WithId<User>):
  */
 export async function clearTotpEnrollmentSecret(login: Login, user: WithId<User>): Promise<void> {
   await getCacheRedis().del(getTotpEnrollmentKey(login, user));
+}
+
+/**
+ * Enrolls the user in TOTP with the secret that was offered to the login, and ends the offer.
+ * @param login - The login that confirmed the offered secret.
+ * @param user - The user.
+ * @param secret - The offered secret.
+ */
+export async function enrollTotp(login: Login, user: WithId<User>, secret: string): Promise<void> {
+  try {
+    // If the user changed since it was read (e.g. another login enrolled), fail rather than overwrite it
+    await getGlobalSystemRepo().updateResource(
+      { ...user, mfaSecret: secret, mfaEnrolled: true, mfaMethod: addMfaMethod(user, 'totp') },
+      { ifMatch: user.meta?.versionId }
+    );
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+      throw new OperationOutcomeError(badRequest('Already enrolled'));
+    }
+    throw err;
+  }
+  await clearTotpEnrollmentSecret(login, user);
+}
+
+/**
+ * Returns the union of the user's existing MFA methods plus the new method.
+ * @param user - The user.
+ * @param method - The method to add.
+ * @returns The updated list of MFA methods.
+ */
+export function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
+  const methods = getEnrolledMfaMethods(user);
+  if (!methods.includes(method)) {
+    methods.push(method);
+  }
+  return methods;
 }
 
 function getTotpEnrollmentKey(login: Login, user: WithId<User>): string {

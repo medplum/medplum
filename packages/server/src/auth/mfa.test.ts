@@ -1509,18 +1509,12 @@ describe('MFA', () => {
    * returns `mfaEnrollRequired` and the `/login-enroll` flow becomes active.
    * Re-reads the user first so earlier changes to it are kept.
    * @param user - The user to update.
-   * @param options - Options.
-   * @param options.clearSecret - When true, removes the user's `mfaSecret`.
    */
-  async function setMfaRequired(user: WithId<User>, options?: { clearSecret?: boolean }): Promise<void> {
+  async function setMfaRequired(user: WithId<User>): Promise<void> {
     const systemRepo = getGlobalSystemRepo();
     await withTestContext(async () => {
       const current = await systemRepo.readResource<User>('User', user.id);
-      await systemRepo.updateResource<User>({
-        ...current,
-        mfaRequired: true,
-        ...(options?.clearSecret ? { mfaSecret: undefined } : {}),
-      });
+      await systemRepo.updateResource<User>({ ...current, mfaRequired: true });
     });
   }
 
@@ -1979,9 +1973,7 @@ describe('MFA', () => {
       })
     );
 
-    // Require MFA for a user who has no secret. Only users invited with
-    // `mfaRequired` get one up front, so enrollment must generate it.
-    await setMfaRequired(user, { clearSecret: true });
+    await setMfaRequired(user);
 
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
@@ -2167,8 +2159,11 @@ describe('MFA', () => {
 
     const succeeded = results.map((r) => r.status === 200);
     expect(succeeded.filter(Boolean)).toHaveLength(1);
+    expect(results[succeeded.indexOf(false)].body).toMatchObject(badRequest('Already enrolled'));
     const stored = await getGlobalSystemRepo().readResource<User>('User', user.id);
     expect(stored.mfaSecret).toBe(secrets[succeeded.indexOf(true)]);
+    const loser = await getGlobalSystemRepo().readResource<Login>('Login', logins[succeeded.indexOf(false)].login);
+    expect(loser.mfaVerified).toBeFalsy();
   });
 
   test('An offered TOTP secret is only stored when its own login confirms it', async () => {
@@ -2225,34 +2220,31 @@ describe('MFA', () => {
   });
 
   test.each([
-    ['not enrolled', { mfaRequired: true }, 'Invalid MFA token'],
-    ['enrolled in email only', { mfaEnrolled: true, mfaMethod: ['email'] }, 'Invalid MFA token'],
-  ] as [string, Partial<User>, string][])(
-    'verify ignores the stored TOTP secret of a user %s',
-    async (_label, fields, message) => {
-      const email = `totp-unenrolled${randomUUID()}@example.com`;
-      const password = 'password!@#';
-      const { user } = await withTestContext(() =>
-        registerNew({
-          firstName: 'Totp',
-          lastName: 'Unenrolled',
-          projectName: `Unenrolled ${randomUUID()}`,
-          email,
-          password,
-        })
-      );
-      const mfaSecret = authenticator.generateSecret();
-      await withTestContext(() => getGlobalSystemRepo().updateResource<User>({ ...user, ...fields, mfaSecret }));
+    ['not enrolled', { mfaRequired: true }],
+    ['enrolled in email only', { mfaEnrolled: true, mfaMethod: ['email'] }],
+  ] as [string, Partial<User>][])('verify ignores the stored TOTP secret of a user %s', async (_label, fields) => {
+    const email = `totp-unenrolled${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Totp',
+        lastName: 'Unenrolled',
+        projectName: `Unenrolled ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+    const mfaSecret = authenticator.generateSecret();
+    await withTestContext(() => getGlobalSystemRepo().updateResource<User>({ ...user, ...fields, mfaSecret }));
 
-      const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-      const res = await request(app)
-        .post('/auth/mfa/verify')
-        .type('json')
-        .send({ login: loginRes.body.login, token: authenticator.generate(mfaSecret) });
-      expect(res).toHaveStatus(400);
-      expect(res.body).toMatchObject(badRequest(message));
-    }
-  );
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    const res = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: loginRes.body.login, token: authenticator.generate(mfaSecret) });
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Invalid MFA token'));
+  });
 
   test('Removing a method the user is not enrolled in fails', async () => {
     const email = `email-mfa${randomUUID()}@example.com`;

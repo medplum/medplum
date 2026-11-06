@@ -43,7 +43,7 @@ import type { IncomingMessage } from 'node:http';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
-import { getEnrolledMfaMethods } from '../auth/utils';
+import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
@@ -343,6 +343,9 @@ export async function verifyMfaToken(login: Login, token: string, enrollSecret?:
 
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
+  if (enrollSecret && user.mfaEnrolled) {
+    throw new OperationOutcomeError(badRequest('Already enrolled'));
+  }
 
   // The stored authenticator secret is only a factor once TOTP is enrolled
   const secret = enrollSecret ?? (getEnrolledMfaMethods(user).includes('totp') ? user.mfaSecret : undefined);
@@ -380,6 +383,11 @@ export async function verifyMfaToken(login: Login, token: string, enrollSecret?:
 
   if (emailCodeVerified && !user.emailVerified) {
     await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
+  }
+
+  if (enrollSecret) {
+    // Enroll before verifying the login, so a login whose enrollment lost a race is not verified
+    await enrollTotp(login, user, enrollSecret);
   }
 
   const result = await systemRepo.updateResource<Login>({
