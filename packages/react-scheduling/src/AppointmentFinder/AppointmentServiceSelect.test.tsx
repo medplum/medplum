@@ -142,7 +142,7 @@ describe('AppointmentServiceSelect', () => {
     expect(searches).toHaveLength(2);
     expect(searches[0].get('location')).toBe('Location/main-clinic');
     expect(searches[1].get('location:missing')).toBe('true');
-    expect(searches.map((params) => [params.get('name'), params.get('_count'), params.get('_sort')])).toEqual([
+    expect(searches.map((params) => [params.get('name:contains'), params.get('_count'), params.get('_sort')])).toEqual([
       ['Ultrasound', '25', 'name'],
       ['Ultrasound', '25', 'name'],
     ]);

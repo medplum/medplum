@@ -68,7 +68,8 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
       const criteria = new URLSearchParams(SERVICE_SEARCH_CRITERIA);
       if (input) {
-        criteria.set('name', input);
+        // Anywhere in the name, since a visit type is often known by a word past its first.
+        criteria.set('name:contains', input);
       }
       // A reference search needs the element present, so what names no location cannot
       // ride on the site's own search and the field asks twice, together. With no site
