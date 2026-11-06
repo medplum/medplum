@@ -196,7 +196,7 @@ describe('AppointmentServiceSelect', () => {
     expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
     const searches = serviceSearches(searchResources);
     expect(searches).toHaveLength(2);
-    expect([searches[1].get('name:contains'), searches[1].get('_count')]).toEqual(['Ultrasound', '25']);
+    expect([searches[1].get('name:contains'), searches[1].get('_count')]).toEqual(['Ultrasound', '100']);
     searchResources.mockRestore();
   });
 
@@ -217,7 +217,7 @@ describe('AppointmentServiceSelect', () => {
     const held: (() => void)[] = [];
     const search = medplum.searchResources.bind(medplum);
     const searchResources = vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType, query, options) => {
-      if (resourceType !== 'HealthcareService' || (query as URLSearchParams).get('_count') !== '100') {
+      if (resourceType !== 'HealthcareService' || (query as URLSearchParams).has('name:contains')) {
         return search(resourceType, query, options);
       }
       return new ReadablePromise(

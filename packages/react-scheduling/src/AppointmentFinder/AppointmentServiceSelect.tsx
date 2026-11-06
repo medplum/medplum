@@ -11,10 +11,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
 
-const SERVICE_PAGE_SIZE = 25;
-
 /** Enough to hold every visit type a practice offers, so the field can list them all. */
-const CATALOG_PAGE_SIZE = 100;
+const SERVICE_PAGE_SIZE = 100;
 
 /**
  * `_sort=name` stays on both requests even though the field orders the merge itself:
@@ -79,7 +77,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     let catalog: Promise<ServiceSearchResult | undefined> | undefined;
     readCatalogRef.current = () => {
       catalog ??= searchServices(medplum, serviceFacilityReference, {
-        count: CATALOG_PAGE_SIZE,
+        count: SERVICE_PAGE_SIZE,
         signal: controller.signal,
       }).catch(() => undefined);
       return catalog;
@@ -101,7 +99,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       }
       // An incomplete read still holds the first page by name, which is all an empty search asks for.
       if (catalog && !input) {
-        return catalog.services.slice(0, CATALOG_PAGE_SIZE);
+        return catalog.services.slice(0, SERVICE_PAGE_SIZE);
       }
       const { services } = await searchServices(medplum, serviceFacilityReference, {
         count: SERVICE_PAGE_SIZE,
