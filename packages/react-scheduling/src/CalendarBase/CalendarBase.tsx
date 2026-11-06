@@ -184,7 +184,10 @@ export interface CalendarBaseProps extends Omit<
 
 /** Imperative handle on a calendar. */
 export interface CalendarHandle {
-  /** Pages the calendar to the day holding `date`, such as that of an appointment just booked. */
+  /**
+   * Pages the calendar to the day holding `date`, such as that of an appointment just booked.
+   * Stays put when that day is already on screen.
+   */
   readonly gotoDate: (date: Date) => void;
 }
 
@@ -197,7 +200,20 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
   const controller = useCalendarController();
   const viewType = controller.view?.type;
 
-  useImperativeHandle(ref, () => ({ gotoDate: (date) => controller.gotoDate(date) }), [controller]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      gotoDate: (date) => {
+        // Views like 4 Day start at the date they're paged to, which would shift days already in view.
+        const view = controller.view;
+        if (view && date >= view.activeStart && date < view.activeEnd) {
+          return;
+        }
+        controller.gotoDate(date);
+      },
+    }),
+    [controller]
+  );
 
   const {
     onRangeChange,
