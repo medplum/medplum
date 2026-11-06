@@ -6,7 +6,7 @@ sidebar_position: 3
 
 This guide provides step-by-step instructions for deploying Medplum on Ubuntu using our official APT repository. The installation process is streamlined through package management while maintaining the robustness and security required for production environments. This guide was tested on Ubuntu 24.04 but is compatible with most recent Ubuntu versions.
 
-Using Medplum's APT repository offers several advantages: automated dependency management, simplified updates, and a standardized installation process. The guide covers all essential components including PostgreSQL database configuration, Redis setup, Node.js installation, and Nginx configuration with SSL/TLS support through Let's Encrypt.
+Using Medplum's APT repository offers several advantages: automated dependency management, simplified updates, and a standardized installation process. The guide covers all essential components including PostgreSQL database configuration, Valkey (Redis-compatible) setup, Node.js installation, and Nginx configuration with SSL/TLS support through Let's Encrypt.
 
 This installation method is well-suited for production deployments where you want to maintain direct control over your infrastructure while benefiting from streamlined package management. It provides a balance between ease of deployment and system control, making it an excellent choice for organizations that prefer traditional Linux server architectures.
 
@@ -72,16 +72,18 @@ Exit psql
 exit
 ```
 
-## Install Redis
+## Install Valkey
+
+Medplum uses a Redis-compatible datastore for caching and background jobs. [Valkey](https://valkey.io/) is the recommended open-source implementation for self-hosted deployments. Redis and other compatible implementations may also be used.
 
 ```bash
-sudo apt-get install redis-server
+sudo apt-get install valkey-server
 ```
 
-Open the Redis config file
+Open the Valkey config file
 
 ```bash
-sudo vi /etc/redis/redis.conf
+sudo vi /etc/valkey/valkey.conf
 ```
 
 Uncomment the "requirepass" line and set a password
@@ -90,10 +92,10 @@ Uncomment the "requirepass" line and set a password
 requirepass medplum
 ```
 
-Restart Redis
+Restart Valkey
 
 ```bash
-sudo systemctl restart redis-server
+sudo systemctl restart valkey-server
 ```
 
 ## Install Node.js

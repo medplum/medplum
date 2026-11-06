@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getExtensionValue, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX, ReactNode, Ref } from 'react';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
@@ -84,6 +84,16 @@ const BOOKED_VISIT: WithId<Appointment> = {
   ],
 };
 
+/** Time blocked off on Dr. Rivera's calendar that week, for the grid to offer a click on. */
+const BLOCKED_TIME: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-rivera-tue-lunch',
+  schedule: { reference: 'Schedule/schedule-dr-rivera' },
+  status: 'busy-unavailable',
+  start: new Date(2026, 7, 18, 12, 0, 0).toISOString(),
+  end: new Date(2026, 7, 18, 12, 30, 0).toISOString(),
+};
+
 /** {@link BOOKED_VISIT}, booked for a visit type asking for codes, with them given. */
 const AUTHORIZED_VISIT: WithId<Appointment> = {
   ...BOOKED_VISIT,
@@ -111,9 +121,16 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
   MultiCalendar: forwardRef(function MultiCalendar(
     props: {
-      sources?: { appointments: Appointment[]; interactive?: boolean; draft?: boolean; label?: string }[];
+      sources?: {
+        appointments: Appointment[];
+        slots?: Slot[];
+        interactive?: boolean;
+        draft?: boolean;
+        label?: string;
+      }[];
       onSelectInterval?: (interval: { start: Date; end: Date }) => void;
       onSelectAppointment?: (appointment: Appointment) => void;
+      onSelectSlot?: (slot: Slot) => void;
       onRangeChange?: (range: { start: Date; end: Date }) => void;
       selection?: { start: Date; end: Date };
       selectedId?: string;
@@ -149,6 +166,13 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
           .map((appointment) => (
             <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
               click appointment {appointment.id}
+            </button>
+          ))}
+        {(props.sources ?? [])
+          .flatMap((source) => source.slots ?? [])
+          .map((slot) => (
+            <button key={slot.id} type="button" onClick={() => props.onSelectSlot?.(slot)}>
+              click slot {slot.id}
             </button>
           ))}
         {/* Stands in for the highlight the real grid draws over the interval it is given. */}
@@ -658,6 +682,82 @@ describe('SchedulingWorkspace booking', () => {
         fireEvent.click(within(details).getByRole('button', { name: 'Edit' }));
       });
       expect(within(details).getByRole('textbox', { name: 'Notes' })).toHaveAttribute('maxlength', '50');
+    });
+
+    function discardDialog(): HTMLElement | null {
+      return screen.queryByRole('dialog', { name: 'Discard unsaved changes?' });
+    }
+
+    async function answer(button: 'Keep editing' | 'Discard changes'): Promise<void> {
+      await act(async () => {
+        fireEvent.click(within(discardDialog() as HTMLElement).getByRole('button', { name: button }));
+      });
+    }
+
+    test('Asks before an appointment replaces a booking form holding answers', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      await chooseImagingService();
+
+      await clickBookedVisit();
+      expect(discardDialog()).toBeInTheDocument();
+      await answer('Keep editing');
+
+      expect(hasPill('Ultrasound Imaging')).toBe(true);
+      expect(detailsPane()).not.toBeInTheDocument();
+    });
+
+    test('Opens the appointment once the answers are discarded', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      await chooseImagingService();
+
+      await clickBookedVisit();
+      await answer('Discard changes');
+
+      expect(detailsPane()).toBeInTheDocument();
+      expect(bookingPaneHeading()).not.toBeInTheDocument();
+    });
+
+    test('Asks for answers on the Block tab too', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      fireEvent.click(screen.getByRole('tab', { name: 'Block Time' }));
+      fireEvent.change(screen.getByLabelText(/^Comment/), { target: { value: 'Lunch' } });
+
+      await clickBookedVisit();
+
+      expect(discardDialog()).toBeInTheDocument();
+    });
+
+    test('Asks before a blocked time replaces a booking form holding answers', async () => {
+      await medplum.createResource(BLOCKED_TIME);
+      await setupWithVisit();
+      await clickCalendar();
+      await chooseImagingService();
+
+      const slot = await screen.findByRole('button', { name: `click slot ${BLOCKED_TIME.id}` });
+      await act(async () => {
+        fireEvent.click(slot);
+      });
+
+      expect(discardDialog()).toBeInTheDocument();
+      expect(screen.queryByRole('region', { name: 'Blocked time details' })).not.toBeInTheDocument();
+    });
+
+    test('Asks nothing once the form holding answers was closed', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      await chooseImagingService();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /close booking form/i }));
+      });
+      expect(discardDialog()).not.toBeInTheDocument();
+
+      await clickBookedVisit();
+
+      expect(discardDialog()).not.toBeInTheDocument();
+      expect(detailsPane()).toBeInTheDocument();
     });
 
     test('Clicking open time puts the booking form back over the details', async () => {
