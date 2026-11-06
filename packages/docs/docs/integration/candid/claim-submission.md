@@ -226,8 +226,14 @@ On success, the operation returns a `ClaimResponse` resource saved to Medplum. T
 The operation is idempotent. If an active `ClaimResponse` already exists for the `Claim`, the bot returns it immediately without re-submitting to Candid.
 :::
 
+:::note[Sample data and partial failures]
+
+This sample can partially succeed on hosted Medplum. Check every response entry before continuing, and follow the [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before retrying POST creates.
+
+:::
+
 <details>
-<summary>Example transaction Bundle</summary>
+<summary>Example linked-resource Bundle</summary>
 
 ```json
 {

@@ -43,13 +43,13 @@ npm run build:fast
 The Medplum Stack requires the following services to be running in your environment:
 
 - [PostgreSQL](https://www.postgresql.org/) for the primary database
-- [Redis](https://redis.com/) for caching and job queueing
+- A Redis-compatible datastore for caching and job queueing. [Valkey](https://valkey.io/) is recommended; Redis also works.
 
 When running these services on your local machine you can either use Docker (recommended) or install them directly onto your machine.
 
 ### Using Docker (Recommended)
 
-Use the supplied `docker-compose.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
+Use the supplied `docker-compose.yml` file to run PostgreSQL and Valkey background services. These services will be deployed with all necessary medplum configurations and database migrations.
 
 From your root `medplum` directory run
 
@@ -95,7 +95,7 @@ Where `medplum-postgres-1` can be replaced with the name of your postgres docker
 If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
 
 1. [Install PostgreSQL](https://www.postgresql.org/download/) (version 13+ required)
-2. [Install Redis](https://redis.io/download) (version 6+ required)
+2. [Install Valkey](https://valkey.io/download/) (or [Redis](https://redis.io/download) version 6+)
 
 After that, you will have to update the file `packages/server/medplum.config.json`
 
@@ -128,7 +128,7 @@ npm t
 
 ### Start the servers
 
-After you have PostgreSQL and Redis up and running, you can run the Medplum API server.
+After you have PostgreSQL and Valkey (or Redis) up and running, you can run the Medplum API server.
 
 From your root `medplum` directory run:
 

@@ -1,7 +1,7 @@
 # This is the docker-compose file to run Medplum's required background services
 # It can be used to quickly run 2 services:
 #   1) The Postgres database
-#   2) The Redis cache
+#   2) The Valkey cache (Redis-compatible)
 # You can start all services by running "docker-compose up"
 services:
   postgres:
@@ -18,9 +18,9 @@ services:
     ports:
       - '5432:5432'
   redis:
-    image: redis:7
+    image: valkey/valkey:8.1.11
     restart: unless-stopped # for production usage, consider using 'always'
-    command: redis-server --requirepass medplum
+    command: valkey-server --requirepass medplum
     ports:
       - '6379:6379'
 

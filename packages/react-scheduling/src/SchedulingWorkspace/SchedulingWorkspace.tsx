@@ -33,6 +33,7 @@ import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.wr
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
+import { DiscardChangesModal } from '../ConfirmModal/DiscardChangesModal';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
@@ -50,6 +51,7 @@ import { PaneHeader } from './PaneHeader';
 import classes from './SchedulingWorkspace.module.css';
 import { getCalendarTimezones, groupAppointmentsByService, matchesCalendarFilters } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
+import { useBookingPaneGuard } from './useBookingPaneGuard';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -397,12 +399,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     calendarRef.current?.gotoDate(start);
   }, [startBooking]);
 
+  const discard = useBookingPaneGuard();
+  const { guard, reset: resetDirty } = discard;
+
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setProposal(undefined);
     setBlockHighlight(undefined);
     setTimeFinderOpen(false);
-  }, []);
+    resetDirty();
+  }, [resetDirty]);
 
   // Hides are kept across a service change rather than pruned: a calendar hidden under
   // one service type stays hidden if another offers it again.
@@ -427,19 +433,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     [closeBooking, onBlocked, schedules]
   );
 
+  const showAppointment = useCallback(
+    (appointment: WithId<Appointment>): void => {
+      if (appointment.id !== selectedAppointment?.id) {
+        setRescheduleFinderOpen(false);
+      }
+      closeBooking();
+      setSelectedSlot(undefined);
+      setNewBlockSlots(undefined);
+      setSelectedAppointment(appointment);
+    },
+    [closeBooking, selectedAppointment?.id]
+  );
+
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (isResourceWithId(appointment)) {
-        if (appointment.id !== selectedAppointment?.id) {
-          setRescheduleFinderOpen(false);
-        }
-        closeBooking();
-        setSelectedSlot(undefined);
-        setNewBlockSlots(undefined);
-        setSelectedAppointment(appointment);
+        guard(() => showAppointment(appointment));
       }
     },
-    [closeBooking, selectedAppointment?.id]
+    [guard, showAppointment]
   );
 
   // Opens what was booked, the first visit of a recurring series, and brings it on screen,
@@ -447,13 +460,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const finishBooking = useCallback(
     (booking: AppointmentBooking): void | Promise<void> => {
       const [first] = booking.appointments;
-      selectAppointment(first);
+      showAppointment(first);
       if (first.start) {
         calendarRef.current?.gotoDate(new Date(first.start));
       }
       return onBooked?.(booking);
     },
-    [selectAppointment, onBooked]
+    [showAppointment, onBooked]
   );
 
   const closeAppointment = useCallback((): void => {
@@ -464,13 +477,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectSlot = useCallback(
     (slot: Slot): void => {
       if (isResourceWithId(slot)) {
-        closeBooking();
-        closeAppointment();
-        setSelectedSlot(slot);
-        setNewBlockSlots(undefined);
+        guard(() => {
+          closeBooking();
+          closeAppointment();
+          setSelectedSlot(slot);
+          setNewBlockSlots(undefined);
+        });
       }
     },
-    [closeBooking, closeAppointment]
+    [guard, closeBooking, closeAppointment]
   );
 
   const closeSlot = useCallback((): void => {
@@ -720,6 +735,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 allowRecurring
                 onToggleTimeFinder={setTimeFinderOpen}
                 onChangeProposal={setProposal}
+                onDirtyChange={discard.onBookingDirtyChange}
                 onBooked={finishBooking}
                 defaultServiceFacility={selectedServiceFacility}
                 defaultService={selectedService}
@@ -730,12 +746,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 candidatesByActorType={candidatesByActorType}
                 defaultRange={bookingSelection}
                 onChangeTime={setBlockHighlight}
+                onDirtyChange={discard.onBlockDirtyChange}
                 onBlocked={finishBlock}
               />
             </Tabs.Panel>
           </Tabs>
         </SidePane>
       )}
+      <DiscardChangesModal {...discard.modalProps}>Your changes haven't been saved.</DiscardChangesModal>
     </div>
   );
 }

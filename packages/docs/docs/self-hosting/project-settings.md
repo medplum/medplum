@@ -36,8 +36,24 @@ are:
 | `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                                               |
 | `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
-| `transaction-bundles`     | Process `transaction` Bundles atomically. Without this flag, `transaction` Bundles are processed as batches. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests#transaction-limits) |
+| `transaction-bundles`     | Enable atomic processing of transaction Bundles in a self-hosted deployment. Unavailable on hosted Medplum. See [configuration and limits](#atomic-transaction-bundles). |
 | `range-search`            | Date searches compare the full period or range. See [Searching by due date range](/docs/careplans/tasks#searching-by-due-date-range). |
+
+### Atomic transaction Bundles
+
+Atomic transaction processing is currently unavailable on Medplum-hosted deployments. Self-hosted operators can enable `transaction-bundles` in `Project.features` using a super administrator account.
+
+Enable this only for workflows that require several writes to commit together or all roll back. Transactions can increase database contention and affect other workloads. Test the actual resource mix, concurrency, and failure recovery before enabling the feature in production. Prefer batches of conditional upserts when partial results can be reconciled.
+
+Without the flag, `type: "transaction"` is processed with batch semantics, without a warning or rollback of successful entries. A `transaction-response` label does not establish atomicity. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+
+Transactions have these limits; requests that exceed them are rejected with `400 Bad Request`:
+
+- At most **50 update operations**.
+- Transactions containing conditional creates, updates, or deletes use serializable isolation and are limited to **8 entries**.
+- Atomic transactions must be synchronous. Requests with `Prefer: respond-async` are rejected when this feature is enabled.
+
+Keep each transaction limited to the resources that must commit together. Do not replace conditional writes with search-then-create to avoid the limits: another writer can change the result between the search and the write.
 
 ## Project system settings
 
