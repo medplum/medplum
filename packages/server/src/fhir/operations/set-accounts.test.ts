@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, getReferenceString, OperationOutcomeError, serverError } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
   AsyncJob,
-  Bundle,
   Communication,
   DiagnosticReport,
+  Parameters as FhirParameters,
   Login,
   Observation,
   Organization,
@@ -39,13 +39,12 @@ let accessToken: string;
 let login: WithId<Login>;
 let membership: WithId<ProjectMembership>;
 let project: WithId<Project>;
-let observation: Observation;
-let diagnosticReport: DiagnosticReport;
-let patient: Patient;
-let organization1: Organization;
-let organization2: Organization;
+let observation: WithId<Observation>;
+let diagnosticReport: WithId<DiagnosticReport>;
+let patient: WithId<Patient>;
+let organization1: WithId<Organization>;
+let organization2: WithId<Organization>;
 let config: ServerConfig;
-const updateSpies: ReturnType<typeof spyOnUpdateResource>[] = [];
 
 describe('Patient Set Accounts Operation', () => {
   beforeEach(async () => {
@@ -57,320 +56,99 @@ describe('Patient Set Accounts Operation', () => {
       membership: { admin: true },
     }));
 
-    // Create organization
-    const orgRes = await request(app)
-      .post('/fhir/R4/Organization')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Organization' });
-    expect(orgRes).toHaveStatus(201);
-    organization1 = orgRes.body as Organization;
-
-    const orgRes2 = await request(app)
-      .post('/fhir/R4/Organization')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Organization' });
-    expect(orgRes2).toHaveStatus(201);
-    organization2 = orgRes2.body as Organization;
-
-    // Create patient
-    const res1 = await request(app)
-      .post('/fhir/R4/Patient')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      } satisfies Patient);
-    expect(res1).toHaveStatus(201);
-    patient = res1.body as Patient;
-
-    // Create observation
-    const res2 = await request(app)
-      .post('/fhir/R4/Observation')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Observation',
-        status: 'final',
-        code: {
-          coding: [
-            {
-              system: 'http://loinc.org',
-              code: 'test-code',
-            },
-          ],
-        },
-        subject: createReference(patient),
-      } satisfies Observation);
-    expect(res2).toHaveStatus(201);
-    observation = res2.body as Observation;
-
-    //Create a diagnostic report
-    const res3 = await request(app)
-      .post('/fhir/R4/DiagnosticReport')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'DiagnosticReport',
-        subject: createReference(patient),
-        status: 'final',
-        code: {
-          coding: [
-            {
-              system: 'http://loinc.org',
-              code: 'test-code',
-            },
-          ],
-        },
-      } satisfies DiagnosticReport);
-    expect(res3).toHaveStatus(201);
-    diagnosticReport = res3.body as DiagnosticReport;
+    organization1 = await createExtended<Organization>({ resourceType: 'Organization' });
+    organization2 = await createExtended<Organization>({ resourceType: 'Organization' });
+    patient = await createExtended<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    observation = await createExtended<Observation>({
+      resourceType: 'Observation',
+      // A security label, to check that propagation preserves the other meta fields
+      meta: { security: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality', code: 'N' }] },
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: 'test-code' }] },
+      subject: createReference(patient),
+    });
+    diagnosticReport = await createExtended<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      subject: createReference(patient),
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: 'test-code' }] },
+    });
   });
 
   afterEach(async () => {
-    for (const spy of updateSpies.splice(0)) {
-      spy.mockRestore();
-    }
+    vi.restoreAllMocks();
+    vi.useRealTimers();
     await shutdownApp();
   });
 
-  test('Updates target patient and compartment resources', async () => {
-    // Execute the operation adding the organization to the patient's compartment
-    const res3 = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'accounts',
-            valueReference: createReference(organization1),
-          },
-          {
-            name: 'accounts',
-            valueReference: createReference(organization2),
-          },
-          {
-            name: 'propagate',
-            valueBoolean: true,
-          },
-        ],
-      });
-    expect(res3).toHaveStatus(200);
-    const result = res3.body;
-    expect(result.parameter?.[0].name).toBe('resourcesUpdated');
-    expect(result.parameter?.[0].valueInteger).toBe(3); // Observation and DiagnosticReport
+  test('Sets and clears accounts on the target and compartment resources', async () => {
+    const org1 = { reference: getReferenceString(organization1) };
+    const org2 = { reference: getReferenceString(organization2) };
+    const targets = [patient, observation, diagnosticReport].map((r) => getReferenceString(r));
+    expect(observation.meta?.security).toBeDefined();
 
-    //check if the accounts are updated on the patient
-    const res4 = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}`)
-      .set('X-Medplum', 'extended')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4).toHaveStatus(200);
-    const updatedPatient = res4.body as Patient;
-    expect(updatedPatient.meta?.accounts).toBeDefined();
-    expect(updatedPatient.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
-    expect(updatedPatient.meta?.accounts?.[1].reference).toBe(`Organization/${organization2.id}`);
+    const set = await setPatientAccounts([organization1, organization2], true);
+    expect(set).toHaveStatus(200);
+    expect(set.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 }); // Patient, Observation, DiagnosticReport
+    for (const ref of targets) {
+      const resource = await readExtended(ref);
+      expect(resource.meta?.accounts).toStrictEqual([org1, org2]);
+      expect(resource.meta?.account).toStrictEqual(org1);
+    }
+    const labelled = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(labelled.meta?.security).toStrictEqual(observation.meta?.security);
 
-    // Check if accounts are updated on the observation
-    const res5 = await request(app)
-      .get(`/fhir/R4/Observation/${observation.id}`)
-      .set('X-Medplum', 'extended')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5).toHaveStatus(200);
-    const updatedObservation = res5.body as Observation;
-    expect(updatedObservation.meta?.accounts).toBeDefined();
-    expect(updatedObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
-    expect(updatedObservation.meta?.accounts?.[1].reference).toBe(`Organization/${organization2.id}`);
-
-    // Check if accounts are updated on the diagnostic report
-    const res6 = await request(app)
-      .get(`/fhir/R4/DiagnosticReport/${diagnosticReport.id}`)
-      .set('X-Medplum', 'extended')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6).toHaveStatus(200);
-    const updatedDiagnosticReport = res6.body as DiagnosticReport;
-    expect(updatedDiagnosticReport.meta?.accounts).toBeDefined();
-    expect(updatedDiagnosticReport.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
-    expect(updatedDiagnosticReport.meta?.accounts?.[1].reference).toBe(`Organization/${organization2.id}`);
+    const clear = await setPatientAccounts([], true);
+    expect(clear).toHaveStatus(200);
+    expect(clear.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
+    for (const ref of targets) {
+      const resource = await readExtended(ref);
+      expect(resource.meta?.accounts ?? []).toHaveLength(0);
+      expect(resource.meta?.account).toBeUndefined();
+    }
+    const stillLabelled = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(stillLabelled.meta?.security).toStrictEqual(observation.meta?.security);
   });
 
-  test('Resources returned in $patient-everything but NOT in the patient compartment are not updated', async () => {
-    const res7 = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'accounts',
-            valueReference: createReference(organization1),
-          },
-          {
-            name: 'accounts',
-            valueReference: createReference(organization2),
-          },
-          {
-            name: 'propagate',
-            valueBoolean: true,
-          },
-        ],
-      });
-    expect(res7).toHaveStatus(200);
-    const numberResourcesUpdated = res7.body.parameter?.[0].valueInteger;
+  test('Replaces target accounts without touching the compartment when propagate is false', async () => {
+    expect(await setPatientAccounts([organization1, organization2], false)).toHaveStatus(200);
 
-    const res = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}/$everything`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
-    const everything = res.body as Bundle;
-    const allResources = everything.entry?.length ?? 0;
-    const resourcesNotInCompartment = everything.entry?.filter((entry) => entry?.search?.mode !== 'match').length ?? 0;
+    const replace = await setPatientAccounts([organization2], false);
+    expect(replace).toHaveStatus(200);
+    expect(replace.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
 
-    //Number of resources updated only includes the ones in the compartment, not other resources returned in $patient-everything
-    expect(numberResourcesUpdated).toBe(allResources - resourcesNotInCompartment);
+    const updatedPatient = await readExtended<Patient>(`Patient/${patient.id}`);
+    expect(updatedPatient.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization2) }]);
+    const untouched = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(untouched.meta?.accounts).toBeUndefined();
   });
 
   test('Patient not found', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Patient/not-found/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'accounts',
-            valueReference: createReference(organization1),
-          },
-        ],
-      });
+    const res = await setPatientAccounts([organization1], false, { id: 'not-found' });
     expect(res).toHaveStatus(404);
   });
 
-  test('setAccountsHandler() called without an id', async () => {
+  test('Non-admin user cannot set accounts', async () => {
+    const res = await setPatientAccounts([organization1], false, { token: await initTestAuth() });
+    expect(res).toHaveStatus(403);
+  });
+
+  test.each([
+    ['missing id', { id: '', resourceType: 'Patient' }, 'Must specify resource type and ID'],
+    ['invalid resource type', { id: 'abc', resourceType: 'NotAResourceType' }, 'Invalid resource type'],
+  ])('setAccountsHandler() rejects %s', async (_name, params, message) => {
     const res = await setAccountsHandler({
-      params: { id: '' },
+      params,
       method: 'POST',
       url: '/fhir/R4/Patient/$set-accounts',
       pathname: '/fhir/R4/Patient/$set-accounts',
       body: {},
       query: {},
     });
-    expect(res[0].issue?.[0]?.details?.text).toBe('Must specify resource type and ID');
-  });
-
-  test('Preserves other meta fields on compartment resources', async () => {
-    //Create a Communication in Patient's compartment with a security tag
-    const res1 = await request(app)
-      .post(`/fhir/R4/Communication`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Communication',
-        subject: createReference(patient),
-        status: 'completed',
-        meta: {
-          security: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality',
-              code: 'N',
-            },
-          ],
-        },
-      } satisfies Communication);
-
-    expect(res1).toHaveStatus(201);
-    const communication = res1.body as Communication;
-    expect(communication.meta?.security).toBeDefined();
-
-    const res2 = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('x-medplum', 'extended')
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'accounts',
-            valueReference: createReference(organization1),
-          },
-          {
-            name: 'propagate',
-            valueBoolean: true,
-          },
-        ],
-      });
-    expect(res2).toHaveStatus(200);
-
-    const res4 = await request(app)
-      .get(`/fhir/R4/Communication/${communication.id}`)
-      .set('X-Medplum', 'extended')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4).toHaveStatus(200);
-    const updatedCommunication = res4.body as Communication;
-    expect(updatedCommunication.meta?.accounts).toHaveLength(1);
-    expect(updatedCommunication.meta?.security).toBeDefined();
-  });
-
-  test('Preserves accounts from other patients on resources in multiple patient compartments', async () => {
-    const org1 = { reference: getReferenceString(organization1) };
-    const org2 = { reference: getReferenceString(organization2) };
-
-    const bobRes = await request(app)
-      .post('/fhir/R4/Patient')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('X-Medplum', 'extended')
-      .send({
-        resourceType: 'Patient',
-        name: [{ given: ['Bob'], family: 'Jones' }],
-        meta: { accounts: [org2] },
-      } satisfies Patient);
-    expect(bobRes).toHaveStatus(201);
-    const bob = bobRes.body as Patient;
-    expect(bob.meta?.accounts).toStrictEqual([org2]);
-    const patients = [{ reference: getReferenceString(patient) }, { reference: getReferenceString(bob) }];
-
-    // In Alice's compartment via subject, and Bob's via recipient
-    const commRes = await request(app)
-      .post('/fhir/R4/Communication')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('X-Medplum', 'extended')
-      .send({
-        resourceType: 'Communication',
-        status: 'completed',
-        subject: createReference(patient),
-        recipient: [createReference(bob)],
-      } satisfies Communication);
-    expect(commRes).toHaveStatus(201);
-    const communication = commRes.body as Communication;
-    expect(communication.meta?.accounts).toStrictEqual([org2]);
-
-    // Alice gets one account of her own, and one she shares with Bob
-    const add = await setPatientAccounts([organization1, organization2], true);
-    expect(add).toHaveStatus(200);
-    expect(add.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 4 });
-
-    const added = await readExtended<Communication>(`Communication/${communication.id}`);
-    expect(added.meta?.accounts).toStrictEqual([org2, org1]);
-    expect(added.meta?.compartment).toStrictEqual(expect.arrayContaining([org1, org2, ...patients]));
-
-    // Removing the account only Alice has drops it
-    const removeOwn = await setPatientAccounts([organization2], true);
-    expect(removeOwn).toHaveStatus(200);
-
-    const ownRemoved = await readExtended<Communication>(`Communication/${communication.id}`);
-    expect(ownRemoved.meta?.accounts).toStrictEqual([org2]);
-    expect(ownRemoved.meta?.compartment).toStrictEqual(expect.arrayContaining([org2, ...patients]));
-    expect(ownRemoved.meta?.compartment).not.toContainEqual(org1);
-
-    // Removing the account Alice shares with Bob keeps it, since Bob still has it
-    const removeShared = await setPatientAccounts([], true);
-    expect(removeShared).toHaveStatus(200);
-
-    const sharedRemoved = await readExtended<Communication>(`Communication/${communication.id}`);
-    expect(sharedRemoved.meta?.accounts).toStrictEqual([org2]);
-    expect(sharedRemoved.meta?.compartment).toStrictEqual(expect.arrayContaining([org2, ...patients]));
-
-    // Bob is not in the target's compartment, so is left untouched
-    const bobAfter = await readExtended<Patient>(`Patient/${bob.id}`);
-    expect(bobAfter.meta?.versionId).toBe(bob.meta?.versionId);
-    expect(bobAfter.meta?.accounts).toStrictEqual([org2]);
+    expect(res[0].issue?.[0]?.details?.text).toBe(message);
   });
 
   test.each([
@@ -394,7 +172,7 @@ describe('Patient Set Accounts Operation', () => {
         // Older data may have only the single meta.account field; the server normalizes on write, so
         // store it directly
         const systemRepo = await getProjectSystemRepo(project);
-        const stored = await systemRepo.readResource<Observation>('Observation', observation.id as string);
+        const stored = await systemRepo.readResource<Observation>('Observation', observation.id);
         const legacy: Observation = {
           ...stored,
           meta: { ...stored.meta, account: createReference(organization2), accounts: undefined },
@@ -426,67 +204,354 @@ describe('Patient Set Accounts Operation', () => {
     expect(report.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
   });
 
-  test('Non-admin user cannot set accounts', async () => {
-    accessToken = await initTestAuth();
-    const res = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'accounts',
-            valueReference: createReference(organization1),
-          },
-        ],
+  test('Preserves accounts from other patients on resources in multiple patient compartments', async () => {
+    const org1 = { reference: getReferenceString(organization1) };
+    const org2 = { reference: getReferenceString(organization2) };
+
+    const bob = await createExtended<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Bob'], family: 'Jones' }],
+      meta: { accounts: [org2] },
+    });
+    expect(bob.meta?.accounts).toStrictEqual([org2]);
+    const patients = [{ reference: getReferenceString(patient) }, { reference: getReferenceString(bob) }];
+
+    // In Alice's compartment via subject, and Bob's via recipient
+    const communication = await createExtended<Communication>({
+      resourceType: 'Communication',
+      status: 'completed',
+      subject: createReference(patient),
+      recipient: [createReference(bob)],
+    });
+    expect(communication.meta?.accounts).toStrictEqual([org2]);
+
+    // Alice gets one account of her own, and one she shares with Bob
+    const add = await setPatientAccounts([organization1, organization2], true);
+    expect(add).toHaveStatus(200);
+    expect(add.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 4 });
+
+    const added = await readExtended<Communication>(`Communication/${communication.id}`);
+    expect(added.meta?.accounts).toStrictEqual([org2, org1]);
+    expect(added.meta?.compartment).toStrictEqual(expect.arrayContaining([org1, org2, ...patients]));
+
+    // Removing the account only Alice has drops it. Bob is read once, to check whether he keeps it.
+    const readSpy = vi.spyOn(Repository.prototype, 'readReferences');
+    const bobReads = (): number =>
+      readSpy.mock.calls.filter(([refs]) => refs.some((r) => r.reference === patients[1].reference)).length;
+    const removeOwn = await setPatientAccounts([organization2], true);
+    expect(removeOwn).toHaveStatus(200);
+    expect(bobReads()).toBe(1);
+
+    const ownRemoved = await readExtended<Communication>(`Communication/${communication.id}`);
+    expect(ownRemoved.meta?.accounts).toStrictEqual([org2]);
+    expect(ownRemoved.meta?.compartment).toStrictEqual(expect.arrayContaining([org2, ...patients]));
+    expect(ownRemoved.meta?.compartment).not.toContainEqual(org1);
+
+    // Removing the account Alice shares with Bob keeps it, since Bob still has it. The Communication
+    // already has the right accounts, so it is counted but not written.
+    readSpy.mockClear();
+    const removeShared = await setPatientAccounts([], true);
+    expect(removeShared).toHaveStatus(200);
+    expect(removeShared.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 4 });
+    expect(bobReads()).toBe(1);
+
+    const sharedRemoved = await readExtended<Communication>(`Communication/${communication.id}`);
+    expect(sharedRemoved.meta?.versionId).toBe(ownRemoved.meta?.versionId);
+    expect(sharedRemoved.meta?.accounts).toStrictEqual([org2]);
+    expect(sharedRemoved.meta?.compartment).toStrictEqual(expect.arrayContaining([org2, ...patients]));
+
+    // Bob is not in the target's compartment, so is left untouched
+    const bobAfter = await readExtended<Patient>(`Patient/${bob.id}`);
+    expect(bobAfter.meta?.versionId).toBe(bob.meta?.versionId);
+    expect(bobAfter.meta?.accounts).toStrictEqual([org2]);
+  });
+
+  test('Re-running only writes compartment resources that are missing the target accounts', async () => {
+    const initial = await setPatientAccounts([organization1], true);
+    expect(initial).toHaveStatus(200);
+
+    // Remove the account from the Observation only
+    const systemRepo = await getProjectSystemRepo(project);
+    const current = await systemRepo.readResource<Observation>('Observation', observation.id);
+    await systemRepo.updateResource<Observation>({
+      ...current,
+      meta: { ...current.meta, accounts: undefined, account: undefined },
+    });
+    const stripped = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(stripped.meta?.accounts).toBeUndefined();
+
+    const transactionSpy = vi.spyOn(Repository.prototype, 'withTransaction');
+    const recordWriteSpy = vi.spyOn(FhirRateLimiter.prototype, 'recordWrite');
+
+    const repair = await setPatientAccounts([organization1], true);
+    expect(repair).toHaveStatus(200);
+    expect(repair.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
+    // Only the Observation needed a write, in addition to the target
+    expect(compartmentWrites(transactionSpy)).toStrictEqual(['Observation']);
+    expect(recordWriteSpy).toHaveBeenCalledTimes(2);
+
+    const obs = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(obs.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
+
+    // With every compartment resource up to date, only the target is written
+    transactionSpy.mockClear();
+    recordWriteSpy.mockClear();
+    const noop = await setPatientAccounts([organization1], true);
+    expect(noop).toHaveStatus(200);
+    expect(noop.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
+    expect(compartmentWrites(transactionSpy)).toHaveLength(0);
+    expect(recordWriteSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('Counts and writes each compartment resource once when its write moves it to a later page', async () => {
+    for (let i = 0; i < 25; i++) {
+      await createExtended<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'paged' },
+        subject: createReference(patient),
       });
-    expect(res).toHaveStatus(403);
+    }
+
+    useSmallCompartmentPages();
+    const transactionSpy = vi.spyOn(Repository.prototype, 'withTransaction');
+
+    const res = await setPatientAccounts([organization1], true);
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 28 });
+    expect(compartmentWrites(transactionSpy)).toHaveLength(27);
+  });
+
+  test('Retries compartment update when the resource is modified concurrently', async () => {
+    const concurrentRepo = await getProjectSystemRepo(project);
+    let observationUpdates = 0;
+    spyOnUpdateResource(async (resource) => {
+      if (resource.resourceType === 'Observation' && ++observationUpdates === 1) {
+        // Commit a write from another connection after the operation's transaction read the
+        // Observation, but before it writes
+        const current = await concurrentRepo.readResource<Observation>('Observation', resource.id as string);
+        await concurrentRepo.updateResource<Observation>({
+          ...current,
+          meta: { ...current.meta, accounts: [createReference(organization2)] },
+        });
+      }
+    });
+
+    const res = await setPatientAccounts([organization1], true);
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
+    // Operation's write, the concurrent write, and the operation's retried write
+    expect(observationUpdates).toBe(3);
+
+    // Concurrently added account is preserved, and the propagated account is added
+    const obs = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(obs.meta?.accounts).toStrictEqual([
+      { reference: getReferenceString(organization2) },
+      { reference: getReferenceString(organization1) },
+    ]);
+  });
+
+  test('Charges one write for the target when its transaction retries', async () => {
+    const concurrentRepo = await getProjectSystemRepo(project);
+    let patientUpdates = 0;
+    spyOnUpdateResource(async (resource, originalUpdate) => {
+      if (resource.resourceType === 'Patient' && ++patientUpdates === 1) {
+        // Commit a write from another connection after the operation's transaction read the Patient,
+        // forcing a serialization failure and a retry
+        const current = await concurrentRepo.readResource<Patient>('Patient', resource.id as string);
+        await originalUpdate.call(concurrentRepo, { ...current, gender: 'female' });
+      }
+    });
+    const recordWriteSpy = vi.spyOn(FhirRateLimiter.prototype, 'recordWrite');
+
+    const res = await setPatientAccounts([organization1], false);
+    expect(res).toHaveStatus(200);
+    // Operation's write, then its retried write
+    expect(patientUpdates).toBe(2);
+    expect(recordWriteSpy).toHaveBeenCalledTimes(1);
+
+    const updated = await readExtended<Patient>(`Patient/${patient.id}`);
+    expect(updated.gender).toBe('female');
+    expect(updated.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
+  });
+
+  test('Skips compartment resource deleted after the compartment search', async () => {
+    const concurrentRepo = await getProjectSystemRepo(project);
+    let deleted = false;
+    spyOnReadResource(async (resourceType, id) => {
+      if (resourceType === 'Observation' && !deleted) {
+        deleted = true;
+        await concurrentRepo.deleteResource('Observation', id);
+      }
+    });
+
+    const res = await setPatientAccounts([organization1], true);
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
+    expect(deleted).toBe(true);
+
+    const obsRes = await request(app)
+      .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(obsRes).toHaveStatus(410);
+
+    const report = await readExtended<DiagnosticReport>(`DiagnosticReport/${diagnosticReport.id}`);
+    expect(report.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
+  });
+
+  test('Skips compartment resource moved to another patient after the compartment search', async () => {
+    const bob = await createExtended<Patient>({ resourceType: 'Patient' });
+    const concurrentRepo = await getProjectSystemRepo(project);
+    let moved = false;
+    spyOnReadResource(async (resourceType, id) => {
+      if (resourceType === 'Observation' && !moved) {
+        moved = true;
+        const current = await concurrentRepo.readResource<Observation>('Observation', id);
+        await concurrentRepo.updateResource<Observation>({ ...current, subject: createReference(bob) });
+      }
+    });
+
+    const res = await setPatientAccounts([organization1], true);
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
+    expect(moved).toBe(true);
+
+    const obs = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(obs.subject).toStrictEqual(createReference(bob));
+    expect(obs.meta?.accounts).toBeUndefined();
+  });
+
+  test('Rejects a run while another run on the same Patient is in progress, then releases the lock', async () => {
+    let started = false;
+    let concurrent: request.Response | undefined;
+    spyOnUpdateResource(async (resource) => {
+      if (resource.resourceType === 'DiagnosticReport' && !started) {
+        started = true;
+        // Without propagation, since every run on a Patient takes the lock
+        concurrent = await setPatientAccounts([organization2], false);
+      }
+    });
+
+    const first = await setPatientAccounts([organization1], true);
+    expect(first).toHaveStatus(200);
+    expect(started).toBe(true);
+    expect(concurrent).toHaveStatus(409);
+
+    // The rejected run did not write
+    const unchanged = await readExtended<Patient>(`Patient/${patient.id}`);
+    expect(unchanged.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
+
+    // The lock is released once the first run finishes
+    const next = await setPatientAccounts([organization2], true);
+    expect(next).toHaveStatus(200);
+  });
+
+  test('A retried job resumes despite the lock left behind by its crashed attempt', async () => {
+    const asyncJob = await createAsyncJob('accepted');
+    const lockKey = `medplum:set-accounts:Patient/${patient.id}`;
+    await getCacheRedis().set(lockKey, `${asyncJob.id}:crashed-attempt`, 'PX', 60_000);
+
+    const result = await setPatientAccountsAsJob(asyncJob.id);
+    expect(result?.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
+    expect(await getCacheRedis().get(lockKey)).toBeNull();
+  });
+
+  test('An earlier attempt of a job stops within a page once a retry takes over its lock', async () => {
+    for (let i = 0; i < 25; i++) {
+      await createExtended<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'paged' },
+        subject: createReference(patient),
+      });
+    }
+    useSmallCompartmentPages();
+    const asyncJob = await createAsyncJob('accepted');
+    const lockKey = `medplum:set-accounts:Patient/${patient.id}`;
+    let retried = false;
+    spyOnUpdateResource(async (resource) => {
+      if (resource.resourceType !== 'Patient' && !retried) {
+        // A retry of the same job takes over, e.g. after BullMQ wrongly marks this attempt as stalled
+        retried = true;
+        await getCacheRedis().set(lockKey, `${asyncJob.id}:retry`, 'PX', 60_000);
+      }
+    });
+    const transactionSpy = vi.spyOn(Repository.prototype, 'withTransaction');
+
+    await expect(setPatientAccountsAsJob(asyncJob.id)).rejects.toThrow('lost its lock');
+    expect(compartmentWrites(transactionSpy).length).toBeLessThan(27);
+
+    // The earlier attempt leaves the retry's lock in place
+    expect(await getCacheRedis().get(lockKey)).toBe(`${asyncJob.id}:retry`);
+    await getCacheRedis().del(lockKey);
+  });
+
+  test('Stops propagating when the run loses its lock on the target', async () => {
+    const lockKey = `medplum:set-accounts:Patient/${patient.id}`;
+    let lockLost = false;
+    spyOnUpdateResource(async (resource) => {
+      if (resource.resourceType === 'Patient' && !lockLost) {
+        // Another run takes over the expired lock, and enough time passes that this run renews it
+        lockLost = true;
+        await getCacheRedis().set(lockKey, 'other-run');
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(Date.now() + 10 * 60 * 1000);
+      }
+    }, 'after');
+
+    const res = await setPatientAccounts([organization1], true);
+    vi.useRealTimers();
+    expect(res).toHaveStatus(409);
+
+    // The other run's lock is left in place
+    expect(await getCacheRedis().get(lockKey)).toBe('other-run');
+    await getCacheRedis().del(lockKey);
+
+    const obs = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(obs.meta?.accounts).toBeUndefined();
+  });
+
+  test('Checks that the caller can read the target before taking its lock', async () => {
+    const lockKey = `medplum:set-accounts:Patient/${patient.id}`;
+    const { accessToken: otherAdminToken } = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+    });
+    const evalSpy = vi.spyOn(getCacheRedis(), 'eval');
+
+    const res = await setPatientAccounts([organization1], true, { token: otherAdminToken });
+    expect(res).toHaveStatus(404);
+    expect(evalSpy.mock.calls.some((call) => call.includes(lockKey))).toBe(false);
+  });
+
+  test('Does not lock non-Patient targets, which have no compartment to propagate to', async () => {
+    const lockKey = `medplum:set-accounts:Organization/${organization1.id}`;
+    await getCacheRedis().set(lockKey, 'other-run', 'PX', 60_000);
+    try {
+      const res = await request(app)
+        .post(`/fhir/R4/Organization/${organization1.id}/$set-accounts`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'accounts', valueReference: createReference(organization2) },
+            { name: 'propagate', valueBoolean: true },
+          ],
+        });
+      expect(res).toHaveStatus(200);
+      expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
+    } finally {
+      await getCacheRedis().del(lockKey);
+    }
   });
 
   test('Supports async response', async () => {
-    const queue = getSetAccountsQueue() as any;
-    queue.add.mockClear();
+    const { contentLocation, job } = await requestAsyncSetAccounts();
+    await runInJobContext(() => execSetAccountsJob(job));
 
-    const initRes = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Prefer', 'respond-async')
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'accounts',
-            valueReference: createReference(organization1),
-          },
-          {
-            name: 'propagate',
-            valueBoolean: true,
-          },
-        ],
-      });
-    expect(initRes).toHaveStatus(202);
-    expect(initRes.headers['content-location']).toBeDefined();
-    expect(queue.add).toHaveBeenCalledWith(
-      'SetAccountsJobData',
-      expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
-    );
-
-    const contentLocation = new URL(initRes.headers['content-location']);
-    const jobData = queue.add.mock.calls[0][1] as SetAccountsJobData;
-    const job = { id: 1, data: jobData } as unknown as Job<SetAccountsJobData>;
-
-    await runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-      undefined,
-      undefined,
-      { async: true },
-      () => execSetAccountsJob(job)
-    );
-
-    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+    await waitForAsyncJob(contentLocation, app, accessToken);
     const statusRes = await request(app)
-      .get(contentLocation.pathname)
+      .get(new URL(contentLocation).pathname)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(statusRes).toHaveStatus(200);
     expect((statusRes.body as AsyncJob).output?.parameter).toStrictEqual(
@@ -495,34 +560,10 @@ describe('Patient Set Accounts Operation', () => {
   });
 
   test('Job aborts when AsyncJob.status is not continuable', async () => {
-    const queue = getSetAccountsQueue() as any;
-    queue.add.mockClear();
-
-    // Start the operation
-    const initRes = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Prefer', 'respond-async')
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'accounts',
-            valueReference: createReference(organization1),
-          },
-          {
-            name: 'propagate',
-            valueBoolean: true,
-          },
-        ],
-      });
-    expect(initRes).toHaveStatus(202);
-    expect(initRes.headers['content-location']).toBeDefined();
-    const jobUrlMatch = /job\/([^/]+)\/status/.exec(initRes.headers['content-location']);
-    const asyncJobId = jobUrlMatch?.[1];
+    const { contentLocation, job } = await requestAsyncSetAccounts();
 
     // Cancel the job by updating AsyncJob.status
+    const asyncJobId = /job\/([^/]+)\/status/.exec(contentLocation)?.[1];
     const cancelRes = await request(app)
       .patch(`/fhir/R4/AsyncJob/${asyncJobId}`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -530,29 +571,12 @@ describe('Patient Set Accounts Operation', () => {
       .send([{ op: 'replace', path: '/status', value: 'cancelled' }]);
     expect(cancelRes).toHaveStatus(200);
 
-    // Manually push through BullMQ job
-    expect(queue.add).toHaveBeenCalledWith(
-      'SetAccountsJobData',
-      expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
-    );
-
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-    queue.add.mockClear();
-
-    await runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-      undefined,
-      undefined,
-      { async: true },
-      () => execSetAccountsJob(job)
-    );
+    await runInJobContext(() => execSetAccountsJob(job));
 
     // Check that the job status doesn't update and no output is provided
-    const contentLocation = new URL(initRes.headers['content-location']);
-    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
-
+    await waitForAsyncJob(contentLocation, app, accessToken);
     const statusRes = await request(app)
-      .get(contentLocation.pathname)
+      .get(new URL(contentLocation).pathname)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(statusRes).toHaveStatus(200);
     const resBody = statusRes.body as AsyncJob;
@@ -561,78 +585,119 @@ describe('Patient Set Accounts Operation', () => {
   });
 
   test('Keeps target accounts when the job is cancelled during propagation', async () => {
-    const systemRepo = await getProjectSystemRepo(project);
-    const asyncJob = await systemRepo.createResource<AsyncJob>({
-      resourceType: 'AsyncJob',
-      status: 'cancelled',
-      requestTime: new Date().toISOString(),
-      request: `Patient/${patient.id}/$set-accounts`,
-    });
+    const asyncJob = await createAsyncJob('cancelled');
 
-    await expect(
-      runInAuthenticatedContext(
-        { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-        undefined,
-        undefined,
-        { async: true },
-        () =>
-          setResourceAccounts(
-            getAuthenticatedContext().repo,
-            'Patient',
-            patient.id as string,
-            { accounts: [createReference(organization1)], propagate: true },
-            asyncJob.id
-          )
-      )
-    ).rejects.toThrow(CancelledError);
+    await expect(setPatientAccountsAsJob(asyncJob.id)).rejects.toThrow(CancelledError);
 
     const updatedPatient = await readExtended<Patient>(`Patient/${patient.id}`);
     expect(updatedPatient.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
   });
 
-  test('Removes account without extended header', async () => {
-    const setTwo = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'accounts', valueReference: createReference(organization1) },
-          { name: 'accounts', valueReference: createReference(organization2) },
-          { name: 'propagate', valueBoolean: false },
+  test('Respects access policy of the user when propagating', async () => {
+    const { accessToken, project, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      accessPolicy: {
+        resource: [
+          { resourceType: 'Patient' },
+          { resourceType: 'Observation', readonly: true },
+          { resourceType: 'DiagnosticReport', hiddenFields: ['conclusion'] },
         ],
-      });
-    expect(setTwo).toHaveStatus(200);
+      },
+    });
+    const systemRepo = repo.getSystemRepo();
+    const meta = { project: project.id };
+    const orgRef = createReference(organization1);
 
-    const get1 = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}`)
-      .set('X-Medplum', 'extended')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(get1).toHaveStatus(200);
-    expect(get1.body.meta?.accounts?.map((r: any) => r.reference)).toEqual(
-      expect.arrayContaining([`Organization/${organization1.id}`, `Organization/${organization2.id}`])
-    );
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient', meta });
+    const observation = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta,
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+    const diagnosticReport = await systemRepo.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      meta,
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+      conclusion: 'hidden from the user',
+    });
 
-    const setOne = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'accounts', valueReference: createReference(organization2) },
-          { name: 'propagate', valueBoolean: false },
+    const res = await setPatientAccounts([organization1], true, { id: patient.id, token: accessToken });
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
+
+    // Read-only resources are not updated
+    const unchangedObservation = await systemRepo.readResource<Observation>('Observation', observation.id);
+    expect(unchangedObservation.meta?.versionId).toStrictEqual(observation.meta?.versionId);
+    expect(unchangedObservation.meta?.accounts).toBeUndefined();
+
+    // Hidden fields of updated resources are preserved
+    const updatedReport = await systemRepo.readResource<DiagnosticReport>('DiagnosticReport', diagnosticReport.id);
+    expect(updatedReport.meta?.accounts).toStrictEqual([orgRef]);
+    expect(updatedReport.conclusion).toStrictEqual('hidden from the user');
+  });
+
+  test('Counts up-to-date compartment resources the user can update by a field hidden from them', async () => {
+    const { accessToken, project, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      accessPolicy: {
+        resource: [
+          { resourceType: 'Patient' },
+          { resourceType: 'DiagnosticReport', criteria: 'DiagnosticReport?status=final', hiddenFields: ['status'] },
         ],
-      });
-    expect(setOne).toHaveStatus(200);
-    expect(setOne.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
+      },
+    });
+    const systemRepo = repo.getSystemRepo();
+    const meta = { project: project.id };
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient', meta });
+    await systemRepo.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      meta,
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
 
-    const get2 = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}`)
-      .set('X-Medplum', 'extended')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(get2).toHaveStatus(200);
-    const acctRefs = (get2.body.meta?.accounts ?? []).map((r: any) => r.reference);
-    expect(acctRefs).toEqual([`Organization/${organization2.id}`]);
+    const first = await setPatientAccounts([organization1], true, { id: patient.id, token: accessToken });
+    expect(first.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
+    // The DiagnosticReport is already up to date, and still counts as updatable
+    const rerun = await setPatientAccounts([organization1], true, { id: patient.id, token: accessToken });
+    expect(rerun.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
+  });
+
+  test('Does not propagate to resources in linked Projects', async () => {
+    const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      project: { link: [{ project: createReference(linkedProject) }] },
+      membership: { admin: true },
+    });
+
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const linkedObservation = await linkedRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+    expect(linkedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+    await expect(repo.readResource('Observation', linkedObservation.id)).resolves.toBeDefined();
+
+    const res = await setPatientAccounts([organization1], true, { id: patient.id, token: accessToken });
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
+
+    const unchangedObservation = await linkedRepo.readResource<Observation>('Observation', linkedObservation.id);
+    expect(unchangedObservation.meta?.versionId).toStrictEqual(linkedObservation.meta?.versionId);
+    expect(unchangedObservation.meta?.accounts).toBeUndefined();
   });
 
   test('Accounts applied to resource with no default profile', async () => {
@@ -681,365 +746,25 @@ describe('Patient Set Accounts Operation', () => {
     expect(diagnosticReport.subject).toStrictEqual(patientRef);
     expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef]));
   });
-
-  test('Propagates empty accounts to target and compartment resources', async () => {
-    const setTwo = await setPatientAccounts([organization1, organization2], true);
-    expect(setTwo).toHaveStatus(200);
-
-    const clear = await setPatientAccounts([], true);
-    expect(clear).toHaveStatus(200);
-    expect(clear.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
-
-    for (const ref of [
-      `Patient/${patient.id}`,
-      `Observation/${observation.id}`,
-      `DiagnosticReport/${diagnosticReport.id}`,
-    ]) {
-      const resource = await readExtended(ref);
-      expect(resource.meta?.accounts ?? []).toHaveLength(0);
-      expect(resource.meta?.account).toBeUndefined();
-    }
-  });
-
-  test('Retries compartment update when the resource is modified concurrently', async () => {
-    const concurrentRepo = await getProjectSystemRepo(project);
-    let observationUpdates = 0;
-    spyOnUpdateResource(async (resource) => {
-      if (resource.resourceType === 'Observation' && ++observationUpdates === 1) {
-        // Commit a write from another connection after the operation's transaction read the
-        // Observation, but before it writes
-        const current = await concurrentRepo.readResource<Observation>('Observation', resource.id as string);
-        await concurrentRepo.updateResource<Observation>({
-          ...current,
-          meta: { ...current.meta, accounts: [createReference(organization2)] },
-        });
-      }
-    });
-
-    const res = await setPatientAccounts([organization1], true);
-    expect(res).toHaveStatus(200);
-    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
-    // Operation's write, the concurrent write, and the operation's retried write
-    expect(observationUpdates).toBe(3);
-
-    // Concurrently added account is preserved, and the propagated account is added
-    const obs = await readExtended<Observation>(`Observation/${observation.id}`);
-    expect(obs.meta?.accounts).toStrictEqual([
-      { reference: getReferenceString(organization2) },
-      { reference: getReferenceString(organization1) },
-    ]);
-  });
-
-  test('Skips compartment resource deleted after the compartment search', async () => {
-    const concurrentRepo = await getProjectSystemRepo(project);
-    const originalRead = Repository.prototype.readResource;
-    let deleted = false;
-    const readSpy = vi.spyOn(Repository.prototype, 'readResource').mockImplementation(async function (
-      this: Repository,
-      ...args: Parameters<typeof originalRead>
-    ) {
-      const [resourceType, id] = args;
-      if (resourceType === 'Observation' && !deleted) {
-        deleted = true;
-        await concurrentRepo.deleteResource('Observation', id);
-      }
-      return originalRead.apply(this, args);
-    });
-
-    try {
-      const res = await setPatientAccounts([organization1], true);
-      expect(res).toHaveStatus(200);
-      expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
-    } finally {
-      readSpy.mockRestore();
-    }
-    expect(deleted).toBe(true);
-
-    const obsRes = await request(app)
-      .get(`/fhir/R4/Observation/${observation.id}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(obsRes).toHaveStatus(410);
-
-    const report = await readExtended<DiagnosticReport>(`DiagnosticReport/${diagnosticReport.id}`);
-    expect(report.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
-  });
-
-  test('Reverts target accounts when propagation fails, so the operation can be re-run', async () => {
-    const initial = await setPatientAccounts([organization1], true);
-    expect(initial).toHaveStatus(200);
-
-    const updateSpy = spyOnUpdateResource(async (resource) => {
-      if (resource.resourceType === 'DiagnosticReport') {
-        throw new OperationOutcomeError(serverError(new Error('Simulated failure')));
-      }
-    });
-
-    const failed = await setPatientAccounts([organization2], true);
-    expect(failed).toHaveStatus(500);
-    updateSpy.mockRestore();
-
-    const reverted = await readExtended<Patient>(`Patient/${patient.id}`);
-    expect(reverted.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
-
-    // Re-running finishes both the addition and the removal on every compartment resource
-    const rerun = await setPatientAccounts([organization2], true);
-    expect(rerun).toHaveStatus(200);
-    expect(rerun.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
-    for (const ref of [
-      `Patient/${patient.id}`,
-      `Observation/${observation.id}`,
-      `DiagnosticReport/${diagnosticReport.id}`,
-    ]) {
-      const resource = await readExtended(ref);
-      expect(resource.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization2) }]);
-    }
-  });
-
-  test('Does not revert target accounts that were rewritten after the operation wrote them', async () => {
-    const initial = await setPatientAccounts([organization1], true);
-    expect(initial).toHaveStatus(200);
-
-    const concurrentRepo = await getProjectSystemRepo(project);
-    spyOnUpdateResource(async (resource, originalUpdate) => {
-      if (resource.resourceType === 'DiagnosticReport') {
-        // Another writer changes the Patient's accounts and then sets them back to the value this
-        // operation wrote, so the accounts match but the version does not
-        for (const org of [organization1, organization2]) {
-          const current = await concurrentRepo.readResource<Patient>('Patient', patient.id as string);
-          await originalUpdate.call(concurrentRepo, {
-            ...current,
-            meta: { ...current.meta, accounts: [createReference(org)], account: createReference(org) },
-          });
-        }
-        throw new OperationOutcomeError(serverError(new Error('Simulated failure')));
-      }
-    });
-
-    const failed = await setPatientAccounts([organization2], true);
-    expect(failed).toHaveStatus(500);
-
-    const current = await readExtended<Patient>(`Patient/${patient.id}`);
-    expect(current.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization2) }]);
-  });
-
-  test('Charges one write for the target when its transaction retries', async () => {
-    const concurrentRepo = await getProjectSystemRepo(project);
-    let patientUpdates = 0;
-    spyOnUpdateResource(async (resource, originalUpdate) => {
-      if (resource.resourceType === 'Patient' && ++patientUpdates === 1) {
-        // Commit a write from another connection after the operation's transaction read the Patient,
-        // forcing a serialization failure and a retry
-        const current = await concurrentRepo.readResource<Patient>('Patient', resource.id as string);
-        await originalUpdate.call(concurrentRepo, { ...current, gender: 'female' });
-      }
-    });
-    const recordWriteSpy = vi.spyOn(FhirRateLimiter.prototype, 'recordWrite');
-
-    try {
-      const res = await setPatientAccounts([organization1], false);
-      expect(res).toHaveStatus(200);
-      // Operation's write, then its retried write
-      expect(patientUpdates).toBe(2);
-      expect(recordWriteSpy).toHaveBeenCalledTimes(1);
-    } finally {
-      recordWriteSpy.mockRestore();
-    }
-
-    const updated = await readExtended<Patient>(`Patient/${patient.id}`);
-    expect(updated.gender).toBe('female');
-    expect(updated.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
-  });
-
-  test('Re-running only writes compartment resources that are missing the target accounts', async () => {
-    const initial = await setPatientAccounts([organization1], true);
-    expect(initial).toHaveStatus(200);
-
-    // Remove the account from the Observation only
-    const systemRepo = await getProjectSystemRepo(project);
-    const current = await systemRepo.readResource<Observation>('Observation', observation.id as string);
-    await systemRepo.updateResource<Observation>({
-      ...current,
-      meta: { ...current.meta, accounts: undefined, account: undefined },
-    });
-    const stripped = await readExtended<Observation>(`Observation/${observation.id}`);
-    expect(stripped.meta?.accounts).toBeUndefined();
-
-    const transactionSpy = vi.spyOn(Repository.prototype, 'withTransaction');
-    const recordWriteSpy = vi.spyOn(FhirRateLimiter.prototype, 'recordWrite');
-    const compartmentTransactions = (): number =>
-      transactionSpy.mock.calls.filter(([, options]) => options.source === 'setAccounts.compartment').length;
-    try {
-      const repair = await setPatientAccounts([organization1], true);
-      expect(repair).toHaveStatus(200);
-      expect(repair.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
-      // Only the Observation needed a write, in addition to the target
-      expect(compartmentTransactions()).toBe(1);
-      expect(recordWriteSpy).toHaveBeenCalledTimes(2);
-
-      const obs = await readExtended<Observation>(`Observation/${observation.id}`);
-      expect(obs.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
-
-      // With every compartment resource up to date, only the target is written
-      transactionSpy.mockClear();
-      recordWriteSpy.mockClear();
-      const noop = await setPatientAccounts([organization1], true);
-      expect(noop).toHaveStatus(200);
-      expect(noop.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
-      expect(compartmentTransactions()).toBe(0);
-      expect(recordWriteSpy).toHaveBeenCalledTimes(1);
-    } finally {
-      transactionSpy.mockRestore();
-      recordWriteSpy.mockRestore();
-    }
-  });
-
-  test('Rejects a run while another run on the same target is in progress', async () => {
-    let started = false;
-    let concurrent: request.Response | undefined;
-    const updateSpy = spyOnUpdateResource(async (resource) => {
-      if (resource.resourceType === 'DiagnosticReport' && !started) {
-        started = true;
-        concurrent = await setPatientAccounts([organization2], true);
-      }
-    });
-
-    const first = await setPatientAccounts([organization1], true);
-    expect(first).toHaveStatus(200);
-    updateSpy.mockRestore();
-    expect(concurrent).toHaveStatus(409);
-
-    // The lock is released once the first run finishes
-    const next = await setPatientAccounts([organization2], true);
-    expect(next).toHaveStatus(200);
-  });
-
-  test('Stops propagating when the run loses its lock on the target', async () => {
-    let lockLost = false;
-    spyOnUpdateResource(async (resource) => {
-      if (resource.resourceType === 'Patient' && !lockLost) {
-        // Another run takes over the expired lock, and enough time passes that this run renews it
-        lockLost = true;
-        await getCacheRedis().set(`medplum:set-accounts:Patient/${patient.id}`, 'other-run');
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(Date.now() + 10 * 60 * 1000);
-      }
-    }, 'after');
-
-    try {
-      const res = await setPatientAccounts([organization1], true);
-      expect(res).toHaveStatus(409);
-    } finally {
-      vi.useRealTimers();
-    }
-
-    // The other run's lock is left in place
-    expect(await getCacheRedis().get(`medplum:set-accounts:Patient/${patient.id}`)).toBe('other-run');
-    await getCacheRedis().del(`medplum:set-accounts:Patient/${patient.id}`);
-
-    const obs = await readExtended<Observation>(`Observation/${observation.id}`);
-    expect(obs.meta?.accounts).toBeUndefined();
-  });
-
-  test('Respects access policy of the user when propagating', async () => {
-    const { accessToken, project, repo } = await createTestProject({
-      withAccessToken: true,
-      withRepo: true,
-      membership: { admin: true },
-      accessPolicy: {
-        resource: [
-          { resourceType: 'Patient' },
-          { resourceType: 'Observation', readonly: true },
-          { resourceType: 'DiagnosticReport', hiddenFields: ['conclusion'] },
-        ],
-      },
-    });
-    const systemRepo = repo.getSystemRepo();
-    const meta = { project: project.id };
-    const orgRef = createReference(organization1);
-
-    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient', meta });
-    const observation = await systemRepo.createResource<Observation>({
-      resourceType: 'Observation',
-      meta,
-      status: 'final',
-      code: { text: 'test' },
-      subject: createReference(patient),
-    });
-    const diagnosticReport = await systemRepo.createResource<DiagnosticReport>({
-      resourceType: 'DiagnosticReport',
-      meta,
-      status: 'final',
-      code: { text: 'test' },
-      subject: createReference(patient),
-      conclusion: 'hidden from the user',
-    });
-
-    const res = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'accounts', valueReference: orgRef },
-          { name: 'propagate', valueBoolean: true },
-        ],
-      });
-    expect(res).toHaveStatus(200);
-    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
-
-    // Read-only resources are not updated
-    const unchangedObservation = await systemRepo.readResource<Observation>('Observation', observation.id);
-    expect(unchangedObservation.meta?.versionId).toStrictEqual(observation.meta?.versionId);
-    expect(unchangedObservation.meta?.accounts).toBeUndefined();
-
-    // Hidden fields of updated resources are preserved
-    const updatedReport = await systemRepo.readResource<DiagnosticReport>('DiagnosticReport', diagnosticReport.id);
-    expect(updatedReport.meta?.accounts).toStrictEqual([orgRef]);
-    expect(updatedReport.conclusion).toStrictEqual('hidden from the user');
-  });
-
-  test('Does not propagate to resources in linked Projects', async () => {
-    const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
-    const { accessToken, repo } = await createTestProject({
-      withAccessToken: true,
-      withRepo: true,
-      project: { link: [{ project: createReference(linkedProject) }] },
-      membership: { admin: true },
-    });
-
-    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-    const linkedObservation = await linkedRepo.createResource<Observation>({
-      resourceType: 'Observation',
-      status: 'final',
-      code: { text: 'test' },
-      subject: createReference(patient),
-    });
-    expect(linkedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
-    await expect(repo.readResource('Observation', linkedObservation.id)).resolves.toBeDefined();
-
-    const res = await request(app)
-      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'accounts', valueReference: createReference(organization1) },
-          { name: 'propagate', valueBoolean: true },
-        ],
-      });
-    expect(res).toHaveStatus(200);
-    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
-
-    const unchangedObservation = await linkedRepo.readResource<Observation>('Observation', linkedObservation.id);
-    expect(unchangedObservation.meta?.versionId).toStrictEqual(linkedObservation.meta?.versionId);
-    expect(unchangedObservation.meta?.accounts).toBeUndefined();
-  });
 });
 
-async function setPatientAccounts(accounts: Organization[], propagate: boolean): Promise<request.Response> {
+/**
+ * Runs `$set-accounts` on a Patient.
+ * @param accounts - The accounts to set.
+ * @param propagate - Whether to propagate to the Patient's compartment.
+ * @param options - Overrides for the caller and target.
+ * @param options.id - The ID of the target Patient. Defaults to the test Patient.
+ * @param options.token - The access token of the caller. Defaults to the test project admin.
+ * @returns The HTTP response.
+ */
+async function setPatientAccounts(
+  accounts: Organization[],
+  propagate: boolean,
+  options: { id?: string; token?: string } = {}
+): Promise<request.Response> {
   return request(app)
-    .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
-    .set('Authorization', 'Bearer ' + accessToken)
+    .post(`/fhir/R4/Patient/${options.id ?? patient.id}/$set-accounts`)
+    .set('Authorization', 'Bearer ' + (options.token ?? accessToken))
     .send({
       resourceType: 'Parameters',
       parameter: [
@@ -1050,19 +775,113 @@ async function setPatientAccounts(accounts: Organization[], propagate: boolean):
 }
 
 /**
+ * Starts an async `$set-accounts` run on the Patient, leaving its job on the (mock) queue.
+ * @returns The Content-Location of the AsyncJob, and the queued job to run.
+ */
+async function requestAsyncSetAccounts(): Promise<{ contentLocation: string; job: Job<SetAccountsJobData> }> {
+  const queue = getSetAccountsQueue();
+  if (!queue) {
+    throw new Error('SetAccounts queue not available');
+  }
+  const addJob = vi.mocked(queue.add);
+  addJob.mockClear();
+
+  const res = await request(app)
+    .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .set('Content-Type', ContentType.FHIR_JSON)
+    .set('Prefer', 'respond-async')
+    .send({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'accounts', valueReference: createReference(organization1) },
+        { name: 'propagate', valueBoolean: true },
+      ],
+    });
+  expect(res).toHaveStatus(202);
+  expect(addJob).toHaveBeenCalledWith(
+    'SetAccountsJobData',
+    expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
+  );
+  return {
+    contentLocation: res.headers['content-location'],
+    // The mock queue does not run jobs, so wrap the queued data in a minimal Job
+    job: { id: 1, data: addJob.mock.calls[0][1] } as unknown as Job<SetAccountsJobData>,
+  };
+}
+
+async function runInJobContext<T>(fn: () => Promise<T>): Promise<T> {
+  return runInAuthenticatedContext(
+    { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+    undefined,
+    undefined,
+    { async: true },
+    fn
+  );
+}
+
+async function createAsyncJob(status: AsyncJob['status']): Promise<WithId<AsyncJob>> {
+  const systemRepo = await getProjectSystemRepo(project);
+  return systemRepo.createResource<AsyncJob>({
+    resourceType: 'AsyncJob',
+    status,
+    requestTime: new Date().toISOString(),
+    request: `Patient/${patient.id}/$set-accounts`,
+  });
+}
+
+function setPatientAccountsAsJob(asyncJobId: string): Promise<FhirParameters | undefined> {
+  return runInJobContext(() =>
+    setResourceAccounts(
+      getAuthenticatedContext().repo,
+      'Patient',
+      patient.id,
+      { accounts: [createReference(organization1)], propagate: true },
+      asyncJobId
+    )
+  );
+}
+
+/**
+ * Shrinks compartment search pages to the smallest cursor page, so 21 or more compartment resources span
+ * several pages. The spy is restored after each test.
+ */
+function useSmallCompartmentPages(): void {
+  const originalSearch = Repository.prototype.search;
+  vi.spyOn(Repository.prototype, 'search').mockImplementation(function (
+    this: Repository,
+    ...args: Parameters<typeof originalSearch>
+  ) {
+    const [searchRequest, options] = args;
+    const isCompartment = searchRequest.filters?.some((f) => f.code === '_compartment');
+    return originalSearch.call(this, isCompartment ? { ...searchRequest, count: 20 } : searchRequest, options);
+  });
+}
+
+/**
+ * Lists the resource types written by `$set-accounts` while propagating to the compartment.
+ * @param transactionSpy - A spy on `Repository.withTransaction`.
+ * @returns The resource type of each compartment write transaction.
+ */
+function compartmentWrites(transactionSpy: MockInstance<Repository['withTransaction']>): string[] {
+  return transactionSpy.mock.calls
+    .filter(([, options]) => options.source === 'setAccounts.compartment')
+    .map(([, options]) => (options.resourceTypes as string[])[0]);
+}
+
+/**
  * Spies on `Repository.updateResource`, running `hook` around each call (before it by default). The spy is
- * restored after the test, so assertions on its calls must run within the test body.
+ * restored after each test.
  * @param hook - Called with the resource being updated and the unspied `updateResource`, for writes that
  *   should bypass the spy.
  * @param timing - Whether `hook` runs before or after the real update.
- * @returns The spy.
  */
 function spyOnUpdateResource(
   hook: (resource: Resource, originalUpdate: Repository['updateResource']) => Promise<void>,
   timing: 'before' | 'after' = 'before'
-): MockInstance<Repository['updateResource']> {
+): void {
   const originalUpdate = Repository.prototype.updateResource;
-  const spy = vi.spyOn(Repository.prototype, 'updateResource').mockImplementation(async function (
+  vi.spyOn(Repository.prototype, 'updateResource').mockImplementation(async function (
     this: Repository,
     ...args: Parameters<typeof originalUpdate>
   ) {
@@ -1075,8 +894,31 @@ function spyOnUpdateResource(
     }
     return result;
   });
-  updateSpies.push(spy);
-  return spy;
+}
+
+/**
+ * Spies on `Repository.readResource`, running `hook` before each call. The spy is restored after each test.
+ * @param hook - Called with the type and ID of the resource being read.
+ */
+function spyOnReadResource(hook: (resourceType: string, id: string) => Promise<void>): void {
+  const originalRead = Repository.prototype.readResource;
+  vi.spyOn(Repository.prototype, 'readResource').mockImplementation(async function (
+    this: Repository,
+    ...args: Parameters<typeof originalRead>
+  ) {
+    await hook(args[0], args[1]);
+    return originalRead.apply(this, args);
+  });
+}
+
+async function createExtended<T extends Resource>(resource: T): Promise<WithId<T>> {
+  const res = await request(app)
+    .post(`/fhir/R4/${resource.resourceType}`)
+    .set('X-Medplum', 'extended')
+    .set('Authorization', 'Bearer ' + accessToken)
+    .send(resource);
+  expect(res).toHaveStatus(201);
+  return res.body as WithId<T>;
 }
 
 async function readExtended<T extends Resource = Resource>(ref: string): Promise<T> {

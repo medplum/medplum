@@ -45,7 +45,12 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
   if (options?.workerEnabled !== false) {
     worker = new Worker<SetAccountsJobData>(
       queueName,
-      trackJobMetrics('set-accounts', setAccountsJobProcessor),
+      trackJobMetrics('set-accounts', (job) => {
+        const { authState, requestId, traceId } = job.data;
+        return runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () =>
+          execSetAccountsJob(job)
+        );
+      }),
       getWorkerBullmqConfig(config, 'set-accounts', queueOptions)
     );
     addVerboseQueueLogging<SetAccountsJobData>(queue, worker, (job) => {
@@ -87,24 +92,16 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
   return queue.add(jobName, job);
 }
 
-async function setAccountsJobProcessor(job: Job<SetAccountsJobData>): Promise<void> {
-  const { authState, requestId, traceId } = job.data;
-  await runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
-}
-
-/**
- * Applies the job's accounts to the target resource and its compartment, tracked by the job's AsyncJob.
- * Must run in an authenticated context. Does nothing if the AsyncJob is no longer active.
- * @param job - The set-accounts job.
- */
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
-  const { tracking, resourceType, id, accounts } = job.data;
-  const exec = await getTrackingAsyncJobExecutor(tracking);
-  const asyncJob = exec.getAsyncJob();
-  if (!isJobActive(asyncJob)) {
+  const { repo } = getAuthenticatedContext();
+  const { resourceType, id, accounts } = job.data;
+  const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
+
+  if (!isJobActive(exec.getAsyncJob())) {
     return;
   }
 
-  const { repo } = getAuthenticatedContext();
-  await exec.startAsync(() => setResourceAccounts(repo, resourceType, id, { accounts, propagate: true }, asyncJob.id));
+  await exec.startAsync(async () => {
+    return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true }, exec.getAsyncJob().id);
+  });
 }

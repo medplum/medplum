@@ -12,7 +12,6 @@ import {
   extractAccountReferences,
   forbidden,
   getReferenceString,
-  getStatus,
   isGone,
   isNotFound,
   isResourceType,
@@ -80,10 +79,8 @@ export interface SetAccountsParameters {
 
 /**
  * Handles the $set-accounts operation.
- * This operation updates the account reference for  a resource, and optionally
+ * This operation updates the account reference for a resource, and optionally
  * all resources in the target compartment as well.
- *
- * NOTE: the operation is currently capped at 1000 resources in the patient compartment.
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -155,47 +152,46 @@ export async function setResourceAccounts(
     throw new OperationOutcomeError(forbidden);
   }
 
-  const lock = await TargetLock.acquire(resourceType, id);
+  // Use extended mode to read the resource, ensuring we get access to the full `meta.accounts`
+  const userRepo = repo.withOverrideConfig({ extendedMode: true });
+  if (resourceType !== 'Patient') {
+    // Only a Patient has a compartment to propagate to, and a write to any other target is atomic on its own
+    await updateTargetResource(userRepo, resourceType, id, params.accounts);
+    return buildOutputParameters(operation, { resourcesUpdated: 1 });
+  }
+
+  // A Patient's accounts must not change while its compartment is being propagated to, so every run on
+  // a Patient takes the lock. The lock is keyed by the Patient alone, so check access first to keep
+  // callers who cannot see the Patient from holding it.
+  if (!(await userRepo.canPerformInteractionById(AccessPolicyInteraction.READ, resourceType, id))) {
+    throw new OperationOutcomeError(notFound);
+  }
+  const lock = await TargetLock.acquire(resourceType, id, asyncJobId);
   try {
-    return await setLockedResourceAccounts(repo, resourceType, id, params, lock, asyncJobId);
+    return await setPatientAccounts(userRepo, id, params, lock, asyncJobId);
   } finally {
     await lock.release();
   }
 }
 
-async function setLockedResourceAccounts(
-  repo: Repository,
-  resourceType: ResourceType,
+async function setPatientAccounts(
+  userRepo: Repository,
   id: string,
   params: SetAccountsParameters,
   lock: TargetLock,
   asyncJobId?: string
 ): Promise<Parameters | undefined> {
-  // Use extended mode to read the resource, ensuring we get access to the full `meta.accounts`
-  const userRepo = repo.withOverrideConfig({ extendedMode: true });
   const accounts = params.accounts;
-
-  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
-  const { target, oldAccounts } = await updateTargetResource(userRepo, resourceType, id, accounts);
+  const { target, oldAccounts } = await updateTargetResource(userRepo, 'Patient', id, accounts);
   let count = 1; // Target resource is updated already
 
-  if (params.propagate && target.resourceType === 'Patient') {
+  if (params.propagate) {
     // Every target account is added, so a re-run restores any that are missing. Removals come from
     // the difference with the previous accounts, which only this run knows.
     const removals = oldAccounts?.filter((o) => !accounts.some((a) => a.reference === o.reference)) ?? [];
 
-    try {
-      // Update the resources in the target compartment to trigger meta.accounts refresh
-      count += await propagateToCompartment(userRepo, target, accounts, removals, lock, asyncJobId);
-    } catch (err) {
-      // Restore the old accounts on the target so that re-running the operation computes the same
-      // additions and removals, and finishes propagating them. A cancelled job keeps the new accounts.
-      if (!(err instanceof CancelledError)) {
-        const systemRepo = repo.getSystemRepo();
-        await revertTargetAccounts(systemRepo, target, oldAccounts);
-      }
-      throw err;
-    }
+    // Update the resources in the target compartment to trigger meta.accounts refresh
+    count += await propagateToCompartment(userRepo, target, accounts, removals, lock, asyncJobId);
   }
 
   return buildOutputParameters(operation, { resourcesUpdated: count });
@@ -208,6 +204,7 @@ async function updateTargetResource(
   accounts: Reference[]
 ): Promise<{ target: WithId<Resource>; oldAccounts: Reference[] | undefined }> {
   const systemRepo = userRepo.getSystemRepo();
+  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
 
   // Each read+write below runs in one transaction, so the read comes from the database rather
   // than the cache, and a concurrent write to the same resource retries against the newer version
@@ -245,11 +242,16 @@ async function propagateToCompartment(
 ): Promise<number> {
   let count = 0;
   const systemRepo = repo.getSystemRepo();
+  // Writes move resources to the end of the _lastUpdated cursor, so later pages return them again. A
+  // resource written since the target was updated, by this run or another writer, already reflects the
+  // target's new accounts, so skip those rather than remember every resource visited.
+  const startTime = Date.now();
 
   const search: Partial<SearchRequest> = { offset: 0, count: 1000 };
   const maxSearchOffset = getConfig().maxSearchOffset ?? Number.POSITIVE_INFINITY;
   while ((search.offset ?? 0) <= maxSearchOffset) {
-    await lock.renewIfDue();
+    // Check the lock on every page, so a run that lost it, e.g. to a retry of its job, stops within a page
+    await lock.renew();
     if (asyncJobId) {
       const shouldContinue = await shouldJobContinue(systemRepo, asyncJobId);
       if (!shouldContinue) {
@@ -258,9 +260,18 @@ async function propagateToCompartment(
     }
 
     const bundle = await searchPatientCompartment(repo, target, search);
-    for (const entry of bundle.entry ?? EMPTY) {
-      const resource = entry.resource;
-      if (resource && resource.resourceType !== 'Patient') {
+    const found = (bundle.entry ?? EMPTY).flatMap((e) =>
+      !e.resource ||
+      e.resource.resourceType === 'Patient' ||
+      Date.parse(e.resource.meta?.lastUpdated ?? '') >= startTime
+        ? EMPTY
+        : [{ reference: getReferenceString(e.resource) }]
+    );
+    // Search results lack fields hidden from the user, so check the stored versions instead
+    const resources = await systemRepo.readReferences(found);
+    for (const resource of resources) {
+      // Skip resources deleted since the search
+      if (!(resource instanceof Error)) {
         await lock.renewIfDue();
         if (await updateCompartmentResource(repo, target, resource, accounts, removals)) {
           count++;
@@ -285,11 +296,14 @@ async function updateCompartmentResource(
   userRepo: Repository,
   target: WithId<Resource>,
   resource: Resource,
-  additions: Reference[],
+  accounts: Reference[],
   removals: Reference[]
 ): Promise<boolean> {
-  // The compartment search ran after the target was updated; skip resources that are already correct
-  if (hasAccounts(resource, applyAccountChanges(extractAccountReferences(resource.meta), additions, removals))) {
+  // The resource was read after the target was updated; skip it if it already has the right accounts.
+  // Whether other Patients keep an account being removed is only read in the transaction below, so a
+  // resource holding one is always checked there.
+  const expected = applyAccountChanges(extractAccountReferences(resource.meta), accounts, removals);
+  if (hasAccounts(resource, expected)) {
     return Boolean(userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource));
   }
 
@@ -301,15 +315,26 @@ async function updateCompartmentResource(
     return await userRepo.getSystemRepo().withTransaction(
       async (txRepo) => {
         const current = await txRepo.readResource(resourceType, id);
-        if (!userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, current)) {
+        // Skip resources moved out of the target's compartment since the search
+        if (
+          !isInTargetCompartment(target, current) ||
+          !userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, current)
+        ) {
           return false;
         }
-        const currentAccounts = extractAccountReferences(current.meta);
         const accountList = applyAccountChanges(
-          currentAccounts,
-          additions,
-          await excludeOtherPatientAccounts(txRepo, target, current, currentAccounts, removals)
+          extractAccountReferences(current.meta),
+          accounts,
+          excludeOtherPatientAccounts(
+            target,
+            current,
+            removals,
+            await readOtherPatientAccounts(txRepo, target, current, removals)
+          )
         );
+        if (hasAccounts(current, accountList)) {
+          return true;
+        }
         current.meta = {
           ...current.meta,
           accounts: accountList,
@@ -328,29 +353,56 @@ async function updateCompartmentResource(
   }
 }
 
-async function excludeOtherPatientAccounts(
-  txRepo: SystemRepository,
+/**
+ * Reads the accounts of the other Patients whose compartments contain a resource, if it holds an account
+ * being removed, since those Patients may keep the account on the resource.
+ * @param systemRepo - The system repository to read with.
+ * @param target - The target Patient.
+ * @param resource - The compartment resource.
+ * @param removals - The accounts being removed.
+ * @returns The accounts of each other existing Patient, by reference string.
+ */
+async function readOtherPatientAccounts(
+  systemRepo: SystemRepository,
   target: WithId<Resource>,
   resource: Resource,
-  accounts: Reference[] | undefined,
   removals: Reference[]
-): Promise<Reference[]> {
-  const applicable = removals.filter((r) => accounts?.some((a) => a.reference === r.reference));
-  if (!applicable.length) {
-    return applicable;
-  }
+): Promise<Map<string, readonly Reference[]>> {
   const targetRef = getReferenceString(target);
-  const patientRefs = getPatients(resource).filter((p) => p.reference !== targetRef);
+  const patientRefs = extractAccountReferences(resource.meta)?.some((a) =>
+    removals.some((r) => r.reference === a.reference)
+  )
+    ? getPatients(resource).filter((p) => p.reference !== targetRef)
+    : EMPTY;
   if (!patientRefs.length) {
-    return applicable;
+    return new Map();
   }
 
-  // Don't remove any accounts provided by other existing Patients
-  const otherPatients = await txRepo.readReferences(patientRefs);
-  const retained = otherPatients.flatMap((p) =>
-    p instanceof Error ? EMPTY : (extractAccountReferences(p.meta) ?? EMPTY)
+  const patients = await systemRepo.readReferences(patientRefs);
+  return new Map(
+    patients.flatMap((p) =>
+      p instanceof Error ? EMPTY : [[getReferenceString(p), extractAccountReferences(p.meta) ?? EMPTY] as const]
+    )
   );
-  return applicable.filter((r) => !retained.some((a) => a.reference === r.reference));
+}
+
+function isInTargetCompartment(target: WithId<Resource>, resource: Resource): boolean {
+  const targetRef = getReferenceString(target);
+  return getPatients(resource).some((p) => p.reference === targetRef);
+}
+
+function excludeOtherPatientAccounts(
+  target: WithId<Resource>,
+  resource: Resource,
+  removals: Reference[],
+  otherPatientAccounts: Map<string, readonly Reference[]>
+): Reference[] {
+  // Don't remove any accounts provided by other existing Patients
+  const targetRef = getReferenceString(target);
+  const retained = getPatients(resource).flatMap((p) =>
+    p.reference === targetRef ? EMPTY : (otherPatientAccounts.get(p.reference) ?? EMPTY)
+  );
+  return removals.filter((r) => !retained.some((a) => a.reference === r.reference));
 }
 
 /**
@@ -390,36 +442,11 @@ function hasAccounts(resource: Resource, accounts: Reference[] | undefined): boo
   );
 }
 
-/**
- * Sets the target's accounts back to their previous value after propagation fails, unless the target
- * was written again since this operation updated it. Failures are logged rather than thrown, so the
- * propagation error is what the caller sees.
- * @param systemRepo - The system repository.
- * @param target - The target resource, as this operation wrote it.
- * @param oldAccounts - The target's accounts before this operation.
- */
-async function revertTargetAccounts(
-  systemRepo: SystemRepository,
-  target: WithId<Resource>,
-  oldAccounts: Reference[] | undefined
-): Promise<void> {
-  const resource = getReferenceString(target);
-  try {
-    await systemRepo.updateResource(
-      { ...target, meta: { ...target.meta, accounts: oldAccounts, account: oldAccounts?.[0] } },
-      { ifMatch: target.meta?.versionId }
-    );
-  } catch (err) {
-    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
-      getLogger().warn('Skipped reverting accounts after incomplete propagation: target changed', { resource });
-      return;
-    }
-    getLogger().error('Failed to revert accounts after incomplete propagation', { resource, err });
-  }
-}
-
 const TARGET_LOCK_TTL_MS = 5 * 60 * 1000;
 
+// Take the lock if it is free or held by an earlier attempt of the same job (token prefix ARGV[3]), so a
+// retried job can resume its own run. The earlier attempt then fails its next check and stops.
+const ACQUIRE_LOCK_SCRIPT = `local held = redis.call('get', KEYS[1]) if held == false or (ARGV[3] ~= '' and string.sub(held, 1, #ARGV[3]) == ARGV[3]) then return redis.call('set', KEYS[1], ARGV[1], 'PX', ARGV[2]) end return false`;
 // Extend or delete the lock only while this run still holds it
 const RENEW_LOCK_SCRIPT = `if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('pexpire', KEYS[1], ARGV[2]) end return 0`;
 const RELEASE_LOCK_SCRIPT = `if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) end return 0`;
@@ -439,19 +466,24 @@ class TargetLock {
     this.token = token;
   }
 
-  static async acquire(resourceType: ResourceType, id: string): Promise<TargetLock> {
+  static async acquire(resourceType: ResourceType, id: string, asyncJobId?: string): Promise<TargetLock> {
     const key = `medplum:set-accounts:${resourceType}/${id}`;
-    const token = randomUUID();
-    if ((await getCacheRedis().set(key, token, 'PX', TARGET_LOCK_TTL_MS, 'NX')) !== 'OK') {
+    // Each attempt has its own token, so an earlier attempt can't renew or release a retry's lock
+    const jobPrefix = asyncJobId ? `${asyncJobId}:` : '';
+    const token = jobPrefix + randomUUID();
+    if ((await getCacheRedis().eval(ACQUIRE_LOCK_SCRIPT, 1, key, token, TARGET_LOCK_TTL_MS, jobPrefix)) !== 'OK') {
       throw new OperationOutcomeError(conflict(`$set-accounts is already running for ${resourceType}/${id}`));
     }
     return new TargetLock(key, token);
   }
 
   async renewIfDue(): Promise<void> {
-    if (Date.now() - this.lastRenewed < TARGET_LOCK_TTL_MS / 3) {
-      return;
+    if (Date.now() - this.lastRenewed >= TARGET_LOCK_TTL_MS / 3) {
+      await this.renew();
     }
+  }
+
+  async renew(): Promise<void> {
     if (!(await getCacheRedis().eval(RENEW_LOCK_SCRIPT, 1, this.key, this.token, TARGET_LOCK_TTL_MS))) {
       throw new OperationOutcomeError(conflict('$set-accounts lost its lock on the target'));
     }
