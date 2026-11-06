@@ -12,7 +12,7 @@ import type { CalendarHandle, ExtendedEvent, FhirEventSource } from '../Calendar
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { SlotEvent } from '../CalendarBase/SlotEvent';
 import { getSchedulingColor, resolveThemeColor } from '../colors';
-import type { DateTimeRange } from '../types';
+import type { CalendarSelection, DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
 
 export type { CalendarHandle } from '../CalendarBase/CalendarBase';
@@ -43,7 +43,7 @@ export interface MultiCalendarSource {
 
 export interface MultiCalendarProps {
   sources: MultiCalendarSource[];
-  onSelectInterval?: (slotInfo: DateTimeRange) => void;
+  onSelectInterval?: (slotInfo: CalendarSelection) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;

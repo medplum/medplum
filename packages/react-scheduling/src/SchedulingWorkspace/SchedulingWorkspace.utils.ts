@@ -6,10 +6,11 @@ import {
   getAppointmentSite,
   getExtensionValue,
   getReferenceString,
+  isDefined,
   serviceTypeIncludesService,
   TimezoneExtensionURI,
 } from '@medplum/core';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { formatDayHeading, formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
 import type { CalendarFilterValues } from './CalendarFilters';
@@ -95,6 +96,39 @@ export function matchesCalendarFilters(appointment: Appointment, filters: Calend
     return false;
   }
   return !service || serviceTypeIncludesService(appointment.serviceType, service);
+}
+
+/**
+ * Picks the Slots to draw while a calendar filter is on.
+ *
+ * A Slot has no link to a Service Facility, and the ones we write name no Visit Type, so the
+ * filters can't be matched against a Slot itself. A Slot linked to an appointment is shown
+ * only when that appointment is. A Slot linked to no appointment, such as blocked time, is
+ * always shown. Only the Slots of listed calendars are passed in, so a block still goes when
+ * the filters remove its Schedule's calendar.
+ *
+ * @param slots - The Slots loaded for the calendars listed.
+ * @param loadedAppointments - Every appointment loaded for those calendars, drawn or not.
+ * @param drawnAppointments - The appointments the filters leave drawn.
+ * @returns The Slots a drawn appointment holds, and the ones no loaded appointment holds.
+ */
+export function filterSlotsByDrawnAppointments<T extends Slot>(
+  slots: readonly T[],
+  loadedAppointments: readonly Appointment[],
+  drawnAppointments: readonly Appointment[]
+): T[] {
+  const held = getHeldSlotReferences(loadedAppointments);
+  const drawn = getHeldSlotReferences(drawnAppointments);
+  return slots.filter((slot) => {
+    const reference = getReferenceString(slot);
+    return !reference || drawn.has(reference) || !held.has(reference);
+  });
+}
+
+function getHeldSlotReferences(appointments: readonly Appointment[]): Set<string> {
+  return new Set(
+    appointments.flatMap((appointment) => (appointment.slot ?? []).map(getReferenceString)).filter(isDefined)
+  );
 }
 
 /**

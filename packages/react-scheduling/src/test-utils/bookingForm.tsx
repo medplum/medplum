@@ -369,6 +369,17 @@ export function chosenTimeField(): HTMLInputElement | null {
 }
 
 /**
+ * The field a time is typed into, told from the chosen time's read-only one of the same name.
+ * @returns The field.
+ */
+export function typedTimeField(): HTMLInputElement {
+  const [typed] = screen
+    .getAllByLabelText<HTMLInputElement>('Date & time')
+    .filter((input) => !input.hasAttribute('readonly'));
+  return typed;
+}
+
+/**
  * Whether one element comes before another in the document.
  *
  * Where a field sits is part of the behaviour: the form asks the criteria, finds the

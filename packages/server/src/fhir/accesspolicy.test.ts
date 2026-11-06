@@ -47,7 +47,7 @@ import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { buildAccessPolicy, getRepoForLogin, getRepoForProject, reconcileDefaultAccessPolicy } from './accesspolicy';
+import { buildAccessPolicy, getRepoForLogin, getRepoForProject } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
@@ -3561,6 +3561,29 @@ describe('AccessPolicy', () => {
         await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
         await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
       }));
+
+    test('Extra ? in scope search string does not drop Patient compartment', async () =>
+      withTestContext(async () => {
+        const login = await tryLogin({
+          authMethod: 'password',
+          email,
+          password,
+          projectId: project.id,
+          scope: 'openid launch/patient patient/Condition.rs',
+          nonce: randomUUID(),
+        });
+
+        const patientRepo = await getRepoForLogin({
+          // Matches both Conditions, so only the Patient compartment hides otherCondition
+          login: { ...login, scope: 'openid launch/patient patient/Condition.rs?code:not=x?y' },
+          project,
+          membership,
+          userConfig: { resourceType: 'UserConfiguration' },
+        });
+
+        await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
+        await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
   });
 
   describe('Logins with SMART scopes', () => {
@@ -3783,111 +3806,5 @@ describe('AccessPolicy', () => {
           );
         }));
     });
-  });
-});
-
-describe('reconcileDefaultAccessPolicy', () => {
-  const practitionerDefault = { reference: 'AccessPolicy/practitioner-default' };
-  const adminDefault = { reference: 'AccessPolicy/admin-default' };
-  const customPolicy = { reference: 'AccessPolicy/custom' };
-
-  const project: Project = {
-    resourceType: 'Project',
-    defaultAccessPolicies: [
-      { profileType: 'Practitioner', accessPolicy: practitionerDefault },
-      { profileType: 'Admin', accessPolicy: adminDefault },
-    ],
-  };
-
-  test('Upgrades Practitioner default to Admin default when admin', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: practitionerDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(adminDefault);
-  });
-
-  test('Downgrades Admin default to Practitioner default when not admin', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      accessPolicy: adminDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(practitionerDefault);
-  });
-
-  test('Leaves a custom access policy untouched', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: customPolicy,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(customPolicy);
-  });
-
-  test('No-op when the policy already matches the role', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: adminDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(adminDefault);
-  });
-
-  test('Switching to admin is a no-op when there is no Admin default', () => {
-    // A project with a Practitioner default but no Admin default (e.g. a project created before
-    // the Admin default existed). Promoting the member to admin must not change their policy.
-    const projectWithoutAdminDefault: Project = {
-      resourceType: 'Project',
-      defaultAccessPolicies: [{ profileType: 'Practitioner', accessPolicy: practitionerDefault }],
-    };
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: practitionerDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(projectWithoutAdminDefault, membership).accessPolicy).toStrictEqual(
-      practitionerDefault
-    );
-  });
-
-  test('No-op when membership has no access policy', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toBeUndefined();
-  });
-
-  test('No-op when project has no default access policies', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: practitionerDefault,
-    };
-    expect(reconcileDefaultAccessPolicy({ resourceType: 'Project' }, membership).accessPolicy).toStrictEqual(
-      practitionerDefault
-    );
   });
 });

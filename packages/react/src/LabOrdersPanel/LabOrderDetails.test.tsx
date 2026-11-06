@@ -665,6 +665,81 @@ describe('LabOrderDetails', () => {
       expect(screen.queryByText('All values within normal range')).not.toBeInTheDocument();
       expect(medplum.searchResources).not.toHaveBeenCalledWith('DiagnosticReport', expect.anything());
     });
+
+    test('shows the Report tab for a preliminary result on an order that is not yet completed', async () => {
+      const preliminaryReport: DiagnosticReport = {
+        ...mockDiagnosticReport,
+        id: 'diagnostic-report-preliminary',
+        status: 'preliminary',
+        conclusion: 'Preliminary interim result',
+      };
+      medplum.readResource = vi.fn().mockImplementation((resourceType: string, id: string) => {
+        if (resourceType === 'DiagnosticReport' && id === 'diagnostic-report-preliminary') {
+          return Promise.resolve(preliminaryReport);
+        }
+        return Promise.reject(new Error(`Unexpected readResource(${resourceType}, ${id})`));
+      });
+
+      await act(async () => {
+        setup({
+          order: mockActiveServiceRequest,
+          selectedReport: { reference: 'DiagnosticReport/diagnostic-report-preliminary' },
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: 'Report' })).toBeInTheDocument();
+        expect(screen.getByText('Preliminary interim result')).toBeInTheDocument();
+      });
+    });
+
+    test('a revoked order with a report opens on and can show the Report tab', async () => {
+      const finalReport: DiagnosticReport = {
+        ...mockDiagnosticReport,
+        id: 'diagnostic-report-revoked-order',
+        conclusion: 'Final result from before revocation',
+      };
+      medplum.readResource = vi.fn().mockImplementation((resourceType: string, id: string) => {
+        if (resourceType === 'DiagnosticReport' && id === 'diagnostic-report-revoked-order') {
+          return Promise.resolve(finalReport);
+        }
+        return Promise.reject(new Error(`Unexpected readResource(${resourceType}, ${id})`));
+      });
+
+      await act(async () => {
+        setup({
+          order: { ...mockActiveServiceRequest, status: 'revoked' },
+          selectedReport: { reference: 'DiagnosticReport/diagnostic-report-revoked-order' },
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Final result from before revocation')).toBeInTheDocument();
+      });
+      const reportTab = screen.getByRole('tab', { name: 'Report' });
+      expect(reportTab).toHaveAttribute('aria-selected', 'true');
+
+      // Switching to Order Details and back to Report both still work - the tab isn't dead.
+      await userEvent.click(screen.getByRole('tab', { name: 'Order Details' }));
+      expect(reportTab).toHaveAttribute('aria-selected', 'false');
+      await userEvent.click(reportTab);
+      expect(reportTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByText('Final result from before revocation')).toBeInTheDocument();
+    });
+
+    test('a completed order with no report falls back off the blank Report tab once loading finishes', async () => {
+      medplum.searchResources = vi.fn().mockResolvedValue([]);
+
+      await act(async () => {
+        setup({ order: mockCompletedServiceRequest });
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByRole('tab', { name: 'Report' })).not.toBeInTheDocument();
+        const progressTab = screen.getByRole('tab', { name: 'Progress Tracker' });
+        expect(progressTab).toHaveAttribute('aria-selected', 'true');
+      });
+    });
   });
 
   describe('Document references', () => {
