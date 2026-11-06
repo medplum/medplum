@@ -23,6 +23,7 @@ describe('getLabOrderDraftDefaults', () => {
   let medplum: MockClient;
   let requester: Practitioner;
   let lab: Organization;
+  let location: Organization;
   let specimen: Specimen;
   let aoeResponse: QuestionnaireResponse;
   let task: Task;
@@ -35,6 +36,11 @@ describe('getLabOrderDraftDefaults', () => {
       resourceType: 'Organization',
       name: 'Test Lab',
       identifier: [{ system: 'https://www.healthgorilla.com', value: 'f-lab' }],
+    });
+    location = await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      name: 'Main Street Clinic',
+      identifier: [{ system: 'https://www.healthgorilla.com', value: 'tl-main' }],
     });
     specimen = await medplum.createResource<Specimen>({
       resourceType: 'Specimen',
@@ -69,6 +75,10 @@ describe('getLabOrderDraftDefaults', () => {
         { url: 'billTo', valueString: 'insurance' },
         { url: 'performingLabAccountNumber', valueString: 'ACCT-1' },
         { url: 'performingLabPhysicianAccountNumber', valueString: 'PHY-1' },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy',
+          valueReference: { reference: `Organization/${location.id}` },
+        },
       ],
       note: [{ text: 'Fasting' }],
     });
@@ -96,6 +106,7 @@ describe('getLabOrderDraftDefaults', () => {
 
     expect(defaults.patient?.id).toBe(HomerSimpson.id);
     expect(defaults.requester?.id).toBe(requester.id);
+    expect(defaults.requestingLocation?.id).toBe(location.id);
     expect(defaults.performingLab?.id).toBe(lab.id);
     expect(defaults.encounter).toEqual({ reference: 'Encounter/enc-1' });
     expect(defaults.task?.id).toBe(task.id);
@@ -350,6 +361,19 @@ describe('saveLabOrderDraft', () => {
       TSH: { priority: 'routine', notes: undefined, aoeResponses: expect.objectContaining({ item: aoe(true).item }) },
     });
     expect(defaults.specimenCollectedDateTime).toEqual(collected);
+  });
+
+  test('saves the practice location and clears it when removed', async () => {
+    const location = await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      name: 'Main Street Clinic',
+      identifier: [{ system: 'https://www.healthgorilla.com', value: 'tl-main' }],
+    });
+    const draft = await saveLabOrderDraft(medplum, { ...inputs, requestingLocation: location });
+    expect((await getLabOrderDraftDefaults(medplum, draft)).requestingLocation?.id).toBe(location.id);
+
+    const { defaults } = await resaveDraft(draft, { requestingLocation: undefined });
+    expect(defaults.requestingLocation).toBeUndefined();
   });
 
   test('clears the values removed from a resumed draft', async () => {
