@@ -9,6 +9,7 @@ import type { JSX, KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
+import { useControllableItems } from './useControllableItems';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
   readonly active?: boolean;
@@ -56,36 +57,22 @@ export interface AsyncAutocompleteProps<T> extends Omit<
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
-  const { defaultValue, value, onChange, maxValues, ...rest } = props;
+  const { defaultValue, value, onChange, ...rest } = props;
   const controlledItems = useMemo(() => (value === undefined ? undefined : toItems(value)), [value]);
-  const [uncontrolledItems, setUncontrolledItems] = useState(() => toItems(defaultValue));
-  const [prevControlledItems, setPrevControlledItems] = useState(controlledItems);
-  if (controlledItems !== prevControlledItems) {
-    setPrevControlledItems(controlledItems);
-    if (controlledItems === undefined) {
-      setUncontrolledItems(prevControlledItems ?? []);
-    }
-  }
-  useWarnOnModeSwitch(value !== undefined, rest.name);
+  const [items, setItems] = useControllableItems(controlledItems, () => toItems(defaultValue), {
+    component: 'AsyncAutocomplete',
+    name: rest.name,
+    maxValues: rest.maxValues,
+  });
   const handleChange = useCallback(
     (newItems: T[]): void => {
-      if (controlledItems === undefined) {
-        // maxValues={0} reports each selection without keeping it
-        setUncontrolledItems(maxValues === 0 ? [] : newItems);
-      }
+      setItems(newItems);
       onChange(newItems);
     },
-    [controlledItems, maxValues, onChange]
+    [setItems, onChange]
   );
 
-  return (
-    <AsyncAutocompleteControlled<T>
-      {...rest}
-      value={controlledItems ?? uncontrolledItems}
-      onChange={handleChange}
-      maxValues={maxValues}
-    />
-  );
+  return <AsyncAutocompleteControlled<T> {...rest} value={items} onChange={handleChange} />;
 }
 
 export interface AsyncAutocompleteControlledProps<T> extends Omit<AsyncAutocompleteProps<T>, 'defaultValue' | 'value'> {
@@ -429,21 +416,6 @@ export function AsyncAutocompleteControlled<T>(props: AsyncAutocompleteControlle
       </Combobox.Dropdown>
     </Combobox>
   );
-}
-
-function useWarnOnModeSwitch(controlled: boolean, name: string | undefined): void {
-  const controlledRef = useRef(controlled);
-  const warnedRef = useRef(false);
-  useEffect(() => {
-    if (import.meta.env.NODE_ENV !== 'production' && controlled !== controlledRef.current && !warnedRef.current) {
-      warnedRef.current = true;
-      console.warn(
-        `AsyncAutocomplete${name ? ` "${name}"` : ''} switched from ${controlled ? 'uncontrolled to controlled' : 'controlled to uncontrolled'}` +
-          ' because `value` changed to or from undefined. Pass null or [] for an empty controlled value.'
-      );
-    }
-    controlledRef.current = controlled;
-  }, [controlled, name]);
 }
 
 function toItems<T>(value: T | readonly T[] | null | undefined): T[] {
