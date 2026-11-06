@@ -248,7 +248,7 @@ function getTotpEnrollmentKey(login: Login, user: WithId<User>): string {
   if (!login.id) {
     throw new OperationOutcomeError(badRequest('Invalid login'));
   }
-  return `medplum:mfa:totp-enroll:${user.id}:${login.id}`;
+  return `medplum:mfa:totp-enroll:${user.id.toLowerCase()}:${login.id.toLowerCase()}`;
 }
 
 /**
