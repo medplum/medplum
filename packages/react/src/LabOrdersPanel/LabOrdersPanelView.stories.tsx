@@ -28,13 +28,13 @@ import {
   HealthGorillaQuestServiceRequest,
   HealthGorillaTriglyceridesObservation,
 } from '../stories/healthgorilla';
-import { LabDetailPaneView } from './LabDetailPaneView';
-import { LabListItemView } from './LabListItemView';
-import { LabOrderDetailsView } from './LabOrderDetailsView';
-import type { LabItem, LabTab } from './LabOrdersPanelView';
-import { LabOrdersPanelView } from './LabOrdersPanelView';
-import { LabResultDetailsView } from './LabResultDetailsView';
-import { LabResultListItemView } from './LabResultListItemView';
+import { LabDetailPaneView } from './LabDetailPane';
+import { LabListItemView } from './LabListItem';
+import { LabOrderDetailsView } from './LabOrderDetails';
+import type { LabItem, LabTab } from './LabOrdersPanel';
+import { LabOrdersPanelView } from './LabOrdersPanel';
+import { LabResultDetailsView } from './LabResultDetails';
+import { LabResultListItemView } from './LabResultListItem';
 
 // The views hold no client: with the Medplum context cleared, any hook on it would throw.
 const withoutMedplum: Decorator = (Story) => (
