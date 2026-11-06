@@ -657,15 +657,22 @@ This update allows for more granular control and visibility in RBAC implementati
 
 New projects are created with a set of **default access policies**, one per profile type. These are stored on the [`Project.defaultAccessPolicies`](/docs/api/fhir/medplum/project) element, which maps a `profileType` to the `AccessPolicy` applied when a user of that type is invited without an explicit policy:
 
-| Profile type    | Default policy grants                                                                                                                            |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Practitioner`  | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types. |
-| `Admin`         | Full read/write access to all resource types (equivalent to having no access policy).                                                            |
-| `Patient`       | Access scoped to the patient's own compartment.                                                                                                  |
-| `RelatedPerson` | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                               |
-| `Bot`           | Read/write access to all resource types, **except** read-only access to `AccessPolicy` and no access to `ClientApplication` secrets.             |
+| Profile type        | Default policy grants                                                                                                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types.                      |
+| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                 |
+| `Patient`           | Access scoped to the patient's own compartment.                                                                                                                       |
+| `RelatedPerson`     | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                                                    |
+| `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
+| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
 
-When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a Bot](/docs/bots/bot-basics) without specifying an access policy, it receives the `Bot` default.
+When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a Bot](/docs/bots/bot-basics) or [create a ClientApplication](/docs/auth/client-credentials) without specifying an access policy, it receives the `Bot` or `ClientApplication` default. This includes the default client created with each new project.
+
+:::note[Deploying Bots with a ClientApplication]
+
+Because the `ClientApplication` default makes `Bot` read-only, a client with that policy cannot save or deploy Bots, for example with `medplum bot save` or `medplum bot deploy` (`Bot/$deploy` returns `403 Forbidden`). This applies to the default client of new projects. To deploy Bots from the CLI or a CI/CD pipeline, use a ClientApplication whose access policy grants write access to `Bot`.
+
+:::
 
 ### Switching a user to (or from) admin
 
