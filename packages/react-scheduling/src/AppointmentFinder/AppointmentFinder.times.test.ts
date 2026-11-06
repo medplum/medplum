@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { RecurrenceTemplateExtensionURI } from '@medplum/core';
+import type { Appointment } from '@medplum/fhirtypes';
 import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA, indexByReference } from '../stories/scheduling';
 import {
   endOfMonth,
@@ -12,6 +14,7 @@ import {
   getAppointmentKey,
   getDurationMinutes,
   getFindWindowError,
+  getLaterOccurrenceStarts,
   getZonedDayRange,
   groupAppointmentsByDay,
   isViewerTimezone,
@@ -195,6 +198,61 @@ describe('keys and durations', () => {
   });
 });
 
+describe('getLaterOccurrenceStarts', () => {
+  /**
+   * A proposed first occurrence of a weekly series.
+   * @param start - When it starts.
+   * @param occurrenceCount - How many occurrences the series has.
+   * @param timezone - The zone the template names, if any.
+   * @returns The proposal.
+   */
+  function seriesOf(start: string, occurrenceCount: number, timezone?: string): Appointment {
+    return {
+      resourceType: 'Appointment',
+      status: 'proposed',
+      participant: [],
+      start,
+      extension: [
+        {
+          url: RecurrenceTemplateExtensionURI,
+          extension: [
+            ...(timezone ? [{ url: 'timezone', valueCodeableConcept: { coding: [{ code: timezone }] } }] : []),
+            { url: 'occurrenceCount', valuePositiveInt: occurrenceCount },
+          ],
+        },
+      ],
+    };
+  }
+
+  test('Counts a week on from the first for each occurrence after it', () => {
+    const starts = getLaterOccurrenceStarts(seriesOf('2026-08-10T14:00:00.000Z', 3), EASTERN);
+
+    expect(starts.map((start) => start.toISOString())).toStrictEqual([
+      '2026-08-17T14:00:00.000Z',
+      '2026-08-24T14:00:00.000Z',
+    ]);
+  });
+
+  test('Keeps the time on the clock of the zone the template names across a change of clocks', () => {
+    // 10am Eastern on 26 October 2026 is 14:00Z; clocks fall back on 1 November, so the
+    // next week's 10am is 15:00Z. The zone handed in is not the one the series keeps.
+    const starts = getLaterOccurrenceStarts(seriesOf('2026-10-26T14:00:00.000Z', 2, EASTERN), 'Etc/UTC');
+
+    expect(starts.map((start) => start.toISOString())).toStrictEqual(['2026-11-02T15:00:00.000Z']);
+  });
+
+  test('Finds nothing more for a visit that does not repeat', () => {
+    expect(
+      getLaterOccurrenceStarts({
+        resourceType: 'Appointment',
+        status: 'proposed',
+        participant: [],
+        start: '2026-08-10T14:00:00.000Z',
+      })
+    ).toStrictEqual([]);
+  });
+});
+
 describe('parseZonedTime', () => {
   test('Reads the time on the clinic’s clock, not the browser’s', () => {
     const day = new Date(2026, 6, 27);
@@ -290,6 +348,24 @@ describe('getFindWindowError', () => {
     const tooFar = new Date(2026, 6, 27);
     tooFar.setDate(tooFar.getDate() + MAX_FIND_WINDOW_DAYS + 1);
     expect(getFindWindowError({ start: new Date(2026, 6, 27), end: tooFar })).toBe('Choose at most 31 days at a time.');
+  });
+
+  test('A series is searched a week at a time', () => {
+    const start = new Date('2026-08-10T04:00:00Z');
+    const weekEnd = new Date('2026-08-17T03:59:59.999Z');
+    expect(getFindWindowError({ start, end: weekEnd }, 2)).toBeUndefined();
+    expect(getFindWindowError({ start, end: new Date('2026-08-18T03:59:59.999Z') }, 2)).toBe(
+      'Choose at most 7 days at a time for a recurring appointment.'
+    );
+  });
+
+  test('A series week that falls back from daylight time runs an hour long and can still be searched', () => {
+    // Monday midnight EDT to the close of Sunday EST in New York: 7 days and an hour.
+    const start = new Date('2026-10-26T04:00:00Z');
+    expect(getFindWindowError({ start, end: new Date('2026-11-02T04:59:59.999Z') }, 2)).toBeUndefined();
+    expect(getFindWindowError({ start, end: new Date('2026-11-02T05:00:00.001Z') }, 2)).toBe(
+      'Choose at most 7 days at a time for a recurring appointment.'
+    );
   });
 
   test('An open range says nothing, because there is no width to judge', () => {

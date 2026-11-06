@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
+import {
+  InvokeCommand,
+  LambdaClient,
+  ListLayerVersionsCommand,
+  ResourceNotFoundException,
+} from '@aws-sdk/client-lambda';
 import { badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -10,10 +15,10 @@ import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
-import { getConfig, loadTestConfig } from '../../config/loader';
+import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
 import { initTestAuth } from '../../test.setup';
-import { getLambdaFunctionName } from './execute';
+import { getLambdaFunctionName, normalizeLambdaExecutionError } from './execute';
 
 const app = express();
 let accessToken: string;
@@ -53,7 +58,7 @@ describe('Execute', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ membership: { admin: true } });
 
     const res = await request(app)
       .post(`/fhir/R4/Bot`)
@@ -203,23 +208,8 @@ describe('Execute', () => {
     expect(res3).toHaveStatus(400);
   });
 
-  test('Get function name', async () => {
-    const config = getConfig();
-    const normalBot: Bot = { resourceType: 'Bot', id: '123' };
-    const customBot: Bot = {
-      resourceType: 'Bot',
-      id: '456',
-      identifier: [{ system: 'https://medplum.com/bot-external-function-id', value: 'custom' }],
-    };
-
-    expect(getLambdaFunctionName(normalBot)).toStrictEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toStrictEqual('medplum-bot-lambda-456');
-
-    // Temporarily enable custom bot support
-    config.botCustomFunctionsEnabled = true;
-    expect(getLambdaFunctionName(normalBot)).toStrictEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toStrictEqual('custom');
-    config.botCustomFunctionsEnabled = false;
+  test('Get function name', () => {
+    expect(getLambdaFunctionName({ resourceType: 'Bot', id: '123' })).toStrictEqual('medplum-bot-lambda-123');
   });
 
   test('Execute by identifier', async () => {
@@ -247,5 +237,38 @@ describe('Execute', () => {
       .send({});
     expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(outcome);
+  });
+
+  test('Execute bot that has not been deployed', async () => {
+    mockLambdaClient
+      .on(InvokeCommand)
+      .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
+
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual(
+      'Bot "Test Bot" is not deployed. Deploy the bot with Bot/$deploy and try again.'
+    );
+  });
+});
+
+describe('normalizeLambdaExecutionError', () => {
+  test('Missing function falls back to the bot id when unnamed', () => {
+    expect(
+      normalizeLambdaExecutionError(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }), {
+        resourceType: 'Bot',
+        id: 'abc',
+      })
+    ).toBe('Bot "abc" is not deployed. Deploy the bot with Bot/$deploy and try again.');
+  });
+
+  test('Other errors are passed through', () => {
+    expect(
+      normalizeLambdaExecutionError(new Error('Rate exceeded'), { resourceType: 'Bot', id: 'abc', name: 'My Bot' })
+    ).toBe('Rate exceeded');
   });
 });

@@ -33,7 +33,10 @@ describe('API catalog', () => {
     expect(linkset).toStrictEqual([
       {
         anchor: `${baseUrl}fhir/R4`,
-        'service-desc': [{ href: `${baseUrl}fhir/R4/metadata`, type: ContentType.FHIR_JSON }],
+        'service-desc': [
+          { href: `${baseUrl}fhir/R4/metadata`, type: ContentType.FHIR_JSON },
+          { href: `${baseUrl}openapi.json`, type: 'application/vnd.oai.openapi+json' },
+        ],
         'service-doc': [{ href: 'https://www.medplum.com/docs/api/fhir', type: ContentType.HTML }],
       },
       {
@@ -75,7 +78,7 @@ describe('API catalog', () => {
     const serviceDescPaths = linkset
       .flatMap((context: any) => context['service-desc'] ?? [])
       .map((target: any) => target.href.substring(baseUrl.length - 1));
-    expect(serviceDescPaths).toHaveLength(3);
+    expect(serviceDescPaths).toHaveLength(4);
 
     for (const path of serviceDescPaths) {
       expect(await request(app).get(path)).toHaveStatus(200);

@@ -19,10 +19,9 @@ Configure these secrets on the Medplum project that runs the bot:
 | Secret | Type | Required | Description |
 |--------|------|----------|-------------|
 | `STEDI_CLAIM_API_KEY` | string | Yes | Stedi API key with permission to submit professional claims |
-| `STEDI_CLAIM_TEST_MODE` | boolean | No | When `true`, sets Stedi `usageIndicator` to `T` (test). Default is `P` (production) |
 
 :::note[]
-Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow) uses a **production** API key. It does not use Stedi test API keys (prefix `test_`) the same way eligibility sandbox checks do.
+The API key selects the mode. Use a Stedi test API key (prefix `test_`) for test claims and a production API key for production claims. See [Stedi test mode](https://www.stedi.com/docs/healthcare/test-mode).
 :::
 
 ## Resource model
@@ -99,14 +98,20 @@ The required fields below note which apply to each case.
 
 The Bundle below creates every resource the bot needs to submit a professional claim **billed as an organization**: the patient, the billing `Organization`, the rendering `Practitioner`, the supervising `Practitioner`, the payer `Organization`, the `Coverage`, the `Encounter`, and the `Claim` (whose `provider` points at the billing `Organization` and whose `careTeam` references the two practitioners). The values are chosen to pass the validations described above — checksum-valid NPIs, an EIN, a NANP-valid submitter phone, and the Stedi Test Payer (`STEDITEST`).
 
-POST the Bundle, then invoke `$stedi-submit-claim` on the `Claim` id returned in the response (see [Executing the claim submission](#executing-the-claim-submission)).
+POST the Bundle, check every response entry, and confirm the Claim and all prerequisites were saved before invoking `$stedi-submit-claim` on the returned `Claim` ID (see [Executing the claim submission](#executing-the-claim-submission)).
 
 :::tip[Billing as an individual]
 To bill under the rendering provider instead, point `Claim.provider` at the `Practitioner` and move the EIN/SSN, `telecom` (phone), and `address` onto that `Practitioner`.
 :::
 
+:::note[Sample data and partial failures]
+
+This sample can partially succeed on hosted Medplum. Check every response entry before continuing, and follow the [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before retrying POST creates.
+
+:::
+
 <details>
-<summary>Example transaction Bundle (organization billing, Stedi test payer)</summary>
+<summary>Example linked-resource Bundle (organization billing, Stedi test payer)</summary>
 
 ```json
 {
@@ -621,9 +626,8 @@ X12/NANP forbids both the **area code** and the **exchange** (the 4th digit) fro
 
 To submit a **test** claim end-to-end (including test 277CA and 835 ERA from the Stedi Test Payer):
 
-1. Set project secret `STEDI_CLAIM_TEST_MODE` to `true`, **or** ensure your deployment maps that secret so the bot sends `usageIndicator: T`.
-2. Use payer ID `STEDITEST` on the payer `Organization` (Stedi Test Payer).
-3. Use a **production** Stedi claims API key enrolled for your billing provider.
+1. Set `STEDI_CLAIM_API_KEY` to a Stedi **test** API key (prefix `test_`). Stedi validates the claim and returns a test 277CA without contacting the payer.
+2. Use payer ID `STEDITEST` on the payer `Organization` (Stedi Test Payer). Any other payer ID returns a test 277CA only, with no 835.
 
 See Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow) for enrollment and example payloads.
 

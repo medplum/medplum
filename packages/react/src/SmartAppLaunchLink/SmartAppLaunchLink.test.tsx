@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { cleanNotifications, Notifications } from '@mantine/notifications';
 import { createReference } from '@medplum/core';
 import type { ClientApplication, Encounter, Patient } from '@medplum/fhirtypes';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
@@ -44,6 +45,39 @@ describe('SmartAppLaunchLink', () => {
     expect(url).toContain('iss=');
     expect(mockOpen).toHaveBeenCalledWith(url, '_blank');
   });
+
+  test.each(['javascript:alert(document.domain)//', 'data:text/html,<script>alert(1)</script>', 'not a url'])(
+    'Does not launch invalid launchUri %s',
+    async (launchUri) => {
+      cleanNotifications();
+      const mockOpen = vi.fn();
+      window.open = mockOpen;
+
+      const medplum = new MockClient();
+      const createSpy = vi.spyOn(medplum, 'createResource');
+
+      setup(
+        <>
+          <Notifications />
+          <SmartAppLaunchLink
+            client={{ resourceType: 'ClientApplication', launchUri }}
+            patient={createReference(HomerSimpson)}
+          >
+            My SmartAppLaunchLink
+          </SmartAppLaunchLink>
+        </>,
+        medplum
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('My SmartAppLaunchLink'));
+      });
+
+      expect(await screen.findByText('Invalid launch URI')).toBeInTheDocument();
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(mockOpen).not.toHaveBeenCalled();
+    }
+  );
 
   test('Includes patient identifier in SmartAppLaunch when launchIdentifierSystems is present', async () => {
     const mockOpen = vi.fn();

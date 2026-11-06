@@ -12,3 +12,8 @@ export interface Message {
   componentCode?: string;
   selectedPatients?: (Patient | Reference<Patient>)[];
 }
+
+export interface GeneratedComponent {
+  code: string;
+  resources?: string[];
+}

@@ -47,6 +47,14 @@ export const ExpungedHistoryTag = {
   display: 'Destroy/Delete Record Lifecycle Event',
 } as const;
 
+/** A row of a `<ResourceType>_History` table. */
+export interface HistoryRow {
+  id: string;
+  versionId: string;
+  lastUpdated: Date;
+  content: string | null;
+}
+
 export function parseHistoryContent(content: string | null | undefined): Resource {
   return content ? (JSON.parse(content) as Resource) : ({ meta: { deleted: true } } as Resource);
 }

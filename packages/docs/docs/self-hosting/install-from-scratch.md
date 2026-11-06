@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # Install from scratch
 
-This guide provides comprehensive instructions for installing and configuring Medplum from scratch on Ubuntu 24.04. It covers all essential components including PostgreSQL database setup, Redis installation, Node.js configuration, and the core Medplum server and app deployment.
+This guide provides comprehensive instructions for installing and configuring Medplum from scratch on Ubuntu 24.04. It covers all essential components including PostgreSQL database setup, Valkey (Redis-compatible) installation, Node.js configuration, and the core Medplum server and app deployment.
 
 The guide also includes optional but recommended steps for setting up Nginx as a reverse proxy with SSL/TLS support, enabling secure access through custom domains. While primarily written for Ubuntu 24.04, these instructions are compatible with most recent Ubuntu versions.
 
@@ -73,16 +73,18 @@ Exit psql
 \q
 ```
 
-## Install Redis
+## Install Valkey
+
+Medplum uses a Redis-compatible datastore for caching and background jobs. [Valkey](https://valkey.io/) is the recommended open-source implementation for self-hosted deployments. Redis and other compatible implementations may also be used.
 
 ```bash
-sudo apt-get install redis-server
+sudo apt-get install valkey-server
 ```
 
-Open the Redis config file
+Open the Valkey config file
 
 ```bash
-sudo vi /etc/redis/redis.conf
+sudo vi /etc/valkey/valkey.conf
 ```
 
 Uncomment the "requirepass" line and set a password
@@ -91,10 +93,10 @@ Uncomment the "requirepass" line and set a password
 requirepass medplum
 ```
 
-Restart Redis
+Restart Valkey
 
 ```bash
-sudo systemctl restart redis-server
+sudo systemctl restart valkey-server
 ```
 
 ## Install Node.js

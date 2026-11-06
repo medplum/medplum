@@ -7,6 +7,7 @@ import type { ServerConfig } from '../config/utils';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import type { PgQueryable } from '../fhir/sql';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
+import { TEST_SHARD_ID } from '../test.setup';
 import {
   addCheckConstraint,
   analyzeTable,
@@ -55,9 +56,9 @@ describe('migrate-functions', () => {
   let client: PoolClient;
 
   beforeAll(async () => {
-    config = await loadTestConfig();
+    config = await loadTestConfig({ sharded: true });
     await initDatabase(config);
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, TEST_SHARD_ID);
     client = await pool.connect();
   });
 

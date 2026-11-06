@@ -4,7 +4,7 @@ import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { CommanderError, Option } from 'commander';
 import { existsSync } from 'node:fs';
 import { agent } from './agent';
-import { login, token, whoami } from './auth';
+import { login, logout, token, whoami } from './auth';
 import { buildAwsCommand } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { bulk } from './bulk';
@@ -13,6 +13,7 @@ import { hl7 } from './hl7';
 import { profile } from './profiles';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
+import { generateTypes } from './types';
 import { addSubcommand, MedplumCommand } from './utils';
 
 export async function main(argv: string[]): Promise<void> {
@@ -54,6 +55,7 @@ export async function main(argv: string[]): Promise<void> {
 
   // Auth commands
   addSubcommand(index, login);
+  addSubcommand(index, logout);
   addSubcommand(index, whoami);
   addSubcommand(index, token);
 
@@ -92,6 +94,9 @@ export async function main(argv: string[]): Promise<void> {
 
   // DICOMweb commands
   addSubcommand(index, dicomweb);
+
+  // Code generation commands
+  addSubcommand(index, generateTypes);
 
   try {
     await index.parseAsync(argv);

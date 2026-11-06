@@ -84,16 +84,35 @@ describe('ScriptSurePage', () => {
     });
   });
 
-  test('Shows an error notification when the hook reports an error', async () => {
+  test('Shows the unwrapped bot error when the hook reports an error', async () => {
+    vi.mocked(useScriptSureIFrame).mockReturnValue(undefined);
     setup();
 
     await act(async () => {
-      vi.mocked(useScriptSureIFrame).mock.calls[0][0].onError?.(new Error('ScriptSure connection failed'));
+      // A bot that throws returns its runtime payload as a JSON string in the error message.
+      vi.mocked(useScriptSureIFrame).mock.calls[0][0].onError?.(
+        new Error(
+          JSON.stringify({
+            errorType: 'Error',
+            errorMessage:
+              'ScriptSure: The Practice ID: 6842 cannot be found as part of the available practices associated with your login',
+            trace: [
+              'Error: ScriptSure: The Practice ID: 6842 cannot be found',
+              '    at ScriptSureClient.request (/var/task/user.cjs:1887:13)',
+            ],
+          })
+        )
+      );
     });
 
     await waitFor(() => {
-      expect(screen.getByText('ScriptSure connection failed')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'ScriptSure: The Practice ID: 6842 cannot be found as part of the available practices associated with your login'
+        )
+      ).toBeInTheDocument();
     });
+    expect(screen.queryByText(/trace/)).not.toBeInTheDocument();
   });
 
   test('Iframe fills its container', async () => {

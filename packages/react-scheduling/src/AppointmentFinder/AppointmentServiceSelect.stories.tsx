@@ -86,6 +86,6 @@ export const Basic = (): JSX.Element => {
  */
 export const NarrowedToASite = (): JSX.Element => (
   <Document>
-    <AppointmentServiceSelect onChange={() => undefined} location={MainClinic} />
+    <AppointmentServiceSelect onChange={() => undefined} serviceFacility={MainClinic} />
   </Document>
 );

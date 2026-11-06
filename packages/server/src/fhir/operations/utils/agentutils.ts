@@ -22,6 +22,7 @@ import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
 import { publish } from '../../../pubsub';
 import type { Repository } from '../../repo';
+import { searchUnique } from '../../searchunique';
 import type { AgentPushParameters } from '../agentpush';
 import {
   buildAgentCallbackId,
@@ -60,10 +61,11 @@ export async function getAgentForRequest(
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return repo.searchOne<Agent>({
-      resourceType: 'Agent',
-      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
-    });
+    return searchUnique<Agent>(
+      repo,
+      { resourceType: 'Agent', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
+      'Agent identifier'
+    );
   }
 
   // If no agent ID or identifier, return undefined
@@ -95,7 +97,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     }
   }
   if (destination.startsWith('Device?')) {
-    return repo.searchOne<Device>(parseSearchRequest(destination));
+    return searchUnique<Device>(repo, parseSearchRequest(destination), 'Agent push Device destination');
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };

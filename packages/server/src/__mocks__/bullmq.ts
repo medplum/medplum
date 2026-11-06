@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 export class Queue {
   add = vi.fn().mockImplementation(async (jobName: string, jobData: any, options: any) => ({
-    id: '123',
+    id: options?.jobId ?? '123',
     name: jobName,
     data: jobData,
     opts: options,

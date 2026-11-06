@@ -39,6 +39,12 @@ export const EMAIL_MFA_CODE_EXPIRATION_MS = 20 * 60 * 1000; // 20 minutes
 /** Maximum age and failed-attempt window for a password login awaiting MFA. */
 export const MFA_LOGIN_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
 
+/**
+ * Maximum age of an authorization code, measured from the Login's last update, before the
+ * authorization_code grant rejects it. RFC 6749 section 4.1.2 recommends at most ten minutes.
+ */
+export const AUTH_CODE_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
+
 /** Maximum MFA attempts accepted for one login and one user during the MFA window. */
 export const MFA_LOGIN_ATTEMPT_LIMIT = 5;
 export const MFA_USER_ATTEMPT_LIMIT = 20;

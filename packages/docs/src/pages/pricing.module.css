@@ -1,10 +1,166 @@
-.pricing {
-  text-align: center;
-  margin: 50px auto 10px auto;
-  padding: 20px 20px 10px 20px;
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.heroTitle {
+  font-size: var(--landing-hero-size);
+  letter-spacing: var(--landing-hero-tracking);
 }
 
-.pricing h1 {
-  font-size: 2.5rem;
-  font-weight: 300;
+.lead {
+  font-size: var(--landing-lead-size);
+}
+
+.sectionTitle {
+  font-size: var(--landing-section-size);
+  letter-spacing: var(--landing-section-tracking);
+}
+
+.planCard {
+  --ifm-card-horizontal-spacing: 1.5rem;
+  --ifm-card-vertical-spacing: 1.5rem;
+  height: 100%;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  box-shadow: none;
+}
+
+.planCard h3 {
+  font-size: 1.5rem;
+}
+
+.paidCard {
+  border-color: color-mix(in srgb, var(--ifm-color-primary) 20%, var(--ifm-card-background-color));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ifm-color-primary) 3%, var(--ifm-card-background-color)),
+    color-mix(in srgb, var(--ifm-color-primary) 10%, var(--ifm-card-background-color))
+  );
+}
+
+.price {
+  font-size: 2rem;
+  font-weight: var(--ifm-font-weight-semibold);
+}
+
+.cta {
+  width: 100%;
+  --landing-btn-padding: 0.75rem;
+  --landing-btn-size: 1rem;
+}
+
+.comparisonHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.included,
+.excluded {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.included {
+  color: var(--ifm-color-white);
+  background: var(--ifm-color-primary);
+}
+
+.excluded {
+  color: var(--ifm-color-emphasis-700);
+  background: var(--ifm-color-emphasis-200);
+}
+
+.comparison {
+  --ifm-table-cell-padding: 1rem;
+  --ifm-table-head-background: var(--ifm-background-surface-color);
+}
+
+/* Collapsed table borders don't move with sticky cells, so sticky cells draw their own
+   dividers with inset shadows. */
+.comparison thead th {
+  position: sticky;
+  top: var(--ifm-navbar-height);
+  z-index: 2;
+  vertical-align: top;
+  box-shadow: inset 0 -2px var(--ifm-table-border-color);
+}
+
+.comparison td:not(:first-child) {
+  font-size: 0.8125rem;
+}
+
+.comparison thead small {
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.comparison th,
+.comparison td {
+  text-align: center;
+}
+
+.comparison :is(th, td):first-child {
+  text-align: left;
+}
+
+.comparison tbody th {
+  background: color-mix(in srgb, var(--ifm-color-primary) 12%, var(--ifm-background-surface-color));
+}
+
+/* On narrow screens the table is its own scroll container (Infima's overflow: auto), so the
+   header can only stick inside it: cap its height to the viewport and pin the header and
+   feature labels within. Full-width rows (group titles and notes) have no room to stick, so
+   their text sticks instead. */
+@media (max-width: 996px) {
+  .comparison {
+    max-height: calc(100svh - var(--ifm-navbar-height) - 2rem);
+  }
+
+  .comparison thead th {
+    top: 0;
+  }
+
+  .comparison [colspan] > span {
+    position: sticky;
+    left: var(--ifm-table-cell-padding);
+    display: inline-block;
+    max-width: calc(100vw - 4rem);
+  }
+
+  .comparison tr > :first-child:not([colspan]) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 10rem;
+    background: var(--ifm-background-surface-color);
+    box-shadow: inset -1px 0 var(--ifm-table-border-color);
+  }
+
+  .comparison thead tr > :first-child:not([colspan]) {
+    z-index: 3;
+    box-shadow:
+      inset -1px 0 var(--ifm-table-border-color),
+      inset 0 -2px var(--ifm-table-border-color);
+  }
+}
+
+/* On wide screens restore a normal table so the header sticks to the page, not the table. */
+@media (min-width: 997px) {
+  .comparison {
+    display: table;
+    width: 100%;
+    overflow: visible;
+  }
 }

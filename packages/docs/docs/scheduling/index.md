@@ -23,7 +23,7 @@ Welcome to the Medplum Scheduling documentation. We currently support a range of
 
 Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each appointment type or service. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
 
-Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute.
+Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute. A Schedule that should take every appointment type can instead be marked as [offering all service types](/docs/scheduling/defining-availability#offering-all-service-types).
 
 <details>
   <summary>Referencing a HealthcareService</summary>
@@ -87,6 +87,8 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 ---
 
+The scheduling operations manage their own database transactions and do not require the `transaction-bundles` Project feature.
+
 ## Key FHIR Resources
 
 | Resource                                                          | Purpose                                                                                                                           |
@@ -121,6 +123,8 @@ Scheduling can be built in FHIR in many different ways. The key design decisions
 ## Quickstart: Seed the Resources You Need
 
 The minimum set of resources required for scheduling to work for a single provider is a [`Practitioner`](/docs/api/fhir/resources/practitioner) (the actor), a [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) (the bookable appointment type and its shared parameters), and a [`Schedule`](/docs/api/fhir/resources/schedule) (the actor's availability, linked to the service).
+
+This seed can partially succeed on hosted Medplum. Inspect every response entry before accepting bookings; see [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before repeating POST creates.
 
 <details>
   <summary>Seed Bundle: Practitioner + HealthcareService + Schedule</summary>

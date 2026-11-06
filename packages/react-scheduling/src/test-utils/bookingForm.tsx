@@ -174,10 +174,10 @@ export async function searchField(label: RegExp, query: string): Promise<HTMLEle
 }
 
 /**
- * Adds another row to one actor type, for a second one the visit needs.
- * @param lowercaseLabel - The actor type as the form writes it, e.g. `provider`.
+ * Adds another row to a field that takes one value per row: a second provider, or a second procedure.
+ * @param lowercaseLabel - What one row holds, as the form writes it, e.g. `provider` or `procedure`.
  */
-export async function addActorRow(lowercaseLabel: string): Promise<void> {
+export async function addRow(lowercaseLabel: string): Promise<void> {
   const button = screen.getByRole('button', { name: `Add another ${lowercaseLabel}` });
   await act(async () => {
     fireEvent.click(button);
@@ -194,12 +194,12 @@ export async function chooseActor(role: RegExp, query: string, name: string): Pr
 }
 
 /**
- * Chooses a site in the location field, which holds one value at a time.
+ * Chooses a site in the service facility field, which holds one value at a time.
  * @param query - What to type.
  * @param name - The site to click out of what came back.
  */
 export async function chooseSite(query: string, name: string): Promise<void> {
-  const listbox = await searchField(/location/i, query);
+  const listbox = await searchField(/service facility/i, query);
   await act(async () => {
     fireEvent.click(within(listbox).getByText(name));
   });
@@ -209,7 +209,7 @@ export async function chooseSite(query: string, name: string): Promise<void> {
 /** Opens the time search, which is what sends the `$find` request. */
 export async function openTimeFinder(): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /find a time/i }));
+    fireEvent.click(screen.getByRole('button', { name: /find a time|change time/i }));
   });
   await settleAutocomplete();
 }
@@ -286,6 +286,19 @@ export async function showNextMonth(): Promise<void> {
     fireEvent.click(screen.getByRole('button', { name: /next month/i }));
   });
   await settleAutocomplete();
+}
+
+/**
+ * Chooses how many weeks in a row to book.
+ * @param label - The option to choose, as the field lists it.
+ */
+export async function chooseRepeat(label: string): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('textbox', { name: 'Repeat' }));
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('option', { name: label }));
+  });
 }
 
 /** Asks for the next couple of days under the ones already on screen. */
@@ -421,8 +434,11 @@ export function finderButton(): HTMLElement {
  * The action that writes the booking.
  * @returns The button.
  */
+/** The Book button's label: "Book appointment", or "Book 3 appointments" for a series. */
+const BOOK_BUTTON_NAME = /^book (\d+ )?appointments?$/i;
+
 export function bookButton(): HTMLElement {
-  return screen.getByRole('button', { name: /book appointment/i });
+  return screen.getByRole('button', { name: BOOK_BUTTON_NAME });
 }
 
 /**
@@ -465,7 +481,7 @@ export async function fillBooking(): Promise<void> {
   await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /**
@@ -480,13 +496,13 @@ export async function fillAuthorizedBooking(): Promise<void> {
   await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /** Confirms the booking. */
 export async function clickBook(): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /book appointment/i }));
+    fireEvent.click(screen.getByRole('button', { name: BOOK_BUTTON_NAME }));
   });
   await settleAutocomplete();
 }

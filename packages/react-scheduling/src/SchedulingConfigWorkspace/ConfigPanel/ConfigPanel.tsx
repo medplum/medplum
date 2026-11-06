@@ -14,6 +14,8 @@ export interface ConfigPanelItem {
   readonly selected: boolean;
   /** The resource is turned off. */
   readonly inactive?: boolean;
+  /** What still needs finishing on the resource, each shown as a mark on its row. */
+  readonly notices?: readonly string[];
   readonly imageUrl?: string;
 }
 

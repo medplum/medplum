@@ -2,22 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
 import {
+  ALL_SERVICE_TYPES_CODE,
   assertNever,
   getDisplayString,
   getReferenceString,
   isDefined,
   lazy,
-  serviceTypeIncludesService,
+  SCHEDULING_SERVICE_TYPE_SYSTEM,
+  serviceTypeOffersService,
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
-import {
-  BOOKABLE_ACTOR_TYPES,
-  getActorType,
-  getActorTypeLabel,
-  isBookableActorType,
-  REQUIRED_ACTOR_TYPES,
-} from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel, isBookableActorType } from '../actors';
 import { getActorsKey } from './AppointmentFinder.times';
 
 /**
@@ -119,6 +115,9 @@ export interface SearchScheduleCandidatesOptions {
 /** How many schedules one search offers. */
 const DEFAULT_COUNT = 25;
 
+/** A schedule offering every visit type carries none of the service's codes, so the search asks for this too. */
+const ALL_SERVICE_TYPES_TOKEN = `${SCHEDULING_SERVICE_TYPE_SYSTEM}|${ALL_SERVICE_TYPES_CODE}`;
+
 /**
  * The chained filters that scope a Schedule search to actors of one type.
  * @param actorType - The type of actors to offer.
@@ -170,7 +169,7 @@ export async function searchScheduleCandidates(
   const actorCriteria = getActorCriteria(options.actorType, options.query);
 
   const tokens = service ? getServiceTypeTokens(service) : [];
-  const typeCriteria = tokens.length > 0 ? { 'service-type': tokens.join(',') } : {};
+  const typeCriteria = tokens.length > 0 ? { 'service-type': [...tokens, ALL_SERVICE_TYPES_TOKEN].join(',') } : {};
 
   const bundle = await medplum.search(
     'Schedule',
@@ -215,7 +214,7 @@ export function toScheduleCandidate(
   service: WithId<HealthcareService> | undefined,
   actors: Map<string, SchedulingActorResource>
 ): ScheduleCandidate | undefined {
-  if (schedule.active === false || (service && !serviceTypeIncludesService(schedule.serviceType, service))) {
+  if (schedule.active === false || (service && !serviceTypeOffersService(schedule.serviceType, service))) {
     return undefined;
   }
 
@@ -555,14 +554,9 @@ const listAlternatives = new Intl.ListFormat('en', { type: 'disjunction' });
  * @returns The blocker to show the user, or undefined when the search can run.
  */
 export function getSelectionError(selections: ActorSelections): SelectionBlocker | undefined {
-  const missing = [...REQUIRED_ACTOR_TYPES].find(
-    (actorType) => !(selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
-  );
-  if (missing) {
-    return {
-      message: `Choose at least one ${getActorTypeLabel(missing).toLowerCase()} first.`,
-      severity: 'incomplete',
-    };
+  if (getSelectedActorTypes(selections).length === 0) {
+    const anyType = listAlternatives.format(BOOKABLE_ACTOR_TYPES.map((type) => getActorTypeLabel(type).toLowerCase()));
+    return { message: `Choose at least one ${anyType} first.`, severity: 'incomplete' };
   }
   if (countActorCombinations(selections) > MAX_ACTOR_COMBINATIONS) {
     // Naming only the types in play keeps the advice actionable: there is nothing
@@ -690,6 +684,36 @@ export function getActorCombinations(selections: ActorSelections): ActorCombinat
     }
   }
   return [...byKey.values()];
+}
+
+/**
+ * The candidates of the first combination {@link getActorCombinations} would build,
+ * found without expanding the rest.
+ *
+ * @param selections - What has been chosen.
+ * @returns One candidate per filled row, or an empty list when nothing is chosen or
+ *   nobody can fill every row at once.
+ */
+export function getFirstCombinationCandidates(selections: ActorSelections): ScheduleCandidate[] {
+  const lists = getFilledRequirements(selections).map((requirement) => requirement.candidates);
+  return findFirstCombination(lists, []) ?? [];
+}
+
+function findFirstCombination(
+  lists: readonly (readonly ScheduleCandidate[])[],
+  chosen: ScheduleCandidate[]
+): ScheduleCandidate[] | undefined {
+  if (chosen.length === lists.length) {
+    return chosen;
+  }
+  for (const candidate of lists[chosen.length]) {
+    const next = [...chosen, candidate];
+    const found = hasRepeatedActor(next) ? undefined : findFirstCombination(lists, next);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
 }
 
 /**

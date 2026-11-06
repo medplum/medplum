@@ -154,6 +154,144 @@ describe('Email API Routes', () => {
     expect(parsed.text).toBe('Body\n');
   });
 
+  test('Send email with supported options', async () => {
+    const accessToken = await initTestAuth({ membership: { admin: true } });
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        to: 'alice@example.com',
+        cc: 'bob@example.com',
+        bcc: 'carol@example.com',
+        replyTo: 'dave@example.com',
+        subject: 'Subject',
+        text: 'Body',
+        html: '<p>Body</p><img src="cid:logo">',
+        attachments: [
+          { filename: 'hello.txt', content: 'aGVsbG8=', encoding: 'base64', contentType: 'text/plain' },
+          { filename: 'logo.png', content: 'iVBORw0KGgo=', encoding: 'base64', cid: 'logo', contentType: 'image/png' },
+        ],
+        icalEvent: { method: 'REQUEST', content: 'BEGIN:VCALENDAR\r\nEND:VCALENDAR' },
+      });
+    expect(res).toHaveStatus(200);
+
+    const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    expect(args.Destination?.CcAddresses).toStrictEqual(['bob@example.com']);
+    expect(args.Destination?.BccAddresses).toStrictEqual(['carol@example.com']);
+    expect(args.ReplyToAddresses).toStrictEqual(['dave@example.com']);
+
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
+    expect(parsed.text?.trim()).toBe('Body');
+    expect(parsed.html).toContain('<p>Body</p>');
+    expect(parsed.attachments.find((a) => a.filename === 'hello.txt')?.content.toString()).toBe('hello');
+    expect(parsed.attachments.find((a) => a.filename === 'logo.png')?.cid).toBe('logo');
+    expect(parsed.attachments.find((a) => a.contentType === 'application/ics')).toBeDefined();
+  });
+
+  test.each([
+    ['envelope', { text: 'Body', envelope: { from: 'other@example.com', to: ['bob@example.com'] } }],
+    ['raw message', { raw: 'From: other@example.com\r\nTo: bob@example.com\r\nSubject: Hello\r\n\r\nBody\r\n' }],
+    ['raw attachment', { attachments: [{ raw: 'From: other@example.com\r\n\r\nBody' }] }],
+    ['raw alternative', { alternatives: [{ raw: 'From: other@example.com\r\n\r\nBody' }] }],
+    ['custom headers', { text: 'Body', headers: { From: 'other@example.com', 'X-Test': 'test' } }],
+    [
+      'prepared header',
+      { text: 'Body', headers: { 'X-Test': { prepared: true, value: 'x\r\nFrom: other@example.com' } } },
+    ],
+    ['header name', { text: 'Body', headers: { 'From: other@example.com (': 'x' } }],
+    ['attachment headers', { attachments: [{ content: 'x', headers: { 'X-Test': 'test' } }] }],
+  ])('Ignore unsupported option: %s', async (_, options) => {
+    const accessToken = await initTestAuth({ membership: { admin: true } });
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ to: 'alice@example.com', subject: 'Subject', ...options });
+    expect(res).toHaveStatus(200);
+
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
+    const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    expect(args.FromEmailAddress).toBe(getConfig().supportEmail);
+    expect(args.Destination?.ToAddresses).toStrictEqual(['alice@example.com']);
+
+    const raw = (args.Content?.Raw?.Data as Buffer).toString();
+    expect(raw).not.toContain('other@example.com');
+    expect(raw).not.toMatch(/^X-Test:/im);
+
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
+    expect(parsed.from?.text).toBe(getConfig().supportEmail);
+    expect(parsed.headerLines.filter((h) => h.key === 'from')).toHaveLength(1);
+    expect(parsed.subject).toBe('Subject');
+  });
+
+  test.each([
+    ['text object', { text: { raw: 'From: other@example.com\r\n\r\nBody' } }],
+    ['html object', { html: { path: 'https://example.com/index.html' } }],
+    ['subject object', { text: 'Body', subject: { prepared: true, value: 'x\r\nFrom: other@example.com' } }],
+    ['attachments object', { text: 'Body', attachments: { raw: 'From: other@example.com\r\n\r\nBody' } }],
+    ['attachment string', { text: 'Body', attachments: ['attachment.txt'] }],
+    ['attachment content object', { text: 'Body', attachments: [{ content: { href: 'https://example.com/' } }] }],
+    ['attachment path object', { text: 'Body', attachments: [{ path: { href: 'https://example.com/' } }] }],
+    ['icalEvent href', { text: 'Body', icalEvent: { href: 'https://example.com/event.ics' } }],
+    ['icalEvent content object', { text: 'Body', icalEvent: { content: { path: 'attachment.txt' } } }],
+  ])('Reject invalid option: %s', async (_, options) => {
+    const accessToken = await initTestAuth({ membership: { admin: true } });
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ to: 'alice@example.com', subject: 'Subject', ...options });
+    expect(res).toHaveStatus(400);
+    expect(mockSESv2Client.send.callCount).toBe(0);
+  });
+
+  test('Send email via server SMTP only passes supported options', async () => {
+    mockCreateTransport.mockClear();
+    mockSendMail.mockClear();
+
+    const config = getConfig();
+    const originalSmtp = config.smtp;
+    config.smtp = { host: 'smtp.example.com', port: 587, username: 'user', password: 'pass' };
+
+    try {
+      const accessToken = await initTestAuth({ membership: { admin: true } });
+      const res = await request(app)
+        .post(`/email/v1/send`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send(
+          // Raw JSON so that "__proto__" arrives as an own property of the parsed body
+          JSON.stringify({
+            to: 'alice@example.com',
+            subject: 'Subject',
+            text: 'Body',
+            from: 'other@example.com',
+            envelope: { from: 'other@example.com', to: ['bob@example.com'] },
+            raw: 'From: other@example.com\r\n\r\nBody',
+            headers: { From: 'other@example.com' },
+            dkim: { domainName: 'example.com', keySelector: 's', privateKey: 'x', cacheDir: '/tmp', cacheTreshold: 1 },
+            auth: { type: 'OAuth2', accessUrl: 'http://127.0.0.1/' },
+            disableFileAccess: false,
+            disableUrlAccess: false,
+          }).replace(/}$/, ',"__proto__":{"raw":"x","envelope":{"to":["bob@example.com"]}}}')
+        );
+      expect(res).toHaveStatus(200);
+
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      const options = mockSendMail.mock.calls[0][0];
+      expect(options.from).toBe(config.supportEmail);
+      expect(options.sender).toBe(config.supportEmail);
+      expect(options.disableFileAccess).toBe(true);
+      for (const key of ['envelope', 'raw', 'headers', 'dkim', 'auth', 'disableUrlAccess']) {
+        expect(options[key]).toBeUndefined();
+      }
+      expect(mockSESv2Client.send.callCount).toBe(0);
+    } finally {
+      config.smtp = originalSmtp;
+    }
+  });
+
   test('Send email via project SMTP', async () => {
     mockCreateTransport.mockClear();
     mockSendMail.mockClear();

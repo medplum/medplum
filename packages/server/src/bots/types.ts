@@ -9,6 +9,7 @@ import type {
   Device,
   Patient,
   Practitioner,
+  Project,
   ProjectMembership,
   ProjectSetting,
   Reference,
@@ -19,6 +20,7 @@ import type {
 export interface BotExecutionRequest {
   readonly bot: WithId<Bot>;
   readonly runAs: WithId<ProjectMembership>;
+  readonly runAsProject?: WithId<Project>;
   readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   readonly input: any;
   readonly contentType: string;

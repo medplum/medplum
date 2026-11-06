@@ -5,7 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { makeOperationDefinition } from './definitions';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { buildOutputParameters, getShardIdParam, parseInputParameters } from './utils/parameters';
 
 const operation = makeOperationDefinition(
   { scope: 'system' },
@@ -13,20 +13,9 @@ const operation = makeOperationDefinition(
     name: 'db-stats',
     code: 'db-stats',
     parameter: [
-      {
-        use: 'in',
-        name: 'tableNames',
-        type: 'string',
-        min: 0,
-        max: '1',
-      },
-      {
-        use: 'out',
-        name: 'tableString',
-        type: 'string',
-        min: 1,
-        max: '1',
-      },
+      { use: 'in', name: 'shardId', type: 'string', min: 0, max: '1' },
+      { use: 'in', name: 'tableNames', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'tableString', type: 'string', min: 1, max: '1' },
     ],
   }
 );
@@ -34,9 +23,10 @@ const operation = makeOperationDefinition(
 export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const params = parseInputParameters<{ tableNames?: string }>(operation, req);
+  const params = parseInputParameters<{ shardId?: string; tableNames?: string }>(operation, req);
+  const shardId = getShardIdParam(params);
 
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, shardId);
 
   const tableNames = params.tableNames?.split(',').map((name) => name.trim());
 

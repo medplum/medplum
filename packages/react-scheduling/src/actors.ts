@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference, WithId } from '@medplum/core';
-import { assertNever, isResource, parseReference } from '@medplum/core';
-import type { Schedule } from '@medplum/fhirtypes';
+import { assertNever, isDefined, isResource, parseReference } from '@medplum/core';
+import type { Appointment, AppointmentParticipant, Reference, Schedule } from '@medplum/fhirtypes';
 
 /**
  * A reference to something a Schedule belongs to. The same union an Appointment
@@ -29,6 +29,9 @@ export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
  * the device are all free for it. Asking for *either* of two practitioners is a
  * second request rather than a second schedule on the same one — see
  * `getActorCombinations`.
+ *
+ * No one type has to be asked about: a search needs a schedule to book against,
+ * and a room or a device holds one as well as a provider does.
  *
  * Does not include `PractitionerRole` to prevent double-booking a `Practitioner`
  * who holds multiple roles. A practitioner is booked on their `Practitioner`,
@@ -84,18 +87,32 @@ export function getActorTypeLabel(resourceType: SchedulingActorType): string {
 }
 
 /**
- * Actor types that must be chosen before a search can run.
- *
- * Locations and devices are left optional: a service may have location schedules
- * configured without every booking needing to hold one.
+ * The appointment's first patient participant.
+ * @param appointment - The appointment being described.
+ * @returns The participant, or undefined when no patient is on it.
  */
-export const REQUIRED_ACTOR_TYPES: ReadonlySet<SchedulingActorType> = new Set(['Practitioner']);
+export function getPatientParticipant(appointment: Appointment): AppointmentParticipant | undefined {
+  return appointment.participant.find((participant) => participant.actor?.reference?.startsWith('Patient/'));
+}
 
 /**
- * Reports whether an actorType has to be chosen to be a valid booking
- * @param actorType - The actor type being chosen.
- * @returns Whether a search can run without it.
+ * Everyone and everything the visit is held on besides its patients.
+ * @param appointment - The appointment being described.
+ * @returns Their references, once each, in the order the appointment lists them.
  */
-export function isActorTypeRequired(actorType: SchedulingActorType): boolean {
-  return REQUIRED_ACTOR_TYPES.has(actorType);
+export function getNonPatientActors(appointment: Appointment): Reference[] {
+  const seen = new Set<string>();
+  return appointment.participant
+    .map((participant) => participant.actor)
+    .filter(isDefined)
+    .filter((actor) => {
+      if (!actor.reference) {
+        return true;
+      }
+      if (actor.reference.startsWith('Patient/') || seen.has(actor.reference)) {
+        return false;
+      }
+      seen.add(actor.reference);
+      return true;
+    });
 }

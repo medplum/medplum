@@ -11,6 +11,8 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
   readonly searchCriteria?: Record<string, string>;
+  /** The search parameter, with any modifier, that the typed text is sent as (e.g. `name:contains`). Defaults to one chosen by resource type. */
+  readonly searchParam?: string;
   readonly placeholder?: string;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
@@ -18,6 +20,8 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
+  /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
   /** Whether to show a button that clears the whole selection. Defaults to true. */
   readonly clearable?: boolean;
 }
@@ -44,6 +48,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       name={props.name}
       defaultValue={props.defaultValue ? [props.defaultValue] : undefined}
       searchCriteria={props.searchCriteria}
+      searchParam={props.searchParam}
       placeholder={props.placeholder}
       required={props.required}
       itemComponent={props.itemComponent}
@@ -51,6 +56,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       disabled={props.disabled}
       label={props.label}
       error={props.error}
+      withinPortal={props.withinPortal}
       maxValues={1}
       clearable={props.clearable}
     />

@@ -11,7 +11,7 @@ import {
   isReference,
   OperationOutcomeError,
   resolveId,
-  serviceTypeIncludesService,
+  serviceTypeOffersService,
   setPrimaryProvider,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -166,7 +166,7 @@ async function handler(params: {
   // Spans every week of a series, so planning horizons clamp later weeks too.
   const effectiveRange = { start: searchRange.start, end: requestedRanges[requestedRanges.length - 1].end };
   schedules.forEach((schedule) => {
-    if (!serviceTypeIncludesService(schedule.serviceType, healthcareService)) {
+    if (!serviceTypeOffersService(schedule.serviceType, healthcareService)) {
       throw new OperationOutcomeError(
         badRequest('Schedule is not schedulable for requested service type', getPath(schedule))
       );

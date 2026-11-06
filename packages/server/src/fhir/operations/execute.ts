@@ -15,15 +15,34 @@ import type { Request, Response } from 'express';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionResult } from '../../bots/types';
 import {
+  getBotBodyInput,
   getBotDefaultHeaders,
   getBotProjectMembership,
   getOutParametersFromResult,
   sendBotResponse,
 } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
+import { searchUnique } from '../searchunique';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
+
+/**
+ * Response headers that describe the connection or where the message ends.
+ * These belong to the server: a streaming bot only supplies a body of unknown length.
+ * If a bot could declare the end of its own response (i.e., "Content-Length: 0") and keep writing,
+ * those bytes would be read as the response to the next request on a connection reused by a reverse proxy.
+ */
+const SERVER_CONTROLLED_HEADERS = new Set([
+  'connection',
+  'content-length',
+  'keep-alive',
+  'proxy-connection',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+]);
 
 /**
  * Handles HTTP requests for the execute operation.
@@ -79,9 +98,15 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
     responseStream = Object.assign(res, {
       startStreaming: (statusCode: number, headers: Record<string, string>): void => {
         if (!res.headersSent) {
+          // Only final status codes: a 1xx response is not the end of the HTTP exchange
+          if (!Number.isInteger(statusCode) || statusCode < 200 || statusCode > 599) {
+            throw new OperationOutcomeError(badRequest(`Invalid streaming status code: ${statusCode}`));
+          }
           res.status(statusCode);
           for (const [key, value] of Object.entries(headers)) {
-            res.setHeader(key, value);
+            if (!SERVER_CONTROLLED_HEADERS.has(key.toLowerCase())) {
+              res.setHeader(key, value);
+            }
           }
           res.flushHeaders();
         }
@@ -95,8 +120,9 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
+    runAsProject: ctx.project,
     requester: ctx.membership.profile,
-    input: req.method === 'POST' ? req.body : req.query,
+    input: req.method === 'POST' ? getBotBodyInput(bot, req.body, res.locals.rawBody) : req.query,
     contentType: req.header('content-type') as string,
     headers: req.headers,
     traceId: ctx.traceId,
@@ -126,10 +152,11 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    const bot = await ctx.repo.searchOne<Bot>({
-      resourceType: 'Bot',
-      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
-    });
+    const bot = await searchUnique<Bot>(
+      ctx.repo,
+      { resourceType: 'Bot', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
+      'Execute Bot by identifier'
+    );
 
     if (!bot) {
       throw new OperationOutcomeError(notFound);

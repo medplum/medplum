@@ -262,7 +262,7 @@ async function propagateToCompartment(
       const resource = entry.resource;
       if (resource && resource.resourceType !== 'Patient') {
         await lock.renewIfDue();
-        if (await updateCompartmentResource(systemRepo, target, resource, accounts, removals)) {
+        if (await updateCompartmentResource(repo, target, resource, accounts, removals)) {
           count++;
         }
       }
@@ -282,7 +282,7 @@ async function propagateToCompartment(
 }
 
 async function updateCompartmentResource(
-  systemRepo: SystemRepository,
+  userRepo: Repository,
   target: WithId<Resource>,
   resource: Resource,
   additions: Reference[],
@@ -290,16 +290,20 @@ async function updateCompartmentResource(
 ): Promise<boolean> {
   // The compartment search ran after the target was updated; skip resources that are already correct
   if (hasAccounts(resource, applyAccountChanges(extractAccountReferences(resource.meta), additions, removals))) {
-    return true;
+    return Boolean(userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource));
   }
 
   const { resourceType } = resource;
   const id = resource.id as string;
   await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   try {
-    await systemRepo.withTransaction(
+    // Read and write with the system repo to keep fields hidden from the user
+    return await userRepo.getSystemRepo().withTransaction(
       async (txRepo) => {
         const current = await txRepo.readResource(resourceType, id);
+        if (!userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, current)) {
+          return false;
+        }
         const currentAccounts = extractAccountReferences(current.meta);
         const accountList = applyAccountChanges(
           currentAccounts,
@@ -312,10 +316,10 @@ async function updateCompartmentResource(
           account: accountList?.[0],
         };
         await txRepo.updateResource(current);
+        return true;
       },
       { resourceTypes: [resourceType, 'Patient'], source: 'setAccounts.compartment' }
     );
-    return true;
   } catch (err) {
     if (err instanceof OperationOutcomeError && (isGone(err.outcome) || isNotFound(err.outcome))) {
       return false;

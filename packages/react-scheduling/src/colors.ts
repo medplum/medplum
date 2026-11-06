@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MantineTheme, MantineThemeColors } from '@mantine/core';
+import { getExtensionValue, SchedulingColorURI } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
 
-/** A cycling palette used when nothing more specific names a color. */
+/**
+ * A cycling palette used when nothing more specific names a color, and the palette a visit type's color is
+ * chosen from.
+ */
 export const FALLBACK_COLORS = [
   'indigo',
   'teal',
@@ -15,6 +20,7 @@ export const FALLBACK_COLORS = [
   'yellow',
   'grape',
   'orange',
+  'green',
 ] satisfies (keyof MantineThemeColors)[];
 
 /**
@@ -34,4 +40,29 @@ export function resolveThemeColor(
     return explicit;
   }
   return FALLBACK_COLORS[fallbackIndex % FALLBACK_COLORS.length];
+}
+
+/**
+ * Picks a fallback color position from a key, so the same key is always given the same
+ * color, whatever else there is to color.
+ * @param key - What is being colored, such as a resource's reference.
+ * @returns A position to pass to `resolveThemeColor` as its `fallbackIndex`.
+ */
+export function fallbackColorIndex(key: string): number {
+  // 32-bit FNV-1a.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) {
+    hash = Math.imul(hash ^ key.charCodeAt(i), 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Reads the color a resource names for the scheduling calendar, as stored: it may not be a theme color.
+ * @param resource - A Schedule or HealthcareService.
+ * @returns The color name, if the resource names one.
+ */
+export function getSchedulingColor(resource: Resource | undefined): string | undefined {
+  const color = getExtensionValue(resource, SchedulingColorURI);
+  return typeof color === 'string' ? color : undefined;
 }

@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { vi } from 'vitest';
 import * as awsConfigModule from '../cloud/aws/config';
 import * as azureConfigModule from '../cloud/azure/config';
 import * as gcpConfigModule from '../cloud/gcp/config';
+import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
+import { globalLogger } from '../logger';
 import { getConfig, loadConfig, loadTestConfig } from './loader';
 
 describe('Config', () => {
@@ -129,11 +134,24 @@ describe('Config', () => {
     expect(config.appBaseUrl).toStrictEqual('http://localhost:4000');
   });
 
+  test('Warns about unsupported botCustomFunctionsEnabled setting', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
+    const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+    try {
+      await loadConfig('env');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'The botCustomFunctionsEnabled config setting is no longer supported and is ignored'
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   test('Env config boolean values', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_REGISTER_ENABLED', 'true');
     setEnv('MEDPLUM_LOG_REQUESTS', 'false');
-    setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
     setEnv('MEDPLUM_RATE_LIMITS_ENABLED', 'false');
     setEnv('MEDPLUM_AUTO_DOWNLOAD_ENABLED', 'false');
     setEnv('MEDPLUM_REQUIRE_VERIFIED_EMAIL_FOR_PROJECT_CREATION', 'false');
@@ -141,7 +159,6 @@ describe('Config', () => {
     const config = await loadConfig('env');
     expect(config.registerEnabled).toBe(true);
     expect(config.logRequests).toBe(false);
-    expect(config.botCustomFunctionsEnabled).toBe(true);
     expect(config.rateLimitsEnabled).toBe(false);
     expect(config.autoDownloadEnabled).toBe(false);
     expect(config.requireVerifiedEmailForProjectCreation).toBe(false);
@@ -402,6 +419,103 @@ describe('Config', () => {
     expect(config.baseUrl).toBeDefined();
   });
 
+  describe('Shards', () => {
+    const database = { host: 'localhost', dbname: 'medplum_shard_x' };
+    let dir: string;
+    let overlayCount = 0;
+
+    beforeAll(() => {
+      dir = mkdtempSync(join(tmpdir(), 'medplum-config-'));
+    });
+
+    afterAll(() => {
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    function writeOverlay(overlay: object): string {
+      const overlayPath = join(dir, `overlay-${overlayCount++}.json`);
+      writeFileSync(overlayPath, JSON.stringify(overlay));
+      return overlayPath;
+    }
+
+    test('Rejects more than one default shard', async () => {
+      const overlayPath = writeOverlay({ shards: { 'shard-2': { isDefaultShard: true, database } } });
+      await expect(
+        loadConfig(`file:medplum.config.json,file:medplum-sharded.config.json,file:${overlayPath}`)
+      ).rejects.toThrow('Only one shard can set isDefaultShard: shard-1, shard-2');
+    });
+
+    test.each([GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID])(
+      'Rejects reserved shard ID %s',
+      async (shardId) => {
+        const overlayPath = writeOverlay({ shards: { [shardId]: { database } } });
+        await expect(loadConfig(`file:medplum.config.json,file:${overlayPath}`)).rejects.toThrow(
+          `Cannot use reserved shard ID ${shardId}`
+        );
+      }
+    );
+
+    test.each(['Shard-1', '1', 'shard_1', 'shard.1', '-shard', '__proto__', 'constructor', 'prototype'])(
+      'Rejects malformed shard ID "%s"',
+      async (shardId) => {
+        const overlayPath = writeOverlay({ shards: { [shardId]: { database } } });
+        await expect(loadConfig(`file:medplum.config.json,file:${overlayPath}`)).rejects.toThrow(
+          `Invalid shard ID "${shardId}"`
+        );
+      }
+    );
+
+    test.each<[string, unknown, string]>([
+      ['shards is not an object', 'shard-x', 'Invalid shards config: expected an object keyed by shard ID'],
+      ['shard is not an object', { 'shard-x': 'nope' }, 'shard shard-x: expected an object'],
+      [
+        'isDefaultShard is a string',
+        { 'shard-x': { isDefaultShard: 'false', database } },
+        'shard shard-x: isDefaultShard must be a boolean',
+      ],
+      ['database is missing', { 'shard-x': {} }, 'shard shard-x: database must be an object'],
+      [
+        'dbname is missing',
+        { 'shard-x': { database: { host: 'h' } } },
+        'shard shard-x: database.dbname must be a string',
+      ],
+      [
+        'port is a string',
+        { 'shard-x': { database: { ...database, port: '5432' } } },
+        'shard shard-x: database.port must be a number',
+      ],
+      [
+        'readonlyDatabase is incomplete',
+        { 'shard-x': { database, readonlyDatabase: { host: 'h' } } },
+        'shard shard-x: readonlyDatabase.dbname must be a string',
+      ],
+    ])('Rejects config when %s', async (_label, shards, message) => {
+      const overlayPath = writeOverlay({ shards });
+      await expect(loadConfig(`file:medplum.config.json,file:${overlayPath}`)).rejects.toThrow(message);
+    });
+
+    test('Rejects unsafe keys in overlay files', async () => {
+      const overlayPath = writeOverlay({ database: { ['__proto__']: { host: 'evil' } } });
+      await expect(loadConfig(`file:medplum.config.json,file:${overlayPath}`)).rejects.toThrow(
+        'Invalid config key: __proto__'
+      );
+    });
+
+    test('Loads shards from MEDPLUM_SHARDS', async () => {
+      setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+      setEnv(
+        'MEDPLUM_SHARDS',
+        JSON.stringify({ 'shard-1': { isDefaultShard: true, database: { ...database, port: 5433 } } })
+      );
+      const config = await loadConfig('env');
+      expect(config.shards?.['shard-1']).toStrictEqual({
+        id: 'shard-1',
+        isDefaultShard: true,
+        database: { ...database, port: 5433 },
+      });
+    });
+  });
+
   test('Multi-source: empty config name throws', async () => {
     await expect(loadConfig('')).rejects.toThrow('Empty config name');
   });
@@ -426,5 +540,13 @@ describe('Config', () => {
     expect(config.defaultRateLimit).toStrictEqual(-1);
     expect(config.defaultSuperAdminClientId).toBeDefined();
     expect(config.defaultSuperAdminClientSecret).toBeDefined();
+  });
+
+  test('loadTestConfig with sharded points shards at test databases', async () => {
+    const config = await loadTestConfig({ sharded: true });
+    const shard = config.shards?.['shard-1'];
+    expect(shard?.database.dbname).toStrictEqual('medplum_test_shard_1');
+    expect(shard?.readonlyDatabase?.dbname).toStrictEqual('medplum_test_shard_1');
+    expect(shard?.readonlyDatabase?.username).toStrictEqual('medplum_test_readonly');
   });
 });

@@ -9,7 +9,7 @@ CDS Hooks is a standard for surfacing clinical decision support at key points in
 
 Medplum supports implementing [CDS Hooks](https://cds-hooks.hl7.org/) services using Bots.
 
-This page focuses on Medplum's CDS Hooks integration model and API contract. For broader CDS strategy and compliance context, see [Clinical Decision Support](/docs/careplans/clinical-decision-support).
+This page focuses on Medplum's CDS Hooks integration model and API contract. For broader CDS strategy, see [Clinical Decision Support](/docs/careplans/clinical-decision-support). For product certification scope, see [ONC Certification](/docs/compliance/onc).
 
 ## Overview
 

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClientEventMap, ProfileResource } from '@medplum/core';
+import type { MedplumClientEventMap } from '@medplum/core';
 import { ClientStorage, MemoryStorage, MockAsyncClientStorage, getDisplayString, sleep } from '@medplum/core';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
@@ -22,7 +22,7 @@ describe('MedplumProvider', () => {
       return (
         <div>
           <div>MyComponent</div>
-          <div>{getDisplayString(medplum.getProfile() as ProfileResource)}</div>
+          <div>{getDisplayString(medplum.getProfile())}</div>
           <div>Context: {Boolean(context).toString()}</div>
           <div>Navigate: {Boolean(navigate).toString()}</div>
           <div>Profile: {Boolean(profile).toString()}</div>

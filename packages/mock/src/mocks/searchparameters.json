@@ -28,6 +28,24 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "DiagnosticReport-status",
+    "name": "status",
+    "code": "status",
+    "base": ["DiagnosticReport"],
+    "type": "token",
+    "expression": "DiagnosticReport.status"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "DiagnosticReport-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["DiagnosticReport"],
+    "type": "reference",
+    "expression": "DiagnosticReport.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Encounter-length",
     "name": "length",
     "code": "length",
@@ -195,16 +213,16 @@
     "code": "actor",
     "base": ["Schedule"],
     "type": "reference",
-    "expression": "Schedule.actor",
-    "target": [
-      "Practitioner",
-      "Device",
-      "Patient",
-      "HealthcareService",
-      "PractitionerRole",
-      "RelatedPerson",
-      "Location"
-    ]
+    "expression": "Schedule.actor"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Schedule-identifier",
+    "name": "identifier",
+    "code": "identifier",
+    "base": ["Schedule"],
+    "type": "token",
+    "expression": "Schedule.identifier"
   },
   {
     "resourceType": "SearchParameter",
@@ -217,12 +235,12 @@
   },
   {
     "resourceType": "SearchParameter",
-    "id": "Schedule-identifier",
-    "name": "identifier",
-    "code": "identifier",
-    "base": ["Schedule"],
-    "type": "token",
-    "expression": "Schedule.identifier"
+    "id": "ServiceRequest-based-on",
+    "name": "based-on",
+    "code": "based-on",
+    "base": ["ServiceRequest"],
+    "type": "reference",
+    "expression": "ServiceRequest.basedOn"
   },
   {
     "resourceType": "SearchParameter",
@@ -241,6 +259,15 @@
     "base": ["ServiceRequest"],
     "type": "reference",
     "expression": "ServiceRequest.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "ServiceRequest-status",
+    "name": "status",
+    "code": "status",
+    "base": ["ServiceRequest"],
+    "type": "token",
+    "expression": "ServiceRequest.status"
   },
   {
     "resourceType": "SearchParameter",

@@ -28,16 +28,32 @@ export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
 
-const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } = require("@medplum/core");
+/**
+ * Removes runtime-provided AWS_* environment variables before user code loads.
+ */
+export const DELETE_AWS_ENV_CODE = `for (const key of Object.keys(process.env)) {
+  if (key.startsWith('AWS_')) {
+    delete process.env[key];
+  }
+}
+`;
+
+const CJS_PREFIX =
+  `const { ContentType, Hl7Message, MedplumClient, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
-const userCode = require("./user.cjs");
+` +
+  DELETE_AWS_ENV_CODE +
+  `const userCode = require("./user.cjs");
 
 exports.handler = async (event, context) => {
 `;
 
-const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } from '@medplum/core';
+const ESM_PREFIX =
+  `import { ContentType, Hl7Message, MedplumClient, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
-import * as userCode from './user.mjs';
+` +
+  DELETE_AWS_ENV_CODE +
+  `const userCode = await import('./user.mjs');
 
 export const handler = async (event, context) => {
 `;

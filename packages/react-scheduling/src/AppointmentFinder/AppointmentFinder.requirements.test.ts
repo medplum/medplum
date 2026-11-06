@@ -14,13 +14,19 @@ import {
   EMPTY_REQUIREMENT_VALUES,
   hasRequiredValues,
   isRequirementAnswered,
-  toCodings,
+  toCodedConcept,
 } from './AppointmentFinder.requirements';
 
 describe('isRequirementAnswered', () => {
   const answers: Record<SchedulingRequirement, BookingRequirementValues> = {
-    [REQUIRES_PROCEDURE_CODE]: { ...EMPTY_REQUIREMENT_VALUES, procedure: [{ system: CPT, code: '96365' }] },
-    [REQUIRES_DIAGNOSIS_CODE]: { ...EMPTY_REQUIREMENT_VALUES, diagnosis: [{ system: ICD10, code: 'D63.1' }] },
+    [REQUIRES_PROCEDURE_CODE]: {
+      ...EMPTY_REQUIREMENT_VALUES,
+      procedure: [{ coding: [{ system: CPT, code: '96365' }] }],
+    },
+    [REQUIRES_DIAGNOSIS_CODE]: {
+      ...EMPTY_REQUIREMENT_VALUES,
+      diagnosis: [{ coding: [{ system: ICD10, code: 'D63.1' }] }],
+    },
     [REQUIRES_MEDICAL_NECESSITY_CODE]: { ...EMPTY_REQUIREMENT_VALUES, medicalNecessity: true },
   };
 
@@ -39,8 +45,8 @@ describe('isRequirementAnswered', () => {
 });
 
 describe('hasRequiredValues', () => {
-  const procedure = [{ system: CPT, code: '96365' }];
-  const diagnosis = [{ system: ICD10, code: 'D63.1' }];
+  const procedure = [{ coding: [{ system: CPT, code: '96365' }] }];
+  const diagnosis = [{ coding: [{ system: ICD10, code: 'D63.1' }] }];
   const all = new Set(SCHEDULING_REQUIREMENT_CODES);
 
   test('Nothing given is not enough', () => {
@@ -61,8 +67,8 @@ describe('hasRequiredValues', () => {
     expect(
       hasRequiredValues(
         {
-          procedure: [...procedure, { system: CPT, code: '96366' }],
-          diagnosis: [...diagnosis, { system: ICD10, code: 'E86.0' }],
+          procedure: [...procedure, { coding: [{ system: CPT, code: '96366' }] }],
+          diagnosis: [...diagnosis, { coding: [{ system: ICD10, code: 'E86.0' }] }],
           medicalNecessity: true,
         },
         all
@@ -94,37 +100,25 @@ describe('hasRequiredValues', () => {
   });
 });
 
-describe('toCodings', () => {
-  test('Records a code exactly as the ValueSet expanded it', () => {
-    expect(toCodings([{ system: CPT, code: '96365', display: 'Intravenous infusion; initial, up to 1 hour' }])).toEqual(
-      [{ system: CPT, code: '96365', display: 'Intravenous infusion; initial, up to 1 hour' }]
-    );
-  });
-
-  test('Keeps every code the field is holding, in the order it holds them', () => {
-    expect(
-      toCodings([
-        { system: CPT, code: '96365' },
-        { system: CPT, code: '96366' },
-      ]).map((coding) => coding.code)
-    ).toEqual(['96365', '96366']);
-  });
-
-  test('Names no system of its own, since the ValueSet already said which one', () => {
-    // Guessing here would be asserting a provenance the field cannot know: a project's diagnosis
-    // ValueSet may be drawn from ICD-10-CM rather than ICD-10, and the expansion is what knows.
-    expect(toCodings([{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'D63.1' }])[0].system).toBe(
-      'http://hl7.org/fhir/sid/icd-10-cm'
-    );
-  });
-
-  test('An empty field holds no codes', () => {
-    expect(toCodings([])).toEqual([]);
+describe('toCodedConcept', () => {
+  test('Records a concept exactly as the field holds it', () => {
+    const concept = {
+      text: 'Infusion',
+      coding: [
+        { system: CPT, code: '96365', display: 'Intravenous infusion; initial, up to 1 hour' },
+        { system: 'http://example.com/local', code: 'INF-1' },
+      ],
+    };
+    expect(toCodedConcept(concept)).toEqual(concept);
   });
 
   test('Drops anything that never became a code', () => {
     // A grouping entry in an expansion carries a display and no code, and is not something
     // anything downstream can bill from.
-    expect(toCodings([{ display: 'Bariatric procedures' }])).toEqual([]);
+    expect(toCodedConcept({ coding: [{ display: 'Bariatric procedures' }, { system: CPT, code: '43644' }] })).toEqual({
+      coding: [{ system: CPT, code: '43644' }],
+    });
+    expect(toCodedConcept({ coding: [{ display: 'Bariatric procedures' }] })).toBeUndefined();
+    expect(toCodedConcept(undefined)).toBeUndefined();
   });
 });

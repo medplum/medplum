@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, OperationOutcomeError, badRequest, getReferenceString, sleep } from '@medplum/core';
+import {
+  ContentType,
+  OperationOutcomeError,
+  badRequest,
+  createReference,
+  getReferenceString,
+  sleep,
+} from '@medplum/core';
 import type {
   Binary,
   Bundle,
@@ -12,6 +19,7 @@ import type {
   Patient,
   Project,
   ProjectMembership,
+  Resource,
   Subscription,
   SubscriptionStatus,
 } from '@medplum/fhirtypes';
@@ -752,6 +760,151 @@ describe('WebSocket Subscription', () => {
         expectNotification(noBirthDateToken, { gender: patient.gender }),
         expectNotification(noGenderToken, { birthDate: patient.birthDate }),
       ]);
+    }));
+
+  test.each<[string, Parameters<typeof addTestUser>[1], 'Patient' | 'Binary']>([
+    [
+      'access policy',
+      { accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Subscription' }] } },
+      'Patient',
+    ],
+    ['token scope', { scope: 'openid user/Subscription.cruds' }, 'Patient'],
+    ['token scope criteria', { scope: 'openid user/Patient.rs?gender=male user/Subscription.cruds' }, 'Patient'],
+    ['Binary security context', { scope: 'openid user/Binary.rs user/Subscription.cruds' }, 'Binary'],
+  ])('Does not notify a subscriber whose %s does not permit reading the resource', (_, userOptions, resourceType) =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Not'], family: 'Readable' }],
+        gender: 'female',
+      });
+      const resource: WithId<Resource> =
+        resourceType === 'Binary'
+          ? await repo.createResource<Binary>({
+              resourceType: 'Binary',
+              contentType: ContentType.TEXT,
+              securityContext: createReference(patient),
+            })
+          : patient;
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: resourceType,
+        channel: { type: 'websocket' },
+      });
+
+      const bindingTokenFor = async (userToken: string): Promise<string> => {
+        const res = await request(server)
+          .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+          .set('Authorization', 'Bearer ' + userToken);
+        expect(res.status).toBe(200);
+        return (res.body as FhirParameters).parameter?.[0]?.valueString as string;
+      };
+
+      // Baseline: the restricted user cannot read the resource over HTTP
+      const restrictedUser = await addTestUser(project, userOptions);
+      const restrictedRead = await request(server)
+        .get(`/fhir/R4/${resourceType}/${resource.id}`)
+        .set('Authorization', 'Bearer ' + restrictedUser.accessToken);
+      expect([403, 404]).toContain(restrictedRead.status);
+
+      const restrictedToken = await bindingTokenFor(restrictedUser.accessToken);
+      const permittedToken = await bindingTokenFor(accessToken);
+
+      const expectHandshake = (actual: Bundle): void => {
+        expect(actual).toMatchObject({
+          resourceType: 'Bundle',
+          entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+        });
+      };
+
+      // Sockets are notified in bind order, so with the restricted socket bound first, its next message
+      // after the permitted socket is notified must be the pong rather than a notification.
+      let restrictedBound = false;
+      let permittedNotified = false;
+
+      await Promise.all([
+        request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token: restrictedToken } })
+          .expectJson(expectHandshake)
+          .exec(() => {
+            restrictedBound = true;
+          })
+          .exec(() => waitFor(async () => expect(permittedNotified).toStrictEqual(true)))
+          .sendJson({ type: 'ping' })
+          .expectJson({ type: 'pong' })
+          .close()
+          .expectClosed(),
+        request(server)
+          .ws('/ws/subscriptions-r4')
+          .exec(() => waitFor(async () => expect(restrictedBound).toStrictEqual(true)))
+          .sendJson({ type: 'bind-with-token', payload: { token: permittedToken } })
+          .expectJson(expectHandshake)
+          .exec(() =>
+            publish(
+              WEBSOCKET_SUB_PUBLISH_CHANNEL,
+              JSON.stringify({ resource, events: [[subscription.id, { includeResource: true }]] })
+            )
+          )
+          .expectJson((msg: Bundle) => {
+            expect(msg.entry?.[1]?.resource?.id).toStrictEqual(resource.id);
+          })
+          .exec(() => {
+            permittedNotified = true;
+          })
+          .close()
+          .expectClosed(),
+      ]);
+    })
+  );
+
+  test('Notifies a subscriber whose token scope permits reading the resource', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Readable'], family: 'ByScope' }],
+        gender: 'female',
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const { accessToken: userToken } = await addTestUser(project, {
+        scope: 'openid user/Patient.rs?gender=female user/Subscription.cruds',
+      });
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + userToken);
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(() =>
+          publish(
+            WEBSOCKET_SUB_PUBLISH_CHANNEL,
+            JSON.stringify({ resource: patient, events: [[subscription.id, { includeResource: true }]] })
+          )
+        )
+        .expectJson((msg: Bundle) => {
+          expect((msg.entry?.[1] as BundleEntry<Patient> | undefined)?.resource?.id).toStrictEqual(patient.id);
+        })
+        .close()
+        .expectClosed();
     }));
 
   test('Payload with multiple subscriptions fires all events', () =>

@@ -24,7 +24,7 @@ import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
 import { getConfig } from '../../config/loader';
-import { getAuthenticatedContext } from '../../context';
+import { requireSuperAdmin } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import type { SystemRepository } from '../repo';
@@ -67,8 +67,7 @@ interface ProjectInitParameters {
  * @returns The FHIR response.
  */
 export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
-  const ctx = getAuthenticatedContext();
-  const login = ctx.login;
+  const { systemRepo } = requireSuperAdmin();
 
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
 
@@ -84,11 +83,9 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
       lastName: 'Admin',
     });
     ownerRef = createReference(user);
-  } else if (login.user.reference?.startsWith('User/')) {
-    ownerRef = login.user;
   }
 
-  const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
+  const owner = ownerRef ? await systemRepo.readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
       return [badRequest('Only Users are permitted to be the owner of a new Project')];
@@ -162,6 +159,7 @@ export async function createProject(
         projectId,
         'Default Practitioner Access Policy'
       );
+      const botAccessPolicy = await createBotAccessPolicy(txRepo, projectId, 'Default Bot Access Policy');
 
       const project = await txRepo.createResource<Project>(
         {
@@ -172,12 +170,12 @@ export async function createProject(
           strictMode: true,
           features: config.defaultProjectFeatures,
           systemSetting: config.defaultProjectSystemSetting,
-          defaultPatientAccessPolicy: createReference(patientAccessPolicy),
           defaultAccessPolicies: [
             { profileType: 'Patient', accessPolicy: createReference(patientAccessPolicy) },
             { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
             { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
             { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
+            { profileType: 'Bot', accessPolicy: createReference(botAccessPolicy) },
           ],
         },
         { assignedId: true }
@@ -260,6 +258,25 @@ async function createAdminAccessPolicy(
     name,
     // Full read/write access to all resource types (essentially no policy).
     resource: [{ resourceType: '*' }],
+  });
+}
+
+async function createBotAccessPolicy(
+  systemRepo: SystemRepository,
+  projectId: string,
+  name: string
+): Promise<WithId<AccessPolicy>> {
+  return systemRepo.createResource<AccessPolicy>({
+    resourceType: 'AccessPolicy',
+    meta: { project: projectId },
+    name,
+    // The first matching entry wins, so the specific entries must come before the wildcard.
+    // AccessPolicy is a project admin resource type, which the wildcard never matches.
+    resource: [
+      { resourceType: 'AccessPolicy', readonly: true },
+      { resourceType: 'ClientApplication', hiddenFields: ['secret', 'retiringSecret'] },
+      { resourceType: '*' },
+    ],
   });
 }
 

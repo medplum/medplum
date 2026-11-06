@@ -39,7 +39,11 @@ const STORY_FIXTURES = [
  * @param booking - What the form wrote.
  */
 function reportBooking(booking: AppointmentBooking): void {
-  console.info('Booked', booking.appointment.id, `over ${booking.slots.length} slot(s)`);
+  console.info(
+    'Booked',
+    booking.appointments.map((appointment) => appointment.id),
+    `over ${booking.slots.length} slot(s)`
+  );
 }
 
 // A story's own decorators add to these rather than replacing them, so `$find` is
@@ -56,8 +60,8 @@ export default {
  * `onBooked` and nothing else.
  *
  * Choose "Ultrasound Imaging" and the three role fields search against it: it is
- * held on practitioners, rooms and devices, and only the provider is required. So
- * "Find a time" stays unusable until a provider is named, and says so.
+ * held on practitioners, rooms and devices, and any one of them is enough. So
+ * "Find a time" stays unusable until a provider, room or device is named, and says so.
  *
  * Change a resource with a time already picked and the time goes — it was found for
  * resources that no longer stand — while the search stays open and re-runs, so the
@@ -102,7 +106,11 @@ UntypedMedicalRecordNumbers.decorators = [withFindStub()];
  */
 export const SurgicalTeam = (): JSX.Element => (
   <Document>
-    <AppointmentBookingForm defaultService={SurgeryService} defaultLocation={MainClinic} onBooked={reportBooking} />
+    <AppointmentBookingForm
+      defaultService={SurgeryService}
+      defaultServiceFacility={MainClinic}
+      onBooked={reportBooking}
+    />
   </Document>
 );
 SurgicalTeam.decorators = [withFindStub()];
@@ -128,7 +136,7 @@ export const AuthRequired = (): JSX.Element => (
   <Document>
     <AppointmentBookingForm
       defaultService={InfusionService}
-      defaultLocation={MainClinic}
+      defaultServiceFacility={MainClinic}
       procedureBinding={PROCEDURE_VALUE_SET}
       diagnosisBinding={DIAGNOSIS_VALUE_SET}
       onBooked={reportBooking}
@@ -152,7 +160,7 @@ export const PartialAuthRequired = (): JSX.Element => (
   <Document>
     <AppointmentBookingForm
       defaultService={IronInfusionService}
-      defaultLocation={MainClinic}
+      defaultServiceFacility={MainClinic}
       procedureBinding={PROCEDURE_VALUE_SET}
       diagnosisBinding={DIAGNOSIS_VALUE_SET}
       onBooked={reportBooking}
@@ -174,7 +182,7 @@ export const AuthRequiredMissingValueSets = (): JSX.Element => (
   <Document>
     <AppointmentBookingForm
       defaultService={InfusionService}
-      defaultLocation={MainClinic}
+      defaultServiceFacility={MainClinic}
       procedureBinding={PROCEDURE_VALUE_SET}
       diagnosisBinding={DIAGNOSIS_VALUE_SET}
       onBooked={reportBooking}
@@ -225,7 +233,7 @@ export const SiteAsymmetryByRole = (): JSX.Element => (
         </List>
       </Alert>
       <AppointmentBookingForm
-        defaultLocation={MainClinic}
+        defaultServiceFacility={MainClinic}
         defaultService={UltrasoundImagingService}
         onBooked={reportBooking}
       />

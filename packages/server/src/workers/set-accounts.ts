@@ -3,7 +3,7 @@
 import type { Reference, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import type { AuthState } from '../oauth/middleware';
 import type { AsyncJobTracking } from './base';
@@ -15,6 +15,7 @@ import {
   getWorkerBullmqConfig,
   isJobActive,
   queueRegistry,
+  runJobInAuthenticatedContext,
   trackJobMetrics,
 } from './utils';
 
@@ -51,16 +52,13 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
       return { asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId };
     });
 
-    worker.on('failed', async (job) => {
+    worker.on('failed', async (job, err) => {
       if (!job) {
         return;
       }
 
-      // `failed` also fires for attempts that may already have settled the AsyncJob; only fail it if still active
       const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-      if (isJobActive(exec.getAsyncJob())) {
-        await exec.failJob();
-      }
+      await exec.failJob(err);
     });
   }
 
@@ -91,7 +89,7 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
 
 async function setAccountsJobProcessor(job: Job<SetAccountsJobData>): Promise<void> {
   const { authState, requestId, traceId } = job.data;
-  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
+  await runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
 }
 
 /**

@@ -84,4 +84,23 @@ describe('FileSystemStorage', () => {
 
     await expect(storage.readBinary(binary)).rejects.toThrow('File not found');
   });
+
+  test('Should throw an error when the key is outside of the base directory', async () => {
+    initBinaryStorage('file:binary');
+
+    const storage = getBinaryStorage();
+
+    const binary = {
+      resourceType: 'Binary',
+      id: '..',
+      meta: {
+        versionId: 'package.json',
+      },
+    } as Binary;
+
+    await expect(storage.readBinary(binary)).rejects.toThrow('Invalid storage key');
+    await expect(storage.writeFile('../outside.txt', ContentType.TEXT, 'foo')).rejects.toThrow('Invalid storage key');
+    await expect(storage.copyFile('binary/123/456', '../outside.txt')).rejects.toThrow('Invalid storage key');
+    await expect(storage.deleteFile('../outside.txt')).rejects.toThrow('Invalid storage key');
+  });
 });

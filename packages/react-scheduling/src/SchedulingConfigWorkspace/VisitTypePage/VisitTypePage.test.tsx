@@ -1,8 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, HealthcareService, Location } from '@medplum/fhirtypes';
+import {
+  badRequest,
+  getExtensionValue,
+  OperationOutcomeError,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+  SchedulingColorURI,
+} from '@medplum/core';
+import type { Bundle, Coding, HealthcareService, HealthcareServiceEligibility, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   getHealthcareServiceSchedulingParameterValues,
@@ -33,7 +42,7 @@ const initialVisit = setHealthcareServiceSchedulingParameterValues(
 interface Setup {
   readonly medplum: MockClient;
   readonly stored?: WithId<HealthcareService>;
-  readonly onStored: ReturnType<typeof vi.fn>;
+  readonly onSynced: ReturnType<typeof vi.fn>;
   readonly onDiscardNew: ReturnType<typeof vi.fn>;
 }
 
@@ -43,11 +52,11 @@ async function setup(service: HealthcareService | null = initialVisit): Promise<
   await medplum.createResource(downtown);
   await medplum.createResource(northside);
   const stored = service ? await medplum.createResource(service) : undefined;
-  const onStored = vi.fn();
+  const onSynced = vi.fn();
   const onDiscardNew = vi.fn();
   vi.spyOn(medplum, 'executeBatch');
-  renderWithMedplum(<VisitTypePage service={stored} onStored={onStored} onDiscardNew={onDiscardNew} />, medplum);
-  return { medplum, stored, onStored, onDiscardNew };
+  renderWithMedplum(<VisitTypePage service={stored} onSynced={onSynced} onDiscardNew={onDiscardNew} />, medplum);
+  return { medplum, stored, onSynced, onDiscardNew };
 }
 
 function saveBar(): HTMLElement | null {
@@ -62,8 +71,8 @@ function parameter(name: string): HTMLElement {
   return screen.getByTestId(`scheduling-parameters-${name}`);
 }
 
-function lastStored(onStored: Setup['onStored']): WithId<HealthcareService> {
-  return onStored.mock.calls.at(-1)?.[0];
+function lastSynced(onSynced: Setup['onSynced']): WithId<HealthcareService> {
+  return onSynced.mock.calls.at(-1)?.[0];
 }
 
 function sentBundle(medplum: MockClient): Bundle {
@@ -75,7 +84,12 @@ describe('VisitTypePage', () => {
     await setup();
 
     const headings = screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent);
-    expect(headings).toEqual(['General', 'Scheduling parameters', 'Default availability']);
+    expect(headings).toEqual([
+      'General',
+      'Scheduling parameters',
+      'Default availability',
+      'Schedules offering this visit type',
+    ]);
     expect(screen.getByLabelText(/Name/)).toHaveValue('Initial Visit');
     expect(screen.getByRole('switch', { name: 'Active' })).toBeChecked();
     expect(parameter('duration')).toHaveValue('60 min');
@@ -115,46 +129,79 @@ describe('VisitTypePage', () => {
   });
 
   test('saving sends only this visit type, conditional on the version loaded, and hands back what was stored', async () => {
-    const { medplum, stored, onStored } = await setup();
+    const { medplum, stored, onSynced } = await setup();
 
     await userEvent.clear(parameter('duration'));
     await userEvent.type(parameter('duration'), '45');
     await userEvent.type(parameter('slotCapacity'), '2');
     await userEvent.click(saveButton());
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
     const bundle = sentBundle(medplum);
     expect(bundle.entry).toHaveLength(1);
     expect(bundle.entry?.[0].request?.ifMatch).toBe(`W/"${stored?.meta?.versionId}"`);
-    expect(getHealthcareServiceSchedulingParameterValues(lastStored(onStored))).toMatchObject({
+    expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({
       duration: 45,
       bufferAfter: 10,
       slotCapacity: 2,
     });
   });
 
-  test('turning Active off stores active false', async () => {
-    const { onStored } = await setup();
+  test('a chosen calendar color is stored beside the scheduling parameters', async () => {
+    const { onSynced } = await setup();
+    expect(screen.getByRole('radio', { name: 'Automatic' })).toBeChecked();
 
-    await userEvent.click(screen.getByRole('switch', { name: 'Active' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'grape' }));
+    await userEvent.clear(parameter('duration'));
+    await userEvent.type(parameter('duration'), '45');
     await userEvent.click(saveButton());
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(lastStored(onStored).active).toBe(false);
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBe('grape');
+    expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 45 });
+  });
+
+  test('a stored color outside the palette is shown as chosen, and Automatic takes it off', async () => {
+    const stored: HealthcareService = initialVisit;
+    const { onSynced } = await setup({
+      ...stored,
+      extension: [...(stored.extension ?? []), { url: SchedulingColorURI, valueString: 'green' }],
+    });
+    expect(screen.getByRole('radio', { name: 'green' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Automatic' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBeUndefined();
+    expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 60 });
+  });
+
+  test('turning Active off stores active false, and the badge beside the name follows the switch', async () => {
+    const { onSynced } = await setup();
+    const header = screen.getByRole('heading', { level: 2 }).parentElement as HTMLElement;
+    expect(header).toHaveTextContent('Initial VisitActive');
+
+    await userEvent.click(screen.getByRole('switch', { name: 'Active' }));
+    expect(header).toHaveTextContent('Initial VisitInactive');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(lastSynced(onSynced).active).toBe(false);
   });
 
   test('editing only the name leaves the stored hours untouched', async () => {
-    const { stored, onStored } = await setup();
+    const { stored, onSynced } = await setup();
 
     await userEvent.type(screen.getByLabelText(/Name/), ' (adult)');
     await userEvent.click(saveButton());
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(lastStored(onStored).availableTime).toEqual(stored?.availableTime);
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(lastSynced(onSynced).availableTime).toEqual(stored?.availableTime);
   });
 
   test('changing the default hours stores them as the visit type availableTime', async () => {
-    const { onStored } = await setup();
+    const { onSynced } = await setup();
 
     await act(async () => {
       fireEvent.focus(screen.getByTestId('schedule-availability-end-mon-0'));
@@ -164,8 +211,8 @@ describe('VisitTypePage', () => {
     });
     await userEvent.click(saveButton());
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(lastStored(onStored).availableTime).toEqual([
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(lastSynced(onSynced).availableTime).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
       { daysOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
@@ -192,7 +239,7 @@ describe('VisitTypePage', () => {
   });
 
   test('a value already stored out of range does not block saving another field', async () => {
-    const { onStored } = await setup(
+    const { onSynced } = await setup(
       setHealthcareServiceSchedulingParameterValues(
         { resourceType: 'HealthcareService', name: 'Legacy', availableTime: initialVisit.availableTime },
         { duration: 30, alignmentInterval: 2000 }
@@ -202,7 +249,7 @@ describe('VisitTypePage', () => {
     await userEvent.type(screen.getByLabelText(/Name/), ' visit');
     await userEvent.click(saveButton());
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
   });
 
   test('a reload that fails after a conflict says why', async () => {
@@ -219,32 +266,72 @@ describe('VisitTypePage', () => {
   });
 
   test('a visit type changed elsewhere since it was opened is not written over, and can be reloaded', async () => {
-    const { medplum, stored, onStored } = await setup();
+    const { medplum, stored, onSynced } = await setup();
     await medplum.updateResource({ ...(stored as WithId<HealthcareService>), name: 'Initial Visit (renamed)' });
 
     await userEvent.type(screen.getByLabelText(/Name/), ' (mine)');
     await userEvent.click(saveButton());
 
     expect(await screen.findByText('Initial Visit changed since you opened it')).toBeInTheDocument();
-    expect(onStored).not.toHaveBeenCalled();
+    expect(onSynced).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/Name/)).toHaveValue('Initial Visit (mine)');
 
     await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(lastStored(onStored).name).toBe('Initial Visit (renamed)');
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(lastSynced(onSynced).name).toBe('Initial Visit (renamed)');
   });
 
   test('a save the server refuses keeps the edits and shows why', async () => {
-    const { medplum, onStored } = await setup();
+    const { medplum, onSynced } = await setup();
     vi.mocked(medplum.executeBatch).mockRejectedValueOnce(new OperationOutcomeError(badRequest('Not allowed here')));
 
     await userEvent.type(screen.getByLabelText(/Name/), ' (mine)');
     await userEvent.click(saveButton());
 
     expect(await screen.findByText('Not allowed here')).toBeInTheDocument();
-    expect(onStored).not.toHaveBeenCalled();
+    expect(onSynced).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/Name/)).toHaveValue('Initial Visit (mine)');
     expect(saveBar()).toBeInTheDocument();
+  });
+
+  describe('booking requirements', () => {
+    const requirement = (code: string): Coding => ({ system: SCHEDULING_ELIGIBILITY_SYSTEM, code });
+    const asks = (code: string): HealthcareServiceEligibility => ({ code: { coding: [requirement(code)] } });
+
+    test('ticking one stores it beside what the visit type already asks for, leaving other eligibility alone', async () => {
+      const adultsOnly: HealthcareServiceEligibility = { code: { text: 'Adults only' }, comment: 'From intake' };
+      const { onSynced } = await setup({ ...initialVisit, eligibility: [adultsOnly, asks(REQUIRES_DIAGNOSIS_CODE)] });
+      expect(screen.getByRole('checkbox', { name: 'Require diagnosis code(s)' })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: 'Require procedure code(s)' })).not.toBeChecked();
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require procedure code(s)' }));
+      await userEvent.click(saveButton());
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).eligibility).toEqual([
+        adultsOnly,
+        asks(REQUIRES_DIAGNOSIS_CODE),
+        asks(REQUIRES_PROCEDURE_CODE),
+      ]);
+    });
+
+    test('unticking one removes only its code, keeping anything else its entry holds', async () => {
+      const referral: Coding = { system: 'http://example.org/eligibility', code: 'referral' };
+      const { onSynced } = await setup({
+        ...initialVisit,
+        eligibility: [
+          { code: { coding: [referral, requirement(REQUIRES_DIAGNOSIS_CODE)] } },
+          asks(REQUIRES_MEDICAL_NECESSITY_CODE),
+        ],
+      });
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require diagnosis code(s)' }));
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require medical necessity confirmation' }));
+      await userEvent.click(saveButton());
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).eligibility).toEqual([{ code: { coding: [referral] } }]);
+    });
   });
 
   describe('creating', () => {
@@ -264,16 +351,16 @@ describe('VisitTypePage', () => {
     });
 
     test('opens as an unsaved draft and creates a turned-off visit type', async () => {
-      const { medplum, onStored } = await setup(null);
+      const { medplum, onSynced } = await setup(null);
 
       expect(saveBar()).toBeInTheDocument();
       await userEvent.type(screen.getByLabelText(/Name/), 'Consult');
       await userEvent.type(parameter('duration'), '30');
       await userEvent.click(saveButton());
 
-      await waitFor(() => expect(onStored).toHaveBeenCalled());
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
       expect(sentBundle(medplum).entry?.[0].request).toEqual({ method: 'POST', url: 'HealthcareService' });
-      const created = lastStored(onStored);
+      const created = lastSynced(onSynced);
       expect(created).toMatchObject({ name: 'Consult', active: false });
       expect(created.id).toBeDefined();
       expect(getHealthcareServiceSchedulingParameterValues(created).duration).toBe(30);
@@ -322,36 +409,54 @@ describe('VisitTypePage', () => {
       });
     }
 
-    test('restricting a visit type offered everywhere asks first, and cancelling changes nothing', async () => {
-      await setup();
+    test('saving a visit type offered everywhere with a service facility asks, and cancelling saves nothing', async () => {
+      const { medplum } = await setup();
 
       await pick('Downtown Clinic');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await save();
 
       const dialog = await screen.findByRole('dialog', { name: 'Offer Initial Visit only at Downtown Clinic?' });
       await act(async () => {
         fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
       });
-      expect(picker()).toHaveAttribute('placeholder', 'Offered at every service facility');
-      expect(screen.queryByText('Downtown Clinic')).not.toBeInTheDocument();
-      expect(saveBar()).toBeNull();
+      expect(medplum.executeBatch).not.toHaveBeenCalled();
+      expect(chips()).toHaveTextContent('Downtown Clinic');
+      expect(saveBar()).not.toBeNull();
     });
 
-    test('holds a visit type at the service facilities added', async () => {
-      const { onStored } = await setup();
+    test('holds a visit type at the service facilities added, once confirmed', async () => {
+      const { onSynced } = await setup();
 
       await pick('Downtown Clinic');
-      await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Limit to Downtown Clinic' }));
-      });
-      expect(picker()).toHaveAttribute('placeholder', 'Add a service facility');
       await pick('Northside');
       await save();
+      const dialog = await screen.findByRole('dialog', { name: 'Offer Initial Visit only at 2 service facilities?' });
+      expect(dialog).toHaveTextContent('After this save, only at Downtown Clinic and Northside.');
+      await act(async () => {
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Limit to 2 service facilities' }));
+      });
 
-      await waitFor(() => expect(onStored).toHaveBeenCalled());
-      expect(lastStored(onStored).location?.map((location) => location.reference)).toEqual([
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).location?.map((location) => location.reference)).toEqual([
         'Location/downtown',
         'Location/northside',
       ]);
+    });
+
+    test('a new visit type is created at its service facilities without asking', async () => {
+      const { onSynced, medplum } = await setup(null);
+      const searchResources = vi.spyOn(medplum, 'searchResources');
+
+      fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Consult' } });
+      await pick('Downtown Clinic');
+      // Matched anywhere in the name, as the site pickers elsewhere are.
+      const criteria = searchResources.mock.calls.find(([resourceType]) => resourceType === 'Location')?.[1];
+      expect((criteria as URLSearchParams).get('name:contains')).toBe('Downtown');
+      await save();
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).location?.map((location) => location.reference)).toEqual(['Location/downtown']);
     });
 
     test('Discard takes an added service facility off the field as well as the draft', async () => {
@@ -370,27 +475,8 @@ describe('VisitTypePage', () => {
       expect(saveBar()).toBeNull();
     });
 
-    test('clearing several service facilities at once asks before offering it everywhere', async () => {
-      await setup({
-        ...initialVisit,
-        name: 'Cystoscopy',
-        location: [
-          { reference: 'Location/downtown', display: 'Downtown Clinic' },
-          { reference: 'Location/northside', display: 'Northside' },
-        ],
-      });
-      await settleAutocomplete();
-
-      await act(async () => {
-        fireEvent.click(screen.getByTitle('Clear all'));
-      });
-
-      const dialog = await screen.findByRole('dialog', { name: 'Offer Cystoscopy at every service facility?' });
-      expect(dialog).toHaveTextContent('That leaves no service facilities listed');
-    });
-
-    test('removing the last service facility asks first, then offers it everywhere', async () => {
-      const { onStored } = await setup({
+    test('saving with the last service facility removed asks, then offers it everywhere', async () => {
+      const { onSynced } = await setup({
         ...initialVisit,
         name: 'Cystoscopy',
         location: [{ reference: 'Location/downtown', display: 'Downtown Clinic' }],
@@ -399,15 +485,15 @@ describe('VisitTypePage', () => {
       // The input looks the stored reference up after it mounts.
       await settleAutocomplete();
       await removePill('Downtown Clinic');
+      expect(picker()).toHaveAttribute('placeholder', 'Offered at every service facility');
+      await save();
       const dialog = await screen.findByRole('dialog', { name: 'Offer Cystoscopy at every service facility?' });
       await act(async () => {
         fireEvent.click(within(dialog).getByRole('button', { name: 'Offer everywhere' }));
       });
-      expect(picker()).toHaveAttribute('placeholder', 'Offered at every service facility');
-      await save();
 
-      await waitFor(() => expect(onStored).toHaveBeenCalled());
-      expect(lastStored(onStored).location).toBeUndefined();
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).location).toBeUndefined();
     });
   });
 });

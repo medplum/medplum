@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { getLogger } from '../logger';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -37,6 +38,7 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
 export const googleValidator = makeValidationMiddleware([
   body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
   body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
+  body('redirectUri').optional({ values: 'falsy' }).isString().withMessage('Invalid redirectUri'),
 ]);
 
 /**
@@ -73,6 +75,11 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
     if (projects.length === 1) {
       projectId = projects[0].id;
+    } else {
+      getLogger().warn('Google client ID matches multiple projects', {
+        googleClientId,
+        projectIds: projects.map((p) => p.id),
+      });
     }
   }
 
@@ -145,6 +152,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,
     codeChallengeMethod: req.body.codeChallengeMethod,
+    redirectUri: req.body.redirectUri,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.createUser || projectId === 'new',

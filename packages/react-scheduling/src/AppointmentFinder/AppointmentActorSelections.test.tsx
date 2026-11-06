@@ -224,23 +224,12 @@ describe('AppointmentActorSelections', () => {
     expect(screen.getByRole('button', { name: 'Remove provider 2' })).toBeInTheDocument();
   });
 
-  test('The asterisk marks the actor type, while every row stays required', async () => {
+  test('Marks no actor type required, since any one of them is enough to search', async () => {
     const medplum = await setupClient();
     await setup(medplum);
 
-    // A lone row is the whole question, so it carries the mark itself. Only the
-    // provider is required; the room and the device are not.
-    expect(asteriskedLabels()).toStrictEqual(['Provider']);
-    expect(requiredFieldCount()).toBe(1);
-
-    await pick(/^provider$/i, 'riv', 'Dr. Maya Rivera');
-    await click('Add another provider');
-
-    // Neither row is what has to be answered, so the mark moves up to the heading over
-    // them. Both rows stay required all the same: it is `withAsterisk` that decides
-    // what is marked, so suppressing the mark no longer costs the field its state.
-    expect(asteriskedLabels()).toStrictEqual(['Provider']);
-    expect(requiredFieldCount()).toBe(2);
+    expect(asteriskedLabels()).toStrictEqual([]);
+    expect(requiredFieldCount()).toBe(0);
   });
 
   test('A problem with one type is shown against that type, not the whole form', async () => {
