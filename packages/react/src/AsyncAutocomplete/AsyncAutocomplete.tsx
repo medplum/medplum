@@ -56,6 +56,48 @@ export interface AsyncAutocompleteProps<T> extends Omit<
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
+  const { defaultValue, value, onChange, maxValues, ...rest } = props;
+  const controlledItems = useMemo(() => (value === undefined ? undefined : toItems(value)), [value]);
+  const [uncontrolledItems, setUncontrolledItems] = useState(() => toItems(defaultValue));
+  const [prevControlledItems, setPrevControlledItems] = useState(controlledItems);
+  if (controlledItems !== prevControlledItems) {
+    setPrevControlledItems(controlledItems);
+    if (controlledItems === undefined) {
+      setUncontrolledItems(prevControlledItems ?? []);
+    }
+  }
+  useWarnOnModeSwitch(value !== undefined, rest.name);
+  const handleChange = useCallback(
+    (newItems: T[]): void => {
+      if (controlledItems === undefined) {
+        // maxValues={0} reports each selection without keeping it
+        setUncontrolledItems(maxValues === 0 ? [] : newItems);
+      }
+      onChange(newItems);
+    },
+    [controlledItems, maxValues, onChange]
+  );
+
+  return (
+    <AsyncAutocompleteControlled<T>
+      {...rest}
+      value={controlledItems ?? uncontrolledItems}
+      onChange={handleChange}
+      maxValues={maxValues}
+    />
+  );
+}
+
+export interface AsyncAutocompleteControlledProps<T> extends Omit<AsyncAutocompleteProps<T>, 'defaultValue' | 'value'> {
+  readonly value: readonly T[];
+}
+
+/**
+ * For inputs that hold their own uncontrolled selection. Not exported from the package.
+ * @param props - The autocomplete props, with the selection always given as `value`.
+ * @returns The autocomplete element.
+ */
+export function AsyncAutocompleteControlled<T>(props: AsyncAutocompleteControlledProps<T>): JSX.Element {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
     onDropdownOpen: () => combobox.updateSelectedOptionIndex('active'),
@@ -65,7 +107,6 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     label,
     description,
     error,
-    defaultValue,
     value,
     toOption,
     loadOptions,
@@ -87,27 +128,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     ...rest
   } = props;
   const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
-  const controlledItems = useMemo(() => (value === undefined ? undefined : toItems(value)), [value]);
-  const [uncontrolledItems, setUncontrolledItems] = useState(() => toItems(defaultValue));
-  const [prevControlledItems, setPrevControlledItems] = useState(controlledItems);
-  if (controlledItems !== prevControlledItems) {
-    setPrevControlledItems(controlledItems);
-    if (controlledItems === undefined) {
-      setUncontrolledItems(prevControlledItems ?? []);
-    }
-  }
-  const items = controlledItems ?? uncontrolledItems;
-  useWarnOnModeSwitch(value !== undefined, name);
-  const setItems = useCallback(
-    (newItems: T[]): void => {
-      if (controlledItems === undefined) {
-        setUncontrolledItems(newItems);
-      }
-      onChange(newItems);
-    },
-    [controlledItems, onChange]
-  );
-  const selected = useMemo(() => items.map(toOption), [items, toOption]);
+  const selected = useMemo(() => value.map(toOption), [value, toOption]);
   const [search, setSearch] = useState('');
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
@@ -160,7 +181,6 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       // when maxValues is 0, still fire the onChange when an item is selected
       if (maxValues === 0) {
         onChange([item.resource]);
-        setUncontrolledItems([]);
         return;
       }
 
@@ -173,9 +193,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       }
 
-      setItems(newSelected.map((v) => v.resource));
+      onChange(newSelected.map((v) => v.resource));
     },
-    [maxValues, onChange, setItems]
+    [maxValues, onChange]
   );
 
   const handleTimer = useCallback((): void => {
@@ -261,7 +281,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     (newValue: string): void => {
       const alreadySelected = selected.some((v) => v.value === newValue);
       if (alreadySelected) {
-        setItems(selected.filter((v) => v.value !== newValue).map((v) => v.resource));
+        onChange(selected.filter((v) => v.value !== newValue).map((v) => v.resource));
       } else {
         let option = options?.find((option) => option.value === newValue);
         if (!option && creatable !== false && onCreate) {
@@ -273,7 +293,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       }
     },
-    [selected, setItems, handleValueAdd, onCreate, toOption, options, creatable]
+    [selected, onChange, handleValueAdd, onCreate, toOption, options, creatable]
   );
 
   const handleValueSelect = useMemo(() => {
@@ -297,9 +317,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
-      setItems(selected.filter((v) => v.value !== item.value).map((v) => v.resource));
+      onChange(selected.filter((v) => v.value !== item.value).map((v) => v.resource));
     },
-    [selected, setItems]
+    [selected, onChange]
   );
 
   const handleKeyDown = useCallback(
@@ -334,7 +354,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       size="sm"
       onClear={() => {
         setSearch('');
-        setItems([]);
+        onChange([]);
         combobox.closeDropdown();
       }}
     />
