@@ -7,8 +7,6 @@ import { MedplumLink } from '../MedplumLink/MedplumLink';
 import type { LabListItemTab } from './LabListItemView';
 import { LabListItemView } from './LabListItemView';
 
-export * from './LabListItemView';
-
 export interface LabListItemProps {
   readonly item: ServiceRequest;
   readonly selectedItem: ServiceRequest | undefined;

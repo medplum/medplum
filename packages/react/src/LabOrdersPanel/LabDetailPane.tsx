@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Center, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { createReference, isReference, normalizeErrorString } from '@medplum/core';
+import { isReference, normalizeErrorString } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { LabDetailPaneView } from './LabDetailPaneView';
 import { LabOrderDetails } from './LabOrderDetails';
 import { LabResultDetails } from './LabResultDetails';
 
@@ -18,10 +18,8 @@ interface LabDetailPaneProps {
 }
 
 /**
- * Renders the detail pane for a selected lab item. An order (ServiceRequest)
- * shows the order details. A result (DiagnosticReport) that is based on a
- * ServiceRequest also shows the order details for that request; otherwise it
- * falls back to the result details.
+ * The detail pane for a selected lab item, reading a report's order through the Medplum client
+ * and rendering the Medplum-backed order and result details.
  * @param props - The lab item to render.
  * @returns The detail pane for the given lab item.
  */
@@ -77,28 +75,22 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
   }, [medplum, item, basedOnRef]);
 
   return (
-    <Box h="100%" flex={1} style={{ overflow: 'hidden' }}>
-      {loading ? (
-        <Center h="100%">
-          <Loader />
-        </Center>
-      ) : (
-        <>
-          {order && (
-            <LabOrderDetails
-              key={`${order.id}:${item.resourceType === 'DiagnosticReport' ? item.id : ''}`}
-              order={order}
-              selectedReport={item.resourceType === 'DiagnosticReport' ? createReference(item) : undefined}
-              onChange={(updated) => {
-                setOrder(updated);
-                onOrderChange?.(updated);
-              }}
-              onResume={onResumeOrder ? () => onResumeOrder(order) : undefined}
-            />
-          )}
-          {!order && item.resourceType === 'DiagnosticReport' && <LabResultDetails key={item.id} result={item} />}
-        </>
+    <LabDetailPaneView
+      item={item}
+      order={order}
+      loading={loading}
+      renderOrder={(current, selectedReport) => (
+        <LabOrderDetails
+          order={current}
+          selectedReport={selectedReport}
+          onChange={(updated) => {
+            setOrder(updated);
+            onOrderChange?.(updated);
+          }}
+          onResume={onResumeOrder ? () => onResumeOrder(current) : undefined}
+        />
       )}
-    </Box>
+      renderResult={(result) => <LabResultDetails result={result} />}
+    />
   );
 }

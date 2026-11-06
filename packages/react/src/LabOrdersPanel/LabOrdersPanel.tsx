@@ -1,25 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Flex, Stack, Text, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { Filter, SearchRequest, WithId } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, normalizeErrorString, Operator } from '@medplum/core';
-import type { DiagnosticReport, Patient, Reference, ServiceRequest } from '@medplum/fhirtypes';
+import type { Patient, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconPlus } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ListWithDetailPaneTab } from '../ListWithDetailPane/ListWithDetailPane';
-import { ListWithDetailPane } from '../ListWithDetailPane/ListWithDetailPane';
+import { useCallback, useEffect, useState } from 'react';
+import type { ListWithDetailPaneTabLinkRenderer } from '../ListWithDetailPane/ListWithDetailPane';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { LabDetailPane } from './LabDetailPane';
 import { LabListItem } from './LabListItem';
+import type { LabItem, LabTab } from './LabOrdersPanelView';
+import { LabOrdersPanelView } from './LabOrdersPanelView';
 import { LabResultListItem } from './LabResultListItem';
-import { LabSelectEmpty } from './LabSelectEmpty';
 
-export type LabTab = 'open' | 'completed' | 'revoked';
-export type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
-
-const DEFAULT_COUNT = 20;
+export type { LabItem, LabTab } from './LabOrdersPanelView';
 
 export interface LabOrdersPanelOrderModalProps {
   readonly opened: boolean;
@@ -57,6 +53,18 @@ export interface LabOrdersPanelProps {
   readonly renderOrderModal?: (props: LabOrdersPanelOrderModalProps) => ReactNode;
 }
 
+const renderMedplumTabLink: ListWithDetailPaneTabLinkRenderer = (uri, { children, ...rest }) => (
+  <MedplumLink to={uri} {...rest}>
+    {children}
+  </MedplumLink>
+);
+
+/**
+ * The lab orders panel, searching and reading through the Medplum client and linking with
+ * MedplumLink.
+ * @param props - The patient, the search, the selection, and the URIs.
+ * @returns The panel.
+ */
 export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
   const {
     patient,
@@ -133,19 +141,6 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
     resolveSelected().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [selectedId, items, resourceType, medplum]);
 
-  const tabs = useMemo<ListWithDetailPaneTab[]>(
-    () => [
-      { value: 'completed', label: 'Completed', uri: completedUri },
-      { value: 'open', label: 'Open', uri: openUri },
-      { value: 'revoked', label: 'Revoked', uri: revokedUri },
-    ],
-    [completedUri, openUri, revokedUri]
-  );
-
-  const count = search.count ?? DEFAULT_COUNT;
-  const page = Math.floor((search.offset ?? 0) / count) + 1;
-  const pageCount = Math.max(1, Math.ceil(total / count));
-
   const handleOrderSaved = useCallback((): void => {
     setOrderModal(undefined);
     fetchData()
@@ -153,43 +148,28 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [fetchData, onNew]);
 
-  const headerActions = renderOrderModal && (
-    <Tooltip label="Order Labs" position="bottom" openDelay={500}>
-      <ActionIcon
-        radius="xl"
-        variant="filled"
-        color="blue"
-        size={32}
-        aria-label="Order Labs"
-        onClick={() => setOrderModal('new')}
-      >
-        <IconPlus size={16} />
-      </ActionIcon>
-    </Tooltip>
-  );
-
   return (
-    <Box w="100%" h="100%">
-      <ListWithDetailPane<LabItem>
+    <>
+      <LabOrdersPanelView
         items={items}
+        total={total}
         loading={loading}
-        selectedKey={selectedId}
-        selected={selected}
-        tabs={tabs}
+        search={search}
         activeTab={activeTab}
-        headerActions={headerActions}
-        emptyList={<EmptyLabsState activeTab={activeTab} />}
-        emptyDetail={<LabSelectEmpty />}
-        page={page}
-        pageCount={pageCount}
-        onPageChange={(newPage) => onChange({ ...search, offset: (newPage - 1) * count })}
-        renderItem={(item, ctx) =>
+        selectedId={selectedId}
+        selected={selected}
+        onChange={onChange}
+        completedUri={completedUri}
+        openUri={openUri}
+        revokedUri={revokedUri}
+        renderTabLink={renderMedplumTabLink}
+        renderItem={(item, isSelected) =>
           item.resourceType === 'DiagnosticReport' ? (
-            <LabResultListItem report={item} selected={ctx.selected} to={getItemUri(item)} />
+            <LabResultListItem report={item} selected={isSelected} to={getItemUri(item)} />
           ) : (
             <LabListItem
               item={item}
-              selectedItem={ctx.selected ? item : undefined}
+              selectedItem={isSelected ? item : undefined}
               activeTab="open"
               onItemSelect={() => getItemUri(item)}
             />
@@ -204,6 +184,7 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
             onResumeOrder={renderOrderModal ? setOrderModal : undefined}
           />
         )}
+        onOrder={renderOrderModal ? () => setOrderModal('new') : undefined}
       />
       {renderOrderModal?.({
         opened: !!orderModal,
@@ -211,18 +192,6 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
         onClose: () => setOrderModal(undefined),
         onSaved: handleOrderSaved,
       })}
-    </Box>
-  );
-}
-
-function EmptyLabsState({ activeTab }: { activeTab: LabTab }): JSX.Element {
-  return (
-    <Flex direction="column" h="100%" justify="center" align="center">
-      <Stack align="center" gap="md" pt="xl">
-        <Text size="md" c="dimmed" fw={400}>
-          No {activeTab} labs to display.
-        </Text>
-      </Stack>
-    </Flex>
+    </>
   );
 }

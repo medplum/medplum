@@ -6,8 +6,6 @@ import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { LabResultListItemView } from './LabResultListItemView';
 
-export * from './LabResultListItemView';
-
 export interface LabResultListItemProps {
   readonly report: DiagnosticReport;
   readonly selected: boolean;
