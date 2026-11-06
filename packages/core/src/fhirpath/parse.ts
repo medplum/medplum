@@ -260,7 +260,10 @@ export function evalFhirPath(
       array[i] = toTypedValue(array[i]);
     }
   }
-  return evalFhirPathTyped(expression, array, variables, cache).map((e) => e.value);
+
+  return evalFhirPathTyped(expression, array, variables, cache)
+    .filter((e) => e.value !== undefined)
+    .map((e) => e.value);
 }
 
 /**
@@ -287,14 +290,5 @@ export function evalFhirPathTyped(
   } else {
     ast = expression;
   }
-  return ast.eval({ variables }, input).map((v) => {
-    const result: TypedValue & { path?: string } = {
-      type: v.type,
-      value: v.value?.valueOf(),
-    };
-    if ('path' in v) {
-      result.path = v.path as string;
-    }
-    return result;
-  });
+  return ast.eval({ variables }, input);
 }

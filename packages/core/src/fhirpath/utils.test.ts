@@ -339,19 +339,18 @@ describe('FHIRPath utils', () => {
 
     expect(results).toHaveLength(2);
     const [simple, extended] = results as TypedValue[];
+    // The value stays a real primitive; the extension rides alongside it.
     expect(simple).toStrictEqual({ type: 'string', value: 'John' });
     expect(extended).toStrictEqual({
       type: 'string',
-      value: expect.objectContaining(Object.assign('', primitiveValue, { extension: [primitiveExtension] })),
+      value: primitiveValue,
+      primitiveExtension: { extension: [primitiveExtension] },
     });
+    expect(typeof extended.value).toBe('string');
 
-    // Check that values look correct when access "normally"
-    expect(extended.value.valueOf()).toBe('Johnny');
-    expect(extended.value.extension).toStrictEqual([primitiveExtension]);
-
-    // With primitive extensions, array values can be changed into a `String` wrapper type which has a typeof 'object';
-    // need to ensure the original input array values are not mutated as such
+    // The input must not be mutated, neither the array nor the `_given` sibling.
     expect(humanName.given.every((g) => typeof g === 'string')).toBe(true);
+    expect(humanName._given).toStrictEqual([null, { extension: [primitiveExtension] }]);
 
     // If extension only is specified, should still extract
     const results2 = getTypedPropertyValueWithSchema(
@@ -363,7 +362,8 @@ describe('FHIRPath utils', () => {
     const [extensionOnly] = results2 as TypedValue[];
     expect(extensionOnly).toStrictEqual({
       type: 'string',
-      value: expect.objectContaining(Object.assign('', { extension: [primitiveExtension] })),
+      value: undefined,
+      primitiveExtension: { extension: [primitiveExtension] },
     });
   });
 
