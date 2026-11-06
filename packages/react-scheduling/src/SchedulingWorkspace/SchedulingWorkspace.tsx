@@ -49,7 +49,12 @@ import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import { PaneHeader } from './PaneHeader';
 import classes from './SchedulingWorkspace.module.css';
-import { getCalendarTimezones, groupAppointmentsByService, matchesCalendarFilters } from './SchedulingWorkspace.utils';
+import {
+  filterSlotsByDrawnAppointments,
+  getCalendarTimezones,
+  groupAppointmentsByService,
+  matchesCalendarFilters,
+} from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
 import { useBookingPaneGuard } from './useBookingPaneGuard';
 
@@ -165,9 +170,9 @@ export interface SchedulingWorkspaceProps {
  * - Filters calendars and what is booked on them: the Service facility and Visit Type filters
  *   narrow the calendars listed to the ones held at that site and offering that service type,
  *   and the appointments drawn to the ones recording that site and naming that service type.
- *   Under either filter, only the drawn appointments' Slots, such as their buffers, are shown:
- *   Slots record no site, and most blocks name no service type, so apply to every one, and
- *   showing each block that might apply would clutter the calendar.
+ *   Under either filter, the Slots of an appointment it hides, such as its buffers, are hidden
+ *   with it. Blocked time stays on every calendar left listed: Slots record no site, and a
+ *   block takes its actor's time whatever the visit type.
  * - Keeps an open appointment or blocked time open until it is closed, even once paging,
  *   filtering, or hiding its calendars takes it off the calendar, with a notice saying when the
  *   filters or hidden calendars are why.
@@ -317,15 +322,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
     // its own appointments. A held-back appointment's Slots stay, so its time isn't shown as free.
-    // Under a filter, only the Slots the drawn appointments hold are shown. Slots record no site,
-    // and most blocks name no service type, so apply to every one: showing each block that might
-    // apply would clutter the calendar.
-    const visibleSlots = new Set(
-      visibleAppointments.flatMap((appointment) => (appointment.slot ?? []).map(getReferenceString))
-    );
+    // Under a filter, the Slots of an appointment it hides go with it. Blocked time stays: the
+    // calendars listed are already the ones the filters keep.
     const shownSlots =
       filters.service || filters.serviceFacility
-        ? (slots ?? []).filter((slot) => visibleSlots.has(getReferenceString(slot)))
+        ? filterSlotsByDrawnAppointments(slots ?? [], appointments ?? [], visibleAppointments)
         : (slots ?? []);
     const openSlots = filterBookedSlots(
       shownSlots,
