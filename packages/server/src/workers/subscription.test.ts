@@ -1648,7 +1648,7 @@ describe('Subscription Worker', () => {
       await expect(repo.search(subscriptionEvents)).resolves.toMatchObject({ entry: [] });
 
       // Create membership for Bot in Subscription Project
-      await repo.createResource<ProjectMembership>({
+      await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         project: createReference(project),
         user: createReference(bot),
