@@ -8,15 +8,19 @@ import {
   concatUrls,
   forbidden,
   getReferenceString,
+  normalizeErrorString,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
+import { retireAllSecurityRequests } from '../../auth/securityrequest';
+import { revokeUserLogins } from '../../auth/setpassword';
 import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
+import { getLogger } from '../../logger';
 import { membershipProfileTypes, readMembershipReference } from '../projectmembership';
 import type { Repository } from '../repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
@@ -96,9 +100,9 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
   return [allOk, user];
 }
 
-async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
+async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<WithId<User>> {
   const systemRepo = await getProjectSystemRepo(project);
-  return systemRepo.withTransaction(
+  const { user: updatedUser, verification } = await systemRepo.withTransaction(
     async (txRepo) => {
       let user = await txRepo.readResource<User>('User', userId);
       if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {
@@ -113,13 +117,10 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       user.emailVerified = false;
       user = await txRepo.updateResource(user);
 
-      if (!params.skipEmailVerification) {
-        const { id, secret } = await verifyEmail(txRepo, user);
-        // sendEmail: false lets the caller send its own email, e.g. from a Bot subscribed to UserSecurityRequest
-        if (params.sendEmail !== false) {
-          await sendVerificationEmail(id, secret, user, project, txRepo);
-        }
-      }
+      await retireAllSecurityRequests(txRepo, user); // existing requests were issued for previous address
+      await revokeUserLogins(txRepo, user);
+
+      const verification = params.skipEmailVerification ? undefined : await verifyEmail(txRepo, user);
 
       if (params.updateProfileTelecom && user.project?.reference) {
         // Get membership for Project-scoped User
@@ -139,13 +140,34 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         }
       }
 
-      return user;
+      return { user, verification };
     },
     {
-      resourceTypes: ['ProjectMembership', 'User', 'UserSecurityRequest', ...profileTypesWithTelecom],
+      resourceTypes: ['Login', 'ProjectMembership', 'User', 'UserSecurityRequest', ...profileTypesWithTelecom],
       source: 'updateUserEmail.updateUser',
     }
   );
+
+  // After commit, because the transaction may be retried or rolled back.
+  if (verification && params.sendEmail !== false) {
+    try {
+      await sendVerificationEmail(verification.id, verification.secret, updatedUser, project, systemRepo);
+    } catch (err) {
+      // The change is already committed, so say so rather than surface a bare send error
+      getLogger().warn('Verification email failed', { userId: updatedUser.id, err: normalizeErrorString(err) });
+      throw new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'exception',
+            details: { text: 'Email updated, but the verification email could not be sent' },
+          },
+        ],
+      });
+    }
+  }
+  return updatedUser;
 }
 
 async function updateProfileTelecom(

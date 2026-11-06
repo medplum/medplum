@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
-import type { AccessPolicy, Project, User } from '@medplum/fhirtypes';
+import { ContentType, createReference, Operator } from '@medplum/core';
+import type {
+  AccessPolicy,
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+  UserSecurityRequest,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -53,6 +61,27 @@ describe('SCIM Routes', () => {
     await shutdownApp();
   });
 
+  async function getUserAndSecurityRequest(
+    membershipId: string
+  ): Promise<{ user: WithId<User>; securityRequest: UserSecurityRequest | undefined }> {
+    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+    const securityRequest = await systemRepo.searchOne<UserSecurityRequest>({
+      resourceType: 'UserSecurityRequest',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: membership.user?.reference as string }],
+    });
+    return { user, securityRequest };
+  }
+
+  async function createLogin(user: WithId<User>): Promise<WithId<Login>> {
+    return systemRepo.createResource<Login>({
+      resourceType: 'Login',
+      user: createReference(user),
+      authMethod: 'password',
+      authTime: new Date().toISOString(),
+    });
+  }
+
   test('Search users', async () => {
     const res = await request(app)
       .get(`/scim/v2/Users`)
@@ -94,6 +123,8 @@ describe('SCIM Routes', () => {
     const searchCheck = searchResponse.body.Resources.find((user: any) => user.id === res1.body.id);
     expect(searchCheck).toBeDefined();
 
+    const login = await createLogin((await getUserAndSecurityRequest(res1.body.id)).user);
+
     const updateResponse = await request(app)
       .put(`/scim/v2/Users/${res1.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -104,6 +135,8 @@ describe('SCIM Routes', () => {
       });
     expect(updateResponse).toHaveStatus(200);
     expect(updateResponse.body.externalId).toBeDefined();
+    expect((await getUserAndSecurityRequest(res1.body.id)).securityRequest?.used).toBeFalsy();
+    expect((await systemRepo.readResource<Login>('Login', login.id)).revoked).toBeFalsy();
 
     const deleteResponse = await request(app)
       .delete(`/scim/v2/Users/${res1.body.id}`)
@@ -150,6 +183,11 @@ describe('SCIM Routes', () => {
     const searchCheck = searchResponse.body.Resources.find((user: any) => user.id === res1.body.id);
     expect(searchCheck).toBeDefined();
 
+    const { user } = await getUserAndSecurityRequest(res1.body.id);
+    await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
+    const login = await createLogin(user);
+
+    const newEmail = randomUUID() + '@example.com';
     const patchResponse = await request(app)
       .patch(`/scim/v2/Users/${res1.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -161,12 +199,19 @@ describe('SCIM Routes', () => {
             op: 'replace',
             value: {
               active: false,
+              emails: [{ value: newEmail }],
             },
           },
         ],
       });
     expect(patchResponse).toHaveStatus(200);
     expect(patchResponse.body.active).toBe(false);
+    expect(patchResponse.body.emails).toStrictEqual([{ value: newEmail }]);
+
+    const after = await getUserAndSecurityRequest(res1.body.id);
+    expect(after.user.emailVerified).toBe(false);
+    expect(after.securityRequest?.used).toBe(true);
+    expect((await systemRepo.readResource<Login>('Login', login.id)).revoked).toBe(true);
   });
 
   test('Create, missing medplum user type, creates a Practitioner', async () => {
