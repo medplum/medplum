@@ -110,19 +110,43 @@ describe('SchedulingWorkspace blocked time details', () => {
     await screen.findByText('Blocked');
     expect(within(slotDetails() as HTMLElement).queryByRole('alert')).not.toBeInTheDocument();
 
-    // A filter hides Slots no drawn appointment holds, even on a calendar it leaves listed.
+    // A filter leaves blocked time on a calendar it keeps listed: no appointment holds it. The
+    // visit records no site, so it is what the filter takes off.
+    await userEvent.click(screen.getByPlaceholderText('All service facilities'));
+    await userEvent.click(await within(await screen.findByRole('listbox')).findByText('Uro Associates - Main Clinic'));
+    await waitFor(() => expect(screen.queryByText('Miles Cooper')).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true })).toBeInTheDocument();
+    expect(await screen.findByText('Blocked')).toBeInTheDocument();
+    expect(within(slotDetails() as HTMLElement).queryByRole('alert')).not.toBeInTheDocument();
+    await userEvent.click(pillRemoveButton('Uro Associates - Main Clinic'));
+    await screen.findByText('Miles Cooper');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close blocked time details' }));
+    await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
+    expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
+  });
+
+  test('a filter hiding a visit hides the Slots it holds, saying so on one left open', async () => {
+    await medplum.deleteResource('Slot', BLOCKED_SLOT.id);
+    const buffer = await medplum.createResource<Slot>({
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      start: TODAY_AT(11),
+      end: TODAY_AT(11, 15),
+      schedule: createReference(DrRiveraSchedule),
+      comment: 'buffer after appointment',
+    });
+    await medplum.updateResource({ ...APPOINTMENT, slot: [createReference(buffer)] });
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click(await screen.findByText('Blocked'));
+
+    // The visit records no site, so a site filter hides it, and its buffer with it.
     await userEvent.click(screen.getByPlaceholderText('All service facilities'));
     await userEvent.click(await within(await screen.findByRole('listbox')).findByText('Uro Associates - Main Clinic'));
     await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
     expect(within(slotDetails() as HTMLElement).getByText(FILTERED_NOTICE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true })).toBeInTheDocument();
-    await userEvent.click(pillRemoveButton('Uro Associates - Main Clinic'));
-    await screen.findByText('Blocked');
-    expect(within(slotDetails() as HTMLElement).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Close blocked time details' }));
-    await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
-    expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
   });
 
   test('editing moves blocked time and changes its notes', async () => {

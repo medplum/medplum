@@ -28,7 +28,7 @@ import type { JSX, ReactNode } from 'react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { getPatientParticipant } from '../actors';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
-import type { DateTimeRange } from '../types';
+import type { CalendarSelection, DateTimeRange } from '../types';
 import { AppointmentPatientName } from './AppointmentPatientName';
 import classes from './CalendarBase.module.css';
 import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
@@ -166,7 +166,7 @@ export interface CalendarBaseProps extends Omit<
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
-  onSelectInterval?: (interval: DateTimeRange) => void;
+  onSelectInterval?: (interval: CalendarSelection) => void;
   selection?: DateTimeRange;
   /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
   selectedId?: string;
@@ -184,7 +184,10 @@ export interface CalendarBaseProps extends Omit<
 
 /** Imperative handle on a calendar. */
 export interface CalendarHandle {
-  /** Pages the calendar to the day holding `date`, such as that of an appointment just booked. */
+  /**
+   * Pages the calendar to the day holding `date`, such as that of an appointment just booked.
+   * Stays put when that day is already on screen.
+   */
   readonly gotoDate: (date: Date) => void;
 }
 
@@ -197,7 +200,20 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
   const controller = useCalendarController();
   const viewType = controller.view?.type;
 
-  useImperativeHandle(ref, () => ({ gotoDate: (date) => controller.gotoDate(date) }), [controller]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      gotoDate: (date) => {
+        // Views like 4 Day start at the date they're paged to, which would shift days already in view.
+        const view = controller.view;
+        if (view && date >= view.activeStart && date < view.activeEnd) {
+          return;
+        }
+        controller.gotoDate(date);
+      },
+    }),
+    [controller]
+  );
 
   const {
     onRangeChange,
@@ -415,7 +431,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
           if (!eventInfo.jsEvent) {
             return;
           }
-          onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
+          onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end, allDay: eventInfo.allDay });
         }}
         eventContent={renderEventContent}
         dayHeaderContent={renderDayHeaderContent}
