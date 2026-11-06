@@ -80,11 +80,25 @@ if [[ "$IS_RELEASE" == "true" ]]; then
   SERVER_TAGS="$SERVER_TAGS --tag $SERVER_DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $SERVER_DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
 fi
 
-METADATA_FILE=$(mktemp)
-docker buildx build $ATTESTATIONS $PLATFORMS $SERVER_TAGS --progress=plain --push --metadata-file "$METADATA_FILE" .
+# A release that is already published from the same inputs only gets its tags (re)applied
+LABELS=""
+if [[ "$IS_RELEASE" == "true" ]]; then
+  source "$(dirname "${BASH_SOURCE[0]}")/docker-release-utils.sh"
+  CONTENT_HASH=$(input_hash Dockerfile medplum-server-metadata.tar.gz medplum-server-runtime.tar.gz)
+  LABELS="--label $CONTENT_HASH_LABEL=$CONTENT_HASH --label org.opencontainers.image.revision=$GITHUB_SHA"
+fi
 
-SERVER_DOCKER_IMAGE_DIGEST=$(jq -r '."containerimage.digest"' "$METADATA_FILE")
-rm -f "$METADATA_FILE"
+if [[ "$IS_RELEASE" == "true" ]] && is_published "$SERVER_DOCKERHUB_REPOSITORY:$FULL_VERSION" "$CONTENT_HASH"; then
+  docker buildx imagetools create $SERVER_TAGS "$SERVER_DOCKERHUB_REPOSITORY@$PUBLISHED_DIGEST"
+  SERVER_DOCKER_IMAGE_DIGEST=$PUBLISHED_DIGEST
+else
+  METADATA_FILE=$(mktemp)
+  docker buildx build $ATTESTATIONS $PLATFORMS $SERVER_TAGS $LABELS --progress=plain --push --metadata-file "$METADATA_FILE" .
+
+  SERVER_DOCKER_IMAGE_DIGEST=$(jq -r '."containerimage.digest"' "$METADATA_FILE")
+  rm -f "$METADATA_FILE"
+fi
+
 if [[ -z "${SERVER_DOCKER_IMAGE_DIGEST}" || "${SERVER_DOCKER_IMAGE_DIGEST}" == "null" ]]; then
   echo "Failed to determine pushed Docker image digest"
   exit 1
