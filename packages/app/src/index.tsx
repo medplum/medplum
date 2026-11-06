@@ -11,6 +11,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
+import { getCompartmentSearchParams } from './compartmentFilter';
 import { getConfig } from './config';
 import './index.css';
 
@@ -23,6 +24,7 @@ export async function initApp(): Promise<void> {
     storagePrefix: '@medplum:',
     cacheTime: 60000,
     autoBatchTime: 100,
+    defaultSearchParams: getCompartmentSearchParams(),
     onUnauthenticated: () => {
       if (window.location.pathname !== '/signin' && window.location.pathname !== '/oauth') {
         window.location.href = '/signin?next=' + encodeURIComponent(window.location.pathname + window.location.search);
