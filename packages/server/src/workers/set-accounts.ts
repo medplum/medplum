@@ -71,17 +71,17 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
 };
 
 /**
- * Returns the batch queue instance.
+ * Returns the set-accounts queue instance.
  * This is used by the unit tests.
- * @returns The batch queue (if available).
+ * @returns The set-accounts queue (if available).
  */
 export function getSetAccountsQueue(): Queue<SetAccountsJobData> | undefined {
   return queueRegistry.get(queueName);
 }
 
 /**
- * Adds a batch job to the queue.
- * @param job - The batch job details.
+ * Adds a set-accounts job to the queue.
+ * @param job - The set-accounts job details.
  * @returns The enqueued job.
  */
 export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Job<SetAccountsJobData>> {
