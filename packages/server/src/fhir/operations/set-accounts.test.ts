@@ -322,6 +322,33 @@ describe('Patient Set Accounts Operation', () => {
     expect(compartmentWrites(transactionSpy)).toHaveLength(27);
   });
 
+  test('Repairs a compartment resource written with stale accounts after propagation begins', async () => {
+    const concurrentRepo = await getProjectSystemRepo(project);
+    let staleWrite = false;
+    const originalSearch = Repository.prototype.search;
+    vi.spyOn(Repository.prototype, 'search').mockImplementation(async function (
+      this: Repository,
+      ...args: Parameters<typeof originalSearch>
+    ) {
+      if (!staleWrite && args[0].filters?.some((f) => f.code === '_compartment')) {
+        staleWrite = true;
+        // The Observation has no accounts yet; the write keeps it that way
+        const current = await concurrentRepo.readResource<Observation>('Observation', observation.id);
+        await concurrentRepo.updateResource<Observation>({ ...current, status: 'amended' });
+      }
+      return originalSearch.apply(this, args);
+    });
+
+    const res = await setPatientAccounts([organization1], true);
+    expect(res).toHaveStatus(200);
+    expect(staleWrite).toBe(true);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
+
+    const obs = await readExtended<Observation>(`Observation/${observation.id}`);
+    expect(obs.status).toBe('amended');
+    expect(obs.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
+  });
+
   test('Retries compartment update when the resource is modified concurrently', async () => {
     const concurrentRepo = await getProjectSystemRepo(project);
     let observationUpdates = 0;

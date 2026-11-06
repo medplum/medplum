@@ -242,9 +242,8 @@ async function propagateToCompartment(
 ): Promise<number> {
   let count = 0;
   const systemRepo = repo.getSystemRepo();
-  // Writes move resources to the end of the _lastUpdated cursor, so later pages return them again. A
-  // resource written since the target was updated, by this run or another writer, already reflects the
-  // target's new accounts, so skip those rather than remember every resource visited.
+  // Writes move resources to the end of the _lastUpdated cursor, so later pages return them again.
+  // Re-check those resources, but count them only if they need a write.
   const startTime = Date.now();
 
   const search: Partial<SearchRequest> = { offset: 0, count: 1000 };
@@ -261,11 +260,7 @@ async function propagateToCompartment(
 
     const bundle = await searchPatientCompartment(repo, target, search);
     const found = (bundle.entry ?? EMPTY).flatMap((e) =>
-      !e.resource ||
-      e.resource.resourceType === 'Patient' ||
-      Date.parse(e.resource.meta?.lastUpdated ?? '') >= startTime
-        ? EMPTY
-        : [{ reference: getReferenceString(e.resource) }]
+      !e.resource || e.resource.resourceType === 'Patient' ? EMPTY : [{ reference: getReferenceString(e.resource) }]
     );
     // Search results lack fields hidden from the user, so check the stored versions instead
     const resources = await systemRepo.readReferences(found);
@@ -273,7 +268,9 @@ async function propagateToCompartment(
       // Skip resources deleted since the search
       if (!(resource instanceof Error)) {
         await lock.renewIfDue();
-        if (await updateCompartmentResource(repo, target, resource, accounts, removals)) {
+        const revisited = Date.parse(resource.meta?.lastUpdated ?? '') >= startTime;
+        const result = await updateCompartmentResource(repo, target, resource, accounts, removals);
+        if (result === 'written' || (result === 'unchanged' && !revisited)) {
           count++;
         }
       }
@@ -292,19 +289,19 @@ async function propagateToCompartment(
   return count;
 }
 
+type CompartmentUpdateResult = 'written' | 'unchanged' | 'skipped';
+
 async function updateCompartmentResource(
   userRepo: Repository,
   target: WithId<Resource>,
   resource: Resource,
   accounts: Reference[],
   removals: Reference[]
-): Promise<boolean> {
+): Promise<CompartmentUpdateResult> {
   // The resource was read after the target was updated; skip it if it already has the right accounts.
-  // Whether other Patients keep an account being removed is only read in the transaction below, so a
-  // resource holding one is always checked there.
   const expected = applyAccountChanges(extractAccountReferences(resource.meta), accounts, removals);
   if (hasAccounts(resource, expected)) {
-    return Boolean(userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource));
+    return userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource) ? 'unchanged' : 'skipped';
   }
 
   const { resourceType } = resource;
@@ -312,7 +309,7 @@ async function updateCompartmentResource(
   await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   try {
     // Read and write with the system repo to keep fields hidden from the user
-    return await userRepo.getSystemRepo().withTransaction(
+    return await userRepo.getSystemRepo().withTransaction<CompartmentUpdateResult>(
       async (txRepo) => {
         const current = await txRepo.readResource(resourceType, id);
         // Skip resources moved out of the target's compartment since the search
@@ -320,7 +317,7 @@ async function updateCompartmentResource(
           !isInTargetCompartment(target, current) ||
           !userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, current)
         ) {
-          return false;
+          return 'skipped';
         }
         const accountList = applyAccountChanges(
           extractAccountReferences(current.meta),
@@ -333,7 +330,7 @@ async function updateCompartmentResource(
           )
         );
         if (hasAccounts(current, accountList)) {
-          return true;
+          return 'unchanged';
         }
         current.meta = {
           ...current.meta,
@@ -341,13 +338,13 @@ async function updateCompartmentResource(
           account: accountList?.[0],
         };
         await txRepo.updateResource(current);
-        return true;
+        return 'written';
       },
       { resourceTypes: [resourceType, 'Patient'], source: 'setAccounts.compartment' }
     );
   } catch (err) {
     if (err instanceof OperationOutcomeError && (isGone(err.outcome) || isNotFound(err.outcome))) {
-      return false;
+      return 'skipped';
     }
     throw err;
   }
