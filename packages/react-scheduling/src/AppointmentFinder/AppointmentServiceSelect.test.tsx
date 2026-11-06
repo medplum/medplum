@@ -20,7 +20,7 @@ import {
   settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
-import { renderWithMedplum, screen, waitFor } from '../test-utils/render';
+import { act, renderWithMedplum, screen, waitFor } from '../test-utils/render';
 import type { AppointmentServiceSelectProps } from './AppointmentServiceSelect';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 
@@ -209,6 +209,36 @@ describe('AppointmentServiceSelect', () => {
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
     expect(serviceSearches(searchResources)[0].get('location')).toBe('Location/main-clinic');
+    searchResources.mockRestore();
+  });
+
+  test('Drops what the previous site found when the site changes mid-search', async () => {
+    // Holds each catalog read until released, failing it if aborted first, as the client does.
+    const held: (() => void)[] = [];
+    const search = medplum.searchResources.bind(medplum);
+    const searchResources = vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType, query, options) => {
+      if (resourceType !== 'HealthcareService' || (query as URLSearchParams).get('_count') !== '100') {
+        return search(resourceType, query, options);
+      }
+      return new ReadablePromise(
+        new Promise((resolve, reject) => {
+          held.push(() => resolve(search(resourceType, query, options)));
+          options?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        })
+      );
+    });
+    const { rerender } = setup({ serviceFacility: MainClinic });
+
+    await openAutocomplete(searchBox());
+    rerender(<AppointmentServiceSelect onChange={vi.fn()} serviceFacility={SatelliteClinic} />);
+    await settleAutocomplete();
+
+    // Held only at the main clinic.
+    expect(screen.queryByText('Bariatric Surgery')).not.toBeInTheDocument();
+
+    await typeInAutocomplete(searchBox(), 'Ultrasound');
+    await act(async () => held.forEach((release) => release()));
+    expect(await screen.findByText('Satellite Ultrasound')).toBeInTheDocument();
     searchResources.mockRestore();
   });
 

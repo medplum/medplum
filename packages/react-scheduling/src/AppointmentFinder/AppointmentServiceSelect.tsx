@@ -89,7 +89,12 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
 
   const loadOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
-      const catalog = await readCatalogRef.current?.();
+      // A site change while this waits replaces the reader, and makes this answer the old site's.
+      const readCatalog = readCatalogRef.current;
+      const catalog = await readCatalog?.();
+      if (readCatalogRef.current !== readCatalog) {
+        return [];
+      }
       if (catalog?.complete) {
         const query = input.toLowerCase();
         return catalog.services.filter((service) => getDisplayString(service).toLowerCase().includes(query));
@@ -103,7 +108,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
         name: input,
         signal,
       });
-      return services.slice(0, SERVICE_PAGE_SIZE);
+      return readCatalogRef.current === readCatalog ? services.slice(0, SERVICE_PAGE_SIZE) : [];
     },
     [medplum, serviceFacilityReference]
   );
