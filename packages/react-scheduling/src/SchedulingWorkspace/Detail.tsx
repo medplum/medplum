@@ -23,7 +23,9 @@ export function Detail(props: DetailProps): JSX.Element | null {
       <Text size="xs" c="dimmed">
         {props.label}
       </Text>
-      <Text size="sm">{props.value}</Text>
+      <Text size="sm" component="div">
+        {props.value}
+      </Text>
     </Stack>
   );
 }

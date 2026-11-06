@@ -5,6 +5,7 @@ import {
   Button,
   Divider,
   Group,
+  Input,
   Loader,
   NumberInput,
   Select,
@@ -817,6 +818,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
+        <Divider />
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
         <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
           {getSubmitLabel(mode, effectiveOccurrenceCount)}
@@ -959,7 +961,8 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
               setFlashedKey(flashKey);
             }
           }}
-          label="Date & time"
+          label="Date & Time"
+          withAsterisk
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
@@ -974,6 +977,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
       )}
 
       <Stack gap={4}>
+        {!appointment?.start && <Input.Label required>Date & Time</Input.Label>}
         <Button
           ref={finderButtonRef}
           variant="outline"

@@ -1,6 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Alert, Anchor, Box, Tabs, Text, Tooltip, useMantineTheme } from '@mantine/core';
+import {
+  ActionIcon,
+  Alert,
+  Anchor,
+  Box,
+  Indicator,
+  Tabs,
+  Text,
+  Tooltip,
+  useMantineTheme,
+  VisuallyHidden,
+} from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -230,6 +241,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
   const [calendarsOpen, setCalendarsOpen] = useState(true);
   const sidebarId = useId();
+  const appliedFiltersId = useId();
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per bookable actor type.
@@ -589,7 +601,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   ) as Record<BookableActorType, CalendarsPanelItem[]>;
 
   const displayError = resourcesError ?? schedulesLoadingError;
-  const calendarsLabel = calendarsOpen ? 'Hide calendars' : 'Show calendars';
+  const calendarsLabel = calendarsOpen ? 'Hide Calendar Filters' : 'Show Calendar Filters';
+  const filterCount =
+    (filters.serviceFacility ? 1 : 0) +
+    (filters.service ? 1 : 0) +
+    BOOKABLE_ACTOR_TYPES.reduce((count, actorType) => count + deselectedIds[actorType].size, 0);
+  const appliedFiltersLabel = filterCount > 0 ? `${filterCount} Applied` : undefined;
 
   // The pane beside the calendar shows one thing at a time. Opening any of them already
   // closes the others, so this only decides which wins if they ever hold something together.
@@ -620,21 +637,31 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           sources={sources}
           onRangeChange={setRange}
           toolbarStart={
-            <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
-              <ActionIcon
-                className={classes.calendarsToggle}
-                variant="default"
-                size={32}
-                radius="xl"
-                c="dimmed"
-                aria-label={calendarsLabel}
-                aria-expanded={calendarsOpen}
-                aria-controls={sidebarId}
-                onClick={() => setCalendarsOpen((open) => !open)}
-              >
-                <IconFilter2Search size={16} />
-              </ActionIcon>
-            </Tooltip>
+            <>
+              <Indicator disabled={!appliedFiltersLabel} color="blue" size={8} offset={5}>
+                <Tooltip
+                  label={appliedFiltersLabel ? `${calendarsLabel} · ${appliedFiltersLabel}` : calendarsLabel}
+                  position="bottom"
+                  openDelay={500}
+                >
+                  <ActionIcon
+                    className={classes.calendarsToggle}
+                    variant="default"
+                    size={32}
+                    radius="xl"
+                    c="dimmed"
+                    aria-label={calendarsLabel}
+                    aria-expanded={calendarsOpen}
+                    aria-controls={sidebarId}
+                    aria-describedby={appliedFiltersLabel ? appliedFiltersId : undefined}
+                    onClick={() => setCalendarsOpen((open) => !open)}
+                  >
+                    <IconFilter2Search size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Indicator>
+              {appliedFiltersLabel && <VisuallyHidden id={appliedFiltersId}>{appliedFiltersLabel}</VisuallyHidden>}
+            </>
           }
           toolbarEnd={
             <Tooltip label="New appointment" position="bottom" openDelay={500}>
