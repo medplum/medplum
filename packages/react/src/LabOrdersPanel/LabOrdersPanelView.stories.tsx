@@ -28,12 +28,12 @@ import {
   HealthGorillaQuestServiceRequest,
   HealthGorillaTriglyceridesObservation,
 } from '../stories/healthgorilla';
-import { LabDetailPaneView } from './LabDetailPaneView';
+import { LabDetailPaneView } from './LabDetailPane';
 import { LabListItemView } from './LabListItemView';
-import { LabOrderDetailsView } from './LabOrderDetailsView';
-import type { LabItem, LabTab } from './LabOrdersPanelView';
-import { LabOrdersPanelView } from './LabOrdersPanelView';
-import { LabResultDetailsView } from './LabResultDetailsView';
+import { LabOrderDetailsView } from './LabOrderDetails';
+import type { LabItem, LabTab } from './LabOrdersPanel';
+import { LabOrdersPanelView } from './LabOrdersPanel';
+import { LabResultDetailsView } from './LabResultDetails';
 import { LabResultListItemView } from './LabResultListItemView';
 
 // The views hold no client: with the Medplum context cleared, any hook on it would throw.
