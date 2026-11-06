@@ -71,6 +71,12 @@ export const AuditEventTypeCodeSystem = 'http://terminology.hl7.org/CodeSystem/a
 export const RestfulActionCodeSystem = 'http://hl7.org/fhir/restful-interaction';
 
 /**
+ * Medplum code system identifying FHIR operations by invocation name, e.g. `Binary/$presigned-url`.
+ * Recorded as an additional `AuditEvent.subtype` alongside the generic `operation` interaction.
+ */
+export const OperationCodeSystem = 'https://medplum.com/fhir/CodeSystem/operation';
+
+/**
  * User authentication event type.
  * See examples:
  * Login: https://www.hl7.org/fhir/audit-event-example-login.json.html
@@ -172,7 +178,7 @@ const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction
   delete: 'D',
   batch: undefined,
   transaction: undefined,
-  operation: undefined,
+  operation: 'E',
   110122: undefined,
   110123: undefined,
 };
@@ -206,6 +212,8 @@ export function createAuditEvent(
     searchQuery?: string;
     entityDetail?: AuditEventEntityDetail[];
     durationMs?: number;
+    /** Invocation name of the FHIR operation performed, e.g. `Binary/$presigned-url`. */
+    operation?: string;
     /**
      * The authenticating ClientApplication, recorded as an additional non-requestor
      * `agent[]` participant when it differs from `who` (the acting profile). This
@@ -263,11 +271,16 @@ export function createAuditEvent(
     });
   }
 
+  const subtypes: Coding[] = [subtype];
+  if (options?.operation) {
+    subtypes.push({ system: OperationCodeSystem, code: options.operation, display: options.operation });
+  }
+
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: { project: project?.id },
     type,
-    subtype: [subtype],
+    subtype: subtypes,
     action: AuditEventActionLookup[subtype.code],
     recorded: new Date().toISOString(),
     source: { observer: { identifier: { value: config.baseUrl } } },

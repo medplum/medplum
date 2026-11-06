@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, Logger, createReference } from '@medplum/core';
 import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
@@ -11,7 +12,7 @@ import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
-import { initTestAuth, streamToString } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth, streamToString } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -112,6 +113,95 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3).toHaveStatus(200);
     expect(res3.text).toStrictEqual('Hello world 2');
+  });
+
+  test('Raw update with unchanged content type creates a version and enforces write constraints', async () => {
+    const { project, accessToken: ownerToken } = await createTestProject({ withAccessToken: true });
+    const member = await addTestUser(project, {
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Binary',
+            interaction: ['read', 'vread', 'history', 'create', 'update'],
+            writeConstraint: [
+              {
+                language: 'text/fhirpath',
+                expression: '%before.exists() implies %before.meta.author = %after.meta.author',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const createRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + ownerToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('original');
+    expect(createRes).toHaveStatus(201);
+    const binary = createRes.body as WithId<Binary>;
+    const read = (path: string): request.Test =>
+      request(app)
+        .get(`/fhir/R4/Binary/${binary.id}${path}`)
+        .set('Authorization', 'Bearer ' + ownerToken);
+
+    // Would change the author, which the write constraint forbids
+    const constrainedRes = await request(app)
+      .put('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + member.accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('replaced');
+    expect(constrainedRes).toHaveStatus(403);
+    expect((await read('')).text).toBe('original');
+
+    const updateRes = await request(app)
+      .put('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + ownerToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('updated');
+    expect(updateRes).toHaveStatus(200);
+    expect(updateRes.body.meta.versionId).not.toBe(binary.meta?.versionId);
+    expect((await read('')).text).toBe('updated');
+    expect((await read(`/_history/${binary.meta?.versionId}`)).text).toBe('original');
+  });
+
+  test.each(['readonlyFields', 'hiddenFields'] as const)('Raw write rejected when data is in %s', async (key) => {
+    const { project, accessToken: ownerToken } = await createTestProject({ withAccessToken: true });
+    const member = await addTestUser(project, {
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Binary', interaction: ['read', 'vread', 'history', 'create', 'update'], [key]: ['data'] },
+        ],
+      },
+    });
+
+    const createRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + ownerToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('original');
+    expect(createRes).toHaveStatus(201);
+
+    const updateRes = await request(app)
+      .put('/fhir/R4/Binary/' + createRes.body.id)
+      .set('Authorization', 'Bearer ' + member.accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('replaced');
+    expect(updateRes).toHaveStatus(403);
+    const readRes = await request(app)
+      .get('/fhir/R4/Binary/' + createRes.body.id)
+      .set('Authorization', 'Bearer ' + ownerToken);
+    expect(readRes.text).toBe('original');
+
+    const memberCreateRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + member.accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('new');
+    expect(memberCreateRes).toHaveStatus(403);
   });
 
   test('Binary CORS', async () => {

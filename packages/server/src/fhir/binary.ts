@@ -151,7 +151,10 @@ export async function uploadBinaryData(
     contentType: options?.contentType ?? DEFAULT_CONTENT_TYPE,
     securityContext: options?.securityContext ? { reference: options.securityContext } : undefined,
   };
-  const binary = await (options?.id ? repo.updateResource(resource) : repo.createResource(resource));
+  // The content is not part of the resource, so force a version to run update checks and preserve the prior content
+  const binary = await (options?.id
+    ? repo.updateResource(resource, { forceNewVersion: true, externalFields: ['data'] })
+    : repo.createResource(resource, { externalFields: ['data'] }));
 
   const contentType = options?.contentType ?? DEFAULT_CONTENT_TYPE;
   await getBinaryStorage().writeBinary(binary, options?.filename, contentType, source);

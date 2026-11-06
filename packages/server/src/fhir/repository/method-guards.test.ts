@@ -85,6 +85,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'canWriteProtectedMeta',
   'canWriteAccount',
   'isResourceWriteable',
+  'assertExternalFieldsWritable',
   'isCacheOnly',
   'restoreReadonlyFields',
   'logPostMetadataFieldMatch',
@@ -220,6 +221,11 @@ const guardedInvocations: MethodInvocation[] = [
     name: 'canPerformInteractionById',
     kind: 'method',
     invoke: (repo) => repo.canPerformInteractionById(AccessPolicyInteraction.READ, 'Patient', guardedPatient.id),
+  },
+  {
+    name: 'assertCanUpdateById',
+    kind: 'method',
+    invoke: (repo) => repo.assertCanUpdateById('Patient', guardedPatient.id, { operation: 'Patient/$test' }),
   },
 
   // Writes
