@@ -273,7 +273,7 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "A schedule for the bot to be executed.",
+      "definition": "A schedule for the bot to be executed. A string schedule is a five-field cron expression; bots run at most once a minute, so a seconds field is not supported.",
       "comment": "",
       "inherited": false
     },

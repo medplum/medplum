@@ -16,11 +16,63 @@ You can add a cron job for your bot so it can automatically run from a schedule.
 
 ## The Edit Form
 
-In the Edit Form, scroll down to the Cron and choose one of the two ways to create a cron job. One as a UI tool, or a direct Cron format `e.g * */3 * * *`.
+In the Edit Form, scroll down to the Cron and choose one of the two ways to create a cron job. One as a UI tool, or a direct [cron expression](#cron-expression-syntax) `e.g * */3 * * *`.
 
 ![Edit Form Page](/img/tutorials/edit-form.png)
 
 Click Ok in the bottom of the page, and your bot will be added to the queue.
+
+## Cron expression syntax
+
+Medplum schedules jobs with [BullMQ](https://docs.bullmq.io/guide/job-schedulers/repeat-strategies),
+which parses schedules with [cron-parser](https://github.com/harrisiirak/cron-parser), and validates
+`cronString` with the same rules, except for the two differences noted below. An expression has five
+fields:
+
+```text
+┌─────────── minute (0-59)
+│ ┌───────── hour (0-23)
+│ │ ┌─────── day of month (1-31, L)
+│ │ │ ┌───── month (1-12, JAN-DEC)
+│ │ │ │ ┌─── day of week (0-7, SUN-SAT, 0 and 7 are Sunday, L, #)
+│ │ │ │ │
+* * * * *
+```
+
+| Syntax                | Meaning                                     | Example                        |
+| --------------------- | ------------------------------------------- | ------------------------------ |
+| `*` or `?`            | Every value                                 | `0 * * * *`: every hour        |
+| `a,b`                 | A list of values                            | `0 9,17 * * *`: 9:00 and 17:00 |
+| `a-b`                 | A range of values                           | `0 9 * * MON-FRI`: weekdays    |
+| `*/n`, `a/n`, `a-b/n` | Every `n`th value, from `a` or within `a-b` | `*/15 * * * *`: every 15 min   |
+| `L` (day of month)    | The last day of the month                   | `0 0 L * *`                    |
+| `nL` (day of week)    | The last given weekday of the month         | `0 0 * * 5L`: last Friday      |
+| `n#k` (day of week)   | The `k`th given weekday of the month (1-5)  | `0 0 * * 1#2`: second Monday   |
+
+The shorthands `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@hourly`, `@minutely`,
+`@weekdays`, and `@weekends` are also accepted.
+
+:::note Differences from cron-parser
+
+- **Minute granularity only.** Medplum does not run cron jobs more than once a minute, so it rejects
+  the optional sixth (seconds) field, such as `*/10 * * * * *`, and the `@secondly` shorthand.
+- **No hashed (`H`) values.** cron-parser's `H`, `H(a-b)`, and `H/n` pick a pseudo-random value to
+  stagger jobs that share a schedule. Medplum rejects them: staggering is left to the scheduler as an
+  implementation detail, which keeps the syntax for `Cron` and `Bot` authors small and means a
+  schedule runs exactly when it says.
+
+:::
+
+An expression that can never fire is invalid, such as `0 0 31 2 *` (February 31st) or `0 0 31 4,6 *`
+(neither April nor June has a 31st), as is one with an out-of-range value, an inverted range such as
+`10-2`, or a value listed twice (including `0,7` for Sunday). The 5th weekday of February alone, such
+as `0 0 * 2 1#5`, is also invalid: it occurs only in some leap years, decades apart, which is further
+ahead than the scheduler looks for a next run. A `Cron` with an invalid `cronString` is always rejected on write. A `Bot` with an invalid
+`cronString` is rejected in projects with [`strictMode`](/docs/api/fhir/medplum/project) enabled, the
+default.
+
+The same check is available in FHIRPath as `isValidCron()`, a Medplum extension that returns true
+when its input string is a valid cron expression, e.g. `Bot.cron.ofType(string).isValidCron()`.
 
 ## Scheduling with the Cron resource
 
@@ -33,7 +85,7 @@ Requires the `cron` project feature.
 | `active`          | Only an active job is scheduled. Setting it to false unregisters the job but keeps the schedule. |
 | `onBehalfOf`      | The `ProjectMembership` whose identity and access policy the run assumes.                        |
 | `targetReference` | The Bot to execute.                                                                              |
-| `cronString`      | The schedule, as a five-field cron expression. Required.                                         |
+| `cronString`      | The schedule, as a [cron expression](#cron-expression-syntax). Required.                         |
 | `endTime`         | The point after which the job stops running.                                                     |
 | `parameter`       | Input for the Bot, which always receives the whole `Cron` resource, parameters included.         |
 

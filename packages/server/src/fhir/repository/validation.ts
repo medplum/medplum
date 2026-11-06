@@ -5,6 +5,7 @@ import {
   badRequest,
   getReferenceString,
   isResource,
+  isValidCronString,
   OperationOutcomeError,
   Operator,
   validateResource,
@@ -19,7 +20,6 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
-import { isValidCron } from 'cron-validator';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import { recordHistogramValue } from '../../otel/otel';
@@ -64,13 +64,12 @@ export async function validateRepositoryResource(repo: Repository, resource: Res
 /**
  * Rejects a `Cron` whose schedule cannot be parsed.
  *
- * A cron expression resists being stated as a FHIRPath constraint -- an inverted range such as
- * `10-2` is well formed but invalid -- and constraints only warn outside strict mode. Checking here
- * means a schedule the worker cannot use fails the write instead of silently never firing.
+ * The `cron-4` constraint states the same rule, but constraints only warn outside strict mode.
+ * Checking here means a schedule the worker cannot use fails the write instead of silently never firing.
  * @param cron - The Cron resource being written.
  */
 function validateCronString(cron: Cron): void {
-  if (cron.cronString && !isValidCron(cron.cronString)) {
+  if (cron.cronString && !isValidCronString(cron.cronString)) {
     throw new OperationOutcomeError(badRequest(`Invalid cron expression: '${cron.cronString}'`, 'Cron.cronString'));
   }
 }
