@@ -41,7 +41,7 @@ export function SearchToolbarPopover(props: SearchToolbarPopoverProps): JSX.Elem
       returnFocus
       closeOnClickOutside
     >
-      <Indicator className={classes.indicator} disabled={!activeLabel} color="blue" size={8} offset={6}>
+      <Indicator className={classes.indicator} disabled={!activeLabel} color="blue" size={8} offset={6} zIndex={1}>
         <Tooltip label={activeLabel ?? ''} position="bottom" openDelay={500} disabled={!activeLabel || opened}>
           <Popover.Target>
             <Button

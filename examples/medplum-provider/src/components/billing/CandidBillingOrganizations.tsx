@@ -11,7 +11,6 @@ import { CANDID_CREATE_PROVIDER_BOT_IDENTIFIER, CANDID_EDIT_PROVIDER_BOT_IDENTIF
 import { showErrorNotification } from '../../utils/notifications';
 import { CandidBillingOrganizationList } from './CandidBillingOrganizationList';
 import { CandidBillingOrganizationModal } from './CandidBillingOrganizationModal';
-import { CandidExistingOrganizationModal } from './CandidExistingOrganizationModal';
 
 /**
  * Props for the billing organizations tab. `resourceId` mirrors the URL: the ID of the organization whose modal
@@ -83,7 +82,6 @@ export function CandidBillingOrganizations(props: BillingOrganizationsTabProps):
         candidBotId={createBot?.id}
         savedVersion={savedVersion}
         onNewOrganization={() => onNavigate(NEW_BILLING_ORGANIZATION_ID)}
-        onAddExisting={() => onNavigate(EXISTING_BILLING_ORGANIZATION_ID)}
         onSelectOrganization={(organization) => {
           setEditing(organization);
           onNavigate(organization.id);
@@ -93,19 +91,19 @@ export function CandidBillingOrganizations(props: BillingOrganizationsTabProps):
         candidCreateBotId={createBot?.id}
         candidEditBotId={editBot?.id}
         organization={open}
-        opened={(newOrganization && createBot !== undefined) || open !== undefined}
+        addMode={existingOrganization ? 'existing' : 'new'}
+        opened={((newOrganization || existingOrganization) && createBot !== undefined) || open !== undefined}
         onClose={() => onNavigate()}
+        onAddModeChange={(mode) =>
+          onNavigate(mode === 'existing' ? EXISTING_BILLING_ORGANIZATION_ID : NEW_BILLING_ORGANIZATION_ID)
+        }
+        onSelectExisting={(organization) => {
+          setEditing(organization);
+          onNavigate(organization.id);
+        }}
         onSaved={() => {
           setEditing(undefined);
           setSavedVersion((version) => version + 1);
-        }}
-      />
-      <CandidExistingOrganizationModal
-        opened={existingOrganization && createBot !== undefined}
-        onClose={() => onNavigate()}
-        onSelect={(organization) => {
-          setEditing(organization);
-          onNavigate(organization.id);
         }}
       />
     </>

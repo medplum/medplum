@@ -1,0 +1,13 @@
+.box {
+  position: relative;
+}
+
+.box .textarea {
+  padding: 14px 40px 14px 8px;
+}
+
+.inlineAction {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+}

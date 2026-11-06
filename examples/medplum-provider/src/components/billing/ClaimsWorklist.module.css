@@ -1,0 +1,21 @@
+.root {
+  flex: 1 0 auto;
+  display: flex;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--mantine-spacing-md);
+}
+
+.listArea {
+  flex: 1;
+  min-height: 560px;
+}
+
+.agingDivider {
+  --divider-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}

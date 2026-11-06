@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Input, Stack, TextInput, Tooltip } from '@mantine/core';
+import { Alert, Button, Input, Stack, Tabs, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
@@ -25,6 +25,7 @@ import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 import { getErrorMessage } from '../insurance/utils';
 import { CandidContractAlert } from './CandidContractAlert';
+import { CandidExistingOrganizationPicker } from './CandidExistingOrganizationPicker';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 /**
@@ -33,58 +34,120 @@ import { CandidRegistrationAlert } from './CandidRegistrationAlert';
  */
 const FORM_ID = 'billing-organization-form';
 
+/** Keeps the modal one height while adding, so switching between the New and Add Existing tabs does not resize it. */
+const ADD_BODY_HEIGHT = '70vh';
+
+/** How a billing organization is added: created from scratch, or set up from one already in the project. */
+export type BillingOrganizationAddMode = 'new' | 'existing';
+
 /**
- * Props for the billing organization modal. `organization` is the one to edit, or undefined to create a new one;
+ * Props for the billing organization modal. `organization` is the one to edit, or undefined to add one;
  * an organization without the billing marker is one from elsewhere in the project being set up for billing.
+ * While adding, tabs switch `addMode` between a new organization and a picker of existing ones; `onSelectExisting`
+ * receives the picked organization, which the caller opens for set-up.
  */
 export interface CandidBillingOrganizationModalProps {
   readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
   readonly organization: WithId<Organization> | undefined;
+  readonly addMode: BillingOrganizationAddMode;
   readonly opened: boolean;
   readonly onClose: () => void;
+  readonly onAddModeChange: (mode: BillingOrganizationAddMode) => void;
+  readonly onSelectExisting: (organization: WithId<Organization>) => void;
   readonly onSaved: () => void;
 }
 
 /**
- * Modal for creating or editing a billing organization. The shell stays mounted while the page
+ * Modal for adding or editing a billing organization. The shell stays mounted while the page
  * toggles `opened`; the form inside mounts fresh on every open and remounts when the organization
  * changes, so its state is always seeded from the organization currently being edited. The form
  * reports what Candid knows about the NPI it holds, so the footer button can read Edit while the
- * provider is already registered and hold while a lookup is in flight.
+ * provider is already registered and hold while a lookup is in flight. The existing organization picker
+ * also mounts only while shown, so its selection resets on every open.
  * @param props - The CandidBillingOrganizationModal React props.
  * @returns The CandidBillingOrganizationModal React node.
  */
 export function CandidBillingOrganizationModal(props: CandidBillingOrganizationModalProps): JSX.Element {
-  const { candidCreateBotId, candidEditBotId, organization, opened, onClose, onSaved } = props;
+  const {
+    candidCreateBotId,
+    candidEditBotId,
+    organization,
+    addMode,
+    opened,
+    onClose,
+    onAddModeChange,
+    onSelectExisting,
+    onSaved,
+  } = props;
   const [saving, setSaving] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<CandidProviderRegistration['status']>('unavailable');
+  const [existing, setExisting] = useState<WithId<Organization> | undefined>(undefined);
   const registered = registrationStatus === 'registered';
   const missingBotMessage = registered
     ? candidEditBotId === undefined && EDIT_BOT_MISSING_MESSAGE
     : candidCreateBotId === undefined && CREATE_BOT_MISSING_MESSAGE;
+  const pickingExisting = !organization && addMode === 'existing';
+
+  const close = (): void => {
+    setExisting(undefined);
+    onClose();
+  };
 
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={close}
       size="lg"
       title={getModalTitle(organization)}
+      bodyHeight={organization ? undefined : ADD_BODY_HEIGHT}
       actions={
-        <Tooltip label={missingBotMessage} disabled={!missingBotMessage} multiline w={300}>
+        pickingExisting ? (
           <Button
-            type="submit"
-            form={FORM_ID}
-            loading={saving || registrationStatus === 'loading'}
-            data-disabled={missingBotMessage ? true : undefined}
-            onClick={missingBotMessage ? (e) => e.preventDefault() : undefined}
+            disabled={!existing}
+            onClick={() => {
+              if (existing) {
+                setExisting(undefined);
+                onSelectExisting(existing);
+              }
+            }}
           >
-            {registered ? 'Edit' : 'Save'}
+            Continue
           </Button>
-        </Tooltip>
+        ) : (
+          <Tooltip label={missingBotMessage} disabled={!missingBotMessage} multiline w={300}>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              loading={saving || registrationStatus === 'loading'}
+              data-disabled={missingBotMessage ? true : undefined}
+              onClick={missingBotMessage ? (e) => e.preventDefault() : undefined}
+            >
+              {registered ? 'Edit' : 'Save'}
+            </Button>
+          </Tooltip>
+        )
       }
     >
-      {opened && (
+      {!organization && (
+        <Tabs
+          value={addMode}
+          onChange={(value) => {
+            setExisting(undefined);
+            onAddModeChange(value as BillingOrganizationAddMode);
+          }}
+          variant="unstyled"
+          className="pill-tabs"
+          mb="lg"
+        >
+          <Tabs.List>
+            <Tabs.Tab value="new">New</Tabs.Tab>
+            <Tabs.Tab value="existing">Add Existing</Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
+      )}
+      {opened && pickingExisting && <CandidExistingOrganizationPicker onChange={setExisting} />}
+      {opened && !pickingExisting && (
         <CandidBillingOrganizationForm
           key={organization?.id ?? 'new'}
           candidCreateBotId={candidCreateBotId}
@@ -104,7 +167,7 @@ export function CandidBillingOrganizationModal(props: CandidBillingOrganizationM
 
 function getModalTitle(organization: Organization | undefined): string {
   if (!organization) {
-    return 'New billing organization';
+    return 'Add billing organization';
   }
   return isBillingOrganization(organization) ? 'Edit billing organization' : 'Set up billing organization';
 }
@@ -198,9 +261,7 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
       if (botId) {
         built = withCandidProviderExtensions(built);
       }
-      const saved = organization
-        ? await medplum.updateResource(built as WithId<Organization>)
-        : await medplum.createResource(built);
+      const saved = organization ? await medplum.updateResource(built) : await medplum.createResource(built);
       showSuccessNotification({
         title: 'Success',
         message: getSavedMessage(organization),

@@ -206,7 +206,7 @@ export function isContractInForce(contract: Contract, today: Date = new Date()):
  * @param date - The date to format.
  * @returns The local calendar date.
  */
-function toLocalCalendarDate(date: Date): string {
+export function toLocalCalendarDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
