@@ -815,6 +815,35 @@ class CcdaToFhirConverter {
     return undefined;
   }
 
+  /**
+   * Maps the effectiveTime of an observation or an organizer to Observation.effective[x].
+   *
+   * A point in time, an interval with only a low, and an interval whose low equals its high are one
+   * moment: effectiveDateTime. An interval with a different high, or with only a high, is an
+   * effectivePeriod. A nullFlavor carries no date, so it maps to nothing.
+   * @param effectiveTime - The C-CDA effectiveTime.
+   * @returns The effectiveDateTime or effectivePeriod, or an empty object when there is no date.
+   */
+  private mapObservationEffectiveTime(
+    effectiveTime: CcdaEffectiveTime | undefined
+  ): Pick<Observation, 'effectiveDateTime' | 'effectivePeriod'> {
+    if (effectiveTime?.['@_value']) {
+      return { effectiveDateTime: mapCcdaToFhirDateTime(effectiveTime['@_value']) };
+    }
+    const start = mapCcdaToFhirDateTime(effectiveTime?.low?.['@_value']);
+    const end = mapCcdaToFhirDateTime(effectiveTime?.high?.['@_value']);
+    if (start && end && start !== end) {
+      return { effectivePeriod: { start, end } };
+    }
+    if (start) {
+      return { effectiveDateTime: start };
+    }
+    if (end) {
+      return { effectivePeriod: { end } };
+    }
+    return {};
+  }
+
   private mapGenderCode(code: string | undefined): Patient['gender'] {
     if (!code) {
       return undefined;
@@ -1119,9 +1148,7 @@ class CcdaToFhirConverter {
       subject: createReference(this.patient as Patient),
     };
 
-    if (organizer.effectiveTime?.[0]?.['@_value']) {
-      result.effectiveDateTime = mapCcdaToFhirDateTime(organizer.effectiveTime?.[0]?.['@_value']);
-    }
+    Object.assign(result, this.mapObservationEffectiveTime(organizer.effectiveTime?.[0]));
 
     const members: Reference<Observation>[] = [];
     for (const component of organizer.component ?? EMPTY) {
@@ -1277,9 +1304,7 @@ class CcdaToFhirConverter {
       }
     }
 
-    if (observation.effectiveTime?.[0]?.['@_value']) {
-      result.effectiveDateTime = mapCcdaToFhirDateTime(observation.effectiveTime?.[0]?.['@_value']);
-    }
+    Object.assign(result, this.mapObservationEffectiveTime(observation.effectiveTime?.[0]));
 
     result.extension = this.mapTextReference(observation.text);
 
