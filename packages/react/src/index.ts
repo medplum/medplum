@@ -72,7 +72,6 @@ export * from './LabOrdersPanel/LabOrderDetails';
 export * from './LabOrdersPanel/LabOrdersPanel';
 export * from './LabOrdersPanel/LabReportContent';
 export * from './LabOrdersPanel/LabResultDetails';
-export * from './LabOrdersPanel/LabResultListItem';
 export * from './LinkTabs/LinkTabs';
 export * from './ListWithDetailPane/ListWithDetailPane';
 export * from './Loading/Loading';
