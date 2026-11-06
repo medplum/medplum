@@ -126,7 +126,11 @@ export function satisfiedAccessPolicy(
   if (!accessPolicy) {
     return universalAccessPolicy;
   }
-  return accessPolicy.resource?.find((policy) => matchesAccessPolicyResourcePolicy(resource, interaction, policy));
+  return accessPolicy.resource?.find(
+    (policy) =>
+      shallowMatchesResourcePolicy(policy, resource.resourceType, interaction) &&
+      matchesResourcePolicyFilters(resource, policy)
+  );
 }
 
 /**
@@ -154,24 +158,6 @@ export function satisfiedAccessPolicies(
         shallowMatchesResourcePolicy(policy, resource.resourceType, interaction) &&
         (filterResults[i] ??= matchesResourcePolicyFilters(resource, policy))
     )
-  );
-}
-
-/**
- * Returns true if the resource satisfies the specified access policy resource policy.
- * @param resource - The resource.
- * @param interaction - The interaction being performed on the resource.
- * @param resourcePolicy - One per-resource policy section from the access policy.
- * @returns True if the resource matches the access policy.
- */
-function matchesAccessPolicyResourcePolicy(
-  resource: Resource,
-  interaction: AccessPolicyInteraction,
-  resourcePolicy: AccessPolicyResource
-): boolean {
-  return (
-    shallowMatchesResourcePolicy(resourcePolicy, resource.resourceType, interaction) &&
-    matchesResourcePolicyFilters(resource, resourcePolicy)
   );
 }
 
