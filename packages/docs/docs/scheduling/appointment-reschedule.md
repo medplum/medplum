@@ -154,14 +154,20 @@ If validation of the new time fails, the whole transaction rolls back: the appoi
 
 ### New Time Not Available
 
+The cause is coded as on [`$book`](/docs/scheduling/appointment-book#time-not-available): `slot-taken` or `outside-availability`. `expression` names the Schedule whose time was refused.
+
 ```json
 {
   "resourceType": "OperationOutcome",
   "issue": [
     {
       "severity": "error",
-      "code": "invalid",
-      "details": { "text": "Requested time slot is not available" },
+      "code": "conflict",
+      "details": {
+        "coding": [{ "system": "https://medplum.com/fhir/CodeSystem/scheduling-unavailable-reason", "code": "slot-taken" }],
+        "text": "This time is no longer available because another appointment was booked or held at this time."
+      },
+      "expression": ["Parameters.schedule[0]"],
       "diagnostics": "{\"schedule\":\"Schedule/room-two-schedule\",\"blockingSlots\":[{\"reference\":\"Slot/other-slot-id\",\"start\":\"2026-03-10T09:00:00.000Z\",\"end\":\"2026-03-10T10:00:00.000Z\",\"status\":\"busy\"}]}"
     }
   ]

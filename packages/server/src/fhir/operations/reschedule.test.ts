@@ -406,7 +406,14 @@ describe('Appointment/:id/$reschedule', () => {
     expect(response).toHaveStatus(400);
     expect(response.body).toMatchObject({
       resourceType: 'OperationOutcome',
-      issue: [{ details: { text: 'Requested time slot is not available' } }],
+      issue: [
+        {
+          details: {
+            text: 'This time is not available on the schedule because it is outside the available hours or has been blocked off.',
+          },
+          expression: ['Parameters.schedule[0]'],
+        },
+      ],
     });
 
     // The transaction rolled back, so the appointment still holds its original slots

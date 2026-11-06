@@ -544,23 +544,35 @@ export function normalizeOperationOutcome(error: unknown): OperationOutcome {
   return badRequest(normalizeErrorString(error));
 }
 
+export interface ErrorStringOptions {
+  /**
+   * Leave out an issue's `diagnostics` and `expression` when it has `details.text`, for showing the
+   * error to end users.
+   */
+  readonly omitDiagnostics?: boolean;
+}
+
 /**
  * Normalizes an error object into a displayable error string.
  * @param error - The error value which could be a string, Error, OperationOutcome, or other unknown type.
+ * @param options - Optional formatting options.
  * @returns A display string for the error.
  */
-export function normalizeErrorString(error: unknown): string {
+export function normalizeErrorString(error: unknown, options?: ErrorStringOptions): string {
   if (!error) {
     return 'Unknown error';
   }
   if (typeof error === 'string') {
     return error;
   }
+  if (error instanceof OperationOutcomeError) {
+    return operationOutcomeToString(error.outcome, options);
+  }
   if (isError(error)) {
     return error.message;
   }
   if (isOperationOutcome(error)) {
-    return operationOutcomeToString(error);
+    return operationOutcomeToString(error, options);
   }
   if (typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
     return error.code;
@@ -571,19 +583,24 @@ export function normalizeErrorString(error: unknown): string {
 /**
  * Returns a string representation of the operation outcome.
  * @param outcome - The operation outcome.
+ * @param options - Optional formatting options.
  * @returns The string representation of the operation outcome.
  */
-export function operationOutcomeToString(outcome: OperationOutcome): string {
-  const strs = outcome.issue?.map(operationOutcomeIssueToString) ?? [];
+export function operationOutcomeToString(outcome: OperationOutcome, options?: ErrorStringOptions): string {
+  const strs = outcome.issue?.map((issue) => operationOutcomeIssueToString(issue, options)) ?? [];
   return strs.length > 0 ? strs.join('; ') : 'Unknown error';
 }
 
 /**
  * Returns a string representation of the operation outcome issue.
  * @param issue - The operation outcome issue.
+ * @param options - Optional formatting options.
  * @returns The string representation of the operation outcome issue.
  */
-export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): string {
+export function operationOutcomeIssueToString(issue: OperationOutcomeIssue, options?: ErrorStringOptions): string {
+  if (issue.details?.text && options?.omitDiagnostics) {
+    return issue.details.text;
+  }
   let issueStr;
   if (issue.details?.text) {
     if (issue.diagnostics) {

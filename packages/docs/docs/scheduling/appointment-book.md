@@ -331,10 +331,30 @@ Because these steps run inside a `SERIALIZABLE` transaction, two requests racing
 
 ### Time Not Available
 
+`details.coding` says why, using the `https://medplum.com/fhir/CodeSystem/scheduling-unavailable-reason` code system:
+
+| Code | `issue.code` | Meaning |
+| --- | --- | --- |
+| `slot-taken` | `conflict` | Another appointment or hold, or its buffer, already takes the time. |
+| `outside-availability` | `invalid` | The time is outside the Schedule's availability, or is blocked off by a `busy-unavailable` Slot that no appointment references. |
+
+`expression` names the proposed Slot(s) that were refused, and `diagnostics` lists the Schedule's blocking Slots as JSON. Both causes return HTTP 400.
+
 ```json
 {
   "resourceType": "OperationOutcome",
-  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Requested time slot is not available" } }]
+  "issue": [
+    {
+      "severity": "error",
+      "code": "conflict",
+      "details": {
+        "coding": [{ "system": "https://medplum.com/fhir/CodeSystem/scheduling-unavailable-reason", "code": "slot-taken" }],
+        "text": "This time is no longer available because another appointment was booked or held at this time."
+      },
+      "expression": ["Parameters.appointment.contained[0]"],
+      "diagnostics": "{\"schedule\":\"Schedule/my-schedule-id\",\"blockingSlots\":[{\"reference\":\"Slot/other-slot-id\",\"start\":\"2026-03-10T09:00:00.000Z\",\"end\":\"2026-03-10T10:00:00.000Z\",\"status\":\"busy\"}]}"
+    }
+  ]
 }
 ```
 

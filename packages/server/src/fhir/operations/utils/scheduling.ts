@@ -15,9 +15,12 @@ import {
   MEDPLUM_VERSION,
   OperationOutcomeError,
   Operator,
+  OUTSIDE_AVAILABILITY_CODE,
   resolveId,
+  SCHEDULING_UNAVAILABLE_REASON_SYSTEM,
   SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
+  SLOT_TAKEN_CODE,
   TimezoneExtensionURI,
 } from '@medplum/core';
 import type {
@@ -860,16 +863,29 @@ async function validateAvailability(
     return availability;
   };
 
-  const hasAvailability = slots.every((slot, idx) => {
+  const failedIntervals: Interval[] = [];
+  const failedPaths: string[] = [];
+  slots.forEach((slot, idx) => {
     const interval = intervals[idx];
     // bufferBefore/bufferAfter slots have status "busy-unavailable" and are always
     // treated as having capacity=1.
     const capacity = slot.status === 'busy-unavailable' ? 1 : parameters.get('slotCapacity');
     const availability = availabilityAtCapacity(capacity);
-    return availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
+    if (!availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end)) {
+      failedIntervals.push(interval);
+      failedPaths.push(getPath(slot));
+    }
   });
 
-  if (!hasAvailability) {
+  if (failedIntervals.length) {
+    const overlapping = existingSlots.filter(
+      (slot) =>
+        occupiesTime(slot.status) &&
+        hasMatchingServiceType(slot, healthcareService.type ?? EMPTY) &&
+        failedIntervals.some((interval) => areIntervalsOverlapping(slotToInterval(slot), interval))
+    );
+    const taken = await isTaken(repo, overlapping);
+
     // Include structured JSON in diagnostics so automated tooling can
     // programmatically inspect which slots are blocking the request.
     const blockingSlots = existingSlots
@@ -891,15 +907,46 @@ async function validateAvailability(
       issue: [
         {
           severity: 'error',
-          code: 'invalid',
-          details: {
-            text: 'Requested time slot is not available',
-          },
+          code: taken ? 'conflict' : 'invalid',
+          details: taken
+            ? {
+                coding: [{ system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: SLOT_TAKEN_CODE }],
+                text: 'This time is no longer available because another appointment was booked or held at this time.',
+              }
+            : {
+                coding: [{ system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: OUTSIDE_AVAILABILITY_CODE }],
+                text: 'This time is not available on the schedule because it is outside the available hours or has been blocked off.',
+              },
+          expression: [...new Set(failedPaths)],
           diagnostics,
         },
       ],
     });
   }
+}
+
+/**
+ * Whether existing Slots that overlap a refused time mean somebody else took it, rather than
+ * the time being off the schedule. Buffers and blocked time are both `busy-unavailable`;
+ * only buffers are referenced by an Appointment.
+ *
+ * @param repo - Repository used to look up Appointments
+ * @param overlapping - Existing time-occupying Slots that overlap the refused time
+ * @returns True if any of them belongs to another appointment or hold
+ */
+async function isTaken(repo: Repository, overlapping: WithId<Slot>[]): Promise<boolean> {
+  if (overlapping.some((slot) => slot.status === 'busy' || slot.status === 'busy-tentative')) {
+    return true;
+  }
+  const unavailable = overlapping.filter((slot) => slot.status === 'busy-unavailable');
+  if (!unavailable.length) {
+    return false;
+  }
+  const appointment = await repo.searchOne<Appointment>({
+    resourceType: 'Appointment',
+    filters: [{ code: 'slot', operator: Operator.EQUALS, value: unavailable.map(getReferenceString).join(',') }],
+  });
+  return appointment !== undefined;
 }
 
 export async function validateProposedAppointment(

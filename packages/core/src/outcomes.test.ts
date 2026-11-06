@@ -27,6 +27,7 @@ import {
   normalizeErrorString,
   notFound,
   notModified,
+  OperationOutcomeError,
   operationOutcomeToString,
   preconditionFailed,
   redirect,
@@ -150,6 +151,21 @@ describe('Outcomes', () => {
     expect(normalizeErrorString({ resourceType: 'OperationOutcome' })).toBe('Unknown error');
     expect(normalizeErrorString({ foo: 'bar' })).toBe('{"foo":"bar"}');
     expect(normalizeErrorString({ code: 'ERR_INVALID_ARG_TYPE' })).toBe('ERR_INVALID_ARG_TYPE');
+  });
+
+  test('Normalize error with omitDiagnostics drops diagnostics and expression, keeping details.text', () => {
+    const outcome: OperationOutcome = {
+      resourceType: 'OperationOutcome',
+      issue: [
+        { severity: 'error', code: 'conflict', details: { text: 'taken' }, diagnostics: '{"x":1}', expression: ['a'] },
+        { severity: 'error', code: 'invalid', diagnostics: 'only diagnostics' },
+      ],
+    };
+    expect(normalizeErrorString(outcome)).toBe('taken ({"x":1}) (a); only diagnostics');
+    expect(normalizeErrorString(outcome, { omitDiagnostics: true })).toBe('taken; only diagnostics');
+    expect(normalizeErrorString(new OperationOutcomeError(outcome), { omitDiagnostics: true })).toBe(
+      'taken; only diagnostics'
+    );
   });
 
   test('isError', () => {

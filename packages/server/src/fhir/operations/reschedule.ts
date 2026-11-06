@@ -183,7 +183,9 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       const slots = schedules.flatMap((schedule) => {
         const parameters = parameterGroup.get(schedule);
         assert(parameters);
-        return buildAppointmentSlots({ schedule, parameters, interval });
+        return buildAppointmentSlots({ schedule, parameters, interval }).map((slot) =>
+          withPath(slot, getPath(schedule))
+        );
       });
 
       // A 'pending' appointment holds its time tentatively; keep that after the move
@@ -207,7 +209,7 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       // being reassigned. A failed validation below rolls the deletes back with the transaction.
       await Promise.all(existingSlots.map((slot) => txRepo.deleteResource('Slot', slot.id)));
 
-      await validateAllAvailability(txRepo, withPaths(slots, 'Parameters.schedule'), healthcareService, parameterGroup);
+      await validateAllAvailability(txRepo, slots, healthcareService, parameterGroup);
 
       const createdSlots = new Array<WithId<Slot>>(slots.length);
       for (const [i, slot] of slots.entries()) {

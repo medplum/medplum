@@ -8,10 +8,12 @@ import {
   getAppointmentSite,
   getExtensionValue,
   MRN_IDENTIFIER_TYPE,
+  OperationOutcomeError,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_UNAVAILABLE_REASON_SYSTEM,
   SchedulingMedicalNecessityURI,
   toAppointmentSiteReference,
 } from '@medplum/core';
@@ -1572,6 +1574,81 @@ describe('AppointmentProposalForm', () => {
       // is one field away.
       expect(chosenTimeField()?.value).toBe(time);
       expect(screen.getByText('Jordan Reyes')).toBeInTheDocument();
+      expect(bookButton()).toBeEnabled();
+    });
+
+    test.each([
+      {
+        refusal: 'slot-taken',
+        code: 'conflict',
+        coding: { system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: 'slot-taken' },
+      },
+      {
+        refusal: 'outside-availability',
+        code: 'invalid',
+        coding: { system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: 'outside-availability' },
+      },
+      { refusal: 'a lost serialization race', code: 'conflict', coding: { code: '40001' } },
+    ] as const)('Asks for another time when refused for $refusal', async ({ code, coding }) => {
+      onSubmit.mockRejectedValue(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code,
+              details: { coding: [coding], text: 'Server says no' },
+              expression: ['Parameters.appointment.contained[0]'],
+              diagnostics: '{"blockingSlots":[]}',
+            },
+          ],
+        })
+      );
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      expect(await screen.findByText('Server says no')).toBeInTheDocument();
+      expect(screen.getByText('Refresh to see the latest availability, then pick another time.')).toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+    });
+
+    test('Refreshing times drops the refused time and searches again, keeping every other answer', async () => {
+      onSubmit.mockRejectedValue(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'conflict',
+              details: {
+                coding: [{ system: SCHEDULING_UNAVAILABLE_REASON_SYSTEM, code: 'slot-taken' }],
+                text: 'Taken',
+              },
+            },
+          ],
+        })
+      );
+      const get = vi.spyOn(medplum, 'get');
+      const invalidate = vi.spyOn(medplum, 'invalidateUrl');
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+      const searched = findRequests(get).length;
+
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Refresh times' }));
+      });
+
+      expect(screen.queryByText('Taken')).not.toBeInTheDocument();
+      expect(chosenTimeField()).toBeNull();
+      expect(screen.getByText('Jordan Reyes')).toBeInTheDocument();
+      expect(await screen.findAllByTestId(/^slot-group-/)).not.toHaveLength(0);
+      expect(findRequests(get).length).toBeGreaterThan(searched);
+      expect(invalidate).toHaveBeenCalledWith(findRequests(get).at(-1));
+      expect(bookButton()).toBeDisabled();
+
+      await chooseSecondOfferedTime();
       expect(bookButton()).toBeEnabled();
     });
   });

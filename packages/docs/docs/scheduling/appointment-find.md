@@ -206,8 +206,7 @@ time held by the one appointment it names.
 
 A time found with `ignore-appointment` cannot be committed with [`$book`](/docs/scheduling/appointment-book)
 or [`$hold`](/docs/scheduling/appointment-hold). Those operations validate availability with the
-original appointment's Slots still in place and will reject the request with
-`Requested time slot is not available`. Use
+original appointment's Slots still in place and will reject the request as `slot-taken`. Use
 [`$reschedule`](/docs/scheduling/appointment-reschedule) instead, which releases those Slots and
 moves the appointment in a single transaction.
 

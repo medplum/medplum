@@ -4,7 +4,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString, isDefined, isError, normalizeErrorString } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
 import { getFindWindowError } from './AppointmentFinder.times';
@@ -41,6 +41,8 @@ export interface UseProposedAppointmentsOptions {
    * first occurrence of a series, and the days searched may span at most a week.
    */
   readonly occurrenceCount?: number;
+  /** Changing this asks `$find` again, bypassing the client's cache of the last answers. */
+  readonly refreshCount?: number;
 }
 
 export interface UseProposedAppointmentsResult {
@@ -67,9 +69,18 @@ export interface UseProposedAppointmentsResult {
  * @returns The times offered, plus load and error state.
  */
 export function useProposedAppointments(options: UseProposedAppointmentsOptions): UseProposedAppointmentsResult {
-  const { service, combinations, range, count = DEFAULT_COUNT, ignoreAppointment, occurrenceCount = 1 } = options;
+  const {
+    service,
+    combinations,
+    range,
+    count = DEFAULT_COUNT,
+    ignoreAppointment,
+    occurrenceCount = 1,
+    refreshCount = 0,
+  } = options;
   const medplum = useMedplum();
   const [answered, setAnswered] = useState<SearchState>(NOTHING_ASKED);
+  const invalidatedRefresh = useRef(refreshCount);
 
   const { start, end } = range;
   const windowError = getFindWindowError(range, occurrenceCount);
@@ -83,7 +94,7 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
       : [];
   const urlsKey = urls.join(URL_SEPARATOR);
 
-  const stale = answered.key !== urlsKey;
+  const stale = answered.key !== urlsKey || answered.refreshCount !== refreshCount;
 
   useEffect(() => {
     if (!urlsKey) {
@@ -92,6 +103,12 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
 
     const controller = new AbortController();
     const requests = urlsKey.split(URL_SEPARATOR);
+    if (invalidatedRefresh.current !== refreshCount) {
+      invalidatedRefresh.current = refreshCount;
+      for (const url of requests) {
+        medplum.invalidateUrl(url);
+      }
+    }
 
     Promise.allSettled(
       requests.map(async (url) => medplum.get<Bundle<Appointment>>(url, { signal: controller.signal }))
@@ -103,18 +120,18 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
         const failure = results.find((result) => result.status === 'rejected');
         setAnswered(
           failure && results.every((result) => result.status === 'rejected')
-            ? { key: urlsKey, appointments: [], error: toError(failure.reason) }
-            : { key: urlsKey, appointments: collectAppointments(results), error: undefined }
+            ? { key: urlsKey, refreshCount, appointments: [], error: toError(failure.reason) }
+            : { key: urlsKey, refreshCount, appointments: collectAppointments(results), error: undefined }
         );
       })
       .catch((reason: unknown) => {
         if (!controller.signal.aborted) {
-          setAnswered({ key: urlsKey, appointments: [], error: toError(reason) });
+          setAnswered({ key: urlsKey, refreshCount, appointments: [], error: toError(reason) });
         }
       });
 
     return () => controller.abort();
-  }, [medplum, urlsKey]);
+  }, [medplum, urlsKey, refreshCount]);
 
   return {
     // Times already found stay on screen while a narrower search runs, but a
@@ -130,11 +147,12 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
 /** What one search returned, stamped with the urls it answers. */
 interface SearchState {
   readonly key: string;
+  readonly refreshCount: number;
   readonly appointments: readonly Appointment[];
   readonly error: Error | undefined;
 }
 
-const NOTHING_ASKED: SearchState = { key: '', appointments: [], error: undefined };
+const NOTHING_ASKED: SearchState = { key: '', refreshCount: 0, appointments: [], error: undefined };
 
 function toError(reason: unknown): Error {
   return isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason });
