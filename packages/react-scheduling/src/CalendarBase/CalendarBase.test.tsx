@@ -709,12 +709,7 @@ describe('CalendarBase', () => {
       const onRangeChange = vi.fn();
       const ref = createRef<CalendarHandle>();
       renderWithMedplum(
-        <CalendarBase
-          ref={ref}
-          eventSources={[]}
-          onRangeChange={onRangeChange}
-          initialView="timeGridFourDay"
-        />,
+        <CalendarBase ref={ref} eventSources={[]} onRangeChange={onRangeChange} initialView="timeGridFourDay" />,
         new MockClient()
       );
       const initialStart = onRangeChange.mock.lastCall?.[0].start.getTime();
