@@ -35,6 +35,7 @@ export * from './format';
 export * from './hl7';
 export * from './jwt';
 export * from './keyvalue';
+export * from './lab-report-utils';
 export * from './logger';
 export * from './medication-order-utils';
 export * from './outcomes';
