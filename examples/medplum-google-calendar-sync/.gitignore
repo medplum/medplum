@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+medplum.config*.json
+test-results/
+.local/
+*.log
