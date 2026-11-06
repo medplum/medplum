@@ -113,7 +113,8 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       }
 
       const oldEmail = user.email;
-      user.email = params.email;
+      const newEmail = params.email.toLowerCase();
+      user.email = newEmail;
       user.emailVerified = false;
       user = await txRepo.updateResource(user);
 
@@ -135,7 +136,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         if (membership) {
           const profile = await readMembershipReference(txRepo, membership, membership.profile, membershipProfileTypes);
           if (profileTypesWithTelecom.includes(profile.resourceType)) {
-            await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, params.email);
+            await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, newEmail);
           }
         }
       }
@@ -183,7 +184,7 @@ async function updateProfileTelecom(
   }
 
   // Mark instances of the previous email as old
-  if (oldEmail) {
+  if (oldEmail && oldEmail !== newEmail) {
     for (const contact of telecom) {
       if (contact.system === 'email' && contact.value === oldEmail) {
         contact.use = 'old';

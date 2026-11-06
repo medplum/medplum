@@ -246,7 +246,7 @@ async function saveScimUser(
   return systemRepo.withTransaction(
     async (txRepo) => {
       const updatedUser = userWritable ? await txRepo.updateResource(user) : user;
-      if (emailChanged) {
+      if (userWritable && emailChanged) {
         await retireAllSecurityRequests(txRepo, updatedUser);
         await revokeUserLogins(txRepo, updatedUser);
       }
@@ -344,7 +344,7 @@ function scimUserToUserAndMembership(
     user.lastName = scimUser.name?.familyName as string;
     user.externalId = scimUser.externalId;
 
-    const email = scimUser.emails?.[0]?.value;
+    const email = scimUser.emails?.[0]?.value?.toLowerCase();
     if (email) {
       emailChanged = email !== user.email;
       user.email = email;
@@ -352,7 +352,7 @@ function scimUserToUserAndMembership(
         user.emailVerified = false;
       }
     }
-  } else if (scimUser.emails?.[0]?.value && scimUser.emails[0].value !== user.email) {
+  } else if (scimUser.emails?.[0]?.value && scimUser.emails[0].value.toLowerCase() !== user.email) {
     // The login email of a User owned by another project is not the caller's to change.
     // The other User fields are treated as read-only and ignored.
     throw new OperationOutcomeError(forbidden);

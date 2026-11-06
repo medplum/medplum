@@ -132,6 +132,7 @@ describe('SCIM Routes', () => {
       .send({
         ...res1.body,
         externalId: randomUUID(),
+        emails: [{ value: res1.body.emails[0].value.toUpperCase() }],
       });
     expect(updateResponse).toHaveStatus(200);
     expect(updateResponse.body.externalId).toBeDefined();
@@ -284,6 +285,17 @@ describe('SCIM Routes', () => {
         Operations: [{ op: 'replace', value: { emails: [{ value: newEmail }] } }],
       });
     expect(patchResponse).toHaveStatus(403);
+
+    // The same email in a different case is not a change
+    const sameEmailResponse = await request(app)
+      .patch(`/scim/v2/Users/${membership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+        Operations: [{ op: 'replace', value: { emails: [{ value: bobEmail.toUpperCase() }] } }],
+      });
+    expect(sameEmailResponse).toHaveStatus(200);
 
     // Bob's login email is unchanged
     const bobUser = await getGlobalSystemRepo().readResource<User>('User', bob.user.id);

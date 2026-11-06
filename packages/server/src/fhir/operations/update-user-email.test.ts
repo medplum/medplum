@@ -105,7 +105,7 @@ describe('User/$update-email', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
-          { name: 'email', valueString: newEmail },
+          { name: 'email', valueString: newEmail.toUpperCase() },
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
@@ -129,23 +129,24 @@ describe('User/$update-email', () => {
     });
 
     const newEmail = `user+${randomUUID()}@example.com`;
-    const res = await request(app)
-      .post(`/fhir/R4/User/${user.id}/$update-email`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'email', valueString: newEmail },
-          { name: 'updateProfileTelecom', valueBoolean: true },
-          { name: 'skipEmailVerification', valueBoolean: true },
-        ],
-      } satisfies Parameters);
-    expect(res).toHaveStatus(200);
-    const updated = res.body as User;
-
-    expect(updated.email).toStrictEqual(newEmail);
+    // Repeating the same email leaves the profile as it was after the first call
+    for (let i = 0; i < 2; i++) {
+      const res = await request(app)
+        .post(`/fhir/R4/User/${user.id}/$update-email`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('X-Medplum', 'extended')
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'email', valueString: newEmail },
+            { name: 'updateProfileTelecom', valueBoolean: true },
+            { name: 'skipEmailVerification', valueBoolean: true },
+          ],
+        } satisfies Parameters);
+      expect(res).toHaveStatus(200);
+      expect((res.body as User).email).toStrictEqual(newEmail);
+    }
 
     const practitioner = await repo.readResource<Practitioner>('Practitioner', profile.id);
     expect(practitioner.telecom).toStrictEqual(
