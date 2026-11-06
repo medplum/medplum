@@ -28,7 +28,6 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { getDefaultAccessPolicy } from './default-access-policies';
 import { membershipProfileTypes, readMembershipReference } from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
@@ -170,10 +169,7 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
     throw new OperationOutcomeError(badRequest('SMART scopes are not supported for super admin logins'));
   }
 
-  // Heal any drift between the admin flag and the default access policy before building.
-  // If a member's admin flag was toggled without updating their (still-default) access policy,
-  // this substitutes the correct role default so an upgraded admin isn't left half-restricted.
-  const membership = reconcileDefaultAccessPolicy(project, authState.onBehalfOfMembership ?? authState.membership);
+  const membership = authState.onBehalfOfMembership ?? authState.membership;
 
   let accessPolicy = await buildAccessPolicy(membership);
 
@@ -190,37 +186,6 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
   }
 
   return accessPolicy;
-}
-
-/**
- * Reconciles a project membership's default access policy with its admin flag.
- *
- * The `admin` flag does not bypass the access policy, so toggling it without also swapping the
- * access policy leaves a member "half-upgraded" (e.g. an admin still blocked from editing knowledge
- * resources by the Practitioner default). This keeps the two in sync: when the membership's current
- * access policy is exactly the *other* role's recognized project default, it is swapped to the
- * default that matches the current admin flag. Custom (non-default) access policies are left
- * untouched, and the operation is idempotent.
- * @param project - The project, which holds the recognized role defaults in `defaultAccessPolicies`.
- * @param membership - The project membership to reconcile.
- * @returns The membership, with its `accessPolicy` swapped to the matching role default if needed.
- */
-export function reconcileDefaultAccessPolicy<T extends ProjectMembership>(project: Project, membership: T): T {
-  const currentPolicy = membership.accessPolicy?.reference;
-  if (!currentPolicy) {
-    return membership;
-  }
-
-  const practitionerDefault = getDefaultAccessPolicy(project, 'Practitioner');
-  const adminDefault = getDefaultAccessPolicy(project, 'Admin');
-
-  if (membership.admin && adminDefault && currentPolicy === practitionerDefault?.reference) {
-    return { ...membership, accessPolicy: adminDefault };
-  }
-  if (!membership.admin && practitionerDefault && currentPolicy === adminDefault?.reference) {
-    return { ...membership, accessPolicy: practitionerDefault };
-  }
-  return membership;
 }
 
 /**

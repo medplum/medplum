@@ -676,20 +676,9 @@ Because the `ClientApplication` default makes `Bot` read-only, a client with tha
 
 ### Switching a user to (or from) admin
 
-The `admin` flag does **not** bypass a user's access policy — it only grants access to project administration resource types (such as [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) and [`User`](/docs/api/fhir/medplum/user)) on top of the existing policy. This means that promoting a Practitioner to admin without also changing their policy would leave them "half-upgraded": still restricted by the read-only rules of the `Practitioner` default.
+The `admin` flag does **not** bypass a user's access policy — it only grants access to project administration resource types (such as [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) and [`User`](/docs/api/fhir/medplum/user)) on top of the existing policy. Changing the `admin` flag never changes the membership's `accessPolicy`.
 
-To avoid this, Medplum automatically **reconciles the default access policy when the admin flag is toggled**:
-
-- Promoting a user to admin: if their current policy is exactly the project's `Practitioner` default, it is swapped to the `Admin` default.
-- Demoting an admin: if their current policy is exactly the project's `Admin` default, it is swapped back to the `Practitioner` default.
-
-This reconciliation only happens when the user's current policy is exactly the **opposite role's recognized default** — the `Practitioner` default when promoting, or the `Admin` default when demoting. Any other policy is left as-is. In particular, **custom (non-default) access policies are never modified**: if you have assigned a user a bespoke policy, toggling the admin flag leaves that policy untouched.
-
-:::tip[Custom access policy combinations]
-
-If a user needs a more specific combination of access than the role defaults provide, we recommend **overriding the default by supplying an explicit access policy when you invite (or edit) the user**. Assigning a custom policy both gives the user exactly the access they need and opts them out of the automatic admin/practitioner reconciliation described above, so their policy will not be swapped when the admin flag changes.
-
-:::
+When you promote a user to admin, also set their `accessPolicy` to the access they need, such as the project's `Admin` default. Otherwise they remain restricted by their current policy, for example the read-only rules of the `Practitioner` default. Likewise, when you demote an admin, replace the `Admin` default with a non-admin policy such as the `Practitioner` default.
 
 ## Related Resources
 
