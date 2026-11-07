@@ -1351,6 +1351,51 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res2.body)).toContain('does not belong to this project');
   });
 
+  test('Invite with access policy from linked project', async () => {
+    const { project: sharingProject, accessPolicy } = await createTestProject({
+      withClient: true,
+      project: { exportedResourceType: ['AccessPolicy'] },
+      accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+    });
+    const { project: nonSharingProject, accessPolicy: unsharedPolicy } = await createTestProject({
+      withClient: true,
+      project: { exportedResourceType: ['Bot'] },
+      accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+    });
+    const { project, accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: {
+        link: [{ project: createReference(sharingProject) }, { project: createReference(nonSharingProject) }],
+      },
+      membership: { admin: true },
+    });
+
+    const invite = (policy: AccessPolicy): Promise<request.Response> =>
+      request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Carol',
+          lastName: 'Brown',
+          email: `carol${randomUUID()}@example.com`,
+          accessPolicy: createReference(policy),
+          sendEmail: false,
+        });
+
+    expect(await invite(accessPolicy)).toHaveStatus(200);
+    const res = await invite(unsharedPolicy);
+    expect(res).toHaveStatus(400);
+    expect(normalizeErrorString(res.body)).toContain('does not belong to this project');
+
+    const projectlessPolicy = await getProjectSystemRepo(project).then((repo) =>
+      repo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' })
+    );
+    const res2 = await invite(projectlessPolicy);
+    expect(res2).toHaveStatus(400);
+    expect(normalizeErrorString(res2.body)).toContain('does not belong to this project');
+  });
+
   test('Invite without access policy (backwards compatibility)', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
@@ -1580,6 +1625,7 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -1606,11 +1652,13 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
       const explicitAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Explicit Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -1654,6 +1702,7 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -1680,6 +1729,7 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -2078,6 +2128,7 @@ describe('Admin Invite', () => {
       // The Practitioner default must NOT be selected for an admin invite.
       const patientPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -2115,6 +2166,7 @@ describe('Admin Invite', () => {
       // The Admin default must NOT be selected for a non-admin Practitioner invite.
       const patientPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
