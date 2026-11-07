@@ -1,14 +1,43 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Group } from '@mantine/core';
+import type { MedplumClient } from '@medplum/core';
 import { formatDate } from '@medplum/core';
 import type { Attachment, DiagnosticReport, Resource } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import type { RenderResourceLink } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
-import { renderMedplumLink, useDiagnosticReportResources } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import {
+  fetchDiagnosticReportResources,
+  renderMedplumLink,
+  useDiagnosticReportResources,
+} from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { LabDetailLayout } from './LabDetailLayout';
-import { LabReportContentView, useLabReportAttachments } from './LabReportContent';
+import { fetchLabReportAttachments, LabReportContentView, useLabReportAttachments } from './LabReportContent';
+
+export interface LabResultDetailsData {
+  readonly attachments: Attachment[];
+  readonly resources: Resource[];
+}
+
+/**
+ * Fetches everything LabResultDetailsView needs for a standalone report in parallel: its lab
+ * documents and the resources it refers to. Partners call this (or implement the same walks
+ * against their API) and pass the result as props.
+ * @param medplum - The Medplum client.
+ * @param result - The report.
+ * @returns The resolved attachments and resources.
+ */
+export async function fetchLabResultDetailsData(
+  medplum: MedplumClient,
+  result: DiagnosticReport
+): Promise<LabResultDetailsData> {
+  const [attachments, resources] = await Promise.all([
+    fetchLabReportAttachments(medplum, result),
+    fetchDiagnosticReportResources(medplum, result),
+  ]);
+  return { attachments, resources };
+}
 
 export interface LabResultDetailsProps {
   result: DiagnosticReport;

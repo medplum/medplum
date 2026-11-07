@@ -115,7 +115,7 @@ export const renderMedplumLink: RenderResourceLink = (to, children) => <MedplumL
  * @returns The resolved resources, or undefined until they are read.
  */
 export function useDiagnosticReportResources(report: DiagnosticReport | undefined): Resource[] | undefined {
-  return useResolvedResources(report, resolveReportResources);
+  return useResolvedResources(report, fetchDiagnosticReportResources);
 }
 
 function useResolvedResources<T>(
@@ -146,7 +146,16 @@ function useResolvedResources<T>(
   return resources;
 }
 
-async function resolveReportResources(medplum: MedplumClient, report: DiagnosticReport): Promise<Resource[]> {
+/**
+ * Fetches every resource a report refers to: subject, performer[], specimen[],
+ * resultsInterpreter[], basedOn[0].requester, and every result[] walked recursively through
+ * Observation.hasMember[]. Callers pass the result as `resources` on DiagnosticReportDisplayView
+ * or LabReportContentView.
+ * @param medplum - The Medplum client.
+ * @param report - The report.
+ * @returns The resolved referenced resources.
+ */
+export async function fetchDiagnosticReportResources(medplum: MedplumClient, report: DiagnosticReport): Promise<Resource[]> {
   const reader = createReader(medplum, report.contained);
   const basedOn = await reader.read(report.basedOn?.[0]);
   await Promise.all([

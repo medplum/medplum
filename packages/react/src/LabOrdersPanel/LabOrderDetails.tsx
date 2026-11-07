@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Button, Divider, Group, Loader, Menu, Stack, Tabs, Text, ThemeIcon, Timeline } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { WithId } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import { formatDate, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type {
   Attachment,
@@ -22,7 +22,11 @@ import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } f
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { RenderResourceLink } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
-import { renderMedplumLink, useDiagnosticReportResources } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import {
+  fetchDiagnosticReportResources,
+  renderMedplumLink,
+  useDiagnosticReportResources,
+} from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import classes from '../ListWithDetailPane/ListWithDetailPane.module.css';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
 import { LabDetailLayout } from './LabDetailLayout';
@@ -33,7 +37,7 @@ import {
   getOrderStatusDisplayText,
   getQuestionnaireResponseRef,
 } from './labOrder';
-import { LabReportContentView, useLabReportAttachments } from './LabReportContent';
+import { fetchLabReportAttachments, LabReportContentView, useLabReportAttachments } from './LabReportContent';
 
 export interface LabOrderDetailsProps {
   order: ServiceRequest;
@@ -42,19 +46,142 @@ export interface LabOrderDetailsProps {
   selectedReport?: Reference<DiagnosticReport>;
 }
 
-export interface LabOrderDetailsData {
+export interface LabOrderDetailsFetchedData {
   readonly patient?: Patient;
   readonly requester?: Practitioner;
   readonly report?: DiagnosticReport;
-  readonly reportLoading: boolean;
   readonly reportAttachments: Attachment[];
-  readonly reportResources?: Resource[];
+  readonly reportResources: Resource[];
   readonly requisitionDocuments: DocumentReference[];
-  readonly requisitionDocumentsLoading: boolean;
   readonly specimenLabelDocuments: DocumentReference[];
-  readonly specimenLabelDocumentsLoading: boolean;
   readonly questionnaireResponse?: QuestionnaireResponse;
+}
+
+export interface LabOrderDetailsData extends LabOrderDetailsFetchedData {
+  readonly reportLoading: boolean;
+  readonly requisitionDocumentsLoading: boolean;
+  readonly specimenLabelDocumentsLoading: boolean;
   readonly revoke: () => Promise<WithId<ServiceRequest>>;
+}
+
+/**
+ * Fetches everything LabOrderDetailsView needs for an order in parallel. Partners call this
+ * (or implement the same walks against their API) and pass the result as props. The hook
+ * variant `useLabOrderDetailsData` wraps this with per-slice loading flags and a revoke
+ * mutation for callers that want progressive rendering.
+ * @param medplum - The Medplum client.
+ * @param order - The order.
+ * @param selectedReport - A specific report to show instead of the order's latest.
+ * @returns The resolved data.
+ */
+export async function fetchLabOrderDetailsData(
+  medplum: MedplumClient,
+  order: ServiceRequest,
+  selectedReport?: Reference<DiagnosticReport>
+): Promise<LabOrderDetailsFetchedData> {
+  const [subject, requester, report, requisitionDocuments, specimenLabelDocuments, questionnaireResponse] =
+    await Promise.all([
+      order.subject ? medplum.readReference(order.subject).catch(() => undefined) : undefined,
+      order.requester ? medplum.readReference(order.requester).catch(() => undefined) : undefined,
+      selectedReport
+        ? medplum.readReference(selectedReport).catch(() => undefined)
+        : fetchLatestReportForOrder(medplum, order),
+      fetchLabOrderRequisitionDocuments(medplum, order).catch(() => []),
+      fetchSpecimenLabelDocuments(medplum, order).catch(() => []),
+      fetchOrderQuestionnaireResponse(medplum, order).catch(() => undefined),
+    ]);
+
+  const [reportAttachments, reportResources] = report
+    ? await Promise.all([
+        fetchLabReportAttachments(medplum, report).catch(() => []),
+        fetchDiagnosticReportResources(medplum, report).catch(() => []),
+      ])
+    : [[], []];
+
+  return {
+    patient: subject?.resourceType === 'Patient' ? subject : undefined,
+    requester: requester?.resourceType === 'Practitioner' ? requester : undefined,
+    report,
+    reportAttachments,
+    reportResources,
+    requisitionDocuments,
+    specimenLabelDocuments,
+    questionnaireResponse,
+  };
+}
+
+async function fetchLatestReportForOrder(
+  medplum: MedplumClient,
+  order: ServiceRequest
+): Promise<DiagnosticReport | undefined> {
+  if (!order.id) {
+    return undefined;
+  }
+  const reports = await medplum.searchResources('DiagnosticReport', {
+    'based-on': `ServiceRequest/${order.id}`,
+    _sort: '-_lastUpdated',
+    _count: '1',
+  });
+  return reports[0];
+}
+
+async function fetchSpecimenLabelDocuments(
+  medplum: MedplumClient,
+  order: ServiceRequest
+): Promise<DocumentReference[]> {
+  const healthGorillaRequisitionId = getHealthGorillaRequisitionId(order);
+  if (!healthGorillaRequisitionId) {
+    return [];
+  }
+  const searchParams = new URLSearchParams({
+    category: 'SpecimenLabel',
+    identifier: `https://www.healthgorilla.com|${healthGorillaRequisitionId}`,
+    _sort: '-_lastUpdated',
+  });
+  return medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
+}
+
+async function fetchOrderQuestionnaireResponse(
+  medplum: MedplumClient,
+  order: ServiceRequest
+): Promise<QuestionnaireResponse | undefined> {
+  // First, check if current order has QuestionnaireResponse in supportingInfo
+  const currentRef = getQuestionnaireResponseRef(order);
+  if (currentRef?.reference) {
+    try {
+      return await medplum.readReference(currentRef as Reference<QuestionnaireResponse>);
+    } catch (error) {
+      console.error('Error fetching questionnaire response from current order:', error);
+    }
+  }
+
+  // Fallback (Health Gorilla): find a sibling ServiceRequest for the same subject+code that
+  // lists this order under basedOn and carries a QR.
+  if (!order.id) {
+    return undefined;
+  }
+  try {
+    const searchResult = await medplum.searchResources('ServiceRequest', {
+      subject: order.subject?.reference,
+      code: order.code?.coding?.[0]?.code,
+      _count: 50,
+    });
+    const withQuestionnaire = searchResult.filter((sr) => getQuestionnaireResponseRef(sr));
+    const sourceOrder =
+      withQuestionnaire.find((sr) =>
+        sr.basedOn?.some(
+          (ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) =>
+            ref.reference === `ServiceRequest/${order.id}`
+        )
+      ) ?? withQuestionnaire[0];
+    const sourceRef = getQuestionnaireResponseRef(sourceOrder);
+    if (sourceRef?.reference) {
+      return await medplum.readReference(sourceRef as Reference<QuestionnaireResponse>);
+    }
+  } catch (error) {
+    console.error('Error fetching questionnaire response from original order:', error);
+  }
+  return undefined;
 }
 
 /**
@@ -265,9 +392,7 @@ export function useLabOrderDetailsData(
     if (!order?.id) {
       throw new Error('Cannot revoke an order without an id');
     }
-    return medplum.patchResource('ServiceRequest', order.id, [
-      { op: 'replace', path: '/status', value: 'revoked' },
-    ]);
+    return medplum.patchResource('ServiceRequest', order.id, [{ op: 'replace', path: '/status', value: 'revoked' }]);
   }, [medplum, order]);
 
   return {
@@ -276,7 +401,7 @@ export function useLabOrderDetailsData(
     report: primaryReport,
     reportLoading,
     reportAttachments,
-    reportResources,
+    reportResources: reportResources ?? [],
     requisitionDocuments: labOrderRequisitionDocs,
     requisitionDocumentsLoading: loadingDocs,
     specimenLabelDocuments: specimenLabelDocs,

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Flex, Stack, Text, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { Filter, SearchRequest, WithId } from '@medplum/core';
+import type { Filter, MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { createReference, formatSearchQuery, getReferenceString, normalizeErrorString, Operator } from '@medplum/core';
 import type {
   DiagnosticReport,
@@ -269,60 +269,60 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
 }
 
 /**
- * Resolves the requester (for ServiceRequests) or performer (for DiagnosticReports) behind each
- * visible row, in a single batch of reads. Returns a map keyed by the resource's reference string.
- * @param items - The current page of rows.
- * @returns A map from reference string to resolved person.
+ * Fetches the requester (for ServiceRequests) or performer (for DiagnosticReports) behind each
+ * row, in a single batch of reads. Partners call this (or implement the same walk against their
+ * API) and look up each row's person in the returned map by reference string.
+ * @param medplum - The Medplum client.
+ * @param items - The rows to resolve people for.
+ * @returns A map keyed by reference string.
  */
+export async function fetchRowPeople(medplum: MedplumClient, items: LabItem[]): Promise<Map<string, Resource>> {
+  const unique = new Set<string>();
+  for (const item of items) {
+    const ref =
+      item.resourceType === 'ServiceRequest' ? item.requester?.reference : item.performer?.[0]?.reference;
+    if (ref) {
+      unique.add(ref);
+    }
+  }
+  const refs = Array.from(unique);
+  if (refs.length === 0) {
+    return new Map();
+  }
+  const entries = await Promise.all(
+    refs.map((reference) =>
+      medplum.readReference({ reference }).then(
+        (resource) => [reference, resource] as const,
+        () => undefined
+      )
+    )
+  );
+  const map = new Map<string, Resource>();
+  for (const entry of entries) {
+    if (entry) {
+      map.set(entry[0], entry[1]);
+    }
+  }
+  return map;
+}
+
 function useRowPeople(items: LabItem[]): Map<string, Resource> {
   const medplum = useMedplum();
-  const refs = useMemo(() => {
-    const unique = new Set<string>();
-    for (const item of items) {
-      const ref =
-        item.resourceType === 'ServiceRequest'
-          ? item.requester?.reference
-          : item.performer?.[0]?.reference;
-      if (ref) {
-        unique.add(ref);
-      }
-    }
-    return Array.from(unique);
-  }, [items]);
-
   const [people, setPeople] = useState<Map<string, Resource>>(new Map());
 
   useEffect(() => {
-    if (refs.length === 0) {
-      setPeople(new Map());
-      return undefined;
-    }
     let cancelled = false;
-    Promise.all(
-      refs.map((reference) =>
-        medplum.readReference({ reference }).then(
-          (resource) => [reference, resource] as const,
-          () => undefined
-        )
-      )
-    )
-      .then((entries) => {
-        if (cancelled) {
-          return;
+    fetchRowPeople(medplum, items)
+      .then((resolved) => {
+        if (!cancelled) {
+          setPeople(resolved);
         }
-        const map = new Map<string, Resource>();
-        for (const entry of entries) {
-          if (entry) {
-            map.set(entry[0], entry[1]);
-          }
-        }
-        setPeople(map);
       })
       .catch(console.error);
     return () => {
       cancelled = true;
     };
-  }, [medplum, refs]);
+  }, [medplum, items]);
 
   return people;
 }

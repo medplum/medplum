@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { WithId } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference, isReference, normalizeErrorString } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
@@ -11,6 +11,30 @@ import { Fragment, useEffect, useState } from 'react';
 import { renderMedplumLink } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { LabOrderDetailsView, useLabOrderDetailsData } from './LabOrderDetails';
 import { LabResultDetailsView, useLabResultDetailsData } from './LabResultDetails';
+
+/**
+ * Fetches the detail pane's order: a ServiceRequest item is its own order; a DiagnosticReport's
+ * order is read from its basedOn reference. Partners call this (or implement the same walk
+ * against their API) and pass the result as `order` on LabDetailPaneView.
+ * @param medplum - The Medplum client.
+ * @param item - The selected lab item.
+ * @returns The resolved order, or undefined if the item is a report with no basedOn.
+ */
+export async function fetchLabDetailPaneOrder(
+  medplum: MedplumClient,
+  item: WithId<ServiceRequest> | WithId<DiagnosticReport>
+): Promise<WithId<ServiceRequest> | undefined> {
+  if (item.resourceType === 'ServiceRequest') {
+    return item;
+  }
+  const basedOnRef = item.basedOn?.find((ref): ref is Reference<ServiceRequest> =>
+    isReference(ref, 'ServiceRequest')
+  );
+  if (!basedOnRef) {
+    return undefined;
+  }
+  return medplum.readReference(basedOnRef);
+}
 
 export interface LabDetailPaneProps {
   readonly item: WithId<ServiceRequest> | WithId<DiagnosticReport>;
@@ -30,56 +54,56 @@ export function useLabDetailPaneOrder(item: WithId<ServiceRequest> | WithId<Diag
   setOrder: (order: WithId<ServiceRequest>) => void;
 } {
   const medplum = useMedplum();
-
-  const basedOnRef =
-    item?.resourceType === 'DiagnosticReport'
-      ? item.basedOn?.find((ref): ref is Reference<ServiceRequest> => isReference(ref, 'ServiceRequest'))
-      : undefined;
+  const needsFetch =
+    item?.resourceType === 'DiagnosticReport' &&
+    !!item.basedOn?.find((ref) => isReference(ref, 'ServiceRequest'));
 
   const [order, setOrder] = useState<WithId<ServiceRequest> | undefined>(
     item?.resourceType === 'ServiceRequest' ? item : undefined
   );
-  const [loading, setLoading] = useState<boolean>(!!basedOnRef);
+  const [loading, setLoading] = useState<boolean>(needsFetch);
 
   useEffect(() => {
     let subscribed = true;
-    const fetchOrder = async (): Promise<void> => {
-      if (!item) {
-        setOrder(undefined);
-        setLoading(false);
-        return;
-      }
-      if (item.resourceType === 'ServiceRequest') {
-        setOrder(item);
-        setLoading(false);
-        return;
-      }
+    if (!item) {
       setOrder(undefined);
-      if (!basedOnRef) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      try {
-        const result = await medplum.readReference(basedOnRef);
+      setLoading(false);
+      return undefined;
+    }
+    if (item.resourceType === 'ServiceRequest') {
+      setOrder(item);
+      setLoading(false);
+      return undefined;
+    }
+    const basedOnRef = item.basedOn?.find((ref): ref is Reference<ServiceRequest> =>
+      isReference(ref, 'ServiceRequest')
+    );
+    setOrder(undefined);
+    if (!basedOnRef) {
+      setLoading(false);
+      return undefined;
+    }
+    setLoading(true);
+    fetchLabDetailPaneOrder(medplum, item)
+      .then((resolved) => {
         if (subscribed) {
-          setOrder(result);
+          setOrder(resolved);
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (subscribed) {
           showNotification({ color: 'red', message: normalizeErrorString(err) });
         }
-      } finally {
+      })
+      .finally(() => {
         if (subscribed) {
           setLoading(false);
         }
-      }
-    };
-    fetchOrder().catch(console.error);
+      });
     return () => {
       subscribed = false;
     };
-  }, [medplum, item, basedOnRef]);
+  }, [medplum, item]);
 
   return { order, loading, setOrder };
 }

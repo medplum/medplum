@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Text } from '@mantine/core';
+import type { MedplumClient } from '@medplum/core';
 import type { Attachment, DiagnosticReport, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -14,6 +15,46 @@ import {
 } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { resolveDerivedFromAttachments, resolvePresentedFormAttachments } from './documentReference';
 import classes from './LabReportContent.module.css';
+
+/**
+ * Fetches the lab PDFs a report refers to: Observation.derivedFrom and presentedForm, de-duped
+ * by url. Partners call this (or implement the same walk against their API) and pass the result
+ * as `attachments` on LabReportContentView / LabResultDetailsView / LabOrderDetailsView.
+ * @param medplum - The Medplum client.
+ * @param report - The report.
+ * @returns The resolved displayable attachments.
+ */
+export async function fetchLabReportAttachments(
+  medplum: MedplumClient,
+  report: DiagnosticReport
+): Promise<Attachment[]> {
+  const [derivedFromResult, presentedFormResult] = await Promise.allSettled([
+    resolveDerivedFromAttachments(medplum, report.result),
+    resolvePresentedFormAttachments(medplum, report.presentedForm),
+  ]);
+  if (derivedFromResult.status === 'rejected') {
+    console.error('Error resolving derivedFrom attachments:', derivedFromResult.reason);
+  }
+  if (presentedFormResult.status === 'rejected') {
+    console.error('Error resolving presentedForm attachments:', presentedFormResult.reason);
+  }
+  const derivedFromAttachments = derivedFromResult.status === 'fulfilled' ? derivedFromResult.value : [];
+  const presentedFormAttachments = presentedFormResult.status === 'fulfilled' ? presentedFormResult.value : [];
+
+  // Only de-dupe attachments that have a URL to key on; attachments without one
+  // (e.g. a bare presentedForm entry with just a title/contentType) always render.
+  const seenUrls = new Set<string>();
+  return [...derivedFromAttachments, ...presentedFormAttachments].filter((attachment) => {
+    if (!attachment.url) {
+      return true;
+    }
+    if (seenUrls.has(attachment.url)) {
+      return false;
+    }
+    seenUrls.add(attachment.url);
+    return true;
+  });
+}
 
 export interface LabReportContentProps {
   readonly report: DiagnosticReport;
@@ -60,41 +101,13 @@ export function useLabReportAttachments(report: DiagnosticReport | undefined): A
       return undefined;
     }
     let cancelled = false;
-
-    Promise.allSettled([
-      resolveDerivedFromAttachments(medplum, report.result),
-      resolvePresentedFormAttachments(medplum, report.presentedForm),
-    ])
-      .then(([derivedFromResult, presentedFormResult]) => {
-        if (cancelled) {
-          return;
+    fetchLabReportAttachments(medplum, report)
+      .then((resolved) => {
+        if (!cancelled) {
+          setAttachments(resolved);
         }
-        if (derivedFromResult.status === 'rejected') {
-          console.error('Error resolving derivedFrom attachments:', derivedFromResult.reason);
-        }
-        if (presentedFormResult.status === 'rejected') {
-          console.error('Error resolving presentedForm attachments:', presentedFormResult.reason);
-        }
-        const derivedFromAttachments = derivedFromResult.status === 'fulfilled' ? derivedFromResult.value : [];
-        const presentedFormAttachments = presentedFormResult.status === 'fulfilled' ? presentedFormResult.value : [];
-
-        // Only de-dupe attachments that have a URL to key on; attachments without one
-        // (e.g. a bare presentedForm entry with just a title/contentType) always render.
-        const seenUrls = new Set<string>();
-        const deduped = [...derivedFromAttachments, ...presentedFormAttachments].filter((attachment) => {
-          if (!attachment.url) {
-            return true;
-          }
-          if (seenUrls.has(attachment.url)) {
-            return false;
-          }
-          seenUrls.add(attachment.url);
-          return true;
-        });
-        setAttachments(deduped);
       })
       .catch(console.error);
-
     return () => {
       cancelled = true;
       setAttachments([]);
