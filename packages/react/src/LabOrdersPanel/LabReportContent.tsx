@@ -117,6 +117,19 @@ export function useLabReportAttachments(report: DiagnosticReport | undefined): A
   return attachments;
 }
 
+/**
+ * Props for LabReportContentView.
+ *
+ * - `report`: the report.
+ * - `attachments`: lab PDFs to render above the structured rows. Assemble from
+ *   `report.presentedForm[]` (dereferencing `DocumentReference/{id}` urls) plus every
+ *   `Observation.derivedFrom[]` on `report.result[]` walked recursively through `hasMember[]`.
+ *   De-dupe by `attachment.url`. Omitted or empty → the "Lab Document" section is hidden.
+ * - `resources`: every resource the report refers to, flat, looked up by `ResourceType/id` (or
+ *   `#id` against `report.contained`). Walk `report.result[]` recursively through `hasMember[]`.
+ *   A row whose observation can't be found is hidden, so supply this for every selected report.
+ * - `renderLink`: renders a link for each resolved reference. Omitted → plain text.
+ */
 export interface LabReportContentViewProps {
   readonly report: DiagnosticReport;
   readonly attachments?: Attachment[];

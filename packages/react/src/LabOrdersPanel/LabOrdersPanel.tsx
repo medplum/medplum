@@ -165,8 +165,10 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
   const selectedReportRef =
     selected?.resourceType === 'DiagnosticReport' ? createReference(selected) : undefined;
   const orderData = useLabOrderDetailsData(resolvedOrder, selectedReportRef);
+  // Only resolve result-only data once the order probe has finished and come back empty;
+  // otherwise useLabOrderDetailsData already fetches the report's attachments + resources.
   const resultData = useLabResultDetailsData(
-    selected?.resourceType === 'DiagnosticReport' ? selected : undefined
+    !orderLoading && !resolvedOrder && selected?.resourceType === 'DiagnosticReport' ? selected : undefined
   );
 
   const handleOrderSaved = useCallback((): void => {
@@ -306,19 +308,47 @@ export async function fetchRowPeople(medplum: MedplumClient, items: LabItem[]): 
   return map;
 }
 
+/**
+ * Resolves the requester / performer behind each visible row, one at a time, so names fill in
+ * as each read lands instead of after the slowest. A cached read lands synchronously; the
+ * returned map grows and the panel re-renders incrementally.
+ * @param items - The current page of rows.
+ * @returns A map keyed by reference string.
+ */
 function useRowPeople(items: LabItem[]): Map<string, Resource> {
   const medplum = useMedplum();
   const [people, setPeople] = useState<Map<string, Resource>>(new Map());
 
   useEffect(() => {
+    const refs = new Set<string>();
+    for (const item of items) {
+      const ref =
+        item.resourceType === 'ServiceRequest' ? item.requester?.reference : item.performer?.[0]?.reference;
+      if (ref) {
+        refs.add(ref);
+      }
+    }
+    if (refs.size === 0) {
+      setPeople(new Map());
+      return undefined;
+    }
     let cancelled = false;
-    fetchRowPeople(medplum, items)
-      .then((resolved) => {
-        if (!cancelled) {
-          setPeople(resolved);
-        }
-      })
-      .catch(console.error);
+    setPeople(new Map());
+    for (const reference of refs) {
+      medplum
+        .readReference({ reference })
+        .then((resource) => {
+          if (cancelled) {
+            return;
+          }
+          setPeople((prev) => {
+            const next = new Map(prev);
+            next.set(reference, resource);
+            return next;
+          });
+        })
+        .catch(() => undefined);
+    }
     return () => {
       cancelled = true;
     };
@@ -332,6 +362,23 @@ export type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
 
 const DEFAULT_COUNT = 20;
 
+/**
+ * Props for LabOrdersPanelView.
+ *
+ * - `items`: the current page of rows, searched by the caller.
+ * - `total`: total rows across all pages (bundle total), for pagination.
+ * - `loading`: true while the caller's search is in flight.
+ * - `search`: the normalized search the active tab is paging through.
+ * - `activeTab`: 'open' | 'completed' | 'revoked'.
+ * - `selectedId`: the selected row's id, driven from the URL.
+ * - `selected`: the selected row resolved; usually one of `items`.
+ * - `onChange`: fires with the new search on page change; reflect in the URL.
+ * - `completedUri` / `openUri` / `revokedUri`: links for the three tab pills.
+ * - `renderTabLink`: renders each tab pill as a link through the caller's router.
+ * - `renderItem`: renders one row, wrapped in the caller's link.
+ * - `renderDetail`: renders the right-hand detail pane for the selected item.
+ * - `onOrder`: opens the caller's order-creation flow. Omitted → the "Order Labs" button is hidden.
+ */
 export interface LabOrdersPanelViewProps {
   readonly items: LabItem[];
   readonly total: number;

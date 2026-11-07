@@ -31,6 +31,14 @@ export function LabResultListItem(props: LabResultListItemProps): JSX.Element {
   );
 }
 
+/**
+ * Props for LabResultListItemView.
+ *
+ * - `report`: the report the row represents.
+ * - `selected`: drives the selected-row styling.
+ * - `performer`: resolved `report.performer[0]`. A Practitioner renders as "Performed by {name}";
+ *   an Organization as the org's `name`. Omitted → "Collected {date}" from `effectiveDateTime`.
+ */
 export interface LabResultListItemViewProps {
   readonly report: DiagnosticReport;
   readonly selected: boolean;

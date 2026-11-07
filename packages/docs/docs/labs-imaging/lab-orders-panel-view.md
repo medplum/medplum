@@ -16,7 +16,7 @@ keywords:
 
 # Lab Orders Panel — Partner Integration
 
-This guide is for applications that **do not use `MedplumClient`**. Every component in `@medplum/react`'s Lab Orders Panel has a `*View` sibling that renders purely from props — no FHIR fetching happens inside. Assemble the data against your own backend and hand it in.
+This guide is for applications that **do not use `MedplumClient`**. Every component listed below renders purely from props — no FHIR fetching happens inside. Assemble the data against your own backend and hand it in.
 
 ## The tree
 
@@ -203,7 +203,7 @@ Observation rows are looked up by **reference string** in this flat array. Resol
 - `report.basedOn[0].requester` (the ordering practitioner, resolved indirectly via the order)
 - Every `report.result[]` reference, walked **recursively** through `Observation.hasMember[]` down to the leaves
 
-Return a flat `Resource[]` — mostly `Observation`s for a lab report. The View looks each reference up by `ResourceType/id`, or by `#id` against `report.contained` for inline resources. If the array is omitted, the structured rows still render — any cross-referenced display text just falls back to the raw reference string.
+Return a flat `Resource[]` — mostly `Observation`s for a lab report. The View looks each reference up by `ResourceType/id`, or by `#id` against `report.contained` for inline resources. **A row the lookup can't resolve is hidden** — if you omit `resources`, no observation rows appear. Supply it for every selected report.
 
 ## Links
 
@@ -212,13 +212,27 @@ Every View that renders cross-references takes an optional `renderLink(target, c
 ## Putting it together
 
 ```tsx
-function MyLabPanel({ patientId, selectedId }: { patientId: string; selectedId?: string }) {
-  const { items, total, loading } = useMyLabSearch(patientId, activeTab);
+function MyLabPanel({
+  patientId,
+  activeTab,
+  search,
+  selectedId,
+  onSearchChange,
+}: {
+  patientId: string;
+  activeTab: 'open' | 'completed' | 'revoked';
+  search: SearchRequest;
+  selectedId?: string;
+  onSearchChange: (next: SearchRequest) => void;      // write to URL
+}) {
+  const { items, total, loading } = useMyLabSearch(patientId, activeTab, search);
   const selected = useMyResolveSelected(selectedId, items);
-  const people = useMyBatchResolvePeople(items);                       // Map<ref, Practitioner|Organization>
-  const order = useMyResolveOrder(selected);                           // ServiceRequest | undefined
-  const orderData = useMyOrderDetails(order, selectedReportRefOf(selected));  // patient, requester, report, …
-  const resultData = useMyResultDetails(selectedIfReport(selected));          // attachments, resources
+  const people = useMyBatchResolvePeople(items);                         // Map<ref, Practitioner | Organization>
+  const { order, loading: orderLoading } = useMyResolveOrder(selected);  // ServiceRequest | undefined
+  const orderData = useMyOrderDetails(order, selectedReportRefOf(selected)); // patient, requester, report, …
+  const resultData = useMyResultDetails(
+    !orderLoading && !order && selected?.resourceType === 'DiagnosticReport' ? selected : undefined
+  );
 
   return (
     <LabOrdersPanelView
@@ -229,7 +243,7 @@ function MyLabPanel({ patientId, selectedId }: { patientId: string; selectedId?:
       activeTab={activeTab}
       selectedId={selectedId}
       selected={selected}
-      onChange={updateUrl}
+      onChange={onSearchChange}
       completedUri="/labs/completed"
       openUri="/labs/open"
       revokedUri="/labs/revoked"
@@ -240,14 +254,16 @@ function MyLabPanel({ patientId, selectedId }: { patientId: string; selectedId?:
             <LabResultListItemView
               report={item}
               selected={isSelected}
-              performer={people.get(item.performer?.[0]?.reference ?? '')}
+              performer={
+                people.get(item.performer?.[0]?.reference ?? '') as Practitioner | Organization | undefined
+              }
             />
           ) : (
             <LabListItemView
               item={item}
               selected={isSelected}
               activeTab={activeTab === 'completed' ? 'completed' : 'open'}
-              requester={people.get(item.requester?.reference ?? '')}
+              requester={people.get(item.requester?.reference ?? '') as Practitioner | undefined}
             />
           )}
         </MyRouterLink>
@@ -256,7 +272,7 @@ function MyLabPanel({ patientId, selectedId }: { patientId: string; selectedId?:
         <LabDetailPaneView
           item={item}
           order={order}
-          loading={orderData.loading}
+          loading={orderLoading}
           renderOrder={(current, selectedReport) => (
             <LabOrderDetailsView
               order={current}

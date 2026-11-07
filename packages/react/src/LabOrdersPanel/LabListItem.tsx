@@ -40,6 +40,14 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
 
 export type LabListItemTab = 'open' | 'completed';
 
+/**
+ * Props for LabListItemView.
+ *
+ * - `item`: the order the row represents.
+ * - `selected`: drives the selected-row styling.
+ * - `activeTab`: 'completed' shows the completion date; 'open' shows the REQ #.
+ * - `requester`: resolved `item.requester`. Omitted → "Ordered {date}" without a name.
+ */
 export interface LabListItemViewProps {
   readonly item: ServiceRequest;
   readonly selected: boolean;

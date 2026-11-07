@@ -214,162 +214,104 @@ export function useLabOrderDetailsData(
   // the most recently updated one to show by default.
   useEffect(() => {
     if (!order || selectedReport) {
-      return;
+      return undefined;
     }
-
-    const fetchReports = async (): Promise<void> => {
-      const reports = await medplum.searchResources('DiagnosticReport', {
-        'based-on': `ServiceRequest/${order.id}`,
-        _sort: '-_lastUpdated',
-        _count: '1',
+    setDiagnosticReports([]);
+    setReportsFetched(false);
+    let cancelled = false;
+    fetchLatestReportForOrder(medplum, order)
+      .then((report) => {
+        if (cancelled) {
+          return;
+        }
+        setDiagnosticReports(report ? [report] : []);
+        setReportsFetched(true);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
+        }
       });
-      setDiagnosticReports(reports);
-      setReportsFetched(true);
+    return () => {
+      cancelled = true;
     };
-
-    fetchReports().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, order, selectedReport]);
 
-  // Fetch Lab Order Requisition documents when order changes
   useEffect(() => {
     if (!order) {
       return undefined;
     }
-
-    const fetchDocuments = async (): Promise<void> => {
-      if (!order.id) {
-        setLabOrderRequisitionDocs([]);
-        return;
-      }
-      setLoadingDocs(true);
-      setLabOrderRequisitionDocs([]); // Clear previous documents immediately
-
-      try {
-        const docs = await fetchLabOrderRequisitionDocuments(medplum, order);
-        setLabOrderRequisitionDocs(docs);
-      } catch (error) {
-        console.error('Error fetching lab order requisition documents:', error);
-        setLabOrderRequisitionDocs([]);
-      } finally {
-        setLoadingDocs(false);
-      }
-    };
-
-    fetchDocuments().catch(console.error);
-
-    // Cleanup function to clear documents when component unmounts or order changes
+    setLabOrderRequisitionDocs([]);
+    setLoadingDocs(true);
+    let cancelled = false;
+    fetchLabOrderRequisitionDocuments(medplum, order)
+      .then((docs) => {
+        if (!cancelled) {
+          setLabOrderRequisitionDocs(docs);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Error fetching lab order requisition documents:', error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingDocs(false);
+        }
+      });
     return () => {
-      setLabOrderRequisitionDocs([]);
-      setLoadingDocs(false);
+      cancelled = true;
     };
   }, [medplum, order]);
 
-  // Fetch Specimen Label documents when order changes
   useEffect(() => {
     if (!order) {
       return undefined;
     }
-
-    const fetchSpecimenLabelDocuments = async (): Promise<void> => {
-      if (!order.id) {
-        setSpecimenLabelDocs([]);
-        return;
-      }
-      setLoadingSpecimenDocs(true);
-      setSpecimenLabelDocs([]); // Clear previous documents immediately
-
-      try {
-        // Extract Health Gorilla Requisition ID from ServiceRequest (same as requisition docs)
-        const healthGorillaRequisitionId = getHealthGorillaRequisitionId(order);
-
-        if (!healthGorillaRequisitionId) {
-          setSpecimenLabelDocs([]);
-          return;
+    setSpecimenLabelDocs([]);
+    setLoadingSpecimenDocs(true);
+    let cancelled = false;
+    fetchSpecimenLabelDocuments(medplum, order)
+      .then((docs) => {
+        if (!cancelled) {
+          setSpecimenLabelDocs(docs);
         }
-
-        // Search for DocumentReference with category "SpecimenLabel" using the same identifier pattern
-        const searchParams = new URLSearchParams({
-          category: 'SpecimenLabel',
-          identifier: `https://www.healthgorilla.com|${healthGorillaRequisitionId}`,
-          _sort: '-_lastUpdated',
-        });
-
-        const searchResult = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
-        setSpecimenLabelDocs(searchResult);
-      } catch (error) {
-        console.error('Error fetching specimen label documents:', error);
-        setSpecimenLabelDocs([]);
-      } finally {
-        setLoadingSpecimenDocs(false);
-      }
-    };
-
-    fetchSpecimenLabelDocuments().catch(console.error);
-
-    // Cleanup function to clear documents when component unmounts or order changes
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Error fetching specimen label documents:', error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingSpecimenDocs(false);
+        }
+      });
     return () => {
-      setSpecimenLabelDocs([]);
-      setLoadingSpecimenDocs(false);
+      cancelled = true;
     };
   }, [medplum, order]);
 
-  // Fetch QuestionnaireResponse when order changes
   useEffect(() => {
     if (!order) {
       return undefined;
     }
-
-    const fetchQuestionnaireResponse = async (): Promise<void> => {
-      setQuestionnaireResponse(undefined);
-
-      // First, check if current order has QuestionnaireResponse in supportingInfo
-      const currentRef = getQuestionnaireResponseRef(order);
-      if (currentRef?.reference) {
-        try {
-          setQuestionnaireResponse(await medplum.readReference(currentRef as Reference<QuestionnaireResponse>));
-          return;
-        } catch (error) {
-          console.error('Error fetching questionnaire response from current order:', error);
+    setQuestionnaireResponse(undefined);
+    let cancelled = false;
+    fetchOrderQuestionnaireResponse(medplum, order)
+      .then((qr) => {
+        if (!cancelled) {
+          setQuestionnaireResponse(qr);
         }
-      }
-
-      // For HealthGorilla case: if no QuestionnaireResponse found in current order,
-      // search for the original ServiceRequest that has this ServiceRequest in its basedOn field
-      // This applies to both open and completed orders
-      if (order.id) {
-        try {
-          // Search for ServiceRequests for the same patient with the same code to narrow down results
-          const searchResult = await medplum.searchResources('ServiceRequest', {
-            subject: order.subject?.reference,
-            code: order.code?.coding?.[0]?.code, // Include the same code to narrow down results
-            _count: 50, // Get more results to filter through
-          });
-
-          // Prefer the ServiceRequest that has this order in its basedOn field and a QuestionnaireResponse;
-          // otherwise fall back to any ServiceRequest with a QuestionnaireResponse
-          const withQuestionnaire = searchResult.filter((sr) => getQuestionnaireResponseRef(sr));
-          const sourceOrder =
-            withQuestionnaire.find((sr) =>
-              sr.basedOn?.some(
-                (ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) =>
-                  ref.reference === `ServiceRequest/${order.id}`
-              )
-            ) ?? withQuestionnaire[0];
-          const sourceRef = getQuestionnaireResponseRef(sourceOrder);
-          if (sourceRef?.reference) {
-            setQuestionnaireResponse(await medplum.readReference(sourceRef as Reference<QuestionnaireResponse>));
-          }
-        } catch (error) {
-          console.error('Error fetching questionnaire response from original order:', error);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Error fetching questionnaire response:', error);
         }
-      }
-    };
-
-    fetchQuestionnaireResponse().catch(console.error);
-
-    // Cleanup function
+      });
     return () => {
-      setQuestionnaireResponse(undefined);
+      cancelled = true;
     };
   }, [medplum, order]);
 
@@ -421,12 +363,12 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const { order, onChange, onResume, selectedReport } = props;
   const data = useLabOrderDetailsData(order, selectedReport);
 
+  const { revoke } = data;
   const onRevoke = useCallback((): void => {
-    data
-      .revoke()
+    revoke()
       .then((updated) => onChange?.(updated))
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
-  }, [data, onChange]);
+  }, [revoke, onChange]);
 
   return (
     <LabOrderDetailsView
@@ -452,6 +394,27 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
 export type LabOrderDetailTab = 'report' | 'progress' | 'order';
 
+/**
+ * Props for LabOrderDetailsView.
+ *
+ * - `order`: the order.
+ * - `patient`: resolved `order.subject`. Omitted → no Patient row in Order Details.
+ * - `requester`: resolved `order.requester`. Omitted → no Ordering provider row.
+ * - `report`: the report shown in the Report tab — the caller's selection or the order's latest.
+ * - `reportLoading`: true while the caller is still resolving `report`; keeps the Report tab with
+ *   a loader instead of flipping away mid-fetch.
+ * - `reportAttachments`: lab PDFs for `report`; see LabReportContentView for the walk.
+ * - `reportResources`: resources `report` refers to; see LabReportContentView for the walk.
+ * - `requisitionDocuments`: DocumentReferences in the "LabOrderRequisition" category.
+ * - `requisitionDocumentsLoading`: true while the caller is still resolving them.
+ * - `specimenLabelDocuments`: DocumentReferences in the "SpecimenLabel" category.
+ * - `specimenLabelDocumentsLoading`: true while the caller is still resolving them.
+ * - `questionnaireResponse`: order-entry answers shown under Order Details.
+ * - `defaultTab`: the tab open at first. Default: Report for a completed order, otherwise Progress.
+ * - `onRevoke`: revokes the order (PATCH status → 'revoked' and reflect). Omitted → hides Revoked.
+ * - `onResume`: resumes a draft order. Omitted → hides Active.
+ * - `renderLink`: renders cross-references in the report display. Omitted → plain text.
+ */
 export interface LabOrderDetailsViewProps {
   readonly order: ServiceRequest;
   readonly patient?: Patient;

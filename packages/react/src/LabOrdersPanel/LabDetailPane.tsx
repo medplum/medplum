@@ -120,7 +120,11 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
   const selectedReportRef =
     item.resourceType === 'DiagnosticReport' ? createReference(item) : undefined;
   const orderData = useLabOrderDetailsData(order, selectedReportRef);
-  const resultData = useLabResultDetailsData(item.resourceType === 'DiagnosticReport' ? item : undefined);
+  // Only resolve result-only data once the order probe has finished and come back empty;
+  // otherwise useLabOrderDetailsData already fetches the report's attachments + resources.
+  const resultData = useLabResultDetailsData(
+    !loading && !order && item.resourceType === 'DiagnosticReport' ? item : undefined
+  );
 
   return (
     <LabDetailPaneView
@@ -167,6 +171,17 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
   );
 }
 
+/**
+ * Props for LabDetailPaneView.
+ *
+ * - `item`: the selected lab item — a ServiceRequest (order) or DiagnosticReport (result).
+ * - `order`: the item's order. ServiceRequest items are their own order; for a DiagnosticReport,
+ *   resolve `basedOn[0]` and pass the result, or leave undefined if the report has no order.
+ * - `loading`: true while the caller is still resolving `order`; shows a loader.
+ * - `renderOrder`: renders the order details. Called with `(order, selectedReport)` where
+ *   `selectedReport` is `createReference(item)` when `item` is a DiagnosticReport.
+ * - `renderResult`: renders the standalone result details when `order` is undefined.
+ */
 export interface LabDetailPaneViewProps {
   readonly item: WithId<ServiceRequest> | WithId<DiagnosticReport>;
   readonly order?: WithId<ServiceRequest>;

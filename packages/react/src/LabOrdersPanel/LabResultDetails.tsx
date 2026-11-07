@@ -77,6 +77,15 @@ export function LabResultDetails(props: LabResultDetailsProps): JSX.Element {
   );
 }
 
+/**
+ * Props for LabResultDetailsView. Same shape and walks as LabReportContentView, for a report
+ * that has no order.
+ *
+ * - `result`: the report.
+ * - `attachments`: lab PDFs; see LabReportContentView.
+ * - `resources`: observations the report refers to; see LabReportContentView.
+ * - `renderLink`: renders cross-references in the report display. Omitted → plain text.
+ */
 export interface LabResultDetailsViewProps {
   readonly result: DiagnosticReport;
   readonly attachments?: Attachment[];
