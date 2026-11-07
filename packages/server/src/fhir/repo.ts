@@ -199,8 +199,9 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 /**
  * Returns the project IDs a caller may read for the given resource type.
  *
- * Linked projects are readable only when they export the resource type, and project admin
- * resource types never cross a link at all.
+ * Linked projects are readable when they export the resource type or export nothing. Project admin
+ * resource types never cross a link, except `Project` and `AccessPolicy`, so memberships can
+ * reference access policies shared by linked projects.
  * @param projects - Projects the caller may access; the first is the caller's own.
  * @param resourceType - The resource type being read.
  * @returns The permitted project IDs, or undefined if all projects are permitted.
