@@ -8,6 +8,7 @@ import { isResource } from '../types';
 import type { InternalTypeSchema } from './types';
 import { getDataType } from './types';
 import { isPrimitiveType } from './validation';
+import { getXmlLogicalName } from './xml';
 
 export interface CrawlerVisitor {
   onEnterObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
@@ -101,11 +102,11 @@ class Crawler {
 
     if (this.excludeMissingProperties) {
       for (const key of Object.keys(obj.value)) {
-        this.crawlProperty(obj, key, schema, `${path}.${key}`);
+        this.crawlProperty(obj, key, schema, getPropertyPath(path, key, schema));
       }
     } else {
       for (const key of Object.keys(schema.elements)) {
-        this.crawlProperty(obj, key, schema, `${path}.${key}`);
+        this.crawlProperty(obj, key, schema, getPropertyPath(path, key, schema));
       }
     }
 
@@ -119,7 +120,7 @@ class Crawler {
   }
 
   private crawlProperty(parent: TypedValueWithPath, key: string, schema: InternalTypeSchema, path: string): void {
-    const propertyValues = getNestedProperty(parent, key, { withPath: true });
+    const propertyValues = getPropertyValuesWithPath(parent, key, schema);
     if (this.visitor.visitProperty) {
       this.visitor.visitProperty(parent, key, path, propertyValues, schema);
     }
@@ -173,11 +174,11 @@ class AsyncCrawler {
 
     if (this.excludeMissingProperties && obj.value) {
       for (const key of Object.keys(obj.value)) {
-        await this.crawlProperty(obj, key, schema, `${path}.${key}`);
+        await this.crawlProperty(obj, key, schema, getPropertyPath(path, key, schema));
       }
     } else {
       for (const key of Object.keys(schema.elements)) {
-        await this.crawlProperty(obj, key, schema, `${path}.${key}`);
+        await this.crawlProperty(obj, key, schema, getPropertyPath(path, key, schema));
       }
     }
 
@@ -196,7 +197,7 @@ class AsyncCrawler {
     schema: InternalTypeSchema,
     path: string
   ): Promise<void> {
-    const propertyValues = getNestedProperty(parent, key, { withPath: true });
+    const propertyValues = getPropertyValuesWithPath(parent, key, schema);
     if (this.visitor.visitPropertyAsync) {
       for (const propertyValue of propertyValues) {
         await this.visitor.visitPropertyAsync(parent, key, path, propertyValue, schema);
@@ -217,6 +218,31 @@ class AsyncCrawler {
       await this.crawlObject(value, type, path);
     }
   }
+}
+
+/**
+ * Returns the path of a property. Properties of XML logical models are named by their logical names
+ * (e.g. "use" for `@_use`), so that paths are valid FHIRPath on the model.
+ * @param parentPath - The path of the parent object.
+ * @param key - The property name.
+ * @param schema - The type schema of the parent object.
+ * @returns The property path.
+ */
+function getPropertyPath(parentPath: string, key: string, schema: InternalTypeSchema): string {
+  const element = schema.xmlPropertyNames ? schema.elements[key] : undefined;
+  return `${parentPath}.${element ? getXmlLogicalName(element) : key}`;
+}
+
+function getPropertyValuesWithPath(
+  parent: TypedValueWithPath,
+  key: string,
+  schema: InternalTypeSchema
+): (TypedValueWithPath | TypedValueWithPath[])[] {
+  const element = schema.xmlPropertyNames ? schema.elements[key] : undefined;
+  if (element) {
+    return [withPath(getTypedPropertyValue(parent, key), parent.path, getXmlLogicalName(element))];
+  }
+  return getNestedProperty(parent, key, { withPath: true });
 }
 
 export function getNestedProperty(
