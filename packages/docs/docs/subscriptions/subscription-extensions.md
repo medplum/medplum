@@ -249,10 +249,10 @@ If your subscription failed or threw an error, you can configure it to attempt t
 
 To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with the valueInteger set to a number between 1-18.
 
-The default number of attempts is 4.
+The default number of attempts is 4 for HTTP `rest-hook` endpoints.
 
 :::caution[Note]
-Subscriptions with Bot endpoints will only execute once and will not retry on failure. The `subscription-max-attempts` extension only applies to rest-hook subscriptions with external HTTP endpoints.
+By default, Subscriptions with Bot endpoints (`Bot/<id>`) execute the Bot handler only once and do not retry on handler failure (though setup errors thrown before the handler runs still retry up to 4 times by default). Set the `subscription-max-attempts` extension on a Bot subscription to opt into retries when the Bot throws an error, fails during runtime invocation, or returns a non-OK `OperationOutcome`. Because retried runs re-execute the handler from the beginning, Bot handlers should be idempotent when retries are enabled. When `subscription-max-attempts` is configured, exhausting all configured attempts also counts toward automatic subscription disabling if configured on the server or project.
 :::
 
 ```json

@@ -16,6 +16,7 @@ import {
   matchesSearchRequest,
   normalizeOperationOutcome,
   parseSearchRequest,
+  resolveId,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   stringify,
@@ -37,7 +38,7 @@ import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
-import { canProjectReadBot } from '../bots/utils';
+import { canProjectReadBot, isBotEnabledForProject } from '../bots/utils';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
@@ -93,6 +94,19 @@ const MAX_JOB_ATTEMPTS = 19;
  * This can be overridden by the subscription-max-attempts extension.
  */
 const DEFAULT_ATTEMPTS = 4;
+
+/**
+ * The default number of times a Bot subscription handler execution will be attempted
+ * when subscription-max-attempts is not specified.
+ */
+const DEFAULT_BOT_MAX_ATTEMPTS = 1;
+
+class BotExecutionFailedError extends Error {
+  constructor(botId: string) {
+    super(`Bot execution failed (Bot/${botId})`);
+    this.name = 'BotExecutionFailedError';
+  }
+}
 
 /**
  * The maximum number of attempts to get through the preamble (loading subscription and resource).
@@ -991,11 +1005,16 @@ async function execBot(
   const body = interaction === 'delete' ? { deletedResource: resource } : resource;
   const headers = buildRestHookHeaders(job, subscription, resource, interaction, JSON.stringify(body));
 
-  await executeBot({
+  const runAsProject =
+    project && project.id === resolveId(runAs.project)
+      ? project
+      : await getGlobalSystemRepo().readReference<Project>(runAs.project);
+
+  const result = await executeBot({
     subscription,
     bot,
     runAs,
-    runAsProject: project,
+    runAsProject,
     requester,
     input: body,
     contentType: ContentType.FHIR_JSON,
@@ -1003,6 +1022,13 @@ async function execBot(
     traceId: ctx.traceId,
     headers,
   });
+
+  // When bots are not enabled on the runAs project, executeBot records an AuditEvent and
+  // returns { success: false, logResult: 'Bots not enabled' }; treat this project configuration
+  // state as a no-op rather than failing or retrying the subscription job.
+  if (!result.success && isBotEnabledForProject(runAsProject)) {
+    throw new BotExecutionFailedError(bot.id);
+  }
 }
 
 async function catchJobError(
@@ -1012,17 +1038,27 @@ async function catchJobError(
   job: Job<SubscriptionJobData>,
   err: unknown
 ): Promise<void> {
-  const maxJobAttempts =
-    getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
-      ?.valueInteger ?? DEFAULT_ATTEMPTS;
+  const configuredMaxAttempts = getExtension(
+    subscription,
+    'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts'
+  )?.valueInteger;
+  const isBotExecutionFailure = err instanceof BotExecutionFailedError;
+  const maxJobAttempts = configuredMaxAttempts ?? (isBotExecutionFailure ? DEFAULT_BOT_MAX_ATTEMPTS : DEFAULT_ATTEMPTS);
+  const attemptsExhausted = isBotExecutionFailure
+    ? job.attemptsMade + 1 >= maxJobAttempts
+    : job.attemptsMade >= maxJobAttempts;
 
-  if (job.attemptsMade >= maxJobAttempts) {
-    // All retries exhausted - record as a final failure for auto-disable tracking
+  if (attemptsExhausted) {
+    // All retries exhausted - record as a final failure for auto-disable tracking.
+    // For Bot handler failures, only track toward auto-disable when subscription-max-attempts
+    // was explicitly configured so existing single-attempt Bot subscriptions are not auto-disabled.
     globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
-    const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
-    const result = await recordSubscriptionFailure(subscription.id, triggers);
-    if (result) {
-      await autoDisableSubscription(systemRepo, project, result.trigger, subscription, result.failureCount);
+    if (!isBotExecutionFailure || configuredMaxAttempts !== undefined) {
+      const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
+      const result = await recordSubscriptionFailure(subscription.id, triggers);
+      if (result) {
+        await autoDisableSubscription(systemRepo, project, result.trigger, subscription, result.failureCount);
+      }
     }
     // Throw a special error type to force BullMQ to move the job to failed state, instead of retrying again
     throw new UnrecoverableError(err instanceof Error ? err.message : 'Subscription exhausted available retries');
