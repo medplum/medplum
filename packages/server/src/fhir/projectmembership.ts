@@ -8,6 +8,7 @@ import {
   OperationOutcomeError,
   Operator,
   parseReference,
+  resolveId,
 } from '@medplum/core';
 import type { Project, ProjectMembership, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAllowedProjects, getRepoForProjects } from './accesspolicy';
@@ -103,6 +104,12 @@ export async function readMembershipReference<T extends Resource>(
   }
 
   const resource = await systemRepo.readReference<T>(reference);
+
+  // Runs on every authenticated request, so skip loading projects in the common case
+  if (resource.meta?.project && resource.meta.project === resolveId(membership.project)) {
+    return resource;
+  }
+
   const project = await systemRepo.readReference<Project>(membership.project);
   const projects = options?.allowLinkedProjects ? await getAllowedProjects(project, systemRepo) : [project];
   if (!getRepoForProjects(projects).canPerformInteraction(AccessPolicyInteraction.READ, resource)) {

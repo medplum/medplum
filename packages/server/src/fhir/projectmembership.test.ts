@@ -3,6 +3,7 @@
 import { createReference } from '@medplum/core';
 import type { AccessPolicy, Bot, ClientApplication, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -76,6 +77,27 @@ describe('readMembershipReference', () => {
       await expect(read(linkedPolicy, true)).resolves.toMatchObject({ id: linkedPolicy.id });
       await expect(read(projectlessPolicy, true)).rejects.toThrow('Not found');
       await expect(read(projectlessClient, true)).rejects.toThrow('Not found');
+    }));
+
+  test('Reads a resource in the membership project without loading projects', () =>
+    withTestContext(async () => {
+      const { project, membership } = await createTestProject({ withClient: true });
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+      });
+
+      const readSpy = vi.spyOn(systemRepo, 'readReference');
+      try {
+        await expect(
+          readMembershipReference(systemRepo, membership, createReference(policy), ['AccessPolicy'], {
+            allowLinkedProjects: true,
+          })
+        ).resolves.toMatchObject({ id: policy.id });
+        expect(readSpy).toHaveBeenCalledTimes(1);
+      } finally {
+        readSpy.mockRestore();
+      }
     }));
 
   test('Rejects unexpected resource types', () =>
