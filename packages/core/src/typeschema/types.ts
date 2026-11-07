@@ -17,6 +17,7 @@ import { OperationOutcomeError, badRequest } from '../outcomes';
 import type { TypedValue } from '../types';
 import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
+import { applyXmlPropertyNames } from './xml';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -36,6 +37,8 @@ export interface InternalTypeSchema {
   innerTypes: InternalTypeSchema[];
   summaryProperties?: Set<string>;
   mandatoryProperties?: Set<string>;
+  /** Element names follow the XML parser convention (`@_attr`, `#text`); see `LoadDataTypeOptions`. */
+  xmlPropertyNames?: boolean;
 }
 
 export interface InternalSchemaElement {
@@ -50,6 +53,10 @@ export interface InternalSchemaElement {
   fixed?: TypedValue;
   pattern?: TypedValue;
   binding?: ElementDefinitionBinding;
+  /** True for elements represented as XML attributes, which are always strings in parsed XML. */
+  xmlAttribute?: boolean;
+  /** True for elements holding XML markup (e.g. CDA narrative), which parses to nested objects. */
+  xmlMarkup?: boolean;
 }
 
 export interface ElementType {
@@ -127,17 +134,30 @@ function getDataTypesMap(profileUrl: string): DataTypesMap {
 /**
  * Parses and indexes structure definitions
  * @param bundle - Bundle or array of structure definitions to be parsed and indexed
+ * @param options - Optional loading options.
  */
-export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
+export function indexStructureDefinitionBundle(
+  bundle: StructureDefinition[] | Bundle,
+  options?: LoadDataTypeOptions
+): void {
   const maybeSds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource) ?? []);
   const sds: StructureDefinition[] = maybeSds.filter((r) => r?.resourceType === 'StructureDefinition');
   indexDefaultSearchParameters(sds);
   for (const sd of sds) {
-    loadDataType(sd);
+    loadDataType(sd, options);
   }
 }
 
-export function loadDataType(sd: StructureDefinition): void {
+export interface LoadDataTypeOptions {
+  /**
+   * For logical models of XML formats (e.g. CDA), name elements the way an XML parser does
+   * (`@_attribute`, `#text`, `prefix:name`), and flatten xml-choice-groups, so that parsed XML
+   * can be validated and typed without converting it first.
+   */
+  xmlPropertyNames?: boolean;
+}
+
+export function loadDataType(sd: StructureDefinition, options?: LoadDataTypeOptions): void {
   if (!sd?.name) {
     throw new Error(`Failed loading StructureDefinition from bundle`);
   }
@@ -145,6 +165,9 @@ export function loadDataType(sd: StructureDefinition): void {
     return;
   }
   const schema = parseStructureDefinition(sd);
+  if (options?.xmlPropertyNames && sd.kind === 'logical') {
+    applyXmlPropertyNames(schema, sd);
+  }
   const specialCase = TYPE_SPECIAL_CASES[sd.url];
   let dataTypes: DataTypesMap;
   let typeName: string;
@@ -169,6 +192,9 @@ export function loadDataType(sd: StructureDefinition): void {
   }
 
   dataTypes[typeName] = schema;
+  if (dataTypes === DATA_TYPES && sd.url && sd.url !== typeName && typeName.startsWith('http')) {
+    dataTypes[sd.url] = schema;
+  }
 
   for (const inner of schema.innerTypes) {
     inner.parentType = schema;
@@ -248,6 +274,8 @@ class StructureDefinitionParser {
   private slicingContext: { field: SlicingRules; current?: SliceDefinition; path: string } | undefined;
   private readonly innerTypes: InternalTypeSchema[];
   private backboneContext: BackboneContext | undefined;
+  /** For logical models, paths of elements that have child elements and so define an inner type. */
+  private readonly logicalParents: Set<string>;
 
   /**
    * @param sd - The StructureDefinition to parse
@@ -278,6 +306,15 @@ class StructureDefinitionParser {
       mandatoryProperties: new Set(),
     };
     this.innerTypes = [];
+    this.logicalParents = new Set();
+    if (sd.kind === 'logical') {
+      for (const e of this.elements) {
+        const parent = e.path?.split('.').slice(0, -1).join('.');
+        if (parent && parent !== this.root.path) {
+          this.logicalParents.add(parent);
+        }
+      }
+    }
   }
 
   parse(): InternalTypeSchema {
@@ -357,7 +394,7 @@ class StructureDefinitionParser {
       this.innerTypes.push(this.backboneContext.type);
       this.backboneContext = this.backboneContext.parent;
     }
-    const typeName = getElementDefinitionTypeName(element);
+    const typeName = this.innerTypeName(element);
     this.backboneContext = {
       type: {
         name: typeName,
@@ -456,7 +493,8 @@ class StructureDefinitionParser {
     const next = this.peek();
     return !!(
       pathsCompatible(current?.path, next?.path) &&
-      current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code))
+      (current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code)) ||
+        this.logicalParents.has(current.path))
     );
   }
 
@@ -474,12 +512,28 @@ class StructureDefinitionParser {
     this.slicingContext.field.slices.push(this.slicingContext.current);
   }
 
+  /**
+   * Inner types of logical models are named "<type url>#<path>" so they cannot collide with FHIR
+   * type names (e.g. CDA Observation.referenceRange vs FHIR ObservationReferenceRange).
+   * @param ed - The element that defines the inner type.
+   * @returns The inner type name.
+   */
+  private innerTypeName(ed: ElementDefinition): string {
+    if (this.logicalParents.has(ed.path)) {
+      const path = (ed.path ?? '').split('.').slice(1).join('.');
+      return `${this.resourceSchema.type}#${path}`;
+    }
+    return getElementDefinitionTypeName(ed);
+  }
+
   private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
     return (ed.type ?? []).map((type) => {
       let code: string | undefined;
 
       if (type.code === 'BackboneElement' || type.code === 'Element') {
         code = getElementDefinitionTypeName(ed);
+      } else if (this.logicalParents.has(ed.path)) {
+        code = this.innerTypeName(ed);
       }
 
       if (!code) {

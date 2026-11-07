@@ -5,7 +5,7 @@ import { FileBuilder, wordWrap } from '../filebuilder';
 import { buildTypeName, isResourceTypeSchema } from '../types';
 import { capitalize, EMPTY, escapeHtml, isLowerCase } from '../utils';
 import type { InternalSchemaElement, InternalTypeSchema } from './types';
-import { indexStructureDefinitionBundle, isResourceType, tryGetProfile } from './types';
+import { indexStructureDefinitionBundle, isResourceType, tryGetDataType, tryGetProfile } from './types';
 
 export interface TypeScriptGeneratorOptions {
   /**
@@ -18,6 +18,11 @@ export interface TypeScriptGeneratorOptions {
    * Defaults to a sibling file, e.g. `./Patient.d.ts`.
    */
   getImportPath?: (typeName: string) => string;
+  /**
+   * Prefix for the TypeScript names of logical model types, whose names (e.g. CDA "Observation")
+   * would otherwise read like FHIR resource types.
+   */
+  logicalTypePrefix?: string;
 }
 
 interface GeneratorContext extends TypeScriptGeneratorOptions {
@@ -119,7 +124,8 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema, options: G
 
   const typeName = getTypeName(fhirType, options);
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
-  const genericModifier = genericTypes.includes(typeName) ? '<T extends Resource = Resource>' : '';
+  const fhirGeneric = genericTypes.includes(typeName) && !fhirType.type.includes('/');
+  const genericModifier = fhirGeneric ? '<T extends Resource = Resource>' : '';
 
   b.newLine();
   generateJavadoc(b, fhirType.description);
@@ -132,6 +138,13 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema, options: G
     b.append(`readonly resourceType: '${fhirType.type}';`);
   }
 
+  if (fhirType.xmlPropertyNames && !fhirType.parentType && !fhirType.elements['@_xsi:type']) {
+    b.newLine();
+    generateJavadoc(b, 'The XML Schema type of this element, when it is not the default.');
+    // A string, not a literal: an element of type CD may hold any specialization of CD (CE, CV, ...)
+    b.append(`'@_xsi:type'?: string;`);
+  }
+
   for (const [path, property] of getDirectElements(fhirType)) {
     if (property.max === 0) {
       continue;
@@ -140,7 +153,7 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema, options: G
     writeInterfaceProperty(b, fhirType, property, path, options);
   }
 
-  if (typeName === 'Reference') {
+  if (fhirGeneric && typeName === 'Reference') {
     b.newLine();
     generateJavadoc(b, 'Optional Resource referred to by this reference.');
     b.append('resource?: T;');
@@ -169,9 +182,10 @@ function writeInterfaceProperty(
   for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType, options)) {
     b.newLine();
     generateJavadoc(b, property.description);
-    b.append(
-      typeScriptProperty.name + (typeScriptProperty.required ? '' : '?') + ': ' + typeScriptProperty.typeName + ';'
-    );
+    const name = /^[A-Za-z_$][\w$]*$/.test(typeScriptProperty.name)
+      ? typeScriptProperty.name
+      : `'${typeScriptProperty.name}'`;
+    b.append(name + (typeScriptProperty.required ? '' : '?') + ': ' + typeScriptProperty.typeName + ';');
   }
 }
 
@@ -210,13 +224,45 @@ function buildImports(
     buildImports(subType, includedTypes, referencedTypes, options);
   }
 
-  if (typeName === 'Reference') {
+  if (typeName === 'Reference' && !fhirType.type.includes('/')) {
     referencedTypes.add('Resource');
   }
 }
 
 function getTypeName(fhirType: InternalTypeSchema, options: GeneratorContext): string {
-  return options.profileInnerTypeNames?.get(fhirType.name) ?? fhirType.name;
+  const profileName = options.profileInnerTypeNames?.get(fhirType.name);
+  if (profileName) {
+    return profileName;
+  }
+  if (fhirType.kind === 'logical' && !fhirType.name.includes('/')) {
+    return (options.logicalTypePrefix ?? '') + fhirType.name;
+  }
+  return typeScriptName(fhirType.name, options);
+}
+
+function typeScriptName(name: string, options: GeneratorContext): string {
+  return isTypeUrl(name) ? (options.logicalTypePrefix ?? '') + getLogicalTypeName(name) : name;
+}
+
+function isTypeUrl(name: string): boolean {
+  return name.startsWith('http://') || name.startsWith('https://');
+}
+
+/**
+ * Logical models name their types by URL (e.g. "http://hl7.org/cda/stds/core/StructureDefinition/IVL-TS"), and
+ * their inner types "<url>#<path>". Returns an identifier based on the StructureDefinition name instead,
+ * e.g. "IVL_TS" or "ObservationReferenceRange".
+ * @param name - The type name.
+ * @returns The identifier.
+ */
+export function getLogicalTypeName(name: string): string {
+  if (!isTypeUrl(name)) {
+    return name;
+  }
+  const [url, path] = name.split('#');
+  const base = tryGetDataType(url)?.name ?? url.split('/').pop();
+  const inner = path ? path.split('.').map(capitalize).join('') : '';
+  return (base + inner).replace(/[^A-Za-z0-9_]/g, '_');
 }
 
 // Profiles can also constrain elements of complex data types (e.g. "identifier.system"), which are not generated
@@ -240,6 +286,14 @@ function cleanReferencedType(typeName: string): string[] {
     typeName === 'BundleEntry<T>[]'
   ) {
     return [];
+  }
+
+  // Unions generated for logical models, e.g. "(CdaCD | CdaPQ)[]" or "(CdaPN | string)"
+  if (typeName.startsWith('(')) {
+    return typeName
+      .replace(/[()[\]]/g, '')
+      .split(' | ')
+      .flatMap(cleanReferencedType);
   }
 
   if (typeName.startsWith('Reference<')) {
@@ -282,6 +336,16 @@ function getTypeScriptProperties(
         typeName: getTypeScriptTypeForProperty(property, propertyType, path, options, getBaseProperty(propertyName)),
       });
     }
+  } else if (property.type.length > 1) {
+    const single = { ...property, isArray: false, max: 1 };
+    // Flatten members that are unions themselves, e.g. "(CdaST | string)", so each constituent appears once
+    const members = property.type.flatMap((t) =>
+      getTypeScriptTypeForProperty(single, t, path, options, undefined)
+        .replace(/^\((.*)\)$/, '$1')
+        .split(' | ')
+    );
+    const union = Array.from(new Set(members)).join(' | ');
+    result.push({ name, typeName: `(${union})` + (property.isArray || property.max > 1 ? '[]' : ''), required });
   } else {
     result.push({
       name,
@@ -318,6 +382,14 @@ function getTypeScriptTypeForProperty(
 ): string {
   let baseType = typeDefinition.code;
   let binding: string | undefined;
+
+  if (property.xmlAttribute) {
+    // Parsed XML attributes are strings, whatever their logical type
+    return 'string';
+  }
+  if (property.xmlMarkup) {
+    return 'string | Record<string, unknown>';
+  }
 
   switch (baseType) {
     case 'base64Binary':
@@ -389,7 +461,12 @@ function getTypeScriptTypeForProperty(
       break;
   }
 
-  baseType = options.profileInnerTypeNames?.get(baseType) ?? baseType;
+  const target = isTypeUrl(baseType) ? tryGetDataType(baseType) : undefined;
+  baseType = options.profileInnerTypeNames?.get(baseType) ?? typeScriptName(baseType, options);
+  if (target?.xmlPropertyNames && target.elements['#text']) {
+    // XML parsers collapse text-only elements (e.g. <given>Jo</given>) to plain strings
+    baseType = `(${baseType} | string)`;
+  }
 
   // Profiles can restrict the cardinality of array elements (e.g. 0..1), but they are still arrays in JSON
   if (property.isArray ?? property.max > 1) {
