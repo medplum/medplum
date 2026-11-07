@@ -1,41 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
+import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { exportJsonFile, sendCommand } from '../utils/dom';
 
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
-const BASE_VALIDATION_URL = 'https://ccda-validator.medplum.com/';
 
 export interface CcdaDisplayProps {
   readonly url?: string;
   readonly maxWidth?: number;
 }
 
-interface ValidationResult {
-  resultsMetaData: {
-    ccdaDocumentType: string;
-    ccdaVersion: string;
-    objectiveProvided: string;
-    serviceError: boolean;
-    serviceErrorMessage: string | null;
-    ccdaFileName: string;
-    ccdaFileContents: string;
-    resultMetaData: {
-      type: string;
-      count: number;
-    }[];
-    severityLevel: string;
-    totalConformanceErrorChecks: number;
-  };
-}
-
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   const { url } = props;
+  const medplum = useMedplum();
   const [shouldSend, setShouldSend] = useState(false);
   const iframeRef = useRef(null);
-  const [validationResult, setValidationResult] = useState<ValidationResult>();
+  const [validationResult, setValidationResult] = useState<OperationOutcome>();
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
@@ -60,28 +44,11 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       const response = await fetch(url);
       const ccdaContent = await response.text();
 
-      // Prepare form data for submission
-      const formData = new FormData();
-      formData.append('ccdaFile', new Blob([ccdaContent], { type: 'text/xml' }), 'ccda.xml');
-
-      // Submit to validation API using direct fetch to avoid CORS issues
-      const validationUrl = `${BASE_VALIDATION_URL}referenceccdaservice/?validationObjective=C-CDA_IG_Plus_Vocab&referenceFileName=No%20scenario%20File&curesUpdate=true&severityLevel=WARNING`;
-      const validationResponse = await fetch(validationUrl, {
-        method: 'POST',
-        body: formData,
-        // Don't send credentials for cross-origin requests
-        credentials: 'omit',
-        // Don't follow redirects automatically
-        redirect: 'manual',
-      });
-
-      if (!validationResponse.ok) {
-        throw new Error(`Validation failed: ${validationResponse.status} ${validationResponse.statusText}`);
-      }
-
-      // Parse the JSON response
-      const validationResult = await validationResponse.json();
-      setValidationResult(validationResult as ValidationResult);
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'document', valueString: ccdaContent }],
+      };
+      setValidationResult(await medplum.post<OperationOutcome>(medplum.fhirUrl('$ccda-validate'), params));
     } catch (error) {
       setValidationResult(undefined);
       console.error('CCDA validation error:', error);
@@ -103,9 +70,7 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
     if (!validationResult) {
       return 0;
     }
-    return validationResult.resultsMetaData.resultMetaData
-      .filter((item) => item?.type.includes('Error'))
-      .reduce((sum, item) => sum + (item.count || 0), 0);
+    return validationResult.issue.filter((issue) => issue.severity === 'error' || issue.severity === 'fatal').length;
   };
 
   if (!url) {
