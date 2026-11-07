@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, notFound, OperationOutcomeError, Operator, parseReference } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  badRequest,
+  notFound,
+  OperationOutcomeError,
+  Operator,
+  parseReference,
+} from '@medplum/core';
 import type { Project, ProjectMembership, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAllowedProjects, getRepoForProjects } from './accesspolicy';
 import type { SystemRepository } from './repo';
@@ -66,10 +73,10 @@ export function findProjectMembership(
 /**
  * Reads a resource referenced by a ProjectMembership, such as the profile, access policy, or user configuration.
  *
- * Verifies that the target is one of the expected resource types, then reads it with a repository scoped to the
- * membership's project (and its linked projects, if allowed).
+ * Reads the target with `systemRepo`, so the read joins the caller's transaction and shard, then checks it against
+ * the project rules of a repository scoped to the membership's project (and its linked projects, if allowed).
  * Always use this function instead of reading membership references directly.
- * @param systemRepo - The system repository.
+ * @param systemRepo - The system repository used for the reads.
  * @param membership - The project membership that holds the reference.
  * @param reference - The reference to read.
  * @param allowedTypes - The resource types the reference may point to.
@@ -95,7 +102,11 @@ export async function readMembershipReference<T extends Resource>(
     throw new OperationOutcomeError(notFound);
   }
 
+  const resource = await systemRepo.readReference<T>(reference);
   const project = await systemRepo.readReference<Project>(membership.project);
   const projects = options?.allowLinkedProjects ? await getAllowedProjects(project, systemRepo) : [project];
-  return getRepoForProjects(projects).readReference<T>(reference);
+  if (!getRepoForProjects(projects).canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+    throw new OperationOutcomeError(notFound);
+  }
+  return resource;
 }
