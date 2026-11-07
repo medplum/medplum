@@ -159,6 +159,33 @@ describe('MultiResourceInput', () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
+  test('Is disabled while default references are read', async () => {
+    const client = new MockClient();
+    let resolveRead: () => void = () => undefined;
+    vi.spyOn(client, 'readReference').mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRead = () => resolve(HomerSimpson as WithId<Patient>);
+      }) as ReturnType<MockClient['readReference']>
+    );
+    render(
+      <MedplumProvider medplum={client}>
+        <MultiResourceInput<Patient>
+          resourceType="Patient"
+          name="foo"
+          placeholder="Test"
+          defaultValue={[MargeSimpson, createReference(HomerSimpson)]}
+        />
+      </MedplumProvider>
+    );
+    const pills = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
+    expect(pills.getByText('Marge Simpson')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Test')).not.toBeInTheDocument();
+
+    await act(async () => resolveRead());
+    expect(pills.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+  });
+
   test('Handle invalid reference in defaultValue', async () => {
     await act(async () => {
       setup({
@@ -218,6 +245,18 @@ describe('MultiResourceInput', () => {
 
       await setValue([]);
       expect(pills().queryByText('Marge Simpson')).not.toBeInTheDocument();
+    });
+
+    test('keeps the last selection and warns when value changes to undefined', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const setValue = renderControlled([createReference(HomerSimpson)]);
+      expect(await pills().findByText('Homer Simpson')).toBeInTheDocument();
+
+      await setValue(undefined);
+      expect(pills().getByText('Homer Simpson')).toBeInTheDocument();
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain('MultiResourceInput "foo" switched from controlled to uncontrolled');
+      warn.mockRestore();
     });
 
     test('resolves references when the client cache is off, again for a new client', async () => {
