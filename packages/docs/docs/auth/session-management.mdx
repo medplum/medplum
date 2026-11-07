@@ -20,12 +20,11 @@ Medplum uses two types of tokens to manage authentication securely:
 
 ### Requesting Refresh Tokens
 
-Refresh tokens are not issued by default. To receive a refresh token, you must include one of the following scopes in your authentication request:
+For user logins, Medplum issues a refresh token when the request includes the `offline_access` scope or the `ClientApplication.grantType` array includes `refresh_token`. The legacy `offline` scope remains supported but is deprecated.
 
-- `offline_access`
-- `offline`
+[Token exchange](/docs/auth/token-exchange) defaults to `openid offline_access` when no scope is supplied, so its default response includes a refresh token. The SDK's `exchangeExternalAccessToken()` helper uses this default.
 
-For example:
+To request `offline_access` explicitly:
 
 <MedplumCodeBlock language="ts" selectBlocks="emailPasswordLogin" showLineNumbers>
   {ExampleCode}
@@ -110,7 +109,7 @@ You can adjust the grace period when initializing the Medplum client:
 
    Keep access token lifetimes short (1-2 hours maximum) to minimize the impact of token theft. The Medplum client's automatic refresh mechanism means you don't need long-lived access tokens for continuous operation.
 
-2. **Leverage Automatic Token Refresh**
+2. **Use Automatic Token Refresh**
 
    The Medplum client handles token refresh automatically. Configure the grace period appropriately for your application's needs:
 
@@ -120,7 +119,7 @@ You can adjust the grace period when initializing the Medplum client:
 
 3. **Token Revocation**
 
-   If you suspect a token has been compromised, revoke it immediately using the `/auth/logout` endpoint. Monitor your audit logs for suspicious activity that might indicate compromised tokens.
+   If you suspect a token has been compromised, revoke its session using `/oauth2/logout`. This revokes the session's access and refresh tokens. See [Logout](/docs/auth/logout) for revoking another session by login ID. Monitor your audit logs for suspicious activity.
 
 ## Conclusion
 

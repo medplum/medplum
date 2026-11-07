@@ -99,8 +99,9 @@ async function main(): Promise<void> {
   // Server side token exchange:
   // - `clientId` selects the external auth provider (a server `externalAuthProviders` entry for
   //   self-hosters, or a `ClientApplication` with an `identityProvider` for hosted Medplum).
-  // - `membershipId` optionally targets a specific ProjectMembership, allowing the same external
-  //   identity to authenticate into a project other than the client's own project.
+  // - `membershipId` selects an existing membership of the authenticated user. A ClientApplication
+  //   limits selection to its own project; a server-level provider can select across projects.
+  //   Server-level subject matching requires this ID to establish the project.
   const profile = await medplum.exchangeExternalAccessToken(externalAccessToken, config.clientId, config.membershipId);
 
   const login = medplum.getActiveLogin();
@@ -109,7 +110,6 @@ async function main(): Promise<void> {
   console.log('\nToken exchange succeeded.');
   console.log('Profile:', `${profile.resourceType}/${profile.id}`, `(${getDisplayString(profile)})`);
   console.log('Project:', login?.project?.reference ?? '(unknown)');
-  console.log('Membership:', login?.profile?.reference ?? '(unknown)');
   console.log('Access token (truncated):', accessToken ? `${accessToken.slice(0, 16)}...` : '(none)');
 }
 
