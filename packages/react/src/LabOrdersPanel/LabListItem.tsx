@@ -46,7 +46,7 @@ export type LabListItemTab = 'open' | 'completed';
  * - `item`: the order the row represents.
  * - `selected`: drives the selected-row styling.
  * - `activeTab`: 'completed' shows the completion date; 'open' shows the REQ #.
- * - `requester`: resolved `item.requester`. Omitted → "Ordered {date}" without a name.
+ * - `requester`: resolved `item.requester`. Omitted → the sub-line reads "Ordered &lt;date&gt;" without a name.
  */
 export interface LabListItemViewProps {
   readonly item: ServiceRequest;

@@ -122,7 +122,7 @@ export function useLabReportAttachments(report: DiagnosticReport | undefined): A
  *
  * - `report`: the report.
  * - `attachments`: lab PDFs to render above the structured rows. Assemble from
- *   `report.presentedForm[]` (dereferencing `DocumentReference/{id}` urls) plus every
+ *   `report.presentedForm[]` (dereferencing `DocumentReference/&lt;id&gt;` urls) plus every
  *   `Observation.derivedFrom[]` on `report.result[]` walked recursively through `hasMember[]`.
  *   De-dupe by `attachment.url`. Omitted or empty → the "Lab Document" section is hidden.
  * - `resources`: every resource the report refers to, flat, looked up by `ResourceType/id` (or
