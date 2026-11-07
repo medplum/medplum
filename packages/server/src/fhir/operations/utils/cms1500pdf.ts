@@ -7,6 +7,7 @@ import {
   formatQuantity,
   getDisplayString,
   HTTP_HL7_ORG,
+  HTTP_TERMINOLOGY_HL7_ORG,
 } from '@medplum/core';
 import type { Address, Claim, ClaimItem, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
@@ -363,6 +364,36 @@ export function formatDiagnosisPointers(diagnosisSequence: number[] | undefined)
     .filter((seq) => seq >= 1 && seq <= 26)
     .map((seq) => String.fromCharCode(64 + seq))
     .join('');
+}
+
+const CLAIM_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/claim-type`;
+
+// Claim types that payers expect on a different form. Rendering them as a CMS-1500 silently
+// drops data the other form carries, such as tooth and surface for dental claims.
+const NON_CMS1500_CLAIM_FORMS = new Map<string, string>([
+  ['oral', 'the ADA dental claim form'],
+  ['institutional', 'the UB-04'],
+  ['pharmacy', 'an NCPDP claim'],
+]);
+
+/**
+ * Checks whether a claim can be rendered as a CMS-1500.
+ *
+ * Dental, institutional and pharmacy claims are billed on other forms. Claims with no type,
+ * or with a type outside the HL7 claim-type code system, are allowed.
+ *
+ * @param claim - The claim to check.
+ * @returns An error message when the claim belongs on another form, otherwise undefined.
+ */
+export function getCms1500ClaimTypeError(claim: Claim): string | undefined {
+  for (const coding of claim.type?.coding ?? []) {
+    const form =
+      coding.system === CLAIM_TYPE_SYSTEM && coding.code ? NON_CMS1500_CLAIM_FORMS.get(coding.code) : undefined;
+    if (form) {
+      return `Claim type '${coding.code}' cannot be exported as a CMS-1500. These claims are billed on ${form}.`;
+    }
+  }
+  return undefined;
 }
 
 export function getSimplePhone(phone: string | undefined): string | undefined {

@@ -139,6 +139,7 @@ Accept: application/pdf
 | Status Code | Description |
 |-------------|-------------|
 | `400 Bad Request` | Claim ID is required (GET) or resource parameter missing (POST) |
+| `400 Bad Request` | Claim type is `oral`, `institutional` or `pharmacy`. These claims are billed on the ADA dental claim form, the UB-04 and NCPDP respectively, not the CMS-1500 |
 | `404 Not Found` | Claim not found |
 | `403 Forbidden` | Insufficient permissions |
 
@@ -146,6 +147,7 @@ Accept: application/pdf
 
 - This operation is marked as **experimental**
 - The generated PDF follows the CMS-1500 form format
+- Only claims that belong on a CMS-1500 can be exported. Claims with no `type`, or a `professional` or `vision` type, are supported
 - The Binary resource containing the PDF is automatically created during the operation
 
 ## Related Documentation
