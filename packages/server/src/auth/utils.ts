@@ -25,7 +25,7 @@ import { randomInt } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
-import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants';
+import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH, TOTP_ENROLLMENT_EXPIRATION_MS } from '../constants';
 import type { AuthenticatedRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getProjectAppName } from '../email/utils';
@@ -36,6 +36,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
+import { getCacheRedis } from '../redis';
 
 export type MfaMethod = 'totp' | 'email';
 
@@ -190,15 +191,21 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
   return Boolean(projectMfaRequired) || Boolean(user.mfaRequired);
 }
 
+// Returns the stored offer, or stores and returns ARGV[1] if there is none
+const GET_OR_SET_TOTP_ENROLLMENT = `
+local secret = redis.call('GET', KEYS[1])
+if secret then return secret end
+redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
+return ARGV[1]
+`;
+
 /**
- * Builds the authenticator (TOTP) enrollment payload for a user, generating and
- * persisting an `mfaSecret` first if the user does not have one.
+ * Builds the authenticator (TOTP) enrollment payload offered to a login.
  *
- * A secret is only created up front when a user is invited with `mfaRequired`,
- * so a user who comes under a requirement later — for example when the
- * project-wide `mfaRequired` setting is enabled — reaches enrollment without
- * one. Generating on demand keeps the QR code usable in that case. Users who
- * already have a secret keep it, so the URI is stable across repeated calls.
+ * Each login is offered its own secret, kept for `TOTP_ENROLLMENT_EXPIRATION_MS`
+ * so the URI is stable across repeated calls for that login. It only becomes
+ * `User.mfaSecret` when the same login confirms it with a code, so the secret
+ * of an enrolled authenticator is never part of an offer.
  *
  * The issuer is the project's app name and the account name identifies the user,
  * so the entry reads as "Acme Health" / "alice@example.com" in the user's
@@ -206,24 +213,52 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
  * it is the part that carries the branding; the Key URI spec forbids colons in
  * either field because apps split the label on the first one. Projects without an
  * `appName` keep the `medplum.com` issuer.
- * @param repo - The system repository used to persist a newly generated secret.
+ * @param login - The login the enrollment is offered to.
  * @param user - The user enrolling in an authenticator app.
  * @param project - The project the user is logging in to, if known.
  * @returns The enrollment URI and a QR code data URL for it.
  */
 export async function buildTotpEnrollment(
-  repo: SystemRepository,
+  login: Login,
   user: WithId<User>,
   project: Project | undefined
 ): Promise<{ enrollUri: string; enrollQrCode: string }> {
-  let mfaSecret = user.mfaSecret;
-  if (!mfaSecret) {
-    mfaSecret = authenticator.generateSecret();
-    await repo.updateResource<User>({ ...user, mfaSecret });
-  }
+  const mfaSecret = (await getCacheRedis().eval(
+    GET_OR_SET_TOTP_ENROLLMENT,
+    1,
+    getTotpEnrollmentKey(login, user),
+    authenticator.generateSecret(),
+    TOTP_ENROLLMENT_EXPIRATION_MS
+  )) as string;
   const issuer = (getProjectAppName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
   const enrollUri = authenticator.keyuri(user.email ?? user.id, issuer, mfaSecret);
   return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };
+}
+
+/**
+ * Returns the authenticator (TOTP) secret that `buildTotpEnrollment` offered to a login.
+ * @param login - The login confirming the enrollment.
+ * @param user - The user enrolling in an authenticator app.
+ * @returns The offered secret, or undefined if none was offered or the offer has expired.
+ */
+export async function getTotpEnrollmentSecret(login: Login, user: WithId<User>): Promise<string | undefined> {
+  return (await getCacheRedis().get(getTotpEnrollmentKey(login, user))) ?? undefined;
+}
+
+/**
+ * Ends the authenticator (TOTP) enrollment offer made to a login.
+ * @param login - The login the enrollment was offered to.
+ * @param user - The user the enrollment was offered for.
+ */
+export async function clearTotpEnrollmentSecret(login: Login, user: WithId<User>): Promise<void> {
+  await getCacheRedis().del(getTotpEnrollmentKey(login, user));
+}
+
+function getTotpEnrollmentKey(login: Login, user: WithId<User>): string {
+  if (!login.id) {
+    throw new OperationOutcomeError(badRequest('Invalid login'));
+  }
+  return `medplum:mfa:totp-enroll:${user.id.toLowerCase()}:${login.id.toLowerCase()}`;
 }
 
 /**
@@ -394,7 +429,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   const project = await getLoginProject(login);
 
   if (isMfaRequired(user, project) && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
-    const { enrollUri, enrollQrCode } = await buildTotpEnrollment(systemRepo, user, project);
+    const { enrollUri, enrollQrCode } = await buildTotpEnrollment(login, user, project);
     res.json({
       login: login.id,
       mfaEnrollRequired: true,

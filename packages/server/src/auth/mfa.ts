@@ -19,9 +19,11 @@ import type { MfaMethod } from './utils';
 import {
   buildTotpEnrollment,
   clearMfaEmailCode,
+  clearTotpEnrollmentSecret,
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
   getLoginProject,
+  getTotpEnrollmentSecret,
   isMfaRequired,
   readUserForAccountManagement,
   sendLoginResult,
@@ -53,6 +55,21 @@ function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
     methods.push(method);
   }
   return methods;
+}
+
+/**
+ * Enrolls the user in TOTP with the secret that was offered to the login, and ends the offer.
+ * @param login - The login that confirmed the offered secret.
+ * @param user - The user.
+ * @param secret - The offered secret.
+ */
+async function enrollTotp(login: Login, user: WithId<User>, secret: string): Promise<void> {
+  // If the user changed since it was read (e.g. another login enrolled), fail rather than overwrite it
+  await getGlobalSystemRepo().updateResource(
+    { ...user, mfaSecret: secret, mfaEnrolled: true, mfaMethod: addMfaMethod(user, 'totp') },
+    { ifMatch: user.meta?.versionId }
+  );
+  await clearTotpEnrollmentSecret(login, user);
 }
 
 /**
@@ -94,10 +111,10 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
   const enrolledMethods = getEnrolledMfaMethods(user);
 
   // The TOTP QR code is only returned while TOTP is not enrolled: for initial enrollment,
-  // or to add TOTP alongside email-based MFA. A secret is generated if the user has none.
+  // or to add TOTP alongside email-based MFA.
   const enrollment = enrolledMethods.includes('totp')
     ? undefined
-    : await buildTotpEnrollment(ctx.systemRepo, user, ctx.project);
+    : await buildTotpEnrollment(ctx.login, user, ctx.project);
 
   res.json({
     enrolled: Boolean(user.mfaEnrolled),
@@ -153,7 +170,8 @@ mfaRouter.post(
       return;
     }
 
-    if (!user.mfaSecret) {
+    const secret = await getTotpEnrollmentSecret(login, user);
+    if (!secret) {
       sendOutcome(res, badRequest('Secret not found'));
       return;
     }
@@ -163,14 +181,8 @@ mfaRouter.post(
       return;
     }
 
-    const result = await verifyMfaToken(login, req.body.token);
-
-    await systemRepo.updateResource({
-      ...user,
-      mfaEnrolled: true,
-      mfaMethod: addMfaMethod(user, 'totp'),
-    });
-
+    const result = await verifyMfaToken(login, req.body.token, secret);
+    await enrollTotp(login, user, secret);
     await sendLoginResult(res, result);
   }
 );
@@ -219,7 +231,8 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
-  if (!user.mfaSecret) {
+  const secret = await getTotpEnrollmentSecret(ctx.login, user);
+  if (!secret) {
     sendOutcome(res, badRequest('Secret not found'));
     return;
   }
@@ -229,7 +242,6 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
-  const secret = user.mfaSecret;
   const token = req.body.token as string;
   authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
   if (!authenticator.verify({ token, secret })) {
@@ -237,11 +249,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
-  await systemRepo.updateResource({
-    ...user,
-    mfaEnrolled: true,
-    mfaMethod: addMfaMethod(user, 'totp'),
-  });
+  await enrollTotp(ctx.login, user, secret);
   sendOutcome(res, allOk);
 });
 
@@ -255,6 +263,17 @@ mfaRouter.post(
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
+
+    // A code for this login's own enrollment offer enrolls the user, as /login-enroll does
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+    const secret = user.mfaEnrolled ? undefined : await getTotpEnrollmentSecret(login, user);
+    if (secret && getAllowedMfaMethods(await getLoginProject(login)).includes('totp')) {
+      const result = await verifyMfaToken(login, req.body.token, secret);
+      await enrollTotp(login, user, secret);
+      await sendLoginResult(res, result);
+      return;
+    }
+
     const result = await verifyMfaToken(login, req.body.token);
     await sendLoginResult(res, result);
   }
