@@ -658,6 +658,41 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow('Invalid access policy configuration');
     }));
 
+  test('Access policy in a linked project', () =>
+    withTestContext(async () => {
+      const { project: sharingProject, accessPolicy } = await createTestProject({
+        withClient: true,
+        project: { exportedResourceType: ['AccessPolicy'] },
+        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+      });
+      const { project: nonSharingProject, accessPolicy: unsharedPolicy } = await createTestProject({
+        withClient: true,
+        project: { exportedResourceType: ['Bot'] },
+        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+      });
+      const link = {
+        link: [{ project: createReference(sharingProject) }, { project: createReference(nonSharingProject) }],
+      };
+
+      await expect(
+        createTestProject({
+          withClient: true,
+          withRepo: true,
+          project: link,
+          membership: { accessPolicy: createReference(accessPolicy) },
+        })
+      ).resolves.toBeDefined();
+
+      await expect(
+        createTestProject({
+          withClient: true,
+          withRepo: true,
+          project: link,
+          membership: { accessPolicy: createReference(unsharedPolicy) },
+        })
+      ).rejects.toThrow('Invalid access policy configuration');
+    }));
+
   test('Multiple entries per resource type', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({
@@ -709,6 +744,7 @@ describe('AccessPolicy', () => {
       // Create the access policy
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
         compartment: {
           reference: account,
         },
@@ -889,6 +925,7 @@ describe('AccessPolicy', () => {
       // Create the access policy
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
         resource: [
           {
             resourceType: 'Patient',

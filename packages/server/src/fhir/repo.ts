@@ -216,8 +216,13 @@ export function getPermittedProjectIds(
 
   const projectIds = [projects[0].id]; // Always include the first project
 
-  if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
+  if (
+    resourceType !== 'Project' &&
+    resourceType !== 'AccessPolicy' &&
+    projectAdminResourceTypes.includes(resourceType)
+  ) {
     // If the resource type is a project admin resource, only include the current project (the first project)
+    // AccessPolicy is exempt so memberships can reference policies shared by linked projects
     return projectIds;
   }
 
