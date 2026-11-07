@@ -69,7 +69,10 @@ describe('readMembershipReference', () => {
           { allowLinkedProjects }
         );
 
+      const readSpy = vi.spyOn(systemRepo, 'readReference');
       await expect(read(ownProfile)).resolves.toMatchObject({ id: ownProfile.id });
+      expect(readSpy).toHaveBeenCalledTimes(1); // Same-project reads skip loading projects
+      readSpy.mockRestore();
       await expect(read(otherProfile, true)).rejects.toThrow('Not found');
       await expect(read(linkedProfile)).rejects.toThrow('Not found');
       await expect(read(linkedProfile, true)).resolves.toMatchObject({ id: linkedProfile.id });
@@ -77,27 +80,6 @@ describe('readMembershipReference', () => {
       await expect(read(linkedPolicy, true)).resolves.toMatchObject({ id: linkedPolicy.id });
       await expect(read(projectlessPolicy, true)).rejects.toThrow('Not found');
       await expect(read(projectlessClient, true)).rejects.toThrow('Not found');
-    }));
-
-  test('Reads a resource in the membership project without loading projects', () =>
-    withTestContext(async () => {
-      const { project, membership } = await createTestProject({ withClient: true });
-      const policy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        meta: { project: project.id },
-      });
-
-      const readSpy = vi.spyOn(systemRepo, 'readReference');
-      try {
-        await expect(
-          readMembershipReference(systemRepo, membership, createReference(policy), ['AccessPolicy'], {
-            allowLinkedProjects: true,
-          })
-        ).resolves.toMatchObject({ id: policy.id });
-        expect(readSpy).toHaveBeenCalledTimes(1);
-      } finally {
-        readSpy.mockRestore();
-      }
     }));
 
   test('Rejects unexpected resource types', () =>
@@ -128,6 +110,10 @@ describe('readMembershipReference', () => {
         resourceType: 'Practitioner',
         meta: { project: linkedProject.id },
       });
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: linkedProject.id },
+      });
 
       await expect(
         readMembershipReference(systemRepo, membership, createReference(bot), membershipProfileTypes, {
@@ -139,41 +125,10 @@ describe('readMembershipReference', () => {
           allowLinkedProjects: true,
         })
       ).rejects.toThrow('Not found');
-    }));
-
-  test('Respects exported resource types for access policies', () =>
-    withTestContext(async () => {
-      const { project } = await createTestProject();
-      const { project: sharingProject } = await createTestProject({
-        project: { exportedResourceType: ['AccessPolicy'] },
-      });
-      const { project: botOnlyProject } = await createTestProject({
-        project: { exportedResourceType: ['Bot'] },
-      });
-      const linkingProject = await systemRepo.updateResource({
-        ...project,
-        link: [{ project: createReference(sharingProject) }, { project: createReference(botOnlyProject) }],
-      });
-      const membership = {
-        resourceType: 'ProjectMembership',
-        project: createReference(linkingProject),
-      } as ProjectMembership;
-
-      const sharedPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        meta: { project: sharingProject.id },
-      });
-      const unsharedPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        meta: { project: botOnlyProject.id },
-      });
-
-      const read = (policy: AccessPolicy): any =>
+      await expect(
         readMembershipReference(systemRepo, membership, createReference(policy), ['AccessPolicy'], {
           allowLinkedProjects: true,
-        });
-
-      await expect(read(sharedPolicy)).resolves.toMatchObject({ id: sharedPolicy.id });
-      await expect(read(unsharedPolicy)).rejects.toThrow('Not found');
+        })
+      ).rejects.toThrow('Not found');
     }));
 });

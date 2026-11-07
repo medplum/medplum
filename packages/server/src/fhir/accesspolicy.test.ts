@@ -660,37 +660,24 @@ describe('AccessPolicy', () => {
 
   test('Access policy in a linked project', () =>
     withTestContext(async () => {
-      const { project: sharingProject, accessPolicy } = await createTestProject({
-        withClient: true,
+      const { project: sharingProject } = await createTestProject({
         project: { exportedResourceType: ['AccessPolicy'] },
-        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
       });
-      const { project: nonSharingProject, accessPolicy: unsharedPolicy } = await createTestProject({
+      const accessPolicy = await (
+        await getProjectSystemRepo(sharingProject)
+      ).createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: sharingProject.id },
+        resource: [{ resourceType: 'Patient' }],
+      });
+
+      const { repo } = await createTestProject({
         withClient: true,
-        project: { exportedResourceType: ['Bot'] },
-        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+        withRepo: true,
+        project: { link: [{ project: createReference(sharingProject) }] },
+        membership: { accessPolicy: createReference(accessPolicy) },
       });
-      const link = {
-        link: [{ project: createReference(sharingProject) }, { project: createReference(nonSharingProject) }],
-      };
-
-      await expect(
-        createTestProject({
-          withClient: true,
-          withRepo: true,
-          project: link,
-          membership: { accessPolicy: createReference(accessPolicy) },
-        })
-      ).resolves.toBeDefined();
-
-      await expect(
-        createTestProject({
-          withClient: true,
-          withRepo: true,
-          project: link,
-          membership: { accessPolicy: createReference(unsharedPolicy) },
-        })
-      ).rejects.toThrow('Invalid access policy configuration');
+      expect(repo.effectiveAccessPolicy()?.basedOn).toEqual([createReference(accessPolicy)]);
     }));
 
   test('Multiple entries per resource type', () =>

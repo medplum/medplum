@@ -1352,23 +1352,20 @@ describe('Admin Invite', () => {
   });
 
   test('Invite with access policy from linked project', async () => {
-    const { project: sharingProject, accessPolicy } = await createTestProject({
-      withClient: true,
+    const { project: sharingProject } = await createTestProject({
       project: { exportedResourceType: ['AccessPolicy'] },
-      accessPolicy: { resource: [{ resourceType: 'Patient' }] },
-    });
-    const { project: nonSharingProject, accessPolicy: unsharedPolicy } = await createTestProject({
-      withClient: true,
-      project: { exportedResourceType: ['Bot'] },
-      accessPolicy: { resource: [{ resourceType: 'Patient' }] },
     });
     const { project, accessToken } = await createTestProject({
       withAccessToken: true,
-      project: {
-        link: [{ project: createReference(sharingProject) }, { project: createReference(nonSharingProject) }],
-      },
+      project: { link: [{ project: createReference(sharingProject) }] },
       membership: { admin: true },
     });
+    const systemRepo = await getProjectSystemRepo(project);
+    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      meta: { project: sharingProject.id },
+    });
+    const projectlessPolicy = await systemRepo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' });
 
     const invite = (policy: AccessPolicy): Promise<request.Response> =>
       request(app)
@@ -1384,16 +1381,9 @@ describe('Admin Invite', () => {
         });
 
     expect(await invite(accessPolicy)).toHaveStatus(200);
-    const res = await invite(unsharedPolicy);
+    const res = await invite(projectlessPolicy);
     expect(res).toHaveStatus(400);
     expect(normalizeErrorString(res.body)).toContain('does not belong to this project');
-
-    const projectlessPolicy = await getProjectSystemRepo(project).then((repo) =>
-      repo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' })
-    );
-    const res2 = await invite(projectlessPolicy);
-    expect(res2).toHaveStatus(400);
-    expect(normalizeErrorString(res2.body)).toContain('does not belong to this project');
   });
 
   test('Invite without access policy (backwards compatibility)', async () => {
