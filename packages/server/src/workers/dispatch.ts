@@ -9,8 +9,6 @@ import { deleteLambda, getLambdaNameForBot } from '../cloud/aws/deploy';
 import { getBotManagementLambdaClient } from '../cloud/aws/lambda';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
-import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { ProjectJobTarget } from './base';
 import { getJobSystemRepo, getProjectJobTarget } from './base';
@@ -31,8 +29,7 @@ import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetr
  */
 
 export interface DispatchJobData {
-  // PENDING{v5.2+} make target required and tighten up based on that below
-  readonly target?: ProjectJobTarget;
+  readonly target: ProjectJobTarget;
   readonly interaction: BackgroundJobInteraction;
   readonly resourceType: ResourceType;
   readonly id: string;
@@ -111,16 +108,28 @@ async function addDispatchJobData(job: DispatchJobData): Promise<void> {
   await getDispatchQueue().add(jobName, job);
 }
 
+// For system resources, only these types have dispatch work: Bot Lambda and cron teardown.
+const SYSTEM_DISPATCH_TYPES: readonly ResourceType[] = ['Bot', 'Cron'];
+function hasDispatchWork(data: DispatchJobData): boolean {
+  // Subscriptions never fire for AuditEvents, and no other target applies to them
+  if (data.resourceType === 'AuditEvent') {
+    return false;
+  }
+
+  // skip system resources except SYSTEM_DISPATCH_TYPES
+  return !data.target.system || SYSTEM_DISPATCH_TYPES.includes(data.resourceType);
+}
+
 /**
  * Executes a dispatch job.
  * @param job - The dispatch job details.
  */
 export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> {
-  if (!getConfig().dispatchEnabled) {
+  if (!getConfig().dispatchEnabled || !hasDispatchWork(job.data)) {
     return;
   }
 
-  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
+  const systemRepo = await getJobSystemRepo(job.data.target);
   const { resourceType, id, versionId, previousVersionId } = job.data;
   const resource = await systemRepo.readVersion(resourceType, id, versionId);
   const previousVersion = previousVersionId

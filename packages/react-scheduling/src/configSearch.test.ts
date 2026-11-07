@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Bundle, HealthcareService, Resource } from '@medplum/fhirtypes';
+import type { Bundle, Device, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { searchConfigurableServices } from './configSearch';
+import { searchConfigurableActors, searchConfigurableServices } from './configSearch';
 
 const configured: WithId<HealthcareService> = {
   resourceType: 'HealthcareService',
@@ -29,7 +29,7 @@ const deactivated: WithId<HealthcareService> = {
 };
 
 async function setupClient(resources: readonly Resource[]): Promise<MockClient> {
-  // Unseeded, so the default Dr. Alice Smith calendar does not join every result.
+  // Unseeded, so the default Dr. Alice Smith Schedule does not join every result.
   const medplum = new MockClient({ seedDefaultData: false });
   for (const resource of resources) {
     await medplum.createResource(resource);
@@ -38,9 +38,8 @@ async function setupClient(resources: readonly Resource[]): Promise<MockClient> 
   return medplum;
 }
 
-// `searchResourcePages` hands `search` a URLSearchParams rather than the record it was given.
-function querySentTo(medplum: MockClient, index = 0): Record<string, string> {
-  return Object.fromEntries(vi.mocked(medplum.search).mock.calls[index][1] as URLSearchParams);
+function querySentTo(medplum: MockClient): Record<string, string> {
+  return vi.mocked(medplum.search).mock.calls[0][1] as Record<string, string>;
 }
 
 function searchset<T extends WithId<Resource>>(resources: T[], next?: string): Bundle<T> {
@@ -70,50 +69,16 @@ describe('searchConfigurableServices', () => {
     expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000' });
   });
 
-  test('reading exactly the limit, with nothing left over, is complete', async () => {
-    const medplum = await setupClient([configured, unconfigured]);
-
-    const { services, complete } = await searchConfigurableServices(medplum, { limit: 2 });
-
-    expect(services).toHaveLength(2);
-    expect(complete).toBe(true);
-  });
-
-  test('stops at the limit and reports the rest missing', async () => {
-    const medplum = await setupClient([configured, unconfigured, deactivated]);
-
-    const { services, complete } = await searchConfigurableServices(medplum, { limit: 2 });
-
-    expect(services).toHaveLength(2);
-    expect(complete).toBe(false);
-  });
-
-  // MockClient's bundles never carry a `next` link, so it only ever serves one page. Stubbing `search` still
-  // runs the real paging loop, which is what calls it.
-  test('reads every page', async () => {
-    const medplum = await setupClient([]);
-    vi.mocked(medplum.search)
-      .mockResolvedValueOnce(
-        searchset([configured, unconfigured], 'https://example.com/fhir/R4/HealthcareService?_offset=2')
-      )
-      .mockResolvedValueOnce(searchset([deactivated]));
-
-    const { services, complete } = await searchConfigurableServices(medplum, { pageSize: 2 });
-
-    expect(services.map((service) => service.id)).toEqual(['configured', 'unconfigured', 'deactivated']);
-    expect(complete).toBe(true);
-    expect(querySentTo(medplum, 1)._offset).toBe('2');
-  });
-
-  test('a limit reached on a page with a next link is incomplete', async () => {
+  // MockClient's bundles never carry a `next` link, so a project too big for one page has to be stubbed.
+  test('reads one page, and reports a project with more than that incomplete', async () => {
     const medplum = await setupClient([]);
     vi.mocked(medplum.search).mockResolvedValueOnce(
-      searchset([configured, unconfigured], 'https://example.com/fhir/R4/HealthcareService?_offset=2')
+      searchset([configured, unconfigured], 'https://example.com/fhir/R4/HealthcareService?_offset=1000')
     );
 
-    const { services, complete } = await searchConfigurableServices(medplum, { pageSize: 2, limit: 2 });
+    const { services, complete } = await searchConfigurableServices(medplum);
 
-    expect(services).toHaveLength(2);
+    expect(services.map((service) => service.id)).toEqual(['configured', 'unconfigured']);
     expect(complete).toBe(false);
     expect(medplum.search).toHaveBeenCalledTimes(1);
   });
@@ -124,5 +89,122 @@ describe('searchConfigurableServices', () => {
     controller.abort();
 
     await expect(searchConfigurableServices(medplum, { signal: controller.signal })).rejects.toThrow();
+  });
+});
+
+const drAdams: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-adams',
+  name: [{ prefix: ['Dr.'], given: ['Ada'], family: 'Adams' }],
+};
+const drBaker: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-baker',
+  name: [{ prefix: ['Dr.'], given: ['Ben'], family: 'Baker' }],
+  active: false,
+};
+
+const ROOM_SYSTEM = 'http://terminology.hl7.org/CodeSystem/location-physical-type';
+
+function location(id: string, name: string, code?: 'ro' | 'bd' | 'si'): WithId<Location> {
+  return {
+    resourceType: 'Location',
+    id,
+    name,
+    ...(code && { physicalType: { coding: [{ system: ROOM_SYSTEM, code }] } }),
+  };
+}
+
+const room1 = location('room-1', 'Room 1', 'ro');
+const bed1 = location('bed-1', 'Bed 1', 'bd');
+const clinic = location('clinic', 'Downtown Clinic', 'si');
+const untypedFacility = location('facility-untyped', 'Northside');
+
+const ultrasound: WithId<Device> = {
+  resourceType: 'Device',
+  id: 'ultrasound',
+  deviceName: [{ name: 'Ultrasound', type: 'user-friendly-name' }],
+  status: 'inactive',
+};
+
+function makeSchedule(id: string, actors: string[], active?: boolean): WithId<Schedule> {
+  return {
+    resourceType: 'Schedule',
+    id,
+    ...(active !== undefined && { active }),
+    actor: actors.map((reference) => ({ reference })),
+  };
+}
+
+function scheduleIds(actor: { schedules: WithId<Schedule>[] } | undefined): string[] {
+  return actor?.schedules.map((schedule) => schedule.id) ?? [];
+}
+
+describe('searchConfigurableActors', () => {
+  test('lists every provider, with a Schedule or without, turned off or not', async () => {
+    const medplum = await setupClient([drAdams, drBaker, makeSchedule('adams', ['Practitioner/dr-adams'], false)]);
+
+    const { actors, complete } = await searchConfigurableActors(medplum, 'Practitioner');
+
+    expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([
+      ['dr-adams', ['adams']],
+      ['dr-baker', []],
+    ]);
+    expect(complete).toBe(true);
+    expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000', _revinclude: 'Schedule:actor' });
+  });
+
+  test('attaches only the Schedules an actor holds alone', async () => {
+    const medplum = await setupClient([
+      drAdams,
+      makeSchedule('shared', ['Practitioner/dr-adams', 'Location/room-1']),
+      makeSchedule('first', ['Practitioner/dr-adams']),
+      makeSchedule('second', ['Practitioner/dr-adams']),
+    ]);
+
+    const { actors } = await searchConfigurableActors(medplum, 'Practitioner');
+
+    expect(scheduleIds(actors[0]).sort()).toEqual(['first', 'second']);
+  });
+
+  test('rooms are the Locations typed as a room or a bed, or holding a Schedule, and not the other facilities', async () => {
+    const medplum = await setupClient([
+      room1,
+      bed1,
+      clinic,
+      untypedFacility,
+      location('facility-scheduled', 'Annex', undefined),
+      makeSchedule('annex', ['Location/facility-scheduled']),
+    ]);
+
+    const { actors } = await searchConfigurableActors(medplum, 'Location');
+
+    expect(actors.map((actor) => actor.resource.id)).toEqual(['facility-scheduled', 'bed-1', 'room-1']);
+    expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000', _revinclude: 'Schedule:actor' });
+  });
+
+  test('lists devices, including retired ones', async () => {
+    const medplum = await setupClient([ultrasound, makeSchedule('us', ['Device/ultrasound'])]);
+
+    const { actors } = await searchConfigurableActors(medplum, 'Device');
+
+    expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([['ultrasound', ['us']]]);
+    expect(querySentTo(medplum)).toEqual({ _sort: 'device-name', _count: '1000', _revinclude: 'Schedule:actor' });
+  });
+
+  test('reads one page with its Schedules, and reports a project with more than that incomplete', async () => {
+    const medplum = await setupClient([]);
+    vi.mocked(medplum.search).mockResolvedValueOnce(
+      searchset<WithId<Resource>>(
+        [drAdams, makeSchedule('a', ['Practitioner/dr-adams'])],
+        'https://example.com/fhir/R4/Practitioner?_offset=1000'
+      )
+    );
+
+    const { actors, complete } = await searchConfigurableActors(medplum, 'Practitioner');
+
+    expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([['dr-adams', ['a']]]);
+    expect(complete).toBe(false);
+    expect(medplum.search).toHaveBeenCalledTimes(1);
   });
 });

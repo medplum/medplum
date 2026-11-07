@@ -9,7 +9,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { BookableActorType } from '../actors';
-import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel, isActorTypeRequired } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel } from '../actors';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from './AppointmentFinder.schedules';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
@@ -23,7 +23,7 @@ export interface AppointmentActorSelectProps {
    * device anywhere inside it counts, a provider only if one of their
    * PractitionerRoles names it.
    */
-  readonly location?: Reference<Location> | WithId<Location>;
+  readonly serviceFacility?: Reference<Location> | WithId<Location>;
   readonly defaultValue?: readonly ScheduleCandidate[];
   readonly onChange: (candidates: readonly ScheduleCandidate[]) => void;
   readonly error?: string;
@@ -34,10 +34,15 @@ export interface AppointmentActorSelectProps {
   readonly description?: ReactNode;
   /** What the empty field invites. Defaults to searching the actor type by name. */
   readonly placeholder?: string;
-  /** Whether the field must be answered. Defaults to whether its actor type is required. */
+  /** Whether the field must be answered. Defaults to false. */
   readonly required?: boolean;
   /** Whether to mark the field with an asterisk. Defaults to `required`. */
   readonly withAsterisk?: boolean;
+  /**
+   * The only schedules to offer, matched by name as the user types. Without these the
+   * server is searched for schedules offering `service`.
+   */
+  readonly candidates?: readonly ScheduleCandidate[];
 }
 
 /**
@@ -53,26 +58,30 @@ export interface AppointmentActorSelectProps {
  * @returns The field for one actor type.
  */
 export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.Element {
-  const { actorType, service, location, defaultValue, onChange, error, disabled } = props;
+  const { actorType, service, serviceFacility, defaultValue, onChange, error, disabled, candidates } = props;
   const medplum = useMedplum();
   const resolvedService = useResource<HealthcareService>(service);
-  const locationReference = location && getReferenceString(location);
+  const serviceFacilityReference = serviceFacility && getReferenceString(serviceFacility);
   const lowercaseLabel = getActorTypeLabel(actorType).toLowerCase();
   const label = props.label ?? getActorTypeLabel(actorType);
-  const required = props.required ?? isActorTypeRequired(actorType);
   const placeholder = props.placeholder ?? `Search ${lowercaseLabel}s`;
 
   const search = useCallback(
-    async (query: string, signal: AbortSignal): Promise<ScheduleCandidate[]> =>
-      resolvedService
+    async (query: string, signal: AbortSignal): Promise<ScheduleCandidate[]> => {
+      if (candidates) {
+        const needle = query.trim().toLowerCase();
+        return candidates.filter((candidate) => getCandidateDisplay(candidate).toLowerCase().includes(needle));
+      }
+      return resolvedService
         ? searchScheduleCandidates(medplum, resolvedService, {
             actorType,
             query,
-            location: locationReference ? { reference: locationReference } : undefined,
+            location: serviceFacilityReference ? { reference: serviceFacilityReference } : undefined,
             signal,
           })
-        : [],
-    [medplum, resolvedService, locationReference, actorType]
+        : [];
+    },
+    [medplum, resolvedService, serviceFacilityReference, actorType, candidates]
   );
 
   const handleChange = useCallback((candidates: ScheduleCandidate[]) => onChange(candidates), [onChange]);
@@ -81,7 +90,7 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
     <AsyncAutocomplete<ScheduleCandidate>
       name={actorType}
       label={label}
-      required={required}
+      required={props.required}
       withAsterisk={props.withAsterisk}
       description={props.description}
       placeholder={placeholder}
@@ -123,5 +132,5 @@ function toOption(candidate: ScheduleCandidate): AsyncAutocompleteOption<Schedul
  * @returns The row.
  */
 function CandidateItem(props: Readonly<AsyncAutocompleteOption<ScheduleCandidate>>): JSX.Element {
-  return <AppointmentOptionRow label={props.label} detail={props.resource.schedule.comment} />;
+  return <AppointmentOptionRow label={props.label} detail={props.resource.schedule.comment} active={props.active} />;
 }

@@ -1,20 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, streamToBuffer } from '@medplum/core';
-import type { Binary } from '@medplum/fhirtypes';
+import { badRequest, ContentType, createReference, getReferenceString, Operator, streamToBuffer } from '@medplum/core';
+import type { AccessPolicy, Binary, Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import type { MedplumServerConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 
 const app = express();
 
 describe('Bot $init', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -75,7 +76,7 @@ describe('Bot $init', () => {
   });
 
   test('Create new bot', async () => {
-    const { accessToken } = await createTestProject({
+    const { project, accessToken } = await createTestProject({
       membership: { admin: true },
       withAccessToken: true,
     });
@@ -104,6 +105,12 @@ describe('Bot $init', () => {
     expect(res3.body.resourceType).toBe('Bot');
     expect(res3.body.id).toBe(res2.body.id);
 
+    const systemRepo = getGlobalSystemRepo();
+    const bot = await systemRepo.readResource<Bot>('Bot', res2.body.id);
+    expect(bot.meta?.project).toBe(project.id);
+    const binary = await systemRepo.readReference<Binary>({ reference: bot.sourceCode?.url });
+    expect(binary.meta?.project).toBe(project.id);
+
     // Create bot with invalid name (should fail)
     const res4 = await request(app)
       .post('/fhir/R4/Bot/$init')
@@ -128,7 +135,7 @@ describe('Bot $init', () => {
     };
     `;
 
-    const { accessToken, repo } = await createTestProject({
+    const { project, accessToken, repo } = await createTestProject({
       membership: { admin: true },
       withAccessToken: true,
       withRepo: true,
@@ -165,6 +172,63 @@ describe('Bot $init', () => {
 
     const executableCodeCheck = await readBinaryContent(repo, extractBinaryId(res2.body.executableCode.url));
     expect(executableCodeCheck).toBe(executableCode);
+
+    const systemRepo = getGlobalSystemRepo();
+    const bot = await systemRepo.readResource<Bot>('Bot', res2.body.id);
+    expect(bot.meta?.project).toBe(project.id);
+    const sourceBinary = await systemRepo.readResource<Binary>('Binary', extractBinaryId(res2.body.sourceCode.url));
+    expect(sourceBinary.meta?.project).toBe(project.id);
+    const executableBinary = await systemRepo.readResource<Binary>(
+      'Binary',
+      extractBinaryId(res2.body.executableCode.url)
+    );
+    expect(executableBinary.meta?.project).toBe(project.id);
+  });
+
+  test('Applies Bot defaultAccessPolicies when no access policy is provided', async () => {
+    const { project, accessToken } = await createTestProject({
+      membership: { admin: true },
+      withAccessToken: true,
+    });
+    const systemRepo = await getProjectSystemRepo(project);
+    const botPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      name: 'Default Bot Policy',
+      resource: [{ resourceType: '*' }],
+    });
+    const customPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      name: 'Custom Bot Policy',
+      resource: [{ resourceType: 'Patient' }],
+    });
+    await systemRepo.updateResource({
+      ...project,
+      defaultAccessPolicies: [{ profileType: 'Bot', accessPolicy: createReference(botPolicy) }],
+    });
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot/$init')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Default policy bot' });
+    expect(res1).toHaveStatus(201);
+    const membership1 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'Bot/' + res1.body.id }],
+    });
+    expect(membership1?.accessPolicy?.reference).toBe(getReferenceString(botPolicy));
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Bot/$init')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Custom policy bot', accessPolicy: createReference(customPolicy) });
+    expect(res2).toHaveStatus(201);
+    const membership2 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'Bot/' + res2.body.id }],
+    });
+    expect(membership2?.accessPolicy?.reference).toBe(getReferenceString(customPolicy));
   });
 });
 

@@ -57,6 +57,7 @@ export * from './types';
 export * from './typeschema/crawler';
 export * from './typeschema/slices';
 export * from './typeschema/types';
+export * from './typeschema/typescript';
 export * from './typeschema/validation';
 export * from './utils';
 export * from './version-utils';

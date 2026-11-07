@@ -76,6 +76,16 @@ export const CANDID_GET_CONTRACTS_BOT_IDENTIFIER = {
   value: 'candid-get-contracts',
 };
 
+/**
+ * Bot that adds a practitioner to, or removes them from, the rendering providers of every pending and effective
+ * Candid contract a billing organization holds. Both IDs are Candid organization provider IDs; the bot is
+ * idempotent, so it is safe to run on every save.
+ */
+export const CANDID_LINK_RENDERING_PROVIDER_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-link-rendering-provider',
+};
+
 /** Identifier the candid-get-contracts bot stamps on each Contract it maps from Candid. */
 export const CANDID_CONTRACT_ID_SYSTEM = 'https://candidhealth.com/contract-id';
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   badRequest,
   createReference,
   deepClone,
@@ -21,6 +22,7 @@ import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
+import type { Repository } from '../fhir/repo';
 import type { CacheEntry } from '../fhir/repository/resource-cache';
 import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
@@ -64,11 +66,8 @@ export interface WebSocketSubMetadata {
 
 export type WebSocketSubToken = MedplumAccessTokenClaims & AdditionalWsBindingClaims;
 
-export type V1SubEventEntry = [WithId<Resource>, string, SubEventsOptions];
-export type V1SubEventPayload = V1SubEventEntry[];
-
-export type V2SubEventEntry = [string, SubEventsOptions];
-export type V2SubEventPayload = { resource: WithId<Resource>; events: V2SubEventEntry[] };
+export type SubEventEntry = [string, SubEventsOptions];
+export type SubEventPayload = { resource: WithId<Resource>; events: SubEventEntry[] };
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -127,26 +126,18 @@ async function setupSubscriptionHandler(): Promise<void> {
   });
   subscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    let subEventPayload: V1SubEventPayload | V2SubEventPayload;
+    let subEventPayload: SubEventPayload;
     try {
-      subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
+      subEventPayload = JSON.parse(events) as SubEventPayload;
     } catch (err) {
       globalLogger.error(`[WS]: Failed to parse subscription event payload: ${normalizeErrorString(err)}`, { channel });
       return;
     }
-    let resource: WithId<Resource>;
-    let subEventArgsArr: [string, SubEventsOptions][];
 
-    // PENDING{v5.2} - Deprecate v1
-    if (isV1SubEventPayload(subEventPayload)) {
-      resource = subEventPayload[0][0];
-      subEventArgsArr = subEventPayload.map((entry) => [entry[1], entry[2]]);
-    } else {
-      resource = subEventPayload.resource;
-      subEventArgsArr = subEventPayload.events;
-    }
-
-    const deadSubscriptionIds = await sendSubscriptionEventNotifications(resource, subEventArgsArr);
+    const deadSubscriptionIds = await sendSubscriptionEventNotifications(
+      subEventPayload.resource,
+      subEventPayload.events
+    );
     await handleDeadSubscriptions(deadSubscriptionIds);
   });
   await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
@@ -154,49 +145,120 @@ async function setupSubscriptionHandler(): Promise<void> {
 
 async function sendSubscriptionEventNotifications(
   resource: WithId<Resource>,
-  subEventArgsArr: [string, SubEventsOptions][]
+  subEventArgsArr: SubEventEntry[]
 ): Promise<string[]> {
   const deadSubscriptionIds: string[] = [];
   for (const [subscriptionId, options] of subEventArgsArr) {
     for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
-      // Get the repo for this socket in the context of the subscription
-      const subMetadataMap = wsToSubLookup.get(socket);
-      if (!subMetadataMap) {
-        // We should really never hit this log, this is a true error
-        globalLogger.error('[WS] Unable to find sub metadata map for WebSocket');
-        continue;
+      if (!(await notifySubscriber(socket, resource, subscriptionId, options))) {
+        deadSubscriptionIds.push(subscriptionId);
       }
-      const subMetadata = subMetadataMap.get(subscriptionId);
-      if (!subMetadata) {
-        // We should really never hit this log, this is a true error
-        globalLogger.error('[WS] Unable to find sub metadata entry for WebSocket', { subscriptionId });
-        continue;
-      }
-
-      let rewrittenBundle: Bundle;
-      try {
-        const repo = (await getLoginForAccessToken(undefined, subMetadata.rawToken))?.repo;
-        if (!repo) {
-          globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
-          deadSubscriptionIds.push(subscriptionId);
-          continue;
-        }
-        // removeHiddenFields mutates its input, and one published resource is shared by every
-        // socket on this event, so each subscriber filters its own copy.
-        const visible = repo.removeHiddenFields(deepClone(resource));
-        const bundle = createSubEventNotification(visible, subscriptionId, options);
-        rewrittenBundle = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
-      } catch (err) {
-        globalLogger.error('[WS] Error occurred while preparing subscription notification', { err });
-        continue;
-      }
-
-      socket.send(JSON.stringify(rewrittenBundle), { binary: false });
-      subscriptionMessagesSent++;
     }
     subscriptionEventsFired++;
   }
   return deadSubscriptionIds;
+}
+
+/**
+ * Sends a subscription event notification to one subscriber socket.
+ * @param socket - The subscriber socket.
+ * @param resource - The resource of the subscription event.
+ * @param subscriptionId - The subscription ID.
+ * @param options - The subscription event options.
+ * @returns False if the access token bound to the subscription is no longer valid.
+ */
+async function notifySubscriber(
+  socket: WebSocket,
+  resource: WithId<Resource>,
+  subscriptionId: string,
+  options: SubEventsOptions
+): Promise<boolean> {
+  const subMetadata = getSubMetadata(socket, subscriptionId);
+  if (!subMetadata) {
+    return true;
+  }
+
+  let notification: Bundle | undefined;
+  try {
+    const repo = (await getLoginForAccessToken(undefined, subMetadata.rawToken))?.repo;
+    if (!repo) {
+      globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
+      return false;
+    }
+    notification = await buildSubscriberNotification(repo, resource, subscriptionId, options);
+  } catch (err) {
+    globalLogger.error('[WS] Error occurred while preparing subscription notification', { err });
+    return true;
+  }
+
+  if (notification) {
+    socket.send(JSON.stringify(notification), { binary: false });
+    subscriptionMessagesSent++;
+  }
+  return true;
+}
+
+function getSubMetadata(socket: WebSocket, subscriptionId: string): WebSocketSubMetadata | undefined {
+  const subMetadataMap = wsToSubLookup.get(socket);
+  if (!subMetadataMap) {
+    // We should really never hit this log, this is a true error
+    globalLogger.error('[WS] Unable to find sub metadata map for WebSocket');
+    return undefined;
+  }
+  const subMetadata = subMetadataMap.get(subscriptionId);
+  if (!subMetadata) {
+    // We should really never hit this log, this is a true error
+    globalLogger.error('[WS] Unable to find sub metadata entry for WebSocket', { subscriptionId });
+  }
+  return subMetadata;
+}
+
+/**
+ * Builds the notification for one subscriber, with the resource as that subscriber may read it.
+ * @param repo - The repository of the subscriber's login.
+ * @param resource - The resource of the subscription event.
+ * @param subscriptionId - The subscription ID.
+ * @param options - The subscription event options.
+ * @returns The notification bundle, or undefined if the subscriber cannot read the resource.
+ */
+async function buildSubscriberNotification(
+  repo: Repository,
+  resource: WithId<Resource>,
+  subscriptionId: string,
+  options: SubEventsOptions
+): Promise<Bundle | undefined> {
+  if (!(await canSubscriberReadResource(repo, resource, subscriptionId))) {
+    return undefined;
+  }
+  // removeHiddenFields mutates its input, and one published resource is shared by every
+  // socket on this event, so each subscriber filters its own copy.
+  const visible = repo.removeHiddenFields(deepClone(resource));
+  const bundle = createSubEventNotification(visible, subscriptionId, options);
+  return rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
+}
+
+async function canSubscriberReadResource(
+  repo: Repository,
+  resource: WithId<Resource>,
+  subscriptionId: string
+): Promise<boolean> {
+  // The worker checks a single membership's stored access policy; each bound token, which may carry
+  // narrower SMART scopes, must itself be able to read the resource.
+  if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+    globalLogger.debug('[WS] Subscriber cannot read resource, skipping notification', { subscriptionId });
+    return false;
+  }
+  if (resource.resourceType === 'Binary' && resource.securityContext) {
+    try {
+      await repo.readReference(resource.securityContext);
+    } catch {
+      globalLogger.debug('[WS] Subscriber cannot read Binary security context, skipping notification', {
+        subscriptionId,
+      });
+      return false;
+    }
+  }
+  return true;
 }
 
 async function handleDeadSubscriptions(deadSubscriptionIds: string[]): Promise<void> {
@@ -244,10 +306,6 @@ async function handleDeadSubscriptions(deadSubscriptionIds: string[]): Promise<v
   } catch (err) {
     globalLogger.error('[WS] Error marking dead subscriptions inactive', { err });
   }
-}
-
-function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {
-  return Array.isArray(candidate) && candidate.length !== 0;
 }
 
 function ensureHeartbeatHandler(): void {
@@ -754,7 +812,7 @@ export async function checkWebSocketSubscriptionLimit(project: WithId<Project>, 
   const maxUserWsSubs: number =
     project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
     // We know this is defined in defaults so this is safe to cast
-    (getConfig().defaultMaxUserWebSocketSubscriptions as number);
+    getConfig().defaultMaxUserWebSocketSubscriptions;
   const userSubCount = await getUserActiveWebSocketSubscriptionCount(authorRef);
   if (userSubCount >= maxUserWsSubs) {
     throw new OperationOutcomeError(

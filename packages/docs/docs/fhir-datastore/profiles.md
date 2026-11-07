@@ -302,6 +302,42 @@ to satisfy the field presence requirement, while also denoting why the data is m
 
 [data-absent-ext]: http://hl7.org/fhir/StructureDefinition/data-absent-reason
 
+## TypeScript Types for Profiles
+
+The [Medplum CLI](/docs/cli#generate-types) can generate TypeScript types from your profiles, so that your editor and compiler flag resources that don't follow the profile before they are sent to the server:
+
+```bash
+medplum generate-types --profile-url https://example.com/profiles/my-patient/1.0.0 --output-dir src/types/profiles
+```
+
+```ts
+import type { MyPatientProfile } from './types/profiles';
+
+const patient: MyPatientProfile = {
+  resourceType: 'Patient',
+  name: [{ family: 'Smith' }],
+}; // Compile error if the profile requires elements that are missing, such as identifier
+
+await medplum.createResource(patient); // Profile types can be used anywhere the base type is expected
+```
+
+Generated types enforce the constraints that can be expressed in TypeScript: required and prohibited elements, restricted choice types, and the base resource's codes and structure. Other constraints, such as slices, constraints on nested elements (e.g. `identifier.system`), and FHIRPath invariants, are still enforced by the server when resources are written, and can be checked locally with [`validateResource`](/docs/sdk/core.validateresource).
+
+### Keeping Types in Sync with Profiles
+
+Generated `.d.ts` files are typically committed to your repository, so the main risk is that they drift from the profiles the server validates against. Pick a single source of truth for your profiles: your repository (e.g. [FSH](#fhir-shorthand-fsh) source uploaded to Medplum on deploy), the Medplum server (with `--profile-url`; each profile version has its own `url`), or a pinned version of a published implementation guide. Then add a CI step that regenerates the types and fails on any difference:
+
+```bash
+medplum generate-types <files or --profile-url options> --output-dir src/types/profiles
+git diff --exit-code src/types/profiles
+```
+
+:::tip[]
+
+`StructureDefinition` resources must include a `snapshot` to generate types. SUSHI generates snapshots with `sushi . --snapshot`.
+
+:::
+
 ## Updating Profiles
 
 Updating FHIR profiles is different than updating other resources in FHIR. The process is more similar to a database migration, and the profiled resources will need to be revalidated once the update is complete. This revalidation does not happen automatically, but will be checked the next time the resource is written to.
@@ -316,6 +352,7 @@ For example, say you have a patient profile that requires patients to have an as
 - Define a new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource with the desired changes to the profile.
 - Update the `url` on the new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) with an appropriate new version number.
 - Create the updated [`StructureDefinition](/docs/api/fhir/resources/structuredefinition).
+- If you use [generated TypeScript types](#typescript-types-for-profiles), regenerate them from the new version.
 - Validate and update your [`Patient`](/docs/api/fhir/resources/patient) resources to adhere to the new profile.
 
 ### Updating FSH Profiles

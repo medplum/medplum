@@ -452,6 +452,28 @@ describe('GraphQL', () => {
     expect(data.PatientList[0].ObservationList).toBeDefined();
   });
 
+  test('Reverse lookup on contained resource with invalid id', async () => {
+    const parent = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      contained: [{ resourceType: 'Patient', id: 'not valid' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Patient(id: "${parent.id}") {
+          contained {
+            ... on Patient {
+              ObservationList(_reference: subject) { id }
+            }
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect((res[1] as any).errors[0].message).toBe('Invalid reference');
+  });
+
   test('Reverse lookup without _reference', async () => {
     const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
       query: `{

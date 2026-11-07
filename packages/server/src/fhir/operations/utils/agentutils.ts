@@ -21,9 +21,15 @@ import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
 import { publish } from '../../../pubsub';
-import { getPubSubRedisSubscriber } from '../../../redis';
 import type { Repository } from '../../repo';
+import { searchUnique } from '../../searchunique';
 import type { AgentPushParameters } from '../agentpush';
+import {
+  buildAgentCallbackId,
+  ensureCallbackSubscriber,
+  registerAgentCallback,
+  subscribeLegacyCallbackChannel,
+} from './agentcallback';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 
@@ -55,10 +61,11 @@ export async function getAgentForRequest(
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return repo.searchOne<Agent>({
-      resourceType: 'Agent',
-      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
-    });
+    return searchUnique<Agent>(
+      repo,
+      { resourceType: 'Agent', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
+      'Agent identifier'
+    );
   }
 
   // If no agent ID or identifier, return undefined
@@ -90,7 +97,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     }
   }
   if (destination.startsWith('Device?')) {
-    return repo.searchOne<Device>(parseSearchRequest(destination));
+    return searchUnique<Device>(repo, parseSearchRequest(destination), 'Agent push Device destination');
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };
@@ -174,35 +181,19 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
   options?: AgentMessageOptions
 ): Promise<[OperationOutcome] | [OperationOutcome, T | AgentError]> {
   if (options?.waitForResponse) {
-    // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
-    message.callback = getReferenceString(agent) + '-' + randomUUID();
+    // Tag the message with a hostname-keyed callback id so the response is routed
+    // back to this server process via the shared per-hostname callback channel,
+    // avoiding a new Redis subscriber connection per in-flight request.
+    message.callback = buildAgentCallbackId(randomUUID());
 
-    const redisSubscriber = getPubSubRedisSubscriber();
-    await redisSubscriber.subscribe(message.callback);
-
-    const resultPromise = new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {
-      redisSubscriber.on('message', (_channel: string, message: string) => {
-        const response = JSON.parse(message) as T | AgentError;
-        resolve([allOk, response]);
-        cleanup();
-      });
-
-      // Create a timer for 5 seconds for timeout
-      const timer = setTimeout(() => {
-        cleanup();
-
-        reject(new OperationOutcomeError(badRequest('Timeout')));
-      }, options?.timeout ?? 5000);
-
-      const cleanup = (): void => {
-        redisSubscriber.disconnect();
-        clearTimeout(timer);
-      };
-    });
-
+    await ensureCallbackSubscriber();
+    // Rolling-deploy compatibility: a server still on the previous release publishes the
+    // response to the callback id verbatim, so listen on that channel too until every
+    // process is upgraded.
+    await subscribeLegacyCallbackChannel(message.callback);
+    const resultPromise = registerAgentCallback<T>(message.callback, options?.timeout ?? 5000);
     await publishRequestMessage(agent, message);
-    const result = await resultPromise;
-    return result;
+    return resultPromise;
   }
 
   await publishRequestMessage(agent, message);

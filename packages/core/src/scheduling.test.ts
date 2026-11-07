@@ -12,27 +12,35 @@ import type {
 } from '@medplum/fhirtypes';
 import type { HealthcareServiceSchedulingParameterExtension, SchedulingParameterExtension } from './scheduling';
 import {
+  allServiceTypesCodeableConcept,
   clearHealthcareServiceSchedulingParameter,
   clearScheduleParameter,
   clearScheduleSchedulingParameter,
   extractServiceTypeReferences,
   getAppointmentSite,
   getHealthcareServiceSchedulingParameters,
+  getPrimaryProvider,
   getScheduleParameters,
   getScheduleSchedulingParameters,
   getSchedulingRequirements,
   getSchedulingTimezone,
   hasSchedulingParameters,
   minutesToSchedulingDuration,
+  PARTICIPATION_TYPE_SYSTEM,
+  PRIMARY_PERFORMER_CODE,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_SERVICE_TYPE_SYSTEM,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
   SchedulingSiteURI,
+  serviceTypeIncludesAllServices,
   serviceTypeIncludesService,
+  serviceTypeOffersService,
   setHealthcareServiceSchedulingParameter,
+  setPrimaryProvider,
   setScheduleParameter,
   setScheduleSchedulingParameter,
   TimezoneExtensionURI,
@@ -310,6 +318,36 @@ describe('serviceType CodeableConcepts', () => {
     expect(serviceTypeIncludesService(serviceType, serviceWithType)).toBe(true);
   });
 
+  test('extracts one reference for a service with multiple type codes', () => {
+    const serviceWithTypes = {
+      ...service,
+      type: [
+        { coding: [{ system: 'http://example.com/service', code: 'office' }] },
+        { coding: [{ system: 'http://example.com/modality', code: 'telehealth' }] },
+      ],
+    };
+    const serviceType = toServiceTypeCodeableConcepts(serviceWithTypes);
+
+    expect(serviceType).toHaveLength(2);
+    expect(extractServiceTypeReferences(serviceType)).toEqual([
+      expect.objectContaining({ reference: 'HealthcareService/service-1' }),
+    ]);
+  });
+
+  test('extracts each distinct service reference in order', () => {
+    const otherService = { ...service, id: 'service-2' };
+    const serviceType = [
+      ...toServiceTypeCodeableConcepts(service),
+      ...toServiceTypeCodeableConcepts(otherService),
+      ...toServiceTypeCodeableConcepts(service),
+    ];
+
+    expect(extractServiceTypeReferences(serviceType).map((ref) => ref.reference)).toEqual([
+      'HealthcareService/service-1',
+      'HealthcareService/service-2',
+    ]);
+  });
+
   test('matches a HealthcareService reference', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
 
@@ -321,6 +359,39 @@ describe('serviceType CodeableConcepts', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
     expect(serviceTypeIncludesService(serviceType, { ...service, id: 'service-2' })).toBe(false);
     expect(serviceTypeIncludesService(undefined, service)).toBe(false);
+  });
+
+  test('the all-services marker offers every service without listing any', () => {
+    const serviceType = [allServiceTypesCodeableConcept()];
+
+    expect(serviceType[0].coding).toEqual([
+      { system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' },
+    ]);
+    expect(serviceTypeIncludesAllServices(serviceType)).toBe(true);
+    expect(serviceTypeOffersService(serviceType, service)).toBe(true);
+    // Listing a service by reference keeps its literal meaning.
+    expect(serviceTypeIncludesService(serviceType, service)).toBe(false);
+  });
+
+  test('a listed service is offered without the marker', () => {
+    expect(serviceTypeOffersService(toServiceTypeCodeableConcepts(service), service)).toBe(true);
+  });
+
+  test.each([
+    ['a missing serviceType', undefined],
+    ['an empty serviceType', []],
+    ['the same code in another system', [{ coding: [{ system: 'http://example.com/service', code: 'all' }] }]],
+    ['another code in the same system', [{ coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: 'none' }] }]],
+    ['a concept with only matching text', [{ text: 'All service types' }]],
+  ])('%s is not the all-services marker', (_name, serviceType) => {
+    expect(serviceTypeIncludesAllServices(serviceType)).toBe(false);
+    expect(serviceTypeOffersService(serviceType, service)).toBe(false);
+  });
+
+  test('the marker still offers every service alongside listed ones', () => {
+    const serviceType = [...toServiceTypeCodeableConcepts(service), allServiceTypesCodeableConcept()];
+
+    expect(serviceTypeOffersService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(true);
   });
 });
 
@@ -644,6 +715,41 @@ describe('getAppointmentSite', () => {
     const appointment = withSupportingInformation({ display: 'Somewhere nobody recorded' });
     expect(() => getAppointmentSite(appointment)).not.toThrow();
     expect(getAppointmentSite(appointment)).toBeUndefined();
+  });
+});
+
+describe('setPrimaryProvider', () => {
+  const primaryType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] };
+  const markedType = {
+    coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' }],
+  };
+  const otherType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: 'ATND' }] };
+  const rivera = { reference: 'Practitioner/rivera' };
+  const okafor = { reference: 'Practitioner/okafor' };
+
+  test('moves the mark onto the primary and keeps other types', () => {
+    const participants = setPrimaryProvider(
+      [
+        { actor: rivera, status: 'accepted', type: [primaryType] },
+        { actor: okafor, status: 'accepted', type: [otherType] },
+      ],
+      okafor
+    );
+    expect(participants).toEqual([
+      { actor: rivera, status: 'accepted' },
+      { actor: okafor, status: 'accepted', type: [otherType, markedType] },
+    ]);
+    expect(getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })).toEqual(
+      okafor
+    );
+  });
+
+  test('marks nobody without a primary', () => {
+    const participants = setPrimaryProvider([{ actor: rivera, status: 'accepted', type: [primaryType] }], undefined);
+    expect(participants).toEqual([{ actor: rivera, status: 'accepted' }]);
+    expect(
+      getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })
+    ).toBeUndefined();
   });
 });
 

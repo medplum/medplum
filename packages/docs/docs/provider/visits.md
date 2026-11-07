@@ -58,7 +58,7 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
 4. **Billing for Your Visit**
    - On the “Details & Billing” tab, you will also see the individual Charge Items related to the Visit which will need to be configured as part of your Care Template ahead of time (see [“Setting Up Care Templates”](#setting-up-care-templates-via-medplum-app) )
    - Once billing details are finalized, you can export a claim as a CMS 1500 form to submit for billing.
-   - Alternatively, Medplum offers integrations for both Stedi and Candid Health which allow claims to be sent directly to these services which forward to payors
+   - Alternatively, Medplum offers integrations for both Stedi and Candid Health which allow claims to be sent directly to these services which forward to payors. See [Submitting Claims to Candid Health](./submitting-claims) for a walkthrough
      - To learn more about these integrations, please [contact our sales team](mailto:hello@medplum.com)
 
 ---
@@ -84,6 +84,12 @@ There are two main approaches for setting up Care Templates. The first is by cre
 For this guide, we will take the first approach: creating a Care Template, then creating our Resources, and finally linking the related resources within our Care Template.
 
 Medplum provides a sample Care Template for testing and prototyping. Copy the example below and upload it to the [batch](https://app.medplum.com/batch) tool to create a PlanDefinition you can use for testing.
+
+:::note[Sample data and partial failures]
+
+This sample can partially succeed on hosted Medplum. Check every response entry before continuing, and follow the [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before retrying POST creates.
+
+:::
 
 <details>
 <summary>Example Care Template Bundle</summary>

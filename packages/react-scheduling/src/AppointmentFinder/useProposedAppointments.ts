@@ -36,6 +36,11 @@ export interface UseProposedAppointmentsOptions {
    * search that keeps any of the actors it is held on.
    */
   readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
+  /**
+   * How many weekly occurrences to find a series of. Above 1, each time offered is the
+   * first occurrence of a series, and the days searched may span at most a week.
+   */
+  readonly occurrenceCount?: number;
 }
 
 export interface UseProposedAppointmentsResult {
@@ -62,18 +67,18 @@ export interface UseProposedAppointmentsResult {
  * @returns The times offered, plus load and error state.
  */
 export function useProposedAppointments(options: UseProposedAppointmentsOptions): UseProposedAppointmentsResult {
-  const { service, combinations, range, count = DEFAULT_COUNT, ignoreAppointment } = options;
+  const { service, combinations, range, count = DEFAULT_COUNT, ignoreAppointment, occurrenceCount = 1 } = options;
   const medplum = useMedplum();
   const [answered, setAnswered] = useState<SearchState>(NOTHING_ASKED);
 
   const { start, end } = range;
-  const windowError = getFindWindowError(range);
+  const windowError = getFindWindowError(range, occurrenceCount);
   const serviceReference = service && getReferenceString(service);
   const ignoreReference = ignoreAppointment && getReferenceString(ignoreAppointment);
   const urls =
     serviceReference && start && end && !windowError
       ? combinations.map((combination) =>
-          buildFindUrl(medplum, serviceReference, combination, start, end, count, ignoreReference)
+          buildFindUrl(medplum, combination, { serviceReference, start, end, count, ignoreReference, occurrenceCount })
         )
       : [];
   const urlsKey = urls.join(URL_SEPARATOR);
@@ -135,15 +140,18 @@ function toError(reason: unknown): Error {
   return isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason });
 }
 
-function buildFindUrl(
-  medplum: MedplumClient,
-  serviceReference: string,
-  combination: ActorCombination,
-  start: Date,
-  end: Date,
-  count: number,
-  ignoreReference?: string
-): string {
+/** What every combination's `$find` request asks, whoever it is asked of. */
+interface FindSearch {
+  readonly serviceReference: string;
+  readonly start: Date;
+  readonly end: Date;
+  readonly count: number;
+  readonly ignoreReference?: string;
+  readonly occurrenceCount: number;
+}
+
+function buildFindUrl(medplum: MedplumClient, combination: ActorCombination, search: FindSearch): string {
+  const { serviceReference, start, end, count, ignoreReference, occurrenceCount } = search;
   const url = medplum.fhirUrl('Appointment', '$find');
   url.searchParams.set('start', start.toISOString());
   url.searchParams.set('end', end.toISOString());
@@ -155,6 +163,9 @@ function buildFindUrl(
   }
   if (ignoreReference) {
     url.searchParams.set('ignore-appointment', ignoreReference);
+  }
+  if (occurrenceCount > 1) {
+    url.searchParams.set('occurrence-count', occurrenceCount.toString());
   }
   url.searchParams.set('_count', count.toString());
   return url.toString();

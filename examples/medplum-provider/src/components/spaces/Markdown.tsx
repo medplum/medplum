@@ -10,6 +10,22 @@ interface MarkdownProps {
   children: string;
 }
 
+interface HastNode {
+  type: string;
+  value?: string;
+  children?: HastNode[];
+}
+
+function hastToText(node: HastNode | undefined): string {
+  if (!node) {
+    return '';
+  }
+  if (node.type === 'text') {
+    return node.value ?? '';
+  }
+  return (node.children ?? []).map(hastToText).join('');
+}
+
 const components: Components = {
   p: ({ children }) => (
     <Text component="p" m={0} style={{ lineHeight: 1.6 }}>
@@ -31,17 +47,14 @@ const components: Components = {
       {children}
     </Text>
   ),
-  code: ({ className, children }) => {
-    const isBlock = (className ?? '').includes('language-');
-    if (isBlock) {
-      return (
-        <Code block style={{ whiteSpace: 'pre-wrap' }}>
-          {children}
-        </Code>
-      );
-    }
-    return <Code style={{ fontSize: '0.9em' }}>{children}</Code>;
-  },
+  // Every fenced block arrives as <pre><code>, with or without a language tag, so the
+  // block decision is made on `pre` and `code` is always inline.
+  pre: ({ node }) => (
+    <Code block style={{ whiteSpace: 'pre-wrap' }}>
+      {hastToText(node)}
+    </Code>
+  ),
+  code: ({ children }) => <Code style={{ fontSize: '0.9em' }}>{children}</Code>,
   ul: ({ children }) => (
     <List size="sm" spacing={4} withPadding>
       {children}

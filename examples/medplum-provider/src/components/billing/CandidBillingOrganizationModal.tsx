@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Button, Input, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getIdentifier, normalizeErrorString } from '@medplum/core';
+import { getIdentifier } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
 import { AddressInput, Modal, useMedplum } from '@medplum/react';
 import { IconInfoCircle } from '@tabler/icons-react';
@@ -23,6 +23,7 @@ import {
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { getErrorMessage } from '../insurance/utils';
 import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
@@ -214,7 +215,7 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
         } catch (error) {
           showErrorNotification(
             new Error(
-              `Billing organization saved, but ${candidProviderId ? 'updating it in' : 'registering it with'} Candid failed: ${normalizeErrorString(error)}. ` +
+              `Billing organization saved, but ${candidProviderId ? 'updating it in' : 'registering it with'} Candid failed: ${getErrorMessage(error)}. ` +
                 'Save the organization again to retry.'
             )
           );

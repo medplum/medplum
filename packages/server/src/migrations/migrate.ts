@@ -288,6 +288,26 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
     });
   }
 
+  if (resourceType === 'Task') {
+    tableDefinition.indexes.push({
+      indexNameSuffix: 'not_completed_idx',
+      indexType: 'gin',
+      columns: ['projectId', 'status', '___tag', '__code'],
+      where: "(deleted = false) AND (status <> 'completed'::text)",
+      fastupdate: false,
+    });
+  }
+
+  if (resourceType === 'Encounter') {
+    tableDefinition.indexes.push({
+      indexNameSuffix: 'unfinished_idx',
+      indexType: 'gin',
+      columns: ['projectId', 'status', '___tag', '__class', '__type'],
+      where: "(deleted = false) AND (status <> 'finished'::text)",
+      fastupdate: false,
+    });
+  }
+
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
   result.tables.push(
@@ -563,9 +583,14 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   }
 
   if (resourceType === 'User') {
+    result.indexes = result.indexes.filter((i) => !(i.columns.length === 1 && i.columns[0] === 'projectId'));
     result.indexes.push(
       { columns: ['project', 'email'], indexType: 'btree', unique: true },
-      { columns: ['project', 'externalId'], indexType: 'btree', unique: true }
+      { columns: ['project', 'externalId'], indexType: 'btree', unique: true },
+      {
+        columns: ['projectId', { expression: 'lower(email) text_pattern_ops', name: 'emailLowerPattern' }],
+        indexType: 'btree',
+      }
     );
   }
 
@@ -695,7 +720,7 @@ function buildHumanNameTable(result: SchemaDefinition): void {
 
   // Unscoped btree indexes stay for searches without a project filter; a multicolumn GIN index serves conditions
   // on any subset of its columns, so the scoped GIN indexes replace the unscoped ones
-  tableDefinition.columns.push({ name: 'projectId', type: 'UUID' });
+  tableDefinition.columns.push({ name: 'projectId', type: 'UUID', notNull: true });
   tableDefinition.indexes = tableDefinition.indexes.flatMap((index) => {
     if (index.columns[0] === 'resourceId') {
       return [index];
@@ -1039,7 +1064,7 @@ export function writePostDeployActionsToBuilder(b: FileBuilder, actions: Migrati
   b.newLine();
   b.append('export const migration: CustomPostDeployMigration = {');
   b.append("  type: 'custom',");
-  b.append('  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),');
+  b.append('  prepareJobData: prepareCustomMigrationJobData,');
   b.append('  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),');
   b.append('};');
   b.newLine();
@@ -1503,6 +1528,11 @@ function buildIndexSql(
     result += ')';
   }
 
+  if (index.fastupdate !== undefined) {
+    assert(index.indexType === 'gin', `fastupdate is only supported for GIN indexes: ${indexName}`);
+    result += ` WITH (fastupdate = ${index.fastupdate ? 'on' : 'off'})`;
+  }
+
   if (index.where) {
     result += ' WHERE (';
     result += index.where;
@@ -1513,6 +1543,11 @@ function buildIndexSql(
 }
 
 export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
+  // An unspecified fastupdate means "no opinion", so it only differs when both sides set it
+  if (a.fastupdate !== undefined && b.fastupdate !== undefined && a.fastupdate !== b.fastupdate) {
+    return false;
+  }
+
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
       ...d,
@@ -1525,6 +1560,7 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
       indexNameOverride: undefined,
       indexNameSuffix: undefined,
       indexdef: undefined,
+      fastupdate: undefined,
     };
   });
 

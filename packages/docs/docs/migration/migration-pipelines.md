@@ -66,25 +66,25 @@ Here's an example of using a batch to create multiple [`Patient`][patient] resou
 
 This batch creates or updates [`Patient`][patient] resources using conditional updates. Add one entry per independent source record.
 
-## Using Transactions for Data Integrity
+## Linking Resources in Dependency Order {/* #using-transactions-for-data-integrity */}
 
-[FHIR Transactions](/docs/fhir-datastore/fhir-batch-requests#internal-references) ensure that a set of resources is written together or fails together.
-
-:::caution[Enable transaction support]
-
-Transactions require the `transaction-bundles` feature flag. Without it, a transaction Bundle is processed as a batch and loses atomicity without an error or warning. Transactions also have [entry limits](/docs/fhir-datastore/fhir-batch-requests#transaction-limits).
-
-:::
+Related resources do not automatically require an atomic transaction. For a migration where partial progress can be reconciled, load prerequisites first, record successful writes, and then load their dependents. Use conditional upserts keyed on stable source identifiers in each stage.
 
 ### Example: Encounter with Clinical Impression
 
-Here's an example of using a transaction to create an [`Encounter`][encounter] and associated [`ClinicalImpression`][clinicalimpression] assessment together. We use a transaction because the failure of one operation should invalidate the entire transaction.
+An [`Encounter`][encounter] and its [`ClinicalImpression`][clinicalimpression] can be loaded in two stages. Starting with `savedPatient` from the Patient upsert above, this example saves the Encounter first and uses its returned ID when saving the assessment. If the second write fails, retain the first result and retry the assessment after resolving the failure. The Encounter may exist before its assessment; use this pattern only when that intermediate state is acceptable.
 
-<MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-transaction">
+<MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-upserts">
     {ExampleCode}
 </MedplumCodeBlock>
 
-In this transaction, both the Encounter and ClinicalImpression are created together. If either fails, the entire transaction is rolled back.
+For higher volume, batch independent Encounters, inspect every result, then batch ClinicalImpressions only for successful Encounters. Do not write dependents whose prerequisites failed.
+
+:::caution[When partial progress is unacceptable]
+
+If a partially committed group would violate a business rule, staged writes and batch retries are insufficient. Atomic transaction Bundles are currently unavailable on hosted Medplum. Resolve that requirement in the migration design before loading data; see [Batches vs Transactions](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
+
+:::
 
 ## Choosing Synchronous or Asynchronous Processing
 
@@ -92,16 +92,16 @@ Choose the write path based on input format, atomicity, and volume:
 
 ```mermaid
 flowchart TD
-    Start[Choose an import path] --> NDJSON{FHIR NDJSON input?}
-    NDJSON -->|Yes, simple import| CLI[Medplum CLI bulk import]
-    NDJSON -->|No or custom pipeline| Atomic{Must related writes be atomic?}
-    Atomic -->|Yes| Transaction[Synchronous transaction]
-    Atomic -->|No, modest volume| SyncBatch[Synchronous batch]
-    Atomic -->|No, high volume| AsyncBatch[Asynchronous batch]
+    Start[Choose an import path] --> Atomic{Must related writes be atomic?}
+    Atomic -->|Yes| Review["Review workflow: atomic Bundles<br/>unavailable on hosted Medplum"]
+    Atomic -->|No| NDJSON{Simple FHIR NDJSON load?}
+    NDJSON -->|Yes| CLI[Medplum CLI bulk import]
+    NDJSON -->|No, modest volume| SyncBatch[Synchronous batch]
+    NDJSON -->|No, high volume| AsyncBatch[Asynchronous batch]
 ```
 
 - Use [`medplum bulk import`](/docs/cli#import) only for a simple NDJSON load that does not require source ID preservation, cross-resource ID rewriting, or safe reruns.
-- Use synchronous transactions when related writes must succeed or fail together.
+- If writes must commit together, review the requirement before choosing a hosted load path. Batches cannot provide an all-or-nothing commit.
 - Use synchronous batches for modest volumes of independent writes that need an immediate response.
 - Use [asynchronous batch processing](/docs/fhir-datastore/processing-async-bundles) for high-volume independent writes that may exceed synchronous request-size, timeout, or FHIR interaction quota constraints.
 
@@ -109,7 +109,7 @@ flowchart TD
 
 The CLI chunks NDJSON into synchronous transaction Bundles containing POST creates. Medplum assigns new resource IDs, and the CLI does not add conditional-write idempotency or rewrite references based on source IDs. It retries 429 responses, but other failed entries require review. Use a custom conditional-write pipeline when identifiers, references, or reruns must be controlled.
 
-Transaction atomicity still requires the `transaction-bundles` Project feature.
+The Bundle type does not provide atomicity on hosted Medplum. Inspect every result and handle partial success; do not blindly rerun POST creates.
 
 :::
 
@@ -125,7 +125,7 @@ Save the returned status URL, poll with backoff until the `AsyncJob` reaches a t
 
 :::caution[Transactions cannot run asynchronously]
 
-Medplum rejects a transaction Bundle submitted with `Prefer: respond-async` when transaction support is enabled. Split the workload into synchronous transactions, or use an asynchronous batch and handle partial failures explicitly.
+Async batches do not provide atomicity. On deployments with atomic transaction support enabled, Medplum rejects `type: transaction` with `Prefer: respond-async`. Use an asynchronous batch only when partial success is acceptable; switching processing modes does not satisfy an atomicity requirement.
 
 :::
 
@@ -239,9 +239,9 @@ Before loading data, profile the source and approve each transformation. The [ma
 
 ### Step 1: Create Patients
 
-Use a batch request to upload [`Patients`][patient] independently, using the primary key from the source system as the identifier.
+For this single-patient example, upsert the [`Patient`][patient] using the primary key from the source system as the identifier. Keep the returned `savedPatient` for the dependent writes in Step 3. At scale, batch independent Patient upserts and record each successful result before loading dependents.
 
-<MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
+<MedplumCodeBlock language="ts" selectBlocks="medplum-sdk-upsert">
     {ExampleCode}
 </MedplumCodeBlock>
 
@@ -255,21 +255,21 @@ Use a batch request to upload [`Conditions`][condition] independently, using con
 
 ### Step 3: Create Encounters and ClinicalImpressions
 
-Use one synchronous transaction for each [`Encounter`][encounter] and dependent [`ClinicalImpression`][clinicalimpression]. The transaction preserves atomicity for the pair. Submit separate transactions with bounded concurrency when processing many encounters.
+Upsert each [`Encounter`][encounter] before its [`ClinicalImpression`][clinicalimpression], using the saved Encounter reference. At scale, use separate batches for the two stages and submit dependents only after confirming their prerequisite writes. Record and reconcile partial progress.
 
-<MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-transaction">
+<MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-upserts">
     {ExampleCode}
 </MedplumCodeBlock>
 
 This example demonstrates:
 
-1. Using separate batch requests for different resource types ([`Patients`][patient] and [`Conditions`][condition]).
+1. Loading [`Patients`][patient] and [`Conditions`][condition] in separate stages.
 2. Employing conditional updates for idempotency.
 3. Using conditional references to link [`Conditions`][condition] to [`Patients`][patient].
-4. Using a synchronous transaction to ensure each [`Encounter`][encounter] and [`ClinicalImpression`][clinicalimpression] pair is created together.
-5. Using `urn:uuid` references within transactions to link newly created resources.
+4. Saving each [`Encounter`][encounter] before its dependent [`ClinicalImpression`][clinicalimpression].
+5. Linking dependents through the saved resource IDs and recovering failed writes separately.
 6. Maintaining relationships between resources across different requests using conditional references.
 
-This approach allows for efficient bulk operations while ensuring data integrity for related resources. It also demonstrates how to handle different types of relationships and references in a complex data migration scenario.
+This approach preserves reference relationships while allowing recoverable partial progress. It does not provide an atomic commit across the migrated resources.
 
 Next, [validate and reconcile the migrated data](/docs/migration/validation-and-reconciliation). The manifest and reconciliation examples continue with source patient `P001` from this pipeline.

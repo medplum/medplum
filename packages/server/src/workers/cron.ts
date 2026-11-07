@@ -1,17 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
-import { ContentType, createReference, isGone, isNotFound, normalizeOperationOutcome, resolveId } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
+  isGone,
+  isNotFound,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  resolveId,
+} from '@medplum/core';
 import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
-import { getAllowedProjects } from '../fhir/accesspolicy';
-import { findProjectMembership } from '../fhir/projectmembership';
+import { canProjectReadBot } from '../bots/utils';
+import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
-import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
+import { getShardSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import type { ProjectJobTarget } from './base';
 import { getJobSystemRepo, getProjectJobTarget } from './base';
@@ -19,7 +27,9 @@ import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-const MAX_BOTS_PER_PAGE = 500;
+
+// A lone ascending `_lastUpdated` sort opts the reload into cursor pagination, which has no `maxSearchOffset` cap
+const CURSOR_SORT_RULES = [{ code: '_lastUpdated' }];
 
 /*
  * The Cron worker inspects resources takes a bot,
@@ -27,15 +37,14 @@ const MAX_BOTS_PER_PAGE = 500;
  * Cron job
  */
 
-// PENDING{v5.2} make target required and tighten up based on that throughout
 export type CronJobData =
   | {
-      readonly target?: ProjectJobTarget;
+      readonly target: ProjectJobTarget;
       readonly resourceType: 'Bot';
       readonly botId: string;
     }
   | {
-      readonly target?: ProjectJobTarget;
+      readonly target: ProjectJobTarget;
       readonly resourceType: 'Cron';
       readonly cronId: string;
     };
@@ -71,7 +80,7 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
 
 /**
  * Updates the Cron job for the given resource.
- * Only applies changes if the effective cron string has changed.
+ * Only applies changes if `shouldUpdateSchedule` says the schedule needs it.
  * @param resource - The resource that was created, updated, or deleted.
  * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
@@ -87,7 +96,7 @@ export async function addCronJobs(
     return;
   }
 
-  if (!isSchedulable(resource)) {
+  if (!isSchedulable(resource) || (previousVersion && !isSchedulable(previousVersion))) {
     return;
   }
 
@@ -110,14 +119,11 @@ export async function addCronJobs(
     return;
   }
 
-  const oldCronStr = isSchedulable(previousVersion) ? getCronString(previousVersion) : undefined;
-  const newCronStr = getCronString(resource);
-  logger.debug('Cron job for resource', { schedulerId, ...resourceIds, oldCronStr, newCronStr });
-
-  if (oldCronStr === newCronStr) {
-    // No change in cron job
+  if (!shouldUpdateSchedule(previousVersion, resource)) {
     return;
   }
+
+  const newCronStr = getCronString(resource);
 
   if (newCronStr) {
     logger.info('Upsert cron job for resource', { schedulerId, ...resourceIds });
@@ -140,6 +146,32 @@ const SCHEDULABLE_TYPES: readonly ResourceType[] = ['Bot', 'Cron'];
 
 function isSchedulable(resource: Resource | undefined): resource is Bot | Cron {
   return resource !== undefined && SCHEDULABLE_TYPES.includes(resource.resourceType);
+}
+
+/**
+ * Returns true if a write changes something the registered job depends on.
+ * @param previousVersion - The previous version of the resource, if available.
+ * @param resource - The new version of the resource.
+ * @returns True if the job scheduler should be upserted or removed.
+ */
+function shouldUpdateSchedule(previousVersion: Bot | Cron | undefined, resource: Bot | Cron): boolean {
+  const oldCronStr = previousVersion ? getCronString(previousVersion) : undefined;
+  if (oldCronStr !== getCronString(resource)) {
+    return true;
+  }
+
+  // The tick unregisters a Cron whose target or identity no longer resolves, so repointing it
+  // has to register the job again even when the schedule is unchanged
+  if (resource.resourceType === 'Cron' && previousVersion?.resourceType === 'Cron') {
+    if (
+      previousVersion.targetReference.reference !== resource.targetReference.reference ||
+      previousVersion.onBehalfOf.reference !== resource.onBehalfOf.reference
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -195,29 +227,6 @@ function getCronStringForCron(cron: Cron): string | undefined {
 
 function isPastEndTime(cron: Cron): boolean {
   return cron.endTime !== undefined && Date.parse(cron.endTime) <= Date.now();
-}
-
-/**
- * Returns whether a Cron's project may still run the target bot.
- *
- * A bot is code, not authority, so the target may live in a linked project. The link is what makes
- * that safe, and it is checked here because the worker reads on an unscoped system repo, which
- * would otherwise reach a bot in any project at all.
- * @param cronProject - The project owning the Cron that names the bot.
- * @param bot - The bot the Cron targets.
- * @returns True if the bot's project is the Cron's own or a link that exports Bot.
- */
-async function canCronReadBot(cronProject: WithId<Project>, bot: Bot): Promise<boolean> {
-  const botProjectId = bot.meta?.project;
-  if (!botProjectId) {
-    return false;
-  }
-  if (botProjectId === cronProject.id) {
-    return true;
-  }
-
-  const permitted = getPermittedProjectIds(await getAllowedProjects(cronProject), 'Bot');
-  return !permitted || permitted.includes(botProjectId);
 }
 
 function getCronStringForBot(bot: Bot | undefined): string | undefined {
@@ -318,7 +327,9 @@ async function unregisterCronJob(cron: WithId<Cron>, reason: string): Promise<vo
 async function resolveCronJob(
   systemRepo: Repository,
   cronId: string
-): Promise<{ bot: WithId<Bot>; runAs: WithId<ProjectMembership>; cron: WithId<Cron> } | undefined> {
+): Promise<
+  { bot: WithId<Bot>; runAs: WithId<ProjectMembership>; project: WithId<Project>; cron: WithId<Cron> } | undefined
+> {
   const cron = await systemRepo.readResource<Cron>('Cron', cronId);
 
   if (!getCronStringForCron(cron)) {
@@ -335,11 +346,11 @@ async function resolveCronJob(
     return undefined;
   }
 
-  if (!project.features?.includes('cron')) {
+  if (!project.features?.includes('cron') || getInactiveReason(project)) {
     // addCronJobs refuses to register without the feature, so a job that outlived it must not run.
-    // The schedule stays registered: the feature can come back, and nothing re-registers a dropped
-    // job, so unregistering would strand the Cron.
-    getLogger().info('Skipping cron job, project does not have the cron feature', {
+    // The schedule stays registered: the feature or the project can come back, and nothing
+    // re-registers a dropped job, so unregistering would strand the Cron.
+    getLogger().info('Skipping cron job, project is inactive or does not have the cron feature', {
       cronId: cron.id,
       projectId: project.id,
     });
@@ -352,8 +363,9 @@ async function resolveCronJob(
     return undefined;
   }
 
-  if (!(await canCronReadBot(project, bot))) {
-    // The write path authorized this target, so the link must have been revoked or narrowed since.
+  if (!(await canProjectReadBot(project, bot))) {
+    // The worker reads on an unscoped system repo, so the link is re-checked here. The write path
+    // authorized this target, so the link must have been revoked or narrowed since.
     await unregisterCronJob(cron, 'its target bot is no longer readable');
     return undefined;
   }
@@ -371,15 +383,16 @@ async function resolveCronJob(
     throw new Error('Cron onBehalfOf membership belongs to a different project');
   }
 
-  return { bot, runAs, cron };
+  return { bot, runAs, project, cron };
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
-  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
+  const systemRepo = await getJobSystemRepo(job.data.target);
 
   let bot: WithId<Bot>;
   let runAs: WithId<ProjectMembership> | undefined;
   let input: unknown;
+  let project: WithId<Project> | undefined;
   let cron: WithId<Cron> | undefined;
 
   if (job.data.resourceType === 'Cron') {
@@ -389,6 +402,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     }
     bot = resolved.bot;
     runAs = resolved.runAs;
+    project = resolved.project;
     cron = resolved.cron;
     // The whole Cron goes to the target, so a bot reads its parameters alongside the schedule
     input = resolved.cron;
@@ -402,7 +416,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     throw new Error('Could not find project membership for bot');
   }
 
-  await executeBot({ bot, runAs, input, cron, contentType: ContentType.FHIR_JSON });
+  await executeBot({ bot, runAs, runAsProject: project, input, cron, contentType: ContentType.FHIR_JSON });
 }
 
 export async function removeBullMQJobByKey(schedulerId: string): Promise<void> {
@@ -419,15 +433,15 @@ export async function reloadCronBots(shardId: string): Promise<void> {
     await queue.obliterate({ force: true });
 
     const systemRepo = getShardSystemRepo(shardId);
+    // Many schedules share a project, so each project is read once per reload
+    const projects = new Map<string, WithId<Project>>();
 
     await systemRepo.processAllResources<Bot>(
-      { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
+      { resourceType: 'Bot', count: DEFAULT_MAX_SEARCH_COUNT, sortRules: CURSOR_SORT_RULES },
       async (bot) => {
         // If the bot has a cron, then add a scheduler for it
         if (bot.cronString || bot.cronTiming) {
-          // We pass `undefined` as previous version to make sure that the latest cron string is used
-          const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-          await addCronJobs(bot, undefined, { project, interaction: 'update' });
+          await reloadCronJob(systemRepo, projects, bot);
         }
       },
       { delayBetweenPagesMs: 1000 }
@@ -436,14 +450,39 @@ export async function reloadCronBots(shardId: string): Promise<void> {
     // `obliterate` above cleared Cron schedules too, so they have to be re-registered here or
     // every Cron resource silently stops running after a reload.
     await systemRepo.processAllResources<Cron>(
-      { resourceType: 'Cron', count: MAX_BOTS_PER_PAGE },
+      { resourceType: 'Cron', count: DEFAULT_MAX_SEARCH_COUNT, sortRules: CURSOR_SORT_RULES },
       async (cron) => {
         if (cron.active) {
-          const project = await systemRepo.readResource<Project>('Project', cron.meta?.project as string);
-          await addCronJobs(cron, undefined, { project, interaction: 'update' });
+          await reloadCronJob(systemRepo, projects, cron);
         }
       },
       { delayBetweenPagesMs: 1000 }
     );
+  }
+}
+
+async function reloadCronJob(
+  systemRepo: Repository,
+  projects: Map<string, WithId<Project>>,
+  resource: WithId<Bot> | WithId<Cron>
+): Promise<void> {
+  try {
+    const projectId = resource.meta?.project;
+    let project = projectId ? projects.get(projectId) : undefined;
+    if (projectId && !project) {
+      project = await readIfPresent(() => systemRepo.readResource<Project>('Project', projectId));
+      if (project) {
+        projects.set(projectId, project);
+      }
+    }
+    if (!project) {
+      globalLogger.error('Cannot reload cron job, project not found', { ...getResourceIds(resource), projectId });
+      return;
+    }
+    // We pass `undefined` as previous version to make sure that the latest cron string is used
+    await addCronJobs(resource, undefined, { project, interaction: 'update' });
+  } catch (err) {
+    // The queue was already obliterated, so aborting here would leave every remaining schedule unregistered
+    globalLogger.warn('Failed to reload cron job', { ...getResourceIds(resource), error: normalizeErrorString(err) });
   }
 }

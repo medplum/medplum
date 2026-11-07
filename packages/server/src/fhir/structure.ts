@@ -4,11 +4,11 @@ import type { WithId } from '@medplum/core';
 import { EMPTY, indexSearchParameter, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 
 let loaded = false;
 
-export function loadStructureDefinitions(config?: MedplumServerConfig): void {
+export function loadStructureDefinitions(config?: ServerConfig): void {
   if (!loaded) {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);

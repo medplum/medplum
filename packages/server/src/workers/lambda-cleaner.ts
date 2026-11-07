@@ -14,9 +14,6 @@ import {
   getBotManagementLambdaClient,
 } from '../cloud/aws/lambda';
 import { tryRunInRequestContext } from '../context';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { AsyncJobTracking } from './base';
 import { getTrackingAsyncJobExecutor } from './base';
@@ -40,19 +37,11 @@ interface ResolvedLambdaCleanerOptions extends LambdaCleanerOptions, DeleteLambd
   readonly dryRun: boolean;
 }
 
-export type LambdaCleanerJobData = {
+export interface LambdaCleanerJobData {
+  readonly tracking: AsyncJobTracking;
   readonly options: LambdaCleanerOptions;
   readonly requestId?: string;
   readonly traceId?: string;
-} & (NewLambdaCleanerJobData | LegacyLambdaCleanerJobData);
-
-interface NewLambdaCleanerJobData {
-  readonly tracking: AsyncJobTracking;
-}
-
-// PENDING{v5.2+} remove legacy job data interface
-interface LegacyLambdaCleanerJobData {
-  readonly asyncJob: WithId<AsyncJob>;
 }
 
 export interface LambdaCleanerSummary extends DeleteOldLambdaVersionStats {
@@ -81,14 +70,6 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
       getWorkerBullmqConfig(config, 'lambda-cleaner', queueOptions, { concurrency: 1 })
     );
     addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => {
-      if ('asyncJob' in job.data) {
-        return {
-          asyncJob: `AsyncJob/${job.data.asyncJob.id}`,
-          nameRegex: job.data.options.nameRegex,
-          dryRun: job.data.options.dryRun,
-        };
-      }
-
       return {
         asyncJob: `AsyncJob/${job.data.tracking.asyncJobId}`,
         nameRegex: job.data.options.nameRegex,
@@ -113,14 +94,7 @@ export async function addLambdaCleanerJobData(jobData: LambdaCleanerJobData): Pr
 }
 
 export async function lambdaCleanerJobProcessor(job: Job<LambdaCleanerJobData>): Promise<WithId<AsyncJob>> {
-  let exec: AsyncJobExecutor;
-  if ('tracking' in job.data) {
-    exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-  } else {
-    // PENDING{v5.2+} remove legacy else statement
-    exec = new AsyncJobExecutor(getShardSystemRepo(TODO_SHARD_ID), job.data.asyncJob);
-  }
-
+  const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
   return exec.startAsync(async () => {
     const summary = await execLambdaCleanerJob(job.data.options);
     return formatSummary(summary);

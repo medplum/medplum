@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { convertToTransactionBundle, getDisplayString, getReferenceString, isResource } from '@medplum/core';
+import {
+  convertToTransactionBundle,
+  getDisplayString,
+  getReferenceString,
+  isResource,
+  normalizeErrorString,
+} from '@medplum/core';
 import type { Bundle, BundleEntry, CodeableConcept, Identifier, Patient, Resource } from '@medplum/fhirtypes';
 
 /** A candidate local Patient returned by `Patient/$match` for the shared patient. */
@@ -44,13 +50,15 @@ export function buildSmartHealthLinkImportBundle(
   sharedPatient: Patient,
   targetPatient: WithId<Patient>
 ): Bundle {
+  // A shared bundle can hold one Patient per source system, so match every Patient entry, not just the first
   const sharedPatientRefs = new Set<string>();
   if (sharedPatient.id) {
     sharedPatientRefs.add(`Patient/${sharedPatient.id}`);
   }
-  const sharedPatientFullUrl = bundle.entry?.find((entry) => isResource<Patient>(entry.resource, 'Patient'))?.fullUrl;
-  if (sharedPatientFullUrl) {
-    sharedPatientRefs.add(sharedPatientFullUrl);
+  for (const entry of bundle.entry ?? []) {
+    if (isResource<Patient>(entry.resource, 'Patient') && entry.fullUrl) {
+      sharedPatientRefs.add(entry.fullUrl);
+    }
   }
   const targetPatientRef = `Patient/${targetPatient.id}`;
   const selectedBundle: Bundle = {
@@ -74,6 +82,26 @@ export function buildSmartHealthLinkImportBundle(
     }
   }
   return transaction;
+}
+
+/**
+ * Lists the import entries the server rejected. Without the `transaction-bundles` project feature,
+ * a transaction is processed as a batch, so some entries can fail while the rest are committed.
+ * @param transaction - The import transaction that was sent.
+ * @param response - The server's response bundle.
+ * @returns One message per failed entry, naming the record and the server's reason.
+ */
+export function getFailedImportMessages(transaction: Bundle, response: Bundle): string[] {
+  return (response.entry ?? []).flatMap((entry, index) => {
+    if (entry.response?.status?.startsWith('2')) {
+      return [];
+    }
+    const resource = transaction.entry?.[index]?.resource;
+    const record = resource
+      ? `${getResourceTypeLabel(resource.resourceType)} "${getDisplayString(resource)}"`
+      : 'Record';
+    return [`${record}: ${normalizeErrorString(entry.response?.outcome ?? entry.response?.status)}`];
+  });
 }
 
 export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | undefined {
@@ -238,7 +266,7 @@ function rewritePatientReference<T extends Resource>(
 ): T {
   return JSON.parse(
     JSON.stringify(resource, (key, value) => {
-      if (key === 'reference' && sharedPatientRefs.has(value)) {
+      if (key === 'reference' && (sharedPatientRefs.has(value) || isPatientReference(value))) {
         return targetPatientRef;
       }
       return value;
@@ -246,18 +274,29 @@ function rewritePatientReference<T extends Resource>(
   ) as T;
 }
 
+/**
+ * True for a relative or absolute Patient reference, e.g. `Patient/123` or `https://ehr.example.com/fhir/Patient/123`.
+ * The shared records belong to one person, so every Patient reference means the import's target patient.
+ * @param value - The reference value.
+ * @returns True if the value is a Patient reference.
+ */
+function isPatientReference(value: unknown): boolean {
+  return typeof value === 'string' && /(^|\/)Patient\/[^/?#]+(\/_history\/[^/?#]+)?$/.test(value);
+}
+
 function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): string | undefined {
   if (!CONDITIONAL_CREATE_RESOURCE_TYPES.has(resource.resourceType)) {
     return undefined;
   }
 
+  const patientParam = getPatientSearchParam(resource.resourceType);
   const identifier = getIdentifierSearch(resource);
   if (identifier) {
-    return identifier;
+    // Scope to the target patient so a copy saved on another patient does not count as already imported
+    return patientParam ? `${identifier}&${patientParam}=Patient/${targetPatient.id}` : identifier;
   }
 
   const typedResource = resource as Record<string, any>;
-  const patientParam = getPatientSearchParam(resource.resourceType);
   const tokenParam = getTokenSearchParam(resource.resourceType);
   const token = getTokenSearchValue(typedResource.code ?? typedResource.type ?? typedResource.vaccineCode);
   if (!patientParam || !tokenParam || !token) {
@@ -265,9 +304,9 @@ function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): s
   }
 
   const params = [`${patientParam}=Patient/${targetPatient.id}`, `${tokenParam}=${token}`];
-  const date = getResourceDate(resource);
-  if (date) {
-    params.push(`date=${date}`);
+  const dateSearch = getDateSearch(resource);
+  if (dateSearch) {
+    params.push(dateSearch);
   }
   return params.join('&');
 }
@@ -317,17 +356,20 @@ function getTokenSearchParam(resourceType: string): string | undefined {
   }
 }
 
-function getResourceDate(resource: Resource): string | undefined {
-  const typedResource = resource as Record<string, any>;
-  const date =
-    typedResource.effectiveDateTime ??
-    typedResource.issued ??
-    typedResource.recordedDate ??
-    typedResource.onsetDateTime ??
-    typedResource.occurrenceDateTime ??
-    typedResource.authoredOn ??
-    typedResource.date;
-  return typeof date === 'string' ? date.substring(0, 10) : undefined;
+/** The date search parameter for each resource type, and the field it indexes. */
+const DATE_SEARCH_PARAMS: Record<string, [searchParam: string, field: string]> = {
+  AllergyIntolerance: ['date', 'recordedDate'],
+  Condition: ['recorded-date', 'recordedDate'],
+  DiagnosticReport: ['date', 'effectiveDateTime'],
+  DocumentReference: ['date', 'date'],
+  Immunization: ['date', 'occurrenceDateTime'],
+  Observation: ['date', 'effectiveDateTime'],
+};
+
+function getDateSearch(resource: Resource): string | undefined {
+  const [searchParam, field] = DATE_SEARCH_PARAMS[resource.resourceType] ?? [];
+  const value = field ? (resource as Record<string, any>)[field] : undefined;
+  return typeof value === 'string' ? `${searchParam}=${value.substring(0, 10)}` : undefined;
 }
 
 function getTokenSearchValue(input: CodeableConcept | undefined): string | undefined {

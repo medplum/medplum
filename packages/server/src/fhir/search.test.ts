@@ -57,7 +57,7 @@ import assert from 'node:assert';
 import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { Repository } from './repo';
@@ -74,7 +74,7 @@ import { loadStructureDefinitions } from './structure';
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
 describe.each<Project['features']>([undefined, ['range-search']])('project-scoped Repository w/ %j', (features) => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let repo: Repository;
   let systemRepo: SystemRepository;
 
@@ -2458,6 +2458,60 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         )
       ).rejects.toThrow('Search chains longer than three links are not currently supported');
     }));
+
+  describe('disableChainedSearch', () => {
+    afterEach(() => {
+      config.disableChainedSearch = undefined;
+    });
+
+    test.each([
+      'Observation?subject:Patient.name=Alice',
+      'Patient?_has:Observation:subject:code=123',
+      'DiagnosticReport?result:Observation.subject:Patient.name=Alice',
+      `Patient?_has:Observation:subject:_id=${randomUUID()}`,
+    ])('Rejects chained search through disabled type: %s', (searchString) =>
+      withTestContext(async () => {
+        config.disableChainedSearch = ['Observation'];
+        await expect(repo.search(parseSearchRequest(searchString))).rejects.toThrow(
+          'Chained search is disabled for Observation'
+        );
+      })
+    );
+
+    test.each([
+      `Observation?subject:Patient._id=${randomUUID()}`,
+      'Encounter?patient.name=Alice',
+      'DiagnosticReport?result.code=123',
+    ])('Allows chained search not using disabled reference table: %s', (searchString) =>
+      withTestContext(async () => {
+        config.disableChainedSearch = ['Observation'];
+        await expect(repo.search(parseSearchRequest(searchString))).resolves.toBeDefined();
+      })
+    );
+
+    test('Chained search works again after reindex', () =>
+      withTestContext(async () => {
+        config.disableChainedSearch = ['Observation'];
+        const code = randomUUID();
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const obs = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }] },
+          subject: createReference(patient),
+        });
+        const searchRequest = parseSearchRequest<Patient>(`Patient?_has:Observation:subject:code=${code}`);
+        await expect(repo.search(searchRequest)).rejects.toThrow('Chained search is disabled for Observation');
+
+        config.disableChainedSearch = undefined;
+        const beforeReindex = await repo.search(searchRequest);
+        expect(beforeReindex.entry).toHaveLength(0);
+
+        await systemRepo.reindexResources([obs]);
+        const afterReindex = await repo.search(searchRequest);
+        expect(afterReindex.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
+      }));
+  });
 
   test.each([
     ['Patient?organization.invalid.name=Kaiser', 'Invalid search parameter in chain: Organization?invalid'],
@@ -5188,6 +5242,24 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         expectSearchByReferenceResults(patients, observations, count, result);
       }));
 
+    test('Reference values with special characters', async () =>
+      withTestContext(async () => {
+        const patients = await createPatients(repo, 1);
+        const observations = await createObservations(repo, 2, { subject: patients[0] });
+        const patientRef = getReferenceString(patients[0]);
+        const otherRef = "Patient/o'brien";
+
+        const result = await repo.searchByReference<Observation>(
+          { resourceType: 'Observation', count: 10 },
+          'subject',
+          [otherRef, patientRef]
+        );
+
+        expect(Object.keys(result)).toStrictEqual([otherRef, patientRef]);
+        expect(result[otherRef]).toStrictEqual([]);
+        expect(result[patientRef].map((o) => o.id).sort()).toStrictEqual(observations.map((o) => o.id).sort());
+      }));
+
     test('Array reference column', async () =>
       withTestContext(async () => {
         const parentObservations = await createObservations(repo, 3, {});
@@ -5672,8 +5744,19 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 2$/), expect.anything());
       querySpy.mockClear();
 
+      // resourceOnly searches skip the extra "next page" row
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 1$/), expect.anything());
+      querySpy.mockClear();
+
       config.fhirSearchMinLimit = 39;
       await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
+      querySpy.mockClear();
+
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
       expect(querySpy).toHaveBeenCalledTimes(1);
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
     });
@@ -5768,6 +5851,34 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
       expect(bundleContains(presentBundle, patient1)).toBeDefined();
       expect(bundleContains(presentBundle, patient2)).toBeDefined();
     }));
+
+  test.each([true, false])('Sort by _project; desc=%s', (descending) =>
+    withTestContext(async () => {
+      const idValue = randomUUID();
+      const projectA = await systemRepo.createResource<Project>({ resourceType: 'Project' });
+      const projectB = await systemRepo.createResource<Project>({ resourceType: 'Project' });
+      const [project1, project2] = [projectA.id, projectB.id].sort();
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'id', value: idValue }],
+        meta: { project: project1 },
+      });
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'id', value: idValue }],
+        meta: { project: project2 },
+      });
+
+      const bundle = await systemRepo.search<Patient>({
+        resourceType: 'Patient',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: idValue }],
+        sortRules: [{ code: '_project', descending }],
+      });
+
+      const expected = descending ? [patient2.id, patient1.id] : [patient1.id, patient2.id];
+      expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual(expected);
+    })
+  );
 
   test('Filter by _lastUpdated', () =>
     withTestContext(async () => {

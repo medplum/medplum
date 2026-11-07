@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Observation, Patient, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
+import type { Observation, Patient, ProjectMembership, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
 import { repoAccess } from '../repository/access-tracker';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { lookupTables } from '../searchparameter';
 import type { PgQueryable } from '../sql';
-import { ReferenceTable } from './reference';
+import { isChainedSearchDisabled, ReferenceTable } from './reference';
 
 describe('ReferenceTable', () => {
   const systemRepo = getTestProjectSystemRepo();
@@ -150,34 +150,78 @@ describe('ReferenceTable', () => {
       ).rejects.toThrow('batchIndexResources must be called with resources of the same type: Patient vs Observation');
     });
 
-    test('handles update with unchanged references', async () => {
+    test('diffs each resource independently in a multi-resource batch', async () => {
       const patientId = randomUUID();
-
-      const obs = await systemRepo.createResource<Observation>({
+      const encounter1 = randomUUID();
+      const encounter2 = randomUUID();
+      const makeObs = (): WithId<Observation> => ({
         resourceType: 'Observation',
+        id: randomUUID(),
         subject: { reference: 'Patient/' + patientId },
+        encounter: { reference: 'Encounter/' + encounter1 },
         status: 'registered',
         code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
       });
+      const unchanged = makeObs();
+      const changed = makeObs();
+      const cleared = makeObs();
+      const ids = [unchanged.id, changed.id, cleared.id];
 
-      // Update with the same reference - should detect no changes
-      await systemRepo.updateResource<Observation>({
-        ...obs,
-        status: 'final', // Change something else, not the reference
-      });
+      const client = getReferenceTestClient('Observation');
+      await refTable.batchIndexResources(client, [unchanged, changed, cleared], true);
 
-      const rows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
+      // All rows came from one INSERT and share an xmin; a deleted and re-inserted row would get a new one
+      const sql =
+        'SELECT "resourceId", "code", "targetId", xmin::text FROM "Observation_References" WHERE "resourceId" = ANY($1::uuid[])';
+      const { xmin } = (await client.query(sql, [ids])).rows[0];
+
+      await refTable.batchIndexResources(
+        client,
+        [
+          unchanged,
+          { ...changed, encounter: { reference: 'Encounter/' + encounter2 } },
+          { ...cleared, subject: undefined, encounter: undefined },
+        ],
+        false
+      );
+
+      const after = (await client.query(sql, [ids])).rows;
+      expect(after).toContainExactly([
+        { resourceId: unchanged.id, code: 'encounter', targetId: encounter1, xmin },
+        { resourceId: unchanged.id, code: 'patient', targetId: patientId, xmin },
+        { resourceId: unchanged.id, code: 'subject', targetId: patientId, xmin },
+        { resourceId: changed.id, code: 'encounter', targetId: encounter2, xmin: expect.any(String) },
+        { resourceId: changed.id, code: 'patient', targetId: patientId, xmin },
+        { resourceId: changed.id, code: 'subject', targetId: patientId, xmin },
+      ]);
+    });
+
+    test('deletes stale rows spanning multiple delete batches', async () => {
+      const patientId = randomUUID();
+      const obs: WithId<Observation> = {
+        resourceType: 'Observation',
+        id: randomUUID(),
+        subject: { reference: 'Patient/' + patientId },
+        status: 'registered',
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+      };
+      const client = getReferenceTestClient('Observation');
+      await refTable.batchIndexResources(client, [obs], true);
+
+      // One more than the 10,000-row delete batch size
+      const staleRows = Array.from({ length: 10_001 }, () => ({
+        resourceId: obs.id,
+        targetId: randomUUID(),
+        code: 'subject',
+      }));
+      await refTable.batchInsertRows(client, 'Observation', staleRows);
+
+      await refTable.batchIndexResources(client, [obs], false);
+
+      const rows = await refTable.getExistingRows(client, [obs]);
       expect(rows).toContainExactly([
-        {
-          resourceId: obs.id,
-          code: 'patient',
-          targetId: patientId,
-        },
-        {
-          resourceId: obs.id,
-          code: 'subject',
-          targetId: patientId,
-        },
+        { resourceId: obs.id, code: 'patient', targetId: patientId },
+        { resourceId: obs.id, code: 'subject', targetId: patientId },
       ]);
     });
 
@@ -277,6 +321,83 @@ describe('ReferenceTable', () => {
       const rows = await refTable.getExistingRows(getReferenceTestClient(patient.resourceType), [patient]);
       // Patient with no references should have no reference rows
       expect(rows).toHaveLength(0);
+    });
+  });
+
+  describe('disableChainedSearch', () => {
+    afterEach(() => {
+      getConfig().disableChainedSearch = undefined;
+    });
+
+    test('isChainedSearchDisabled', () => {
+      expect(isChainedSearchDisabled('Observation')).toBe(false);
+
+      getConfig().disableChainedSearch = ['Observation', 'ProjectMembership'];
+      expect(isChainedSearchDisabled('Observation')).toBe(true);
+      expect(isChainedSearchDisabled('Patient')).toBe(false);
+      expect(isChainedSearchDisabled('ProjectMembership')).toBe(false);
+    });
+
+    test('skips writes on create', async () => {
+      getConfig().disableChainedSearch = ['Observation'];
+
+      const obs = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        subject: { reference: 'Patient/' + randomUUID() },
+        status: 'registered',
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+      });
+
+      const rows = await refTable.getExistingRows(getReferenceTestClient('Observation'), [obs]);
+      expect(rows).toHaveLength(0);
+    });
+
+    test('skips writes on update, still deletes', async () => {
+      const patient1 = randomUUID();
+      const obs = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        subject: { reference: 'Patient/' + patient1 },
+        status: 'registered',
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+      });
+
+      getConfig().disableChainedSearch = ['Observation'];
+      await systemRepo.updateResource<Observation>({
+        ...obs,
+        subject: { reference: 'Patient/' + randomUUID() },
+        encounter: { reference: 'Encounter/' + randomUUID() },
+      });
+
+      // Existing rows are left stale until reindexed
+      const updateRows = await refTable.getExistingRows(getReferenceTestClient('Observation'), [obs]);
+      expect(updateRows).toContainExactly([
+        { resourceId: obs.id, code: 'patient', targetId: patient1 },
+        { resourceId: obs.id, code: 'subject', targetId: patient1 },
+      ]);
+
+      await systemRepo.deleteResource('Observation', obs.id);
+      const deleteRows = await refTable.getExistingRows(getReferenceTestClient('Observation'), [obs]);
+      expect(deleteRows).toHaveLength(0);
+    });
+
+    test('always writes ProjectMembership references', async () => {
+      getConfig().disableChainedSearch = ['ProjectMembership'];
+
+      const userId = randomUUID();
+      const membership: WithId<ProjectMembership> = {
+        resourceType: 'ProjectMembership',
+        id: randomUUID(),
+        project: { reference: 'Project/' + randomUUID() },
+        user: { reference: 'User/' + userId },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      };
+      const client = getReferenceTestClient('ProjectMembership');
+
+      await refTable.batchIndexResources(client, [membership], true);
+      const rows = await refTable.getExistingRows(client, [membership]);
+      expect(rows).toContainEqual({ resourceId: membership.id, code: 'user', targetId: userId });
+
+      await refTable.deleteValuesForResource(client, membership);
     });
   });
 });

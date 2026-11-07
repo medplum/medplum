@@ -77,6 +77,28 @@ describe('ConfigPanel', () => {
     expect(row('Blood draw')).not.toHaveTextContent('Inactive');
   });
 
+  test('marks each row with what still needs finishing', () => {
+    setup({
+      sections: [
+        {
+          key: 'Location',
+          title: 'Rooms',
+          noun: 'rooms',
+          items: [
+            {
+              id: 'room-1',
+              label: 'Procedure Room',
+              selected: false,
+              notices: ['Schedule inactive'],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(row('Procedure Room')).toHaveTextContent('Schedule inactive');
+  });
+
   test('collapsing a section hides its rows and keeps its header and count', async () => {
     setup();
 

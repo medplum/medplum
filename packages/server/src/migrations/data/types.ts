@@ -7,28 +7,25 @@ import type { SystemRepository } from '../../fhir/repo';
 import type { AsyncJobTracking, ShardJobTarget } from '../../workers/base';
 import type { PhasalMigration } from '../types';
 
-export type PostDeployJobData = {
+export interface PostDeployJobData {
+  readonly target: ShardJobTarget;
+  readonly tracking: AsyncJobTracking;
   readonly type: 'reindex' | 'custom' | 'dynamic';
   readonly requestId?: string;
   readonly traceId?: string;
   readonly skipInFirstBootMode?: boolean;
-} & (NewPostDeployJobData | LegacyPostDeployJobData);
-
-interface NewPostDeployJobData {
-  readonly target: ShardJobTarget;
-  readonly tracking: AsyncJobTracking;
-  readonly asyncJobId?: never;
 }
-// PENDING{v5.2+} remove LegacyPostDeployJobData and switch back to interfaces for all *JobData in this file
-interface LegacyPostDeployJobData {
-  readonly asyncJobId: string;
+
+export interface PrepareJobDataContext {
+  shardId: string;
+  asyncJob: WithId<AsyncJob>;
 }
 
 export type PostDeployJobRunResult = 'finished' | 'interrupted' | 'ineligible';
 export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJobData> {
   readonly type: T['type'];
   /** Prepares the job data needed to run the migration */
-  prepareJobData(asyncJob: WithId<AsyncJob>): T;
+  prepareJobData(ctx: PrepareJobDataContext): T;
   /**
    * Runs the migration. Is responsible for updating AsyncJob.status and AsyncJob.output,
    * generally through usage `AsyncJobExecutor`
@@ -46,19 +43,19 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
 }
 
 // Custom Jobs
-export type CustomPostDeployMigrationJobData = PostDeployJobData & {
+export interface CustomPostDeployMigrationJobData extends PostDeployJobData {
   readonly type: 'custom';
-};
+}
 
 export interface CustomPostDeployMigration extends PostDeployMigration<CustomPostDeployMigrationJobData> {
   type: 'custom';
 }
 
 // Dynamic Migration Jobs
-export type DynamicPostDeployJobData = PostDeployJobData & {
+export interface DynamicPostDeployJobData extends PostDeployJobData {
   readonly type: 'dynamic';
   readonly migrationActions: PhasalMigration;
-};
+}
 
 export interface DynamicPostDeployMigration extends PostDeployMigration<DynamicPostDeployJobData> {
   type: 'dynamic';

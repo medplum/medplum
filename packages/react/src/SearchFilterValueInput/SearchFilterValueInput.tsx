@@ -12,8 +12,12 @@ export interface SearchFilterValueInputProps {
   readonly resourceType: string;
   readonly searchParam: SearchParameter;
   readonly name?: string;
+  /** Accessible name for the value input. */
+  readonly ariaLabel?: string;
   readonly defaultValue?: string;
   readonly autoFocus?: boolean;
+  /** Render reference dropdowns inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
   readonly onChange: (value: string) => void;
 }
 
@@ -28,6 +32,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
           name={name}
           defaultValue={props.defaultValue ? { reference: props.defaultValue } : undefined}
           targetTypes={props.searchParam.target}
+          withinPortal={props.withinPortal}
           autoFocus={props.autoFocus}
           onChange={(newReference: Reference | undefined) => {
             if (newReference) {
@@ -43,6 +48,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <Checkbox
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultChecked={props.defaultValue === 'true'}
@@ -56,6 +62,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <TextInput
           type="date"
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}
@@ -79,6 +86,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <TextInput
           type="number"
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}
@@ -108,6 +116,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <TextInput
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}

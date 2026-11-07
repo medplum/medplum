@@ -18,17 +18,14 @@ import type {
 import type { Job } from 'bullmq';
 import express from 'express';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import type { MedplumServerConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import { runInAuthenticatedContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
-import { execSetAccountsJob, getSetAccountsQueue, initSetAccountsWorker } from '../../workers/set-accounts';
-import * as workerUtils from '../../workers/utils';
+import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
 import { setAccountsHandler } from './set-accounts';
-import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 
 const app = express();
 let accessToken: string;
@@ -40,7 +37,7 @@ let diagnosticReport: DiagnosticReport;
 let patient: Patient;
 let organization1: Organization;
 let organization2: Organization;
-let config: MedplumServerConfig;
+let config: ServerConfig;
 
 describe('Patient Set Accounts Operation', () => {
   beforeEach(async () => {
@@ -400,10 +397,7 @@ describe('Patient Set Accounts Operation', () => {
     expect(res).toHaveStatus(403);
   });
 
-  test.each([
-    ['tracked', false],
-    ['legacy', true],
-  ] as const)('Supports async response with %s job data', async (_format, legacy) => {
+  test('Supports async response', async () => {
     const queue = getSetAccountsQueue() as any;
     queue.add.mockClear();
 
@@ -433,23 +427,7 @@ describe('Patient Set Accounts Operation', () => {
     );
 
     const contentLocation = new URL(initRes.headers['content-location']);
-    const queuedData = queue.add.mock.calls[0][1] as SetAccountsJobData;
-    let jobData = queuedData;
-    if (legacy) {
-      const initialStatusRes = await request(app)
-        .get(contentLocation.pathname)
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(initialStatusRes).toHaveStatus(202);
-      jobData = {
-        resourceType: queuedData.resourceType,
-        id: queuedData.id,
-        accounts: queuedData.accounts,
-        authState: queuedData.authState,
-        requestId: queuedData.requestId,
-        traceId: queuedData.traceId,
-        asyncJob: initialStatusRes.body as WithId<AsyncJob>,
-      };
-    }
+    const jobData = queue.add.mock.calls[0][1] as SetAccountsJobData;
     const job = { id: 1, data: jobData } as unknown as Job<SetAccountsJobData>;
 
     await runInAuthenticatedContext(
@@ -468,37 +446,6 @@ describe('Patient Set Accounts Operation', () => {
     expect((statusRes.body as AsyncJob).output?.parameter).toStrictEqual(
       expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
     );
-  });
-
-  test('Worker logs and fails legacy async job data', async () => {
-    const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
-    const failSpy = vi.spyOn(AsyncJobExecutor.prototype, 'failJob');
-    const asyncJob: WithId<AsyncJob> = {
-      resourceType: 'AsyncJob',
-      id: 'legacy-async-job',
-      status: 'accepted',
-      request: '/fhir/R4/Patient/$set-accounts',
-      requestTime: new Date().toISOString(),
-    };
-    failSpy.mockResolvedValue({ ...asyncJob, status: 'error' });
-    const legacyData: SetAccountsJobData = {
-      resourceType: 'Patient',
-      id: patient.id as string,
-      accounts: [createReference(organization1)],
-      authState: { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-      asyncJob,
-    };
-    const job = { id: 1, data: legacyData } as unknown as Job<SetAccountsJobData>;
-
-    const { worker } = initSetAccountsWorker(config);
-    const logFields = loggingSpy.mock.calls.at(-1)?.[2] as (job: Job<SetAccountsJobData>) => Record<string, unknown>;
-    expect(logFields(job)).toEqual({ asyncJob: 'AsyncJob/legacy-async-job' });
-
-    const onCalls = (worker?.on as unknown as Mock).mock.calls as [string, (job: Job<SetAccountsJobData>) => unknown][];
-    const failedHandler = onCalls.filter(([event]) => event === 'failed').at(-1)?.[1];
-    expect(failedHandler).toBeDefined();
-    await expect(failedHandler?.(job)).resolves.toBeUndefined();
-    expect(failSpy).toHaveBeenCalledOnce();
   });
 
   test('Job aborts when AsyncJob.status is not continuable', async () => {
@@ -657,5 +604,100 @@ describe('Patient Set Accounts Operation', () => {
     const diagnosticReport = reportRes.body as DiagnosticReport;
     expect(diagnosticReport.subject).toStrictEqual(patientRef);
     expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef]));
+  });
+
+  test('Respects access policy of the user when propagating', async () => {
+    const { accessToken, project, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      accessPolicy: {
+        resource: [
+          { resourceType: 'Patient' },
+          { resourceType: 'Observation', readonly: true },
+          { resourceType: 'DiagnosticReport', hiddenFields: ['conclusion'] },
+        ],
+      },
+    });
+    const systemRepo = repo.getSystemRepo();
+    const meta = { project: project.id };
+    const orgRef = createReference(organization1);
+
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient', meta });
+    const observation = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta,
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+    const diagnosticReport = await systemRepo.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      meta,
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+      conclusion: 'hidden from the user',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: orgRef },
+          { name: 'propagate', valueBoolean: true },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 2 });
+
+    // Read-only resources are not updated
+    const unchangedObservation = await systemRepo.readResource<Observation>('Observation', observation.id);
+    expect(unchangedObservation.meta?.versionId).toStrictEqual(observation.meta?.versionId);
+    expect(unchangedObservation.meta?.accounts).toBeUndefined();
+
+    // Hidden fields of updated resources are preserved
+    const updatedReport = await systemRepo.readResource<DiagnosticReport>('DiagnosticReport', diagnosticReport.id);
+    expect(updatedReport.meta?.accounts).toStrictEqual([orgRef]);
+    expect(updatedReport.conclusion).toStrictEqual('hidden from the user');
+  });
+
+  test('Does not propagate to resources in linked Projects', async () => {
+    const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      project: { link: [{ project: createReference(linkedProject) }] },
+      membership: { admin: true },
+    });
+
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const linkedObservation = await linkedRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+    expect(linkedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+    await expect(repo.readResource('Observation', linkedObservation.id)).resolves.toBeDefined();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: createReference(organization1) },
+          { name: 'propagate', valueBoolean: true },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
+
+    const unchangedObservation = await linkedRepo.readResource<Observation>('Observation', linkedObservation.id);
+    expect(unchangedObservation.meta?.versionId).toStrictEqual(linkedObservation.meta?.versionId);
+    expect(unchangedObservation.meta?.accounts).toBeUndefined();
   });
 });

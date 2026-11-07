@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle, Claim } from '@medplum/fhirtypes';
+import type { Binary, Bundle, Claim } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -94,6 +94,15 @@ describe('CMS 1500 PDF', () => {
     expect(response).toHaveStatus(200);
     expect(response.body.resourceType).toBe('Media');
     expect(response.body.content.contentType).toBe('application/pdf');
+
+    // content.url is a presigned storage URL of the form /storage/<id>/<versionId>
+    const binaryId = new URL(response.body.content.url).pathname.split('/').filter(Boolean)[1];
+    const binaryRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json');
+    expect(binaryRes).toHaveStatus(200);
+    expect((binaryRes.body as Binary).securityContext?.reference).toStrictEqual(claim.patient.reference);
   });
 
   test('Bad request - claim not found', async () => {

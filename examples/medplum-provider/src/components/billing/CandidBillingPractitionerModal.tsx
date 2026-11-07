@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Input, Skeleton, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
+import { createReference, getIdentifier } from '@medplum/core';
 import type { Address, HumanName, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
 import { AddressInput, HumanNameInput, Modal, ResourceInput, useMedplum, useResource } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
@@ -24,6 +24,7 @@ import {
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { getErrorMessage } from '../insurance/utils';
 import { BillingOrganizationOption } from './BillingOrganizationOption';
 import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
@@ -38,6 +39,8 @@ const FORM_ID = 'billing-practitioner-form';
 export interface CandidBillingPractitionerModalProps {
   readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
+  /** The candid-link-rendering-provider bot; without it, contract links are left to the Candid portal. */
+  readonly candidLinkBotId: string | undefined;
   readonly practitioner: WithId<Practitioner> | undefined;
   readonly onClose: () => void;
   readonly onSaved: () => void;
@@ -59,7 +62,7 @@ const EDIT_BOT_MISSING_MESSAGE =
 type FormErrors = Partial<Record<'name' | 'npi' | 'ein' | 'address', string>>;
 
 export function CandidBillingPractitionerModal(props: CandidBillingPractitionerModalProps): JSX.Element {
-  const { candidCreateBotId, candidEditBotId, practitioner, onClose, onSaved } = props;
+  const { candidCreateBotId, candidEditBotId, candidLinkBotId, practitioner, onClose, onSaved } = props;
   const medplum = useMedplum();
   const practitionerId = practitioner?.id;
   const [loadedRoles, setLoadedRoles] = useState<LoadedRoles | undefined>(undefined);
@@ -134,9 +137,11 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
         await medplum.patchResource('PractitionerRole', role.id, [{ op: 'remove', path: '/organization' }]);
       }
       showSuccessNotification({ title: 'Success', message: 'Billing details updated' });
+      let renderingProviderId: string | undefined;
       if (botId) {
         try {
-          await medplum.executeBot(botId, saved, 'application/fhir+json');
+          const registered: Practitioner = await medplum.executeBot(botId, saved, 'application/fhir+json');
+          renderingProviderId = getIdentifier(registered, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM) ?? candidProviderId;
           showSuccessNotification({
             title: 'Success',
             message: candidProviderId ? 'Updated in Candid' : 'Registered with Candid',
@@ -144,10 +149,19 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
         } catch (error) {
           showErrorNotification(
             new Error(
-              `Practitioner saved, but ${candidProviderId ? 'updating them in' : 'registering them with'} Candid failed: ${normalizeErrorString(error)}. ` +
+              `Practitioner saved, but ${candidProviderId ? 'updating them in' : 'registering them with'} Candid failed: ${getErrorMessage(error)}. ` +
                 'Save the practitioner again to retry.'
             )
           );
+        }
+      }
+      if (candidLinkBotId && renderingProviderId) {
+        const previous = role?.organization;
+        if (previous?.reference && previous.reference !== organization?.reference) {
+          await linkToContracts(candidLinkBotId, previous, renderingProviderId, 'unlink');
+        }
+        if (organization) {
+          await linkToContracts(candidLinkBotId, organization, renderingProviderId, 'link');
         }
       }
       onSaved();
@@ -156,6 +170,49 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
       showErrorNotification(error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  /**
+   * Adds the practitioner to, or removes them from, the rendering providers of the organization's Candid
+   * contracts. An organization Candid does not know holds no contracts there, so it is skipped. Failures are
+   * reported and never undo the save.
+   * @param botId - The candid-link-rendering-provider bot.
+   * @param organization - The billing organization whose contracts are affected.
+   * @param renderingProviderId - The practitioner's Candid organization provider ID.
+   * @param action - Whether to add the practitioner to the contracts or remove them.
+   */
+  const linkToContracts = async (
+    botId: string,
+    organization: Reference<Organization>,
+    renderingProviderId: string,
+    action: 'link' | 'unlink'
+  ): Promise<void> => {
+    const name = organization.display ?? 'the billing organization';
+    try {
+      const billingOrg = await medplum.readReference(organization, { cache: 'no-cache' });
+      const contractingProviderId = getIdentifier(billingOrg, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+      if (!contractingProviderId) {
+        return;
+      }
+      await medplum.executeBot(botId, { contractingProviderId, renderingProviderId, action }, 'application/json');
+      showSuccessNotification({
+        title: 'Success',
+        message:
+          action === 'link'
+            ? `Linked to the Candid contracts of ${billingOrg.name ?? name}`
+            : `Unlinked from the Candid contracts of ${billingOrg.name ?? name}`,
+      });
+    } catch (error) {
+      showErrorNotification(
+        new Error(
+          action === 'link'
+            ? `Practitioner saved, but linking them to the Candid contracts of ${name} failed: ${getErrorMessage(error)}. ` +
+                'Save the practitioner again to retry.'
+            : `Practitioner saved, but unlinking them from the Candid contracts of ${name} failed: ${getErrorMessage(error)}. ` +
+                'Remove them from those contracts in the Candid portal.'
+        )
+      );
     }
   };
 
@@ -184,6 +241,7 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
         <CandidBillingPractitionerForm
           key={practitioner.id}
           candidCreateBotId={candidCreateBotId}
+          candidLinkBotId={candidLinkBotId}
           practitioner={practitioner}
           roles={roles}
           onRegistrationStatusChange={setRegistrationStatus}
@@ -213,6 +271,7 @@ function CandidBillingPractitionerFormSkeleton(): JSX.Element {
 
 interface CandidBillingPractitionerFormProps {
   readonly candidCreateBotId: string | undefined;
+  readonly candidLinkBotId: string | undefined;
   readonly practitioner: WithId<Practitioner>;
   readonly roles: WithId<PractitionerRole>[];
   readonly onRegistrationStatusChange: (status: CandidProviderRegistration['status']) => void;
@@ -225,7 +284,7 @@ interface CandidBillingPractitionerFormProps {
 }
 
 function CandidBillingPractitionerForm(props: CandidBillingPractitionerFormProps): JSX.Element {
-  const { candidCreateBotId, practitioner, roles, onRegistrationStatusChange, onSave } = props;
+  const { candidCreateBotId, candidLinkBotId, practitioner, roles, onRegistrationStatusChange, onSave } = props;
 
   const [name, setName] = useState<HumanName | undefined>(() => practitioner.name?.[0]);
   const [npi, setNpi] = useState(() => getIdentifier(practitioner, NPI_SYSTEM) ?? '');
@@ -331,6 +390,8 @@ function CandidBillingPractitionerForm(props: CandidBillingPractitionerFormProps
           />
           <Input.Description mt={4}>
             The billing organization for this role. Leave it empty to bill under the practitioner's own NPI.
+            {candidLinkBotId &&
+              ' Saving also links the practitioner to the Candid contracts of a registered organization as a rendering provider.'}
           </Input.Description>
         </div>
         <TextInput

@@ -118,6 +118,7 @@ export class BatchCheckpointStore {
     return {
       ...persisted,
       bundleInfo: { ...persisted.bundleInfo, resourceTypes: new Set(persisted.bundleInfo.resourceTypes) },
+      assignedIds: persisted.assignedIds,
     };
   }
 
@@ -211,10 +212,10 @@ export class BatchCheckpointStore {
   }
 }
 
-/** The JSON-safe on-disk form of {@link BatchInitialState}. */
-interface PersistedInitialState extends Omit<BatchInitialState, 'bundleInfo'> {
-  // PENDING{v5.2} make resourceTypes required
-  bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes?: ResourceType[] };
+/** The JSON-safe on-disk form of {@link BatchInitialState}. e.g. use array instead of set for resourceTypes. */
+interface PersistedInitialState extends Omit<BatchInitialState, 'bundleInfo' | 'assignedIds'> {
+  bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes: ResourceType[] };
+  assignedIds: BatchInitialState['assignedIds'];
 }
 
 interface RunWithConcurrencyOptions {

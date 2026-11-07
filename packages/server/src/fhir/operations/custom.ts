@@ -12,12 +12,17 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bot, OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';
-import { getBotDefaultHeaders, getBotProjectMembership } from '../../bots/utils';
+import { getBotBodyInput, getBotDefaultHeaders, getBotProjectMembership, isBinaryWithoutData } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
+import { searchUnique } from '../searchunique';
 import { buildOutputParameters } from './utils/parameters';
 
-export async function tryCustomOperation(req: FhirRequest, repo: Repository): Promise<FhirResponse | undefined> {
+export async function tryCustomOperation(
+  req: FhirRequest,
+  repo: Repository,
+  rawBody?: Buffer
+): Promise<FhirResponse | undefined> {
   // Parse the URL to find the operation code
   const parts = req.url.split('/');
   const operationPart = parts.find((part) => part.startsWith('$'));
@@ -28,16 +33,14 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
 
   // Search for the OperationDefinition resource
   const operationCode = operationPart.substring(1); // Remove the '$' prefix
-  const operation = await repo.searchOne<OperationDefinition>({
-    resourceType: 'OperationDefinition',
-    filters: [
-      {
-        code: 'code',
-        operator: Operator.EXACT,
-        value: operationCode,
-      },
-    ],
-  });
+  const operation = await searchUnique<OperationDefinition>(
+    repo,
+    {
+      resourceType: 'OperationDefinition',
+      filters: [{ code: 'code', operator: Operator.EXACT, value: operationCode }],
+    },
+    'Find custom OperationDefinition by code'
+  );
   if (!operation) {
     // No operation definition found
     return undefined;
@@ -79,13 +82,14 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
     const resourceId = parts[operationIndex - 1];
     input = await repo.readResource(resourceType, resourceId);
   } else {
-    input = req.method === 'POST' ? req.body : req.query;
+    input = req.method === 'POST' ? getBotBodyInput(bot, req.body, rawBody) : req.query;
   }
 
   // Execute the bot
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
+    runAsProject: ctx.project,
     requester: ctx.membership.profile,
     input,
     contentType: req.headers?.['content-type'] as string,
@@ -96,6 +100,10 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
 
   if (isOperationOutcome(result)) {
     return [result];
+  }
+
+  if (isBinaryWithoutData(result.returnValue)) {
+    return [badRequest('Bot returned a Binary without data')];
   }
 
   if (!result.success) {

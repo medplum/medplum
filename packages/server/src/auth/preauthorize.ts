@@ -6,7 +6,9 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createHash, randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../context';
+import { parseSmartScopeString } from '../fhir/smart';
 import { generateSecret } from '../oauth/keys';
+import { isNonSmartScopeSubset, isSmartScopeSubset } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const DEFAULT_PRE_AUTH_CODE_TTL = 60 * 60; // 1 hour
@@ -24,12 +26,26 @@ export const preAuthorizeValidator = makeValidationMiddleware([
 
 export async function preAuthorizeHandler(req: Request, res: Response): Promise<void> {
   const { authState, repo } = getAuthenticatedContext();
-  const { project, membership, onBehalfOfMembership } = authState;
+  const { project, membership, onBehalfOfMembership, login } = authState;
   if (project.superAdmin || !membership.admin) {
     throw new OperationOutcomeError(forbidden);
   }
   if (!onBehalfOfMembership) {
     throw new OperationOutcomeError(badRequest('Pre-authorization requires onBehalfOfMembership'));
+  }
+
+  // A caller restricted by SMART scopes can only mint codes within its own scope:
+  // by default it passes on just its resource scopes, and any other requested term must be one it holds
+  const callerScope = login.scope;
+  const callerTerms = callerScope?.split(' ').filter(Boolean) ?? [];
+  const callerSmartTerms = callerTerms.filter((term) => parseSmartScopeString(term));
+  const scope: string =
+    req.body.scope || (callerSmartTerms.length > 0 ? ['openid', ...callerSmartTerms].join(' ') : 'openid');
+  const hasUnheldTerm = callerSmartTerms.length > 0 && !isNonSmartScopeSubset(callerScope, scope);
+  // The minted login has no launch context, so `patient/` scopes are scoped to the target's own Patient profile
+  const hasPatientContext = !!onBehalfOfMembership.profile?.reference?.startsWith('Patient/');
+  if (hasUnheldTerm || !isSmartScopeSubset(callerScope, scope, hasPatientContext)) {
+    throw new OperationOutcomeError(badRequest('Invalid scope', 'scope'));
   }
 
   // X-Medplum-On-Behalf-Of rebuilds the request repo as the target membership's AccessPolicy.
@@ -53,7 +69,7 @@ export async function preAuthorizeHandler(req: Request, res: Response): Promise<
     membership: createReference(onBehalfOfMembership),
     user: onBehalfOfMembership.user,
     authTime: new Date().toISOString(),
-    scope: req.body.scope || 'openid',
+    scope,
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),

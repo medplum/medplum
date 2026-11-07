@@ -298,6 +298,8 @@ The status endpoint returns an `AsyncJob` resource with the following key fields
   - For successful bot execution: `parameter[0].name` will be `responseBody`
   - For failed execution: `parameter[0].name` will be `outcome` with error details
 
+- **`requester`**: The user or client application that started the execution
+
 ### Example Response
 
 When the bot execution completes successfully:

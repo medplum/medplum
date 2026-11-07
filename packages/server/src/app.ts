@@ -22,7 +22,7 @@ import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { cdsRouter } from './cds/routes';
 import { getConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import {
   attachRequestContext,
   AuthenticatedRequestContext,
@@ -35,6 +35,7 @@ import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
 import { smartHealthLinkRouter } from './fhir/operations/smarthealthlinks';
+import { closeAgentCallbackSubscriber } from './fhir/operations/utils/agentcallback';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
@@ -45,7 +46,7 @@ import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { drainStdout, getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
-import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnAllShards } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -58,7 +59,7 @@ import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
-import { WEBHOOK_PATHS, webhookRouter } from './webhook/routes';
+import { webhookRouter } from './webhook/routes';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 import { closeWebSockets, initWebSockets } from './ws/routes';
@@ -66,6 +67,14 @@ import { closeWebSockets, initWebSockets } from './ws/routes';
 let server: http.Server | undefined = undefined;
 
 export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
+
+// Routes that can invoke a Bot, under each mount point.
+// FHIR operation paths cover both Bot $execute and Bot-backed custom operations.
+const BOT_EXECUTION_PATHS = ['', '/api', '/projects/:projectId', '/api/projects/:projectId'].flatMap((prefix) => [
+  prefix + '/webhook/:id',
+  prefix + '/fhir/R4{/*splat}/$:operation',
+  prefix + '/fhir/R4{/*splat}/%24:operation',
+]);
 
 /**
  * Sets standard headers for all requests.
@@ -172,11 +181,16 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest(err.message));
     return;
   }
+  if (err.expose && err.status === 400) {
+    // http-errors marks client errors as safe to expose, e.g. body-parser decompression failures
+    sendOutcome(res, badRequest(err.message));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
-export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
+export async function initApp(app: Express, config: ServerConfig): Promise<http.Server> {
   if (process.env.NODE_ENV !== 'test') {
     await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
   }
@@ -219,6 +233,11 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
     ],
     binaryRouter
   );
+  // Presigned uploads stream the raw body, so like binaryRouter this must precede the body parsers
+  app.use(
+    ['/storage', '/api/storage', '/projects/:projectId/storage', '/api/projects/:projectId/storage'],
+    storageRouter
+  );
 
   // Handle async batch by enqueueing job
   app.post(
@@ -227,13 +246,14 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
     asyncBatchHandler(config)
   );
 
+  // Keep the unparsed JSON, which a Bot with Bot.rawBody set gets as its input
   app.use(
-    WEBHOOK_PATHS,
+    BOT_EXECUTION_PATHS,
     json({
       type: JSON_TYPE,
       limit: config.maxJsonSize,
-      verify: (req, _res, buf) => {
-        (req as any).rawBody = buf;
+      verify: (_req, res, buf) => {
+        (res as Response).locals.rawBody = buf;
       },
     })
   );
@@ -268,7 +288,6 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/shl/', smartHealthLinkRouter);
-  apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
 
   if (config.mcpEnabled) {
@@ -283,7 +302,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   return server;
 }
 
-export async function initAppServices(config: MedplumServerConfig): Promise<void> {
+export async function initAppServices(config: ServerConfig): Promise<void> {
   loadStructureDefinitions(config);
   initRedis(config);
   await initDatabase(config);
@@ -294,7 +313,7 @@ export async function initAppServices(config: MedplumServerConfig): Promise<void
   initHeartbeat(config);
   initOtelHeartbeat();
   initServerRegistryHeartbeatListener();
-  await maybeAutoRunPendingPostDeployMigration();
+  await maybeAutoRunPendingPostDeployMigrationOnAllShards();
 }
 
 export async function shutdownApp(): Promise<void> {
@@ -311,6 +330,7 @@ export async function shutdownApp(): Promise<void> {
 
   await closeWorkers();
   await closeDatabase();
+  closeAgentCallbackSubscriber();
   await closeRedis();
   closeRateLimiter();
 

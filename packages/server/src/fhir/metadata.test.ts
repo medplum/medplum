@@ -3,12 +3,12 @@
 import type { CapabilityStatementRestResource } from '@medplum/fhirtypes';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { buildCapabilityStatement } from './metadata';
 import { loadStructureDefinitions } from './structure';
 
 describe('CapabilityStatement', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
 
   beforeAll(async () => {
     loadStructureDefinitions();

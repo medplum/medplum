@@ -22,12 +22,14 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import JSZip from 'jszip';
 import request from 'supertest';
+import { runInNewContext } from 'vm';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
 import { createTestProject, waitFor } from '../../test.setup';
 import {
   DEFAULT_LAMBDA_TIMEOUT,
+  DELETE_AWS_ENV_CODE,
   getLambdaNameForBot,
   getLambdaTimeoutForBot,
   LAMBDA_HANDLER,
@@ -210,6 +212,9 @@ describe('Deploy', () => {
     expect(createCodeBytes).toBeInstanceOf(Uint8Array);
     const createZip = await new JSZip().loadAsync(createCodeBytes as Uint8Array);
     expect(Object.keys(createZip.files)).toEqual(expect.arrayContaining(['index.cjs', 'user.cjs']));
+    const cjsIndex = (await createZip.file('index.cjs')?.async('string')) as string;
+    expect(cjsIndex.indexOf(DELETE_AWS_ENV_CODE)).toBeGreaterThan(-1);
+    expect(cjsIndex.indexOf(DELETE_AWS_ENV_CODE)).toBeLessThan(cjsIndex.indexOf('./user.cjs'));
 
     mockLambdaClient.resetHistory();
 
@@ -241,6 +246,20 @@ describe('Deploy', () => {
     expect(updateCodeBytes).toBeInstanceOf(Uint8Array);
     const updateZip = await new JSZip().loadAsync(updateCodeBytes as Uint8Array);
     expect(Object.keys(updateZip.files)).toEqual(expect.arrayContaining(['index.mjs', 'user.mjs']));
+    const esmIndex = (await updateZip.file('index.mjs')?.async('string')) as string;
+    expect(esmIndex).not.toContain("import * as userCode from './user.mjs'");
+    expect(esmIndex.indexOf(DELETE_AWS_ENV_CODE)).toBeGreaterThan(-1);
+    expect(esmIndex.indexOf(DELETE_AWS_ENV_CODE)).toBeLessThan(esmIndex.indexOf('./user.mjs'));
+  });
+
+  test('DELETE_AWS_ENV_CODE removes AWS_ environment variables', () => {
+    const env = {
+      AWS_REGION: 'us-east-1',
+      AWS_LAMBDA_FUNCTION_NAME: 'fn',
+      NODE_PATH: '/opt/nodejs',
+    };
+    runInNewContext(DELETE_AWS_ENV_CODE, { process: { env } });
+    expect(env).toEqual({ NODE_PATH: '/opt/nodejs' });
   });
 
   test('Deploy bot with lambda layer update', async () => {

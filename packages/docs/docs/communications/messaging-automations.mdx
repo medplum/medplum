@@ -6,6 +6,7 @@ keywords: [bot, subscription, task, auto-complete, reminder, cron, ooo, reroute,
 ---
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
+import RoutingCode from '!!raw-loader!@site/../examples/src/communications/out-of-office-routing.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Messaging Automations
@@ -31,27 +32,33 @@ A real-time automation uses a [Subscription](/docs/subscriptions) on `Communicat
 
 When a message arrives for a provider who is currently out of office, a Bot can automatically reroute the [Task](/docs/api/fhir/resources/task) back to the provider pool so another team member can pick it up.
 
-The Bot uses the Medplum [scheduling model](/docs/scheduling) to determine availability. It looks up the assigned provider's [Schedule](/docs/api/fhir/resources/schedule) and calls [`$find`](/docs/scheduling/appointment-find) for the current time window. If no free slots are returned — whether because of explicit time blocks (vacation, holidays) or because the provider has no [availability](/docs/scheduling/defining-availability) defined for the current day — the Task is rerouted to the pool.
+Use your practice's coverage roster or explicit absence records to decide whether the assigned person can respond. A lack of bookable appointments does not establish that someone is out of office or unable to answer messages.
 
 ```mermaid
 flowchart LR
-    Sub["Subscription<br/>(new message)"] --> Bot["Bot:<br/>$find on Schedule"]
-    Bot --> Reroute["Reroute Task<br/>if no free slots"]
+    Sub["Subscription: new message"] --> Bot["Check response Tasks and coverage"]
+    Bot --> Away{"Owner confirmed unavailable?"}
+    Away -->|Yes| Reroute["Return work to its role pool"]
+    Away -->|No| Keep["Keep current assignment"]
 ```
 
 #### Bot Code
 
-<MedplumCodeBlock language="ts" selectBlocks="oooRerouteTs">
-  {ExampleCode}
+The factory below returns a Bot handler. Supply `isUnavailable` from your application's coverage integration and a coded response work type. Return `true` only for confirmed unavailability; if the lookup fails, throw so the Bot's recovery process can handle it. The handler uses the [safe pool transfer helper](/docs/communications/message-response-tracking-and-routing#reroute-to-a-provider-pool), preserving thread participants and checking the Task version.
+
+<MedplumCodeBlock language="ts" selectBlocks="oooImports, oooRerouteTs">
+  {RoutingCode}
 </MedplumCodeBlock>
 
-:::tip[]
-This example reroutes to the `performerType` pool. You could instead reroute to a specific coverage provider by setting `Task.owner` to that provider's reference. You can also customize the availability check — for instance, querying a different `serviceType` or adjusting the time window.
+:::tip[Define the response pool before enabling automation]
+
+This example handles `ready`, `accepted`, and `in-progress` response work with one coded `performerType`. It leaves unowned work, ambiguous pools, and paused Tasks for their existing workflow. Confirm your coverage policy allows in-progress work to return to `ready`; another workflow may require a handoff acknowledgment.
+
 :::
 
 #### Deploy and Subscribe
 
-1. Create a Bot resource in the Medplum App (Project Admin → Bots → New). See [Deploying Bots](/docs/bots/bot-basics#deploying-a-bot) for full steps.
+1. Configure the factory with your coverage lookup and response-work coding, then export the returned handler as the Bot entry point. Bundle the imported helper with the Bot. Create a Bot resource in the Medplum App (Project Admin → Bots → New). See [Deploying Bots](/docs/bots/bot-basics#deploying-a-bot) for full steps.
 2. Create a [Subscription](/docs/api/fhir/resources/subscription) that triggers the Bot for new child messages:
 
 <MedplumCodeBlock language="ts" selectBlocks="subscriptionOooRerouteTs">
@@ -62,9 +69,10 @@ The criteria `part-of:missing=false` limits the Subscription to child messages (
 
 #### Verify
 
-1. Configure a provider Schedule with no free slots for the current window (or an explicit OOO block).
-2. Ensure an open Task for the thread is owned by that provider, then send a new child message in the thread so the Subscription runs.
-3. Confirm the Task has `owner` removed, `status` back to `requested`, and an auto-reroute note; optionally confirm thread `recipient` was cleared as in the example.
+1. Mark a provider unavailable in the coverage source used by `isUnavailable`.
+2. Create an owned response Task with the configured work-type code and one coded role pool, then send a new child message in the thread.
+3. Confirm the Task has `owner` removed, `status: ready`, and an appended reroute note. The thread's participants should remain unchanged.
+4. Test an available owner, an absent role code, and a concurrent Task update. On a version conflict, reload and reevaluate coverage and assignment before retrying; preserve the newer assignment.
 
 ## Recurring Automations
 

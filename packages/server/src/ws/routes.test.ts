@@ -10,7 +10,7 @@ import request from 'superwstest';
 import WebSocket from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { globalLogger } from '../logger';
 import * as redisModule from '../redis';
 import { withTestContext } from '../test.setup';
@@ -18,7 +18,7 @@ import { closeWebSockets } from './routes';
 
 describe('WebSockets', () => {
   let app: Express;
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let server: Server;
 
   beforeAll(async () => {

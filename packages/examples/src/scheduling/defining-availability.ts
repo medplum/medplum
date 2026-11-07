@@ -329,6 +329,23 @@ const scheduleServiceTypeLink: Schedule =
   };
 // end-block scheduleServiceTypeLink
 
+// A Schedule that can be booked for every HealthcareService, without referencing any of them.
+const scheduleAllServiceTypes: Schedule =
+  // start-block scheduleAllServiceTypes
+  {
+    resourceType: 'Schedule',
+    id: 'dr-smith-schedule',
+    comment: "Dr. Smith's availability, for any service type",
+    actor: [{ reference: 'Practitioner/dr-smith' }],
+    serviceType: [
+      {
+        text: 'All service types',
+        coding: [{ system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' }],
+      },
+    ],
+  };
+// end-block scheduleAllServiceTypes
+
 // A Schedule that overrides only `availability`, inheriting everything else from the HealthcareService.
 const scheduleOverride: Schedule =
   // start-block scheduleOverride
@@ -956,7 +973,8 @@ const seedBundle: Bundle =
   // start-block seedBundle
   {
     resourceType: 'Bundle',
-    // type: transaction so a bad entry rolls back instead of silently partial-committing
+    // Linked-resource request format only. Hosted processing is not atomic.
+    // Inspect every entry; do not blindly rerun POST creates after a partial failure.
     type: 'transaction',
     entry: [
       {
@@ -1162,6 +1180,7 @@ console.log(
   scheduleAvailability,
   healthcareServiceServiceLevel,
   scheduleServiceTypeLink,
+  scheduleAllServiceTypes,
   scheduleOverride,
   overbookingSchedule,
   slotBlocking,

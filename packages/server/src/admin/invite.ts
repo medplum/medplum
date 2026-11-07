@@ -6,6 +6,7 @@ import {
   badRequest,
   conflict,
   createReference,
+  escapeSearchValue,
   getReferenceString,
   isCreated,
   isNotFound,
@@ -34,6 +35,7 @@ import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
+import { getDefaultAccessPolicy } from '../fhir/default-access-policies';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
@@ -132,7 +134,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
         resourceType: 'ProjectMembership',
         filters: [
-          { code: 'user:User.email', operator: Operator.EXACT, value: email },
+          { code: 'user:User.email', operator: Operator.EXACT, value: escapeSearchValue(email) },
           { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
           projectFilter,
         ],
@@ -149,7 +151,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
         {
           code: 'email',
           operator: Operator.EXACT,
-          value: email,
+          value: escapeSearchValue(email),
         },
         userResource.project
           ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
@@ -274,7 +276,7 @@ async function upsertProfileResource(
         {
           code: 'email',
           operator: Operator.EQUALS,
-          value: email,
+          value: escapeSearchValue(email),
         },
       ];
 
@@ -352,6 +354,10 @@ async function validateAccessPolicies(
     }
   }
 
+  if (request.membership?.accessPolicy) {
+    references.push(request.membership.accessPolicy);
+  }
+
   if (Array.isArray(request.membership?.access)) {
     for (const access of request.membership.access) {
       if (access.policy) {
@@ -413,9 +419,9 @@ async function upsertProjectMembership(
   // Also applies on upsert when no policy is provided in the request.
   // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
   if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    const defaultPolicy = getDefaultAccessPolicy(project, 'Patient');
     if (defaultPolicy) {
-      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+      partialMembership.accessPolicy = defaultPolicy;
     } else if (project.defaultPatientAccessPolicy) {
       // Fallback to legacy field for backwards compatibility
       partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
@@ -428,12 +434,12 @@ async function upsertProjectMembership(
     !partialMembership.accessPolicy &&
     !partialMembership.access?.length
   ) {
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    const defaultPolicy = getDefaultAccessPolicy(project, 'RelatedPerson');
     const patientRef = (profile as RelatedPerson).patient;
     if (defaultPolicy && patientRef) {
       partialMembership.access = [
         {
-          policy: defaultPolicy.accessPolicy,
+          policy: defaultPolicy,
           parameter: [{ name: 'patient', valueReference: patientRef }],
         },
       ];
@@ -443,10 +449,9 @@ async function upsertProjectMembership(
   // Apply default membership policy for Practitioner invites, based on whether the member is
   // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
   if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
+    const defaultPolicy = getDefaultAccessPolicy(project, partialMembership.admin ? 'Admin' : 'Practitioner');
     if (defaultPolicy) {
-      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+      partialMembership.accessPolicy = defaultPolicy;
     }
   }
 
@@ -577,6 +582,7 @@ async function sendInviteEmail(
   try {
     await sendEmail(systemRepo, options, request.project);
   } catch (err) {
+    getLogger().warn('Invite email failed', { projectId: request.project.id, err: normalizeErrorString(err) });
     // A common error for new self-hosted Medplum servers is that SES is not configured.
     // A long time ago, we made the mistake of establishing a convention of HTTP 200 + OperationOutcome for this case.
     // To preserve this behavior, we throw an OperationOutcomeError with allOk ID.
@@ -590,7 +596,6 @@ async function sendInviteEmail(
           details: {
             text: 'Could not send email. Make sure you have AWS SES set up.',
           },
-          diagnostics: normalizeErrorString(err),
         },
       ],
     });

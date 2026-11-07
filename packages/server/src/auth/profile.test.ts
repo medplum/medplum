@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource } from '@medplum/core';
-import { getReferenceString } from '@medplum/core';
-import type { Login, ProjectMembership } from '@medplum/fhirtypes';
+import { ContentType, getReferenceString } from '@medplum/core';
+import type { Binary, Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 const app = express();
@@ -18,6 +18,7 @@ const password = randomUUID();
 let profile1: ProfileResource;
 let profile2: ProfileResource;
 let membership1: ProjectMembership;
+let membership2: ProjectMembership;
 
 describe('Profile', () => {
   const systemRepo = getGlobalSystemRepo();
@@ -49,6 +50,7 @@ describe('Profile', () => {
       });
 
       profile2 = registerResult2.profile;
+      membership2 = registerResult2.membership;
     });
   });
 
@@ -222,6 +224,42 @@ describe('Profile', () => {
     expect(res2.body.issue[0].details.text).toBe('Invalid profile');
   });
 
+  test('Membership for different project', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeUndefined();
+
+    // Simulate a login that was started for the first project
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        project: membership1.project,
+      })
+    );
+
+    // Same user, but the membership is in a different project
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership2.id,
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.issue).toBeDefined();
+    expect(res2.body.issue[0].details.text).toBe('Invalid profile');
+
+    const res3 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership1.id,
+    });
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.code).toBeDefined();
+  });
+
   test('Success', async () => {
     const res1 = await request(app).post('/auth/login').type('json').send({
       scope: 'openid',
@@ -270,5 +308,32 @@ describe('Profile', () => {
     expect(updatedMembership).toBeDefined();
     expect(updatedMembership.identifier).toBeDefined();
     expect(updatedMembership.identifier[0].value).toBe('Label-1');
+  });
+
+  test('Memberships in the login response do not sign attachments', async () => {
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const binary = await withTestContext(async () => {
+      const binary = await otherRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      await systemRepo.updateResource({
+        ...membership1,
+        identifier: [
+          {
+            system: 'https://medplum.com/identifier/label',
+            value: 'Label-1',
+            extension: [{ url: `Binary/${binary.id}`, valueBoolean: true }],
+          },
+        ],
+      });
+      return binary;
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+    expect(res).toHaveStatus(200);
+    const updatedMembership = res.body.memberships.find((p: any) => p.id === membership1.id);
+    expect(updatedMembership.identifier[0].extension[0].url).toBe(`Binary/${binary.id}`);
   });
 });

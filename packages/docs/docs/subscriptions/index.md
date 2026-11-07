@@ -12,11 +12,20 @@ Subscriptions are event-driven notifications, like webhooks, and are commonly us
 - [AuditEvents](https://app.medplum.com/AuditEvent) can be used to see a history of Subscription triggers and are useful in troubleshooting.
 - [Subscription features and fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Asubscriptions) can be seen in detail on Github.
 
-:::warning[Limit of 1,000 active Subscriptions per project]
+:::warning[Limit of 1,000 persisted active Subscriptions per project]
 
-When a resource changes, the server evaluates at most 1,000 active Subscriptions in the project.
+When a resource changes, the server loads at most 1,000 persisted active Subscriptions in the project. Cached WebSocket listeners are added separately; this is not a combined limit on all listeners.
 
 :::
+
+## Planning Automations
+
+Before using Subscriptions for intake, messaging, work queues, or migration side effects, decide:
+
+- **Scale and triggers:** Keep persisted subscriptions within the project limit and scope their criteria to the required resources and events. Use [create/update and transition criteria](/docs/subscriptions/subscription-extensions) to avoid processing unrelated edits.
+- **Tenant scope and execution identity:** A Subscription with `meta.accounts` only matches resources sharing at least one account, even when its search criteria match. Verify inherited account assignments as described in [Publish and Subscribe](/docs/subscriptions/publish-and-subscribe). A Bot normally uses its own membership; select [Run as User](/docs/bots/bot-run-as-user) deliberately. Do not assume the subscription author's policy defines the Bot's permissions.
+- **Idempotency:** Use stable identifiers and conditional writes for generated resources. Track external deliveries separately so replaying an event does not duplicate a message, order, or payment.
+- **Failure recovery:** Assign an owner for detecting and recovering failed work. Application-level Bot handler failures are not automatically retried by `subscription-max-attempts`; errors thrown during setup or invocation may still retry. External HTTP endpoints have a [configurable retry policy](/docs/subscriptions/subscription-extensions#retry-policy). Test recovery for the endpoint type you use.
 
 **Additional Documentation**
 

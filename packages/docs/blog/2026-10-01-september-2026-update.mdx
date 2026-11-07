@@ -1,0 +1,232 @@
+---
+slug: september-2026-update
+title: "Medplum Monthly Update - September 2026"
+authors: reshma
+tags: [monthly-update]
+---
+
+**[PlumCon 2026](/blog/plumcon-2026) happened on September 3 in San Francisco.** Thank you to everyone who spoke, demoed, and came. It was the largest gathering of people building on Medplum yet, and the community demos are posted on the [lineup page](/blog/plumcon-2026#afternoon-session).
+
+September brought 153 commits from 21 contributors, with six patch releases, v5.1.37 through v5.1.42.
+
+[Scheduling](/blog/2026-roadmap#scheduling) gained [rescheduling](/docs/scheduling/appointment-reschedule), overbooking, either/or participant search, and a workspace for configuring visit types. A new [`Cron`](/docs/api/fhir/medplum/cron) resource decouples a Bot's schedule from the Bot itself. The [Provider App](/blog/2026-roadmap#provider-application) grew a full billing setup flow, and a long list of identity and session hardening landed on the server. Two new long-form posts went up: the [Awell Panels case study](/blog/awell-panels-case-study) and [How Medplum thinks about FHIR](/blog/traditional-fhir).
+
+All of this continues to drive forward our [2026 roadmap priorities](/blog/2026-roadmap).
+
+{/* truncate */}
+
+## Features
+
+### Scheduling
+
+<img src="https://github.com/Filupnot.png" alt="Philip Knott" width="50" height="50" style={{borderRadius: '50%'}} /> **[Philip Knott](https://github.com/Filupnot)** and <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
+
+[Scheduling](/blog/2026-roadmap#scheduling) was again the largest area of the month. August built the booking flow; September made the [scheduling workspace](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace--basic) handle the situations a real front desk hits every day:
+
+- **Rescheduling** — A new [`Appointment/$reschedule`](/docs/scheduling/appointment-reschedule) operation moves an existing appointment to a new time or a new set of schedules in a single transaction: it releases the slots the appointment holds, validates the new time, creates the new slots, and updates the appointment in place. The [reschedule form](https://storybook.medplum.com/?path=/story/medplum-appointmentrescheduleform--basic) in Storybook shows the flow. Alongside it, [`Appointment/$find`](/docs/scheduling/appointment-find) accepts an `ignore-appointment` parameter that computes availability as if the named appointment did not exist. Without that, an 11am visit with Dr. Smith in room one could never find 11am with Dr. Smith in room two, because Dr. Smith was busy at 11am with the very appointment being moved
+- **Overbooking** — A `slotCapacity` parameter on the [scheduling parameters extension](/docs/scheduling/defining-availability) sets how many appointments may share a time. Each booked slot is stamped with the capacity it was created under, and a new booking is admitted only while every overlapping booking stays under its own capacity, so the strictest rule wins. A capacity of one remains exclusive, and slots booked before this change read back as capacity one
+- **Either/or participants** — The booking form's participant fields previously intersected every selected actor's schedule, which made "provider A and B" easy and "provider A or B" impossible without two searches. An **Add another** control ([Storybook](https://storybook.medplum.com/?path=/story/medplum-appointmentactorselections--all-roles)) now expresses alternatives, so a search can ask for either room C or D, with device E, with provider A, and with either B or C, in one `$find`
+- **Visit type configuration** — A [`SchedulingConfigWorkspace`](https://storybook.medplum.com/?path=/story/medplum-schedulingconfigworkspace--basic) in `@medplum/react-scheduling` lists every visit type and opens the selected one for editing in place. Practice admins had been hand-editing `HealthcareService` resources to do this. A [`SchedulingParametersEditor`](https://storybook.medplum.com/?path=/story/medplum-schedulingparameterseditor-healthcareservice--configured) edits duration, buffers, alignment, capacity, and time zones at either level, the service's own parameters or a schedule's override for one service, and the weekly hours editor was restructured so a parent form can hold its state and save once
+
+<img src="/img/blog/2026-09-scheduling-parameters-editor.png" alt="SchedulingParametersEditor editing duration, buffers, alignment, capacity, and time zone for a visit type" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+- **Prior authorization fields** — A visit type can declare that it requires prior authorization through a `requires-prior-auth` coding on `HealthcareService.eligibility`. Booking such a visit adds procedure codes, diagnosis codes, and a medical-necessity confirmation to the [booking form](https://storybook.medplum.com/?path=/story/medplum-appointmentbookingform--auth-required), with custom values allowed in the code fields
+
+<img src="/img/blog/2026-09-scheduling-prior-auth-fields.png" alt="Booking form showing procedure codes, diagnosis codes, and medical necessity confirmation for a visit type that requires prior authorization" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+- **Booking outside the rules** — A `canBypassSchedulingRules` prop on the workspace and booking forms adds a **Date & time** and **Minutes** field above the offered times ([Storybook](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace--bypass-scheduling-rules)). The time finder is right for almost everyone, but a scheduler squeezing in an urgent patient or running a visit long needs a way to place a visit the rules would refuse
+- **More days at once** — The time finder has a **Show more days** button that loads two additional days at a time, requesting only days not already answered so results on screen stay put. The results column scrolls on its own so a long list does not push the form off screen
+- **Appointment details and cancellation** — Selecting an appointment on the calendar opens its [details in the side pane](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace-appointmentdetails--basic), with a cancel action. [`Appointment/$cancel`](/docs/scheduling/appointment-cancel) takes an optional structured `cancelationReason`, the form also accepts free text, and cancelled appointments no longer render on the calendar
+
+<img src="/img/blog/2026-09-scheduling-bypass-rules.png" alt="Date and time and minutes fields for booking a time the scheduling rules would refuse" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+- **Calendar filters** — The workspace calendar [filters by location and visit type](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace-calendarspanel--with-filters) using a typeahead, which is what makes it usable for installs with many of each. Calendar colors stay stable across filter changes
+- **Time zones** — When offered times or viewed schedules are in a different time zone than the viewer's, the workspace says so, in the slot labels and in a notice above the calendar ([Storybook](https://storybook.medplum.com/?path=/story/medplum-schedulingworkspace--from-a-different-timezone)). On the server, `$find` no longer fails when an actor's resource cannot be read under the caller's access policy if a time zone is available from the service or schedule
+
+<img src="/img/blog/2026-09-scheduling-timezone-notice.png" alt="Scheduling workspace with the time finder open, showing an either/or provider search, Show more days, and the local time zone notice" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+- **Inactive services and schedules** — A `HealthcareService` or `Schedule` marked `active: false` is rejected by `$find`, `$book`, `$hold`, and `$reschedule`. `$cancel` is deliberately unaffected, so appointments booked before a deactivation remain cancelable, and `$reschedule` can move an appointment *from* an inactive schedule *to* an active one
+- **Appointment site** — The site chosen in the booking form is now stored on the appointment as a `Location` reference in `supportingInformation`, readable through `getAppointmentSite` in `@medplum/core`
+- **Smaller changes** — Participants are named from the loaded resource rather than a reference display that may be absent, the UI says "actor type" instead of "role" to avoid collision with `PractitionerRole`, more calendar statuses are styled so callers decide what to show, the scheduling parameter helpers in `@medplum/core` work on both `HealthcareService` and `Schedule`, and operation-created appointments are stamped with the server version
+
+There is also a new [scheduling decision guide](/docs/decision-guides/scheduling) with discovery questions and a scoping matrix ([Everett Williams](https://github.com/everett-williams)).
+
+### Provider App
+
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)** and <img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style={{borderRadius: '50%'}} /> **[Finn Bergquist](https://github.com/finnbergquist)**
+
+The [Provider App](https://provider.medplum.com) billing surface introduced in August became a complete setup flow ([roadmap](/blog/2026-roadmap#provider-application)):
+
+<img src="/img/blog/2026-09-provider-get-started-visit-billing.png" alt="Provider App get started checklist including an initial visit and billing setup" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+- **Billing providers** — A billing providers tab lists and edits the organizations and practitioners claims are rendered by. Saving a practitioner writes NPI and taxonomy and either points the active `PractitionerRole` at a billing organization or clears it so the practitioner bills individually. Individual billers with an incomplete address are flagged. An existing `Organization` can be added as a billing provider rather than re-entered
+- **Live registration check** — As an NPI is typed, the app looks it up against the claims processor and shows whether the provider is registered, unregistered, or the check failed, and the save button waits on the result. Existing providers take an edit path rather than a duplicate create. Provider contracts are checked too, so a claim is not built against a provider with no effective contract
+
+<img src="/img/blog/2026-09-provider-billing-providers.png" alt="Billing providers tab in the Provider App listing organizations and practitioners" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+- **Billing in the visit** — Visit details show the billing organization, the encounter eligibility check lets the user pick the provider, and the [eligibility request](/docs/billing/insurance-eligibility-checks) inbox was reworked. The get-started flow now includes an initial visit and billing setup
+
+<img src="/img/blog/2026-09-provider-eligibility-inbox.png" alt="Eligibility request inbox in the Provider App" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+- **Diagnoses from lab orders** — When lab orders are submitted during an encounter, the diagnoses on the order are added to the encounter as conditions, so the chart and the claim agree without re-entry
+- **Encounter review** — A `ClinicalImpression` is created on review if the encounter does not have one, which matters for encounters created outside the Provider App
+- **Lab results display** — Leaf observations whose value is `DNR` (Do Not Report) are suppressed in `DiagnosticReportDisplay`, and `NoteDisplay` preserves line breaks and renders in monospace, so a microbiology antibiogram delivered as a pre-formatted note keeps its columns ([Finn Bergquist](https://github.com/finnbergquist))
+- **Polish** — Loading states in the timeline and patient summary, an encounter title overlap fix, and audio attachments play inline in the Medplum App ([Andy Stoneman](https://github.com/andystoneman))
+- **`PlanDefinition/$apply`** — Prefers the active version of a canonical definition when several versions exist
+
+### Bots and Automation
+
+<img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style={{borderRadius: '50%'}} /> **[Derrick Farris](https://github.com/ThatOneBro)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+
+- **The `Cron` resource** — A Bot's schedule used to live on the Bot itself, which tied one Bot to one schedule, gave no way to pass input to a scheduled run, and no way to run under an identity other than the Bot's own. The new [`Cron`](/docs/api/fhir/medplum/cron) resource owns the schedule instead: `onBehalfOf` names the `ProjectMembership` the run assumes, `parameter` carries input, and `endTime` bounds it. The same Bot can run on several schedules under different access policies, and a Bot in a [linked project](/docs/access/projects#project-linking) can be scheduled by each customer project that links to it while running with that project's permissions. Invalid cron strings and unreadable references are rejected on write rather than becoming jobs that silently never fire. The [cron guide](/docs/bots/bot-cron-job) covers the details
+- **Raw webhook bodies** — Public webhook Bots received parsed JSON, which discards the exact bytes a provider such as a payment processor signs. An opt-in `Bot.rawBody` setting delivers the original request text in `event.input` so signatures can be verified. Existing Bots are unchanged. See [consuming webhooks](/docs/bots/consuming-webhooks)
+- **Bot input storage** — A `storeBotInput` [server config](/docs/self-hosting/server-config) flag controls whether each invocation's input is written to binary storage. It defaults on, so nothing changes unless a deployment turns it off
+
+### Platform and API
+
+<img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style={{borderRadius: '50%'}} /> **[Cody Ebberson](https://github.com/codyebberson)**, <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**, and <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**
+
+- **Customizable `CapabilityStatement`** — Medplum supports all of FHIR R4, but an implementer may expose a subset: a consumer-facing endpoint that does not accept patient-entered data, or a deployment limited to USCDI concepts. `/fhir/R4/metadata` advertised everything unconditionally. The generated statement can now be adjusted through server configuration, so a deployment states what it supports while still receiving updates as Medplum adds resource types, search parameters, and profiles
+- **Request correlation** — A new `X-Medplum-Log-Tag` request header attaches up to 128 characters of caller-supplied context to server logs, so an integration authenticating through one machine-to-machine client can still correlate requests back to its end users. Trace IDs were aligned with W3C Trace Context, responses now carry `X-Request-Id` and `X-Trace-Id`, and outbound `traceparent` headers are constructed properly. Both are covered in [log streaming](/docs/integration/log-streaming)
+- **Project-scoped URLs** — WebSocket subscriptions and [DICOMweb](/docs/dicom/dicomweb-api) are reachable under `/projects/{projectId}/`, matching the rest of the API. A `MedplumClient` configured with a project-scoped base URL previously could not open a subscription socket
+- **Expunge tombstones** — After [`$expunge`](/docs/api/fhir/operations/expunge) hard-deletes a resource and its history, a tombstone row tagged with the ISO 21089 `destroy` lifecycle code is written to the history table, so a permanent erasure leaves a record that it happened ([Karl Pietrzak](https://github.com/The-Alchemist))
+- **Email verification** — The Google sign-in path sends the verification email and honors Google's `email_verified` claim, and external and token-exchange sign-ins verify automatically; existing unverified Google users are upgraded in place ([Andy Stoneman](https://github.com/andystoneman))
+- **Medication cart contents** — Vendor-neutral types and a `getCart` hook read a patient's e-prescribe cart as the prescribing system holds it, reconciled against local draft `MedicationRequest`s. Counting drafts alone was a lower bound: it missed lines staged through another UI and could not confirm whether a failed removal left a line behind ([Oleg Rocklin](https://github.com/oleg-mp))
+- **Lab orders** — An order-time override for the physician-level performing lab account number, mirroring the existing practice-level override, so a provider with several accounts at one lab picks between them per order ([Finn Bergquist](https://github.com/finnbergquist))
+- **Smaller changes** — A `Login.project` search parameter ([Philip Knott](https://github.com/Filupnot)), a `skipEmail` option on [`$update-user-email`](/docs/api/fhir/operations/user-update-email) ([Reshma Khilnani](https://github.com/reshmakh)), `_id:missing` handled correctly ([Matt Long](https://github.com/mattlong)), [`ValueSet/$expand`](/docs/api/fhir/operations/valueset-expand) uses supplied designations, `POST /admin/projects/:id/client` no longer lets a request body drop `meta.project` and orphan the new client, settled `ValueSet` probe results stay cached across unmount in `@medplum/react-hooks`, and a `useStabilizedCallback` hook replaces several ad hoc ref patterns
+
+### AI
+
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)**
+
+- **Newer models and reasoning effort** — The [`$ai` operation](/docs/api/fhir/operations/ai) and [Spaces](/docs/provider/spaces) can use the latest OpenAI models, and callers can set the reasoning effort per request. Spaces exposes the model choice in its settings
+
+<img src="/img/blog/2026-09-spaces-model-selection.png" alt="Model selection in Spaces settings" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
+### Revenue Cycle and Billing
+
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+
+The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap#revenue-cycle--billing) capabilities in the claims integrations:
+
+- **Billing setup operations** — Bots that take FHIR inputs and return FHIR resources for the payer directory, provider creation and editing, provider listing, and contract lookup. The payer directory moved to the processor's newer API and returns richer metadata as extensions: payer category, eligibility and remittance payer IDs, alternate names, and per-capability support. There is a [payer directory lookup guide](/docs/integration/candid/payer-directory)
+- **Retry-safe claim submission** — An interrupted submission can be safely retried: the payload is checked against the stored `Claim`, identifier writeback is version-checked, and a single conditional `ClaimResponse` is written. Telehealth encounters now submit with the correct place of service rather than defaulting to an office visit, and a NUCC taxonomy is no longer required on the rendering practitioner
+- **Self-pay** — A self-pay coverage profile is accepted on claims alongside insurance coverage
+- **Patient balances and payments** — A shared patient accounts-receivable sync writes a normalized patient-balance summary onto the claim's `ClaimResponse` plus an itemization `DocumentReference`, and an idempotent patient payment posting operation records a payment collected in a payment processor exactly once, keyed on the processor's payment ID
+- **Caller policies** — An installer creates one tagged `AccessPolicy` per shared billing capability in a customer project, replacing hand-written policy entries that broke whenever the shared code changed
+- **Eligibility** — Eligibility checks accept a `Practitioner` or `PractitionerRole` as the provider, not only an `Organization`, across both supported processors
+- **Clearinghouse** — A `CodeSystem` for X12 service type codes, `Claim.facility` mapped to the service facility location on submission, and claim mode now follows the API key rather than a separate test-mode flag that the clearinghouse rejected
+
+### E-Prescribing
+
+<img src="https://github.com/oleg-mp.png" alt="Oleg Rocklin" width="50" height="50" style={{borderRadius: '50%'}} /> **[Oleg Rocklin](https://github.com/oleg-mp)** and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+
+- **Cart contents** — A `$get-cart` operation returns the current contents of a patient's medication cart from the prescribing system, so the cart badge reflects what the prescriber will actually see at signing
+- **Deletions** — A prescription deleted in the prescribing system previously reached Medplum only when someone re-ran patient sync. Deletion events are now handled when they arrive, across every envelope shape the vendor might post
+- **Concurrency** — Two patient-sync runs racing (a second tab, a strict-mode double mount) could each create a remote patient, with the later write orphaning the first. A version-checked claim on the `Patient` ensures exactly one run creates the remote record; an existing remote ID is never replaced
+- **Pharmacies** — Backend callers can search pharmacies with the same admin fallback drug search uses, shared pharmacy records are created conditionally instead of duplicated, and a patient's preferred pharmacy can be removed or replaced in both systems. The pharmacy workflow docs were expanded to match
+- **Smaller changes** — A per-project iframe template via a project secret, drug search returns marketed formulations even after one format is saved, drug interaction checks exit cleanly when there are no current medications, drug description length is capped below the NCPDP limit, and a supervising prescriber operation with its own guide for the other supported prescribing vendor
+
+### Labs, Terminology, and Integrations
+
+<img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style={{borderRadius: '50%'}} /> **[Finn Bergquist](https://github.com/finnbergquist)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/ianplunkett.png" alt="Ian Plunkett" width="50" height="50" style={{borderRadius: '50%'}} /> **[Ian Plunkett](https://github.com/ianplunkett)**
+
+- **Lab ordering iframe** — The lab network's hosted ordering interface can be launched from Medplum through a type-level operation that matches the patient on demographics and returns an authenticated URL. The [iframe guide](/docs/integration/health-gorilla/iframe) covers prerequisites, the SDK call, callback behavior, and troubleshooting, and distinguishes it from the results integration
+- **HIE groundwork** — Shared connection, installation, subscription, and deployment helpers were extracted from the lab ordering code so the health information exchange work builds on the same layer without entangling the two ([Darren Eam](https://github.com/deam65))
+- **Terminology** — SNOMED CT Canadian Edition import, and an ICD-10-CM to CIM-10-FR crosswalk importer that loads the French PMSI classification mapping as a `ConceptMap` queryable through [`$translate`](/docs/api/fhir/operations/conceptmap-translate). A new guide explains [filtering large code systems](/docs/terminology/filtering-large-code-systems) into usable `ValueSet`s
+- **Log streaming** — A project's logs can stream to more than one destination ([Matt Long](https://github.com/mattlong))
+
+### Enterprise: Scale, Database, and Self-Hosting
+
+<img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Long](https://github.com/mattlong)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/The-Alchemist.png" alt="Karl Pietrzak" width="50" height="50" style={{borderRadius: '50%'}} /> **[Karl Pietrzak](https://github.com/The-Alchemist)**
+
+[Enterprise scale](/blog/2026-roadmap#enterprise-scale--infrastructure) work continued the sharding groundwork from August and tightened the database and operations paths:
+
+- **Sharding preparation** — Background job payloads now carry a `JobTarget` describing the shard their repository should connect to, and the global system repository is meaningfully distinct from a shard repository: touching a project-scoped resource type through the global one logs today and will throw once the remaining call sites are cleaned up. Production behavior is unchanged
+- **Indexes** — Scoped indexes are used more widely, augmented `Task` indexes and a `subject, date` index on `Observation` speed up common chart queries, schema drift detection was fixed, and invalid indexes can be dropped in any schema including `pg_toast`
+- **Bulk export memory** — Two memory leaks in bulk export were fixed: an unnecessary de-duplication set when cursor pagination already de-duplicates, and backpressure listeners that were never cleaned up
+- **Operations** — A server config setting controls write-through cache behavior, a Super Admin schema version override, a copy-to-clipboard button on the DB stats output, and reentrant async batch processing by default with sync and async batches distinguished in telemetry
+- **Health check recovery** — `/healthcheck` reserves a database connection and reuses it so a saturated pool does not fail the check. If that connection dropped, every later check returned 500 until restart, and a load balancer would take the instance out of rotation while the server itself kept working. It now recovers ([Cody Ebberson](https://github.com/codyebberson))
+- **Managed Postgres** — Schema migration v117 no longer tries to create the `pgstattuple` extension, which blocked upgrades on managed Postgres without superuser privileges
+- **`Enterprise` resource** — A new [`Enterprise`](/docs/api/fhir/medplum/enterprise) resource type represents a group of projects managed together ([Maddy Li](https://github.com/maddyli))
+- **Email** — An incomplete project SMTP configuration returns 400 instead of 500 ([Darren Eam](https://github.com/deam65)), the SMTP options were [clarified in the docs](/docs/self-hosting/sendgrid), and the environment variable for requiring a verified email before project creation now works ([Cody Ebberson](https://github.com/codyebberson))
+- **Agent and subscriptions** — The [Agent](/docs/agent) upgrader names its log at spawn time rather than module load, so each upgrade attempt leaves its own evidence instead of overwriting the last. WebSocket subscription notifications now honor `AccessPolicy.hiddenFields`, which every other read path already applied ([Derrick Farris](https://github.com/ThatOneBro))
+
+## Compliance
+
+<img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style={{borderRadius: '50%'}} /> **[Cody Ebberson](https://github.com/codyebberson)**, <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Willer](https://github.com/mattwiller)**, and <img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style={{borderRadius: '50%'}} /> **[Matt Long](https://github.com/mattlong)**
+
+[Compliance](/blog/2026-roadmap#compliance-h1-2026) work this month was concentrated on identity, sessions, and the evidence trail:
+
+- **[Backup and recovery](/docs/compliance/backup-and-recovery)** — A new page describing how Medplum hosted handles database high availability, backups, and recovery. All of it is in the SOC 2 report, but that document is dense, and these were the questions we kept getting asked
+- **Malware scanning** — A [`Binary/$scan`](/docs/api/fhir/operations/binary-scan) operation returns the AWS GuardDuty malware scan result for a stored object as an `OperationOutcome`, requesting an on-demand scan when no result exists. It works with automatic scanning off and never re-scans an object that already has a verdict ([Derrick Farris](https://github.com/ThatOneBro))
+- **Security request expiry** — The `UserSecurityRequest` resources behind password reset, invite, and email verification had no expiration and were not invalidated by a newer request, so a reset link in a compromised mailbox stayed redeemable indefinitely. Requests now carry `expiresAt`, supersede earlier requests of the same type, and cannot be redeemed twice
+- **External identity providers** — The `/auth/external` callback verifies the `id_token` signature when the provider publishes a JWKS, matching what the token-exchange path already did, with regression coverage that external login is scoped to the client's project. See [external identity providers](/docs/auth/external-identity-providers)
+- **One `Login` per authorization** — `/oauth2/authorize` reused an existing `Login` when it found one, which forked a session onto a single resource and let concurrent authorizations clobber each other's PKCE challenge and nonce. Each authorization is now its own grant with fresh per-request state and a fresh refresh secret
+- **Token checks** — Stronger checks around ID tokens, `patient/` scopes rejected when no patient context is present, the introspection query filter updated, and a test suite that exercises the refresh token grant against real signature verification rather than a mocked one, covering forged tokens, token-type confusion, and cross-project redemption
+- **Access gaps closed** — An ordinary member of a linked project could obtain a signed upload URL for another project's `Binary` objects through `$presigned-url`; that is closed. MFA verification rate limits were tightened. The `$ai` operation uses the server's safe fetch for outbound requests
+- **Audit trail** — `AuditEvent` records the references returned by a search, system writes are logged, and the [`$expunge`](/docs/api/fhir/operations/expunge) tombstone described above gives permanent deletion a durable record
+- **Supply chain** — npm installs and Docker base images are hash-pinned, CI workflows declare explicit read-only token permissions, and PR vouching gained a labeled escape hatch, clearing the actionable OpenSSF Scorecard alerts ([Derrick Farris](https://github.com/ThatOneBro))
+- **Edge protection** — The anonymous IP list managed rule was added to the WAF block list for Medplum hosted
+- **C-CDA conformance** — Medication dose quantities in an imported C-CDA now carry the document's value and unit instead of a hard-coded unit, verified against the ONC sample document (contributed by [Jack Przybyl](https://github.com/jacekprzybyl))
+
+## Documentation
+
+<img src="https://github.com/everett-williams.png" alt="Everett Williams" width="50" height="50" style={{borderRadius: '50%'}} /> **[Everett Williams](https://github.com/everett-williams)**, <img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style={{borderRadius: '50%'}} /> **[Cody Ebberson](https://github.com/codyebberson)**, and <img src="https://github.com/deam65.png" alt="Darren Eam" width="50" height="50" style={{borderRadius: '50%'}} /> **[Darren Eam](https://github.com/deam65)**
+
+**Provider and platform**
+
+- **[Scheduling decision guide](/docs/decision-guides/scheduling)** — Discovery questions, a scoping matrix, and implementation guidance aligned with current scheduling behavior. The workflow guides were reordered into the sequence a build actually follows: intake, scheduling, charting, e-prescribe, referrals, messaging, RCM, data migration, access control. The example `AGENTS.md` licensure rule was corrected: `PractitionerRole` is organized by service line, can reference multiple jurisdictions, and does not itself enforce booking eligibility
+- **[Data migration](/docs/migration)** — A [decision guide](/docs/decision-guides/data-migration) and four new pages on adoption strategy, mapping governance, validation and reconciliation, and testing and acceptance, with the planning, pipeline, and cutover guidance expanded and the examples aligned around one FHIR R4 data flow
+- **[Backup and recovery](/docs/compliance/backup-and-recovery)** — Described under Compliance above; the compliance sidebar was reordered alongside it
+- **[Cron jobs](/docs/bots/bot-cron-job)** — The `Cron` resource, including running a shared Bot from a linked project ([Derrick Farris](https://github.com/ThatOneBro))
+- **Reference updates** — [Consuming webhooks](/docs/bots/consuming-webhooks) covers `rawBody`, [log streaming](/docs/integration/log-streaming) covers the log tag and request and trace IDs, [server config](/docs/self-hosting/server-config) covers the new flags, [subscriptions](/docs/subscriptions) notes the limit of 1,000 active subscriptions evaluated per project ([Finn Bergquist](https://github.com/finnbergquist)), and the password reset, [`$expunge`](/docs/api/fhir/operations/expunge), and [`$update-user-email`](/docs/api/fhir/operations/user-update-email) pages reflect this month's changes
+- **[Filtering large code systems](/docs/terminology/filtering-large-code-systems)** — How to build a `ValueSet` that narrows a large `CodeSystem` to what a form needs ([Finn Bergquist](https://github.com/finnbergquist))
+- **[Azure Blob Storage](/docs/self-hosting/install-on-azure)** — Configuring `binaryStorage` for Azure, managed-identity permissions, and the distinction between runtime binary storage and frontend CDN storage (contributed by [zhv50](https://github.com/krudo-taco))
+- **Contributing** — The README contributing section was refreshed ([Matt Willer](https://github.com/mattwiller))
+
+**Integrations**
+
+- **[Lab ordering iframe](/docs/integration/health-gorilla/iframe)** — The hosted ordering interface guide described above, linked from the lab integration overview, ordering, and results pages
+- **[Payer directory lookup](/docs/integration/candid/payer-directory)** — Searching the payer directory and using the result in claims and eligibility checks ([David Yanez](https://github.com/techdavidy))
+- **E-prescribe** — Pharmacy workflows and the medication cart contents operation, plus a supervising prescriber guide and an updated sandbox eligibility example for the clearinghouse
+
+## Bug Fixes
+
+- Busy `Slot`s that carry a `serviceType` now block only that service when computing availability, as the documentation always said (contributed by [Nick Catalano](https://github.com/nickcatal))
+- C-CDA medication `doseQuantity` value and unit are mapped from the document rather than a hard-coded `[IU]` (contributed by [Jack Przybyl](https://github.com/jacekprzybyl))
+- `MEDPLUM_AUTO_DOWNLOAD_ENABLED=false` is parsed as a boolean, so the download worker can actually be disabled from the environment (contributed by [Joshua Kelly](https://github.com/jdjkelly))
+- Two Foomedical home page links pointed at routes that did not exist and rendered a blank page (contributed by [Krishna More](https://github.com/KrishnaMore19))
+- Line numbers in the blame code block were invisible in dark mode (contributed by [Aditya Mitra](https://github.com/aditya-mitra))
+
+## Videos
+
+New videos published this month, all on the [Medplum YouTube channel](https://www.youtube.com/channel/UCu_sS6aXEHz3GPk2NTugtJA).
+
+- **[Awell Panels - Patient worklists that update themselves](https://youtu.be/pH7ME9FRPLY)**: a walkthrough of Panels, the worklist surface from the [Awell case study](/blog/awell-panels-case-study)
+- **[Awell Panels - build a Panel from scratch](https://youtu.be/e_jwOw4lo8E)**: defining a patient population, configuring how a care team works it, and wiring what happens next
+- **[Pelairo LIS built on Medplum](https://youtu.be/Aw4DXDQQ2Uw)**: a modern laboratory information system for pathology labs, from the [PlumCon community demos](/blog/plumcon-2026#afternoon-session)
+
+## From the Blog
+
+Longer-form writing published this month:
+
+- <img src="/img/people/thomas-vande-casteele.jpg" alt="Thomas Vande Casteele" width="24" height="24" style={{borderRadius: '50%', verticalAlign: 'middle'}} /> **[Awell Panels: Worklists That Update Themselves](/blog/awell-panels-case-study)** by Thomas Vande Casteele — How Awell built Panels on self-hosted Medplum and took post-discharge follow-up from two hospitals to 180 facilities in nine months, with a [walkthrough](https://youtu.be/pH7ME9FRPLY) and a [build-from-scratch demo](https://youtu.be/e_jwOw4lo8E)
+- <img src="https://github.com/maddyli.png" alt="Maddy Li" width="24" height="24" style={{borderRadius: '50%', verticalAlign: 'middle'}} /> **[How Medplum thinks about FHIR](/blog/traditional-fhir)** by Maddy Li — Why Medplum treats FHIR as the transactional system of record rather than a read-mostly interface bolted onto proprietary tables
+
+## Releases
+
+- [**v5.1.37**](https://github.com/medplum/medplum/releases/tag/v5.1.37) — September 4
+- [**v5.1.38**](https://github.com/medplum/medplum/releases/tag/v5.1.38) — September 14
+- [**v5.1.39**](https://github.com/medplum/medplum/releases/tag/v5.1.39) — September 15
+- [**v5.1.40**](https://github.com/medplum/medplum/releases/tag/v5.1.40) — September 23
+- [**v5.1.41**](https://github.com/medplum/medplum/releases/tag/v5.1.41) — September 24
+- [**v5.1.42**](https://github.com/medplum/medplum/releases/tag/v5.1.42) — September 25
+
+## Looking Ahead
+
+Much of what is in this update was demoed live at PlumCon, and the scheduling work in particular is close to the point where a practice can configure and run its calendar without touching raw FHIR. Expect that to round out in October.
+
+We are also hiring a [Head of Security and a Security Engineer](https://www.medplum.com/careers). If the Compliance section above reads like the kind of work you want to own, we would like to talk.
+
+Join us on [Discord](https://discord.gg/medplum) to share feedback or follow along on [GitHub](https://github.com/medplum/medplum). To learn more about anything in this update, or to talk through how it applies to what you are building, contact us at [hello@medplum.com](mailto:hello@medplum.com).

@@ -1,76 +1,82 @@
 ---
-tags: ['compliance']
-keywords: ['clinical decision support', 'onc']
-sidebar_position: 6
+sidebar_position: 2
+title: Clinical Decision Support and Follow-Through
+tags: [care coordination, clinical decision support, compliance]
 ---
 
-# Clinical Decision Support
+# Clinical Decision Support and Follow-Through
 
-Medplum enables building and delivering custom clinical decision support tools for a variety of applications. This guide focuses on the regulated ONC Criteria for Clinical Decision support which is criteria (a)(9) of the HTI criteria on predictive CDS.
+A recommendation is useful only if it reaches someone who can act on it. Sometimes a link in the chart is enough. Sometimes the recommendation needs an owner and follow-up that will still be there when the chart is closed.
 
-The guide will walk through the three major categories of Clinical Decision Support (CDS), as defined by the regulations, and how to enable said CDS on Medplum.
+Clinical decision support (CDS) can provide reference material, rule-based recommendations, or predictive results. This guide covers how to bring that guidance into a care workflow and track the work it creates.
 
-:::warning[]
-Medplum is not currently certified for (a)(9) but is pursuing certification. Contact us at info@medplum.com for details.
+## Meet the Clinician Where the Decision Happens {/* #choose-the-interaction */}
+
+| Need | Approach |
+| --- | --- |
+| Contextual reference material | Link from the relevant chart context; record follow-up only when the workflow requires it |
+| Guidance during chart review or ordering | Use a supported CDS Hooks interaction, embedded application, or the service's documented API |
+| Background identification of work | A Bot evaluates scoped patient data and creates an appropriately assigned review Task |
+| Follow-through after review | Persist the authorized request and separately track its fulfillment |
+
+Use [CDS Hooks](/docs/integration/cds-hooks) for the discovery, request, prefetch, and card contract. Use [SMART App Launch](/docs/integration/smart-app-launch) when launching an external application. These integration choices do not determine the clinical approval policy.
+
+## Show the Guidance and Its Evidence {/* #present-guidance-in-context */}
+
+For a Medplum-hosted CDS Hooks service, configure the Bot's `cdsService` hook and prefetch requirements. The client invokes the service at the intended workflow point and displays returned cards. It must implement the user interaction for suggestions and proposed actions.
+
+:::caution[Displaying a suggestion does not authorize an order]
+
+A returned card is not automatically a persisted clinical request or Task. Check proposed resources against FHIR R4, the receiving application, and the user's authority before committing a clinical action. Preserve the clinician's decision separately from the service's evaluation result.
+
 :::
 
-## Predictive
+Display the guidance source and relevant evidence. Handle unavailable services and incomplete context explicitly. A failure can create a manual review obligation when the clinical workflow requires one; it should not silently appear as a successful evaluation with no recommendations.
 
-Predictive clinical decision support technology is "intended to support decision-making based on algorithms or models that derive relationships from training or example data and then are used to produce an output or outputs related to, but not limited to, prediction, classification, recommendation, evaluation, or analysis.”
+## Turn Recommendations into Review Tasks {/* #track-actionable-review */}
 
-Large language model-based clinical decision support tools, as well as tools that use algorithms for risk assessment or triage, fall in the predictive clinical decision support category.
+For recommendations that need follow-through, give the reviewer a work item that survives closing the chart:
 
-Medplum enables [many implementations](/case-studies) with predictive clinical decision support. Per the HTI final ruling, predictive clinical decision support systems will become regulated in December 2024. Any system certified to g10, b2, f1 or e1 will be required to provide **Insight Reports** as part of maintaining their certification.
+```mermaid
+flowchart TD
+  guidance[Recommendation requiring review] --> task[Assigned review Task]
+  task --> decision{Reviewer decision}
+  decision -->|Accept| request[Persist authorized request]
+  request --> followup[Track fulfillment separately]
+  decision -->|Decline| reason[Record disposition and rationale]
+  decision -->|Defer| later[Record decision and arrange later review]
+```
 
-The following sections describe best practices to prepare for a predictive clinical decision support certification.
+Use a review Task when a recommendation requires acknowledgment, ownership, or follow-up across sessions. Populate `for`, an accountable `owner` or required `performerType`, and the relevant evidence in `focus` or `input`. Use a stable identifier derived from the rule and triggering event or review period so repeated evaluations do not create duplicate open work.
 
-### Training Data
+Record the decision in a governed local `businessStatus`, with an authored, timestamped rationale in `note` and any resulting clinical request in `output`. A completed review Task means review is finished. The recommendation may have been accepted, declined, or deferred according to the workflow; its clinical service is not thereby complete.
 
-Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/user-management#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
+If accepted guidance leads to a referral, use a ServiceRequest and fulfillment Tasks as described in [Referrals](/docs/careplans/referrals). If it changes a treatment plan, update the CarePlan through the clinical review path. Preserve patient references on every resulting resource.
 
-### Code Systems
+## Keep Evaluation Records When You Need Them {/* #decide-whether-to-retain-every-evaluation */}
 
-It is recommended that data is tagged with UMLS code systems, including [LOINC](/docs/careplans/loinc), SNOMED and RxNorm. For certification, data must conform to [USCDI profiles](/docs/fhir-datastore/understanding-uscdi-dataclasses). Implementations of predictive clinical decision support sometimes include annotating data with code systems using an algorithm or large language model.
+Suppose a rule runs ten times during a week, but only one result needs review. One review Task may cover the work. Retaining all ten evaluations is a separate requirement. Some applications also need the inputs, rule/model version, evaluation result, and disposition for informational results that never create a Task.
 
-### Insights Reporting
+FHIR R4 `GuidanceResponse` is a candidate for the evaluation result: it can identify the evaluated module, patient, occurrence time, output Parameters, and a resulting CarePlan or RequestGroup. Its `status` describes evaluation success or failure, not clinician acceptance. A CDS Hooks card does not automatically map to GuidanceResponse, and Medplum's CDS Hooks endpoint does not establish that persistence model for you.
 
-Electronic health records that support predictive clinical decision support will be required to report on the usage of their product. Prepare the following basic statistics as part of certification:
+:::note[GuidanceResponse is an additional modeling choice]
 
-- Number of times the decision support was used
-- Number of unique clinicians who used it
-- Number of times it was updated
-- Number of complaints received
+Choose this additional model only after defining retention and retrieval requirements and the mapping for the particular service. If it is adopted, a review Task can reference that evaluation in `focus` or `input`. Keep this choice explicit rather than creating a Task for every informational card.
 
-## Linked Referential
-
-Linked referential clinical decision support are hyperlinks that link to reference material that is specific to the clinical context of a specific patient or population. The ONC criteria that define this standard are 170.205(a)(3,4) and relate to the retrieval of context-aware knowledge using the HL7 Infobutton.
-
-:::warning[]
-Medplum is not certified for (a)(3,4) but serves as a basis for those who wish to implement. The Clinical Profile and [Diagnostic Report](https://storybook.medplum.com/?path=/story/medplum-diagnosticreportdisplay--simple) React components serve as common launch points for Infobutton implementations.
 :::
 
-To support the linked referential clinical decision support the system should be capable of retrieving information based on one or more of the following data elements. The Clinical Profile React component highlights the data elements.
+## Check Whether Guidance Leads to Follow-Through {/* #operate-and-evaluate-the-workflow */}
 
-- Demographic information
-- Problems list (Conditions in FHIR)
-- Medications
-- Smoking status
+Track who maintains the rules, how versions are introduced, when repeat review is warranted, and how to recover missed work. Measure actionable reviews, accepted and declined recommendations, follow-up completion, and alert burden with clear denominators. Clinical outcomes need separate evidence.
 
-[UpToDate](https://www.wolterskluwer.com/en/solutions/uptodate/uptodate-advanced/workflow-integration) is a common provider for linked referential data.
+Apply [Access Policies](/docs/access/access-policies) to the service context and stored outputs.
 
-## Evidence Based
+## Understand the Certification Context {/* #certification-context */}
 
-Evidence-based clinical decision support systems are largely related to medication administration, drug interactions (with other drugs, foods, OTC medications, etc.) and dosing. Evidence-based clinical decision support systems plug into health record systems via SMART-App-Launch links, iFrames or APIs, all of which are supported by Medplum.
+Medplum's [ONC certification documentation](/docs/compliance/onc#criteria-certified) lists the certified product and criteria, including (b)(11) Decision Support Interventions. Use that page and its linked product listing for certification scope. Building a CDS workflow on Medplum still requires evaluating the particular application, intervention, and use case.
 
-Medplum supports a [Smart-App-Launch react component](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) which serves as a launch point for evidence-based implementations.
+Under HTI-1, the (b)(11) criterion replaced the legacy (a)(9) CDS criterion. The [ONC Decision Support Interventions guidance](https://healthit.gov/test-method/decision-support-interventions/) describes evidence-based and predictive interventions, source information, feedback, and applicable risk-management requirements. Treat the [Insights Condition](https://healthit.gov/certification-health-it/insights-condition/) as a separate reporting topic with its own applicability and measures; operational Task counts alone do not establish that reporting model.
 
-[DoseSpot](https://www.dosespot.com/) is a common provider for evidence based medication administration and supports recording and retrieving allergies, listing potential interactions for a specific prescription, listing drug interactions on a patient record, checking for known interactions at prescription creation time.
+For context-aware reference links, [HL7 Infobutton](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=208) is another integration option. Choose the interaction that fits the clinician's workflow, then confirm the requirements for the product being delivered.
 
-## Related Reading
-
-- [ONC Certification](/docs/compliance/onc)
-- [CDS Hooks](/docs/integration/cds-hooks) in Integrations
-- [Smart App Launch](/docs/integration/smart-app-launch) in Integrations
-- [(a)(9) Clinical decision support (CDS)](https://www.healthit.gov/test-method/clinical-decision-support-cds)
-- [HL7 Infobutton Implementation Guide](https://www.hl7.org/documentcenter/public/standards/dstu/V3IG_INFOBUTTON_DSTU_R4_2013JAN.pdf)
-- [HT1 Final Rule](https://www.healthit.gov/sites/default/files/page/2023-12/hti-1-final-rule.pdf) on predictive clinical decision support and algorithms
+See [Automating Care Workflows](/docs/careplans/automating-workflows) for event handling and [Operational Reporting](/docs/careplans/operational-reporting) for transitions and measures.

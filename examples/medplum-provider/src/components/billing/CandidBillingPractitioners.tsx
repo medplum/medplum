@@ -5,7 +5,11 @@ import type { Practitioner } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne, useStabilizedCallback } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { CANDID_CREATE_PROVIDER_BOT_IDENTIFIER, CANDID_EDIT_PROVIDER_BOT_IDENTIFIER } from '../../utils/candid';
+import {
+  CANDID_CREATE_PROVIDER_BOT_IDENTIFIER,
+  CANDID_EDIT_PROVIDER_BOT_IDENTIFIER,
+  CANDID_LINK_RENDERING_PROVIDER_BOT_IDENTIFIER,
+} from '../../utils/candid';
 import { showErrorNotification } from '../../utils/notifications';
 import { CandidBillingPractitionerList } from './CandidBillingPractitionerList';
 import { CandidBillingPractitionerModal } from './CandidBillingPractitionerModal';
@@ -28,6 +32,9 @@ export function CandidBillingPractitioners(props: BillingPractitionersTabProps):
   });
   const [editBot] = useSearchOne('Bot', {
     identifier: `${CANDID_EDIT_PROVIDER_BOT_IDENTIFIER.system}|${CANDID_EDIT_PROVIDER_BOT_IDENTIFIER.value}`,
+  });
+  const [linkBot] = useSearchOne('Bot', {
+    identifier: `${CANDID_LINK_RENDERING_PROVIDER_BOT_IDENTIFIER.system}|${CANDID_LINK_RENDERING_PROVIDER_BOT_IDENTIFIER.value}`,
   });
   const navigate = useStabilizedCallback(onNavigate);
   const [savedVersion, setSavedVersion] = useState(0);
@@ -69,6 +76,7 @@ export function CandidBillingPractitioners(props: BillingPractitionersTabProps):
       <CandidBillingPractitionerModal
         candidCreateBotId={createBot?.id}
         candidEditBotId={editBot?.id}
+        candidLinkBotId={linkBot?.id}
         practitioner={open}
         onClose={() => onNavigate()}
         onSaved={() => {

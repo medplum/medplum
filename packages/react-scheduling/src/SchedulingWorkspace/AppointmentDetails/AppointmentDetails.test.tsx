@@ -1,21 +1,85 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI } from '@medplum/core';
-import type { Appointment, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
+import {
+  CPT,
+  createReference,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_REQUIREMENT_CODES,
+  SchedulingExternalUrlURI,
+  SchedulingMedicalNecessityURI,
+  ServiceTypeReferenceURI,
+  setPrimaryProvider,
+  toAppointmentSiteReference,
+} from '@medplum/core';
+import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
+import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM } from '../../constants';
 import { installCancelStub } from '../../stories/mockCancel';
+import { installConfirmStub } from '../../stories/mockConfirm';
 import { installValueSetStub } from '../../stories/mockValueSet';
-import { renderWithMedplum, screen, userEvent, waitFor } from '../../test-utils/render';
+import {
+  AuthorizationValueSets,
+  DIAGNOSIS_VALUE_SET,
+  DiagnosisCodes,
+  DrOkaforPractitioner,
+  DrRiveraPractitioner,
+  ElderJordanPatient,
+  ExamRoomA,
+  MainClinic,
+  MilesCooperPatient,
+  PatientFixtures,
+  PROCEDURE_VALUE_SET,
+  ProcedureCodes,
+  Ultrasound1Device,
+} from '../../stories/scheduling';
+import { installAutocompleteTimers, removePill, settleAutocomplete } from '../../test-utils/asyncAutocomplete';
+import {
+  addRow,
+  codePill,
+  confirmMedicalNecessity,
+  enterCode,
+  hasPill,
+  medicalNecessityBox,
+} from '../../test-utils/bookingForm';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor } from '../../test-utils/render';
+import type { AppointmentDetailsProps } from './AppointmentDetails';
 import { AppointmentDetails } from './AppointmentDetails';
 
 const SERVICE: WithId<HealthcareService> = {
   resourceType: 'HealthcareService',
   id: 'ultrasound-imaging',
   name: 'Ultrasound Imaging',
+};
+
+const AUTHORIZED_SERVICE: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'infusion-therapy',
+  name: 'Infusion Therapy',
+  eligibility: SCHEDULING_REQUIREMENT_CODES.map((code) => ({
+    code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] },
+  })),
+};
+
+const DIAGNOSIS_SERVICE: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'iron-infusion',
+  name: 'Iron Infusion',
+  eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_DIAGNOSIS_CODE }] } }],
+};
+
+const PROCEDURE_SERVICE: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'imaging-with-procedures',
+  name: 'Imaging With Procedures',
+  eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_PROCEDURE_CODE }] } }],
 };
 
 const HELD_SCHEDULE: WithId<Schedule> = {
@@ -63,20 +127,62 @@ const BOOKED_APPOINTMENT: WithId<Appointment> = {
   ],
 };
 
+const TENTATIVE_SLOT: WithId<Slot> = { ...HELD_SLOT, id: 'slot-rivera-tue-tentative', status: 'busy-tentative' };
+
+/** Held through `$hold`, on time it has not yet firmed up. */
+const PENDING_APPOINTMENT: WithId<Appointment> = {
+  ...BOOKED_APPOINTMENT,
+  id: 'appt-rivera-imaging-tue-pending',
+  status: 'pending',
+  slot: [{ reference: `Slot/${TENTATIVE_SLOT.id}` }],
+};
+
+const AUTHORIZED_APPOINTMENT: WithId<Appointment> = {
+  ...BOOKED_APPOINTMENT,
+  id: 'appt-rivera-infusion-tue',
+  serviceType: [
+    {
+      text: 'Infusion Therapy',
+      extension: [
+        { url: ServiceTypeReferenceURI, valueReference: { reference: `HealthcareService/${AUTHORIZED_SERVICE.id}` } },
+      ],
+    },
+    { coding: [ProcedureCodes[0]] },
+  ],
+  reasonCode: [{ coding: [DiagnosisCodes[0]] }],
+  extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+};
+
 let medplum: MockClient;
 let restoreCancel: () => void;
+let restoreConfirm: () => void;
 let restoreValueSet: () => void;
 
 beforeEach(async () => {
+  // At the visits themselves, well inside the 12 hours they stay open to changes.
+  vi.setSystemTime(new Date(BOOKED_APPOINTMENT.start as string));
   medplum = new MockClient();
   await medplum.createResource(SERVICE);
+  await medplum.createResource(AUTHORIZED_SERVICE);
+  await medplum.createResource(DIAGNOSIS_SERVICE);
+  await medplum.createResource(PROCEDURE_SERVICE);
+  await medplum.createResource(MilesCooperPatient);
+  await medplum.createResource(DrRiveraPractitioner);
+  await medplum.createResource(Ultrasound1Device);
+  for (const patient of PatientFixtures) {
+    await medplum.createResource(patient);
+  }
   await medplum.createResource(HELD_SCHEDULE);
   await medplum.createResource(HELD_SLOT);
   await medplum.createResource(BOOKED_APPOINTMENT);
+  await medplum.createResource(TENTATIVE_SLOT);
+  await medplum.createResource(PENDING_APPOINTMENT);
   restoreCancel = installCancelStub(medplum);
+  restoreConfirm = installConfirmStub(medplum);
   restoreValueSet = installValueSetStub(medplum);
   return () => {
     restoreCancel();
+    restoreConfirm();
     restoreValueSet();
   };
 });
@@ -124,33 +230,170 @@ async function chooseReason(label = 'Patient: Feeling Better'): Promise<void> {
 }
 
 describe('AppointmentDetails', () => {
-  test('describes the appointment', () => {
+  test('shows saved requirements as details until Edit is clicked', async () => {
+    renderDetails(AUTHORIZED_APPOINTMENT);
+    await screen.findByText('Miles Cooper');
+    expect(screen.getByText(ProcedureCodes[0].display as string)).toBeInTheDocument();
+    expect(screen.getByText(DiagnosisCodes[0].display as string)).toBeInTheDocument();
+    expect(screen.getByText('Confirmed')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
+    expect(screen.getByText('Miles Cooper')).toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
+  });
+
+  test('describes the appointment', async () => {
     renderDetails(BOOKED_APPOINTMENT);
 
     expect(screen.getByText('booked')).toBeInTheDocument();
-    expect(screen.getByText('Miles Cooper')).toBeInTheDocument();
+    expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
-    // Everyone but the patient, in one line.
-    expect(screen.getByText('Dr. Maya Rivera, Ultrasound 1')).toBeInTheDocument();
+    // Everyone but the patient, named from their own resources rather than the references' displays.
+    expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
     // The day and the times it runs between, in the timezone the browser is in.
     expect(screen.getByText(/Tuesday, May 5/)).toBeInTheDocument();
   });
 
-  test('leaves out what is not on file', () => {
+  test('names only the visit type under the service, not the procedure codes booked with it', async () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      serviceType: [
+        ...(BOOKED_APPOINTMENT.serviceType ?? []),
+        { coding: [{ system: CPT, code: '76700', display: 'Ultrasound, abdominal, real time' }] },
+      ],
+    });
+
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
+  });
+
+  test('uses only the first visit type referring to a HealthcareService', async () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      serviceType: [
+        // Carries the extension, but what it refers to is not a HealthcareService.
+        {
+          text: 'Misfiled visit type',
+          extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: 'Practitioner/dr-rivera' } }],
+        },
+        ...(BOOKED_APPOINTMENT.serviceType ?? []),
+        {
+          text: 'Ignored visit type',
+          extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: 'HealthcareService/other' } }],
+        },
+        { text: 'Abdominal ultrasound' },
+      ],
+    });
+
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(screen.queryByText(/Ignored visit type/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Misfiled visit type/)).not.toBeInTheDocument();
+    expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
+  });
+
+  test('shows unreferenced service types as procedures when there is no visit type', async () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      appointmentType: undefined,
+      serviceType: [{ text: 'Office visit' }, { text: 'Follow-up' }],
+    });
+    await screen.findByText('Miles Cooper');
+
+    expect(screen.getByText('Office visit, Follow-up')).toBeInTheDocument();
+    expect(screen.getByText('Procedure codes')).toBeInTheDocument();
+    expect(screen.queryByText('Service')).not.toBeInTheDocument();
+  });
+
+  test('leaves out what is not on file', async () => {
     renderDetails({
       resourceType: 'Appointment',
       id: 'appt-bare',
       status: 'booked',
-      participant: [{ status: 'accepted', actor: { reference: 'Practitioner/dr-rivera' } }],
+      participant: [{ status: 'accepted', actor: { reference: 'Practitioner/dr-unknown' } }],
     });
 
     expect(screen.queryByText('When')).not.toBeInTheDocument();
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
-    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
     expect(screen.queryByText('Notes')).not.toBeInTheDocument();
-    // A participant with no display name is still named, by what it points at.
-    expect(screen.getByText('Practitioner/dr-rivera')).toBeInTheDocument();
+    expect(screen.queryByText('Repeats')).not.toBeInTheDocument();
+    expect(screen.queryByText('Service facility')).not.toBeInTheDocument();
+    expect(screen.queryByText('MRN')).not.toBeInTheDocument();
+    // With no primary marked, every provider is listed alike.
+    expect(screen.getByText('Providers')).toBeInTheDocument();
+    expect(screen.queryByText('Primary provider')).not.toBeInTheDocument();
+    // A participant whose resource can't be read says so.
+    expect(await screen.findByText('[Not found]')).toBeInTheDocument();
+  });
+
+  test('names the service facility the visit is held at by the Location it points at', async () => {
+    await medplum.createResource(MainClinic);
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      supportingInformation: [
+        // Another Location, not stamped as the site.
+        { reference: 'Location/exam-room-a' },
+        { ...toAppointmentSiteReference(MainClinic), display: 'Stale display' },
+      ],
+    });
+
+    expect(await screen.findByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+    expect(screen.getByText('Service facility')).toBeInTheDocument();
+    expect(screen.queryByText('Stale display')).not.toBeInTheDocument();
+  });
+
+  test("shows the patient's medical record number", async () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      participant: [{ status: 'accepted', actor: createReference(ElderJordanPatient) }],
+    });
+
+    expect(await screen.findByText('100041')).toBeInTheDocument();
+    expect(screen.getByText('MRN')).toBeInTheDocument();
+  });
+
+  test('names the primary provider apart from the other providers, rooms, and devices', async () => {
+    await medplum.createResource(DrOkaforPractitioner);
+    await medplum.createResource(ExamRoomA);
+    const primary = createReference(DrOkaforPractitioner);
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      participant: setPrimaryProvider(
+        [
+          ...BOOKED_APPOINTMENT.participant,
+          { status: 'accepted', actor: primary },
+          { status: 'accepted', actor: createReference(ExamRoomA) },
+        ],
+        primary
+      ),
+    });
+
+    expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
+    expect(screen.getByText('Primary provider').parentElement).toHaveTextContent('Dr. Tunde Okafor');
+    expect(screen.getByText('Other providers').parentElement).toHaveTextContent('Dr. Maya Rivera');
+    expect(screen.getByText('Rooms').parentElement).toHaveTextContent('Exam Room A');
+    expect(screen.getByText('Devices').parentElement).toHaveTextContent('Ultrasound 1 (Main Campus)');
+    expect(screen.queryByText('With')).not.toBeInTheDocument();
+  });
+
+  test('names a participant stored without a display by the resource it points at', async () => {
+    await medplum.createResource({
+      resourceType: 'Practitioner',
+      id: 'dr-okafor',
+      name: [{ given: ['Tunde'], family: 'Okafor' }],
+    });
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      participant: [
+        ...BOOKED_APPOINTMENT.participant.slice(0, 1),
+        { status: 'accepted', actor: { reference: 'Practitioner/dr-okafor' } },
+      ],
+    });
+
+    expect(await screen.findByText('Tunde Okafor')).toBeInTheDocument();
+    expect(screen.queryByText('Practitioner/dr-okafor')).not.toBeInTheDocument();
   });
 
   test('cancelling posts $cancel and reports the cancelled appointment', async () => {
@@ -282,38 +525,134 @@ describe('AppointmentDetails', () => {
     expect(stored.cancelationReason?.coding?.[0].code).toBe('prov-hosp');
   });
 
-  test('shows the reason a cancelled appointment carries', () => {
+  test('confirming a pending appointment books it through $confirm', async () => {
+    const notify = vi.spyOn(medplum, 'notifyResourceModified');
+    const onConfirmed = vi.fn();
+    renderWithMedplum(<AppointmentDetails appointment={PENDING_APPOINTMENT} onConfirmed={onConfirmed} />, medplum);
+    await screen.findByText('Miles Cooper');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalled());
+    expect(onConfirmed.mock.calls[0][0]).toMatchObject({
+      appointments: [{ id: PENDING_APPOINTMENT.id, status: 'booked' }],
+      slots: [{ id: TENTATIVE_SLOT.id, status: 'busy' }],
+    });
+
+    // The operation firmed up the time as well as the visit, and the client is told of both.
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'Appointment',
+        operation: 'update',
+        id: PENDING_APPOINTMENT.id,
+        resource: expect.objectContaining({ status: 'booked' }),
+      })
+    );
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'Slot',
+        operation: 'update',
+        id: TENTATIVE_SLOT.id,
+        resource: expect.objectContaining({ status: 'busy' }),
+      })
+    );
+  });
+
+  test('shows the refusal when $confirm fails', async () => {
+    const onConfirmed = vi.fn();
+    vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Schedule is inactive'));
+    renderWithMedplum(<AppointmentDetails appointment={PENDING_APPOINTMENT} onConfirmed={onConfirmed} />, medplum);
+    await screen.findByText('Miles Cooper');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByText('Schedule is inactive')).toBeInTheDocument();
+    expect(onConfirmed).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeEnabled();
+  });
+
+  test('says where a visit falls in the series it was booked in', async () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      extension: [
+        {
+          url: RecurrenceTemplateExtensionURI,
+          extension: [{ url: 'occurrenceCount', valuePositiveInt: 4 }],
+        },
+        { url: RecurrenceIdExtensionURI, valuePositiveInt: 1 },
+      ],
+    });
+    await screen.findByText('Miles Cooper');
+
+    expect(screen.getByText('Repeats')).toBeInTheDocument();
+    expect(screen.getByText('Weekly · visit 1 of 4')).toBeInTheDocument();
+  });
+
+  test('says where a later visit falls, without the count only the first keeps', async () => {
+    // `$book` leaves the series' template on its first occurrence alone.
+    renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 3 }] });
+    await screen.findByText('Miles Cooper');
+
+    expect(screen.getByText('Weekly · visit 3')).toBeInTheDocument();
+  });
+
+  test('shows the reason a cancelled appointment carries', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       status: 'cancelled',
       cancelationReason: { coding: [{ code: 'pat-fb', display: 'Patient: Feeling Better' }] },
     });
+    await screen.findByText('Miles Cooper');
 
     expect(screen.getByText('Patient: Feeling Better')).toBeInTheDocument();
   });
 
-  test('offers no cancellation for an appointment $cancel would refuse', () => {
+  test('offers no cancellation for an appointment $cancel would refuse', async () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+    await screen.findByText('Miles Cooper');
 
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText('This appointment is cancelled.')).toBeInTheDocument();
   });
 
-  test('says why an appointment already seen cannot be cancelled', () => {
+  test('says why an appointment already seen cannot be cancelled', async () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'fulfilled' });
+    await screen.findByText('Miles Cooper');
 
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
   });
 
-  test('offers to reschedule a visit $reschedule would accept', () => {
+  test('links to the visit in the external system', async () => {
+    const url = 'https://foomedical.com/appointments?date=05%2F05%2F2020&mrn=123';
+    renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
+    await screen.findByText('Miles Cooper');
+
+    const link = screen.getByRole('link', { name: 'View details' });
+    expect(link).toHaveAttribute('href', url);
+    expect(link).not.toHaveAttribute('target');
+  });
+
+  test.each(['javascript:alert(1)', 'http://foomedical.com/appointments', 'not a url'])(
+    'offers no external link to %s',
+    async (url) => {
+      renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
+      await screen.findByText('Miles Cooper');
+
+      expect(screen.queryByRole('link', { name: 'View details' })).not.toBeInTheDocument();
+    }
+  );
+
+  test('offers to reschedule a visit $reschedule would accept', async () => {
     renderDetails(BOOKED_APPOINTMENT);
+    await screen.findByText('Miles Cooper');
 
     expect(rescheduleButton()).toBeInTheDocument();
   });
 
-  test('offers no reschedule for a visit $reschedule would refuse', () => {
+  test('offers no reschedule for a visit $reschedule would refuse', async () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+    await screen.findByText('Miles Cooper');
 
     expect(rescheduleButton()).not.toBeInTheDocument();
   });
@@ -348,5 +687,360 @@ describe('AppointmentDetails', () => {
 
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
     expect(cancelButton()).toBeInTheDocument();
+  });
+});
+
+describe('AppointmentDetails more than 12 hours after it ended', () => {
+  const LATER = new Date('2020-05-06T06:00:00Z');
+
+  test('offers nothing but the link to the visit', async () => {
+    vi.setSystemTime(LATER);
+    const url = 'https://foomedical.com/appointments?mrn=123';
+    renderDetails({ ...PENDING_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
+    await screen.findByText('Miles Cooper');
+
+    expect(screen.getByRole('link', { name: 'View details' })).toHaveAttribute('href', url);
+    expect(screen.getByText("Appointments that ended more than 12 hours ago can't be changed.")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(rescheduleButton()).not.toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
+  });
+
+  test('lets a reschedule opened before the cutoff finish', async () => {
+    const details = (): JSX.Element => <AppointmentDetails appointment={BOOKED_APPOINTMENT} />;
+    const { rerender } = renderWithMedplum(details(), medplum);
+    await userEvent.click(rescheduleButton() as HTMLElement);
+
+    vi.setSystemTime(LATER);
+    rerender(details());
+
+    expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
+  });
+});
+
+describe('AppointmentDetails editing', () => {
+  installAutocompleteTimers();
+
+  async function renderEditable(
+    appointment: WithId<Appointment>,
+    onUpdated?: (a: WithId<Appointment>) => void,
+    props?: Partial<AppointmentDetailsProps>
+  ): Promise<void> {
+    installValueSetStub(medplum, AuthorizationValueSets);
+    renderWithMedplum(
+      <AppointmentDetails
+        appointment={appointment}
+        procedureBinding={PROCEDURE_VALUE_SET}
+        diagnosisBinding={DIAGNOSIS_VALUE_SET}
+        onUpdated={onUpdated}
+        {...props}
+      />,
+      medplum
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+  }
+
+  function saveButton(): HTMLElement {
+    return screen.getByRole('button', { name: 'Save Changes' });
+  }
+
+  async function clickSave(): Promise<void> {
+    await act(async () => {
+      fireEvent.click(saveButton());
+    });
+    await settleAutocomplete();
+  }
+
+  test('asks for what the visit type asked for, filled with what is on file', async () => {
+    await renderEditable(AUTHORIZED_APPOINTMENT);
+
+    expect(await screen.findByRole('searchbox', { name: /procedure code/i })).toBeInTheDocument();
+    expect(hasPill(codePill(ProcedureCodes[0]))).toBe(true);
+    expect(hasPill(codePill(DiagnosisCodes[0]))).toBe(true);
+    expect(medicalNecessityBox()).toBeChecked();
+    // Exact match: the procedure code is not appended to the Service line.
+    expect(screen.getByText('Infusion Therapy')).toBeInTheDocument();
+  });
+
+  test('asks only for what the visit type asked for', async () => {
+    await renderEditable({
+      ...BOOKED_APPOINTMENT,
+      serviceType: [
+        {
+          text: 'Iron Infusion',
+          extension: [
+            {
+              url: ServiceTypeReferenceURI,
+              valueReference: { reference: `HealthcareService/${DIAGNOSIS_SERVICE.id}` },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(await screen.findByRole('searchbox', { name: /diagnosis code/i })).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+  });
+
+  test('offers no save until something changes, nor while a required field is empty', async () => {
+    await renderEditable(AUTHORIZED_APPOINTMENT);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    expect(saveButton()).toBeDisabled();
+
+    await removePill(codePill(ProcedureCodes[0]));
+    expect(saveButton()).toBeDisabled();
+    expect(screen.getByText('Add at least one procedure code.')).toBeInTheDocument();
+
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
+    expect(saveButton()).toBeEnabled();
+    expect(screen.queryByText('Before you can save')).not.toBeInTheDocument();
+  });
+
+  test('saves the codes, keeping the visit type they were booked under', async () => {
+    const onUpdated = vi.fn();
+    await medplum.createResource(AUTHORIZED_APPOINTMENT);
+    await renderEditable(AUTHORIZED_APPOINTMENT, onUpdated);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    await addRow('procedure');
+    await enterCode(/procedure 2/i, ProcedureCodes[1]);
+    await removePill(codePill(DiagnosisCodes[0]));
+    await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+    await clickSave();
+
+    expect(onUpdated).toHaveBeenCalled();
+    const stored = await medplum.readResource('Appointment', AUTHORIZED_APPOINTMENT.id);
+    expect(stored.serviceType).toEqual([
+      AUTHORIZED_APPOINTMENT.serviceType?.[0],
+      { coding: [ProcedureCodes[0]] },
+      { coding: [ProcedureCodes[1]] },
+    ]);
+    expect(stored.reasonCode).toEqual([{ coding: [DiagnosisCodes[1]] }]);
+    expect(stored.extension).toEqual([{ url: SchedulingMedicalNecessityURI, valueBoolean: true }]);
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
+
+  test('keeps every coding and the text of a code it was not asked to change', async () => {
+    const procedure = {
+      text: 'Infusion, as ordered',
+      coding: [ProcedureCodes[0], { system: 'http://example.com/local', code: 'INF-1' }],
+    };
+    const diagnosis = { coding: [DiagnosisCodes[0], { system: 'http://example.com/local', code: 'ANEMIA' }] };
+    const appointment: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      serviceType: [AUTHORIZED_APPOINTMENT.serviceType?.[0] as CodeableConcept, procedure],
+      reasonCode: [diagnosis],
+    };
+    await medplum.createResource(appointment);
+    await renderEditable(appointment);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    expect(hasPill('INF-1')).toBe(true);
+    expect(saveButton()).toBeDisabled();
+    await addRow('diagnosis');
+    await enterCode(/diagnosis 2/i, DiagnosisCodes[1]);
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', appointment.id);
+    expect(stored.serviceType?.[1]).toEqual(procedure);
+    expect(stored.reasonCode).toEqual([diagnosis, { coding: [DiagnosisCodes[1]] }]);
+  });
+
+  test('edits one coding of a procedure without touching the other procedures', async () => {
+    const appointment: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      serviceType: [
+        AUTHORIZED_APPOINTMENT.serviceType?.[0] as CodeableConcept,
+        { coding: [ProcedureCodes[0], { system: 'http://example.com/local', code: 'INF-1' }] },
+        { coding: [ProcedureCodes[1]] },
+      ],
+    };
+    await medplum.createResource(appointment);
+    await renderEditable(appointment);
+    await screen.findByRole('searchbox', { name: /procedure 1/i });
+
+    await removePill('INF-1');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Remove procedure 2' }));
+    });
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', appointment.id);
+    expect(stored.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
+  });
+
+  test('confirms medical necessity on a visit on file without it, replacing the attestation rather than adding one', async () => {
+    const otherExtension = { url: 'http://example.com/StructureDefinition/unrelated', valueString: 'kept' };
+    const unconfirmed: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      extension: [otherExtension, { url: SchedulingMedicalNecessityURI, valueBoolean: false }],
+    };
+    await medplum.createResource(unconfirmed);
+    await renderEditable(unconfirmed);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    expect(medicalNecessityBox()).not.toBeChecked();
+    // Required, as at booking.
+    expect(saveButton()).toBeDisabled();
+
+    await confirmMedicalNecessity();
+    expect(saveButton()).toBeEnabled();
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', unconfirmed.id);
+    expect(stored.extension).toEqual([otherExtension, { url: SchedulingMedicalNecessityURI, valueBoolean: true }]);
+  });
+
+  test('offers no save once medical necessity is unticked', async () => {
+    await renderEditable(AUTHORIZED_APPOINTMENT);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
+    expect(saveButton()).toBeEnabled();
+    expect(screen.queryByText('Before you can save')).not.toBeInTheDocument();
+
+    await confirmMedicalNecessity();
+
+    expect(medicalNecessityBox()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
+    expect(screen.getByText('Confirm medical necessity.')).toBeInTheDocument();
+  });
+
+  test('writes only what the visit type asks for', async () => {
+    // Not this visit type's to change: it asks for no diagnosis codes.
+    const reasonCode = [{ text: 'Follow-up on prior imaging' }];
+    const appointment: WithId<Appointment> = {
+      ...BOOKED_APPOINTMENT,
+      id: 'appt-procedures-only',
+      serviceType: [
+        {
+          text: 'Imaging With Procedures',
+          extension: [
+            {
+              url: ServiceTypeReferenceURI,
+              valueReference: { reference: `HealthcareService/${PROCEDURE_SERVICE.id}` },
+            },
+          ],
+        },
+      ],
+      reasonCode,
+    };
+    await medplum.createResource(appointment);
+    await renderEditable(appointment);
+
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+    expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+
+    await enterCode(/procedure code/i, ProcedureCodes[0]);
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', appointment.id);
+    expect(stored.serviceType).toEqual([appointment.serviceType?.[0], { coding: [ProcedureCodes[0]] }]);
+    expect(stored.reasonCode).toEqual(reasonCode);
+    expect(stored.extension).toBeUndefined();
+  });
+
+  test('asks for everything the visit type requires on a visit that has none of it on file', async () => {
+    const bare: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      id: 'appt-infusion-bare',
+      serviceType: AUTHORIZED_APPOINTMENT.serviceType?.slice(0, 1),
+      reasonCode: undefined,
+      extension: undefined,
+    };
+    await medplum.createResource(bare);
+    await renderEditable(bare);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    expect(hasPill(codePill(ProcedureCodes[0]))).toBe(false);
+    expect(medicalNecessityBox()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
+    expect(screen.getByText('Confirm medical necessity.')).toBeInTheDocument();
+
+    expect(screen.getByText('Add at least one diagnosis code.')).toBeInTheDocument();
+    await enterCode(/procedure code/i, ProcedureCodes[0]);
+    await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+    expect(screen.queryByText('Add at least one diagnosis code.')).not.toBeInTheDocument();
+    expect(saveButton()).toBeDisabled();
+    await confirmMedicalNecessity();
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', bare.id);
+    expect(stored.serviceType).toEqual(AUTHORIZED_APPOINTMENT.serviceType);
+    expect(stored.reasonCode).toEqual(AUTHORIZED_APPOINTMENT.reasonCode);
+    expect(stored.extension).toEqual(AUTHORIZED_APPOINTMENT.extension);
+  });
+
+  test('edits the notes in place of showing them, and clears them', async () => {
+    await renderEditable(BOOKED_APPOINTMENT);
+
+    const notes = screen.getByRole('textbox', { name: 'Notes' });
+    expect(notes).toHaveValue('Bring prior films');
+    // Only in the field: the detail line it replaces is gone.
+    expect(screen.getByText('Bring prior films')).toBe(notes);
+    expect(saveButton()).toBeDisabled();
+
+    fireEvent.change(notes, { target: { value: '  Bring prior films and referral  ' } });
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBe(
+      'Bring prior films and referral'
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Notes' }), { target: { value: ' ' } });
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBeUndefined();
+  });
+
+  test('caps the notes, holding back a save until notes already past the cap are shortened', async () => {
+    // 'Bring prior films' is 17 characters.
+    await renderEditable(BOOKED_APPOINTMENT, undefined, { commentMaxLength: 10 });
+
+    const notes = screen.getByRole('textbox', { name: 'Notes' });
+    expect(notes).toHaveAttribute('maxlength', '10');
+    expect(screen.getByText('17/10')).toBeInTheDocument();
+    expect(screen.getByText('Notes are limited to 10 characters.')).toBeInTheDocument();
+
+    fireEvent.change(notes, { target: { value: 'Bring prior films!' } });
+    expect(saveButton()).toBeDisabled();
+
+    fireEvent.change(notes, { target: { value: 'Films' } });
+    expect(screen.getByText('5/10')).toBeInTheDocument();
+    expect(screen.queryByText('Notes are limited to 10 characters.')).not.toBeInTheDocument();
+    await clickSave();
+    expect((await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id)).comment).toBe('Films');
+  });
+
+  test('discards unsaved changes when editing is cancelled', async () => {
+    const update = vi.spyOn(medplum, 'updateResource');
+    await renderEditable(AUTHORIZED_APPOINTMENT);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+    expect(update).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+    expect(hasPill(codePill(ProcedureCodes[1]))).toBe(false);
+    expect(saveButton()).toBeDisabled();
+  });
+
+  test('shows a refused save and keeps what was entered', async () => {
+    vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Precondition failed'));
+    await renderEditable(AUTHORIZED_APPOINTMENT);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
+    await clickSave();
+
+    expect(await screen.findByText('Precondition failed')).toBeInTheDocument();
+    expect(hasPill(codePill(ProcedureCodes[1]))).toBe(true);
+    expect(saveButton()).toBeEnabled();
   });
 });

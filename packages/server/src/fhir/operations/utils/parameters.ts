@@ -21,6 +21,7 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { Request } from 'express';
+import { GLOBAL_SHARD_ID, isConfiguredShardId, isShardingEnabled } from '../../sharding';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -46,8 +47,8 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
   const inputParameters = operation.parameter.filter((p) => p.use === 'in');
 
   // If the request is a GET request, use the query parameters
-  // Otherwise, use the body
-  const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : req.body;
+  // Otherwise, use the body, which a batch entry without a resource leaves undefined
+  const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : (req.body ?? {});
 
   if (isResourceInputParam(inputParameters, input)) {
     const param = inputParameters[0];
@@ -343,4 +344,17 @@ export function makeOperationDefinitionParameter(
     max,
     part,
   };
+}
+
+export function getShardIdParam(params: { shardId?: string }): string {
+  if (!params.shardId) {
+    if (isShardingEnabled()) {
+      throw new OperationOutcomeError(badRequest('shardId is required'));
+    }
+    return GLOBAL_SHARD_ID;
+  }
+  if (!isConfiguredShardId(params.shardId)) {
+    throw new OperationOutcomeError(badRequest(`Unknown shardId: ${params.shardId}`));
+  }
+  return params.shardId;
 }

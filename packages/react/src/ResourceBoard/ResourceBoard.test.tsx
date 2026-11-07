@@ -221,6 +221,20 @@ describe('ResourceBoard', () => {
     expect(screen.getByTestId('header-action')).toBeInTheDocument();
   });
 
+  test('renders the list footer once loaded, not while loading', async () => {
+    let resolveSearch: (bundle: Bundle<Communication>) => void = () => undefined;
+    medplum.search = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSearch = resolve;
+        })
+    );
+    await setup({ listFooter: <button data-testid="list-footer">Checkout</button> });
+    expect(screen.queryByTestId('list-footer')).not.toBeInTheDocument();
+    await act(async () => resolveSearch(bundleOf(comm('1', 'A'))));
+    expect(screen.getByTestId('list-footer')).toBeInTheDocument();
+  });
+
   test('onSelectFirst fires with the first item when nothing is selected', async () => {
     const onSelectFirst = vi.fn();
     medplum.search = vi.fn().mockResolvedValue(bundleOf(comm('a', 'Alpha'), comm('b', 'Beta')));

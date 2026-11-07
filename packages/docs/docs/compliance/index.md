@@ -19,7 +19,8 @@ This is a living document, and we continually update our resources. We welcome f
 - [HIPAA compliance](/docs/compliance/hipaa)
 - [CFR Part 11](/docs/compliance/cfr11)
 - [ISO 9001](/docs/compliance/iso9001)
-- [HTI-4/CMS-0057-F](/docs/compliance/hti-4)
+- [HTI-4](/docs/compliance/hti-4)
+- [CMS-0057-F and Drummond FHIRplace Validation](/docs/compliance/cms-0057-f)
 - [Good Manufacturing Practices (GMP)](/docs/compliance/gmp)
 - ISO 27001 Certification (coming soon)
 

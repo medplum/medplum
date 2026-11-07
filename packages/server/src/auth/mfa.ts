@@ -5,22 +5,25 @@ import { allOk, badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { authenticator } from 'otplib';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
+import { sendValidationErrors } from '../util/validator';
 import { assertMfaLoginActive } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
   buildTotpEnrollment,
+  clearMfaEmailCode,
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
   getLoginProject,
   isMfaRequired,
+  readUserForAccountManagement,
   sendLoginResult,
   sendMfaEmailCode,
   verifyEmailMfaCode,
@@ -86,24 +89,26 @@ export async function verifyConnectedFactor(user: User, login: Login, token: str
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await readUserForAccountManagement(ctx);
   const allowedMethods = getAllowedMfaMethods(ctx.project);
+  const enrolledMethods = getEnrolledMfaMethods(user);
 
-  // The TOTP QR code can always be shown, whether for initial enrollment or for
-  // adding TOTP as a second method to an account already enrolled in
-  // email-based MFA, because a secret is generated on demand if missing.
-  const { enrollUri, enrollQrCode } = await buildTotpEnrollment(ctx.systemRepo, user, ctx.project);
+  // The TOTP QR code is only returned while TOTP is not enrolled: for initial enrollment,
+  // or to add TOTP alongside email-based MFA. A secret is generated if the user has none.
+  const enrollment = enrolledMethods.includes('totp')
+    ? undefined
+    : await buildTotpEnrollment(ctx.systemRepo, user, ctx.project);
 
   res.json({
     enrolled: Boolean(user.mfaEnrolled),
-    enrolledMethods: getEnrolledMfaMethods(user),
+    enrolledMethods,
     allowedMethods,
     // When MFA is required for the account, the client must not offer to disable
     // it (the `/disable` endpoint enforces this server-side as well).
     mfaRequired: isMfaRequired(user, ctx.project),
     email: user.email,
-    enrollUri,
-    enrollQrCode,
+    enrollUri: enrollment?.enrollUri,
+    enrollQrCode: enrollment?.enrollQrCode,
   });
 });
 
@@ -111,9 +116,7 @@ mfaRouter.post(
   '/login-enroll',
   [body('login').notEmpty().withMessage('Missing login')],
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -129,6 +132,11 @@ mfaRouter.post(
     assertMfaLoginActive(login);
 
     const method = parseMfaMethod(req.body.method);
+
+    if (!getAllowedMfaMethods(await getLoginProject(login)).includes(method)) {
+      sendOutcome(res, badRequest('MFA method not allowed'));
+      return;
+    }
 
     if (method === 'email') {
       // Enroll in email-based MFA. No token to verify here; because email
@@ -170,7 +178,7 @@ mfaRouter.post(
 mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Response) => {
   const systemRepo = getGlobalSystemRepo();
   const ctx = getAuthenticatedContext();
-  const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await readUserForAccountManagement(ctx);
 
   const method = parseMfaMethod(req.body.method);
 
@@ -206,9 +214,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
       emailVerified: true,
     });
     // Consume the emailed code so it cannot be reused.
-    if (ctx.login.emailMfa) {
-      await systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
-    }
+    await clearMfaEmailCode(ctx.login as WithId<Login>);
     sendOutcome(res, allOk);
     return;
   }
@@ -243,9 +249,7 @@ mfaRouter.post(
   '/verify',
   [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -260,9 +264,7 @@ mfaRouter.post(
   '/send-email',
   [body('login').notEmpty().withMessage('Missing login')],
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -292,7 +294,7 @@ mfaRouter.post(
  */
 mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await readUserForAccountManagement(ctx);
 
   const emailEnrolled = getEnrolledMfaMethods(user).includes('email');
   const emailAllowed = getAllowedMfaMethods(ctx.project).includes('email');
@@ -311,16 +313,14 @@ mfaRouter.post(
   [body('token').optional().isString(), body('method').optional().isString()],
   async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+    const user = await readUserForAccountManagement(ctx);
 
     if (!user.mfaEnrolled) {
       sendOutcome(res, badRequest('User not enrolled in MFA'));
       return;
     }
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -380,9 +380,7 @@ mfaRouter.post(
     });
 
     // Consume any emailed verification code so it cannot be reused.
-    if (ctx.login.emailMfa) {
-      await ctx.systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
-    }
+    await clearMfaEmailCode(ctx.login as WithId<Login>);
 
     sendOutcome(res, allOk);
   }
