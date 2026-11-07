@@ -1,38 +1,64 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Text } from '@mantine/core';
-import type { Attachment, DiagnosticReport } from '@medplum/fhirtypes';
+import type { Attachment, DiagnosticReport, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
-import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import type { RenderResourceLink } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import {
+  DiagnosticReportDisplayView,
+  renderMedplumLink,
+  useDiagnosticReportResources,
+} from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { resolveDerivedFromAttachments, resolvePresentedFormAttachments } from './documentReference';
 import classes from './LabReportContent.module.css';
 
-interface LabReportContentProps {
-  report: DiagnosticReport;
+export interface LabReportContentProps {
+  readonly report: DiagnosticReport;
 }
 
 /**
- * Renders the content of a lab report: the presented form documents (e.g. the
- * lab's PDF) followed by the structured report results. Shared between the
- * standalone result view and the order's Report tab.
+ * The content of a lab report, resolving its documents and referenced resources through the
+ * Medplum client and linking with MedplumLink.
  * @param props - The DiagnosticReport to render.
  * @returns The lab report content.
  */
 export function LabReportContent(props: LabReportContentProps): JSX.Element {
   const { report } = props;
-  const medplum = useMedplum();
-  const [labDocumentAttachments, setLabDocumentAttachments] = useState<Attachment[]>([]);
+  const attachments = useLabReportAttachments(report);
+  const resources = useDiagnosticReportResources(report);
+  return (
+    <LabReportContentView
+      report={report}
+      attachments={attachments}
+      resources={resources}
+      renderLink={renderMedplumLink}
+    />
+  );
+}
 
-  // Resolve both attachment sources together and commit them in a single state update, so the
-  // list doesn't render with just one source and then visibly reorder once the other resolves.
-  // Health Gorilla doesn't always fold the lab-branded PDF into presentedForm; derivedFrom is a
-  // more reliable fallback source for it, so it's placed first. The two sources often resolve the
-  // *same* lab-branded PDF (Health Gorilla usually folds it into presentedForm too), so de-dupe by
-  // URL before rendering.
+/**
+ * Resolves a report's lab documents through the Medplum client, for LabReportContentView.
+ *
+ * Both attachment sources resolve together and commit in a single state update, so the list
+ * doesn't render with just one source and then visibly reorder once the other resolves.
+ * Health Gorilla doesn't always fold the lab-branded PDF into presentedForm; derivedFrom is a
+ * more reliable fallback source for it, so it's placed first. The two sources often resolve the
+ * same lab-branded PDF (Health Gorilla usually folds it into presentedForm too), so de-dupe by
+ * URL before rendering.
+ * @param report - The report, or undefined for no documents.
+ * @returns The displayable attachments, empty until resolved.
+ */
+export function useLabReportAttachments(report: DiagnosticReport | undefined): Attachment[] {
+  const medplum = useMedplum();
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+
   useEffect(() => {
+    if (!report) {
+      return undefined;
+    }
     let cancelled = false;
 
     Promise.allSettled([
@@ -65,26 +91,44 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
           seenUrls.add(attachment.url);
           return true;
         });
-        setLabDocumentAttachments(deduped);
+        setAttachments(deduped);
       })
       .catch(console.error);
 
     return () => {
       cancelled = true;
-      setLabDocumentAttachments([]);
+      setAttachments([]);
     };
   }, [medplum, report]);
 
+  return attachments;
+}
+
+export interface LabReportContentViewProps {
+  readonly report: DiagnosticReport;
+  readonly attachments?: Attachment[];
+  readonly resources?: Resource[];
+  readonly renderLink?: RenderResourceLink;
+}
+
+/**
+ * The content of a lab report: the lab documents followed by the structured results. It holds
+ * no client: the caller resolves the documents and the referenced resources.
+ * @param props - The report and its resolved documents and resources.
+ * @returns The lab report content.
+ */
+export function LabReportContentView(props: LabReportContentViewProps): JSX.Element {
+  const { report, attachments, resources, renderLink } = props;
+
   return (
     <Stack gap="sm" mb="xl">
-      {/* Results PDF */}
-      {labDocumentAttachments.length > 0 && (
+      {attachments && attachments.length > 0 && (
         <Stack gap="lg" mb="xl">
           <Text fw={800} size="md" pb="0">
             Lab Document
           </Text>
           <Stack gap="md">
-            {labDocumentAttachments.map((form, index) => (
+            {attachments.map((form, index) => (
               <Stack key={index} gap="xs">
                 <div className={classes.attachment}>
                   <AttachmentDisplay value={form} />
@@ -97,7 +141,7 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
 
       {report.result && report.result.length > 0 && (
         <Stack pt="md">
-          <DiagnosticReportDisplay value={report} />
+          <DiagnosticReportDisplayView value={report} resources={resources} renderLink={renderLink} />
         </Stack>
       )}
     </Stack>

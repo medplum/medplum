@@ -4,7 +4,7 @@ import { Box, Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs,
 import type { Resource } from '@medplum/fhirtypes';
 import { useStabilizedCallback } from '@medplum/react-hooks';
 import cx from 'clsx';
-import type { JSX, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, JSX, ReactNode } from 'react';
 import { useEffect } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './ListWithDetailPane.module.css';
@@ -15,6 +15,12 @@ export interface ListWithDetailPaneTab {
   readonly label: ReactNode;
   readonly uri: string;
 }
+
+/** The props a tab link spreads onto its anchor: the pill's class and content plus Mantine's tab attributes. */
+export type ListWithDetailPaneTabLinkProps = ComponentPropsWithoutRef<'a'>;
+
+/** Renders a tab pill as a link to its URI. */
+export type ListWithDetailPaneTabLinkRenderer = (uri: string, props: ListWithDetailPaneTabLinkProps) => ReactNode;
 
 export interface ListWithDetailPaneItemContext<T extends { id?: string } = Resource> {
   readonly selected: boolean;
@@ -84,6 +90,7 @@ export interface ListWithDetailPaneTextHeaderProps {
   readonly headerText?: ReactNode;
   readonly tabs?: never;
   readonly activeTab?: never;
+  readonly renderTabLink?: never;
 }
 
 /**
@@ -91,10 +98,13 @@ export interface ListWithDetailPaneTextHeaderProps {
  * Each tab renders as a link to its `uri`, so tab switching needs no change callback.
  * @param tabs - Sidebar header tabs. Selecting a tab navigates to its URI.
  * @param activeTab - Controlled active tab value; consumers derive it from the URL.
+ * @param renderTabLink - Renders each tab pill as a link. Default: MedplumLink, which needs a MedplumProvider.
+ * Pass it to link through another router.
  */
 export interface ListWithDetailPaneTabsHeaderProps {
   readonly tabs: ListWithDetailPaneTab[];
   readonly activeTab?: string;
+  readonly renderTabLink?: ListWithDetailPaneTabLinkRenderer;
   readonly headerText?: never;
 }
 
@@ -131,6 +141,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     headerText,
     tabs,
     activeTab,
+    renderTabLink,
     headerActions,
     selected,
     renderDetail,
@@ -169,11 +180,20 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
               // from reaching the button) and is invalid interactive nesting. Mantine's
               // own onClick is dropped: navigation is the link's job, so there is one
               // code path and no tab-change callback to wire up.
-              renderRoot={({ onClick: _onClick, className, children, ...rootProps }) => (
-                <MedplumLink to={tab.uri} className={cx(classes.tabLink, className)} {...rootProps}>
-                  {children}
-                </MedplumLink>
-              )}
+              renderRoot={({ onClick: _onClick, className, children, ...rootProps }) => {
+                const linkProps: ListWithDetailPaneTabLinkProps = {
+                  ...rootProps,
+                  className: cx(classes.tabLink, className),
+                  children,
+                };
+                return renderTabLink ? (
+                  renderTabLink(tab.uri, linkProps)
+                ) : (
+                  <MedplumLink to={tab.uri} {...linkProps}>
+                    {children}
+                  </MedplumLink>
+                );
+              }}
             >
               {tab.label}
             </Tabs.Tab>

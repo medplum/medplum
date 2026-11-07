@@ -5,18 +5,24 @@ import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { formatDate, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type {
+  Attachment,
   CarePlan,
   DiagnosticReport,
   DocumentReference,
   MedicationRequest,
+  Patient,
+  Practitioner,
   QuestionnaireResponse,
   Reference,
+  Resource,
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { RenderResourceLink } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import { renderMedplumLink, useDiagnosticReportResources } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import classes from '../ListWithDetailPane/ListWithDetailPane.module.css';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
 import { LabDetailLayout } from './LabDetailLayout';
@@ -27,7 +33,7 @@ import {
   getOrderStatusDisplayText,
   getQuestionnaireResponseRef,
 } from './labOrder';
-import { LabReportContent } from './LabReportContent';
+import { LabReportContentView, useLabReportAttachments } from './LabReportContent';
 
 export interface LabOrderDetailsProps {
   order: ServiceRequest;
@@ -36,20 +42,37 @@ export interface LabOrderDetailsProps {
   selectedReport?: Reference<DiagnosticReport>;
 }
 
-interface ProgressStep {
-  id: string;
-  title: string;
-  description: string;
-  icon: JSX.Element;
-  status: 'completed' | 'current' | 'pending';
-  timestamp?: string;
+export interface LabOrderDetailsData {
+  readonly patient?: Patient;
+  readonly requester?: Practitioner;
+  readonly report?: DiagnosticReport;
+  readonly reportLoading: boolean;
+  readonly reportAttachments: Attachment[];
+  readonly reportResources?: Resource[];
+  readonly requisitionDocuments: DocumentReference[];
+  readonly requisitionDocumentsLoading: boolean;
+  readonly specimenLabelDocuments: DocumentReference[];
+  readonly specimenLabelDocumentsLoading: boolean;
+  readonly questionnaireResponse?: QuestionnaireResponse;
+  readonly revoke: () => Promise<WithId<ServiceRequest>>;
 }
 
-export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
-  const { order, onChange, onResume, selectedReport } = props;
+/**
+ * Resolves everything LabOrderDetailsView needs: the patient and requester, the report (the one
+ * the caller picked, or the order's latest), the report's documents and referenced resources, the
+ * requisition and specimen-label documents, and the order-entry QuestionnaireResponse. Also
+ * exposes a revoke mutation the caller can apply and propagate.
+ * @param order - The order, or undefined to keep the hook idle.
+ * @param selectedReport - A specific report to show instead of the latest one.
+ * @returns The resolved data and the revoke mutation.
+ */
+export function useLabOrderDetailsData(
+  order: ServiceRequest | undefined,
+  selectedReport?: Reference<DiagnosticReport>
+): LabOrderDetailsData {
   const medplum = useMedplum();
-  const patient = useResource(order.subject);
-  const requester = useResource(order.requester);
+  const subject = useResource(order?.subject);
+  const requester = useResource(order?.requester);
   const selectedReportResource = useResource(selectedReport);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [reportsFetched, setReportsFetched] = useState(false);
@@ -57,38 +80,13 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
-  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
-  const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
-  // Default to the Report tab whenever the caller explicitly selected a report (e.g. clicked one
-  // from a results list) or the order is fully completed - in every other case there's nothing
-  // to show there yet, so default to tracking progress instead. This is only the *initial* tab;
-  // availability of the Report tab itself is governed separately, by whether a report exists (see
-  // primaryReport below) rather than by order status, since a report can exist well before the
-  // order it belongs to is marked completed (e.g. a preliminary or partial result).
-  const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
-    selectedReport || order.status === 'completed' ? 'report' : 'progress'
-  );
-
-  const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
-  const isDraft = order.status === 'draft';
-  const hideProgress = isDraft || order.status === 'revoked';
-
-  const handleRevoke = useCallback(async (): Promise<void> => {
-    try {
-      const updated = await medplum.patchResource('ServiceRequest', order.id as string, [
-        { op: 'replace', path: '/status', value: 'revoked' },
-      ]);
-      onChange?.(updated);
-    } catch (err) {
-      showNotification({ color: 'red', message: normalizeErrorString(err) });
-    }
-  }, [medplum, order.id, onChange]);
+  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse>();
 
   // An order can have more than one DiagnosticReport (e.g. a multi-day culture result resent
   // with additional findings). When the caller didn't pass a specific selectedReport, fetch just
   // the most recently updated one to show by default.
   useEffect(() => {
-    if (selectedReport) {
+    if (!order || selectedReport) {
       return;
     }
 
@@ -103,7 +101,150 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     };
 
     fetchReports().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
-  }, [medplum, order.id, selectedReport]);
+  }, [medplum, order, selectedReport]);
+
+  // Fetch Lab Order Requisition documents when order changes
+  useEffect(() => {
+    if (!order) {
+      return undefined;
+    }
+
+    const fetchDocuments = async (): Promise<void> => {
+      if (!order.id) {
+        setLabOrderRequisitionDocs([]);
+        return;
+      }
+      setLoadingDocs(true);
+      setLabOrderRequisitionDocs([]); // Clear previous documents immediately
+
+      try {
+        const docs = await fetchLabOrderRequisitionDocuments(medplum, order);
+        setLabOrderRequisitionDocs(docs);
+      } catch (error) {
+        console.error('Error fetching lab order requisition documents:', error);
+        setLabOrderRequisitionDocs([]);
+      } finally {
+        setLoadingDocs(false);
+      }
+    };
+
+    fetchDocuments().catch(console.error);
+
+    // Cleanup function to clear documents when component unmounts or order changes
+    return () => {
+      setLabOrderRequisitionDocs([]);
+      setLoadingDocs(false);
+    };
+  }, [medplum, order]);
+
+  // Fetch Specimen Label documents when order changes
+  useEffect(() => {
+    if (!order) {
+      return undefined;
+    }
+
+    const fetchSpecimenLabelDocuments = async (): Promise<void> => {
+      if (!order.id) {
+        setSpecimenLabelDocs([]);
+        return;
+      }
+      setLoadingSpecimenDocs(true);
+      setSpecimenLabelDocs([]); // Clear previous documents immediately
+
+      try {
+        // Extract Health Gorilla Requisition ID from ServiceRequest (same as requisition docs)
+        const healthGorillaRequisitionId = getHealthGorillaRequisitionId(order);
+
+        if (!healthGorillaRequisitionId) {
+          setSpecimenLabelDocs([]);
+          return;
+        }
+
+        // Search for DocumentReference with category "SpecimenLabel" using the same identifier pattern
+        const searchParams = new URLSearchParams({
+          category: 'SpecimenLabel',
+          identifier: `https://www.healthgorilla.com|${healthGorillaRequisitionId}`,
+          _sort: '-_lastUpdated',
+        });
+
+        const searchResult = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
+        setSpecimenLabelDocs(searchResult);
+      } catch (error) {
+        console.error('Error fetching specimen label documents:', error);
+        setSpecimenLabelDocs([]);
+      } finally {
+        setLoadingSpecimenDocs(false);
+      }
+    };
+
+    fetchSpecimenLabelDocuments().catch(console.error);
+
+    // Cleanup function to clear documents when component unmounts or order changes
+    return () => {
+      setSpecimenLabelDocs([]);
+      setLoadingSpecimenDocs(false);
+    };
+  }, [medplum, order]);
+
+  // Fetch QuestionnaireResponse when order changes
+  useEffect(() => {
+    if (!order) {
+      return undefined;
+    }
+
+    const fetchQuestionnaireResponse = async (): Promise<void> => {
+      setQuestionnaireResponse(undefined);
+
+      // First, check if current order has QuestionnaireResponse in supportingInfo
+      const currentRef = getQuestionnaireResponseRef(order);
+      if (currentRef?.reference) {
+        try {
+          setQuestionnaireResponse(await medplum.readReference(currentRef as Reference<QuestionnaireResponse>));
+          return;
+        } catch (error) {
+          console.error('Error fetching questionnaire response from current order:', error);
+        }
+      }
+
+      // For HealthGorilla case: if no QuestionnaireResponse found in current order,
+      // search for the original ServiceRequest that has this ServiceRequest in its basedOn field
+      // This applies to both open and completed orders
+      if (order.id) {
+        try {
+          // Search for ServiceRequests for the same patient with the same code to narrow down results
+          const searchResult = await medplum.searchResources('ServiceRequest', {
+            subject: order.subject?.reference,
+            code: order.code?.coding?.[0]?.code, // Include the same code to narrow down results
+            _count: 50, // Get more results to filter through
+          });
+
+          // Prefer the ServiceRequest that has this order in its basedOn field and a QuestionnaireResponse;
+          // otherwise fall back to any ServiceRequest with a QuestionnaireResponse
+          const withQuestionnaire = searchResult.filter((sr) => getQuestionnaireResponseRef(sr));
+          const sourceOrder =
+            withQuestionnaire.find((sr) =>
+              sr.basedOn?.some(
+                (ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) =>
+                  ref.reference === `ServiceRequest/${order.id}`
+              )
+            ) ?? withQuestionnaire[0];
+          const sourceRef = getQuestionnaireResponseRef(sourceOrder);
+          if (sourceRef?.reference) {
+            setQuestionnaireResponse(await medplum.readReference(sourceRef as Reference<QuestionnaireResponse>));
+          }
+        } catch (error) {
+          console.error('Error fetching questionnaire response from original order:', error);
+        }
+      }
+    };
+
+    fetchQuestionnaireResponse().catch(console.error);
+
+    // Cleanup function
+    return () => {
+      setQuestionnaireResponse(undefined);
+    };
+  }, [medplum, order]);
 
   // When the caller passed a selectedReport, always show that exact resource - resolved directly
   // by reference, never substituted with a different report. Otherwise fall back to the most
@@ -113,18 +254,158 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   // While this is true, we don't yet know whether a report exists - keep the Report tab visible
   // (with a loader) rather than flipping it away only to potentially flip it back once the fetch
   // resolves, and don't bounce the user off the Report tab just because it isn't resolved yet.
-  const isLoadingPrimaryReport = selectedReport ? selectedReportResource === undefined : !reportsFetched;
+  let reportLoading = false;
+  if (order) {
+    reportLoading = selectedReport ? selectedReportResource === undefined : !reportsFetched;
+  }
+  const reportAttachments = useLabReportAttachments(primaryReport);
+  const reportResources = useDiagnosticReportResources(primaryReport);
+
+  const revoke = useCallback(async (): Promise<WithId<ServiceRequest>> => {
+    if (!order?.id) {
+      throw new Error('Cannot revoke an order without an id');
+    }
+    return medplum.patchResource('ServiceRequest', order.id, [
+      { op: 'replace', path: '/status', value: 'revoked' },
+    ]);
+  }, [medplum, order]);
+
+  return {
+    patient: subject?.resourceType === 'Patient' ? subject : undefined,
+    requester: requester?.resourceType === 'Practitioner' ? requester : undefined,
+    report: primaryReport,
+    reportLoading,
+    reportAttachments,
+    reportResources,
+    requisitionDocuments: labOrderRequisitionDocs,
+    requisitionDocumentsLoading: loadingDocs,
+    specimenLabelDocuments: specimenLabelDocs,
+    specimenLabelDocumentsLoading: loadingSpecimenDocs,
+    questionnaireResponse,
+    revoke,
+  };
+}
+
+/**
+ * The details of a lab order, resolving its report, documents, and people through the Medplum
+ * client, revoking through it, and linking with MedplumLink.
+ * @param props - The order, the selected report, and the change callbacks.
+ * @returns The order details.
+ */
+export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
+  const { order, onChange, onResume, selectedReport } = props;
+  const data = useLabOrderDetailsData(order, selectedReport);
+
+  const onRevoke = useCallback((): void => {
+    data
+      .revoke()
+      .then((updated) => onChange?.(updated))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [data, onChange]);
+
+  return (
+    <LabOrderDetailsView
+      order={order}
+      patient={data.patient}
+      requester={data.requester}
+      report={data.report}
+      reportLoading={data.reportLoading}
+      reportAttachments={data.reportAttachments}
+      reportResources={data.reportResources}
+      requisitionDocuments={data.requisitionDocuments}
+      requisitionDocumentsLoading={data.requisitionDocumentsLoading}
+      specimenLabelDocuments={data.specimenLabelDocuments}
+      specimenLabelDocumentsLoading={data.specimenLabelDocumentsLoading}
+      questionnaireResponse={data.questionnaireResponse}
+      defaultTab={selectedReport ? 'report' : undefined}
+      onRevoke={onRevoke}
+      onResume={onResume}
+      renderLink={renderMedplumLink}
+    />
+  );
+}
+
+export type LabOrderDetailTab = 'report' | 'progress' | 'order';
+
+export interface LabOrderDetailsViewProps {
+  readonly order: ServiceRequest;
+  readonly patient?: Patient;
+  readonly requester?: Practitioner;
+  readonly report?: DiagnosticReport;
+  readonly reportLoading?: boolean;
+  readonly reportAttachments?: Attachment[];
+  readonly reportResources?: Resource[];
+  readonly requisitionDocuments?: DocumentReference[];
+  readonly requisitionDocumentsLoading?: boolean;
+  readonly specimenLabelDocuments?: DocumentReference[];
+  readonly specimenLabelDocumentsLoading?: boolean;
+  readonly questionnaireResponse?: QuestionnaireResponse;
+  readonly defaultTab?: LabOrderDetailTab;
+  readonly onRevoke?: () => void;
+  readonly onResume?: () => void;
+  readonly renderLink?: RenderResourceLink;
+}
+
+interface ProgressStep {
+  id: string;
+  title: string;
+  description: string;
+  icon: JSX.Element;
+  status: 'completed' | 'current' | 'pending';
+  timestamp?: string;
+}
+
+/**
+ * The details of a lab order: its report, its progress, and its order details. It holds no
+ * client: the caller resolves the report, the documents, and the people, and performs the
+ * status changes.
+ * @param props - The order and its resolved data.
+ * @returns The order details.
+ */
+export function LabOrderDetailsView(props: LabOrderDetailsViewProps): JSX.Element {
+  const {
+    order,
+    patient,
+    requester,
+    report,
+    reportLoading = false,
+    reportAttachments,
+    reportResources,
+    requisitionDocuments = [],
+    requisitionDocumentsLoading = false,
+    specimenLabelDocuments = [],
+    specimenLabelDocumentsLoading = false,
+    questionnaireResponse,
+    defaultTab,
+    onRevoke,
+    onResume,
+    renderLink,
+  } = props;
+  // Default to the Report tab whenever the caller explicitly selected a report (e.g. clicked one
+  // from a results list) or the order is fully completed - in every other case there's nothing
+  // to show there yet, so default to tracking progress instead. This is only the *initial* tab;
+  // availability of the Report tab itself is governed separately, by whether a report exists
+  // rather than by order status, since a report can exist well before the order it belongs to is
+  // marked completed (e.g. a preliminary or partial result).
+  const [activeDetailTab, setActiveDetailTab] = useState<LabOrderDetailTab>(
+    defaultTab ?? (order.status === 'completed' ? 'report' : 'progress')
+  );
+
+  const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
+  const isDraft = order.status === 'draft';
+  const hideProgress = isDraft || order.status === 'revoked';
+  const hasStatusMenu = canRevoke && (onRevoke !== undefined || (isDraft && onResume !== undefined));
 
   // The tab actually shown, derived from the requested tab plus two corrections:
   // - once loading finishes with no report found, a request for 'report' has nothing to show, so
   //   fall back to a tab that does (e.g. a completed order whose report search came back empty);
   // - 'progress' is requested but genuinely hidden (hideProgress), so fall back to 'order'. This
   //   never overrides a 'report' request on a draft/revoked order - the report tab's own
-  //   availability is governed separately, by whether a report exists (see primaryReport above),
-  //   so a draft or revoked order with a report (e.g. a preliminary result opened from Completed)
-  //   must still be able to select and view it instead of being stuck on Order Details.
-  let detailTab: 'report' | 'progress' | 'order' = activeDetailTab;
-  if (!isLoadingPrimaryReport && !primaryReport && activeDetailTab === 'report') {
+  //   availability is governed separately, by whether a report exists, so a draft or revoked
+  //   order with a report (e.g. a preliminary result opened from Completed) must still be able to
+  //   select and view it instead of being stuck on Order Details.
+  let detailTab: LabOrderDetailTab = activeDetailTab;
+  if (!reportLoading && !report && activeDetailTab === 'report') {
     detailTab = hideProgress ? 'order' : 'progress';
   } else if (hideProgress && activeDetailTab === 'progress') {
     detailTab = 'order';
@@ -176,23 +457,23 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     }
 
     // Step 2: Lab Acknowledged - presence of accession number or LabOrderRequisition
-    if (order.requisition?.value || labOrderRequisitionDocs.length > 0) {
+    if (order.requisition?.value || requisitionDocuments.length > 0) {
       steps[1].status = 'completed';
       steps[1].timestamp = order.requisition?.value ? 'Acknowledged' : undefined;
       currentStepIndex = 2;
     }
 
     // Step 3: Testing - DiagnosticReport.effectiveDateTime
-    if (primaryReport?.effectiveDateTime) {
+    if (report?.effectiveDateTime) {
       steps[2].status = 'completed';
-      steps[2].timestamp = formatDate(primaryReport.effectiveDateTime);
+      steps[2].timestamp = formatDate(report.effectiveDateTime);
       currentStepIndex = 3;
     }
 
     // Step 4: Final - DiagnosticReport.issued timestamp
-    if (primaryReport?.issued && primaryReport.status === 'final') {
+    if (report?.issued && report.status === 'final') {
       steps[3].status = 'completed';
-      steps[3].timestamp = formatDate(primaryReport.issued);
+      steps[3].timestamp = formatDate(report.issued);
       currentStepIndex = 4;
     }
 
@@ -202,7 +483,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     }
 
     return steps;
-  }, [order, primaryReport, labOrderRequisitionDocs]);
+  }, [order, report, requisitionDocuments]);
 
   // Helper function to get step color
   const getStepColor = (status: 'completed' | 'current' | 'pending'): string => {
@@ -214,145 +495,6 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     }
     return 'gray.2';
   };
-
-  // Fetch Lab Order Requisition documents when order changes
-  useEffect(() => {
-    const fetchDocuments = async (): Promise<void> => {
-      if (!order.id) {
-        setLabOrderRequisitionDocs([]);
-        return;
-      }
-      setLoadingDocs(true);
-      setLabOrderRequisitionDocs([]); // Clear previous documents immediately
-
-      try {
-        const docs = await fetchLabOrderRequisitionDocuments(medplum, order);
-        setLabOrderRequisitionDocs(docs);
-      } catch (error) {
-        console.error('Error fetching lab order requisition documents:', error);
-        setLabOrderRequisitionDocs([]);
-      } finally {
-        setLoadingDocs(false);
-      }
-    };
-
-    fetchDocuments().catch(console.error);
-
-    // Cleanup function to clear documents when component unmounts or order changes
-    return () => {
-      setLabOrderRequisitionDocs([]);
-      setLoadingDocs(false);
-    };
-  }, [medplum, order]);
-
-  // Fetch Specimen Label documents when order changes
-  useEffect(() => {
-    const fetchSpecimenLabelDocuments = async (): Promise<void> => {
-      if (!order.id) {
-        setSpecimenLabelDocs([]);
-        return;
-      }
-      setLoadingSpecimenDocs(true);
-      setSpecimenLabelDocs([]); // Clear previous documents immediately
-
-      try {
-        // Extract Health Gorilla Requisition ID from ServiceRequest (same as requisition docs)
-        const healthGorillaRequisitionId = getHealthGorillaRequisitionId(order);
-
-        if (!healthGorillaRequisitionId) {
-          setSpecimenLabelDocs([]);
-          return;
-        }
-
-        // Search for DocumentReference with category "SpecimenLabel" using the same identifier pattern
-        const searchParams = new URLSearchParams({
-          category: 'SpecimenLabel',
-          identifier: `https://www.healthgorilla.com|${healthGorillaRequisitionId}`,
-          _sort: '-_lastUpdated',
-        });
-
-        const searchResult = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
-        setSpecimenLabelDocs(searchResult);
-      } catch (error) {
-        console.error('Error fetching specimen label documents:', error);
-        setSpecimenLabelDocs([]);
-      } finally {
-        setLoadingSpecimenDocs(false);
-      }
-    };
-
-    fetchSpecimenLabelDocuments().catch(console.error);
-
-    // Cleanup function to clear documents when component unmounts or order changes
-    return () => {
-      setSpecimenLabelDocs([]);
-      setLoadingSpecimenDocs(false);
-    };
-  }, [medplum, order]);
-
-  // Fetch QuestionnaireResponse when order changes
-  useEffect(() => {
-    const fetchQuestionnaireResponse = async (): Promise<void> => {
-      setQuestionnaireResponse(null);
-
-      // First, check if current order has QuestionnaireResponse in supportingInfo
-      const currentRef = getQuestionnaireResponseRef(order);
-      if (currentRef?.reference) {
-        try {
-          setLoadingQuestionnaire(true);
-          setQuestionnaireResponse(await medplum.readReference(currentRef as Reference<QuestionnaireResponse>));
-          return;
-        } catch (error) {
-          console.error('Error fetching questionnaire response from current order:', error);
-        } finally {
-          setLoadingQuestionnaire(false);
-        }
-      }
-
-      // For HealthGorilla case: if no QuestionnaireResponse found in current order,
-      // search for the original ServiceRequest that has this ServiceRequest in its basedOn field
-      // This applies to both open and completed orders
-      if (order.id) {
-        try {
-          setLoadingQuestionnaire(true);
-
-          // Search for ServiceRequests for the same patient with the same code to narrow down results
-          const searchResult = await medplum.searchResources('ServiceRequest', {
-            subject: order.subject?.reference,
-            code: order.code?.coding?.[0]?.code, // Include the same code to narrow down results
-            _count: 50, // Get more results to filter through
-          });
-
-          // Prefer the ServiceRequest that has this order in its basedOn field and a QuestionnaireResponse;
-          // otherwise fall back to any ServiceRequest with a QuestionnaireResponse
-          const withQuestionnaire = searchResult.filter((sr) => getQuestionnaireResponseRef(sr));
-          const sourceOrder =
-            withQuestionnaire.find((sr) =>
-              sr.basedOn?.some(
-                (ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) =>
-                  ref.reference === `ServiceRequest/${order.id}`
-              )
-            ) ?? withQuestionnaire[0];
-          const sourceRef = getQuestionnaireResponseRef(sourceOrder);
-          if (sourceRef?.reference) {
-            setQuestionnaireResponse(await medplum.readReference(sourceRef as Reference<QuestionnaireResponse>));
-          }
-        } catch (error) {
-          console.error('Error fetching questionnaire response from original order:', error);
-        } finally {
-          setLoadingQuestionnaire(false);
-        }
-      }
-    };
-
-    fetchQuestionnaireResponse().catch(console.error);
-
-    // Cleanup function
-    return () => {
-      setQuestionnaireResponse(null);
-      setLoadingQuestionnaire(false);
-    };
-  }, [medplum, order]);
 
   return (
     <LabDetailLayout
@@ -366,12 +508,12 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
         <Group justify="space-between" align="center">
           <Tabs
             value={detailTab}
-            onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+            onChange={(value) => setActiveDetailTab(value as LabOrderDetailTab)}
             variant="unstyled"
             className={classes.pillTabs}
           >
             <Tabs.List>
-              {(isLoadingPrimaryReport || primaryReport) && <Tabs.Tab value="report">Report</Tabs.Tab>}
+              {(reportLoading || report) && <Tabs.Tab value="report">Report</Tabs.Tab>}
               {!hideProgress && <Tabs.Tab value="progress">Progress Tracker</Tabs.Tab>}
               <Tabs.Tab value="order">Order Details</Tabs.Tab>
             </Tabs.List>
@@ -381,17 +523,17 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
               <Button
                 variant="light"
                 color={getOrderStatusColor(order.status)}
-                rightSection={canRevoke ? <IconChevronDown size={16} /> : undefined}
+                rightSection={hasStatusMenu ? <IconChevronDown size={16} /> : undefined}
                 radius="xl"
                 size="sm"
               >
                 {getOrderStatusDisplayText(order.status)}
               </Button>
             </Menu.Target>
-            {canRevoke && (
+            {hasStatusMenu && (
               <Menu.Dropdown>
                 {isDraft && onResume && <Menu.Item onClick={onResume}>Active</Menu.Item>}
-                <Menu.Item onClick={() => handleRevoke().catch(console.error)}>Revoked</Menu.Item>
+                {onRevoke && <Menu.Item onClick={onRevoke}>Revoked</Menu.Item>}
               </Menu.Dropdown>
             )}
           </Menu>
@@ -418,7 +560,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
               </DetailRow>
             )}
 
-            {requester?.resourceType === 'Practitioner' && (
+            {requester && (
               <DetailRow label="Ordering provider">
                 <Text size="sm">{formatHumanName(requester.name?.[0])}</Text>
               </DetailRow>
@@ -436,7 +578,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
               </DetailRow>
             )}
 
-            {patient?.resourceType === 'Patient' && (
+            {patient && (
               <DetailRow label="Patient">
                 <Text size="sm">{formatHumanName(patient.name?.[0])}</Text>
               </DetailRow>
@@ -495,10 +637,10 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
           <Divider />
           <LabDocumentSection
             title="Requisition Document"
-            loading={loadingDocs}
+            loading={requisitionDocumentsLoading}
             loadingText="Loading requisition documents..."
             emptyText="No lab order requisition documents found."
-            docs={labOrderRequisitionDocs}
+            docs={requisitionDocuments}
           />
 
           {/* Order Entry Questions - show when QuestionnaireResponse is linked */}
@@ -510,86 +652,38 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                   Order Entry Questions
                 </Text>
 
-                {loadingQuestionnaire && (
-                  <Group>
-                    <Loader size="sm" />
-                    <Text size="sm" c="dimmed">
-                      Loading questionnaire response...
-                    </Text>
-                  </Group>
-                )}
-
-                {!loadingQuestionnaire && questionnaireResponse && (
-                  <Stack gap="sm">
-                    {questionnaireResponse.item && questionnaireResponse.item.length > 0 ? (
-                      questionnaireResponse.item.map((item, index) => (
-                        <Group key={index} align="flex-start" style={{ alignItems: 'flex-start' }} gap="lg">
-                          <div style={{ width: '150px', flexShrink: 0 }}>
-                            <Text fw={500} size="sm" c="dimmed">
-                              {item.text || item.linkId || `Question ${index + 1}`}
+                <Stack gap="sm">
+                  {questionnaireResponse.item && questionnaireResponse.item.length > 0 ? (
+                    questionnaireResponse.item.map((item, index) => (
+                      <Group key={index} align="flex-start" style={{ alignItems: 'flex-start' }} gap="lg">
+                        <div style={{ width: '150px', flexShrink: 0 }}>
+                          <Text fw={500} size="sm" c="dimmed">
+                            {item.text || item.linkId || `Question ${index + 1}`}
+                          </Text>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          {item.answer && item.answer.length > 0 ? (
+                            <Stack gap="xs">
+                              {item.answer.map((answer, answerIndex) => (
+                                <Text key={answerIndex} size="sm">
+                                  {getAnswerText(answer)}
+                                </Text>
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Text size="sm" c="dimmed">
+                              No answer provided
                             </Text>
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            {item.answer && item.answer.length > 0 ? (
-                              <Stack gap="xs">
-                                {item.answer.map((answer, answerIndex) => {
-                                  // Extract the answer value based on FHIR QuestionnaireResponse answer types
-                                  let answerText = 'No answer provided';
-
-                                  if (answer.valueString) {
-                                    answerText = answer.valueString;
-                                  } else if (answer.valueCoding?.display) {
-                                    answerText = answer.valueCoding.display;
-                                  } else if (answer.valueCoding?.code) {
-                                    answerText = `${answer.valueCoding.code}${answer.valueCoding.display ? ` - ${answer.valueCoding.display}` : ''}`;
-                                  } else if (answer.valueBoolean !== undefined) {
-                                    answerText = answer.valueBoolean.toString();
-                                  } else if (answer.valueInteger !== undefined) {
-                                    answerText = answer.valueInteger.toString();
-                                  } else if (answer.valueDecimal !== undefined) {
-                                    answerText = answer.valueDecimal.toString();
-                                  } else if (answer.valueDate) {
-                                    answerText = answer.valueDate;
-                                  } else if (answer.valueDateTime) {
-                                    answerText = answer.valueDateTime;
-                                  } else if (answer.valueTime) {
-                                    answerText = answer.valueTime;
-                                  } else if (answer.valueUri) {
-                                    answerText = answer.valueUri;
-                                  } else if (answer.valueQuantity) {
-                                    answerText = `${answer.valueQuantity.value}${answer.valueQuantity.unit ? ` ${answer.valueQuantity.unit}` : ''}`;
-                                  } else if (answer.valueReference?.display) {
-                                    answerText = answer.valueReference.display;
-                                  } else if (answer.valueReference?.reference) {
-                                    answerText = answer.valueReference.reference;
-                                  } else if (answer.valueAttachment?.title) {
-                                    answerText = answer.valueAttachment.title;
-                                  } else if (answer.valueAttachment?.url) {
-                                    answerText = answer.valueAttachment.url;
-                                  }
-
-                                  return (
-                                    <Text key={answerIndex} size="sm">
-                                      {answerText}
-                                    </Text>
-                                  );
-                                })}
-                              </Stack>
-                            ) : (
-                              <Text size="sm" c="dimmed">
-                                No answer provided
-                              </Text>
-                            )}
-                          </div>
-                        </Group>
-                      ))
-                    ) : (
-                      <Text size="sm" c="dimmed">
-                        No questionnaire items found.
-                      </Text>
-                    )}
-                  </Stack>
-                )}
+                          )}
+                        </div>
+                      </Group>
+                    ))
+                  ) : (
+                    <Text size="sm" c="dimmed">
+                      No questionnaire items found.
+                    </Text>
+                  )}
+                </Stack>
               </Stack>
             </>
           )}
@@ -597,10 +691,10 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
           <Divider />
           <LabDocumentSection
             title="Specimen Label"
-            loading={loadingSpecimenDocs}
+            loading={specimenLabelDocumentsLoading}
             loadingText="Loading specimen label documents..."
             emptyText="No specimen label documents found."
-            docs={specimenLabelDocs}
+            docs={specimenLabelDocuments}
           />
         </Stack>
       )}
@@ -671,13 +765,18 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       )}
 
       {/* Report Tab Content - for completed items */}
-      {detailTab === 'report' && isLoadingPrimaryReport && (
+      {detailTab === 'report' && reportLoading && (
         <Group justify="center" p="xl">
           <Loader size="sm" />
         </Group>
       )}
-      {detailTab === 'report' && !isLoadingPrimaryReport && primaryReport && (
-        <LabReportContent report={primaryReport} />
+      {detailTab === 'report' && !reportLoading && report && (
+        <LabReportContentView
+          report={report}
+          attachments={reportAttachments}
+          resources={reportResources}
+          renderLink={renderLink}
+        />
       )}
     </LabDetailLayout>
   );
@@ -692,4 +791,60 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }):
       {children}
     </Group>
   );
+}
+
+type QuestionnaireResponseAnswer = NonNullable<NonNullable<QuestionnaireResponse['item']>[number]['answer']>[number];
+
+/**
+ * Extracts the answer value based on FHIR QuestionnaireResponse answer types.
+ * @param answer - The answer.
+ * @returns The answer text.
+ */
+function getAnswerText(answer: QuestionnaireResponseAnswer): string {
+  if (answer.valueString) {
+    return answer.valueString;
+  }
+  if (answer.valueCoding?.display) {
+    return answer.valueCoding.display;
+  }
+  if (answer.valueCoding?.code) {
+    return `${answer.valueCoding.code}${answer.valueCoding.display ? ` - ${answer.valueCoding.display}` : ''}`;
+  }
+  if (answer.valueBoolean !== undefined) {
+    return answer.valueBoolean.toString();
+  }
+  if (answer.valueInteger !== undefined) {
+    return answer.valueInteger.toString();
+  }
+  if (answer.valueDecimal !== undefined) {
+    return answer.valueDecimal.toString();
+  }
+  if (answer.valueDate) {
+    return answer.valueDate;
+  }
+  if (answer.valueDateTime) {
+    return answer.valueDateTime;
+  }
+  if (answer.valueTime) {
+    return answer.valueTime;
+  }
+  if (answer.valueUri) {
+    return answer.valueUri;
+  }
+  if (answer.valueQuantity) {
+    return `${answer.valueQuantity.value}${answer.valueQuantity.unit ? ` ${answer.valueQuantity.unit}` : ''}`;
+  }
+  if (answer.valueReference?.display) {
+    return answer.valueReference.display;
+  }
+  if (answer.valueReference?.reference) {
+    return answer.valueReference.reference;
+  }
+  if (answer.valueAttachment?.title) {
+    return answer.valueAttachment.title;
+  }
+  if (answer.valueAttachment?.url) {
+    return answer.valueAttachment.url;
+  }
+  return 'No answer provided';
 }

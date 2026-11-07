@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerServiceRequest, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
@@ -14,21 +14,49 @@ import { LabDetailPane } from './LabDetailPane';
 
 vi.mock('@mantine/notifications');
 
-vi.mock('./LabOrderDetails', () => ({
-  LabOrderDetails: (props: {
-    order: ServiceRequest;
-    onChange?: (order: ServiceRequest) => void;
-    selectedReport?: { reference?: string };
-  }): JSX.Element => (
-    <button type="button" onClick={() => props.onChange?.({ ...props.order, status: 'revoked' })}>
-      Order {props.order.id}: {props.order.status} (selected: {props.selectedReport?.reference ?? 'none'})
-    </button>
-  ),
-}));
+vi.mock('./LabOrderDetails', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./LabOrderDetails')>();
+  return {
+    ...actual,
+    LabOrderDetailsView: (props: {
+      order: WithId<ServiceRequest>;
+      report?: DiagnosticReport;
+      onRevoke?: () => void;
+    }): JSX.Element => (
+      <button type="button" onClick={() => props.onRevoke?.()}>
+        Order {props.order.id}: {props.order.status} (selected:{' '}
+        {props.report ? `DiagnosticReport/${props.report.id}` : 'none'})
+      </button>
+    ),
+    useLabOrderDetailsData: (order: WithId<ServiceRequest> | undefined, selectedReport?: Reference<DiagnosticReport>) => ({
+      patient: undefined,
+      requester: undefined,
+      report: selectedReport?.reference
+        ? ({ resourceType: 'DiagnosticReport', id: selectedReport.reference.split('/')[1] } as DiagnosticReport)
+        : undefined,
+      reportLoading: false,
+      reportAttachments: [],
+      reportResources: undefined,
+      requisitionDocuments: [],
+      requisitionDocumentsLoading: false,
+      specimenLabelDocuments: [],
+      specimenLabelDocumentsLoading: false,
+      questionnaireResponse: undefined,
+      revoke: vi.fn().mockImplementation(async () => (order ? { ...order, status: 'revoked' } : undefined)),
+    }),
+  };
+});
 
-vi.mock('./LabResultDetails', () => ({
-  LabResultDetails: (props: { result: DiagnosticReport }): JSX.Element => <div>Result details: {props.result.id}</div>,
-}));
+vi.mock('./LabResultDetails', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./LabResultDetails')>();
+  return {
+    ...actual,
+    LabResultDetailsView: (props: { result: DiagnosticReport }): JSX.Element => (
+      <div>Result details: {props.result.id}</div>
+    ),
+    useLabResultDetailsData: () => ({ attachments: [], resources: undefined }),
+  };
+});
 
 const medplum = new MockClient();
 const report = HomerDiagnosticReport as WithId<DiagnosticReport>;

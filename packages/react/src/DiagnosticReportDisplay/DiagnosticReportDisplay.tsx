@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Divider, Group, List, Stack, Text, Title } from '@mantine/core';
-import type { MedplumClient } from '@medplum/core';
+import { Avatar, Divider, Group, List, Stack, Text, Title } from '@mantine/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import {
   formatAddress,
   formatCodeableConcept,
@@ -9,7 +9,10 @@ import {
   formatHumanName,
   formatObservationValue,
   getDisplayString,
+  getImageSrc,
   isReference,
+  isResource,
+  stringify,
 } from '@medplum/core';
 import type {
   Annotation,
@@ -25,20 +28,20 @@ import type {
   PractitionerRole,
   Reference,
   RelatedPerson,
+  Resource,
   Specimen,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { ContactPointDisplay } from '../ContactPointDisplay/ContactPointDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
-import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
-import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
+import { getInitials } from '../ResourceAvatar/ResourceAvatar.utils';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import classes from './DiagnosticReportDisplay.module.css';
 
@@ -55,66 +58,296 @@ DiagnosticReportDisplay.defaultProps = {
   hideSubject: false,
 } as DiagnosticReportDisplayProps;
 
+/**
+ * Renders a diagnostic report, reading it and the resources it references through the Medplum
+ * client and linking with MedplumLink.
+ * @param props - The report or a reference to it, and the display options.
+ * @returns The report display, or null until the report is read.
+ */
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
-  const medplum = useMedplum();
   const diagnosticReport = useResource(props.value);
-  const [specimens, setSpecimens] = useState<Specimen[]>();
-
-  useEffect(() => {
-    if (diagnosticReport?.specimen) {
-      Promise.allSettled(diagnosticReport.specimen.map((ref) => medplum.readReference(ref)))
-        .then((outcomes) =>
-          outcomes
-            .filter((outcome) => outcome.status === 'fulfilled')
-            .map((outcome) => (outcome as PromiseFulfilledResult<Specimen>).value)
-        )
-        .then(setSpecimens)
-        .catch(console.error);
-    }
-  }, [medplum, diagnosticReport]);
+  const resources = useDiagnosticReportResources(diagnosticReport);
 
   if (!diagnosticReport) {
     return null;
   }
 
-  const specimenNotes: Annotation[] = specimens?.flatMap((spec) => spec.note || []) || [];
+  return (
+    <DiagnosticReportDisplayView
+      value={diagnosticReport}
+      resources={resources}
+      renderLink={renderMedplumLink}
+      hideObservationNotes={props.hideObservationNotes}
+      hideSpecimenInfo={props.hideSpecimenInfo}
+      hideSubject={props.hideSubject}
+    />
+  );
+}
 
-  if (diagnosticReport.presentedForm && diagnosticReport.presentedForm.length > 0) {
-    const pf = diagnosticReport.presentedForm[0];
+export interface ObservationTableProps {
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
+}
+
+/**
+ * Renders a table of observations, reading them and their members and performers through the
+ * Medplum client and linking with MedplumLink.
+ * @param props - The observations and the display options.
+ * @returns The observation table.
+ */
+export function ObservationTable(props: ObservationTableProps): JSX.Element {
+  const resources = useResolvedResources(props.value, resolveObservationResources);
+  return <ObservationTableView {...props} resources={resources} renderLink={renderMedplumLink} />;
+}
+
+/**
+ * Links through MedplumLink, for the Medplum-backed wrappers of the client-free views.
+ * @param to - The resource or reference to link to.
+ * @param children - The link content.
+ * @returns The link.
+ */
+export const renderMedplumLink: RenderResourceLink = (to, children) => <MedplumLink to={to}>{children}</MedplumLink>;
+
+/**
+ * Reads the resources a report references through the Medplum client, for DiagnosticReportDisplayView.
+ * @param report - The report.
+ * @returns The resolved resources, or undefined until they are read.
+ */
+export function useDiagnosticReportResources(report: DiagnosticReport | undefined): Resource[] | undefined {
+  return useResolvedResources(report, resolveReportResources);
+}
+
+function useResolvedResources<T>(
+  input: T | undefined,
+  resolveFn: (medplum: MedplumClient, input: T) => Promise<Resource[]>
+): Resource[] | undefined {
+  const medplum = useMedplum();
+  const [resources, setResources] = useState<Resource[]>();
+
+  useEffect(() => {
+    setResources(undefined);
+    if (!input) {
+      return undefined;
+    }
+    let subscribed = true;
+    resolveFn(medplum, input)
+      .then((resolved) => {
+        if (subscribed) {
+          setResources(resolved);
+        }
+      })
+      .catch(console.error);
+    return () => {
+      subscribed = false;
+    };
+  }, [medplum, input, resolveFn]);
+
+  return resources;
+}
+
+async function resolveReportResources(medplum: MedplumClient, report: DiagnosticReport): Promise<Resource[]> {
+  const reader = createReader(medplum, report.contained);
+  const basedOn = await reader.read(report.basedOn?.[0]);
+  await Promise.all([
+    reader.read(report.subject),
+    reader.read(basedOn?.resourceType === 'ServiceRequest' ? basedOn.requester : undefined),
+    ...(report.resultsInterpreter ?? []).map((ref) => reader.read(ref)),
+    ...(report.performer ?? []).map((ref) => reader.read(ref)),
+    ...(report.specimen ?? []).map((ref) => reader.read(ref)),
+    reader.readObservations(report.result),
+  ]);
+  return reader.resources;
+}
+
+async function resolveObservationResources(
+  medplum: MedplumClient,
+  value: Observation[] | Reference<Observation>[]
+): Promise<Resource[]> {
+  const reader = createReader(medplum, undefined);
+  await reader.readObservations(value);
+  return reader.resources;
+}
+
+interface ResourceReader {
+  readonly resources: Resource[];
+  read<T extends Resource>(ref: Reference<T> | undefined): Promise<T | undefined>;
+  readObservations(value: Observation[] | Reference<Observation>[] | undefined): Promise<void>;
+}
+
+/**
+ * Reads referenced resources once each, collecting them for a view. Contained references
+ * resolve against the given contained resources and are not collected; a failed read is skipped.
+ * @param medplum - The Medplum client.
+ * @param contained - The contained resources that "#id" references resolve against.
+ * @returns The reader.
+ */
+function createReader(medplum: MedplumClient, contained: Resource[] | undefined): ResourceReader {
+  const resources: Resource[] = [];
+  const pending = new Map<string, Promise<Resource | undefined>>();
+  const visited = new Set<string>();
+
+  async function read<T extends Resource>(ref: Reference<T> | undefined): Promise<T | undefined> {
+    const refString = ref?.reference;
+    if (!refString) {
+      return undefined;
+    }
+    if (refString.startsWith('#')) {
+      return contained?.find((resource) => resource.id === refString.slice(1)) as T | undefined;
+    }
+    let promise = pending.get(refString);
+    if (!promise) {
+      promise = medplum.readReference(ref as Reference).then(
+        (resource) => {
+          resources.push(resource);
+          return resource;
+        },
+        () => undefined
+      );
+      pending.set(refString, promise);
+    }
+    return (await promise) as T | undefined;
+  }
+
+  async function readObservations(value: Observation[] | Reference<Observation>[] | undefined): Promise<void> {
+    await Promise.all(
+      ((value ?? []) as (Observation | Reference<Observation>)[]).map(async (item) => {
+        const key = isReference(item) ? item.reference : `Observation/${item.id}`;
+        if (visited.has(key)) {
+          return;
+        }
+        visited.add(key);
+        const observation: Observation | undefined = isReference(item)
+          ? await read<Observation>(item as Reference<Observation>)
+          : (item as Observation);
+        if (!observation) {
+          return;
+        }
+        await Promise.all([
+          ...(observation.performer ?? []).map((ref) => read(ref)),
+          readObservations(observation.hasMember as Reference<Observation>[] | undefined),
+        ]);
+      })
+    );
+  }
+
+  return { resources, read, readObservations };
+}
+
+/** Renders a link to a resource. A view given none renders its content without links. */
+export type RenderResourceLink = (to: Reference | Resource, children: ReactNode) => ReactNode;
+
+export interface DiagnosticReportDisplayViewProps {
+  readonly value: DiagnosticReport;
+  readonly hideObservationNotes?: boolean;
+  readonly hideSpecimenInfo?: boolean;
+  readonly hideSubject?: boolean;
+  /**
+   * The resources the report references, resolved by the caller: the result Observations and
+   * their members, the Specimens, the first basedOn ServiceRequest and its requester, and the
+   * performers of the report and of its observations. Contained resources resolve on their own.
+   * An unresolved reference shows its display string; an unresolved Observation shows no row.
+   */
+  readonly resources?: Resource[];
+  /** Renders the links to the subject, the performers, and the observations. Default: no links. */
+  readonly renderLink?: RenderResourceLink;
+}
+
+type Resolve = <T extends Resource>(value: Reference<T> | T | undefined) => WithId<T> | undefined;
+
+interface ViewContextValue {
+  readonly resolve: Resolve;
+  readonly renderLink: RenderResourceLink;
+}
+
+const renderPlain: RenderResourceLink = (_to, children) => children;
+
+const ViewContext = createContext<ViewContextValue>({ resolve: () => undefined, renderLink: renderPlain });
+
+function useViewContext(
+  resources: Resource[] | undefined,
+  contained: Resource[] | undefined,
+  renderLink: RenderResourceLink | undefined
+): ViewContextValue {
+  return useMemo(() => {
+    const byReference = new Map<string, Resource>();
+    for (const resource of contained ?? []) {
+      byReference.set(`#${resource.id}`, resource);
+    }
+    for (const resource of resources ?? []) {
+      byReference.set(`${resource.resourceType}/${resource.id}`, resource);
+    }
+    const resolve: Resolve = <T extends Resource>(value: Reference<T> | T | undefined): WithId<T> | undefined => {
+      if (!value) {
+        return undefined;
+      }
+      if (isResource(value)) {
+        return value as WithId<T>;
+      }
+      const key = value.reference;
+      return key ? (byReference.get(key) as WithId<T> | undefined) : undefined;
+    };
+    return { resolve, renderLink: renderLink ?? renderPlain };
+  }, [resources, contained, renderLink]);
+}
+
+/**
+ * Renders a diagnostic report from the report and the resources it references. It holds no
+ * client: the caller resolves the references and supplies any links.
+ * @param props - The report, its resolved resources, and the display options.
+ * @returns The report display.
+ */
+export function DiagnosticReportDisplayView(props: DiagnosticReportDisplayViewProps): JSX.Element {
+  const { value, hideObservationNotes = false, hideSpecimenInfo = false, hideSubject = false } = props;
+  const context = useViewContext(props.resources, value.contained, props.renderLink);
+  const { resolve } = context;
+
+  const specimens = useMemo(
+    () =>
+      (value.specimen ?? []).map((ref) => resolve(ref)).filter((specimen): specimen is WithId<Specimen> => !!specimen),
+    [value.specimen, resolve]
+  );
+  const performingLabs = useMemo(() => getPerformingLabs(value, resolve), [value, resolve]);
+
+  const specimenNotes: Annotation[] = specimens.flatMap((spec) => spec.note || []);
+
+  if (value.presentedForm && value.presentedForm.length > 0) {
+    const pf = value.presentedForm[0];
     if (pf.contentType?.startsWith('text/plain') && pf.data) {
       specimenNotes.push({ text: window.atob(pf.data) });
     }
   }
 
   return (
-    <Stack>
-      <Title>Diagnostic Report</Title>
-      <DiagnosticReportHeader value={diagnosticReport} hideSubject={props.hideSubject} />
-      {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
-      {diagnosticReport.result && (
-        <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
-      )}
-      {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
-      {diagnosticReport.conclusion && (
-        <Stack mt="md">
-          <Text fw={500} size="sm" c="dimmed">
-            Conclusion
-          </Text>
-          <Text>{diagnosticReport.conclusion}</Text>
-        </Stack>
-      )}
-      <PerformingLabs value={diagnosticReport} />
-    </Stack>
+    <ViewContext.Provider value={context}>
+      <Stack>
+        <Title>Diagnostic Report</Title>
+        <DiagnosticReportHeader value={value} hideSubject={hideSubject} />
+        {specimens.length > 0 && !hideSpecimenInfo && <SpecimenInfo specimens={specimens} />}
+        {value.result && <ObservationTableMarkup hideObservationNotes={hideObservationNotes} value={value.result} />}
+        {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
+        {value.conclusion && (
+          <Stack mt="md">
+            <Text fw={500} size="sm" c="dimmed">
+              Conclusion
+            </Text>
+            <Text>{value.conclusion}</Text>
+          </Stack>
+        )}
+        <PerformingLabs labs={performingLabs} />
+      </Stack>
+    </ViewContext.Provider>
   );
 }
 
 interface DiagnosticReportHeaderProps {
   readonly value: DiagnosticReport;
-  readonly hideSubject?: boolean;
+  readonly hideSubject: boolean;
 }
 
-function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReportHeaderProps): JSX.Element {
-  const basedOn = useResource(value.basedOn?.[0]);
+function DiagnosticReportHeader({ value, hideSubject }: DiagnosticReportHeaderProps): JSX.Element {
+  const { resolve } = useContext(ViewContext);
+  const basedOn = resolve(value.basedOn?.[0]);
   const requester = basedOn?.resourceType === 'ServiceRequest' ? basedOn.requester : undefined;
   const showSubject = Boolean(value.subject && !hideSubject);
   const hasLeftColumn = showSubject || Boolean(requester) || Boolean(value.resultsInterpreter?.length);
@@ -123,19 +356,19 @@ function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReport
     <Group mt="md" gap="xl" align="stretch" wrap="nowrap">
       {hasLeftColumn && (
         <Stack gap="md" style={{ flex: 1 }}>
-          {showSubject && (
+          {showSubject && value.subject && (
             <HeaderField label="Subject">
-              <ResourceBadge value={value.subject} link={true} />
+              <ResolvedBadge value={value.subject} />
             </HeaderField>
           )}
           {requester && (
             <HeaderField label="Ordering">
-              <ResourceBadge value={requester} link={true} />
+              <ResolvedBadge value={requester} />
             </HeaderField>
           )}
           {value.resultsInterpreter?.map((interpreter) => (
             <HeaderField key={interpreter.reference} label="Interpreter">
-              <ResourceBadge value={interpreter} link={true} />
+              <ResolvedBadge value={interpreter} />
             </HeaderField>
           ))}
         </Stack>
@@ -180,16 +413,39 @@ function HeaderField({ label, children }: HeaderFieldProps): JSX.Element {
   );
 }
 
+interface ResolvedBadgeProps {
+  readonly value: Reference | Resource;
+}
+
+// The avatar and name of a resolved resource, each linked. An unresolved reference shows an empty avatar.
+function ResolvedBadge({ value }: ResolvedBadgeProps): JSX.Element {
+  const { resolve, renderLink } = useContext(ViewContext);
+  const resource = resolve(value);
+  const text = resource ? getDisplayString(resource) : '';
+  return (
+    <Group gap="xs">
+      {renderLink(
+        value,
+        <Avatar size={24} radius={12} src={resource && getImageSrc(resource)} alt={text}>
+          {getInitials(text)}
+        </Avatar>
+      )}
+      {resource && renderLink(value, text)}
+    </Group>
+  );
+}
+
 interface PerformerDisplayProps {
   readonly value: NonNullable<DiagnosticReport['performer']>[number];
 }
 
 function PerformerDisplay({ value }: PerformerDisplayProps): JSX.Element {
-  const performer = useResource(value);
+  const { resolve } = useContext(ViewContext);
+  const performer = resolve(value);
   const address = performer?.resourceType === 'Organization' ? performer.address?.[0] : undefined;
   return (
     <>
-      <ResourceBadge value={value} link={true} />
+      <ResolvedBadge value={value} />
       {address && (
         <Text size="sm" c="dimmed" mt={4} ml={34}>
           <AddressDisplay value={address} />
@@ -199,7 +455,11 @@ function PerformerDisplay({ value }: PerformerDisplayProps): JSX.Element {
   );
 }
 
-function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
+interface SpecimenInfoProps {
+  readonly specimens: Specimen[];
+}
+
+function SpecimenInfo({ specimens }: SpecimenInfoProps): JSX.Element {
   return (
     <Stack gap="xs">
       <Title order={2} size="h6">
@@ -207,7 +467,7 @@ function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
       </Title>
 
       <List type="ordered">
-        {specimens?.map((specimen) => (
+        {specimens.map((specimen) => (
           <List.Item ml="sm" key={`specimen-${specimen.id}`}>
             <Group gap={20}>
               <Group gap={5}>
@@ -224,13 +484,39 @@ function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
   );
 }
 
-export interface ObservationTableProps {
+export interface ObservationTableViewProps {
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
+  /** The referenced Observations, their members, and their performers, resolved by the caller. */
+  readonly resources?: Resource[];
+  /** Renders the links to the observations and their performers. Default: no links. */
+  readonly renderLink?: RenderResourceLink;
+}
+
+/**
+ * Renders a table of observations from the observations and the resources they reference.
+ * It holds no client: the caller resolves the references and supplies any links.
+ * @param props - The observations, their resolved resources, and the display options.
+ * @returns The observation table.
+ */
+export function ObservationTableView(props: ObservationTableViewProps): JSX.Element {
+  const { resources, renderLink, ...rest } = props;
+  const context = useViewContext(resources, undefined, renderLink);
+  return (
+    <ViewContext.Provider value={context}>
+      <ObservationTableMarkup {...rest} />
+    </ViewContext.Provider>
+  );
+}
+
+interface ObservationTableMarkupProps {
   readonly value?: Observation[] | Reference<Observation>[];
   readonly ancestorIds?: string[];
   readonly hideObservationNotes?: boolean;
 }
 
-export function ObservationTable(props: ObservationTableProps): JSX.Element {
+function ObservationTableMarkup(props: ObservationTableMarkupProps): JSX.Element {
   return (
     <table className={classes.table}>
       <thead>
@@ -266,7 +552,7 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
     <>
       {props.value?.map((observation) => (
         <ObservationRow
-          key={`obs-${isReference(observation) ? observation.reference : observation.id}`}
+          key={`obs-${isResource(observation) ? observation.id : observation.reference}`}
           value={observation}
           ancestorIds={props.ancestorIds}
           hideObservationNotes={props.hideObservationNotes}
@@ -283,7 +569,8 @@ interface ObservationRowProps {
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
-  const observation = useResource(props.value);
+  const { resolve, renderLink } = useContext(ViewContext);
+  const observation = resolve(props.value);
 
   if (!observation || props.ancestorIds?.includes(observation.id)) {
     return null;
@@ -313,9 +600,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         <tr className={classes.groupHeaderRow}>
           <td colSpan={7} style={indentStyle(depth)}>
             <Group gap="sm">
-              <MedplumLink to={observation}>
-                <CodeableConceptDisplay value={observation.code} />
-              </MedplumLink>
+              {renderLink(observation, <CodeableConceptDisplay value={observation.code} />)}
               {observation.effectiveDateTime && (
                 <Text size="sm" c="dimmed" fw={400}>
                   Collected: {formatDateTime(observation.effectiveDateTime)}
@@ -340,9 +625,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
     <>
       <tr className={cx({ [classes.criticalRow]: critical })}>
         <td rowSpan={displayNotes ? 2 : 1} style={indentStyle(depth)}>
-          <MedplumLink to={observation}>
-            <CodeableConceptDisplay value={observation.code} />
-          </MedplumLink>
+          {renderLink(observation, <CodeableConceptDisplay value={observation.code} />)}
         </td>
         <td>
           <ObservationValueDisplay value={observation} />
@@ -390,11 +673,13 @@ interface ObservationPerformerDisplayProps {
 }
 
 function ObservationPerformerDisplay(props: ObservationPerformerDisplayProps): JSX.Element {
-  const performer = useResource(props.value);
-  if (!performer) {
-    return <ReferenceDisplay value={props.value} />;
+  const { resolve, renderLink } = useContext(ViewContext);
+  const performer = resolve(props.value);
+  if (performer) {
+    return <>{renderLink(props.value, getDisplayString(performer))}</>;
   }
-  return <MedplumLink to={props.value}>{getDisplayString(performer)}</MedplumLink>;
+  const displayString = props.value.display || props.value.reference || stringify(props.value);
+  return <>{props.value.reference ? renderLink(props.value, displayString) : displayString}</>;
 }
 
 interface ObservationValueDisplayProps {
@@ -497,18 +782,11 @@ function isCritical(observation: Observation): boolean {
 }
 
 interface PerformingLabsProps {
-  readonly value: DiagnosticReport;
+  readonly labs: Organization[];
 }
 
-function PerformingLabs({ value }: PerformingLabsProps): JSX.Element | null {
-  const medplum = useMedplum();
-  const [labs, setLabs] = useState<Organization[]>();
-
-  useEffect(() => {
-    getPerformingLabs(medplum, value).then(setLabs).catch(console.error);
-  }, [medplum, value]);
-
-  if (!labs || labs.length === 0) {
+function PerformingLabs({ labs }: PerformingLabsProps): JSX.Element | null {
+  if (labs.length === 0) {
     return null;
   }
 
@@ -558,50 +836,46 @@ function LabContactDisplay({ value }: LabContactDisplayProps): JSX.Element | nul
 /**
  * Collects the unique performing lab organizations for a diagnostic report.
  *
- * Walks the report results (including nested observation groups) and resolves
- * each observation performer that is an Organization. References of the form
- * "#id" are resolved against the report's contained resources, which is how
- * lab integrations such as Health Gorilla represent the performing labs.
- * @param medplum - The Medplum client.
+ * Walks the report results (including nested observation groups) and takes each observation
+ * performer that is an Organization. References of the form "#id" resolve against the report's
+ * contained resources, which is how lab integrations such as Health Gorilla represent the
+ * performing labs.
  * @param report - The diagnostic report.
+ * @param resolve - Finds a referenced resource.
  * @returns The unique performing lab organizations.
  */
-async function getPerformingLabs(medplum: MedplumClient, report: DiagnosticReport): Promise<Organization[]> {
+function getPerformingLabs(report: DiagnosticReport, resolve: Resolve): Organization[] {
   const observations: Observation[] = [];
   const visited = new Set<string>();
 
-  async function resolveObservation(ref: Reference<Observation>): Promise<void> {
+  const visit = (ref: Reference<Observation>): void => {
     const refString = ref.reference;
     if (!refString || visited.has(refString)) {
       return;
     }
     visited.add(refString);
-    const observation = refString.startsWith('#')
-      ? findContained<Observation>(report, refString, 'Observation')
-      : await medplum.readReference(ref).catch(() => undefined);
+    const observation = resolve(ref);
     if (!observation) {
       return;
     }
     observations.push(observation);
     for (const member of observation.hasMember ?? []) {
-      await resolveObservation(member as Reference<Observation>);
+      visit(member as Reference<Observation>);
     }
-  }
+  };
 
   for (const result of report.result ?? []) {
-    await resolveObservation(result);
+    visit(result);
   }
 
   const labs = new Map<string, Organization>();
   for (const performer of observations.flatMap((observation) => observation.performer ?? [])) {
     const refString = performer.reference;
-    let organization: Organization | undefined;
-    if (refString?.startsWith('#')) {
-      organization = findContained<Organization>(report, refString, 'Organization');
-    } else if (refString?.startsWith('Organization/')) {
-      organization = await medplum.readReference(performer as Reference<Organization>).catch(() => undefined);
+    if (!refString?.startsWith('#') && !refString?.startsWith('Organization/')) {
+      continue;
     }
-    if (organization && (organization.address || organization.contact)) {
+    const organization = resolve(performer as Reference<Organization>);
+    if (organization?.resourceType === 'Organization' && (organization.address || organization.contact)) {
       const key = `${organization.name}|${formatAddress(organization.address?.[0])}`;
       if (!labs.has(key)) {
         labs.set(key, organization);
@@ -610,14 +884,4 @@ async function getPerformingLabs(medplum: MedplumClient, report: DiagnosticRepor
   }
 
   return Array.from(labs.values());
-}
-
-function findContained<T extends Observation | Organization>(
-  report: DiagnosticReport,
-  refString: string,
-  resourceType: T['resourceType']
-): T | undefined {
-  const id = refString.slice(1);
-  return report.contained?.find((resource) => resource.resourceType === resourceType && resource.id === id) as
-    T | undefined;
 }
