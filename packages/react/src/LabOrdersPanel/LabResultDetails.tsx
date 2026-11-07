@@ -15,6 +15,21 @@ export interface LabResultDetailsProps {
 }
 
 /**
+ * Resolves the lab documents and referenced resources for a result, for LabResultDetailsView.
+ * @param result - The report, or undefined to keep the hook idle.
+ * @returns The resolved attachments and the resources the report references.
+ */
+export function useLabResultDetailsData(result: DiagnosticReport | undefined): {
+  attachments: Attachment[];
+  resources: Resource[] | undefined;
+} {
+  return {
+    attachments: useLabReportAttachments(result),
+    resources: useDiagnosticReportResources(result),
+  };
+}
+
+/**
  * The details of a lab result that has no order, resolving its documents and referenced resources
  * through the Medplum client and linking with MedplumLink.
  * @param props - The result.
@@ -22,8 +37,7 @@ export interface LabResultDetailsProps {
  */
 export function LabResultDetails(props: LabResultDetailsProps): JSX.Element {
   const { result } = props;
-  const attachments = useLabReportAttachments(result);
-  const resources = useDiagnosticReportResources(result);
+  const { attachments, resources } = useLabResultDetailsData(result);
   return (
     <LabResultDetailsView
       result={result}
@@ -36,11 +50,8 @@ export function LabResultDetails(props: LabResultDetailsProps): JSX.Element {
 
 export interface LabResultDetailsViewProps {
   readonly result: DiagnosticReport;
-  /** The lab documents, resolved by the caller. See LabReportContentView. */
   readonly attachments?: Attachment[];
-  /** The resources the report references, resolved by the caller. See DiagnosticReportDisplayView. */
   readonly resources?: Resource[];
-  /** Renders the links in the report display. Default: no links. */
   readonly renderLink?: RenderResourceLink;
 }
 

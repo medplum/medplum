@@ -34,7 +34,6 @@ export function LabResultListItem(props: LabResultListItemProps): JSX.Element {
 export interface LabResultListItemViewProps {
   readonly report: DiagnosticReport;
   readonly selected: boolean;
-  /** The performer, resolved by the caller. Omitted: falls back to "Collected <date>". */
   readonly performer?: Practitioner | Organization;
 }
 

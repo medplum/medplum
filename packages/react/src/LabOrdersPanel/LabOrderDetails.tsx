@@ -42,17 +42,37 @@ export interface LabOrderDetailsProps {
   selectedReport?: Reference<DiagnosticReport>;
 }
 
+export interface LabOrderDetailsData {
+  readonly patient?: Patient;
+  readonly requester?: Practitioner;
+  readonly report?: DiagnosticReport;
+  readonly reportLoading: boolean;
+  readonly reportAttachments: Attachment[];
+  readonly reportResources?: Resource[];
+  readonly requisitionDocuments: DocumentReference[];
+  readonly requisitionDocumentsLoading: boolean;
+  readonly specimenLabelDocuments: DocumentReference[];
+  readonly specimenLabelDocumentsLoading: boolean;
+  readonly questionnaireResponse?: QuestionnaireResponse;
+  readonly revoke: () => Promise<WithId<ServiceRequest>>;
+}
+
 /**
- * The details of a lab order, resolving its report, documents, and people through the Medplum
- * client, revoking through it, and linking with MedplumLink.
- * @param props - The order, the selected report, and the change callbacks.
- * @returns The order details.
+ * Resolves everything LabOrderDetailsView needs: the patient and requester, the report (the one
+ * the caller picked, or the order's latest), the report's documents and referenced resources, the
+ * requisition and specimen-label documents, and the order-entry QuestionnaireResponse. Also
+ * exposes a revoke mutation the caller can apply and propagate.
+ * @param order - The order, or undefined to keep the hook idle.
+ * @param selectedReport - A specific report to show instead of the latest one.
+ * @returns The resolved data and the revoke mutation.
  */
-export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
-  const { order, onChange, onResume, selectedReport } = props;
+export function useLabOrderDetailsData(
+  order: ServiceRequest | undefined,
+  selectedReport?: Reference<DiagnosticReport>
+): LabOrderDetailsData {
   const medplum = useMedplum();
-  const subject = useResource(order.subject);
-  const requester = useResource(order.requester);
+  const subject = useResource(order?.subject);
+  const requester = useResource(order?.requester);
   const selectedReportResource = useResource(selectedReport);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [reportsFetched, setReportsFetched] = useState(false);
@@ -62,22 +82,11 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse>();
 
-  const handleRevoke = useCallback(async (): Promise<void> => {
-    try {
-      const updated = await medplum.patchResource('ServiceRequest', order.id as string, [
-        { op: 'replace', path: '/status', value: 'revoked' },
-      ]);
-      onChange?.(updated);
-    } catch (err) {
-      showNotification({ color: 'red', message: normalizeErrorString(err) });
-    }
-  }, [medplum, order.id, onChange]);
-
   // An order can have more than one DiagnosticReport (e.g. a multi-day culture result resent
   // with additional findings). When the caller didn't pass a specific selectedReport, fetch just
   // the most recently updated one to show by default.
   useEffect(() => {
-    if (selectedReport) {
+    if (!order || selectedReport) {
       return;
     }
 
@@ -92,10 +101,14 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     };
 
     fetchReports().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
-  }, [medplum, order.id, selectedReport]);
+  }, [medplum, order, selectedReport]);
 
   // Fetch Lab Order Requisition documents when order changes
   useEffect(() => {
+    if (!order) {
+      return undefined;
+    }
+
     const fetchDocuments = async (): Promise<void> => {
       if (!order.id) {
         setLabOrderRequisitionDocs([]);
@@ -126,6 +139,10 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   // Fetch Specimen Label documents when order changes
   useEffect(() => {
+    if (!order) {
+      return undefined;
+    }
+
     const fetchSpecimenLabelDocuments = async (): Promise<void> => {
       if (!order.id) {
         setSpecimenLabelDocs([]);
@@ -171,6 +188,10 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   // Fetch QuestionnaireResponse when order changes
   useEffect(() => {
+    if (!order) {
+      return undefined;
+    }
+
     const fetchQuestionnaireResponse = async (): Promise<void> => {
       setQuestionnaireResponse(undefined);
 
@@ -233,26 +254,71 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   // While this is true, we don't yet know whether a report exists - keep the Report tab visible
   // (with a loader) rather than flipping it away only to potentially flip it back once the fetch
   // resolves, and don't bounce the user off the Report tab just because it isn't resolved yet.
-  const reportLoading = selectedReport ? selectedReportResource === undefined : !reportsFetched;
+  let reportLoading = false;
+  if (order) {
+    reportLoading = selectedReport ? selectedReportResource === undefined : !reportsFetched;
+  }
   const reportAttachments = useLabReportAttachments(primaryReport);
   const reportResources = useDiagnosticReportResources(primaryReport);
+
+  const revoke = useCallback(async (): Promise<WithId<ServiceRequest>> => {
+    if (!order?.id) {
+      throw new Error('Cannot revoke an order without an id');
+    }
+    return medplum.patchResource('ServiceRequest', order.id, [
+      { op: 'replace', path: '/status', value: 'revoked' },
+    ]);
+  }, [medplum, order]);
+
+  return {
+    patient: subject?.resourceType === 'Patient' ? subject : undefined,
+    requester: requester?.resourceType === 'Practitioner' ? requester : undefined,
+    report: primaryReport,
+    reportLoading,
+    reportAttachments,
+    reportResources,
+    requisitionDocuments: labOrderRequisitionDocs,
+    requisitionDocumentsLoading: loadingDocs,
+    specimenLabelDocuments: specimenLabelDocs,
+    specimenLabelDocumentsLoading: loadingSpecimenDocs,
+    questionnaireResponse,
+    revoke,
+  };
+}
+
+/**
+ * The details of a lab order, resolving its report, documents, and people through the Medplum
+ * client, revoking through it, and linking with MedplumLink.
+ * @param props - The order, the selected report, and the change callbacks.
+ * @returns The order details.
+ */
+export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
+  const { order, onChange, onResume, selectedReport } = props;
+  const data = useLabOrderDetailsData(order, selectedReport);
+
+  const onRevoke = useCallback((): void => {
+    data
+      .revoke()
+      .then((updated) => onChange?.(updated))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [data, onChange]);
 
   return (
     <LabOrderDetailsView
       order={order}
-      patient={subject?.resourceType === 'Patient' ? subject : undefined}
-      requester={requester?.resourceType === 'Practitioner' ? requester : undefined}
-      report={primaryReport}
-      reportLoading={reportLoading}
-      reportAttachments={reportAttachments}
-      reportResources={reportResources}
-      requisitionDocuments={labOrderRequisitionDocs}
-      requisitionDocumentsLoading={loadingDocs}
-      specimenLabelDocuments={specimenLabelDocs}
-      specimenLabelDocumentsLoading={loadingSpecimenDocs}
-      questionnaireResponse={questionnaireResponse}
+      patient={data.patient}
+      requester={data.requester}
+      report={data.report}
+      reportLoading={data.reportLoading}
+      reportAttachments={data.reportAttachments}
+      reportResources={data.reportResources}
+      requisitionDocuments={data.requisitionDocuments}
+      requisitionDocumentsLoading={data.requisitionDocumentsLoading}
+      specimenLabelDocuments={data.specimenLabelDocuments}
+      specimenLabelDocumentsLoading={data.specimenLabelDocumentsLoading}
+      questionnaireResponse={data.questionnaireResponse}
       defaultTab={selectedReport ? 'report' : undefined}
-      onRevoke={() => handleRevoke().catch(console.error)}
+      onRevoke={onRevoke}
       onResume={onResume}
       renderLink={renderMedplumLink}
     />
@@ -263,33 +329,20 @@ export type LabOrderDetailTab = 'report' | 'progress' | 'order';
 
 export interface LabOrderDetailsViewProps {
   readonly order: ServiceRequest;
-  /** The order's patient, resolved by the caller. */
   readonly patient?: Patient;
-  /** The ordering practitioner, resolved by the caller. */
   readonly requester?: Practitioner;
-  /** The report to show: the one the caller selected, or the order's latest. */
   readonly report?: DiagnosticReport;
-  /** True while the caller is still finding the report. Keeps the Report tab while it loads. */
   readonly reportLoading?: boolean;
-  /** The report's lab documents, resolved by the caller. See LabReportContentView. */
   readonly reportAttachments?: Attachment[];
-  /** The resources the report references, resolved by the caller. See DiagnosticReportDisplayView. */
   readonly reportResources?: Resource[];
-  /** The lab order requisition documents, resolved by the caller. */
   readonly requisitionDocuments?: DocumentReference[];
   readonly requisitionDocumentsLoading?: boolean;
-  /** The specimen label documents, resolved by the caller. */
   readonly specimenLabelDocuments?: DocumentReference[];
   readonly specimenLabelDocumentsLoading?: boolean;
-  /** The order entry questions, resolved by the caller. */
   readonly questionnaireResponse?: QuestionnaireResponse;
-  /** The tab open at first. Default: Report for a completed order, otherwise Progress Tracker. */
   readonly defaultTab?: LabOrderDetailTab;
-  /** Revokes the order. Omitted: the status menu offers no Revoked item. */
   readonly onRevoke?: () => void;
-  /** Resumes a draft order. Omitted: the status menu offers no Active item. */
   readonly onResume?: () => void;
-  /** Renders the links in the report display. Default: no links. */
   readonly renderLink?: RenderResourceLink;
 }
 

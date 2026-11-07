@@ -106,11 +106,8 @@ export function useLabReportAttachments(report: DiagnosticReport | undefined): A
 
 export interface LabReportContentViewProps {
   readonly report: DiagnosticReport;
-  /** The lab documents shown above the results: the presentedForm and derivedFrom PDFs, resolved by the caller. */
   readonly attachments?: Attachment[];
-  /** The resources the report references, resolved by the caller. See DiagnosticReportDisplayView. */
   readonly resources?: Resource[];
-  /** Renders the links in the report display. Default: no links. */
   readonly renderLink?: RenderResourceLink;
 }
 

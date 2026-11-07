@@ -3,21 +3,32 @@
 import { ActionIcon, Box, Flex, Stack, Text, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { Filter, SearchRequest, WithId } from '@medplum/core';
-import { formatSearchQuery, getReferenceString, normalizeErrorString, Operator } from '@medplum/core';
-import type { DiagnosticReport, Patient, Reference, ServiceRequest } from '@medplum/fhirtypes';
+import { createReference, formatSearchQuery, getReferenceString, normalizeErrorString, Operator } from '@medplum/core';
+import type {
+  DiagnosticReport,
+  Organization,
+  Patient,
+  Practitioner,
+  Reference,
+  Resource,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { renderMedplumLink } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import type {
   ListWithDetailPaneTab,
   ListWithDetailPaneTabLinkRenderer,
 } from '../ListWithDetailPane/ListWithDetailPane';
 import { ListWithDetailPane } from '../ListWithDetailPane/ListWithDetailPane';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { LabDetailPane } from './LabDetailPane';
-import { LabListItem } from './LabListItem';
-import { LabResultListItem } from './LabResultListItem';
+import { LabDetailPaneView, useLabDetailPaneOrder } from './LabDetailPane';
+import { LabListItemView } from './LabListItem';
+import { LabOrderDetailsView, useLabOrderDetailsData } from './LabOrderDetails';
+import { LabResultDetailsView, useLabResultDetailsData } from './LabResultDetails';
+import { LabResultListItemView } from './LabResultListItem';
 import { LabSelectEmpty } from './LabSelectEmpty';
 
 export interface LabOrdersPanelOrderModalProps {
@@ -144,12 +155,30 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
     resolveSelected().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [selectedId, items, resourceType, medplum]);
 
+  // Resolve the requester/performer behind each visible row in a single pass so the list rows
+  // can render through the client-free View tier instead of each row re-reading its own person.
+  const rowPeople = useRowPeople(items);
+
+  // Resolve the detail pane's data at this level so the panel renders LabDetailPaneView directly,
+  // never nesting a client-having wrapper beneath LabOrdersPanelView.
+  const { order: resolvedOrder, loading: orderLoading, setOrder: setResolvedOrder } = useLabDetailPaneOrder(selected);
+  const selectedReportRef =
+    selected?.resourceType === 'DiagnosticReport' ? createReference(selected) : undefined;
+  const orderData = useLabOrderDetailsData(resolvedOrder, selectedReportRef);
+  const resultData = useLabResultDetailsData(
+    selected?.resourceType === 'DiagnosticReport' ? selected : undefined
+  );
+
   const handleOrderSaved = useCallback((): void => {
     setOrderModal(undefined);
     fetchData()
       .then(() => onNew?.())
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [fetchData, onNew]);
+
+  const refetch = useCallback((): void => {
+    fetchData().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [fetchData]);
 
   return (
     <>
@@ -166,25 +195,65 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
         openUri={openUri}
         revokedUri={revokedUri}
         renderTabLink={renderMedplumTabLink}
-        renderItem={(item, isSelected) =>
-          item.resourceType === 'DiagnosticReport' ? (
-            <LabResultListItem report={item} selected={isSelected} to={getItemUri(item)} />
-          ) : (
-            <LabListItem
-              item={item}
-              selectedItem={isSelected ? item : undefined}
-              activeTab="open"
-              onItemSelect={() => getItemUri(item)}
-            />
-          )
-        }
+        renderItem={(item, isSelected) => (
+          <MedplumLink to={getItemUri(item)} underline="never">
+            {item.resourceType === 'DiagnosticReport' ? (
+              <LabResultListItemView
+                report={item}
+                selected={isSelected}
+                performer={rowPeople.get(item.performer?.[0]?.reference ?? '') as Practitioner | Organization | undefined}
+              />
+            ) : (
+              <LabListItemView
+                item={item}
+                selected={isSelected}
+                activeTab={activeTab === 'completed' ? 'completed' : 'open'}
+                requester={rowPeople.get(item.requester?.reference ?? '') as Practitioner | undefined}
+              />
+            )}
+          </MedplumLink>
+        )}
         renderDetail={(item) => (
-          <LabDetailPane
+          <LabDetailPaneView
             item={item}
-            onOrderChange={() =>
-              fetchData().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }))
-            }
-            onResumeOrder={renderOrderModal ? setOrderModal : undefined}
+            order={resolvedOrder}
+            loading={orderLoading}
+            renderOrder={(current, selectedReport) => (
+              <LabOrderDetailsView
+                order={current}
+                patient={orderData.patient}
+                requester={orderData.requester}
+                report={orderData.report}
+                reportLoading={orderData.reportLoading}
+                reportAttachments={orderData.reportAttachments}
+                reportResources={orderData.reportResources}
+                requisitionDocuments={orderData.requisitionDocuments}
+                requisitionDocumentsLoading={orderData.requisitionDocumentsLoading}
+                specimenLabelDocuments={orderData.specimenLabelDocuments}
+                specimenLabelDocumentsLoading={orderData.specimenLabelDocumentsLoading}
+                questionnaireResponse={orderData.questionnaireResponse}
+                defaultTab={selectedReport ? 'report' : undefined}
+                onRevoke={() =>
+                  orderData
+                    .revoke()
+                    .then((updated) => {
+                      setResolvedOrder(updated);
+                      refetch();
+                    })
+                    .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }))
+                }
+                onResume={renderOrderModal ? () => setOrderModal(current) : undefined}
+                renderLink={renderMedplumLink}
+              />
+            )}
+            renderResult={(result) => (
+              <LabResultDetailsView
+                result={result}
+                attachments={resultData.attachments}
+                resources={resultData.resources}
+                renderLink={renderMedplumLink}
+              />
+            )}
           />
         )}
         onOrder={renderOrderModal ? () => setOrderModal('new') : undefined}
@@ -199,28 +268,70 @@ export function LabOrdersPanel(props: LabOrdersPanelProps): JSX.Element {
   );
 }
 
+/**
+ * Resolves the requester (for ServiceRequests) or performer (for DiagnosticReports) behind each
+ * visible row, in a single batch of reads. Returns a map keyed by the resource's reference string.
+ * @param items - The current page of rows.
+ * @returns A map from reference string to resolved person.
+ */
+function useRowPeople(items: LabItem[]): Map<string, Resource> {
+  const medplum = useMedplum();
+  const refs = useMemo(() => {
+    const unique = new Set<string>();
+    for (const item of items) {
+      const ref =
+        item.resourceType === 'ServiceRequest'
+          ? item.requester?.reference
+          : item.performer?.[0]?.reference;
+      if (ref) {
+        unique.add(ref);
+      }
+    }
+    return Array.from(unique);
+  }, [items]);
+
+  const [people, setPeople] = useState<Map<string, Resource>>(new Map());
+
+  useEffect(() => {
+    if (refs.length === 0) {
+      setPeople(new Map());
+      return undefined;
+    }
+    let cancelled = false;
+    Promise.all(
+      refs.map((reference) =>
+        medplum.readReference({ reference }).then(
+          (resource) => [reference, resource] as const,
+          () => undefined
+        )
+      )
+    )
+      .then((entries) => {
+        if (cancelled) {
+          return;
+        }
+        const map = new Map<string, Resource>();
+        for (const entry of entries) {
+          if (entry) {
+            map.set(entry[0], entry[1]);
+          }
+        }
+        setPeople(map);
+      })
+      .catch(console.error);
+    return () => {
+      cancelled = true;
+    };
+  }, [medplum, refs]);
+
+  return people;
+}
+
 export type LabTab = 'open' | 'completed' | 'revoked';
 export type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
 
 const DEFAULT_COUNT = 20;
 
-/**
- * @param items - The current page of orders or results, searched by the caller.
- * @param total - The total number of items across pages.
- * @param loading - True while the caller is searching.
- * @param search - The normalized search for the active tab (status, sort, count, offset).
- * @param activeTab - The active tab.
- * @param selectedId - The id of the selected order or result.
- * @param selected - The selected item, resolved by the caller.
- * @param onChange - Called with the new search when the page changes.
- * @param completedUri - The URI for the completed tab.
- * @param openUri - The URI for the open tab.
- * @param revokedUri - The URI for the revoked tab.
- * @param renderTabLink - Renders each tab pill as a link through the caller's router.
- * @param renderItem - Renders a list row, wrapped in the caller's link.
- * @param renderDetail - Renders the detail pane for the selected item.
- * @param onOrder - Opens the order form. Omitted: the Order Labs button is hidden.
- */
 export interface LabOrdersPanelViewProps {
   readonly items: LabItem[];
   readonly total: number;

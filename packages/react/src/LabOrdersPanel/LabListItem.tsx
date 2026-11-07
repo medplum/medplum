@@ -44,7 +44,6 @@ export interface LabListItemViewProps {
   readonly item: ServiceRequest;
   readonly selected: boolean;
   readonly activeTab: LabListItemTab;
-  /** The requester, resolved by the caller. Omitted: "Ordered <date>" without a name. */
   readonly requester?: Practitioner;
 }
 

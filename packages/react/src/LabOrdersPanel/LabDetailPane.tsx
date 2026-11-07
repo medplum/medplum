@@ -8,8 +8,9 @@ import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirt
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useEffect, useState } from 'react';
-import { LabOrderDetails } from './LabOrderDetails';
-import { LabResultDetails } from './LabResultDetails';
+import { renderMedplumLink } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import { LabOrderDetailsView, useLabOrderDetailsData } from './LabOrderDetails';
+import { LabResultDetailsView, useLabResultDetailsData } from './LabResultDetails';
 
 export interface LabDetailPaneProps {
   readonly item: WithId<ServiceRequest> | WithId<DiagnosticReport>;
@@ -18,30 +19,36 @@ export interface LabDetailPaneProps {
 }
 
 /**
- * The detail pane for a selected lab item, reading a report's order through the Medplum client
- * and rendering the Medplum-backed order and result details.
- * @param props - The lab item to render.
- * @returns The detail pane for the given lab item.
+ * Resolves the order for a lab detail pane item. A ServiceRequest item is its own order; a
+ * DiagnosticReport's order is read from its basedOn reference.
+ * @param item - The lab item, or undefined to keep the hook idle.
+ * @returns The resolved order, a loading flag, and a setter for in-place updates (e.g. after revoke).
  */
-export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
-  const { item, onOrderChange, onResumeOrder } = props;
+export function useLabDetailPaneOrder(item: WithId<ServiceRequest> | WithId<DiagnosticReport> | undefined): {
+  order: WithId<ServiceRequest> | undefined;
+  loading: boolean;
+  setOrder: (order: WithId<ServiceRequest>) => void;
+} {
   const medplum = useMedplum();
 
   const basedOnRef =
-    item.resourceType === 'DiagnosticReport'
+    item?.resourceType === 'DiagnosticReport'
       ? item.basedOn?.find((ref): ref is Reference<ServiceRequest> => isReference(ref, 'ServiceRequest'))
       : undefined;
 
-  // A ServiceRequest item is its own order; a DiagnosticReport's order is
-  // fetched from its basedOn reference.
   const [order, setOrder] = useState<WithId<ServiceRequest> | undefined>(
-    item.resourceType === 'ServiceRequest' ? item : undefined
+    item?.resourceType === 'ServiceRequest' ? item : undefined
   );
   const [loading, setLoading] = useState<boolean>(!!basedOnRef);
 
   useEffect(() => {
     let subscribed = true;
     const fetchOrder = async (): Promise<void> => {
+      if (!item) {
+        setOrder(undefined);
+        setLoading(false);
+        return;
+      }
       if (item.resourceType === 'ServiceRequest') {
         setOrder(item);
         setLoading(false);
@@ -74,39 +81,76 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
     };
   }, [medplum, item, basedOnRef]);
 
+  return { order, loading, setOrder };
+}
+
+/**
+ * The detail pane for a selected lab item. Reads the report's order through the Medplum client
+ * and renders the order and result Views with their data resolved by this wrapper's hooks.
+ * @param props - The lab item to render.
+ * @returns The detail pane for the given lab item.
+ */
+export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
+  const { item, onOrderChange, onResumeOrder } = props;
+  const { order, loading, setOrder } = useLabDetailPaneOrder(item);
+  const selectedReportRef =
+    item.resourceType === 'DiagnosticReport' ? createReference(item) : undefined;
+  const orderData = useLabOrderDetailsData(order, selectedReportRef);
+  const resultData = useLabResultDetailsData(item.resourceType === 'DiagnosticReport' ? item : undefined);
+
   return (
     <LabDetailPaneView
       item={item}
       order={order}
       loading={loading}
       renderOrder={(current, selectedReport) => (
-        <LabOrderDetails
+        <LabOrderDetailsView
           order={current}
-          selectedReport={selectedReport}
-          onChange={(updated) => {
-            setOrder(updated);
-            onOrderChange?.(updated);
-          }}
+          patient={orderData.patient}
+          requester={orderData.requester}
+          report={orderData.report}
+          reportLoading={orderData.reportLoading}
+          reportAttachments={orderData.reportAttachments}
+          reportResources={orderData.reportResources}
+          requisitionDocuments={orderData.requisitionDocuments}
+          requisitionDocumentsLoading={orderData.requisitionDocumentsLoading}
+          specimenLabelDocuments={orderData.specimenLabelDocuments}
+          specimenLabelDocumentsLoading={orderData.specimenLabelDocumentsLoading}
+          questionnaireResponse={orderData.questionnaireResponse}
+          defaultTab={selectedReport ? 'report' : undefined}
+          onRevoke={() =>
+            orderData
+              .revoke()
+              .then((updated) => {
+                setOrder(updated);
+                onOrderChange?.(updated);
+              })
+              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }))
+          }
           onResume={onResumeOrder ? () => onResumeOrder(current) : undefined}
+          renderLink={renderMedplumLink}
         />
       )}
-      renderResult={(result) => <LabResultDetails result={result} />}
+      renderResult={(result) => (
+        <LabResultDetailsView
+          result={result}
+          attachments={resultData.attachments}
+          resources={resultData.resources}
+          renderLink={renderMedplumLink}
+        />
+      )}
     />
   );
 }
 
 export interface LabDetailPaneViewProps {
   readonly item: WithId<ServiceRequest> | WithId<DiagnosticReport>;
-  /** The item's order: an order is its own; a report's is the ServiceRequest it is based on, resolved by the caller. */
   readonly order?: WithId<ServiceRequest>;
-  /** True while the caller is still reading a report's order. */
   readonly loading?: boolean;
-  /** Renders the order details, with the item selected as the report when the item is a report. */
   readonly renderOrder: (
     order: WithId<ServiceRequest>,
     selectedReport: Reference<DiagnosticReport> | undefined
   ) => ReactNode;
-  /** Renders the details of a report that has no order. */
   readonly renderResult: (result: WithId<DiagnosticReport>) => ReactNode;
 }
 
