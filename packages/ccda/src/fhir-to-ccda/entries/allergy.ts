@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { capitalize } from '@medplum/core';
+import { arrayify, capitalize } from '@medplum/core';
 import type { AllergyIntolerance } from '@medplum/fhirtypes';
 import {
   OID_ACT_CLASS_CODE_SYSTEM,
@@ -38,167 +38,158 @@ import {
 export function createAllergyEntry(converter: FhirToCcdaConverter, allergy: AllergyIntolerance): CcdaEntry {
   const reaction = allergy.reaction?.[0];
   return {
-    act: [
-      {
-        '@_classCode': 'ACT',
-        '@_moodCode': 'EVN',
-        templateId: [
-          {
-            '@_root': OID_ALLERGY_PROBLEM_ACT,
-          },
-          {
-            '@_root': OID_ALLERGY_PROBLEM_ACT,
-            '@_extension': '2015-08-01',
-          },
-        ],
-        id: mapIdentifiers(allergy.id, allergy.identifier),
-        code: {
-          '@_code': 'CONC',
-          '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
+    act: {
+      '@_classCode': 'ACT',
+      '@_moodCode': 'EVN',
+      templateId: [
+        {
+          '@_root': OID_ALLERGY_PROBLEM_ACT,
         },
-        statusCode: {
-          '@_code': ALLERGY_STATUS_MAPPER.mapFhirToCcdaWithDefault(allergy.clinicalStatus?.coding?.[0]?.code, 'active'),
+        {
+          '@_root': OID_ALLERGY_PROBLEM_ACT,
+          '@_extension': '2015-08-01',
         },
-        effectiveTime: mapEffectivePeriod(allergy.recordedDate, undefined),
-        author: converter.mapAuthor(allergy.recorder, allergy.recordedDate),
-        text: createTextFromExtensions(allergy.extension),
-        entryRelationship: [
-          {
-            '@_typeCode': 'SUBJ',
-            observation: [
+      ],
+      id: mapIdentifiers(allergy.id, allergy.identifier),
+      code: {
+        '@_code': 'CONC',
+        '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
+      },
+      statusCode: {
+        '@_code': ALLERGY_STATUS_MAPPER.mapFhirToCcdaWithDefault(allergy.clinicalStatus?.coding?.[0]?.code, 'active'),
+      },
+      effectiveTime: mapEffectivePeriod(allergy.recordedDate, undefined),
+      author: converter.mapAuthor(allergy.recorder, allergy.recordedDate),
+      text: createTextFromExtensions(allergy.extension),
+      entryRelationship: [
+        {
+          '@_typeCode': 'SUBJ',
+          observation: {
+            '@_classCode': 'OBS',
+            '@_moodCode': 'EVN',
+            templateId: [
               {
-                '@_classCode': 'OBS',
-                '@_moodCode': 'EVN',
-                templateId: [
-                  {
-                    '@_root': OID_ALLERGY_OBSERVATION,
+                '@_root': OID_ALLERGY_OBSERVATION,
+              },
+              {
+                '@_root': OID_ALLERGY_OBSERVATION,
+                '@_extension': '2014-06-09',
+              },
+            ],
+            id: mapIdentifiers(allergy.id, allergy.identifier),
+            code: {
+              '@_code': 'ASSERTION',
+              '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
+            },
+            text: createTextFromExtensions(allergy.extension),
+            statusCode: {
+              '@_code': 'completed',
+            },
+            effectiveTime: mapEffectivePeriod(
+              allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
+              allergy.onsetPeriod?.end,
+              true
+            ),
+            value: [mapAllergyCategory(allergy.category)],
+            author: converter.mapAuthor(allergy.asserter, allergy.recordedDate),
+            participant: [
+              {
+                '@_typeCode': 'CSM',
+                participantRole: {
+                  '@_classCode': 'MANU',
+                  playingEntity: {
+                    '@_classCode': 'MMAT',
+                    code:
+                      // Handle special case for "No known allergies"
+                      // https://hl7.org/fhir/R4/allergyintolerance-nka.json.html
+                      // C-CDA-Examples/Allergies/No Known Allergies
+                      allergy.code?.coding?.[0]?.code === '716186003'
+                        ? { '@_nullFlavor': 'NA' }
+                        : {
+                            ...mapCodeableConceptToCcdaCode(allergy.code),
+                            originalText: allergy.code?.extension
+                              ? {
+                                  reference: getNarrativeReference(allergy.code?.extension),
+                                }
+                              : undefined,
+                          },
                   },
-                  {
-                    '@_root': OID_ALLERGY_OBSERVATION,
-                    '@_extension': '2014-06-09',
-                  },
-                ],
-                id: mapIdentifiers(allergy.id, allergy.identifier),
-                code: {
-                  '@_code': 'ASSERTION',
-                  '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                 },
-                text: createTextFromExtensions(allergy.extension),
-                statusCode: {
-                  '@_code': 'completed',
-                },
-                effectiveTime: mapEffectivePeriod(
-                  allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
-                  allergy.onsetPeriod?.end,
-                  true
-                ),
-                value: mapAllergyCategory(allergy.category),
-                author: converter.mapAuthor(allergy.asserter, allergy.recordedDate),
-                participant: [
+              },
+            ],
+            entryRelationship: reaction
+              ? [
                   {
-                    '@_typeCode': 'CSM',
-                    participantRole: {
-                      '@_classCode': 'MANU',
-                      playingEntity: {
-                        '@_classCode': 'MMAT',
-                        code:
-                          // Handle special case for "No known allergies"
-                          // https://hl7.org/fhir/R4/allergyintolerance-nka.json.html
-                          // C-CDA-Examples/Allergies/No Known Allergies
-                          allergy.code?.coding?.[0]?.code === '716186003'
-                            ? { '@_nullFlavor': 'NA' }
-                            : {
-                                ...mapCodeableConceptToCcdaCode(allergy.code),
-                                originalText: allergy.code?.extension
-                                  ? {
-                                      reference: getNarrativeReference(allergy.code?.extension),
-                                    }
-                                  : undefined,
-                              },
+                    '@_typeCode': 'MFST',
+                    '@_inversionInd': 'true',
+                    observation: {
+                      '@_classCode': 'OBS',
+                      '@_moodCode': 'EVN',
+                      templateId: [
+                        {
+                          '@_root': OID_REACTION_OBSERVATION,
+                        },
+                        {
+                          '@_root': OID_REACTION_OBSERVATION,
+                          '@_extension': '2014-06-09',
+                        },
+                      ],
+                      id: mapIdentifiers(reaction.id, undefined),
+                      code: {
+                        '@_code': 'ASSERTION',
+                        '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                       },
-                    },
-                  },
-                ],
-                entryRelationship: reaction
-                  ? [
-                      {
-                        '@_typeCode': 'MFST',
-                        '@_inversionInd': 'true',
-                        observation: [
-                          {
+                      statusCode: {
+                        '@_code': 'completed',
+                      },
+                      effectiveTime: mapEffectiveDate(allergy.onsetDateTime, allergy.onsetPeriod),
+                      value: arrayify(mapCodeableConceptToCcdaValue(reaction.manifestation?.[0])),
+                      text: createTextFromExtensions(reaction.manifestation?.[0]?.extension),
+                      entryRelationship: [
+                        {
+                          '@_typeCode': 'SUBJ',
+                          '@_inversionInd': 'true',
+                          observation: {
                             '@_classCode': 'OBS',
                             '@_moodCode': 'EVN',
                             templateId: [
                               {
-                                '@_root': OID_REACTION_OBSERVATION,
+                                '@_root': OID_SEVERITY_OBSERVATION,
                               },
                               {
-                                '@_root': OID_REACTION_OBSERVATION,
+                                '@_root': OID_SEVERITY_OBSERVATION,
                                 '@_extension': '2014-06-09',
                               },
                             ],
-                            id: mapIdentifiers(reaction.id, undefined),
                             code: {
-                              '@_code': 'ASSERTION',
+                              '@_code': 'SEV',
                               '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
+                              '@_codeSystemName': 'ActCode',
                             },
                             statusCode: {
                               '@_code': 'completed',
                             },
-                            effectiveTime: mapEffectiveDate(allergy.onsetDateTime, allergy.onsetPeriod),
-                            value: mapCodeableConceptToCcdaValue(reaction.manifestation?.[0]),
-                            text: createTextFromExtensions(reaction.manifestation?.[0]?.extension),
-                            entryRelationship: [
+                            value: [
                               {
-                                '@_typeCode': 'SUBJ',
-                                '@_inversionInd': 'true',
-                                observation: [
-                                  {
-                                    '@_classCode': 'OBS',
-                                    '@_moodCode': 'EVN',
-                                    templateId: [
-                                      {
-                                        '@_root': OID_SEVERITY_OBSERVATION,
-                                      },
-                                      {
-                                        '@_root': OID_SEVERITY_OBSERVATION,
-                                        '@_extension': '2014-06-09',
-                                      },
-                                    ],
-                                    code: {
-                                      '@_code': 'SEV',
-                                      '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
-                                      '@_codeSystemName': 'ActCode',
-                                    },
-                                    statusCode: {
-                                      '@_code': 'completed',
-                                    },
-                                    value: {
-                                      '@_xsi:type': 'CD',
-                                      '@_code': ALLERGY_SEVERITY_MAPPER.mapFhirToCcdaWithDefault(
-                                        reaction.severity,
-                                        'M'
-                                      ),
-                                      '@_displayName': reaction.severity ? capitalize(reaction.severity) : undefined,
-                                      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-                                      '@_codeSystemName': 'SNOMED CT',
-                                    },
-                                    text: createTextFromExtensions(reaction.extension),
-                                  },
-                                ],
+                                '@_xsi:type': 'CD',
+                                '@_code': ALLERGY_SEVERITY_MAPPER.mapFhirToCcdaWithDefault(reaction.severity, 'M'),
+                                '@_displayName': reaction.severity ? capitalize(reaction.severity) : undefined,
+                                '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                                '@_codeSystemName': 'SNOMED CT',
                               },
                             ],
+                            text: createTextFromExtensions(reaction.extension),
                           },
-                        ],
-                      },
-                    ]
-                  : [],
-              },
-            ],
+                        },
+                      ],
+                    },
+                  },
+                ]
+              : [],
           },
-        ],
-      },
-    ],
+        },
+      ],
+    },
   };
 }
 

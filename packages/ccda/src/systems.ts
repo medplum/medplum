@@ -83,13 +83,13 @@ export interface EnumMapperDetails {
 export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
   readonly details: EnumMapperDetails;
   readonly entries: EnumEntry<TFhirValue, TCcdaValue>[];
-  readonly ccdaToFhirMap: Record<TCcdaValue, EnumEntry<TFhirValue, TCcdaValue>>;
+  readonly ccdaToFhirMap: Record<string, EnumEntry<TFhirValue, TCcdaValue> | undefined>;
   readonly fhirToCcdaMap: Record<TFhirValue, EnumEntry<TFhirValue, TCcdaValue>>;
 
   constructor(details: EnumMapperDetails, entries: EnumEntry<TFhirValue, TCcdaValue>[]) {
     this.details = details;
     this.entries = entries;
-    this.ccdaToFhirMap = {} as Record<TCcdaValue, EnumEntry<TFhirValue, TCcdaValue>>;
+    this.ccdaToFhirMap = {};
     this.fhirToCcdaMap = {} as Record<TFhirValue, EnumEntry<TFhirValue, TCcdaValue>>;
 
     for (const entry of entries) {
@@ -106,15 +106,15 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     return this.fhirToCcdaMap[fhir];
   }
 
-  getEntryByCcda(ccda: TCcdaValue): EnumEntry<TFhirValue, TCcdaValue> | undefined {
+  getEntryByCcda(ccda: string): EnumEntry<TFhirValue, TCcdaValue> | undefined {
     return this.ccdaToFhirMap[ccda];
   }
 
-  mapCcdaToFhir(ccda: TCcdaValue): TFhirValue | undefined {
+  mapCcdaToFhir(ccda: string): TFhirValue | undefined {
     return this.ccdaToFhirMap[ccda]?.fhirValue;
   }
 
-  mapCcdaToFhirWithDefault(ccda: TCcdaValue | undefined, defaultValue: TFhirValue): TFhirValue {
+  mapCcdaToFhirWithDefault(ccda: string | undefined, defaultValue: TFhirValue): TFhirValue {
     if (!ccda) {
       return defaultValue;
     }
@@ -128,7 +128,7 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     return this.mapFhirToCcda(fhir) ?? defaultValue;
   }
 
-  mapCcdaToFhirCodeableConcept(ccda: TCcdaValue): CodeableConcept | undefined {
+  mapCcdaToFhirCodeableConcept(ccda: string): CodeableConcept | undefined {
     const entry = this.ccdaToFhirMap[ccda];
     if (!entry) {
       return undefined;

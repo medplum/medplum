@@ -56,9 +56,9 @@ describe('createCareTeamEntry', () => {
 
     expect(result).toBeDefined();
     expect(result.organizer).toBeDefined();
-    expect(result.organizer?.length).toBe(1);
+    expect(result.organizer).toBeDefined();
 
-    const organizer = result.organizer?.[0];
+    const organizer = result.organizer;
     expect(organizer?.['@_classCode']).toBe('CLUSTER');
     expect(organizer?.['@_moodCode']).toBe('EVN');
     expect(organizer?.templateId).toEqual([
@@ -87,7 +87,7 @@ describe('createCareTeamEntry', () => {
 
     const result = createCareTeamEntry(converter, careTeam);
 
-    const organizer = result.organizer?.[0];
+    const organizer = result.organizer;
     expect(organizer?.id).toBeDefined();
     expect(organizer?.id?.length).toBeGreaterThanOrEqual(1); // At least the base ID
   });
@@ -102,7 +102,7 @@ describe('createCareTeamEntry', () => {
 
     const result = createCareTeamEntry(converter, careTeam);
 
-    const organizer = result.organizer?.[0];
+    const organizer = result.organizer;
     expect(organizer?.component).toBeUndefined();
   });
 
@@ -146,7 +146,7 @@ describe('createCareTeamEntry', () => {
 
     const result = createCareTeamEntry(converter, careTeam);
 
-    const organizer = result.organizer?.[0];
+    const organizer = result.organizer;
     expect(organizer?.component).toBeDefined();
     expect(organizer?.component?.length).toBe(2);
 
@@ -186,7 +186,7 @@ describe('createCareTeamEntry', () => {
 
     const result = createCareTeamEntry(converter, careTeam);
 
-    const organizer = result.organizer?.[0];
+    const organizer = result.organizer;
     expect(organizer?.component).toBeDefined();
     expect(organizer?.component?.length).toBe(2);
 
@@ -207,7 +207,7 @@ describe('createCareTeamEntry', () => {
 
     const result = createCareTeamEntry(converter, careTeam);
 
-    const organizer = result.organizer?.[0];
+    const organizer = result.organizer;
     expect(organizer?.component).toEqual([]);
   });
 
@@ -220,7 +220,7 @@ describe('createCareTeamEntry', () => {
 
     const result = createCareTeamEntry(converter, careTeam);
 
-    const organizer = result.organizer?.[0];
+    const organizer = result.organizer;
     expect(organizer?.id).toBeDefined();
     expect(organizer?.id?.length).toBeGreaterThanOrEqual(0); // May be empty if no ID provided
   });

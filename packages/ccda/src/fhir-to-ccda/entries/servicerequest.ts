@@ -19,38 +19,34 @@ export function createPlanOfTreatmentServiceRequestEntry(
   const system = resource.code?.coding?.[0]?.system;
   if (system === SNOMED) {
     return {
-      procedure: [
-        {
-          '@_classCode': 'PROC',
-          '@_moodCode': 'RQO',
-          templateId: [
-            { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE },
-            { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
-            { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2022-06-01' },
-          ],
-          id: mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
-          statusCode: { '@_code': 'active' }, // USCDI v2 requires statusCode to be "active"
-          effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.authoredOn) }],
-          text: createTextFromExtensions(resource.extension),
-        },
-      ],
+      procedure: {
+        '@_classCode': 'PROC',
+        '@_moodCode': 'RQO',
+        templateId: [
+          { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE },
+          { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
+          { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2022-06-01' },
+        ],
+        id: mapIdentifiers(resource.id, resource.identifier),
+        code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+        statusCode: { '@_code': 'active' }, // USCDI v2 requires statusCode to be "active"
+        effectiveTime: { '@_value': mapFhirToCcdaDateTime(resource.authoredOn) },
+        text: createTextFromExtensions(resource.extension),
+      },
     };
   }
 
   const result: CcdaEntry = {
-    observation: [
-      {
-        '@_classCode': 'OBS',
-        '@_moodCode': 'RQO',
-        templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
-        id: mapIdentifiers(resource.id, resource.identifier),
-        code: mapCodeableConceptToCcdaCode(resource.code),
-        statusCode: { '@_code': mapPlanOfTreatmentStatus(resource.status) },
-        effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) }],
-        text: createTextFromExtensions(resource.extension),
-      },
-    ],
+    observation: {
+      '@_classCode': 'OBS',
+      '@_moodCode': 'RQO',
+      templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
+      id: mapIdentifiers(resource.id, resource.identifier),
+      code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+      statusCode: { '@_code': mapPlanOfTreatmentStatus(resource.status) },
+      effectiveTime: { '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) },
+      text: createTextFromExtensions(resource.extension),
+    },
   };
 
   return result;

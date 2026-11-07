@@ -10,6 +10,7 @@ import {
   LOINC_OVERALL_GOAL,
   LOINC_PLAN_OF_TREATMENT_SECTION,
 } from '../../systems';
+import type { CcdaText } from '../../types';
 import { createGoalEntry } from './goal';
 
 describe('createGoalEntry', () => {
@@ -58,16 +59,16 @@ describe('createGoalEntry', () => {
 
     expect(result).toBeDefined();
     expect(result?.observation).toBeDefined();
-    expect(result?.observation?.length).toBe(1);
+    expect(result?.observation).toBeDefined();
 
-    const observation = result?.observation?.[0];
+    const observation = result?.observation;
     expect(observation?.['@_classCode']).toBe('OBS');
     expect(observation?.['@_moodCode']).toBe('GOL');
     expect(observation?.templateId).toEqual([{ '@_root': OID_GOAL_OBSERVATION }]);
     expect(observation?.code?.['@_code']).toBe('273249006');
     expect(observation?.code?.['@_displayName']).toBe('Assessment scales');
     expect(observation?.statusCode?.['@_code']).toBe('active');
-    expect(observation?.effectiveTime?.[0]?.['@_value']).toBe('20240101');
+    expect(observation?.effectiveTime?.['@_value']).toBe('20240101');
     // Value structure is dynamic based on goal description
     expect(observation?.value).toBeDefined();
     expect(observation?.id).toBeDefined();
@@ -95,7 +96,7 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
+    const observation = result?.observation;
     expect(observation?.code?.['@_code']).toBe(LOINC_OVERALL_GOAL);
     expect(observation?.code?.['@_displayName']).toBe("Resident's overall goal established during assessment process");
   });
@@ -139,10 +140,10 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
+    const observation = result?.observation;
     expect(observation?.templateId).toEqual([{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }]);
     expect(observation?.statusCode?.['@_code']).toBe('completed');
-    expect(observation?.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
+    expect(observation?.effectiveTime?.['@_value']).toBe('20240101100000+0000');
     expect(observation?.value).toBeDefined();
   });
 
@@ -178,7 +179,7 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
+    const observation = result?.observation;
     expect(observation?.templateId).toEqual([
       { '@_root': OID_GOAL_OBSERVATION },
       { '@_root': OID_GOAL_OBSERVATION, '@_extension': '2022-06-01' },
@@ -240,22 +241,22 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
+    const observation = result?.observation;
     expect(observation?.entryRelationship).toBeDefined();
     expect(observation?.entryRelationship?.length).toBe(2);
 
     const firstTarget = observation?.entryRelationship?.[0];
     expect(firstTarget?.['@_typeCode']).toBe('RSON');
     expect(firstTarget?.['@_inversionInd']).toBe('true');
-    expect(firstTarget?.act?.[0]?.['@_classCode']).toBe('ACT');
-    expect(firstTarget?.act?.[0]?.['@_moodCode']).toBe('EVN');
-    expect(firstTarget?.act?.[0]?.templateId).toEqual([
+    expect(firstTarget?.act?.['@_classCode']).toBe('ACT');
+    expect(firstTarget?.act?.['@_moodCode']).toBe('EVN');
+    expect(firstTarget?.act?.templateId).toEqual([
       { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
       { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
     ]);
-    expect(firstTarget?.act?.[0]?.code?.['@_code']).toBe('29463-7');
-    expect(firstTarget?.act?.[0]?.code?.['@_displayName']).toBe('Body weight');
-    expect(firstTarget?.act?.[0]?.statusCode?.['@_code']).toBe('completed');
+    expect(firstTarget?.act?.code?.['@_code']).toBe('29463-7');
+    expect(firstTarget?.act?.code?.['@_displayName']).toBe('Body weight');
+    expect(firstTarget?.act?.statusCode?.['@_code']).toBe('completed');
   });
 
   test('should return undefined when goal has no category, description coding, or is in wrong section', () => {
@@ -302,7 +303,7 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
+    const observation = result?.observation;
     expect(observation?.templateId).toEqual([{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }]);
     expect(observation?.code).toBeUndefined(); // No category or description coding
     // Value structure is dynamic based on goal description
@@ -330,8 +331,8 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
-    expect(observation?.effectiveTime?.[0]?.['@_value']).toBeUndefined();
+    const observation = result?.observation;
+    expect(observation?.effectiveTime?.['@_value']).toBeUndefined();
   });
 
   test('should handle goal with extension for text reference', () => {
@@ -361,8 +362,8 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
-    expect(observation?.text?.reference?.['@_value']).toBe('#goal-narrative');
+    const observation = result?.observation;
+    expect((observation?.text as CcdaText | undefined)?.reference?.['@_value']).toBe('#goal-narrative');
   });
 
   test('should handle goal without id or identifiers', () => {
@@ -385,7 +386,7 @@ describe('createGoalEntry', () => {
     const result = createGoalEntry(section, goal);
 
     expect(result).toBeDefined();
-    const observation = result?.observation?.[0];
+    const observation = result?.observation;
     expect(observation?.id).toBeDefined();
   });
 });
