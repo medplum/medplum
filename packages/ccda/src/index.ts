@@ -7,4 +7,5 @@ export * from './fhir-to-ccda/convert';
 export * from './systems';
 export * from './templates';
 export type * from './types';
+export * from './validate';
 export * from './xml';
