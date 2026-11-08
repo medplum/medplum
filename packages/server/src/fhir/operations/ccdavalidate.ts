@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { indexCdaDefinitions, validateCcda } from '@medplum/ccda';
-import { allOk } from '@medplum/core';
+import { validateCcda } from '@medplum/ccda';
+import { allOk, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationOutcome } from '@medplum/fhirtypes';
@@ -43,7 +43,7 @@ let cdaDefinitionsLoaded = false;
 // The CDA logical model is loaded on first use, since most servers never validate C-CDA
 function loadCdaDefinitions(): void {
   if (!cdaDefinitionsLoaded) {
-    indexCdaDefinitions(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json'));
+    indexStructureDefinitionBundle(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json'));
     cdaDefinitionsLoaded = true;
   }
 }
