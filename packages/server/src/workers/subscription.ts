@@ -5,7 +5,9 @@ import {
   AccessPolicyInteraction,
   ContentType,
   EMPTY,
+  OperationOutcomeError,
   Operator,
+  badRequest,
   createReference,
   getExtension,
   getExtensionValue,
@@ -37,7 +39,7 @@ import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
-import { canProjectReadBot } from '../bots/utils';
+import { canProjectReadBot, findBotByIdentifier } from '../bots/utils';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
@@ -954,7 +956,8 @@ async function execBot(
     return;
   }
 
-  // URL should be a Bot reference string
+  // URL is either a Bot reference string ("Bot/<id>")
+  // or a Bot execute URL with an identifier ("Bot/$execute?identifier=<value>")
   // SHARDING: this reads the Bot through the triggering project's shard, but the Bot can live in another
   // project (a linked project, or any project for a server-scoped Subscription), and `Bot/<id>` doesn't
   // say which. Proposed fix: search the global shard for `ProjectMembership?profile=Bot/<id>`, read the
@@ -962,7 +965,21 @@ async function execBot(
   // Alternatives considered: store the Bot's project on the Subscription at write time (a per-write
   // lookup, but a field that can go stale and needs a migration, and linked-project Subscriptions would
   // need it too), or try every shard (simple, but one read per shard per job unless cached).
-  const bot = await systemRepo.readReference<Bot>({ reference: url });
+  let bot: WithId<Bot>;
+  if (url === 'Bot/$execute' || url.startsWith('Bot/$execute?')) {
+    // An identifier is only unique within a project, so the lookup is scoped to the Subscription's project
+    const subscriptionProjectId = subscription.meta?.project;
+    if (!subscriptionProjectId) {
+      throw new Error('Bot identifier endpoints require a project-scoped Subscription');
+    }
+    const identifier = new URLSearchParams(url.slice(url.indexOf('?') + 1)).get('identifier');
+    if (!identifier) {
+      throw new OperationOutcomeError(badRequest('Must specify bot ID or identifier.'));
+    }
+    bot = await findBotByIdentifier(systemRepo, identifier, subscriptionProjectId);
+  } else {
+    bot = await systemRepo.readReference<Bot>({ reference: url });
+  }
 
   // A project-scoped Subscription may only target a Bot in its own project, or in a linked project that exports Bot
   if (subscription.meta?.project) {

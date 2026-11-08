@@ -1,20 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BotResponseStream, WithId } from '@medplum/core';
-import {
-  badRequest,
-  isOk,
-  isOperationOutcome,
-  notFound,
-  OperationOutcomeError,
-  Operator,
-  singularize,
-} from '@medplum/core';
+import { badRequest, isOk, isOperationOutcome, OperationOutcomeError, singularize } from '@medplum/core';
 import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionResult } from '../../bots/types';
 import {
+  findBotByIdentifier,
   getBotBodyInput,
   getBotDefaultHeaders,
   getBotProjectMembership,
@@ -22,7 +15,6 @@ import {
   sendBotResponse,
 } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
-import { searchUnique } from '../searchunique';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
@@ -152,17 +144,7 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    const bot = await searchUnique<Bot>(
-      ctx.repo,
-      { resourceType: 'Bot', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
-      'Execute Bot by identifier'
-    );
-
-    if (!bot) {
-      throw new OperationOutcomeError(notFound);
-    }
-
-    return bot;
+    return findBotByIdentifier(ctx.repo, identifier);
   }
 
   // If no bot ID or identifier, return undefined
