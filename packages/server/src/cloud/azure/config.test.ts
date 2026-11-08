@@ -61,7 +61,7 @@ describe('Azure Config', () => {
       const inputConfig: Record<string, unknown> = {
         baseUrl: 'https://www.example.com',
         port: 8080,
-        rateLimitsEnabled: 'true',
+        botCustomFunctionsEnabled: 'true',
         logAuditEvents: 'false',
         registerEnabled: 'false',
         defaultProjectSystemSetting: JSON.stringify([
@@ -79,7 +79,7 @@ describe('Azure Config', () => {
       expect(config).toMatchObject({
         baseUrl: 'https://www.example.com',
         port: 8080,
-        rateLimitsEnabled: true,
+        botCustomFunctionsEnabled: true,
         logAuditEvents: false,
         registerEnabled: false,
         defaultProjectSystemSetting: [

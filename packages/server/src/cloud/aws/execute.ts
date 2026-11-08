@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
-import { Hl7Message, createReference, normalizeErrorString } from '@medplum/core';
+import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
@@ -101,10 +101,20 @@ export function normalizeLambdaExecutionError(err: unknown, bot: Bot): string {
 
 /**
  * Returns the AWS Lambda function name for the given bot.
+ * By default, the function name is based on the bot ID.
+ * If the bot has a custom function, and the server allows it, then that is used instead.
  * @param bot - The Bot resource.
  * @returns The AWS Lambda function name.
  */
 export function getLambdaFunctionName(bot: Bot): string {
+  if (getConfig().botCustomFunctionsEnabled) {
+    const customFunction = getIdentifier(bot, 'https://medplum.com/bot-external-function-id');
+    if (customFunction) {
+      return customFunction;
+    }
+  }
+
+  // By default, use the bot ID as the Lambda function name
   return `medplum-bot-lambda-${bot.id}`;
 }
 
