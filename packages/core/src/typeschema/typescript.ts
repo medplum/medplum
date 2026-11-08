@@ -50,7 +50,8 @@ export function generateTypeScriptDefinitions(
   const schemas = structureDefinitions
     .map((sd) => tryGetProfile(sd.url) as InternalTypeSchema)
     .filter((s) => isResourceTypeSchema(s) || s.kind === 'complex-type' || s.kind === 'logical');
-  const generatedNames = new Set(schemas.map((s) => s.name));
+  // Files are named by TypeScript type name, which differs from the StructureDefinition name for logical models
+  const generatedNames = new Set(schemas.map((s) => getTypeName(s, options)));
   const getImportPath =
     options.getImportPath ??
     ((typeName: string) => (generatedNames.has(typeName) ? './' + typeName + '.d.ts' : '@medplum/fhirtypes'));
@@ -60,8 +61,9 @@ export function generateTypeScriptDefinitions(
   for (const schema of schemas) {
     const contents = generateTypeScriptDefinition(schema, { ...options, getImportPath });
     if (contents) {
-      files[schema.name + '.d.ts'] = contents;
-      exported.push(schema.name);
+      const typeName = getTypeName(schema, options);
+      files[typeName + '.d.ts'] = contents;
+      exported.push(typeName);
     }
   }
   exported.sort((a, b) => a.localeCompare(b));
@@ -89,7 +91,7 @@ export function generateTypeScriptDefinition(
   const context: GeneratorContext = { ...options };
   // A profile constrains a base type (e.g. USCorePatientProfile on Patient). Other StructureDefinitions define their
   // own type, which is either the same as the name (e.g. Patient) or a URL (e.g. logical models).
-  if (fhirType.name !== fhirType.type && !fhirType.type.includes('/')) {
+  if (fhirType.name !== fhirType.type && !isLogicalModel(fhirType)) {
     context.profileInnerTypeNames = new Map(
       fhirType.innerTypes.map((t) => [t.name, fhirType.name + t.name.replace(fhirType.type, '')])
     );
@@ -124,7 +126,7 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema, options: G
 
   const typeName = getTypeName(fhirType, options);
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
-  const fhirGeneric = genericTypes.includes(typeName) && !fhirType.type.includes('/');
+  const fhirGeneric = genericTypes.includes(typeName) && !isLogicalModel(fhirType);
   const genericModifier = fhirGeneric ? '<T extends Resource = Resource>' : '';
 
   b.newLine();
@@ -224,7 +226,7 @@ function buildImports(
     buildImports(subType, includedTypes, referencedTypes, options);
   }
 
-  if (typeName === 'Reference' && !fhirType.type.includes('/')) {
+  if (typeName === 'Reference' && !isLogicalModel(fhirType)) {
     referencedTypes.add('Resource');
   }
 }
@@ -234,14 +236,31 @@ function getTypeName(fhirType: InternalTypeSchema, options: GeneratorContext): s
   if (profileName) {
     return profileName;
   }
-  if (fhirType.kind === 'logical' && !fhirType.name.includes('/')) {
-    return (options.logicalTypePrefix ?? '') + fhirType.name;
+  if (fhirType.kind === 'logical' && !isTypeUrl(fhirType.name)) {
+    return (options.logicalTypePrefix ?? '') + toIdentifier(fhirType.name);
   }
   return typeScriptName(fhirType.name, options);
 }
 
 function typeScriptName(name: string, options: GeneratorContext): string {
   return isTypeUrl(name) ? (options.logicalTypePrefix ?? '') + getLogicalTypeName(name) : name;
+}
+
+/**
+ * Returns true for types of logical models, including their inner types, which have no kind of their own.
+ * @param fhirType - The type schema.
+ * @returns True if the type belongs to a logical model.
+ */
+function isLogicalModel(fhirType: InternalTypeSchema): boolean {
+  let root = fhirType;
+  while (root.parentType) {
+    root = root.parentType;
+  }
+  return root.kind === 'logical';
+}
+
+function toIdentifier(name: string): string {
+  return name.replace(/[^A-Za-z0-9_]/g, '_');
 }
 
 function isTypeUrl(name: string): boolean {
@@ -262,7 +281,7 @@ export function getLogicalTypeName(name: string): string {
   const [url, path] = name.split('#');
   const base = tryGetDataType(url)?.name ?? url.split('/').pop();
   const inner = path ? path.split('.').map(capitalize).join('') : '';
-  return (base + inner).replace(/[^A-Za-z0-9_]/g, '_');
+  return toIdentifier(base + inner);
 }
 
 // Profiles can also constrain elements of complex data types (e.g. "identifier.system"), which are not generated
@@ -336,7 +355,8 @@ function getTypeScriptProperties(
         typeName: getTypeScriptTypeForProperty(property, propertyType, path, options, getBaseProperty(propertyName)),
       });
     }
-  } else if (property.type.length > 1) {
+  } else if (property.type.length > 1 && isLogicalModel(fhirType)) {
+    // Logical models (e.g. CDA Observation.value) allow several types without a choice-of-type [x] name
     const single = { ...property, isArray: false, max: 1 };
     // Flatten members that are unions themselves, e.g. "(CdaST | string)", so each constituent appears once
     const members = property.type.flatMap((t) =>

@@ -4,16 +4,35 @@ import type { ElementDefinition, StructureDefinition } from '@medplum/fhirtypes'
 import { getExtension } from '../utils';
 import type { InternalSchemaElement, InternalTypeSchema } from './types';
 
-// Support for logical models of XML formats, such as the HL7 CDA StructureDefinitions, validated
-// and typed in the shape an XML parser produces. See `LoadDataTypeOptions.xmlPropertyNames`.
+// Support for logical models of XML formats, such as the HL7 CDA StructureDefinitions, typed in the
+// shape an XML parser produces. See `loadDataType`.
 
 const XML_NAME = 'http://hl7.org/fhir/tools/StructureDefinition/xml-name';
 const XML_NAMESPACE = 'http://hl7.org/fhir/tools/StructureDefinition/xml-namespace';
 const XML_CHOICE_GROUP = 'http://hl7.org/fhir/tools/StructureDefinition/xml-choice-group';
+const XML_EXTENSIONS = new Set([XML_NAME, XML_NAMESPACE, XML_CHOICE_GROUP]);
 const XML_NAMESPACE_PREFIXES: Record<string, string> = {
   'urn:hl7-org:sdtc': 'sdtc',
   'http://www.w3.org/2001/XMLSchema-instance': 'xsi',
 };
+
+/**
+ * Returns true for logical models of XML formats, such as the HL7 CDA StructureDefinitions. These declare a
+ * non-FHIR XML namespace, or use the xml-* tool extensions on their elements. `representation` alone is not
+ * enough: FHIR's own StructureDefinitions mark elements such as `Element.id` as XML attributes too.
+ * @param sd - The structure definition.
+ * @returns True if the structure definition is a logical model of an XML format.
+ */
+export function isXmlLogicalModel(sd: StructureDefinition): boolean {
+  if (sd.kind !== 'logical') {
+    return false;
+  }
+  const namespace = getExtension(sd, XML_NAMESPACE)?.valueUri;
+  if (namespace && namespace !== 'http://hl7.org/fhir') {
+    return true;
+  }
+  return !!sd.snapshot?.element?.some((e) => e.extension?.some((ext) => XML_EXTENSIONS.has(ext.url)));
+}
 
 /**
  * Renames the elements of an XML logical model the way an XML parser names them: `@_attr` for attributes,
@@ -28,6 +47,9 @@ export function applyXmlPropertyNames(schema: InternalTypeSchema, sd: StructureD
   const groups = new Set<string>();
 
   const rename = (type: InternalTypeSchema): void => {
+    if (type.xmlPropertyNames) {
+      return; // Already renamed, e.g. a choice group renamed with its parent
+    }
     const renamed: Record<string, InternalSchemaElement> = Object.create(null);
     for (const [key, element] of Object.entries(type.elements)) {
       const ed = definitions.get(element.path);

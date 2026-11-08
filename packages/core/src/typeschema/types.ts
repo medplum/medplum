@@ -17,7 +17,7 @@ import { OperationOutcomeError, badRequest } from '../outcomes';
 import type { TypedValue } from '../types';
 import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
-import { applyXmlPropertyNames } from './xml';
+import { applyXmlPropertyNames, isXmlLogicalModel } from './xml';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -37,7 +37,7 @@ export interface InternalTypeSchema {
   innerTypes: InternalTypeSchema[];
   summaryProperties?: Set<string>;
   mandatoryProperties?: Set<string>;
-  /** Element names follow the XML parser convention (`@_attr`, `#text`); see `LoadDataTypeOptions`. */
+  /** For XML logical models, element names follow the XML parser convention (`@_attr`, `#text`); see `loadDataType`. */
   xmlPropertyNames?: boolean;
 }
 
@@ -134,30 +134,25 @@ function getDataTypesMap(profileUrl: string): DataTypesMap {
 /**
  * Parses and indexes structure definitions
  * @param bundle - Bundle or array of structure definitions to be parsed and indexed
- * @param options - Optional loading options.
  */
-export function indexStructureDefinitionBundle(
-  bundle: StructureDefinition[] | Bundle,
-  options?: LoadDataTypeOptions
-): void {
+export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
   const maybeSds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource) ?? []);
   const sds: StructureDefinition[] = maybeSds.filter((r) => r?.resourceType === 'StructureDefinition');
   indexDefaultSearchParameters(sds);
   for (const sd of sds) {
-    loadDataType(sd, options);
+    loadDataType(sd);
   }
 }
 
-export interface LoadDataTypeOptions {
-  /**
-   * For logical models of XML formats (e.g. CDA), name elements the way an XML parser does
-   * (`@_attribute`, `#text`, `prefix:name`), and flatten xml-choice-groups, so that parsed XML
-   * can be validated and typed without converting it first.
-   */
-  xmlPropertyNames?: boolean;
-}
-
-export function loadDataType(sd: StructureDefinition, options?: LoadDataTypeOptions): void {
+/**
+ * Parses and indexes a structure definition.
+ *
+ * Logical models of XML formats, such as the HL7 CDA StructureDefinitions, are recognized by their XML
+ * representation markers. Their elements are named the way an XML parser names them (`@_attribute`, `#text`,
+ * `prefix:name`), so that parsed XML can be typed and validated without converting it first.
+ * @param sd - The structure definition.
+ */
+export function loadDataType(sd: StructureDefinition): void {
   if (!sd?.name) {
     throw new Error(`Failed loading StructureDefinition from bundle`);
   }
@@ -165,10 +160,12 @@ export function loadDataType(sd: StructureDefinition, options?: LoadDataTypeOpti
     return;
   }
   const schema = parseStructureDefinition(sd);
-  if (options?.xmlPropertyNames && sd.kind === 'logical') {
+  if (isXmlLogicalModel(sd)) {
     applyXmlPropertyNames(schema, sd);
   }
   const specialCase = TYPE_SPECIAL_CASES[sd.url];
+  // Logical models name their types by URL
+  const isUrlType = sd.type?.startsWith('http://') || sd.type?.startsWith('https://');
   let dataTypes: DataTypesMap;
   let typeName: string;
 
@@ -181,8 +178,7 @@ export function loadDataType(sd: StructureDefinition, options?: LoadDataTypeOpti
     // By default, only index by "type" for "official" FHIR types
     sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
     sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
-    sd.type?.startsWith('http://') ||
-    sd.type?.startsWith('https://')
+    isUrlType
   ) {
     dataTypes = DATA_TYPES;
     typeName = sd.type;
@@ -192,7 +188,9 @@ export function loadDataType(sd: StructureDefinition, options?: LoadDataTypeOpti
   }
 
   dataTypes[typeName] = schema;
-  if (dataTypes === DATA_TYPES && sd.url && sd.url !== typeName && typeName.startsWith('http')) {
+  // Types named by URL are also indexed by their StructureDefinition URL. Special cases are named by "name",
+  // even when their type is a URL, so this checks the name actually used.
+  if (dataTypes === DATA_TYPES && typeName.startsWith('http') && sd.url !== typeName) {
     dataTypes[sd.url] = schema;
   }
 
@@ -290,6 +288,15 @@ class StructureDefinitionParser {
     this.elements = sd.snapshot.element.slice(1);
     this.elementIndex = Object.create(null);
     this.index = 0;
+    this.logicalParents = new Set();
+    if (sd.kind === 'logical') {
+      for (const e of this.elements) {
+        const parent = e.path?.split('.').slice(0, -1).join('.');
+        if (parent && parent !== this.root.path) {
+          this.logicalParents.add(parent);
+        }
+      }
+    }
     this.resourceSchema = {
       name: sd.name,
       path: this.root.path,
@@ -306,15 +313,6 @@ class StructureDefinitionParser {
       mandatoryProperties: new Set(),
     };
     this.innerTypes = [];
-    this.logicalParents = new Set();
-    if (sd.kind === 'logical') {
-      for (const e of this.elements) {
-        const parent = e.path?.split('.').slice(0, -1).join('.');
-        if (parent && parent !== this.root.path) {
-          this.logicalParents.add(parent);
-        }
-      }
-    }
   }
 
   parse(): InternalTypeSchema {
@@ -519,21 +517,30 @@ class StructureDefinitionParser {
    * @returns The inner type name.
    */
   private innerTypeName(ed: ElementDefinition): string {
-    if (this.logicalParents.has(ed.path)) {
-      const path = (ed.path ?? '').split('.').slice(1).join('.');
-      return `${this.resourceSchema.type}#${path}`;
+    return this.getLogicalInnerTypeName(ed.path) ?? getElementDefinitionTypeName(ed);
+  }
+
+  /**
+   * Returns the name of the logical model inner type defined at a path, if any.
+   * @param path - The element path, e.g. "Observation.referenceRange".
+   * @returns The inner type name, or undefined if the path does not define a logical model inner type.
+   */
+  private getLogicalInnerTypeName(path: string | undefined): string | undefined {
+    if (!path || !this.logicalParents.has(path)) {
+      return undefined;
     }
-    return getElementDefinitionTypeName(ed);
+    return `${this.resourceSchema.type}#${path.split('.').slice(1).join('.')}`;
   }
 
   private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
+    // A content reference uses the type defined at the referenced path
+    const typePath = ed.contentReference ? ed.contentReference.slice(ed.contentReference.indexOf('#') + 1) : ed.path;
+    const logicalInnerType = this.getLogicalInnerTypeName(typePath);
     return (ed.type ?? []).map((type) => {
-      let code: string | undefined;
+      let code: string | undefined = logicalInnerType;
 
-      if (type.code === 'BackboneElement' || type.code === 'Element') {
+      if (!code && (type.code === 'BackboneElement' || type.code === 'Element')) {
         code = getElementDefinitionTypeName(ed);
-      } else if (this.logicalParents.has(ed.path)) {
-        code = this.innerTypeName(ed);
       }
 
       if (!code) {
