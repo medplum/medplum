@@ -29,7 +29,7 @@ const READ_PATH = /^(?<resourceType>[A-Za-z]+)\/(?<id>[^/?]+)$/;
  * list fails with "Not found", the same as a real server. Any other request, such as a search or a
  * write, fails with "Bad request".
  * @param resources - The resources to serve.
- * @param options - Optional client options. `fetch` and `storage` are always replaced.
+ * @param options - Optional client options. `fetch`, `storage`, and `autoBatchTime` are always replaced.
  * @returns The client.
  */
 export function createStaticClient(resources: Resource[], options?: MedplumClientOptions): MedplumClient {
@@ -45,6 +45,7 @@ export function createStaticClient(resources: Resource[], options?: MedplumClien
 
   const client = new MedplumClient({
     ...options,
+    autoBatchTime: 0,
     storage: new ClientStorage(new MemoryStorage()),
     fetch: async (url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET';

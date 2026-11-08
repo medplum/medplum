@@ -12,6 +12,14 @@ describe('createStaticClient', () => {
     await expect(medplum.readReference({ reference: 'Patient/123' })).resolves.toMatchObject(patient);
   });
 
+  test('Ignores autoBatchTime', async () => {
+    const other: Patient = { resourceType: 'Patient', id: '456' };
+    const medplum = createStaticClient([patient, other], { autoBatchTime: 100 });
+    await expect(
+      Promise.all([medplum.readResource('Patient', '123'), medplum.readResource('Patient', '456')])
+    ).resolves.toMatchObject([patient, other]);
+  });
+
   test('Unknown resource is not found', async () => {
     const medplum = createStaticClient([patient]);
     await expect(medplum.readResource('Patient', 'missing')).rejects.toThrow('Not found');
