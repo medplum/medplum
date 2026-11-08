@@ -11,7 +11,7 @@ The `$book` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 {{< /info >}}
 
-The `$book` operation books an [`Appointment`](/docs/api/fhir/resources/appointment) by atomically creating the Appointment, one or more busy [`Slot`](/docs/api/fhir/resources/slot) resources, and any required buffer Slots in a single FHIR transaction. The operation validates that the requested time is genuinely available before committing. It can also book every occurrence of a [weekly recurring series](#booking-a-recurring-series) in the same transaction.
+The `$book` operation books an [`Appointment`](/docs/api/fhir/resources/appointment) by atomically creating the Appointment, one or more busy [`Slot`](/docs/api/fhir/resources/slot) resources, and any required buffer Slots in a single database transaction. The operation validates that the requested time is genuinely available before committing. It can also book every occurrence of a [weekly recurring series](#booking-a-recurring-series) in the same transaction.
 
 ## Use Cases
 

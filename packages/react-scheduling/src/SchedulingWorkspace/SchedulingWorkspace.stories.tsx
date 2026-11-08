@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import { SchedulingColorURI } from '@medplum/core';
-import type { Appointment, Location, Reference } from '@medplum/fhirtypes';
+import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import {
   withBookStub,
   withCancelStub,
+  withConfirmStub,
   withFindStub,
   withFixtures,
   withMockedDate,
@@ -28,6 +29,7 @@ import {
   SchedulingFixtures,
   TelehealthService,
 } from '../stories/scheduling';
+import type { SchedulingWorkspaceProps } from './SchedulingWorkspace';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 /**
@@ -67,6 +69,7 @@ export default {
   decorators: [
     withBookStub(),
     withCancelStub(),
+    withConfirmStub(),
     withRescheduleStub(),
     // Cancellation reasons, plus the code value sets for visit types that ask for codes.
     withValueSets({ ...CancellationReasonValueSets, ...AuthorizationValueSets }),
@@ -93,18 +96,20 @@ export default {
  * visit is this story's, raised from `onBooked`: the workspace reports what was booked
  * and leaves how to say so to whatever is hosting it.
  *
- * The grid marks the time being booked, and the mark follows the answers: picking a time
- * in the search moves it there, and searching another day takes it down. Hovering open
- * time marks nothing — a whole-column tint cannot say which time is under the pointer.
- * The calendar never moves itself to keep the mark in sight; page to a week the marked
- * time is on and it is there.
+ * The grid highlights the time clicked. Picking a time in the search draws the visit it
+ * would book as a draft, hatched and outlined, and searching another day takes it down.
+ * Hovering open time marks nothing — a whole-column tint cannot say which time is under
+ * the pointer. The calendar never moves itself to keep either in sight; page to a week
+ * they are on and they are there.
  *
- * Clicking a different day with the form part-filled re-opens it on the new day and
- * clears the answers; clicking again inside the day already open leaves them alone.
+ * Clicking another time with the form part-filled keeps the answers and moves the time
+ * search to the day clicked; a day the search already covers is left as it is.
  *
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
  * anything booked from the form — opens its details in the same pane the booking form
  * uses, closing the form if one was open; clicking open time again puts the form back.
+ * A form holding answers on either tab asks first, the way the configuration workspace
+ * does; closing it with the ✕ does not.
  * "Cancel Appointment" turns the pane over to a page asking what the visit is being
  * called off for; a reason has to be searched for and picked before it can be confirmed,
  * and "Back" leaves without touching the visit. Confirming runs it through
@@ -129,6 +134,10 @@ export default {
  * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
  * "Delete" takes it off the calendar.
  *
+ * The imaging visits on Monday, Tuesday and Wednesday record **Uro Associates - Main Clinic**
+ * as their site, so their details name it as the service facility. The telehealth visits
+ * record none, and their details leave the line out.
+ *
  * Eliana Garcia's Tuesday telehealth visit with Dr. Brown is the second of three, weekly, and is
  * marked as recurring; page a week back or forward for the first and third.
  *
@@ -142,10 +151,21 @@ export default {
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.
  *
+ * Set **appointmentCommentMaxLength** under Controls to cap the notes: the booking form and the
+ * details' "Edit" count them against it and take no more. At 50, Tuesday's imaging visit has
+ * notes within the cap, and Thursday's infusion has notes already past it, which have to be
+ * shortened before its details can be saved.
+ *
+ * @param args - The props set from the Controls panel.
  * @returns The story.
  */
-export const Basic = (): JSX.Element => <Workspace />;
+export const Basic = (args: WorkspaceProps): JSX.Element => <Workspace {...args} />;
 Basic.decorators = [withFixtures(LOCAL_FIXTURES)];
+Basic.argTypes = {
+  appointmentCommentMaxLength: { control: { type: 'number', min: 1 } },
+};
+// The workspace's other props are inferred from it too, but this story passes none of them on.
+Basic.parameters = { controls: { include: ['appointmentCommentMaxLength'] } };
 
 /**
  * The same workspace when the calendars are not kept on the viewer's clock.
@@ -174,6 +194,9 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * `$book`, which checks it. What this adds is a **Date & time** and a **Minutes** field
  * above the times on offer, for placing a visit the rules would refuse. The read-only
  * time on the left stays where it is; both ways of answering land in it.
+ *
+ * **Date & time** starts out on the time clicked to open the form, unless that time has
+ * passed or a whole day was picked in month view.
  *
  * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
  * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
@@ -210,26 +233,31 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  * The workspace as a host opens it on one site, such as the facility a user launched
  * scheduling from.
  *
- * The host passes a reference to the Location, and the Location filter starts on **Uro Associates
- * - Satellite**: only the calendars held there are listed, and the visit types on offer
- * are the ones the satellite holds. Click open time and the booking form starts on the
+ * The host passes a reference to the Location, and the Service facility filter starts on **Uro Associates
+ * - Satellite**: only the calendars held there are listed, only the appointments recording the
+ * satellite are drawn, such as Dr. Brown's telehealth visit with Priya Shah on Thursday, and the
+ * visit types on offer are the ones the satellite holds. Click open time and the booking form starts on the
  * satellite too, which is the site the booked appointment records.
  *
- * It is only where the filter starts. Take the pill off and every calendar comes back.
+ * It is only where the filter starts. Take the pill off and every calendar and appointment comes
+ * back.
  *
  * @returns The story.
  */
-export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
+export const AtASite = (): JSX.Element => (
+  <Workspace defaultServiceFacility={{ reference: 'Location/satellite-clinic' }} />
+);
 AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
-  readonly defaultLocation?: Reference<Location>;
+  readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
+  readonly appointmentCommentMaxLength?: number;
 }
 
 /**
  * Fills the viewport under the package banner, which is 72px.
- * @param props - Whether the story lets a time be typed, and the site it starts on.
+ * @param props - Whether the story lets a time be typed, the site it starts on, and the cap on notes.
  * @returns The workspace as a host would mount it.
  */
 function Workspace(props: WorkspaceProps): JSX.Element {
@@ -240,7 +268,8 @@ function Workspace(props: WorkspaceProps): JSX.Element {
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
-        defaultLocation={props.defaultLocation}
+        defaultServiceFacility={props.defaultServiceFacility}
+        appointmentCommentMaxLength={props.appointmentCommentMaxLength}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={({ appointments }) => {

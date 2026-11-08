@@ -50,3 +50,9 @@ npm t -- --coverage
 npm t -- src/App.test.tsx --coverage
 npm t -- src/App.test.tsx -t 'Click logo' --coverage
 ```
+
+When run by a coding agent, Vitest switches to its `agent` reporter, which hides console output from passing tests. Pass `--reporter=default` to see it:
+
+```bash
+npm t -- src/App.test.tsx --reporter=default
+```

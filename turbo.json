@@ -16,7 +16,8 @@
         "MEDPLUM_INTROSPECTION_URL",
         "MEDPLUM_REGISTER_ENABLED",
         "GOOGLE_CLIENT_ID",
-        "RECAPTCHA_SITE_KEY"
+        "RECAPTCHA_SITE_KEY",
+        "FOOMEDICAL_PROJECT_ID"
       ]
     },
     "test": {

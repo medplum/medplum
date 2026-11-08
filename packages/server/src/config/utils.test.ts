@@ -13,6 +13,8 @@ describe('utils', () => {
     expect(isBooleanConfig('rateLimitsEnabled')).toBe(true);
     expect(isBooleanConfig('requireVerifiedEmailForProjectCreation')).toBe(true);
     expect(isBooleanConfig('storeBotInput')).toBe(true);
+    expect(isBooleanConfig('allowProjectSmtp')).toBe(true);
+    expect(isBooleanConfig('vmContextBotsEnabled')).toBe(true);
   });
 
   test('isIntegerConfig', () => {

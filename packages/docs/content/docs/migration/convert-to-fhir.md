@@ -144,4 +144,4 @@ With this modification, we no longer have to look up the [`Patient's`][patient] 
 
 ## Next Steps
 
-Continue with patient `P001` in [Building Migration Pipelines](/docs/migration/migration-pipelines), which applies these mapping, identifier, coding, and reference patterns to batches and transactions.
+Continue with patient `P001` in [Building Migration Pipelines](/docs/migration/migration-pipelines), which applies these mapping, identifier, coding, and reference patterns to batches and staged conditional upserts.

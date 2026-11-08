@@ -49,9 +49,11 @@ For linear chat, `partOf` plus sorting by `sent` is usually enough. Add [`inResp
 
 {{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="createYourFirstThreadReplyInResponseToTs" >}}
 
-## Atomic Creates With Transaction Bundles
+## Recovering a Partial Thread Creation {#atomic-creates-with-transaction-bundles}
 
-The steps above use separate `createResource` calls so each part of the thread is obvious. In production, you may prefer a single FHIR `transaction` `Bundle` so the thread header and first message are created together (all entries succeed or none are committed). Use `fullUrl` and `urn:uuid` references so the first message’s `partOf` can point at the header inside the same bundle. This tutorial does not include a full bundle example on purpose: step-by-step `transaction` patterns, the `executeBatch` helper on [`MedplumClient`](/docs/sdk/core.medplumclient), project feature flags, and current limitations are covered in [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+A thread header and its first message can be created in separate steps, as above. In production, assign stable identifiers to the thread and message, use conditional creates, and retain the saved header reference if the message write fails. Retry the failed message without recreating the header. An empty header is an intermediate state that the application must handle explicitly.
+
+If your workflow cannot tolerate the header existing without the first message, this recovery pattern is insufficient. Atomic transaction Bundles are currently unavailable on hosted Medplum. Define how the workflow will handle that requirement before deployment; see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions).
 
 ## Verification
 

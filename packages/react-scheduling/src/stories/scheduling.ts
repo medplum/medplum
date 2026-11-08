@@ -23,6 +23,7 @@ import {
   setScheduleSchedulingParameter,
   SNOMED,
   TimezoneExtensionURI,
+  toAppointmentSiteReference,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -1150,7 +1151,7 @@ function buildPatient(id: string, given: string, family: string, birthDate: stri
 /** Typed as a medical record number, which is how it is read without configuration. */
 export const ElderJordanPatient = buildPatient('jordan-elder', 'Jordan', 'Reyes', '1961-04-02', {
   type: { coding: [{ system: HL7_V2_0203, code: 'MR' }] },
-  value: 'MRN-0041',
+  value: '100041',
 });
 
 /** Same name, different person, and no medical record number on file. */
@@ -1159,7 +1160,7 @@ export const YoungerJordanPatient = buildPatient('jordan-younger', 'Jordan', 'Re
 /** Identified only by the system that issued it, which is what `mrnSystem` names. */
 export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield', '1978-06-14', {
   system: MRN_SYSTEM,
-  value: 'MRN-0099',
+  value: '100099',
 });
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
@@ -1175,12 +1176,13 @@ export const AppointmentPatientFixtures = [
   buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
   buildPatient('pt-patel', 'Anika', 'Patel', '1983-03-19'),
   buildPatient('pt-novak', 'Theo', 'Novak', '1967-10-08'),
+  buildPatient('pt-shah', 'Priya', 'Shah', '1992-05-26'),
 ];
 
 /**
- * Appointments and Slots for the calendar view, dated within the week of Monday,
- * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
- * always renders Sun May 3 through Sat May 9.
+ * Appointments and Slots for the calendar view, dated Monday, May 4 2020 — the date
+ * `MockDateWrapper` freezes the clock to — through Thursday, May 7, so they all fall within
+ * the weekdays `MultiCalendar` opens on.
  */
 
 /**
@@ -1219,7 +1221,9 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  comment: 'Bring prior films',
   slot: RiveraImagingHeldSlots.map(createReference),
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(MilesCooperPatient) },
@@ -1276,6 +1280,7 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
     createReference(DrOkaforPractitioner)
   ),
   slot: OkaforImagingHeldSlots.map(createReference),
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
 };
 
 /** Open availability outside the booked visits, on the pinned "today." */
@@ -1300,13 +1305,13 @@ export const ExamRoomABlockedSlot: WithId<Slot> = {
   comment: 'Equipment maintenance',
 };
 
-/** Availability at the satellite site, for when the location filter is switched. */
+/** Availability at the satellite site, for when the service facility filter is switched. */
 export const SatelliteRoomFreeSlot: WithId<Slot> = {
   resourceType: 'Slot',
-  id: 'slot-satellite-room-free-fri',
+  id: 'slot-satellite-room-free-thu',
   status: 'free',
-  start: '2020-05-08T13:00:00Z',
-  end: '2020-05-08T15:00:00Z',
+  start: '2020-05-07T13:00:00Z',
+  end: '2020-05-07T15:00:00Z',
   schedule: createReference(SatelliteRoomSchedule),
 };
 
@@ -1408,6 +1413,7 @@ export const MondayImagingAppointment: WithId<Appointment> = {
   end: mondayMorningAt(9, 30),
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   slot: MondayImagingHeldSlots.map(createReference),
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: { reference: 'Patient/pt-patel', display: 'Anika Patel' } },
@@ -1494,6 +1500,34 @@ function garciaSeriesOccurrence(position: number): Pick<Appointment, 'identifier
   };
 }
 
+export const SatelliteTelehealthHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'brown-thu',
+  status: 'busy',
+  schedule: createReference(DrBrownSchedule),
+  start: '2020-05-07T20:00:00Z',
+  end: '2020-05-07T20:20:00Z',
+};
+
+/** A telehealth visit Dr. Brown sees from the satellite, so the satellite has a visit to filter to. */
+export const SatelliteTelehealthAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appointment-brown-thu',
+  status: 'booked',
+  start: SatelliteTelehealthHeldSlot.start,
+  end: SatelliteTelehealthHeldSlot.end,
+  serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+  slot: [createReference(SatelliteTelehealthHeldSlot)],
+  supportingInformation: [toAppointmentSiteReference(SatelliteClinic)],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+      { status: 'accepted', actor: { reference: 'Patient/pt-shah', display: 'Priya Shah' } },
+    ],
+    createReference(DrBrownPractitioner)
+  ),
+};
+
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-chen-infusion-thu',
@@ -1526,7 +1560,9 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  comment: 'Prefers the recliner by the window; allow extra time for IV access',
   slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
+  supportingInformation: [toAppointmentSiteReference(MainClinic)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(ElderJordanPatient) },
@@ -1569,6 +1605,8 @@ export const CalendarWeekFixtures = [
   MondayTelehealthAppointment,
   ...GarciaSeriesSlots,
   ...GarciaSeriesAppointments,
+  SatelliteTelehealthHeldSlot,
+  SatelliteTelehealthAppointment,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,

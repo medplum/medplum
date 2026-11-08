@@ -30,7 +30,7 @@ Install required profiles and terminology before validating these stages.
 
 ## Check the Order Against Your References
 
-The table is a starting point. Inspect the references produced by your approved mappings before finalizing the sequence. For example, a `Condition` without an encounter reference can load before encounter history, while a `Condition.encounter` reference requires that Encounter to exist first or be created in the same transaction.
+The table is a starting point. Inspect the references produced by your approved mappings before finalizing the sequence. For example, a `Condition` without an encounter reference can load before encounter history, while a `Condition.encounter` reference requires that Encounter to be saved successfully before the dependent Condition is loaded.
 
 This diagram illustrates common dependencies. Arrows point from prerequisite data to records that commonly depend on it:
 
@@ -48,6 +48,6 @@ flowchart TD
     Encounters --> Documents
 ```
 
-When a target reference does not exist yet, change the order, create the related resources together in a [FHIR transaction](/docs/fhir-datastore/fhir-batch-requests#internal-references) with transaction support enabled, or use a conditional reference to a resource that already exists. Do not drop the reference merely to make the load succeed.
+When a target reference does not exist yet, load that resource first and confirm success before loading its dependents. Use the saved ID or a conditional reference that resolves uniquely to the existing resource. See [staged upserts](/docs/migration/migration-pipelines#using-transactions-for-data-integrity). Do not drop the reference merely to make the load succeed. Atomic transaction Bundles are currently unavailable on hosted Medplum.
 
 Next, define and approve the rules for [governing data mappings](/docs/migration/mapping-governance).

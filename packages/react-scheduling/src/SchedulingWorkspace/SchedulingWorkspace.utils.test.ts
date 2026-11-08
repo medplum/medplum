@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { TimezoneExtensionURI } from '@medplum/core';
-import type { Practitioner, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
-import { formatWhen, getCalendarTimezones } from './SchedulingWorkspace.utils';
+import {
+  filterSlotsByDrawnAppointments,
+  formatWhen,
+  getCalendarTimezones,
+  isPastEditWindow,
+} from './SchedulingWorkspace.utils';
 
 const EASTERN = 'America/New_York';
 
@@ -71,5 +76,65 @@ describe('formatWhen', () => {
       `Monday, May 4 · ${formatZonedTime(mondayNine)} – Friday, May 8 · ${formatZonedTime(fridayFive)}`
     );
     expect(formatWhen({})).toBeUndefined();
+  });
+});
+
+describe('isPastEditWindow', () => {
+  const visit: Appointment = {
+    resourceType: 'Appointment',
+    status: 'booked',
+    participant: [],
+    start: '2020-05-04T09:00:00Z',
+    end: '2020-05-04T10:00:00Z',
+  };
+
+  test('Stays open for 12 hours after the visit ends, and closes then', () => {
+    expect(isPastEditWindow(visit, new Date('2020-05-04T21:59:59Z'))).toBe(false);
+    expect(isPastEditWindow(visit, new Date('2020-05-04T22:00:00Z'))).toBe(true);
+  });
+
+  test('Judges a visit with no end by its start, and one with neither as open', () => {
+    expect(isPastEditWindow({ ...visit, end: undefined }, new Date('2020-05-04T21:00:00Z'))).toBe(true);
+    expect(isPastEditWindow({ ...visit, start: undefined, end: undefined }, new Date('2020-05-05T09:00:00Z'))).toBe(
+      false
+    );
+  });
+});
+
+describe('filterSlotsByDrawnAppointments', () => {
+  const slotOf = (id: string, status: Slot['status']): WithId<Slot> => ({
+    resourceType: 'Slot',
+    id,
+    status,
+    schedule: { reference: 'Schedule/dr-rivera-schedule' },
+    start: '2020-05-04T09:00:00Z',
+    end: '2020-05-04T10:00:00Z',
+  });
+  const visitOf = (...slots: Slot[]): Appointment => ({
+    resourceType: 'Appointment',
+    status: 'booked',
+    participant: [],
+    slot: slots.map((slot) => ({ reference: `Slot/${slot.id}` })),
+  });
+
+  const block = slotOf('out-of-office', 'busy-unavailable');
+  const drawnVisit = slotOf('drawn-visit', 'busy');
+  const drawnBuffer = slotOf('drawn-buffer', 'busy-unavailable');
+  const hiddenVisit = slotOf('hidden-visit', 'busy');
+  const hiddenBuffer = slotOf('hidden-buffer', 'busy-unavailable');
+  const slots = [block, drawnVisit, drawnBuffer, hiddenVisit, hiddenBuffer];
+  const drawn = visitOf(drawnVisit, drawnBuffer);
+  const hidden = visitOf(hiddenVisit, hiddenBuffer);
+
+  test('Keeps a Slot no loaded appointment holds', () => {
+    expect(filterSlotsByDrawnAppointments(slots, [drawn, hidden], [])).toStrictEqual([block]);
+  });
+
+  test("Keeps a drawn appointment's Slots and drops a hidden one's, though a buffer has a block's status", () => {
+    expect(filterSlotsByDrawnAppointments(slots, [drawn, hidden], [drawn])).toStrictEqual([
+      block,
+      drawnVisit,
+      drawnBuffer,
+    ]);
   });
 });

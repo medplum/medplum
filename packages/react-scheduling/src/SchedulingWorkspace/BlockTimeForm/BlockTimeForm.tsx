@@ -16,6 +16,7 @@ import {
   getNativeInputType,
   parseZonedDateTimeInput,
 } from '../../AppointmentFinder/AppointmentFinder.times';
+import { useChanged } from '../../hooks/useChanged';
 import type { DateTimeRange } from '../../types';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, readonly ScheduleCandidate[]>>;
@@ -29,6 +30,8 @@ export interface BlockTimeFormProps {
   readonly defaultRange: DateTimeRange;
   /** Called when the time typed changes, with undefined while it is not a whole range. */
   readonly onChangeTime?: (range: DateTimeRange | undefined) => void;
+  /** Called whenever the form starts or stops holding anything beyond the time it opened on. */
+  readonly onDirtyChange?: (dirty: boolean) => void;
   /**
    * Called with the Slots written. A failure here is logged rather than shown: the
    * time is blocked by the time it runs.
@@ -47,7 +50,7 @@ export interface BlockTimeFormProps {
  * @returns The form.
  */
 export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
-  const { candidatesByActorType, defaultRange, onChangeTime, onBlocked } = props;
+  const { candidatesByActorType, defaultRange, onChangeTime, onDirtyChange, onBlocked } = props;
   const medplum = useMedplum();
 
   const [startValue, setStartValue] = useState(() => formatZonedDateTimeInput(defaultRange.start));
@@ -58,13 +61,19 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>();
 
-  const [shownRange, setShownRange] = useState(defaultRange);
-  if (shownRange !== defaultRange) {
-    setShownRange(defaultRange);
+  const defaultRangeChanged = useChanged(defaultRange);
+  if (defaultRangeChanged) {
     setStartValue(formatZonedDateTimeInput(defaultRange.start));
     setEndValue(formatZonedDateTimeInput(defaultRange.end));
     setWritten(false);
   }
+
+  const dirty =
+    startValue !== formatZonedDateTimeInput(defaultRange.start) ||
+    endValue !== formatZonedDateTimeInput(defaultRange.end) ||
+    chosen !== NONE_CHOSEN ||
+    comment !== '';
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const start = parseZonedDateTimeInput(startValue);
   const end = parseZonedDateTimeInput(endValue);

@@ -27,6 +27,8 @@ This operation requires **Project Admin** privileges
 
 In Medplum, the `User.email` field controls authentication and login, while the profile resource's `telecom` field displays contact information. If you update only the profile resource email, users will not be able to log in with the new email address. Use this operation to update both atomically.
 
+Use this operation rather than editing `User.email` directly, so that the related account changes described under [Output](#output) are applied.
+
 {{< /warning >}}
 
 ## Parameters
@@ -46,6 +48,8 @@ The operation returns the updated [`User`](/docs/api/fhir/medplum/user) resource
 
 - `email` set to the new email address
 - `emailVerified` set to `false` (unless verification was skipped)
+
+Any outstanding invite, password reset, and email verification requests for the user are invalidated, and the user is signed out of all active sessions. A user who has not yet set a password can do so with "Forgot password" and the new email address.
 
 If `updateProfileTelecom` is `true`:
 

@@ -82,7 +82,7 @@ To prevent this, you can use the `If-Match` header (or `ifMatch` option) to spec
 {{< /tabs >}}
 </details>
 
-**For transaction bundles**, you can use version checking with `ifMatch` in bundle entry requests. See the [Version Checking in Transaction Bundle](/docs/fhir-datastore/fhir-batch-requests#preventing-lost-updates-with-version-checking) section for details.
+**For batch requests**, use `ifMatch` on each entry that needs version checking. A conflicting entry fails independently of the other entries; atomic transaction support is not required. See [Version Checking in a Batch](/docs/fhir-datastore/fhir-batch-requests#preventing-lost-updates-with-version-checking).
 
 ## Patch Operation
 

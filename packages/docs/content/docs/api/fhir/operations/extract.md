@@ -39,7 +39,7 @@ This is a key component of the [Structured Data Capture][data-capture] workflow,
 
 ## Output
 
-The operation returns a `Bundle` resource containing the resources populated from templates in the Questionnaire, derived from values in the QuestionnaireResponse.
+The operation returns a `Bundle` resource containing the resources populated from templates in the Questionnaire, derived from values in the QuestionnaireResponse. It does not persist the extracted resources; see [saving the results](/docs/questionnaires/parsing-questionnaire-responses#results-bundle).
 
 **Request**:
 

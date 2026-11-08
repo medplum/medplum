@@ -10,6 +10,7 @@ import type {
   Organization,
   PractitionerRole,
   Reference,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -18,7 +19,15 @@ import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
+import type { ServiceType } from '../../utils/eligibility';
+import {
+  buildEligibilityServiceTypesValueSet,
+  DEFAULT_ELIGIBILITY_SERVICE_TYPE,
+  X12_SERVICE_TYPE_CODE_SYSTEM,
+} from '../../utils/eligibility';
 import { EncounterCoverageEligibilityModal } from './EncounterCoverageEligibilityModal';
+
+const MENTAL_HEALTH: ServiceType = { code: 'MH', display: 'Mental Health' };
 
 const mockCoverage: WithId<Coverage> = {
   resourceType: 'Coverage',
@@ -82,11 +91,18 @@ const mockEligibilityResponse: WithId<CoverageEligibilityResponse> = {
  * @param medplum - The mock client to stub.
  * @param opts - What the stub returns.
  * @param opts.practitionerRole - The signed-in practitioner's active role at a billing organization, if any.
+ * @param opts.valueSet - The eligibility service types saved in Billing Settings, if any.
  */
-function mockSearchOne(medplum: MockClient, opts: { practitionerRole?: PractitionerRole | undefined } = {}): void {
+function mockSearchOne(
+  medplum: MockClient,
+  opts: { practitionerRole?: PractitionerRole | undefined; valueSet?: ValueSet | undefined } = {}
+): void {
   vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string) => {
     if (resourceType === 'PractitionerRole') {
       return opts.practitionerRole ?? undefined;
+    }
+    if (resourceType === 'ValueSet') {
+      return opts.valueSet ?? undefined;
     }
     return undefined;
   }) as any);
@@ -332,12 +348,57 @@ describe('EncounterCoverageEligibilityModal', () => {
           expect.objectContaining({
             resourceType: 'CoverageEligibilityRequest',
             provider: expect.objectContaining({ reference: `Organization/${TestOrganization.id}` }),
+            item: [
+              {
+                category: {
+                  coding: [
+                    { system: X12_SERVICE_TYPE_CODE_SYSTEM, code: '30', display: 'Health Benefit Plan Coverage' },
+                  ],
+                },
+              },
+            ],
           })
         );
         expect(medplum.post).toHaveBeenCalledWith(
           medplum.fhirUrl('CoverageEligibilityRequest', mockEligibilityRequest.id, '$submit')
         );
         expect(screen.queryByText('Billing organization')).not.toBeInTheDocument();
+      });
+    });
+
+    test('asks only about the service types kept in the picker', async () => {
+      const user = userEvent.setup();
+      mockSearchOne(medplum, {
+        practitionerRole: mockPractitionerRole,
+        valueSet: {
+          ...buildEligibilityServiceTypesValueSet([DEFAULT_ELIGIBILITY_SERVICE_TYPE, MENTAL_HEALTH]),
+          id: 'vs-1',
+        },
+      });
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      const pill = (await screen.findByText('Mental Health (MH)')).parentElement as HTMLElement;
+      await user.click(within(pill).getByRole('button', { hidden: true }));
+      await user.click(screen.getByRole('button', { name: 'Run as Organization', hidden: true }));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({
+            item: [
+              {
+                category: {
+                  coding: [
+                    { system: X12_SERVICE_TYPE_CODE_SYSTEM, code: '30', display: 'Health Benefit Plan Coverage' },
+                  ],
+                },
+              },
+            ],
+          })
+        );
       });
     });
 

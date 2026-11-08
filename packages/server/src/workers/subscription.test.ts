@@ -17,6 +17,7 @@ import type {
   Binary,
   Bot,
   DocumentReference,
+  Login,
   Observation,
   Patient,
   Practitioner,
@@ -221,6 +222,36 @@ describe('Subscription Worker', () => {
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
     }));
 
+  test('Does not send subscriptions for Login', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Login',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const project = repo.currentProject() as WithId<Project>;
+      const login: WithId<Login> = {
+        resourceType: 'Login',
+        id: randomUUID(),
+        meta: { project: project.id },
+        user: { reference: 'User/' + randomUUID() },
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        refreshSecret: randomUUID(),
+      };
+
+      const subscriptionQueue = getSubscriptionQueue();
+      (subscriptionQueue?.add as Mock).mockClear();
+      await addSubscriptionJobs(login, undefined, { project, interaction: 'create' });
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
   test('Does not send subscriptions when project is inactive', () =>
     withTestContext(async () => {
       await repo.createResource<Subscription>({
@@ -258,6 +289,36 @@ describe('Subscription Worker', () => {
       (subscriptionQueue?.add as Mock).mockClear();
       await addSubscriptionJobs(patient, undefined, { project, interaction: 'update' });
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
+  test("Redacts AuditEvent display text when the subscription's project redacts AuditEvents", () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: 'https://example.com/subscription' },
+      });
+      await systemRepo.updateResource<Project>({
+        ...(repo.currentProject() as WithId<Project>),
+        setting: [{ name: 'redactAuditEvents', valueBoolean: true }],
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(patient, 'create');
+
+      const auditEvent = await repo.searchOne<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(auditEvent?.entity?.find((e) => e.what?.reference === getReferenceString(patient))?.what).toStrictEqual({
+        reference: getReferenceString(patient),
+      });
     }));
 
   test('Status code 201', () =>
@@ -1608,6 +1669,58 @@ describe('Subscription Worker', () => {
       });
     }));
 
+  test('Do not execute Bot from unlinked Project', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        description: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        runAsUser: true,
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      // No Project.link to the Bot's Project
+      const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+      const subscriptionEvents: SearchRequest<AuditEvent> = {
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'entity',
+            operator: Operator.EQUALS,
+            value: getReferenceString(subscription),
+          },
+        ],
+      };
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      // Attempt to trigger the Subscription
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(
+        'Bot is not accessible from the Subscription project'
+      );
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(0);
+
+      // The Bot must not have run
+      await expect(repo.search(subscriptionEvents)).resolves.toMatchObject({ entry: [] });
+    }));
+
   test('Stop retries if Subscription status not active', () =>
     withTestContext(async () => {
       const subscription = await repo.createResource<Subscription>({
@@ -2191,23 +2304,15 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy in different project
-      // This should trigger an error when the subscription is executed
-      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        meta: { project: repo.currentProject()?.id },
-        resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
-      });
-
-      const { repo: apTestRepo } = await createTestProject({
+      const { repo: apTestRepo, accessPolicy } = await createTestProject({
         withClient: true,
         withRepo: true,
         project: {
           name: 'AccessPolicy Throw Project',
           features: [],
         },
-        membership: {
-          accessPolicy: createReference(accessPolicy),
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
         },
       });
 
@@ -2263,23 +2368,15 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy in different project
-      // This should trigger an error when the subscription is executed
-      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        meta: { project: repo.currentProject()?.id },
-        resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-      });
-
-      const { repo: apTestRepo } = await createTestProject({
+      const { repo: apTestRepo, accessPolicy } = await createTestProject({
         withClient: true,
         withRepo: true,
         project: {
           name: 'AccessPolicy Not Met but Should Succeed Project',
           features: [],
         },
-        membership: {
-          accessPolicy: createReference(accessPolicy),
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         },
       });
 
@@ -2416,6 +2513,53 @@ describe('Subscription Worker', () => {
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('?Expires='),
+        })
+      );
+    }));
+
+  test('Do not presign attachments from a different project', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const binary = await botRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const documentRef = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              url: `Binary/${binary.id}`,
+            },
+          },
+        ],
+      });
+      expect(documentRef).toBeDefined();
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      await findAndExecSubscriptionJob(documentRef, 'create', subscription);
+
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining(`"url":"Binary/${binary.id}"`),
         })
       );
     }));
@@ -2633,6 +2777,11 @@ describe('Subscription Worker', () => {
           { includeResource: true },
         ]);
 
+        const differentCase = await wsSubRepo.updateResource<Subscription>({
+          ...subscription,
+          id: subscription.id.toUpperCase(),
+        });
+
         // Delete the patient
         nextArgsPromise = waitForNextSubNotification<Patient>();
         await wsSubRepo.deleteResource('Patient', updatedPatient.id);
@@ -2641,7 +2790,7 @@ describe('Subscription Worker', () => {
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(updatedPatient),
-          subscription.id,
+          differentCase.id,
           { includeResource: true },
         ]);
       }));
@@ -2668,7 +2817,7 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
 
-        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Not found');
+        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Job not found');
 
         // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
         // if the job had made its way to the queue previously under different logic
@@ -2685,7 +2834,6 @@ describe('Subscription Worker', () => {
           requestTime: new Date().toISOString(),
           requestId: ctx?.requestId,
           traceId: ctx?.traceId,
-          authState: ctx?.authState,
         };
 
         // For a websocket subscription, this results in "not found" instead of "gone"
@@ -2763,16 +2911,6 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        // Create an access policy in different project
-        // This should trigger an error when the subscription is executed
-        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          meta: { project: repo.currentProject()?.id },
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
-        // Create an access policy in different project
-        // This should trigger an error when the subscription is executed
         const {
           repo: wsRepo,
           project,
@@ -2786,8 +2924,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy Denied Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
@@ -2831,16 +2969,6 @@ describe('Subscription Worker', () => {
         // allow the websocket subscription to bypass the access-policy check.
         const url = 'https://example.com/subscription';
 
-        // An access policy that restricts Patient to a specific ID that will never match our patient.
-        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          meta: { project: repo.currentProject()?.id },
-          resource: [
-            { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
-            { resourceType: 'Subscription' },
-          ],
-        });
-
         // Create a project whose membership carries the denying access policy.
         // The project must have 'websocket-subscriptions' enabled so that the websocket
         // subscription is fetched and evaluated.
@@ -2857,8 +2985,12 @@ describe('Subscription Worker', () => {
             name: 'Access Policy Cache Channel Type Isolation Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          // An access policy that restricts Patient to a specific ID that will never match our patient.
+          accessPolicy: {
+            resource: [
+              { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
+              { resourceType: 'Subscription' },
+            ],
           },
         });
 

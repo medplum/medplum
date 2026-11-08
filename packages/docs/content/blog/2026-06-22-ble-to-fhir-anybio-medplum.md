@@ -18,6 +18,8 @@ This post walks through what each side does and how the data is shaped, then giv
 
 <!--more-->
 
+*Updated November 2026: Corrected the hosted Bundle atomicity guidance and clarified requirements for recovering partial writes.*
+
 ## The pipeline at a glance
 
 ```
@@ -46,6 +48,12 @@ The standard payload is a FHIR R4 **transaction Bundle** containing:
 - **DocumentReference + Attachment** - for telemetry strips (ECG, EDA, PPG waveforms) rendered as PNG/PDF artifacts.  
 - **Provenance** - chain-of-custody from device through algorithm to derived artifact.  
 - **Patient** reference - a logical reference; Medplum resolves or auto-creates it.
+
+{{< warning title="Hosted Bundle processing" >}}
+
+Atomic transaction Bundles are currently unavailable on hosted Medplum. The payload below can partially succeed even though its type is `transaction`. Inspect each response entry and reconcile failed writes before treating an episode export as complete. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
+
+{{< /warning >}}
 
 Every Observation carries its lineage and its reproducibility metadata using **standard FHIR elements** - not custom fields:
 
@@ -258,7 +266,9 @@ You should see the Observations AnyBio wrote, with US Core profile metadata, mul
 
 A happy-path demo tells you the integration *can* work. Here's how it behaves when it doesn't - which is the part that decides whether you'd put it in front of patients.
 
-**Transaction Bundles are all-or-nothing.** A `transaction` Bundle either fully applies or fully rejects; one invalid resource or one broken reference fails the entire episode's export, and the server returns an `OperationOutcome` describing why. AnyBio validates the Bundle against US Core *in-pipeline before* the POST, so most of this is caught early. If Medplum still rejects it, the Bundle is quarantined with the returned `OperationOutcome` attached - so you can see exactly which resource and which constraint failed instead of reverse-engineering it from logs.
+**Handle partial writes on hosted Medplum.** Atomic transaction processing is currently unavailable, so a failed entry does not roll back successful entries, even when the response is labeled `transaction-response`. Pre-validating resources does not change that behavior. The exporting client must inspect every entry, retain its outcome and saved reference, and recover failures individually. Verify that the integration handles mixed success and failure responses before deployment.
+
+If episode exports may be reconciled incrementally, batches of identifier-based conditional writes are sufficient, with dependency stages for linked resources. If the application requires every resource to commit together, this hosted path cannot meet that requirement; an episode-complete indicator or retries do not provide database atomicity.
 
 **Transient failures retry; persistent ones dead-letter.** Network errors, 5xx responses, and expired tokens trigger exponential backoff with jitter and a capped retry count. A 401 refreshes the token and retries. Once retries are exhausted, the Bundle moves to a dead-letter queue and raises an alert rather than being silently dropped.
 
@@ -302,7 +312,7 @@ To go deeper on the Medplum side of the pipeline:
 - [Working with FHIR Data](/docs/fhir-datastore/working-with-fhir) — how Medplum stores and serves FHIR R4.
 - [Chart Data Model](/docs/charting/chart-data-model) — modeling Observations and vital signs, including [`valueSampledData` for time series](/docs/charting/chart-data-model#using-valuesampleddata-for-time-series).
 - [Commonly Used Terminologies](/docs/terminology/common-terminologies) — LOINC, SNOMED CT, and UCUM, and how multi-coded `code` works.
-- [Batch & Transaction Requests](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) and [Conditional Batch Actions](/docs/fhir-datastore/fhir-batch-requests#conditional-batch-actions) — atomic Bundles and idempotent (`ifNoneExist`) writes.
+- [Batch & Transaction Requests](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) and [Conditional Batch Actions](/docs/fhir-datastore/fhir-batch-requests#conditional-batch-actions) – hosted availability, per-entry recovery, and conditional (`ifNoneExist`) writes.
 - [FHIR Profiles & Validation](/docs/fhir-datastore/profiles) and [Understanding USCDI Data Classes](/docs/fhir-datastore/understanding-uscdi-dataclasses) — US Core conformance.
 - [Patient Deduplication](/docs/fhir-datastore/patient-deduplication) — identity matching versus auto-create.
 - [External Files and Document References](/docs/fhir-datastore/external-documents) — storing waveform strips and other binary artifacts.

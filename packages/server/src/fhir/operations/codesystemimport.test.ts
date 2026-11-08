@@ -406,6 +406,58 @@ describe('CodeSystem $import', () => {
     await assertCodeMissing(codeSystem.id, code);
   });
 
+  test('Requires update permission on own Project CodeSystem by URL', async () => {
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      accessPolicy: { resource: [{ resourceType: 'CodeSystem', interaction: ['create', 'read', 'search'] }] },
+    });
+    const codeSystem = await repo.createResource<CodeSystem>({
+      ...snomedJSON,
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+    });
+
+    const code = 'ZZ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: codeSystem.url },
+          { name: 'concept', valueCoding: { code, display: 'Read-only policy' } },
+        ],
+      });
+    expect(res).toHaveStatus(403);
+    await assertCodeMissing(codeSystem.id, code);
+  });
+
+  test('Imports into own Project CodeSystem by ID without extended mode', async () => {
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    const codeSystem = await repo.createResource<CodeSystem>({
+      ...snomedJSON,
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+    });
+
+    const code = 'ZZ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'concept', valueCoding: { code, display: 'Own project concept' } }],
+      });
+    expect(res).toHaveStatus(200);
+    await assertCodeExists(codeSystem.id, code);
+  });
+
   test('Imports concepts and synonym designations', async () => {
     const res = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)

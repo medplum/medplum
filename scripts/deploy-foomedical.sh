@@ -8,16 +8,22 @@ fi
 # Exit on error
 set -e
 
-if [[ -z "${MEDPLUM_BASE_URL}" ]]; then
-  echo "MEDPLUM_BASE_URL is missing"
+if [[ -z "${FOOMEDICAL_BASE_URL}" ]]; then
+  echo "FOOMEDICAL_BASE_URL is missing"
   exit 1
 fi
 
-# Inject env vars into build output. foomedical.com has its own reCAPTCHA key, separate from the app's.
+if [[ -z "${FOOMEDICAL_PROJECT_ID}" ]]; then
+  echo "FOOMEDICAL_PROJECT_ID is missing"
+  exit 1
+fi
+
+# Inject deployment configuration into the build output.
 find "examples/foomedical/dist" -type f -exec sed -i \
-  -e "s|__MEDPLUM_BASE_URL__|${MEDPLUM_BASE_URL}|g" \
+  -e "s|__MEDPLUM_BASE_URL__|${FOOMEDICAL_BASE_URL}|g" \
+  -e "s|__FOOMEDICAL_PROJECT_ID__|${FOOMEDICAL_PROJECT_ID}|g" \
   -e "s|__MEDPLUM_CLIENT_ID__||g" \
-  -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
+  -e "s|__GOOGLE_CLIENT_ID__|${FOOMEDICAL_GOOGLE_CLIENT_ID}|g" \
   -e "s|__RECAPTCHA_SITE_KEY__|${FOOMEDICAL_RECAPTCHA_SITE_KEY}|g" \
   {} \;
 

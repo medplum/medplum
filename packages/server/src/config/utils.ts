@@ -206,9 +206,9 @@ export function isFloatConfig(_key: string): boolean {
 }
 
 const booleanKeys = new Set([
+  'allowProjectSmtp',
   'allowUnsafeOutbound',
   'autoDownloadEnabled',
-  'botCustomFunctionsEnabled',
   'cacheResourcesOnWrite',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
@@ -222,6 +222,7 @@ const booleanKeys = new Set([
   'logRequests',
   'logAuditEvents',
   'mcpEnabled',
+  'newProjectRegistrationEnabled',
   'registerEnabled',
   'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
@@ -231,6 +232,14 @@ const booleanKeys = new Set([
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
   'redactAuditEvents',
+  'saveAuditEvents',
+  'introspectionEnabled',
+  'vmContextBotsEnabled',
+  'heartbeatEnabled',
+  'dispatchEnabled',
+  'subscriptionsEnabled',
+  'preCommitSubscriptionsEnabled',
+  'rangeSearch',
 ]);
 
 export function isBooleanConfig(key: string): boolean {

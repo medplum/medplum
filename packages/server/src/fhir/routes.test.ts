@@ -498,6 +498,16 @@ describe('FHIR Routes', () => {
     expect(res).toHaveStatus(400);
   });
 
+  test('Patch resource invalid resource type', async () => {
+    const res = await request(app)
+      .patch(`/fhir/R4/Foo/${patientId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Parameters' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Unknown resource type');
+  });
+
   test('Patch resource invalid result', async () => {
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${patientId}`)
@@ -692,6 +702,93 @@ describe('FHIR Routes', () => {
       }));
   });
 
+  test('chainedSearchOnReader only routes chained searches to reader', async () => {
+    const token = await initTestAuth({
+      project: { systemSetting: [{ name: 'chainedSearchOnReader', valueBoolean: true }] },
+    });
+
+    for (const [url, expectReader] of [
+      ['/fhir/R4/Observation?subject:Patient.name=Alice', true],
+      ['/fhir/R4/Patient?_has:Observation:subject:status=final', true],
+      ['/fhir/R4/Patient?name=Alice', false],
+    ] as const) {
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
+      try {
+        const res = await request(app)
+          .get(url)
+          .set('Authorization', 'Bearer ' + token);
+        expect(res).toHaveStatus(200);
+        expect(readerSpy).toHaveBeenCalledTimes(expectReader ? 1 : 0);
+        expect(writerSpy).toHaveBeenCalledTimes(expectReader ? 0 : 1);
+      } finally {
+        restore();
+      }
+    }
+  });
+
+  test('readonlyBatchOnReader only routes read-only batches to reader', async () => {
+    const token = await initTestAuth({
+      project: { systemSetting: [{ name: 'readonlyBatchOnReader', valueBoolean: true }] },
+    });
+
+    const search = { request: { method: 'GET', url: 'Patient?name=Alice' } };
+    const create = { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } };
+    const nested = {
+      request: { method: 'POST', url: '/' },
+      resource: { resourceType: 'Bundle', type: 'batch', entry: [search] },
+    };
+    for (const [type, entry, expectReader] of [
+      ['batch', [search, search], true],
+      ['batch', [search, create], false],
+      ['transaction', [search, search], false],
+      ['batch', [nested, search], false],
+    ] as const) {
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
+      try {
+        const res = await request(app)
+          .post('/fhir/R4')
+          .set('Authorization', 'Bearer ' + token)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send({ resourceType: 'Bundle', type, entry });
+        expect(res).toHaveStatus(200);
+        expect(readerSpy.mock.calls.length > 0).toBe(expectReader);
+        expect(writerSpy.mock.calls.length > 0).toBe(!expectReader);
+      } finally {
+        restore();
+      }
+    }
+  });
+
+  test('readonlyBatchOnReader does not break a nested read-only batch inside a transaction', async () => {
+    const token = await initTestAuth({
+      project: {
+        features: ['transaction-bundles'],
+        systemSetting: [{ name: 'readonlyBatchOnReader', valueBoolean: true }],
+      },
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4')
+      .set('Authorization', 'Bearer ' + token)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+          {
+            request: { method: 'POST', url: '/' },
+            resource: {
+              resourceType: 'Bundle',
+              type: 'batch',
+              entry: [{ request: { method: 'GET', url: 'Patient?name=Alice' } }],
+            },
+          },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+  });
+
   test('Search invalid resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patientx`)
@@ -721,6 +818,29 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ resourceType: 'Patient', badProperty: 'bad' });
     expect(res).toHaveStatus(400);
+  });
+
+  test('Validate unwraps the resource parameter of a Parameters body', async () => {
+    const validate = (resource: Record<string, unknown>): request.Test =>
+      request(app)
+        .post(`/fhir/R4/Patient/$validate`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'resource', resource }] });
+
+    expect(await validate({ resourceType: 'Patient' })).toHaveStatus(200);
+
+    const res = await validate({ resourceType: 'Patient', name: 'x' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].expression).toStrictEqual(['Patient.name']);
+  });
+
+  test('Validate rejects a Parameters body without a resource parameter', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/$validate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Parameters', parameter: [] });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing resource parameter');
   });
 
   test('Validate wrong content type', async () => {

@@ -1,9 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Operation, SearchRequest, WithId } from '@medplum/core';
-import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import {
+  badRequest,
+  escapeSearchValue,
+  forbidden,
+  getReferenceString,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
 import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { inviteUser } from '../admin/invite';
+import { retireAllSecurityRequests } from '../auth/securityrequest';
+import { revokeUserLogins } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { patchObject } from '../util/patch';
@@ -48,7 +57,7 @@ export async function searchScimUsers(
       searchRequest.filters.push({
         code: 'user-name',
         operator: Operator.EQUALS,
-        value: match[1],
+        value: escapeSearchValue(match[1]),
       });
     }
   }
@@ -178,13 +187,9 @@ export async function updateScimUser(
   );
 
   // Copy the updated properties from the SCIM user to the Medplum user and membership
-  scimUserToUserAndMembership(scimUser, user, membership, userWritable);
+  const emailChanged = scimUserToUserAndMembership(scimUser, user, membership, userWritable);
 
-  // Save the updated user and membership
-  const updatedUser = userWritable ? await systemRepo.updateResource(user) : user;
-  const updatedMembership = await systemRepo.updateResource(membership);
-
-  return convertToScimUser(updatedUser, updatedMembership);
+  return saveScimUser(systemRepo, user, membership, userWritable, emailChanged);
 }
 
 /**
@@ -214,13 +219,42 @@ export async function patchScimUser(
   patchObject(scimUser, convertScimToJsonPatch(request));
 
   // Copy the updated properties from the SCIM user to the Medplum user and membership
-  scimUserToUserAndMembership(scimUser, user, membership, userWritable);
+  const emailChanged = scimUserToUserAndMembership(scimUser, user, membership, userWritable);
 
-  // Save the updated user and membership
-  const updatedUser = userWritable ? await systemRepo.updateResource(user) : user;
-  const updatedMembership = await systemRepo.updateResource(membership);
+  return saveScimUser(systemRepo, user, membership, userWritable, emailChanged);
+}
 
-  return convertToScimUser(updatedUser, updatedMembership);
+/**
+ * Saves the User and membership after a SCIM write.
+ *
+ * One transaction, so that if any step fails the email change rolls back too, and the client's
+ * retry still sees the change and repeats every step.
+ * @param systemRepo - The system repository.
+ * @param user - The updated Medplum user.
+ * @param membership - The updated Medplum project membership.
+ * @param userWritable - Whether the caller's project owns the User.
+ * @param emailChanged - Whether the User's login email changed.
+ * @returns The saved SCIM user.
+ */
+async function saveScimUser(
+  systemRepo: SystemRepository,
+  user: WithId<User>,
+  membership: WithId<ProjectMembership>,
+  userWritable: boolean,
+  emailChanged: boolean
+): Promise<ScimUser> {
+  return systemRepo.withTransaction(
+    async (txRepo) => {
+      const updatedUser = userWritable ? await txRepo.updateResource(user) : user;
+      if (userWritable && emailChanged) {
+        await retireAllSecurityRequests(txRepo, updatedUser);
+        await revokeUserLogins(txRepo, updatedUser);
+      }
+      const updatedMembership = await txRepo.updateResource(membership);
+      return convertToScimUser(updatedUser, updatedMembership);
+    },
+    { resourceTypes: ['Login', 'ProjectMembership', 'User', 'UserSecurityRequest'], source: 'scim.saveScimUser' }
+  );
 }
 
 /**
@@ -296,22 +330,29 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
  * @param user - The output Medplum user.
  * @param membership - The output Medplum project membership.
  * @param userWritable - Whether the caller's project owns the User.
+ * @returns True if the User's login email changed.
  */
 function scimUserToUserAndMembership(
   scimUser: ScimUser,
   user: User,
   membership: ProjectMembership,
   userWritable: boolean
-): void {
+): boolean {
+  let emailChanged = false;
   if (userWritable) {
     user.firstName = scimUser.name?.givenName as string;
     user.lastName = scimUser.name?.familyName as string;
     user.externalId = scimUser.externalId;
 
-    if (scimUser.emails?.[0]?.value) {
-      user.email = scimUser.emails[0]?.value;
+    const email = scimUser.emails?.[0]?.value?.toLowerCase();
+    if (email) {
+      emailChanged = email !== user.email;
+      user.email = email;
+      if (emailChanged) {
+        user.emailVerified = false;
+      }
     }
-  } else if (scimUser.emails?.[0]?.value && scimUser.emails[0].value !== user.email) {
+  } else if (scimUser.emails?.[0]?.value && scimUser.emails[0].value.toLowerCase() !== user.email) {
     // The login email of a User owned by another project is not the caller's to change.
     // The other User fields are treated as read-only and ignored.
     throw new OperationOutcomeError(forbidden);
@@ -322,6 +363,7 @@ function scimUserToUserAndMembership(
   }
 
   membership.externalId = scimUser.externalId;
+  return emailChanged;
 }
 
 /**

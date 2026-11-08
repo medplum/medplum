@@ -1,10 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
-import type { Appointment } from '@medplum/fhirtypes';
+import {
+  extractServiceTypeReferences,
+  getAppointmentSite,
+  getExtensionValue,
+  getReferenceString,
+  isDefined,
+  serviceTypeIncludesService,
+  TimezoneExtensionURI,
+} from '@medplum/core';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { formatDayHeading, formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
+import type { CalendarFilterValues } from './CalendarFilters';
 
 /** The zones the calendars on show are kept in, and whether any of them is unknown. */
 export interface CalendarTimezones {
@@ -72,6 +81,57 @@ export function groupAppointmentsByService(
 }
 
 /**
+ * Reports whether an appointment is what the calendar filters ask for.
+ *
+ * Sites match by exact reference, with no `partOf` walk. An appointment recording no site
+ * matches only when no site is chosen.
+ *
+ * @param appointment - The appointment to check.
+ * @param filters - The chosen site and service type, either absent for all of them.
+ * @returns Whether the appointment is at the chosen site and for the chosen service type.
+ */
+export function matchesCalendarFilters(appointment: Appointment, filters: CalendarFilterValues): boolean {
+  const { serviceFacility, service } = filters;
+  if (serviceFacility && getAppointmentSite(appointment)?.reference !== getReferenceString(serviceFacility)) {
+    return false;
+  }
+  return !service || serviceTypeIncludesService(appointment.serviceType, service);
+}
+
+/**
+ * Picks the Slots to draw while a calendar filter is on.
+ *
+ * A Slot has no link to a Service Facility, and the ones we write name no Visit Type, so the
+ * filters can't be matched against a Slot itself. A Slot linked to an appointment is shown
+ * only when that appointment is. A Slot linked to no appointment, such as blocked time, is
+ * always shown. Only the Slots of listed calendars are passed in, so a block still goes when
+ * the filters remove its Schedule's calendar.
+ *
+ * @param slots - The Slots loaded for the calendars listed.
+ * @param loadedAppointments - Every appointment loaded for those calendars, drawn or not.
+ * @param drawnAppointments - The appointments the filters leave drawn.
+ * @returns The Slots a drawn appointment holds, and the ones no loaded appointment holds.
+ */
+export function filterSlotsByDrawnAppointments<T extends Slot>(
+  slots: readonly T[],
+  loadedAppointments: readonly Appointment[],
+  drawnAppointments: readonly Appointment[]
+): T[] {
+  const held = getHeldSlotReferences(loadedAppointments);
+  const drawn = getHeldSlotReferences(drawnAppointments);
+  return slots.filter((slot) => {
+    const reference = getReferenceString(slot);
+    return !reference || drawn.has(reference) || !held.has(reference);
+  });
+}
+
+function getHeldSlotReferences(appointments: readonly Appointment[]): Set<string> {
+  return new Set(
+    appointments.flatMap((appointment) => (appointment.slot ?? []).map(getReferenceString)).filter(isDefined)
+  );
+}
+
+/**
  * Says when a visit or a block of time is, as far as it is known.
  * @param period - The appointment or slot being described.
  * @param period.start - When it starts.
@@ -92,16 +152,33 @@ export function formatWhen(period: { readonly start?: string; readonly end?: str
   return `${formatDayHeading(start)} · ${times}`;
 }
 
+/** How many hours after an appointment ends it can still be changed. */
+export const EDIT_WINDOW_HOURS = 12;
+
+/**
+ * Whether the appointment ended long enough ago that it is closed to changes.
+ * @param appointment - The appointment to check.
+ * @param now - The time to judge from.
+ * @returns True once `EDIT_WINDOW_HOURS` have passed since it ended, or since it started when it has no end.
+ */
+export function isPastEditWindow(appointment: Appointment, now = new Date()): boolean {
+  const last = appointment.end ?? appointment.start;
+  if (!last) {
+    return false;
+  }
+  return now.getTime() - new Date(last).getTime() >= EDIT_WINDOW_HOURS * 60 * 60 * 1000;
+}
+
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
 const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 /**
- * Whether the server would accept cancelling the appointment.
+ * Whether cancelling the appointment is offered.
  * @param appointment - The appointment to cancel.
- * @returns True when its status is one `Appointment/:id/$cancel` accepts.
+ * @returns True when its status is one `Appointment/:id/$cancel` accepts and it is inside its edit window.
  */
 export function isCancelable(appointment: Appointment): boolean {
-  return CANCELABLE_STATUSES.has(appointment.status);
+  return CANCELABLE_STATUSES.has(appointment.status) && !isPastEditWindow(appointment);
 }
 
 /**
@@ -113,10 +190,10 @@ export function isCancelable(appointment: Appointment): boolean {
 const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 /**
- * Whether the server would accept rescheduling the appointment.
+ * Whether rescheduling the appointment is offered.
  * @param appointment - The appointment to reschedule.
- * @returns True when its status is one `Appointment/:id/$reschedule` accepts.
+ * @returns True when its status is one `Appointment/:id/$reschedule` accepts and it is inside its edit window.
  */
 export function isReschedulable(appointment: Appointment): boolean {
-  return RESCHEDULABLE_STATUSES.has(appointment.status);
+  return RESCHEDULABLE_STATUSES.has(appointment.status) && !isPastEditWindow(appointment);
 }

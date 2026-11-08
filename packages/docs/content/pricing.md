@@ -1,6 +1,7 @@
 ---
 id: pricing
 title: Pricing
+description: Compare Medplum plans, features, support, and hosting options.
 layout: pricing
 standalone: true
 ---

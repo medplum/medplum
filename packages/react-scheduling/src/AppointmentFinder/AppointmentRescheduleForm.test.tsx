@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ResourceModifiedEvent, WithId } from '@medplum/core';
-import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  createReference,
+  getAppointmentSite,
+  getReferenceString,
+  setPrimaryProvider,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -13,13 +19,16 @@ import {
   DrOkaforSchedule,
   DrRiveraSchedule,
   ExamRoomASchedule,
+  MainClinic,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
 } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   chooseActor,
+  chooseDay,
   chooseFirstOfferedTime,
+  chooseSite,
   chosenTimeField,
   hasPill,
   lastFindParams,
@@ -50,6 +59,13 @@ const HELD_SLOTS: WithId<Slot>[] = RiveraImagingHeldSlots.map((slot) => ({
 
 /** The schedules those times are on, which are the ones a move keeps unless it is told otherwise. */
 const HELD_SCHEDULES = HELD_SLOTS.map((slot) => slot.schedule.reference as string);
+
+/** The same visit, recording no site. */
+const UNSITED_APPOINTMENT: WithId<Appointment> = {
+  ...APPOINTMENT,
+  id: 'appt-unsited',
+  supportingInformation: undefined,
+};
 
 /** Every mount needs one, and it is the only prop a host must supply besides the visit. */
 const onRescheduled = vi.fn();
@@ -204,6 +220,26 @@ describe('AppointmentRescheduleForm', () => {
       expect(onRescheduled.mock.calls[0][0].appointments[0].end).toBe('2026-08-18T18:52:00.000Z');
     });
 
+    test('flashes a picked time, but not a typed one that takes its place', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      const shownTime = (): HTMLElement | undefined =>
+        screen.getAllByLabelText('Date & time').find((input) => input.hasAttribute('readonly'));
+      expect(shownTime()?.className).toMatch(/justPicked/);
+
+      // Another day takes the picked time down; a time typed for it comes up without a flash.
+      await openTimeFinder();
+      await chooseDay('19');
+      expect(shownTime()).toBeUndefined();
+      fireEvent.change(
+        screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly')) as HTMLElement,
+        { target: { value: '2026-08-19T14:07' } }
+      );
+      await settleAutocomplete();
+      expect(shownTime()?.className).not.toMatch(/justPicked/);
+    });
+
     test('opens the typed time on the appointment as it stands, proposing nothing until something changes', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await openTimeFinder();
@@ -269,6 +305,23 @@ describe('AppointmentRescheduleForm', () => {
       expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
     });
 
+    test('proposes nothing when the move only offers an alternative to an actor it keeps', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await openTimeFinder();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('keeps a typed time when an alternative is added, held on the first actor in the row', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await clickReschedule();
+      const schedules = onRescheduled.mock.calls[0][0].slots.map((slot: Slot) => slot.schedule.reference);
+      expect(schedules).toContain(`Schedule/${DrRiveraSchedule.id}`);
+      expect(schedules).not.toContain(`Schedule/${DrOkaforSchedule.id}`);
+    });
+
     test('asks for a length when the appointment has none, rather than using the configured one', async () => {
       const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
@@ -313,15 +366,16 @@ describe('AppointmentRescheduleForm', () => {
   });
 
   describe('Opening on the visit as it stands', () => {
-    test('Fills in the visit type and everyone the visit is held on', async () => {
+    test('Fills in the visit type, service facility, and everyone the visit is held on', async () => {
       // Read off the Slots the appointment holds: its participants would not say which
       // of an actor's schedules the visit is on.
       await setup(medplum);
 
       expect(screen.getByRole('textbox', { name: /visit type/i })).toHaveValue('Ultrasound Imaging');
-      expect(hasPill(/Rivera/)).toBe(true);
-      expect(hasPill(/Ultrasound 1/)).toBe(true);
-      expect(hasPill(/Exam Room A/)).toBe(true);
+      expect(hasPill(/Rivera/)).toBe(true); // Practitioner actor
+      expect(hasPill(/Ultrasound 1/)).toBe(true); // Device actor
+      expect(hasPill(/Exam Room A/)).toBe(true); // Location actor
+      expect(hasPill(MainClinic.name as string)).toBe(true); // Service facility
       expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
     });
 
@@ -455,6 +509,23 @@ describe('AppointmentRescheduleForm', () => {
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(true);
     });
 
+    test('Keeps a time found on another day when a missed visit re-renders', async () => {
+      // A missed visit opens the search on today, and the form is handed a new `new Date()`
+      // on every render. Only a change of day should move the search.
+      const missed = { ...APPOINTMENT, start: '2026-08-14T15:00:00Z', end: '2026-08-14T15:30:00Z' };
+      const rendered = await setup(medplum, { appointment: missed });
+      await openTimeFinder();
+      await chooseDay('19');
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).not.toBeNull();
+
+      vi.setSystemTime(new Date(MONDAY_MORNING.getTime() + 60 * 60 * 1000));
+      rendered.rerender(<AppointmentRescheduleForm appointment={missed} onRescheduled={onRescheduled} />);
+      await settleAutocomplete();
+
+      expect(chosenTimeField()).not.toBeNull();
+    });
+
     test('Searches the schedules the visit is held on, until they are changed', async () => {
       const get = vi.spyOn(medplum, 'get');
       await setup(medplum);
@@ -518,6 +589,29 @@ describe('AppointmentRescheduleForm', () => {
       const schedules = parameterValues(lastRescheduleParameters(post), 'schedule');
       expect(schedules).toContain('Schedule/schedule-exam-room-b');
       expect(schedules).not.toContain('Schedule/schedule-exam-room-a');
+    });
+
+    test('Moves the visit to a newly chosen service facility before moving its time', async () => {
+      // `$reschedule` keeps whatever site it finds, so the site is written first.
+      const unsited = await medplum.createResource(UNSITED_APPOINTMENT);
+      await setup(medplum, { appointment: unsited });
+      // Edited elsewhere while the form is open: the site is still written, onto the newer version.
+      await medplum.updateResource({ ...unsited, comment: 'Edited elsewhere' });
+      vi.spyOn(medplum, 'updateResource').mockRejectedValueOnce(new Error('Precondition failed'));
+      const post = vi.spyOn(medplum, 'post');
+
+      await chooseSite('Main Clinic', MainClinic.name as string);
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await moveToAnotherTime();
+
+      expect(screen.getByText('Precondition failed')).toBeInTheDocument();
+      expect(lastRescheduleParameters(post)).toBeUndefined();
+
+      await clickReschedule();
+
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(getAppointmentSite(reschedule.appointments[0])?.reference).toBe(getReferenceString(MainClinic));
+      expect(reschedule.appointments[0].comment).toBe('Edited elsewhere');
     });
 
     test('Leaves the visit type on file, and the codes booked with it, alone', async () => {

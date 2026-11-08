@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "5.2.5",
+  "version": "5.2.15",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -27,7 +27,7 @@
   "devDependencies": {
     "@docsearch/css": "5.1.2",
     "@docsearch/js": "5.1.2",
-    "@medplum/core": "5.2.5",
+    "@medplum/core": "5.2.15",
     "@swup/preload-plugin": "3.2.12",
     "@tabler/icons": "3.49.0",
     "hugo-bin": "0.166.0",

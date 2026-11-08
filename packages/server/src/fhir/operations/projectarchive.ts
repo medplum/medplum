@@ -37,7 +37,7 @@ interface ArchiveInput {
   includeAuditEvents?: boolean;
 }
 
-const unarchivedResourceTypes = new Set(['AsyncJob', 'BulkDataExport']);
+const unarchivedResourceTypes = new Set(['AsyncJob', 'BulkDataExport', 'Login']);
 
 const archivePageSize = 1000;
 

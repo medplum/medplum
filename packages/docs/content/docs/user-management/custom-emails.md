@@ -38,7 +38,9 @@ In short, here are the key steps:
 
 {{< /info >}}
 
-Medplum requires reCAPTCHA for all unauthenticated API requests. "Reset Password" is necessarily unauthenticated, so you will need to setup reCAPTCHA first.
+If your server or project has reCAPTCHA configured, reset password requests must include a reCAPTCHA token. Medplum's hosted service has reCAPTCHA configured, so hosted projects need to set up reCAPTCHA first.
+
+Google reCAPTCHA is an optional integration for protecting registration and password reset workflows. It is not required for Medplum authentication or self-hosted deployments. On a self-hosted server without `recaptchaSecretKey` configured, the server does not require reCAPTCHA tokens. Project-level reCAPTCHA keys, configured as described below, still apply when your application sends that project's site key.
 
 Visit the [reCAPTCHA website](https://www.google.com/recaptcha/about/) to get started. You will need to create a new reCAPTCHA v3 key. Make note of the "Site Key" and "Secret Key".
 

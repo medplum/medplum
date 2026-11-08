@@ -87,3 +87,9 @@ article details:not(table details) {
     }
   }
 }
+
+/* The prompt in Decision Guides' "Plan with this guide" (layouts/partials/guide-planning.html) wraps, as on Docusaurus */
+.guide-planning .highlight pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

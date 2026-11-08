@@ -38,7 +38,7 @@ For visit-level orchestration that launches forms and orders together, see [Visi
 
 ## Approach 1: SDC Annotations + $extract
 
-Annotate the `Questionnaire` with template resources and FHIRPath extraction rules. When a `QuestionnaireResponse` is submitted, call [`$extract`][extract]; Medplum reads the annotations and returns a [transaction Bundle][batch] of populated resources ready to upload.
+Annotate the `Questionnaire` with template resources and FHIRPath extraction rules. When a `QuestionnaireResponse` is submitted, call [`$extract`][extract]; Medplum reads the annotations and returns a [transaction Bundle][batch] of populated resources for a separate write step. Extraction does not save those resources or guarantee an atomic commit when the Bundle is submitted.
 
 ### Annotating the Questionnaire
 
@@ -508,7 +508,9 @@ in a transaction [`Bundle`][bundle]:
 }
 ```
 
-This can be uploaded via the [Batch API][batch] to save the generated resources to the Medplum server.
+Submit the generated resources through the [Batch API][batch] as a separate step. Atomic transaction processing is currently unavailable on hosted Medplum, so the returned `type: transaction` does not guarantee all-or-nothing writes. Inspect every response entry.
+
+For forms whose outputs can be saved independently, use batches of conditional writes keyed by stable identifiers derived from the response and output identity. If outputs reference newly created resources, save prerequisites first or preserve the Bundle's reference-resolution behavior. Do not blindly change its type or retry the whole generated Bundle: POST entries can create duplicates. If all outputs must commit together, batch recovery is insufficient; resolve that workflow requirement before using this pattern.
 
 [bundle]: /docs/api/fhir/resources/bundle
 

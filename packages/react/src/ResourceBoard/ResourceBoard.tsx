@@ -42,6 +42,7 @@ export type ResourceBoardDetailContext = ListWithDetailPaneDetailContext;
  * @param listWidth - Sidebar width in pixels. Default 350.
  * @param renderDetail - Renders the detail pane for the resolved selection.
  * @param emptyDetail - Shown when nothing is selected or the selection cannot be resolved.
+ * @param listFooter - Pinned below the list and above the pagination row, e.g. bulk actions for the current list.
  * @param onChange - Fired by the built-in pagination with the updated offset.
  * @param onSelectFirst - Auto-select escape hatch. Fired with the first item when a load for the current search
  * settles with items while nothing is selected (owned by ListWithDetailPane). The consumer decides how to navigate
@@ -65,6 +66,7 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
   readonly listWidth?: number;
   readonly renderDetail: (selected: WithId<T>, ctx: ResourceBoardDetailContext) => ReactNode;
   readonly emptyDetail?: ReactNode;
+  readonly listFooter?: ReactNode;
   readonly onChange?: (search: SearchRequest) => void;
   readonly onSelectFirst?: (item: WithId<T>) => void;
   readonly onLoad?: (items: WithId<T>[], total: number | undefined) => void;
@@ -96,6 +98,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     listWidth,
     renderDetail,
     emptyDetail,
+    listFooter,
     onChange,
     onSelectFirst,
     onLoad,
@@ -151,6 +154,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
       selected={selected}
       renderDetail={renderDetail}
       emptyDetail={emptyDetail}
+      listFooter={listFooter}
       refresh={refresh}
       onSelectFirst={onSelectFirst}
       page={currentPage}

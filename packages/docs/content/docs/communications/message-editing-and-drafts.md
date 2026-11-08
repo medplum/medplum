@@ -111,7 +111,7 @@ Other users should never see your drafts. When loading messages for a thread, fi
 
 {{< tip title="Draft cleanup" >}}
 
-Server-side drafts can accumulate over time if users start composing but never send. Set up a cron-triggered Bot to purge `preparation` [`Communication`](/docs/api/fhir/resources/communication) resources older than a threshold (for example, 30 days). For large numbers of stale drafts, batch the deletes using `medplum.executeBatch()` with a Transaction Bundle for better performance.
+Server-side drafts can accumulate over time if users start composing but never send. Set up a cron-triggered Bot to purge `preparation` [`Communication`](/docs/api/fhir/resources/communication) resources older than a threshold (for example, 30 days). For large numbers of stale drafts, batch the deletes using `medplum.executeBatch()` with `type: "batch"`. Each deletion is independent; inspect every response entry and recover failed deletions individually. Atomic rollback across unrelated drafts is unnecessary.
 
 {{< code-example file="packages/examples/src/communications/messaging-examples.ts" language="ts" blocks="staleDraftCleanupTs" >}}
 

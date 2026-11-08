@@ -25,7 +25,7 @@ Use `Prefer: respond-async` when:
 Avoid async when:
 
 - **Callers need the `batch-response` immediately** — Data is committed only as the job runs; until then, treat the system as “in progress.”
-- **You require a synchronous `transaction`** — Async **transaction** bundles are rejected when the `transaction-bundles` project feature is enabled (see [Limitations](#limitations)).
+- **You require an atomic commit across resources**: async batches permit partial success. Atomic transaction Bundles are currently unavailable on hosted Medplum (see [Limitations](#limitations)).
 
 ## Step-by-step: submit, poll, read results
 
@@ -169,7 +169,7 @@ If either is blocked, polling or downloading results will fail with an HTTP **40
 
 ## Limitations
 
-- **Transaction bundles** — If your project has the **`transaction-bundles`** feature enabled, Medplum rejects **`type: "transaction"`** bundles submitted with `Prefer: respond-async`. Use a synchronous transaction or split work into a **`batch`** async bundle instead.
+- **Atomicity**: hosted Medplum does not currently offer atomic transaction Bundles. On deployments with `transaction-bundles` enabled, Medplum rejects `type: "transaction"` with `Prefer: respond-async`. Use an async `batch` only when partial success is acceptable; it cannot replace a required atomic commit.
 - **No automatic retry of failed batches** — If the worker hits an unrecoverable error, the `AsyncJob` moves to a terminal error state; you must fix the bundle or data issue and submit a new job.
 
 ## Related topics

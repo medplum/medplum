@@ -714,7 +714,7 @@ describe('SMART Health operations', () => {
     expect(JSON.stringify(expiredResponse.body)).toContain('Expected exp to be in the future');
   });
 
-  test('Returns not found when direct SMART Health Link Binary is deleted', async () => {
+  test('Returns not found when direct SMART Health Link Binary is unavailable', async () => {
     const patient = await createPatient();
 
     const generateResponse = await request(app)
@@ -730,6 +730,12 @@ describe('SMART Health operations', () => {
     const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
     const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
     const binaryId = getBinaryId(smartHealthLink);
+    const binary = await repo.readResource<Binary>('Binary', binaryId);
+    await repo.updateResource<Binary>({ ...binary, contentType: ContentType.TEXT });
+
+    const textPayloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
+    expect(textPayloadResponse).toHaveStatus(404);
+
     await repo.deleteResource('Binary', binaryId);
 
     const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });

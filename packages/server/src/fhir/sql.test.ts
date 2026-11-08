@@ -39,6 +39,11 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable"');
     });
 
+    test('Select rejects invalid identifiers', () => {
+      const sql = new SqlBuilder();
+      expect(() => new SelectQuery('My"Table').column('id').buildSql(sql)).toThrow('Invalid identifier: My"Table');
+    });
+
     test('Select where', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').where('name', '=', 'x').buildSql(sql);

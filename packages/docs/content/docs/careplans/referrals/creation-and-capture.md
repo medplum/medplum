@@ -78,6 +78,6 @@ This example shows a released order. The text labels are illustrative; configure
 
 A user may click Submit twice, or a Bot may receive the same event again. Use a stable submission or referral identifier for conditional create, including when a Bot processes the form. `createResourceIfNoneExist` avoids a search-then-create race. Replaying the same submission should retrieve the existing request.
 
-If the request and its initial Task must be created together, use a transaction Bundle with `urn:uuid` fullUrls for their cross-references. See the [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples). Conditional create does not apply later edits to an existing match; use an authorized, version-checked update path for amendments.
+Create the request first, then conditionally create its initial Task using the saved request reference. Track and recover a failed Task creation before advancing the referral. This assumes an intermediate request without its Task is acceptable; if both must commit together, atomic transaction Bundles are currently unavailable on hosted Medplum. See the [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples). Conditional create does not apply later edits to an existing match; use an authorized, version-checked update path for amendments.
 
 Next, choose the [recipient and referral package](/docs/careplans/referrals/recipients-and-packages).

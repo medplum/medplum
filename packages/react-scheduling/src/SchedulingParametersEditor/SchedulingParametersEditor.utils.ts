@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ComboboxItem, ComboboxItemGroup, ComboboxParsedItem, OptionsFilter } from '@mantine/core';
+import { isOptionsGroup } from '@mantine/core';
 import type { SchedulingParameterValues } from '../parameterValues';
 import { FLAT_PARAMETERS, SCHEDULING_PARAMETER_DEFAULTS, withInherited } from '../parameterValues';
 
@@ -126,12 +128,70 @@ export function isSupportedTimezone(value: string): boolean {
 }
 
 /**
- * The timezones to offer, with anything already stored added so a value the runtime does not list is still
- * shown rather than silently dropped from the field.
- * @param stored - Identifiers already on the resource, which may include ones the runtime does not list.
- * @returns Sorted identifiers, free of duplicates.
+ * Offered ahead of the rest, east to west, since they are the ones most deployments pick. Named by hand so they
+ * go without a city, and so Arizona reads as its own zone rather than the runtime's Mountain Standard Time.
  */
-export function getTimezoneOptions(stored: (string | undefined)[] = []): string[] {
+const US_TIMEZONES: Record<string, string> = {
+  'America/New_York': 'Eastern Time',
+  'America/Chicago': 'Central Time',
+  'America/Denver': 'Mountain Time',
+  'America/Phoenix': 'Arizona Time',
+  'America/Los_Angeles': 'Pacific Time',
+  'America/Anchorage': 'Alaska Time',
+  'Pacific/Honolulu': 'Hawaii-Aleutian Time',
+};
+
+interface TimezoneOption extends ComboboxItem {
+  /** The label without its abbreviation, so `(ET) Eastern Time` sorts under E rather than ahead of every name. */
+  readonly place: string;
+}
+
+function timeZoneNamePart(zone: string, timeZoneName: 'shortGeneric' | 'longGeneric', locale?: string): string {
+  return (
+    new Intl.DateTimeFormat(locale, { timeZone: zone, timeZoneName })
+      .formatToParts()
+      .find((part) => part.type === 'timeZoneName')?.value ?? ''
+  );
+}
+
+/**
+ * Describes a timezone the way calendar apps list them, e.g. `(ET) Eastern Time - Toronto`. The abbreviation
+ * is the generic one, so the label reads the same either side of daylight saving. Most zones outside the
+ * Americas have no abbreviation and go without.
+ * @param zone - The IANA identifier.
+ * @returns The option, labelled with the bare identifier when the runtime cannot resolve it.
+ */
+function getTimezoneOption(zone: string): TimezoneOption {
+  try {
+    const city = (zone.split('/').pop() ?? zone).replaceAll('_', ' ');
+    // A zone the runtime has no name for comes back as an offset, so the city stands alone.
+    const name = timeZoneNamePart(zone, 'longGeneric');
+    const place = US_TIMEZONES[zone] ?? (name.startsWith('GMT') ? city : `${name} - ${city}`);
+    // Read in en-US so US zones get their abbreviations whatever the viewer's locale. Without one, the runtime
+    // writes a phrase such as `Germany Time` instead.
+    const abbreviation = timeZoneNamePart(zone, 'shortGeneric', 'en-US');
+    return { value: zone, label: /^[A-Z]{2,5}$/.test(abbreviation) ? `(${abbreviation}) ${place}` : place, place };
+  } catch {
+    return { value: zone, label: zone, place: zone };
+  }
+}
+
+/**
+ * Labels a timezone the way calendar apps list them, e.g. `(ET) Eastern Time`.
+ * @param zone - The IANA identifier.
+ * @returns The label, or the bare identifier when the runtime cannot resolve it.
+ */
+export function getTimezoneLabel(zone: string): string {
+  return getTimezoneOption(zone).label;
+}
+
+/**
+ * The timezones to offer, US zones first, with anything already stored added so a value the runtime does not
+ * list is still shown rather than silently dropped from the field.
+ * @param stored - Identifiers already on the resource, which may include ones the runtime does not list.
+ * @returns The US zones, then every other zone alphabetically, each appearing once.
+ */
+export function getTimezoneOptions(stored: (string | undefined)[] = []): ComboboxItemGroup<ComboboxItem>[] {
   let supported: string[] = [];
   try {
     supported = Intl.supportedValuesOf('timeZone');
@@ -140,10 +200,40 @@ export function getTimezoneOptions(stored: (string | undefined)[] = []): string[
     // and UTC is always a legitimate answer, so the field degrades to those rather than to nothing.
     supported = ['Etc/UTC'];
   }
-  return [...new Set([...supported, ...stored.filter((value): value is string => !!value)])].sort((a, b) =>
-    a.localeCompare(b)
-  );
+  const others = new Set([...supported, ...stored.filter((value): value is string => !!value)]);
+  for (const zone of Object.keys(US_TIMEZONES)) {
+    others.delete(zone);
+  }
+  const toItem = ({ value, label }: TimezoneOption): ComboboxItem => ({ value, label });
+  return [
+    { group: 'United States', items: Object.keys(US_TIMEZONES).map(getTimezoneOption).map(toItem) },
+    {
+      group: 'Other time zones',
+      items: [...others]
+        .map(getTimezoneOption)
+        .sort((a, b) => a.place.localeCompare(b.place))
+        .map(toItem),
+    },
+  ];
 }
+
+/**
+ * Matches the IANA identifier as well as the label, so someone who knows `America/New_York` can type it.
+ * @param input - What Mantine passes a Select's filter: the options and what has been typed.
+ * @returns The options and groups with at least one match.
+ */
+export const timezoneFilter: OptionsFilter = (input) => {
+  const needle = input.search.trim().toLowerCase();
+  const matches = (item: ComboboxItem): boolean =>
+    item.label.toLowerCase().includes(needle) || item.value.toLowerCase().includes(needle);
+  return input.options.flatMap((option): ComboboxParsedItem[] => {
+    if (!isOptionsGroup(option)) {
+      return matches(option) ? [option] : [];
+    }
+    const items = option.items.filter(matches);
+    return items.length > 0 ? [{ ...option, items }] : [];
+  });
+};
 
 function checkInteger(value: number | undefined, minimum: number, label: string): string | undefined {
   if (value === undefined) {

@@ -194,12 +194,12 @@ export async function chooseActor(role: RegExp, query: string, name: string): Pr
 }
 
 /**
- * Chooses a site in the location field, which holds one value at a time.
+ * Chooses a site in the service facility field, which holds one value at a time.
  * @param query - What to type.
  * @param name - The site to click out of what came back.
  */
 export async function chooseSite(query: string, name: string): Promise<void> {
-  const listbox = await searchField(/location/i, query);
+  const listbox = await searchField(/service facility/i, query);
   await act(async () => {
     fireEvent.click(within(listbox).getByText(name));
   });
@@ -209,7 +209,7 @@ export async function chooseSite(query: string, name: string): Promise<void> {
 /** Opens the time search, which is what sends the `$find` request. */
 export async function openTimeFinder(): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /find a time/i }));
+    fireEvent.click(screen.getByRole('button', { name: /find a time|change time/i }));
   });
   await settleAutocomplete();
 }
@@ -369,6 +369,17 @@ export function chosenTimeField(): HTMLInputElement | null {
 }
 
 /**
+ * The field a time is typed into, told from the chosen time's read-only one of the same name.
+ * @returns The field.
+ */
+export function typedTimeField(): HTMLInputElement {
+  const [typed] = screen
+    .getAllByLabelText<HTMLInputElement>('Date & time')
+    .filter((input) => !input.hasAttribute('readonly'));
+  return typed;
+}
+
+/**
  * Whether one element comes before another in the document.
  *
  * Where a field sits is part of the behaviour: the form asks the criteria, finds the
@@ -481,7 +492,7 @@ export async function fillBooking(): Promise<void> {
   await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /**
@@ -496,7 +507,7 @@ export async function fillAuthorizedBooking(): Promise<void> {
   await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
   await openTimeFinder();
   await chooseFirstOfferedTime();
-  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
 }
 
 /** Confirms the booking. */

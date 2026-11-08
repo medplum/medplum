@@ -1,0 +1,11 @@
+.frame {
+  height: 600px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #3c3c3c;
+}
+
+.frame :global([data-testid='attachment-iframe']),
+.frame :global([data-testid='attachment-iframe'] iframe) {
+  height: 600px !important;
+}

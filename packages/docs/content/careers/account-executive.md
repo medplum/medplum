@@ -83,6 +83,6 @@ Medplum is redefining healthcare with our open source, API-first electronic heal
 - Inclusive healthcare package
 - The chance to shape the future of healthcare tech – leave your mark on this vital industry
 
-The San Francisco, CA base salary range for this role is $200,000-$250,000 per year. Actual base salary within this range will be determined based on job-related skills, experience, and qualifications.
+The San Francisco, CA on-target earnings (OTE) range for this role is $200,000-$250,000 per year, inclusive of base salary and commission. Actual compensation within this range will be determined based on job-related skills, experience, and qualifications.
 
 Join us in our mission to revolutionize healthcare. If you're excited about driving operational excellence and enabling our team's success, we'd love to hear from you! Reach out to careers@medplum.com.

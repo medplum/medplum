@@ -196,8 +196,6 @@ Create a JSON file containing your secret data. Save it as secret_data.json.
     "supportEmail": "\"Medplum\" <support@medplum.com>",
     "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
     "googleClientSecret": "",
-    "recaptchaSiteKey": "6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq",
-    "recaptchaSecretKey": "6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL",
     "botLambdaRoleArn": "",
     "botLambdaLayerName": "medplum-bot-layer",
     "vmContextBotsEnabled": true,

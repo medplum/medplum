@@ -34,6 +34,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import { AUTH_CODE_EXPIRATION_MS } from '../constants';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getInactiveReason } from '../fhir/projectmembership';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -50,6 +51,7 @@ import {
   getClientApplicationMembership,
   getExternalUserInfo,
   hashCode,
+  isExternalEmailUnverified,
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
@@ -176,6 +178,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     authMethod: 'client',
     user: createReference(client),
     client: createReference(client),
+    project: membership.project,
     membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
@@ -254,6 +257,12 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
 
   if (login.revoked) {
     sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
+
+  const issuedAt = Date.parse(login.meta?.lastUpdated ?? '');
+  if (!Number.isFinite(issuedAt) || Date.now() - issuedAt >= AUTH_CODE_EXPIRATION_MS) {
+    sendTokenError(res, 'invalid_grant', 'Authorization code expired');
     return;
   }
 
@@ -581,6 +590,14 @@ export async function exchangeExternalAuthToken(
   const userInfo = await tryGetExternalUserInfo(res, idp, subjectToken);
   if (!userInfo) {
     return;
+  }
+
+  if (!idp.useSubject && isExternalEmailUnverified(userInfo)) {
+    getLogger().warn('External identity provider reported unverified email', {
+      clientId,
+      projectId,
+      userInfoMode: idp.userInfoMode,
+    });
   }
 
   const { email, externalId } = getExternalAuthLoginIdentity(idp, userInfo);

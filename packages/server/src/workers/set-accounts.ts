@@ -3,7 +3,7 @@
 import type { Reference, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import type { AuthState } from '../oauth/middleware';
 import type { AsyncJobTracking } from './base';
@@ -11,11 +11,11 @@ import { getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
-  assertProjectActive,
   defaultQueueOptions,
   getWorkerBullmqConfig,
   isJobActive,
   queueRegistry,
+  runJobInAuthenticatedContext,
   trackJobMetrics,
 } from './utils';
 
@@ -47,7 +47,9 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
       queueName,
       trackJobMetrics('set-accounts', (job) => {
         const { authState, requestId, traceId } = job.data;
-        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
+        return runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () =>
+          execSetAccountsJob(job)
+        );
       }),
       getWorkerBullmqConfig(config, 'set-accounts', queueOptions)
     );
@@ -55,13 +57,13 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
       return { asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId };
     });
 
-    worker.on('failed', async (job) => {
+    worker.on('failed', async (job, err) => {
       if (!job) {
         return;
       }
 
       const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-      await exec.failJob();
+      await exec.failJob(err);
     });
   }
 
@@ -100,7 +102,6 @@ export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<
   }
 
   await exec.startAsync(async () => {
-    await assertProjectActive(job.data.authState.project.id);
     return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true }, exec.getAsyncJob().id);
   });
 }

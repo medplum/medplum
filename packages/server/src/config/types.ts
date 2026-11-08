@@ -71,13 +71,14 @@ export interface MedplumServerConfig {
   sseCustomerKey?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
-  botCustomFunctionsEnabled?: boolean;
   /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `true`. */
   storeBotInput?: boolean;
   logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
   registerEnabled?: boolean;
+  /** When `false`, new users can still register but cannot create new projects. Default is `true`. */
+  newProjectRegistrationEnabled?: boolean;
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;

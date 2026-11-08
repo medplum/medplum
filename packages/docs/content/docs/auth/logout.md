@@ -36,6 +36,8 @@ Users can retrieve a list of active sessions using the `/auth/me` endpoint. It w
 
 Each session has a login `id`. You can use this login `id` to revoke a specific session access token.
 
+Users who signed in with a password or Google can list and revoke their sessions in all of their projects. Other logins can only list and revoke sessions in the current project.
+
 ```bash
 curl 'https://api.medplum.com/auth/revoke' \
   -X POST \

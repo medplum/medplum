@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import type { TestSpecification } from 'vitest/node';
 import { BaseSequencer } from 'vitest/node';
-import { medplumAliases } from '../../aliases.mjs';
 import packageJson from './package.json' with { type: 'json' };
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
@@ -46,15 +45,18 @@ export default defineConfig({
     'import.meta.env.MEDPLUM_VERSION': JSON.stringify(`${packageJson.version}-test`),
   },
   resolve: {
-    alias: {
-      ...medplumAliases,
-      '@azure/identity': resolve(serverDir, 'src/__mocks__/@azure/identity.ts'),
-      '@azure/keyvault-secrets': resolve(serverDir, 'src/__mocks__/@azure/keyvault-secrets.ts'),
-      '@azure/storage-blob': resolve(serverDir, 'src/__mocks__/@azure/storage-blob.ts'),
-      '@google-cloud/secret-manager': resolve(serverDir, 'src/__mocks__/@google-cloud/secret-manager.ts'),
-      '@google-cloud/storage': resolve(serverDir, 'src/__mocks__/@google-cloud/storage.ts'),
-      hibp: resolve(serverDir, 'src/__mocks__/hibp.ts'),
-    },
+    alias: [
+      { find: /^@medplum\/([\w-]+)$/, replacement: resolve(serverDir, '../$1/src') },
+      { find: '@azure/identity', replacement: resolve(serverDir, 'src/__mocks__/@azure/identity.ts') },
+      { find: '@azure/keyvault-secrets', replacement: resolve(serverDir, 'src/__mocks__/@azure/keyvault-secrets.ts') },
+      { find: '@azure/storage-blob', replacement: resolve(serverDir, 'src/__mocks__/@azure/storage-blob.ts') },
+      {
+        find: '@google-cloud/secret-manager',
+        replacement: resolve(serverDir, 'src/__mocks__/@google-cloud/secret-manager.ts'),
+      },
+      { find: '@google-cloud/storage', replacement: resolve(serverDir, 'src/__mocks__/@google-cloud/storage.ts') },
+      { find: 'hibp', replacement: resolve(serverDir, 'src/__mocks__/hibp.ts') },
+    ],
   },
   test: {
     maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',

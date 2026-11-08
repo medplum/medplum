@@ -1104,7 +1104,13 @@ describe('FHIR resource validation', () => {
     patient.birthDate = 'x';
     expect(() => validateResource(patient)).toThrow('Invalid date format');
 
+    patient.birthDate = '2023-02-29';
+    expect(() => validateResource(patient)).toThrow('Invalid date value');
+
     patient.birthDate = '2000-01-01';
+    expect(() => validateResource(patient)).not.toThrow();
+
+    patient.birthDate = '2024-02-29';
     expect(() => validateResource(patient)).not.toThrow();
   });
 

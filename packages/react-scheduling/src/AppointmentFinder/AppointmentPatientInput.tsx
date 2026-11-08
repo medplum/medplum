@@ -1,22 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { formatDate, getIdentifier, getIdentifierByType, MRN_IDENTIFIER_TYPE } from '@medplum/core';
-import type { Patient, Reference } from '@medplum/fhirtypes';
+import { formatDate, getDisplayString, getReferenceString } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { ResourceInput } from '@medplum/react';
+import { AsyncAutocomplete } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
+import { getMedicalRecordNumber, hasMedicalRecordNumber } from '../patients';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 
 // Alphabetical, then by birth date: a short prefix — or the first click, before
 // anything is typed — leaves a list only a name orders usefully, and the birth
 // date is what tells the people sharing one apart.
-const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
+const NAME_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
+
+// An MRN names one patient; a few more leaves room for identifiers from other
+// systems that share the value and are filtered out below.
+const IDENTIFIER_SEARCH_CRITERIA = { _count: '10' };
 
 export interface AppointmentPatientInputProps {
   /** Read once, at mount. */
-  readonly defaultValue?: WithId<Patient> | Reference<Patient>;
+  readonly defaultValue?: WithId<Patient>;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
   readonly required?: boolean;
@@ -25,36 +31,63 @@ export interface AppointmentPatientInputProps {
 }
 
 /**
- * Asks who a visit is for, telling namesakes apart by birth date and medical record number.
+ * Asks who a visit is for, found by name or medical record number, telling
+ * namesakes apart by birth date and medical record number.
  * @param props - The React props.
  * @returns The field.
  */
 export function AppointmentPatientInput(props: AppointmentPatientInputProps): JSX.Element {
   const { defaultValue, mrnSystem, required, onChange, error } = props;
+  const medplum = useMedplum();
+
+  const loadPatients = useCallback(
+    async (input: string, signal: AbortSignal): Promise<WithId<Patient>[]> => {
+      const mrn = input.trim();
+      const [byIdentifier, byName] = await Promise.all([
+        mrn ? medplum.searchResources('Patient', { identifier: mrn, ...IDENTIFIER_SEARCH_CRITERIA }, { signal }) : [],
+        medplum.searchResources('Patient', { name: input, ...NAME_SEARCH_CRITERIA }, { signal }),
+      ]);
+
+      // `identifier` matches every system, and a number typed may be somebody's
+      // insurance member ID. Only a medical record number counts as a match.
+      const byMrn = byIdentifier.filter((patient) => hasMedicalRecordNumber(patient, mrnSystem, mrn));
+
+      // An exact number is the surer match, so it leads.
+      const mrnIds = new Set(byMrn.map((patient) => patient.id));
+      return [...byMrn, ...byName.filter((patient) => !mrnIds.has(patient.id))];
+    },
+    [medplum, mrnSystem]
+  );
 
   const patientItem = useCallback(
-    (option: AsyncAutocompleteOption<Patient>) => (
+    (option: AsyncAutocompleteOption<WithId<Patient>>) => (
       <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
     ),
     [mrnSystem]
   );
 
+  const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
+
   return (
-    <ResourceInput<Patient>
-      resourceType="Patient"
+    <AsyncAutocomplete<WithId<Patient>>
       name="patient"
       label="Patient"
-      placeholder="Search patients by name"
+      placeholder="Search patients by name or MRN"
       required={required}
       error={error}
-      searchCriteria={PATIENT_SEARCH_CRITERIA}
       defaultValue={defaultValue}
+      toOption={toPatientOption}
+      loadOptions={loadPatients}
       itemComponent={patientItem}
-      // Options come from a search, so each one has an id.
-      onChange={onChange as (patient: Patient | undefined) => void}
+      onChange={handleChange}
+      maxValues={1}
       clearable={false}
     />
   );
+}
+
+function toPatientOption(patient: WithId<Patient>): AsyncAutocompleteOption<WithId<Patient>> {
+  return { value: getReferenceString(patient), label: getDisplayString(patient), resource: patient };
 }
 
 /**
@@ -66,21 +99,4 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
 function formatPatientDetail(patient: Patient, mrnSystem: string | undefined): string | undefined {
   const mrn = getMedicalRecordNumber(patient, mrnSystem);
   return [formatDate(patient.birthDate), mrn && `MRN ${mrn}`].filter(Boolean).join(' · ') || undefined;
-}
-
-/**
- * Reads a patient's medical record number.
- *
- * A typed identifier answers it whoever issued it, which is the case that needs
- * no configuration. `mrnSystem` is for the project whose identifiers carry no
- * type, where nothing but the system says which one this is.
- *
- * @param patient - The patient to read.
- * @param mrnSystem - The system a project issues medical record numbers under.
- * @returns The medical record number, or undefined for a patient with none.
- */
-function getMedicalRecordNumber(patient: Patient, mrnSystem: string | undefined): string | undefined {
-  return (
-    getIdentifierByType(patient, MRN_IDENTIFIER_TYPE) ?? (mrnSystem ? getIdentifier(patient, mrnSystem) : undefined)
-  );
 }

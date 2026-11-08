@@ -44,6 +44,8 @@ Because Bots contain important or sensitive code, it's important to prevent unau
 
 First, you should create a Client Application on the Medplum Server by following [these directions](/docs/auth/client-credentials).
 
+New ClientApplications, including the default client created with each new project, receive the [`ClientApplication` default access policy](/docs/access/access-policies#default-access-policies), which makes `Bot` read-only. To deploy Bots, give the ClientApplication you use for deployment an access policy that grants write access to `Bot`.
+
 The [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) looks for two environment variables when authenticating: `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`.
 
 You can set these on the command line using the `export` command in bash.

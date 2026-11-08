@@ -173,6 +173,15 @@ describe('Login', () => {
     expect(res.body.code).toBeDefined();
   });
 
+  test('Invalid redirect URI type', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ clientId: client.id, email, password, scope: 'openid', redirectUri: { foo: 'bar' } });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid redirectUri');
+  });
+
   test('Success default client', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,

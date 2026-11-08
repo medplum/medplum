@@ -170,11 +170,17 @@ POST {base}/fhir/R4/CoverageEligibilityRequest/{id}/$stedi-check-eligibility
 ### Stedi sandbox testing
 
 {{< note >}}
-The Stedi sandbox successfully validates only a few payloads. **We recommend using the transaction Bundle below** when testing against the sandbox.
+The Stedi sandbox successfully validates only a few payloads. Use the sample data below when testing against the sandbox.
+{{< /note >}}
+
+{{< note title="Sample data and partial failures" >}}
+
+This sample can partially succeed on hosted Medplum. Check every response entry before continuing, and follow the [Bundle recovery guidance](/docs/fhir-datastore/fhir-batch-requests#performing-upserts) before retrying POST creates.
+
 {{< /note >}}
 
 <details>
-<summary>Example transaction Bundle for Eligibility Checks (recommended for Stedi sandbox testing)</summary>
+<summary>Example linked-resource Bundle for Eligibility Checks (recommended for Stedi sandbox testing)</summary>
 
 ```json
 {

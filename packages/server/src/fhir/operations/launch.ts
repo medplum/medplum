@@ -38,6 +38,10 @@ export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> 
   if (!clientApp.launchUri) {
     return [badRequest('ClientApplication not configured for launch')];
   }
+  const url = URL.canParse(clientApp.launchUri) ? new URL(clientApp.launchUri) : undefined;
+  if (url?.protocol !== 'https:' && url?.protocol !== 'http:') {
+    return [badRequest('Invalid ClientApplication launch URI')];
+  }
   if (params.patient && params.encounter) {
     return [badRequest('Only one launch context can be specified')];
   }
@@ -48,7 +52,6 @@ export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> 
     encounter: params.encounter ? { reference: `Encounter/${params.encounter}` } : undefined,
   });
 
-  const url = new URL(clientApp.launchUri);
   url.searchParams.set('iss', concatUrls(getConfig().baseUrl, 'fhir/R4/'));
   url.searchParams.set('launch', launch.id);
 
