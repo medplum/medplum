@@ -24,7 +24,7 @@ export function main(): void {
 
   const bundle = readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json') as Bundle<StructureDefinition>;
   const sds = (bundle.entry ?? []).map((e) => e.resource as StructureDefinition);
-  indexStructureDefinitionBundle(sds, { xmlPropertyNames: true });
+  indexStructureDefinitionBundle(sds);
 
   const schemas = sds
     .filter((sd) => sd.kind === 'logical')
