@@ -57,7 +57,7 @@ export interface InternalSchemaElement {
   xmlAttribute?: boolean;
   /** True for elements holding XML markup (e.g. CDA narrative), which parses to nested objects. */
   xmlMarkup?: boolean;
-  /** For XML logical models, the property name in parsed XML, e.g. `@_root` (see `LoadDataTypeOptions`). */
+  /** For XML logical models, the property name in parsed XML, e.g. `@_root` (see `loadDataType`). */
   xmlName?: string;
 }
 

@@ -60,9 +60,7 @@ describe('XML logical models', () => {
     for (const type of FHIR_TYPES) {
       fhirSchemas.set(type, getDataType(type));
     }
-    indexStructureDefinitionBundle(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json') as Bundle, {
-      xmlPropertyNames: true,
-    });
+    indexStructureDefinitionBundle(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json') as Bundle);
   });
 
   test('FHIR types are unchanged', () => {
