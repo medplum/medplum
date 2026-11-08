@@ -24,6 +24,7 @@ blog_tags: [community]
   height="50"
   style="border-radius: 50%"
 />
+
 **[Cody Ebberson](https://github.com/codyebberson)**
 
 A state of the union on the Medplum platform: what launched in the past year, and what is launching today.
@@ -40,6 +41,7 @@ _Themes: 🧩 Platform, 🗺️ Roadmap_
   style="border-radius: 50%"
 />
 <img src="/img/avatars/vishnu-ravi.webp" alt="Vishnu Ravi" width="50" height="50" style="border-radius: 50%" />
+
 **[Vishnu Ravi](https://med.stanford.edu/profiles/vishnu-ravi)**, **[Aydin
 Zahedivash](https://med.stanford.edu/profiles/aydin-zahedivash)**
 
@@ -53,6 +55,7 @@ _Themes: 🤖 AI, 💻 Agentic Coding, 🩺 Clinician-Led Innovation_
 
 <img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style="border-radius: 50%" />
 <img src="https://github.com/maddyli.png" alt="Maddy Li" width="50" height="50" style="border-radius: 50%" />
+
 **[Matt Long](https://github.com/mattlong)**, **[Maddy Li](https://github.com/maddyli)**
 
 New platform features enable workflows at a national scale. Scale happens in multiple dimensions, some literal (patients, API calls) and some more related to access control, observability, and governance. This session covers how sharding, the data warehouse, asynchronous batches, access controls, websockets, and expanded use of standards drive scale.
@@ -69,6 +72,7 @@ _Themes: 📈 Scale, 🏗️ Infrastructure, 📐 Standards, 🔐 Access Control
   style="border-radius: 50%"
 />
 <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style="border-radius: 50%" />
+
 **[Everett Williams](https://github.com/everett-williams)**, **[Noah Silas](https://github.com/noahsilas)**
 
 Platform enhancements have enabled new workflows, and we will showcase them: scheduling, DICOM, health information exchange, medications, agents and voice, financial and revenue cycle, prior authorization, and marketplace.
@@ -82,6 +86,7 @@ _Themes: 📦 Product, 🔄 Workflows_
 ### 1:00 PM - Scheduling Agents for Healthcare Operations
 
 <img src="https://github.com/codyhall.png" alt="Cody Hall" width="50" height="50" style="border-radius: 50%" />
+
 **[Cody Hall](https://github.com/codyhall)**, Unity AI
 
 The team at Unity AI will discuss their experience building and scaling a healthcare service that manages complex scheduling workflows over the phone. They will cover the architecture of the application, caregiver access and logic, and how the voice system is integrated.
@@ -98,6 +103,7 @@ _Themes: 🤖 AI, 🦾 Agents, 📞 Voice Scheduling, 🧰 Developer Platform, �
   style="border-radius: 50%"
 />
 <img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" />
+
 **[Ed Charbeneau](https://github.com/dg-edcharbeneau)**, [Deepgram](https://deepgram.com/), moderated by **[David
 Yanez](https://github.com/techdavidy)**
 
@@ -108,6 +114,7 @@ _Themes: 🤖 AI, 🦾 Agents, 🎙️ Voice, 🛠️ Developer Experience, ✅ 
 ### 1:50 PM - Open Source for Healthcare
 
 <img src="/img/avatars/stuart.webp" alt="Stuart Parmenter" width="50" height="50" style="border-radius: 50%" />
+
 **[Stuart Parmenter](https://www.linkedin.com/in/stuartparmenter)**
 
 Stuart Parmenter, former CTO of One Medical and an early team member at Mozilla, has a unique perspective on the role of open source in healthcare and on delivering care at scale. Advancements in LLMs and AI are ushering in a new era for healthcare.
@@ -135,6 +142,7 @@ _Themes: ⚡ Realtime, 🏛️ Government Programs, ⚖️ Regulated Industry_
   height="50"
   style="border-radius: 50%"
 />
+
 **[Flávio Juvenal](https://www.linkedin.com/in/flaviojuvenal)**, Vinta Software, **[Kevin
 Shaw](https://github.com/kevinwadeshaw)**
 
@@ -152,6 +160,7 @@ _Themes: 🧰 Developer Platform, 🚀 Implementation_
   height="50"
   style="border-radius: 50%"
 />
+
 **Yash Lala**, [Suki](https://www.suki.ai/partners/), moderated by **[Andy Stoneman](https://github.com/andystoneman)**
 
 Yash will demo [Suki](https://www.suki.ai/partners/) integrated into Medplum, showing form filling, ambient documentation, and dictation capabilities.

@@ -32,7 +32,7 @@
 <div class="admonition alert {{ $class }}">
   <div class="admonition-heading">
     <span class="admonition-icon">{{ partial "icon" $icon }}</span>
-    <span>{{ $heading }}</span>
+    <span>{{ if $title }}{{ $title | markdownify }}{{ else }}{{ $heading }}{{ end }}</span>
   </div>
   <div class="admonition-content">
     {{ $inner }}

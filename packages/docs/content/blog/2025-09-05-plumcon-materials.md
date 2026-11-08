@@ -22,7 +22,7 @@ We also want to thank everyone who donated demos and demo videos to this event -
 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
   <img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="80" height="80" style="border-radius: 50%" />
   <div>
-    <strong>Slides:</strong> [Download Presentation](https://drive.google.com/file/d/13ChwHbf9S19kGL-kpheFBuR1ccjYQx3V/view?usp=sharing)
+    <p><strong>Slides:</strong> <a href="https://drive.google.com/file/d/13ChwHbf9S19kGL-kpheFBuR1ccjYQx3V/view?usp=sharing" target="_blank" rel="noopener noreferrer">Download Presentation</a></p>
   </div>
 </div>
 
@@ -32,8 +32,8 @@ We also want to thank everyone who donated demos and demo videos to this event -
 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
   <img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="80" height="80" style="border-radius: 50%" />
   <div>
-    <strong>Slides:</strong> [How to be a Healthtech Hero and Ship Apps 10x Faster](https://docs.google.com/presentation/d/19GQjsTZcoOLUC1mVKmecvnTz5mFRfcW3QpoU2iATGrs/edit?usp=sharing)  
-    <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=lHhK9dxgl2A)
+    <p><strong>Slides:</strong> <a href="https://docs.google.com/presentation/d/19GQjsTZcoOLUC1mVKmecvnTz5mFRfcW3QpoU2iATGrs/edit?usp=sharing" target="_blank" rel="noopener noreferrer">How to be a Healthtech Hero and Ship Apps 10x Faster</a><br>
+    <strong>Video:</strong> <a href="https://www.youtube.com/watch?v=lHhK9dxgl2A" target="_blank" rel="noopener noreferrer">Watch Recording</a></p>
   </div>
 </div>
 
@@ -55,8 +55,8 @@ We also want to thank everyone who donated demos and demo videos to this event -
   <img src="https://github.com/mattlong.png" alt="Matt Long" width="80" height="80" style="border-radius: 50%" />
   <img src="https://github.com/mattwiller.png" alt="Matt Willer" width="80" height="80" style="border-radius: 50%" />
   <div>
-    <strong>Slides:</strong> [Scaling to Millions of Patients](https://docs.google.com/presentation/d/1Ngktqoi8e5prNEq441O_OhVEJmgCDsMwrOQFWK9VLTQ/edit?usp=sharing)  
-    <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=0ewuLinTDYQ)
+    <p><strong>Slides:</strong> <a href="https://docs.google.com/presentation/d/1Ngktqoi8e5prNEq441O_OhVEJmgCDsMwrOQFWK9VLTQ/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Scaling to Millions of Patients</a><br>
+    <strong>Video:</strong> <a href="https://www.youtube.com/watch?v=0ewuLinTDYQ" target="_blank" rel="noopener noreferrer">Watch Recording</a></p>
   </div>
 </div>
 
@@ -67,8 +67,8 @@ We also want to thank everyone who donated demos and demo videos to this event -
   <img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="80" height="80" style="border-radius: 50%" />
   <img src="https://github.com/maddyli.png" alt="Maddy Li" width="80" height="80" style="border-radius: 50%" />
   <div>
-    <strong>Slides:</strong> [Real-time Medical Applications for Developers](https://docs.google.com/presentation/d/1H1JjwD78NB3HFZ7n3sruDHPY82RK0rsJVrJC0GUVY_E/edit?usp=sharing)  
-    <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=PliSbKE9UNI)
+    <p><strong>Slides:</strong> <a href="https://docs.google.com/presentation/d/1H1JjwD78NB3HFZ7n3sruDHPY82RK0rsJVrJC0GUVY_E/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Real-time Medical Applications for Developers</a><br>
+    <strong>Video:</strong> <a href="https://www.youtube.com/watch?v=PliSbKE9UNI" target="_blank" rel="noopener noreferrer">Watch Recording</a></p>
   </div>
 </div>
 
@@ -79,8 +79,8 @@ We also want to thank everyone who donated demos and demo videos to this event -
   <img src="https://github.com/kevinwadeshaw.png" alt="Kevin Shaw" width="80" height="80" style="border-radius: 50%" />
   <img src="https://github.com/techdavidy.png" alt="David Yanez" width="80" height="80" style="border-radius: 50%" />
   <div>
-    <strong>Slides:</strong> [Vibe Coding EHRs](https://docs.google.com/presentation/d/1T_ErFaDrJrPG0Otr0I-l7iog-4Vy3RFvGHJQaMOHWqk/edit?usp=sharing)  
-    <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=ZbxVopl8McI)
+    <p><strong>Slides:</strong> <a href="https://docs.google.com/presentation/d/1T_ErFaDrJrPG0Otr0I-l7iog-4Vy3RFvGHJQaMOHWqk/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Vibe Coding EHRs</a><br>
+    <strong>Video:</strong> <a href="https://www.youtube.com/watch?v=ZbxVopl8McI" target="_blank" rel="noopener noreferrer">Watch Recording</a></p>
   </div>
 </div>
 
@@ -91,8 +91,8 @@ We also want to thank everyone who donated demos and demo videos to this event -
   <img src="https://github.com/ianplunkett.png" alt="Ian Plunkett" width="80" height="80" style="border-radius: 50%" />
   <img src="https://github.com/rahul1.png" alt="Rahul Agarwal" width="80" height="80" style="border-radius: 50%" />
   <div>
-    <strong>Slides:</strong> [What We Worry About So You Don't Have To](https://docs.google.com/presentation/d/11bWfSQ5Gj8keLEdoDDYhjuHK-9_Mz-5nnwaMXrEqmrg/edit?usp=sharing)  
-    <strong>Video:</strong> [Watch Recording](https://www.youtube.com/watch?v=hsBtH35vKzo)
+    <p><strong>Slides:</strong> <a href="https://docs.google.com/presentation/d/11bWfSQ5Gj8keLEdoDDYhjuHK-9_Mz-5nnwaMXrEqmrg/edit?usp=sharing" target="_blank" rel="noopener noreferrer">What We Worry About So You Don't Have To</a><br>
+    <strong>Video:</strong> <a href="https://www.youtube.com/watch?v=hsBtH35vKzo" target="_blank" rel="noopener noreferrer">Watch Recording</a></p>
   </div>
 </div>
 

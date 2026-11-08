@@ -23,6 +23,7 @@ Below you'll find slides and available recordings for each session from the [age
   height="50"
   style="border-radius: 50%"
 />
+
 **[Cody Ebberson](https://github.com/codyebberson)**
 
 **Slides:** [Medplum Past, Present and Future](https://drive.google.com/file/d/10cd5FCUCOuj4naMkjDtjSSORvzSBsopL/view?usp=sharing)
@@ -37,6 +38,7 @@ Below you'll find slides and available recordings for each session from the [age
   style="border-radius: 50%"
 />
 <img src="/img/avatars/vishnu-ravi.webp" alt="Vishnu Ravi" width="50" height="50" style="border-radius: 50%" />
+
 **[Vishnu Ravi](https://med.stanford.edu/profiles/vishnu-ravi)**, **[Aydin
 Zahedivash](https://med.stanford.edu/profiles/aydin-zahedivash)**
 
@@ -46,6 +48,7 @@ Zahedivash](https://med.stanford.edu/profiles/aydin-zahedivash)**
 
 <img src="https://github.com/mattlong.png" alt="Matt Long" width="50" height="50" style="border-radius: 50%" />
 <img src="https://github.com/maddyli.png" alt="Maddy Li" width="50" height="50" style="border-radius: 50%" />
+
 **[Matt Long](https://github.com/mattlong)**, **[Maddy Li](https://github.com/maddyli)**
 
 <div class="responsive-iframe-wrapper">
@@ -68,6 +71,7 @@ Zahedivash](https://med.stanford.edu/profiles/aydin-zahedivash)**
   style="border-radius: 50%"
 />
 <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style="border-radius: 50%" />
+
 **[Everett Williams](https://github.com/everett-williams)**, **[Noah Silas](https://github.com/noahsilas)**
 
 <div class="responsive-iframe-wrapper">
@@ -85,6 +89,7 @@ Zahedivash](https://med.stanford.edu/profiles/aydin-zahedivash)**
 ### Scheduling Agents for Healthcare Operations
 
 <img src="https://github.com/codyhall.png" alt="Cody Hall" width="50" height="50" style="border-radius: 50%" />
+
 **[Cody Hall](https://github.com/codyhall)**, Unity AI
 
 **Slides:** [Scheduling Agents for Healthcare Operations](https://drive.google.com/file/d/1hA2jVqKMNRlhmQI87shMg2Yd16Ezxar0/view?usp=sharing)
@@ -99,6 +104,7 @@ Zahedivash](https://med.stanford.edu/profiles/aydin-zahedivash)**
   style="border-radius: 50%"
 />
 <img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style="border-radius: 50%" />
+
 **[Ed Charbeneau](https://github.com/dg-edcharbeneau)**, [Deepgram](https://deepgram.com/), moderated by **[David
 Yanez](https://github.com/techdavidy)**
 
@@ -109,6 +115,7 @@ Yanez](https://github.com/techdavidy)**
 ### Open Source for Healthcare
 
 <img src="/img/avatars/stuart.webp" alt="Stuart Parmenter" width="50" height="50" style="border-radius: 50%" />
+
 **[Stuart Parmenter](https://www.linkedin.com/in/stuartparmenter)**
 
 **Slides:** [Open Source Impact on Healthcare](https://drive.google.com/file/d/1DhpYze5_esPgnbWNHS6aL-UbD-FPXIVz/view?usp=sharing)
@@ -140,6 +147,7 @@ The fireside chat was not recorded, but you can learn more about Seen Health's w
   height="50"
   style="border-radius: 50%"
 />
+
 **[Flávio Juvenal](https://www.linkedin.com/in/flaviojuvenal)**, Vinta Software, **[Kevin
 Shaw](https://github.com/kevinwadeshaw)**
 
@@ -156,6 +164,7 @@ Shaw](https://github.com/kevinwadeshaw)**
   height="50"
   style="border-radius: 50%"
 />
+
 **Yash Lala**, [Suki](https://www.suki.ai/partners/), moderated by **[Andy Stoneman](https://github.com/andystoneman)**
 
 **Slides:** [Suki for Partners + Medplum](https://drive.google.com/file/d/1xAFDr9nJPRzJuRyMHuBM5EFLiHa7g5Cg/view?usp=sharing)

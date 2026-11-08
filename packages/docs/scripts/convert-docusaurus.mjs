@@ -203,6 +203,7 @@ function writePage(page, urlBySource) {
   body = copyAssets(body, page, bundleDir);
   body = rewriteDocLinks(body, sourcePath, urlBySource);
   body = fixSummaries(body);
+  body = fixHtmlBlocks(body);
 
   const frontMatter = convertFrontMatter(page, body);
   body = body.replace(/^# .+\n?/m, ''); // The layout renders the title
@@ -250,24 +251,84 @@ function dedentDetails(body) {
   });
 }
 
-// MDX renders markdown inside <summary>, but to CommonMark it's raw HTML, so convert the inline markdown there (code,
-// bold, italics, and links, including [text][ref] references to the page's link definitions) to HTML
+// MDX renders markdown inside <summary>, but to CommonMark it's raw HTML, so convert the inline markdown there to HTML
 function fixSummaries(body) {
-  const refs = new Map([...body.matchAll(/^ {0,3}\[([^\]]+)\]:\s*(\S+)/gm)].map((m) => [m[1].toLowerCase(), m[2]]));
+  const refs = linkDefinitions(body);
+  return body.replace(/<summary>([\s\S]*?)<\/summary>/g, (_m, inner) => `<summary>${inlineMarkdownToHtml(inner, refs)}</summary>`);
+}
+
+function linkDefinitions(body) {
+  return new Map([...body.matchAll(/^ {0,3}\[([^\]]+)\]:\s*(\S+)/gm)].map((m) => [m[1].toLowerCase(), m[2]]));
+}
+
+// Converts inline markdown (code, bold, italics, and links, including [text][ref] references to the page's link
+// definitions) to HTML
+function inlineMarkdownToHtml(text, refs) {
   const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return body.replace(/<summary>([\s\S]*?)<\/summary>/g, (_match, inner) => {
-    const codes = [];
-    let html = inner.replace(/`([^`]+)`/g, (_m, code) => `\u0001${codes.push(`<code>${escape(code)}</code>`) - 1}\u0001`);
-    html = html
-      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
-      .replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (m, text, ref) => {
-        const url = refs.get((ref || text).toLowerCase());
-        return url ? `<a href="${url}">${text}</a>` : m;
-      })
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/(?<![\w*])[*_](?=\S)(.+?)(?<=\S)[*_](?![\w*])/g, '<em>$1</em>');
-    return `<summary>${html.replace(/\u0001(\d+)\u0001/g, (_m, i) => codes[Number(i)])}</summary>`;
-  });
+  // External links open in a new tab, as the link render hook does
+  const link = (label, url) =>
+    /^https?:/.test(url) ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>` : `<a href="${url}">${label}</a>`;
+  const codes = [];
+  let html = text.replace(/`([^`]+)`/g, (_m, code) => `\u0001${codes.push(`<code>${escape(code)}</code>`) - 1}\u0001`);
+  html = html
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, label, url) => link(label, url))
+    .replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (m, label, ref) => {
+      const url = refs.get((ref || label).toLowerCase());
+      return url ? link(label, url) : m;
+    })
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<![\w*])[*_](?=\S)(.+?)(?<=\S)[*_](?![\w*])/g, '<em>$1</em>');
+  return html.replace(/\u0001(\d+)\u0001/g, (_m, i) => codes[Number(i)]);
+}
+
+// A line that starts with a tag begins a CommonMark raw HTML block, which runs to the next blank line, so markdown on
+// the lines after it shows as text. MDX renders it. A markdown line where the block's elements are all closed (after
+// a lone <img>, or after the closing </div>) becomes its own paragraph, as in MDX; one inside an element is converted
+// to HTML.
+function fixHtmlBlocks(body) {
+  const refs = linkDefinitions(body);
+  const voidTags = new Set(['area', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
+  const tagLine = /^\s*(<\/?[A-Za-z][\w-]*(\s[^>]*)?\/?>\s*)+$/;
+  const markdown = /\*\*\S|\[[^\]]+\]\(|`[^`]+`/;
+  const out = [];
+  let depth = -1; // -1: not in an HTML block
+  let para = -1; // index of the paragraph that converted text lines are added to
+  for (const line of body.split('\n')) {
+    if (!line.trim()) {
+      depth = -1;
+    } else if (depth < 0 && (out.length === 0 || !out[out.length - 1].trim()) && /^ {0,3}<\/?[A-Za-z][\w-]*(\s|\/?>|$)/.test(line)) {
+      depth = 0;
+    }
+    if (depth >= 0 && !tagLine.test(line) && markdown.test(line)) {
+      if (depth === 0) {
+        out.push('');
+        depth = -1;
+      } else {
+        // MDX makes consecutive lines of text inside an element a paragraph, where two trailing spaces are a <br>
+        const [, indent, text] = /^(\s*)(.*?)( {2,})?$/.exec(line);
+        const html = inlineMarkdownToHtml(text, refs) + (/ {2}$/.test(line) ? '<br>' : '');
+        if (/^<(?!(strong|em|code|a|span|b|i)\b)/.test(text)) {
+          out.push(indent + html);
+        } else if (para === out.length - 1) {
+          out[para] = out[para].replace(/<\/p>$/, `\n${indent}${html}</p>`);
+        } else {
+          out.push(`${indent}<p>${html}</p>`);
+          para = out.length - 1;
+        }
+        continue;
+      }
+    }
+    out.push(line);
+    if (depth >= 0) {
+      for (const m of line.matchAll(/<(\/?)([A-Za-z][\w-]*)(?:\s[^>]*?)?(\/?)>/g)) {
+        if (!m[3] && !voidTags.has(m[2].toLowerCase())) {
+          depth += m[1] ? -1 : 1;
+        }
+      }
+      depth = Math.max(depth, 0);
+    }
+  }
+  return out.join('\n');
 }
 
 // Docusaurus's magic comments (// or # highlight-next-line, highlight-start, highlight-end) mark code lines to

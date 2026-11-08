@@ -22,6 +22,7 @@ This video walkthrough summarizes a [reference implementation](https://github.co
     allowfullscreen
   ></iframe>
 </div>
+
 Our overview of [Patient Deduplication Architectures](/docs/fhir-datastore/patient-deduplication) describes the data
 model and pipelines in detail.
 
