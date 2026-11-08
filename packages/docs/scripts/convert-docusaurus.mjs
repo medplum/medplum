@@ -288,7 +288,7 @@ function inlineMarkdownToHtml(text, refs) {
 function fixHtmlBlocks(body) {
   const refs = linkDefinitions(body);
   const voidTags = new Set(['area', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
-  const isTagLine = (line) => !line.replace(/<\/?[A-Za-z][^>]*>/g, '').trim();
+  const isTagLine = (line) => line.split(/<\/?[A-Za-z][^>]*>/).every((text) => !text.trim());
   const markdown = /\*\*\S|\[[^\]]+\]\(|`[^`]+`/;
   const out = [];
   let depth = -1; // -1: not in an HTML block
