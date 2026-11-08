@@ -1,0 +1,51 @@
+{{- /* Navbar items: mirrors themeConfig.navbar.items in packages/docs/docusaurus.config.ts in the medplum repo */ -}}
+{{- $links := slice (dict "href" "/products" "label" "Products") (dict "href" "/solutions" "label" "Solutions") (dict "href" "/docs" "label" "Resources") (dict "href" "/pricing" "label" "Pricing") -}}
+{{- $signIn := "https://app.medplum.com/signin" -}}
+{{- $bookDemo := "https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a" -}}
+{{- $path := .RelPermalink -}}
+<nav class="navbar">
+  <button type="button" class="navbar-toggle" aria-label="Toggle navigation bar" aria-expanded="false">{{ partial "icon" "outline/menu-2" }}</button>
+  <div class="navbar-left">
+    <a class="navbar-link navbar-logo-link" href="/"> {{ partial "logo" (dict "width" "120" "height" "26" "class" "navbar-logo-image") }} </a>
+    {{- /* As in Docusaurus, a link is active on its own path and everything under it. main.mjs re-applies this after Swup navigations. */ -}}
+    {{- range $links }}
+    {{- $active := hasPrefix $path .href }}
+    <a class="navbar-link{{ if $active }} active{{ end }}" href="{{ .href }}" data-active-base="{{ .href }}"{{ if $active }} aria-current="page"{{ end }}>{{ .label }}</a>
+    {{- /* Fallback lvl0 for Algolia's default Docusaurus crawler template (see sidebar.html) */}}
+    {{- if $active }}<span class="navbar__item navbar__link--active" style="display: none">{{ .label }}</span>{{ end }}
+    {{- end }}
+  </div>
+  <div class="navbar-right">
+    <a class="navbar-icon-btn navbar-desktop-only" href="https://github.com/medplum/medplum" target="_blank">{{ partial "icon" "outline/brand-github" }}</a>
+    <a class="navbar-icon-btn" href="/search" data-search-trigger data-no-swup aria-label="Search">{{ partial "icon" "outline/search" }}</a>
+    <button type="button" class="navbar-icon-btn theme-toggle navbar-desktop-only" aria-label="Switch between dark and light mode">{{ partial "icon" "outline/sun" }}</button>
+    <a class="navbar-text-btn navbar-desktop-only" href="{{ $signIn }}" target="_blank">Sign In</a>
+    <a class="navbar-text-btn navbar-primary-btn navbar-desktop-only" href="{{ $bookDemo }}" target="_blank">Book a Demo</a>
+  </div>
+</nav>
+
+{{- /* Mobile drawer (below 997px). On docs pages it opens to the docs sidebar, which mobile-nav.mjs moves in from <aside> while open. */}}
+<div class="mobile-nav">
+  <div class="mobile-nav-backdrop"></div>
+  <div class="mobile-nav-panel" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="mobile-nav-brand">
+      <a class="navbar-link navbar-logo-link" href="/"> {{ partial "logo" (dict "width" "120" "height" "26" "class" "navbar-logo-image") }} </a>
+      <button type="button" class="navbar-icon-btn theme-toggle" aria-label="Switch between dark and light mode">{{ partial "icon" "outline/sun" }}</button>
+      <button type="button" class="mobile-nav-close" aria-label="Close navigation bar">{{ partial "icon" "outline/x" }}</button>
+    </div>
+    <div class="mobile-nav-items">
+      <div class="mobile-nav-primary">
+        {{- range $links }}
+        {{- $active := hasPrefix $path .href }}
+        <a class="mobile-nav-link{{ if $active }} active{{ end }}" href="{{ .href }}" data-active-base="{{ .href }}"{{ if $active }} aria-current="page"{{ end }}>{{ .label }}</a>
+        {{- end }}
+        <a class="navbar-text-btn" href="{{ $signIn }}" target="_blank">Sign In</a>
+        <a class="navbar-text-btn navbar-primary-btn" href="{{ $bookDemo }}" target="_blank">Book a Demo</a>
+      </div>
+      <div class="mobile-nav-secondary">
+        <button type="button" class="mobile-nav-back">← Back to main menu</button>
+        <div class="mobile-nav-docs"></div>
+      </div>
+    </div>
+  </div>
+</div>
