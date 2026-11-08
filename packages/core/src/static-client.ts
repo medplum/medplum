@@ -8,6 +8,12 @@ import { badRequest, notFound } from './outcomes';
 import { ClientStorage, MemoryStorage } from './storage';
 
 /**
+ * A FHIR read path relative to the FHIR base URL: `Patient/123`.
+ * Does not match searches (`Patient?name=Homer`), sub-paths (`Patient/123/_history`), or operations (`$export`).
+ */
+const READ_PATH = /^(?<resourceType>[A-Za-z]+)\/(?<id>[^/?]+)$/;
+
+/**
  * Creates a MedplumClient that serves reads from the given resources and never touches the network.
  *
  * Use it to render Medplum React components from data gathered up front:
@@ -43,10 +49,11 @@ export function createStaticClient(resources: Resource[], options?: MedplumClien
     fetch: async (url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET';
       const path = url.startsWith(fhirBaseUrl) ? url.slice(fhirBaseUrl.length).replace(/^\//, '') : undefined;
-      if (method !== 'GET' || !path || !/^[A-Za-z]+\/[^/?]+$/.test(path)) {
+      const read = method === 'GET' ? path?.match(READ_PATH)?.groups : undefined;
+      if (!read) {
         return jsonResponse(400, badRequest(`Not supported by static client: ${method} ${url}`));
       }
-      const resource = byKey.get(path);
+      const resource = byKey.get(`${read.resourceType}/${read.id}`);
       return resource ? jsonResponse(200, resource) : jsonResponse(404, notFound);
     },
   });
