@@ -1,0 +1,7 @@
+{{- /* Products page. Markup is generated from the medplum repo by port-landing.mjs; behavior is in assets/js/components/products/. */ -}}
+{{ define "page" }}
+  {{- /* Single root: main is a flex container, and the generated markup has several top-level siblings */ -}}
+  <div class="landing">
+    {{ partial "products/generated/page.html" . }}
+  </div>
+{{ end }}
