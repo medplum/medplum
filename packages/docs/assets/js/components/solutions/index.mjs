@@ -8,7 +8,7 @@ import { initHeroAnimation } from './hero-animation.mjs';
 let cleanups = [];
 
 export function initSolutions() {
-  // The .landing wrapper from layouts/solutions/list.html holds the page plus the data appended by port-landing.mjs
+  // The .landing wrapper from layouts/solutions/list.html holds the page plus its JSON data
   const root = document.querySelector('.solutions-page-page')?.closest('.landing');
   if (!root) {
     return;

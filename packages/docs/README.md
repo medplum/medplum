@@ -77,7 +77,3 @@ Pages are Markdown with front matter (`title`, and optionally `description`, `si
 ### Decision Guides
 
 The Decision Guide PDF and Word downloads are generated from their Markdown with `npm run build:guides`, which needs pandoc and LibreOffice. You normally don't need to run it: CI regenerates and commits them when a guide changes (`.github/workflows/autofix-ci.yml`).
-
-## Migration from Docusaurus
-
-The site was converted from Docusaurus. Until the migration is merged, `scripts/convert-docusaurus.mjs` regenerates `content/`, `data/sidebar.yml`, and `data/authors.json` from the Docusaurus sources on `main`, so docs changes made there carry over. It will be deleted after the migration, and then `content/` and `data/` are edited directly.

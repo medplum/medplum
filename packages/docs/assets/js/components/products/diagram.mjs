@@ -1,6 +1,6 @@
 // "How it all works together" architecture diagram: draws the SVG connectors between the diagram's
 // HTML boxes, measured at runtime so they stay aligned across resizes and theme changes.
-// Port of the connector logic in ProductsDiagram.tsx. port-landing.mjs tags each measured box with
+// Port of the connector logic in ProductsDiagram.tsx. The page markup tags each measured box with
 // data-dg="<name>" (the React ref name) and the measuring container with data-dg-root.
 
 const LINE = 'var(--oc-gray-5)';
