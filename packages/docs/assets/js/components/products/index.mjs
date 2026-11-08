@@ -11,7 +11,7 @@ import { initMessagingPreview } from './messaging-preview.mjs';
 let cleanups = [];
 
 export function initProducts() {
-  // The .landing wrapper from layouts/products/list.html holds the page plus the data appended by port-landing.mjs
+  // The .landing wrapper from layouts/products/list.html holds the page plus its JSON data
   const root = document.querySelector('.products-page-page')?.closest('.landing');
   if (!root) {
     return;

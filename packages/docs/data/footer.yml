@@ -1,5 +1,4 @@
 # Footer link columns (layouts/partials/footer.html).
-# Mirrors themeConfig.footer.links in packages/docs/docusaurus.config.ts in the medplum repo.
 
 columns:
   - title: Developers
