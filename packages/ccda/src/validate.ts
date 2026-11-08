@@ -1,37 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  createStructureIssue,
-  indexStructureDefinitionBundle,
-  OperationOutcomeError,
-  tryGetDataType,
-  validateTypedValue,
-} from '@medplum/core';
-import type { Bundle, OperationOutcomeIssue, StructureDefinition } from '@medplum/fhirtypes';
+import { createStructureIssue, OperationOutcomeError, tryGetDataType, validateTypedValue } from '@medplum/core';
+import type { OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { XMLValidator } from 'fast-xml-parser';
 import { parseCcdaXml } from './parse';
 
 const CLINICAL_DOCUMENT = 'http://hl7.org/cda/stds/core/StructureDefinition/ClinicalDocument';
 
 /**
- * Loads the HL7 CDA R2 logical model, which `validateCcda` validates against.
- *
- * The model is distributed in `@medplum/definitions`:
- *
- * ```ts
- * indexCdaDefinitions(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json'));
- * ```
- * @param bundle - The CDA StructureDefinitions.
- */
-export function indexCdaDefinitions(bundle: Bundle | StructureDefinition[]): void {
-  indexStructureDefinitionBundle(bundle, { xmlPropertyNames: true });
-}
-
-/**
  * Validates C-CDA XML against the HL7 CDA R2 logical model: well-formed XML, then CDA structure, cardinality,
  * `xsi:type`, and data type formats. C-CDA template conformance statements are not checked.
  *
- * Requires the CDA logical model, loaded with `indexCdaDefinitions`.
+ * Requires the CDA logical model, which is distributed in `@medplum/definitions`:
+ *
+ * ```ts
+ * indexStructureDefinitionBundle(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json'));
+ * ```
  *
  * Issue locations are FHIRPath expressions on the CDA logical model, e.g. "ClinicalDocument.effectiveTime.value".
  * @param xml - The C-CDA XML.
@@ -39,7 +23,9 @@ export function indexCdaDefinitions(bundle: Bundle | StructureDefinition[]): voi
  */
 export function validateCcda(xml: string): OperationOutcomeIssue[] {
   if (!tryGetDataType(CLINICAL_DOCUMENT)) {
-    throw new Error('CDA definitions not loaded; call indexCdaDefinitions first');
+    throw new Error(
+      'CDA definitions not loaded; index fhir/cda/hl7.cda.uv.core-2.0.0-sd.json from @medplum/definitions'
+    );
   }
 
   const syntax = XMLValidator.validate(xml);

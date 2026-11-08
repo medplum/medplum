@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { indexCdaDefinitions, validateCcda } from './validate';
+import { validateCcda } from './validate';
 import { convertXmlToCcda } from './xml';
 
 function readTestData(name: string): string {
@@ -21,12 +22,12 @@ const R21 = readTestData('170.315_b1_toc_amb_ccd_r21_sample1_v13.xml');
 
 describe('validateCcda', () => {
   test('Requires the CDA definitions', () => {
-    expect(() => validateCcda(R21)).toThrow('CDA definitions not loaded; call indexCdaDefinitions first');
+    expect(() => validateCcda(R21)).toThrow('CDA definitions not loaded');
   });
 
   describe('With CDA definitions', () => {
     beforeAll(() => {
-      indexCdaDefinitions(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json'));
+      indexStructureDefinitionBundle(readJson('fhir/cda/hl7.cda.uv.core-2.0.0-sd.json'));
     });
 
     test('Valid documents', () => {
