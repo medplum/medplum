@@ -4,6 +4,12 @@ title: Mantine 6.x to 7.x
 weight: 100
 ---
 
+{{< note title="Historical migration guide" >}}
+
+This page covers the transition from Mantine 6 to 7 for older applications. Current Medplum React packages require Mantine 8. For a new application, use [React Components](/docs/react); for an existing application, check the peer dependencies of each Medplum release in your upgrade path.
+
+{{< /note >}}
+
 [Mantine 7.0](https://mantine.dev/changelog/7-0-0/) is a major release that introduces breaking changes. This guide will help you to migrate your application from Mantine 6.x to 7.x.
 
 The main change in Mantine 7.0 is the removal of all CSS-in-JS dependencies. Mantine now uses CSS variables to style components. This change improves performance, reduces bundle size of the library and allows using Mantine in environments where CSS-in-JS is not supported (or supported with limitations), for example, Next.js app directory.

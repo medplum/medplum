@@ -1,57 +1,43 @@
 ---
 id: index
 title: React Components
+description: Set up Medplum React components, providers, styles, and compatible dependencies.
 ---
 
-Medplum maintains a library of React components which we use in the [Medplum app](/docs/app) and are open source. We support use of our React component library in third party apps as well.
+Use Medplum's React library to add FHIR forms, search interfaces, and clinical workspaces to your application. The same components power the Medplum App and Provider.
 
-- [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs)
-- [Source Code](https://github.com/medplum/medplum/tree/main/packages/react) on Github
+Choose a starting point:
 
-The best way to get started is to try one of the Medplum example apps:
+- **Start a small app:** use [Medplum Hello World](https://github.com/medplum/medplum/tree/main/examples/medplum-hello-world), which includes sign-in and patient pages.
+- **Customize a clinical app:** start with [Medplum Provider](/docs/provider#building-a-custom-ehr).
+- **Add components to an existing app:** follow the setup below, then continue with [Building a React Application](/docs/react/building-an-application).
 
-- [Medplum Hello World](https://github.com/medplum/medplum/tree/main/examples/medplum-hello-world)
-- [Medplum Next.js Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-nextjs-demo)
-
-Or, you can try our full-featured patient demo called [Foo Medical](https://github.com/medplum/medplum/tree/main/examples/foomedical).
+Explore the [component catalog](https://storybook.medplum.com/) and [public source](https://github.com/medplum/medplum/tree/main/packages/react) as you build.
 
 ## Prerequisites
 
-As the name implies, Medplum React components are built with [React](https://reactjs.org/). Medplum requires React 18+.
+Use compatible versions of React, Mantine, and the Medplum packages. The current `@medplum/react` package supports React 18 or 19 and requires Mantine 8. Keep `@medplum/core`, `@medplum/react`, and `@medplum/react-hooks` on the same Medplum release.
+
+For a new app using React 19:
 
 ```bash
-npm i -D react react-dom
+npm install react@^19 react-dom@^19 react-router@^8
+npm install @mantine/core@^8 @mantine/hooks@^8 @mantine/notifications@^8 @mantine/spotlight@^8
+npm install @medplum/core @medplum/react @medplum/react-hooks jsqr signature_pad@^5
+npm install -D @medplum/fhirtypes @types/react @types/react-dom postcss postcss-preset-mantine postcss-simple-vars
 ```
 
-Medplum React components are built with [Mantine](https://mantine.dev/), which is a fantastic library for building functional accessible web applications. Medplum uses Mantine version 7+.
+The PostCSS packages are development tools; the React, Mantine, and Medplum packages are application dependencies. `postcss-simple-vars` is required by the configuration below.
 
-```bash
-npm i -D @mantine/core @mantine/hooks @mantine/notifications
-```
-
-Medplum and Mantine both use [PostCSS](https://postcss.org/) for CSS processing. Mantine provides a [PostCSS preset](https://mantine.dev/theming/postcss) for common configuration.
-
-```bash
-npm i -D postcss postcss-preset-mantine
-```
-
-While not strictly required, Medplum recommends using [React Router](https://reactrouter.com/) for client side routing. Medplum uses React Router version 6+.
-
-```bash
-npm i -D react-router
-```
-
-And then finally you can install Medplum React components:
-
-```bash
-npm i -D @medplum/core @medplum/react
-```
+For an existing app, check the peer dependencies of the Medplum version you are installing before changing framework versions. Use the maintained [Hello World example](https://github.com/medplum/medplum/tree/main/examples/medplum-hello-world) as a complete starting point.
 
 ## Getting Started
 
+After installing the packages, continue with [Building a React Application](/docs/react/building-an-application) for authentication state, data loading, forms, and refresh behavior. [Choosing React Components](/docs/react/choosing-components) maps common workflows to controls and working examples.
+
 If you are not familiar with Mantine, you may want to start with the [Mantine Getting Started](https://mantine.dev/getting-started/) guide.
 
-There are a few important steps.
+Configure PostCSS, then load the styles and providers in your application entry point.
 
 ### PostCSS Configuration
 
@@ -79,36 +65,16 @@ const config = {
 export default config;
 ```
 
-### Mantine Imports
+### Styles and providers {#mantine-imports}
 
-Import the Mantine CSS styles in your `index.tsx` file:
-
-```typescript
-import '@mantine/core/styles.css';
-```
-
-Wrap your application with the `MantineProvider` component:
-
-```tsx
-import { createTheme, MantineProvider } from '@mantine/core';
-
-const theme = createTheme({
-  /** Put your mantine theme override here */
-});
-
-function Demo() {
-  return (
-    <MantineProvider theme={theme}>
-      <App />
-    </MantineProvider>
-  );
-}
-```
+Load Mantine's styles before Medplum's styles. Wrap your pages with `MedplumProvider` for client and authentication state, and `MantineProvider` for UI theming. Keep the `MedplumClient` instance outside the render function so it stays stable across renders.
 
 ## Simple Example
 
+In your application entry point, replace `YOUR_CLIENT_ID` with your public ClientApplication ID and render your `App` component:
+
 ```tsx
-import { MantineProvider, createTheme } from '@mantine/core';
+import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
@@ -119,35 +85,16 @@ import { BrowserRouter } from 'react-router';
 import { App } from './App';
 
 const medplum = new MedplumClient({
-  onUnauthenticated: () => (window.location.href = '/'),
-});
-
-const theme = createTheme({
-  headings: {
-    sizes: {
-      h1: {
-        fontSize: '1.125rem',
-        fontWeight: '500',
-        lineHeight: '2.0',
-      },
-    },
-  },
-  fontSizes: {
-    xs: '0.6875rem',
-    sm: '0.875rem',
-    md: '0.875rem',
-    lg: '1.0rem',
-    xl: '1.125rem',
-  },
+  baseUrl: 'https://api.medplum.com/',
+  clientId: 'YOUR_CLIENT_ID',
 });
 
 const container = document.getElementById('root') as HTMLDivElement;
-const root = createRoot(container);
-root.render(
+createRoot(container).render(
   <StrictMode>
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
-        <MantineProvider theme={theme}>
+        <MantineProvider>
           <App />
         </MantineProvider>
       </MedplumProvider>
@@ -155,3 +102,9 @@ root.render(
   </StrictMode>
 );
 ```
+
+{{< note title="Keep client secrets on the server" >}}
+A browser app uses a public client ID. Configure a browser-compatible [sign-in flow](/docs/auth); client secrets belong in a trusted backend.
+{{< /note >}}
+
+The providers establish the application context. Continue with [Building a React Application](/docs/react/building-an-application) to handle sign-in state, searches, saves, and refreshes.
