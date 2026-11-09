@@ -60,7 +60,7 @@
     "@medplum/definitions": "5.2.15",
     "@medplum/fhirtypes": "5.2.15",
     "dataloader": "2.2.3",
-    "graphql": "17.0.2"
+    "graphql": "17.1.0"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

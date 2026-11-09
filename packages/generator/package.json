@@ -31,8 +31,8 @@
     "@medplum/fhirtypes": "5.2.15",
     "@types/json-schema": "7.0.15",
     "csv-parser": "3.2.1",
-    "fast-xml-parser": "5.11.2",
-    "fhirpath": "5.2.1"
+    "fast-xml-parser": "5.12.0",
+    "fhirpath": "5.2.3"
   },
   "engines": {
     "node": ">=22"
