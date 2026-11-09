@@ -40,7 +40,7 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
     name: 'Default RelatedPerson Access Policy',
     // Same criteria as the patient policy. %patient is the associated Patient, supplied by
     // ProjectMembership.access.parameter on invite. The profile is the RelatedPerson, so it
-    // cannot fill %patient. A top-level compartment would only tag meta.accounts on create.
+    // cannot fill %patient. 
     resource: patientCompartmentResources(),
   }),
   Admin: () => ({
