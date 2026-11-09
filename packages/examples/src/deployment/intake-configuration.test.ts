@@ -8,12 +8,13 @@ import {
   MemoryStorage,
   validateResource,
 } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { beforeAll, expect, test, vi } from 'vitest';
 import {
+  contactChoices,
   contactMethods,
   deployConfiguration,
   intake,
@@ -24,19 +25,17 @@ import {
 const target = { baseUrl: 'https://example.com/', projectId: 'staging' };
 
 beforeAll(() => {
-  const read = (name: string): Bundle =>
-    JSON.parse(readFileSync(new URL(`../../../definitions/src/fhir/r4/${name}.json`, import.meta.url), 'utf8'));
   for (const name of ['profiles-types', 'profiles-resources', 'profiles-medplum']) {
-    indexStructureDefinitionBundle(read(name));
+    indexStructureDefinitionBundle(readJson(`fhir/r4/${name}.json`) as Bundle);
   }
   for (const name of ['search-parameters', 'search-parameters-medplum']) {
-    indexSearchParameterBundle(read(name) as Bundle<SearchParameter>);
+    indexSearchParameterBundle(readJson(`fhir/r4/${name}.json`) as Bundle<SearchParameter>);
   }
 });
 
-function setup(projectId = 'staging'): MockClient {
+function setup(projectId = 'staging', baseUrl = target.baseUrl): MockClient {
   const client = new MockClient({
-    baseUrl: target.baseUrl,
+    baseUrl,
     project: { resourceType: 'Project', id: projectId },
     seedDefaultData: false,
     storage: new ClientStorage(new MemoryStorage()),
@@ -115,6 +114,52 @@ test('a new Questionnaire revision preserves the previous form and reuses unchan
   expect(await client.searchResources('Questionnaire')).toHaveLength(2);
 });
 
+test('revised answer choices preserve the previous terminology and form', async () => {
+  const client = setup();
+  const previous = await deployConfiguration(client, target, intakeConfiguration);
+  const codes = {
+    ...contactMethods,
+    identifier: [{ system: contactMethods.identifier?.[0]?.system, value: 'contact-methods-v2' }],
+    url: 'https://example.com/fhir/CodeSystem/contact-methods-v2',
+    version: '2.0.0',
+    concept: [...(contactMethods.concept ?? []), { code: 'sms', display: 'Text message' }],
+  };
+  const choices = {
+    ...contactChoices,
+    identifier: [{ system: contactChoices.identifier?.[0]?.system, value: 'intake-contact-choices-v2' }],
+    url: 'https://example.com/fhir/ValueSet/intake-contact-choices-v2',
+    version: '2.0.0',
+    compose: { include: [{ system: codes.url }] },
+  };
+  const form = {
+    ...intake,
+    identifier: [{ system: intake.identifier?.[0]?.system, value: 'intake-v2' }],
+    url: 'https://example.com/fhir/Questionnaire/intake-v2',
+    version: '2.0.0',
+    item: intake.item?.map((item) => ({ ...item, answerValueSet: choices.url })),
+  };
+  const revised = [codes, choices, form];
+  const next = await deployConfiguration(client, target, revised);
+  expect(await deployConfiguration(client, target, revised)).toEqual(next);
+  for (const definition of [...intakeConfiguration, ...revised]) {
+    const identifier = definition.identifier?.[0]?.value;
+    assert(identifier);
+    expect(await client.readReference({ reference: { ...previous, ...next }[identifier] })).toMatchObject(definition);
+    expect(await client.searchResources(definition.resourceType)).toHaveLength(2);
+  }
+});
+
+test.each(['https://example.com/medplum', 'https://example.com/medplum/'])(
+  'a matching server base URL accepts an optional trailing slash: %s',
+  async (baseUrl) => {
+    const client = setup('staging', 'https://example.com/medplum/');
+    expect(await previewConfiguration(client, { ...target, baseUrl }, intakeConfiguration)).toHaveLength(3);
+    await expect(
+      previewConfiguration(client, { ...target, baseUrl: 'https://example.com/other-path/' }, intakeConfiguration)
+    ).rejects.toThrow('expected server and project');
+  }
+);
+
 test('wrong project, wrong server, and super-admin sessions fail before reads or writes', async () => {
   const client = setup();
   const search = vi.spyOn(client, 'searchResources');
@@ -132,29 +177,27 @@ test('wrong project, wrong server, and super-admin sessions fail before reads or
   expect(client.createResourceIfNoneExist).not.toHaveBeenCalled();
 });
 
-test('a linked definition is not mistaken for a local one or duplicated under the same canonical URL', async () => {
-  const client = setup();
-  const linked = await client.createResource({
-    ...intake,
-    meta: { project: 'shared', compartment: [{ reference: 'Project/shared' }] },
-  });
-  await expect(deployConfiguration(client, target, intakeConfiguration)).rejects.toThrow('Canonical URL already used');
-  expect(client.createResourceIfNoneExist).not.toHaveBeenCalled();
-  const remaining = await client.searchResources('Questionnaire');
-  expect(remaining).toHaveLength(1);
-  expect(remaining[0]).toEqual(linked);
-});
-
-test('a resource with the same canonical URL but another identifier blocks a duplicate deployment', async () => {
-  const client = setup();
-  await client.createResource({
-    ...intake,
-    identifier: [{ system: intake.identifier?.[0]?.system, value: 'manually-created-intake' }],
-    meta: { compartment: [{ reference: 'Project/staging' }] },
-  });
-  await expect(deployConfiguration(client, target, intakeConfiguration)).rejects.toThrow('Canonical URL already used');
-  expect(client.createResourceIfNoneExist).not.toHaveBeenCalled();
-});
+test.each([
+  { projectId: 'shared', identifier: 'intake-v1' },
+  { projectId: 'staging', identifier: 'manually-created-intake' },
+])(
+  'a canonical URL collision with $projectId/$identifier blocks a duplicate deployment',
+  async ({ projectId, identifier }) => {
+    const client = setup();
+    const existing = await client.createResource({
+      ...intake,
+      identifier: [{ system: intake.identifier?.[0]?.system, value: identifier }],
+      meta: { project: projectId, compartment: [{ reference: `Project/${projectId}` }] },
+    });
+    await expect(deployConfiguration(client, target, intakeConfiguration)).rejects.toThrow(
+      'Canonical URL already used'
+    );
+    expect(client.createResourceIfNoneExist).not.toHaveBeenCalled();
+    const remaining = await client.searchResources('Questionnaire');
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]).toEqual(existing);
+  }
+);
 
 test('changed published content and authored metadata stop deployment without overwriting', async () => {
   const client = setup();

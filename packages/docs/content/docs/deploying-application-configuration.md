@@ -42,7 +42,7 @@ If you author a form in the Medplum App, export that selected definition, review
 
 ## Set up the two deployment targets
 
-Create a [ClientApplication](/docs/auth/client-credentials) in each project for deployment. Its [AccessPolicy](/docs/access/access-policies) must allow reading and writing the configuration types it manages. Policy assignment and project-setting changes may require a separately authorized administrator.
+Create a project-scoped [ClientApplication](/docs/auth/client-credentials) in each project for deployment. Its [AccessPolicy](/docs/access/access-policies) must allow reading and writing the configuration types it manages. The example rejects super-admin sessions to keep deployment within the target project. Policy assignment and project-setting changes may require a separately authorized administrator.
 
 For each environment, configure:
 
@@ -75,7 +75,7 @@ Keep identifiers and canonical URLs consistent across environments. Resolve ordi
 
 {{< note title="Pin the definitions your workflow actually resolves" >}}
 
-Medplum's current ValueSet expansion removes the `|version` suffix before looking up the canonical URL. Do not rely on `url|version` alone to select historical answer choices. The example below uses a distinct ValueSet URL for each published revision and keeps the earlier resource available.
+Medplum's current ValueSet expansion removes the `|version` suffix before looking up the canonical URL. Do not rely on `url|version` alone to select historical answer choices. The example below uses distinct URLs for published revisions of both its ValueSet and its application-owned CodeSystem. Keep both resources unchanged so older forms retain their original choices.
 
 {{< /note >}}
 
@@ -85,7 +85,7 @@ This example publishes three definitions in dependency order:
 
 ```mermaid
 flowchart LR
-  codes["CodeSystem: contact methods"] --> choices["ValueSet: intake choices v1"]
+  codes["CodeSystem: contact methods v1"] --> choices["ValueSet: intake choices v1"]
   choices --> form["Questionnaire: intake v1"]
 ```
 
@@ -178,7 +178,13 @@ Treat large terminology imports as separate prerequisites when they need their o
 
 ## Handle changes and failures
 
-To publish a revised intake form, give it a new identifier, canonical URL, and business version, such as `intake-v2`, `https://example.com/fhir/Questionnaire/intake-v2`, and `2.0.0`. Keep unchanged dependencies at their existing identities. If the answer choices change, publish a new ValueSet URL and point the new form at it. Test both a new response and an older in-progress response before changing which form the application assigns.
+To publish a revised intake form, give it a new identifier, canonical URL, and business version, such as `intake-v2`, `https://example.com/fhir/Questionnaire/intake-v2`, and `2.0.0`. Update its dependencies according to the change:
+
+- **Form-only changes:** keep unchanged terminology at its existing identities.
+- **Changed answer choices:** publish a new ValueSet identity and point the new form at its URL.
+- **Added or changed codes:** also publish a new application-owned CodeSystem identity, such as `contact-methods-v2` with URL `https://example.com/fhir/CodeSystem/contact-methods-v2` and version `2.0.0`. Point the new ValueSet's `compose.include.system` at that URL, then deploy the CodeSystem, ValueSet, and Questionnaire in order.
+
+A new CodeSystem URL also changes the `Coding.system` stored in answers. Keep the earlier terminology available and ensure downstream processing can handle answers from both versions. This pattern is for application-owned codes; preserve the publisher's canonical identities when using standard terminology. Test both a new response and an older in-progress response before changing which form the application assigns.
 
 Keep a deployment record containing the configuration commit, target server and project, resolved resource IDs, verification results, and activation steps. Preview again before each deployment to identify manual edits or unexpected differences.
 

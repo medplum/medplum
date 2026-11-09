@@ -13,26 +13,33 @@ function required(name: string): string {
   return value;
 }
 
-const mode = process.argv[2];
-if (mode !== 'preview' && mode !== 'apply') {
-  throw new Error('Usage: tsx deploy-intake.ts preview|apply');
-}
-
-const target = {
-  baseUrl: required('MEDPLUM_BASE_URL'),
-  projectId: required('MEDPLUM_PROJECT_ID'),
-};
-const medplum = new MedplumClient({ baseUrl: target.baseUrl, storage: new ClientStorage(new MemoryStorage()) });
-
-try {
-  await medplum.startClientLogin(required('MEDPLUM_CLIENT_ID'), required('MEDPLUM_CLIENT_SECRET'));
-  console.log('Target:', target);
-  if (mode === 'preview') {
-    console.table(await previewConfiguration(medplum, target, intakeConfiguration));
-  } else {
-    console.log(await deployConfiguration(medplum, target, intakeConfiguration));
+async function main(): Promise<void> {
+  const mode = process.argv[2];
+  if (mode !== 'preview' && mode !== 'apply') {
+    throw new Error('Usage: tsx deploy-intake.ts preview|apply');
   }
-} finally {
-  medplum.clear();
+
+  const target = {
+    baseUrl: required('MEDPLUM_BASE_URL'),
+    projectId: required('MEDPLUM_PROJECT_ID'),
+  };
+  const medplum = new MedplumClient({ baseUrl: target.baseUrl, storage: new ClientStorage(new MemoryStorage()) });
+
+  try {
+    await medplum.startClientLogin(required('MEDPLUM_CLIENT_ID'), required('MEDPLUM_CLIENT_SECRET'));
+    console.log('Target:', target);
+    if (mode === 'preview') {
+      console.table(await previewConfiguration(medplum, target, intakeConfiguration));
+    } else {
+      console.log(await deployConfiguration(medplum, target, intakeConfiguration));
+    }
+  } finally {
+    medplum.clear();
+  }
 }
+
+main().catch((err: unknown) => {
+  console.error(err);
+  process.exitCode = 1;
+});
 // end-block runner

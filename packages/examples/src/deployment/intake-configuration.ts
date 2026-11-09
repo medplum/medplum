@@ -3,7 +3,7 @@
 
 // start-block imports
 import type { MedplumClient } from '@medplum/core';
-import { deepEquals } from '@medplum/core';
+import { deepEquals, ensureTrailingSlash } from '@medplum/core';
 import type { CodeSystem, Meta, Questionnaire, ValueSet } from '@medplum/fhirtypes';
 
 export type Definition = CodeSystem | ValueSet | Questionnaire;
@@ -15,7 +15,7 @@ const identifierSystem = 'https://example.com/configuration';
 export const contactMethods: CodeSystem = {
   resourceType: 'CodeSystem',
   identifier: [{ system: identifierSystem, value: 'contact-methods-v1' }],
-  url: 'https://example.com/fhir/CodeSystem/contact-methods',
+  url: 'https://example.com/fhir/CodeSystem/contact-methods-v1',
   version: '1.0.0',
   status: 'active',
   content: 'complete',
@@ -65,7 +65,7 @@ export interface DeploymentTarget {
 
 export function checkTarget(medplum: MedplumClient, target: DeploymentTarget): void {
   if (
-    new URL(medplum.getBaseUrl()).href !== new URL(target.baseUrl).href ||
+    new URL(medplum.getBaseUrl()).href !== new URL(ensureTrailingSlash(target.baseUrl)).href ||
     medplum.getProject()?.id !== target.projectId ||
     medplum.isSuperAdmin()
   ) {
@@ -75,11 +75,16 @@ export function checkTarget(medplum: MedplumClient, target: DeploymentTarget): v
 // end-block target
 
 // start-block helpers
-function identityQuery(definition: Definition, projectId: string): string {
+function definitionIdentifier(definition: Definition): { system: string; value: string } {
   const identifier = definition.identifier?.[0];
   if (!identifier?.system || !identifier.value || definition.id) {
     throw new Error('Definitions need a system/value identifier and must omit server-assigned IDs.');
   }
+  return { system: identifier.system, value: identifier.value };
+}
+
+function identityQuery(definition: Definition, projectId: string): string {
+  const identifier = definitionIdentifier(definition);
   return new URLSearchParams({
     identifier: `${identifier.system}|${identifier.value}`,
     _compartment: `Project/${projectId}`,
@@ -112,7 +117,7 @@ function definitionContent(definition: Definition): Definition {
 
 function checkDefinition(actual: Definition, expected: Definition): void {
   if (!deepEquals(definitionContent(actual), definitionContent(expected))) {
-    throw new Error(`Published definition differs: ${expected.resourceType}/${expected.identifier?.[0]?.value}`);
+    throw new Error(`Published definition differs: ${expected.resourceType}/${definitionIdentifier(expected).value}`);
   }
 }
 
@@ -127,7 +132,7 @@ export async function previewConfiguration(
     const query = identityQuery(definition, target.projectId);
     const matches = await medplum.searchResources(definition.resourceType, `${query}&_count=2`, { cache: 'no-cache' });
     if (matches.length > 1) {
-      throw new Error(`Multiple matches for ${definition.identifier?.[0]?.value}`);
+      throw new Error(`Multiple matches for ${definitionIdentifier(definition).value}`);
     }
     if (matches[0]) {
       checkDefinition(matches[0], definition);
@@ -144,7 +149,7 @@ export async function previewConfiguration(
     }
     plan.push({
       resourceType: definition.resourceType,
-      identifier: definition.identifier?.[0]?.value as string,
+      identifier: definitionIdentifier(definition).value,
       action: matches.length ? 'unchanged' : 'create',
     });
   }
@@ -165,7 +170,7 @@ export async function deployConfiguration(
     const saved = await medplum.createResourceIfNoneExist(definition, identityQuery(definition, target.projectId));
     // Recheck the server result in case another writer changed it after preview.
     checkDefinition(saved, definition);
-    references[definition.identifier?.[0]?.value as string] = `${saved.resourceType}/${saved.id}`;
+    references[definitionIdentifier(definition).value] = `${saved.resourceType}/${saved.id}`;
   }
   return references;
 }
