@@ -193,7 +193,15 @@ function writeInterfaceProperty(
 
 function writeChoiceOfTypeDefinitions(b: FileBuilder, fhirType: InternalTypeSchema, options: GeneratorContext): void {
   for (const [path, property] of getDirectElements(fhirType)) {
-    if (property.type.length > 1) {
+    if (property.type.length > 1 && isLogicalModel(fhirType) && !path.endsWith('[x]')) {
+      // Like FHIR choice-of-type aliases, the alias is the type of one value. It is named by the element's logical
+      // name, since the XML property name may not be an identifier (e.g. "sdtc:raceCode").
+      b.newLine();
+      generateJavadoc(b, property.description);
+      const logicalName = toIdentifier(property.path.slice(property.path.lastIndexOf('.') + 1));
+      const unionName = getTypeName(fhirType, options) + capitalize(logicalName);
+      b.append(`export type ${unionName} = ${getLogicalUnionMembers(property, path, options).join(' | ')};`);
+    } else if (property.type.length > 1) {
       b.newLine();
       generateJavadoc(b, property.description);
       const unionName = getTypeName(fhirType, options) + capitalize(path.replaceAll('[x]', ''));
@@ -324,6 +332,24 @@ function cleanReferencedType(typeName: string): string[] {
   return [typeName.replace('[]', '')];
 }
 
+/**
+ * Returns the TypeScript types of one value of a logical model element with several types, e.g. CDA Observation.value.
+ * Members that are unions themselves, e.g. "(CdaST | string)", are flattened so each constituent appears once.
+ * @param property - The element definition.
+ * @param path - The element path.
+ * @param options - The generator options.
+ * @returns The union members.
+ */
+function getLogicalUnionMembers(property: InternalSchemaElement, path: string, options: GeneratorContext): string[] {
+  const single = { ...property, isArray: false, max: 1 };
+  const members = property.type.flatMap((t) =>
+    getTypeScriptTypeForProperty(single, t, path, options, undefined)
+      .replace(/^\((.*)\)$/, '$1')
+      .split(' | ')
+  );
+  return Array.from(new Set(members));
+}
+
 function getTypeScriptProperties(
   property: InternalSchemaElement,
   path: string,
@@ -357,14 +383,7 @@ function getTypeScriptProperties(
     }
   } else if (property.type.length > 1 && isLogicalModel(fhirType)) {
     // Logical models (e.g. CDA Observation.value) allow several types without a choice-of-type [x] name
-    const single = { ...property, isArray: false, max: 1 };
-    // Flatten members that are unions themselves, e.g. "(CdaST | string)", so each constituent appears once
-    const members = property.type.flatMap((t) =>
-      getTypeScriptTypeForProperty(single, t, path, options, undefined)
-        .replace(/^\((.*)\)$/, '$1')
-        .split(' | ')
-    );
-    const union = Array.from(new Set(members)).join(' | ');
+    const union = getLogicalUnionMembers(property, path, options).join(' | ');
     result.push({ name, typeName: `(${union})` + (property.isArray || property.max > 1 ? '[]' : ''), required });
   } else {
     result.push({

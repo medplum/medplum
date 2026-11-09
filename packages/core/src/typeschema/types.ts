@@ -164,8 +164,10 @@ export function loadDataType(sd: StructureDefinition): void {
     applyXmlPropertyNames(schema, sd);
   }
   const specialCase = TYPE_SPECIAL_CASES[sd.url];
-  // Logical models name their types by URL
-  const isUrlType = sd.type?.startsWith('http://') || sd.type?.startsWith('https://');
+  // Logical models name their types by URL. Profiles of them (e.g. C-CDA templates on CDA) are indexed by
+  // their own URL below, so they do not replace the base type or its inner types.
+  const isUrlType =
+    sd.derivation !== 'constraint' && (sd.type?.startsWith('http://') || sd.type?.startsWith('https://'));
   let dataTypes: DataTypesMap;
   let typeName: string;
 

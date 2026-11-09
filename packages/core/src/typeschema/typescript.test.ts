@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle, ElementDefinition, StructureDefinition } from '@medplum/fhirtypes';
-import { getDataType, indexStructureDefinitionBundle } from './types';
+import { getDataType, indexStructureDefinitionBundle, tryGetProfile } from './types';
 import { generateTypeScriptDefinition, generateTypeScriptDefinitions, getLogicalTypeName } from './typescript';
 
 describe('generateTypeScriptDefinition', () => {
@@ -167,6 +167,7 @@ describe('Logical models', () => {
           { path: 'raceCode', max: '*', extension: sdtc, type: [{ code: base + 'ST' }] },
           { path: 'addr', type: [{ code: base + 'AD' }] },
           { path: 'value', max: '*', type: [{ code: base + 'ST' }, { code: base + 'AD' }] },
+          { path: 'sdtcValue', extension: sdtc, type: [{ code: base + 'ST' }, { code: base + 'AD' }] },
           { path: 'text', representation: ['cdaText'], type: [{ code: base + 'ST' }] },
           { path: 'part', max: '*', type: baseType },
           { path: 'part.name', type: [{ code: base + 'ST' }] },
@@ -191,6 +192,7 @@ describe('Logical models', () => {
         'sdtc:raceCode',
         'addr',
         'value',
+        'sdtc:sdtcValue',
         'text',
         'part',
       ]);
@@ -212,6 +214,10 @@ describe('Logical models', () => {
       expect(result).toContain('title?: (XST | string);');
       expect(result).toContain("'sdtc:raceCode'?: (XST | string)[];");
       expect(result).toContain('value?: (XST | string | XAD)[];');
+      // Union aliases are the type of one value, named by the logical name
+      expect(result).toContain('export type XDocValue = XST | string | XAD;');
+      expect(result).toContain("'sdtc:sdtcValue'?: (XST | string | XAD);");
+      expect(result).toContain('export type XDocSdtcValue = XST | string | XAD;');
       expect(result).toContain('text?: string | Record<string, unknown>;');
       expect(result).toContain('part?: XDocPart[];');
       expect(result).toContain('export interface XDocPart {');
@@ -220,8 +226,22 @@ describe('Logical models', () => {
       expect(st).toContain("'#text'?: string;");
     });
 
+    test('Profiles do not replace the base type', () => {
+      const doc = getDataType(base + 'Doc');
+      const profile: StructureDefinition = {
+        ...logicalModel('Doc', [{ path: 'title', min: 1, type: [{ code: base + 'ST' }] }], v3),
+        url: base + 'DocProfile',
+        name: 'DocProfile',
+        derivation: 'constraint',
+      };
+      indexStructureDefinitionBundle([profile]);
+      expect(getDataType(base + 'Doc')).toBe(doc);
+      expect(getDataType(base + 'Doc#part').elements['sdtc:alias']).toBeDefined();
+      expect(tryGetProfile(base + 'DocProfile')?.elements.title.min).toBe(1);
+    });
+
     test('Imports of union types', () => {
-      // Reindexing without options keeps the XML property names, since they are a property of the model
+      // Reindexing keeps the XML property names, since they are a property of the model
       const files = generateTypeScriptDefinitions(models, { logicalTypePrefix: 'X' });
       expect(files['XDoc.d.ts']).toContain("import type { XAD } from './XAD.d.ts';");
       expect(files['XDoc.d.ts']).toContain("import type { XST } from './XST.d.ts';");

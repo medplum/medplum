@@ -65,6 +65,7 @@ export function applyXmlPropertyNames(schema: InternalTypeSchema, sd: StructureD
         }
         continue;
       }
+      // Set on the element itself, so choice group members carry the flags when their parent copies them above
       renamed[ed ? xmlPropertyName(ed, key) : key] = element;
       element.xmlAttribute = ed?.representation?.includes('xmlAttr') || undefined;
       element.xmlMarkup = ed?.representation?.includes('cdaText') || undefined;
