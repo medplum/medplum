@@ -1,74 +1,58 @@
 ---
 id: 2026-11-09-ai-coding-agents-on-medplum
 slug: ai-coding-agents-on-medplum
-title: 'Teaching Coding Agents to Build Healthcare Workflows'
-description: 'How Medplum helps coding agents ask useful implementation questions, save project decisions, and build from documented healthcare patterns.'
+title: 'Give Your Coding Agent a Head Start on Medplum'
+description: 'Give your coding agent Medplum decision guides for planning healthcare workflows and persistent rules for implementing them consistently.'
 authors: everett
 blog_tags: [ai]
 ---
 
-A vital-signs form needs a rule for what happens when a required measurement cannot be obtained. That choice affects the form, the data it records, and what completing the workflow means. It's also a question a coding agent should raise when the requirements leave it open.
+Put Medplum's **decision guides** to work in your coding agent. They help it ask the right questions about your healthcare workflow, explain the tradeoffs, and find a documented path to implementation. Pair them with our **persistent rules file** to carry Medplum's conventions into the next coding task.
 
-Medplum's implementation guides connect questions like these to data models, workflow choices, and working examples. We've expanded our [AI coding guidance](/docs/building-with-ai-coding-assistants) to make that knowledge easier for agents to use: research the relevant patterns, work through the decisions with you, and carry the answers into implementation.
-
-Whether you're vibe coding an application or using agents within an engineering team, the benefit is practical. You can start from Medplum's guidance, keep your project's choices available between tasks, and review generated work against the requirements you agreed.
+Our expanded [AI coding guidance](/docs/building-with-ai-coding-assistants) shows how to connect these resources to your project:
 
 <!--more-->
 
-## Start with the decisions behind the form
+- **Decision guides: give the agent a foundation for planning.** Our [guides](/docs/decision-guides) connect questions about charting, scheduling, access control, and other healthcare workflows to tradeoffs and implementation docs. The agent can use them to uncover missing requirements, explain your options, and trace an agreed choice to a documented approach.
+- **Persistent rules: carry Medplum conventions into later tasks.** The reusable [rules file](/ai/medplum-rules.md) directs agents to the relevant docs and calls out common mistakes, such as mixing FHIR versions or implementing access control through application filtering. Connect it to your project instructions so future sessions have the same guidance to work from.
 
-Consider this request:
+These resources are useful whether you're vibe coding your first application or building an agentic development workflow for an engineering team. You bring the product requirements and review the decisions. Your agent gets Medplum-specific guidance for turning them into an implementation.
+
+## Put it to work on a vital-signs form
+
+Start with a short request:
 
 > Help me plan a vital-signs form for an initial visit. We want blood pressure and heart rate; weight is optional.
 
-The [Charting Decision Guide](/docs/decision-guides/charting) helps an agent work outward from those fields. It covers what a visit includes, how form responses become queryable data, signing requirements, and who owns the templates. Related access-control guidance helps establish who can read and change the resulting records.
+The [Charting Decision Guide](/docs/decision-guides/charting) gives the agent a way to develop that request with you. How should the readings become queryable data? Does completing the form save the measurements, or also sign the visit? The [Access Control Decision Guide](/docs/decision-guides/access-control) helps work through who can read or change them.
 
-Each answer has an implementation consequence. Saving measurements as Observations makes them available for other parts of the application to query. Choosing how responses become Observations affects the form's extraction logic. Defining what completion means determines which workflow step the application should advance.
+Those questions shape the build. Saving measurements as Observations makes them queryable elsewhere in the application. Defining what completion means determines which workflow step advances when the form is submitted.
 
-The agent can research Medplum's implementation options and explain the tradeoffs. Your team supplies the requirements for its own clinical workflow. The planning instructions tell the agent to reuse answers already given and ask about consequential gaps.
+For this example, suppose the team agrees to save the readings as Observations linked to the patient and encounter, with visit signing handled separately. The agent can capture that agreement in `docs/decisions/charting.md` and turn it into checks: save the expected values and units, link the correct patient and encounter, and avoid creating an empty weight Observation when weight is omitted.
 
-## Carry the answers into the next coding task
+The guide also helps the agent recommend an implementation. Medplum's [Structured Data Capture extraction](/docs/questionnaires/parsing-questionnaire-responses) supports straightforward form mappings; requirements for scoring or external calls may lead to a Bot. The agent has a source for explaining that choice and the technical docs to follow once you've agreed on it.
 
-Suppose the team confirms that completing this form means saving the required measurements, with signing handled separately. It also agrees that the measurements should reference the patient and encounter. A decision record can make those choices available to the implementation task:
+The [planning instructions](/ai/planning.md) connect these steps: read the relevant guides, research technical questions, ask about missing requirements, and save the decisions alongside your code. An unanswered question, such as what happens when a required measurement cannot be obtained, stays open with the work it blocks identified.
 
-```markdown
-Status: confirmed
-Decision: Require blood pressure and heart rate; make weight optional.
-Store the measurements as Observations linked to the patient and encounter.
-Completing this form saves the measurements; visit signing is a separate step.
+## Keep Medplum's conventions in the loop
 
-Checks: Verify saved values, units, patient, and encounter.
-Omitting weight must not create an empty weight Observation.
+As the agent implements the form, the rules file gives it concrete instructions: use FHIR R4 types, read the relevant Medplum docs, and enforce access through AccessPolicy and ProjectMembership. It also calls for reviewing the implementation against the agreed requirements, type-checking, and running the relevant tests.
 
-Status: open
-Question: Can staff complete the form when a required reading cannot be obtained?
-Blocks: Finalizing completion rules and their acceptance tests.
-```
+Make that guidance part of your project by referencing the rules from `AGENTS.md`, `CLAUDE.md`, or your tool's equivalent. The Medplum repository's own [AGENTS.md](https://github.com/medplum/medplum/blob/main/AGENTS.md) directs supported agents to the same resources; the [setup guide](/docs/building-with-ai-coding-assistants#5-encode-your-conventions-in-a-rule-file) shows how to connect them to your application. Confirm that your tool reads the references in a fresh session, and reload the relevant context after compaction.
 
-This is an illustrative record for this workflow. The agent should record recommendations awaiting agreement as proposed and unanswered questions as open, including what they block. The [planning workflow](/ai/planning.md) defines how to save those records alongside your application code and keep them current.
+## Give the next task the same context
 
-Before implementation, resolve the open completion rule and agree on extraction, resource constraints, and access. The agent can then follow the linked docs to build the form and its checks. For straightforward form mappings, Medplum's [Structured Data Capture extraction](/docs/questionnaires/parsing-questionnaire-responses) is one option; workflows involving scoring or external calls may need a Bot. The appropriate choice follows from the requirements.
+Now ask for a change: make weight required.
 
-Now change the request: make weight required. The saved decision gives the next task a specific starting point. The agent should clarify whether the change applies to existing visits, then update the decision, form, and tests together. Changes to resource constraints may also require profile and migration work.
+The saved decision gives the next coding task a starting point. The agent can identify the previous requirement, clarify whether the change applies to existing visits, and update the decision, form, and tests together. If resource constraints change too, it should account for the affected profiles and any migration work.
 
-Engineers can review that change against a shared requirement. A later coding session can read the same decision and its rationale.
+For engineering teams, this creates a shared basis for coding and review. Each agent job can receive the same guides and rules at a pinned revision, together with the current project decisions. Engineers can review the result against those requirements and update the shared context as the product evolves.
 
-## Give agents guidance they can reuse
+## Bring it into your next coding session
 
-We've connected several reusable resources to support this workflow:
+Follow the [setup guide](/docs/building-with-ai-coding-assistants#plan-your-application) to give your agent access to Medplum's docs. You can use a local clone or an agent with web access to the public guides and rules.
 
-- **[Decision guides](/docs/decision-guides)** supply workflow questions, tradeoffs, and links to implementation docs across areas such as charting, scheduling, and access control.
-- **[Planning instructions](/ai/planning.md)** describe how to research, ask about missing requirements, save decisions, and use them during implementation and review.
-- **[Medplum rules](/ai/medplum-rules.md)** direct agents to documented patterns and checks, including FHIR R4 types, resource validation, and API access tests.
-- **The repository's [AGENTS.md](https://github.com/medplum/medplum/blob/main/AGENTS.md)** directs supported agents working in the Medplum clone to this guidance. The setup workflow helps you connect the rules and saved decisions to your own application's project instructions.
-
-Confirm that your coding tool reads those references in a fresh session, and reload the relevant docs and decisions after context compaction. The rules make the context available; tests and engineering review check the implementation.
-
-For teams running automated coding workflows, provide the same guidance at a pinned revision and the current project decisions to each planning, implementation, or review job. Engineers retain responsibility for product choices, architecture, and accepting the result. The shared context gives each job a consistent basis for doing its part.
-
-## Try it on one feature
-
-Follow the [AI coding setup guide](/docs/building-with-ai-coding-assistants#plan-your-application), then give your agent a focused request:
+Then pick a feature and start planning:
 
 ```text
 Help me plan [feature] on Medplum.
@@ -79,4 +63,4 @@ Save our decisions and acceptance checks before implementation.
 Ask before changing project instruction files.
 ```
 
-Start with one feature, review the decisions together, and use the saved record to guide its implementation.
+Start with the [decision guide](/docs/decision-guides) for your next feature. Work through the choices with your agent, save the decisions, and use the rules to carry that context into the build.
