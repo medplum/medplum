@@ -12,6 +12,7 @@ export * from './client';
 export * from './config';
 export * from './constants';
 export * from './contenttype';
+export * from './cron';
 export * from './crypto';
 export * from './datasampler';
 export * from './default-values';

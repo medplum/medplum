@@ -2537,7 +2537,7 @@
           {
             "id": "Bot.cron[x]",
             "path": "Bot.cron[x]",
-            "definition": "A schedule for the bot to be executed.",
+            "definition": "A schedule for the bot to be executed. A string schedule is a five-field cron expression; bots run at most once a minute, so a seconds field is not supported.",
             "min": 0,
             "max": "1",
             "type": [{
@@ -2549,7 +2549,13 @@
               "path": "Bot.cron[x]",
               "min": 0,
               "max": "1"
-            }
+            },
+            "constraint": [{
+              "key": "bot-1",
+              "severity": "error",
+              "human": "cronString must be a valid five-field cron expression; seconds are not supported",
+              "expression": "ofType(string).all(isValidCron())"
+            }]
           },
           {
             "id" : "Bot.category",
@@ -11336,7 +11342,7 @@
             "id" : "Cron.cronString",
             "path" : "Cron.cronString",
             "short" : "The schedule on which the job runs",
-            "definition" : "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write.",
+            "definition" : "A schedule for the job to be executed, as a five-field cron expression. Jobs run at most once a minute, so a seconds field is not supported. An expression that is not a valid cron expression is rejected on write.",
             "min" : 1,
             "max" : "1",
             "base" : {
@@ -11346,6 +11352,12 @@
             },
             "type" : [{
               "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "cron-4",
+              "severity" : "error",
+              "human" : "cronString must be a valid five-field cron expression; seconds are not supported",
+              "expression" : "isValidCron()"
             }]
           },
           {
