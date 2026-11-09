@@ -979,6 +979,18 @@ async function execBot(
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;
+
+  // A runAsUser Bot runs as the requester's membership, but the system user has none
+  if (bot.runAsUser && requester?.reference === 'system') {
+    ctx.logger.warn('Skipping runAsUser Bot for system-authored resource', {
+      subscription: getReferenceString(subscription),
+      project: subscription.meta?.project,
+      bot: getReferenceString(bot),
+      resource: getReferenceString(resource),
+    });
+    return;
+  }
+
   let runAs: WithId<ProjectMembership> | undefined;
   if (projectId) {
     runAs = await findProjectMembership(projectId, bot.runAsUser ? requester : createReference(bot));
