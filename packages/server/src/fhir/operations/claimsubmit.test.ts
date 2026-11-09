@@ -169,7 +169,11 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches to the operation named by the CLAIM_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     await deployClaimOperation(accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
@@ -185,7 +189,11 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches a raw Claim body to the operation named by the CLAIM_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     await deployClaimOperation(accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
@@ -200,7 +208,11 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches preauthorization claims to the PRIOR_AUTH_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     await deployClaimOperation(accessToken, SUB_OPERATION_CODE, 'Claim Payer');
     await deployClaimOperation(accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
@@ -218,7 +230,11 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches Bundles containing preauthorization claims to the PRIOR_AUTH_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     await deployClaimOperation(accessToken, SUB_OPERATION_CODE, 'Claim Payer');
     await deployClaimOperation(accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
@@ -244,7 +260,11 @@ describe('Claim $submit', () => {
   });
 
   test('Returns 400 when a Bundle does not contain a Claim', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     await deployClaimOperation(accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
@@ -264,7 +284,11 @@ describe('Claim $submit', () => {
   });
 
   test('Reads the Claim from the URL on the instance route', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     await deployClaimOperation(accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
@@ -287,7 +311,11 @@ describe('Claim $submit', () => {
   });
 
   test('Returns 400 when no Claim payload is provided', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     await deployClaimOperation(accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 

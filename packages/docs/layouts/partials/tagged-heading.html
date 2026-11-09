@@ -1,0 +1,4 @@
+{{- /* Docusaurus's tag page heading: One post tagged with "x" / 11 posts tagged with "x" */ -}}
+{{- $count := len .page.Pages -}}
+{{- $what := cond (eq $count 1) (printf "One %s" .noun) (printf "%d %ss" $count .noun) -}}
+{{- return printf "%s tagged with \"%s\"" $what .page.Title -}}

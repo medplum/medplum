@@ -1,0 +1,23 @@
+{{- /* "Plan with this guide" on each Decision Guide, as on Docusaurus (its GuidePlanning component): a prompt to copy into
+  an AI agent, naming the guide's URL and source file. Added at render time (layouts/_default/single.html), so the
+  Markdown that the Word and PDF downloads are built from stays as written. */ -}}
+{{- $url := printf "%s%s" (strings.TrimSuffix "/" site.BaseURL) (partial "href" .) -}}
+{{- $prompt := printf `Help me plan this part of my Medplum application using this guide:
+%s
+%s
+Local source, if cloned: medplum-link/packages/docs/content/%s
+
+Follow medplum-link/packages/docs/static/ai/planning.md
+(or https://www.medplum.com/ai/planning.md), including its Medplum rules.
+Ask before creating or changing my app's project instruction files.
+
+Read my existing requirements and decisions, then ask me about consequential missing requirements; do not invent answers. Save and summarize the decisions in my app's repo before implementation.` .Title $url .File.Path -}}
+<details class="guide-planning">
+  <summary>Plan with this guide</summary>
+  <p>
+    Copy this prompt into your AI agent. It will use this guide and your existing project context, ask about missing
+    requirements, and save decisions for later development. See
+    <a href="/docs/building-with-ai-coding-assistants">setup and examples</a>.
+  </p>
+  {{ highlight $prompt "text" "" }}
+</details>

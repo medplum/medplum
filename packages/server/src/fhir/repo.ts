@@ -107,6 +107,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import { FhirQuotaCost } from './fhirquota';
+import { logAsyncJobAccess } from './operations/utils/asyncjobexecutor';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -198,8 +199,9 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 /**
  * Returns the project IDs a caller may read for the given resource type.
  *
- * Linked projects are readable only when they export the resource type, and project admin
- * resource types never cross a link at all.
+ * Linked projects are readable when they export the resource type or export nothing. Project admin
+ * resource types never cross a link, except `Project` and `AccessPolicy`, so memberships can
+ * reference access policies shared by linked projects.
  * @param projects - Projects the caller may access; the first is the caller's own.
  * @param resourceType - The resource type being read.
  * @returns The permitted project IDs, or undefined if all projects are permitted.
@@ -215,8 +217,13 @@ export function getPermittedProjectIds(
 
   const projectIds = [projects[0].id]; // Always include the first project
 
-  if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
+  if (
+    resourceType !== 'Project' &&
+    resourceType !== 'AccessPolicy' &&
+    projectAdminResourceTypes.includes(resourceType)
+  ) {
     // If the resource type is a project admin resource, only include the current project (the first project)
+    // AccessPolicy is exempt so memberships can reference policies shared by linked projects
     return projectIds;
   }
 
@@ -287,8 +294,9 @@ export class Repository extends FhirRepository implements Disposable {
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
    * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
    * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
+   * 20. 10/28/26 - Added search param: AsyncJob-requester
    */
-  static readonly VERSION: number = 19;
+  static readonly VERSION: number = 20;
 
   /**
    * Constructs a new Repository instance.
@@ -711,7 +719,13 @@ export class Repository extends FhirRepository implements Disposable {
       if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
       }
-      await this.readReference(resource.securityContext);
+      // Extended mode for meta.project
+      const securityContext = await this.withOverrideConfig({ extendedMode: true }).readReference(
+        resource.securityContext
+      );
+      if (securityContext.resourceType === 'AsyncJob') {
+        logAsyncJobAccess(this, securityContext);
+      }
     }
     return resource;
   }

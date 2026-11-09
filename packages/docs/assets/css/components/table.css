@@ -1,0 +1,39 @@
+table {
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  display: block;
+  overflow: auto;
+}
+
+table thead {
+  background-color: var(--ifm-table-stripe-background);
+}
+
+table thead tr {
+  border-bottom: 2px solid var(--ifm-table-border-color);
+}
+
+table tr {
+  background-color: var(--ifm-table-background);
+  border-top: var(--ifm-table-border-width) solid var(--ifm-table-border-color);
+}
+
+table tr:nth-child(2n) {
+  background-color: var(--ifm-table-stripe-background);
+}
+
+table th,
+table td {
+  border: var(--ifm-table-border-width) solid var(--ifm-table-border-color);
+  padding: var(--ifm-table-cell-padding);
+}
+
+table th {
+  background-color: var(--ifm-table-head-background);
+  color: var(--ifm-table-head-color);
+  font-weight: var(--ifm-table-head-font-weight);
+}
+
+table td {
+  font-size: 14px;
+}

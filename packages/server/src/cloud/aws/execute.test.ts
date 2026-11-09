@@ -58,7 +58,7 @@ describe('Execute', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ membership: { admin: true } });
 
     const res = await request(app)
       .post(`/fhir/R4/Bot`)
