@@ -97,3 +97,14 @@ Example response if patient has 3 resources in their compartment:
   ]
 }
 ```
+
+## Moving a resource to another patient
+
+Edits by users who are not project administrators never remove accounts. When such a user changes a resource's patient reference, the resource keeps the previous patient's accounts and also gains the new patient's accounts. To remove the previous patient's accounts:
+
+1. Update the resource so that it references the new patient.
+2. Call `$set-accounts` on that resource, without `propagate`, with the complete list of accounts it should keep. The list replaces `meta.accounts`, so include any accounts beyond the new patient's that should remain.
+
+Do these steps in this order. If `$set-accounts` runs first, any edit made before the patient reference changes adds the previous patient's accounts back.
+
+`$set-accounts` overwrites the resource with the version it reads, so run it after the patient change has been saved and while no one else is editing the resource. Related resources, such as the Observations referenced by a DiagnosticReport, are not moved with it and need the same two steps.

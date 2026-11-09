@@ -2082,11 +2082,14 @@ describe('FHIR Repo', () => {
       const projectReference = createReference(otherProject);
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { compartment: [projectReference], account: projectReference },
+        meta: { compartment: [projectReference] },
       });
       expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
       expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
       expect(patient.meta?.compartment).not.toContainEqual({ reference: getReferenceString(otherProject) });
+      await expect(
+        repo.createResource<Patient>({ resourceType: 'Patient', meta: { account: projectReference } })
+      ).rejects.toMatchObject({ outcome: { id: 'forbidden' } });
 
       const results = await otherRepo.searchResources(parseSearchRequest('Patient'));
       expect(results).toHaveLength(0);
