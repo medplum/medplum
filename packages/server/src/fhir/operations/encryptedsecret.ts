@@ -8,6 +8,7 @@ import {
   businessRule,
   forbidden,
   notFound,
+  preconditionFailed,
   serverError,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
@@ -17,6 +18,7 @@ import { getAuthenticatedContext } from '../../context';
 import { AuditEventOutcome } from '../../util/auditevent';
 import type { EncryptionContext } from '../../util/secret-encryption';
 import { open, seal } from '../../util/secret-encryption';
+import type { Repository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -58,27 +60,39 @@ export async function encryptedSecretSetValueHandler(req: FhirRequest): Promise<
     return [badRequest(`Value must be at most ${MAX_VALUE_BYTES} bytes`)];
   }
 
-  const secret = await readStoredSecret(req.params.id);
+  using unrestrictedRepo = getUnrestrictedRepo(repo);
+  const secret = await readStoredSecret(unrestrictedRepo, req.params.id);
   if (!secret || !repo.canPerformInteraction(AccessPolicyInteraction.READ, secret)) {
     return [notFound];
+  }
+  if (!(await repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'EncryptedSecret', secret.id))) {
+    return [forbidden];
   }
   if (secret.status === 'revoked') {
     return [businessRule('revoked', 'Cannot set the value of a revoked secret')];
   }
+  const versionId = secret.meta?.versionId;
+  const ifMatch = parseIfMatchHeader(req.headers?.['if-match']);
+  if (ifMatch && ifMatch !== versionId) {
+    return [preconditionFailed];
+  }
 
-  let updated: WithId<EncryptedSecret>;
   try {
-    updated = await repo.patchResource<EncryptedSecret>(
+    // encryptedValue is readonly in every access policy, so only a repository without one can write it.
+    // Pinning the version checked above keeps a concurrent revoke or edit from slipping in before the write.
+    await unrestrictedRepo.patchResource<EncryptedSecret>(
       'EncryptedSecret',
       secret.id,
       [{ op: 'add', path: '/encryptedValue', value: seal(getEncryptionContext(secret), value) }],
-      { ifMatch: parseIfMatchHeader(req.headers?.['if-match']) }
+      { ifMatch: versionId }
     );
   } catch (err) {
     logSecretEvent(AuditEventOutcome.MinorFailure, secret, 'set-value failed');
     throw err;
   }
   logSecretEvent(AuditEventOutcome.Success, secret, 'set-value');
+  // Return the secret as the caller's own access policy presents it
+  const updated = await repo.readResource<EncryptedSecret>('EncryptedSecret', secret.id);
   return [allOk, buildOutputParameters(setValueOperation, updated)];
 }
 
@@ -90,7 +104,8 @@ export async function encryptedSecretSetValueHandler(req: FhirRequest): Promise<
  */
 export async function encryptedSecretGetValueHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
-  const secret = await readStoredSecret(req.params.id);
+  using unrestrictedRepo = getUnrestrictedRepo(repo);
+  const secret = await readStoredSecret(unrestrictedRepo, req.params.id);
   const reference: Reference = { reference: `EncryptedSecret/${req.params.id}` };
 
   if (!secret || !repo.canPerformOperation('get-value', secret)) {
@@ -118,14 +133,27 @@ export async function encryptedSecretGetValueHandler(req: FhirRequest): Promise<
 }
 
 /**
- * Reads the complete stored secret, bypassing access policy.
- * Callers must check access on the result before using or revealing anything about it.
- * @param id - The EncryptedSecret ID.
- * @returns The stored secret, or undefined if it does not exist or is deleted.
+ * Returns a repository with the caller's identity and project scope but no access policy.
+ * Callers must check the caller's own access before using or revealing anything it returns.
+ * @param repo - The caller's repository.
+ * @returns The unrestricted repository, in extended mode so reads keep `meta.project`.
  */
-async function readStoredSecret(id: string): Promise<WithId<EncryptedSecret> | undefined> {
+function getUnrestrictedRepo(repo: Repository): Repository {
+  return repo.clone({ accessPolicy: undefined, extendedMode: true });
+}
+
+/**
+ * Reads the complete stored secret.
+ * @param unrestrictedRepo - A repository without an access policy.
+ * @param id - The EncryptedSecret ID.
+ * @returns The stored secret, or undefined if it does not exist, is deleted, or is outside the caller's projects.
+ */
+async function readStoredSecret(
+  unrestrictedRepo: Repository,
+  id: string
+): Promise<WithId<EncryptedSecret> | undefined> {
   try {
-    return await getAuthenticatedContext().systemRepo.readResource<EncryptedSecret>('EncryptedSecret', id);
+    return await unrestrictedRepo.readResource<EncryptedSecret>('EncryptedSecret', id);
   } catch {
     return undefined;
   }
