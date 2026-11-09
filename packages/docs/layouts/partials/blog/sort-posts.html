@@ -1,0 +1,3 @@
+{{- /* Blog posts newest first, as Docusaurus orders them: by date, with same-day posts in source file order.
+  The sorts are stable, so sorting by path first breaks date ties by path. */ -}}
+{{- return sort (sort . "File.Path") "Date" "desc" -}}

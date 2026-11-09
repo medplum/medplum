@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ClaimItem, HumanName } from '@medplum/fhirtypes';
-import { formatDiagnosisPointers, formatHumanName, getPlaceOfService, getSimplePhone } from './cms1500pdf';
+import type { Claim, ClaimItem, HumanName } from '@medplum/fhirtypes';
+import {
+  formatDiagnosisPointers,
+  formatHumanName,
+  getCms1500ClaimTypeError,
+  getPlaceOfService,
+  getSimplePhone,
+} from './cms1500pdf';
 
 describe('CMS 1500 PDF Utils', () => {
   test('formats full name with middle name', () => {
@@ -158,5 +164,59 @@ describe('CMS 1500 PDF Utils', () => {
   test('returns undefined when the claim line has no location information', () => {
     const item: ClaimItem = { sequence: 1, productOrService: {} };
     expect(getPlaceOfService(item)).toBeUndefined();
+  });
+
+  describe('getCms1500ClaimTypeError', () => {
+    const CLAIM_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/claim-type';
+
+    function claimWithType(type?: Claim['type']): Claim {
+      return {
+        resourceType: 'Claim',
+        status: 'active',
+        type: type as Claim['type'],
+        use: 'claim',
+        patient: { reference: 'Patient/123' },
+        created: '2026-01-01',
+        provider: { reference: 'Organization/456' },
+        priority: { coding: [{ code: 'normal' }] },
+        insurance: [],
+      };
+    }
+
+    test.each(['professional', 'vision'])('allows %s claims', (code) => {
+      expect(
+        getCms1500ClaimTypeError(claimWithType({ coding: [{ system: CLAIM_TYPE_SYSTEM, code }] }))
+      ).toBeUndefined();
+    });
+
+    test('allows claims with no type coding', () => {
+      expect(getCms1500ClaimTypeError(claimWithType())).toBeUndefined();
+      expect(getCms1500ClaimTypeError(claimWithType({ text: 'Dental' }))).toBeUndefined();
+    });
+
+    test.each([
+      ['oral', 'the ADA dental claim form'],
+      ['institutional', 'the UB-04'],
+      ['pharmacy', 'an NCPDP claim'],
+    ])('rejects %s claims', (code, form) => {
+      expect(getCms1500ClaimTypeError(claimWithType({ coding: [{ system: CLAIM_TYPE_SYSTEM, code }] }))).toBe(
+        `Claim type '${code}' cannot be exported as a CMS-1500. These claims are billed on ${form}.`
+      );
+    });
+
+    test('ignores codes from other systems', () => {
+      const claim = claimWithType({ coding: [{ system: 'http://example.com/claim-type', code: 'oral' }] });
+      expect(getCms1500ClaimTypeError(claim)).toBeUndefined();
+    });
+
+    test('finds the claim-type coding regardless of its position', () => {
+      const claim = claimWithType({
+        coding: [
+          { system: 'http://example.com/claim-type', code: 'D' },
+          { system: CLAIM_TYPE_SYSTEM, code: 'oral' },
+        ],
+      });
+      expect(getCms1500ClaimTypeError(claim)).toContain("'oral'");
+    });
   });
 });
