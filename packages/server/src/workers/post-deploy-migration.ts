@@ -32,7 +32,7 @@ import {
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
-import { getAsyncJobTracking, getTrackingAsyncJobExecutor, normalizeJobTarget } from './base';
+import { getAsyncJobTracking, getTrackingAsyncJobExecutor, normalizeJobTarget, requireSystemAsyncJob } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -90,6 +90,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   job.data = normalizeJobTarget(job.data);
   const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
   const asyncJob = exec.getAsyncJob();
+  await requireSystemAsyncJob(exec);
 
   if (!isJobCompatible(asyncJob)) {
     await moveToDelayedAndThrow(job, 'Post-deploy migration delayed since this worker is not compatible');

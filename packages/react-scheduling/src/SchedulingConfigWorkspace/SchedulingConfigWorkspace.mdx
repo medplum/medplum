@@ -70,7 +70,8 @@ once it is saved. A provider created here has no NPI; providers with one come fr
   room's or device's service facility (`Location.partOf`, or `Device.location`), picked from the same Locations
   booking filters by, and from inactive ones too (below). The time zone (the `timezone` extension) is the one
   hours are read in for any visit type that sets none of its own. A provider, room, or device without one is warned
-  that it is recommended, without blocking Save.
+  that it is recommended, without blocking Save. Once it has a Schedule, the Schedule's comment (`Schedule.comment`)
+  is edited too, and is shown under its name when picking who to book; emptied, it is removed.
 - **Visit types offered:** what its Schedule offers, by name. Each visit type offered is an entry showing its
   duration in effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and
   hours for it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with

@@ -1,0 +1,142 @@
+---
+id: deleting-data
+title: Deleting Data
+toc_max_heading_level: 5
+weight: 50
+---
+
+The management of healthcare information relies heavily on the effective and secure handling of data. A critical aspect of FHIR data store management is the `delete` operation, which ensures the removal of outdated or erroneous records as necessary. This article will provide an overview of the deleting data in Medplum, including the differences between "soft delete" and "hard delete" methods. Understanding these distinctions is essential for making informed decisions when dealing with sensitive healthcare data.
+
+## Delete Operation
+
+The FHIR [`delete`](https://hl7.org/fhir/http.html#delete) operation performs a "soft" or "logical" delete. This means that data is not permanently removed from the database.
+
+The delete interaction removes an existing resource. The interaction is performed by an HTTP `DELETE` request as shown:
+
+```
+DELETE [base]/[resourceType]/[id]
+```
+
+For example, suppose a [`Patient`](/docs/api/fhir/resources/patient) resource with ID 123 is created (via an HTTP `POST /Patient`) and subsequently deleted (via an HTTP `DELETE Patient/123`). This will cause a second version of the `Patient/123` resource to be created with version `Patient/123/\_history/2` that is marked as deleted.
+
+Internally, Medplum stores a minimal tombstone in the `_History` table for delete versions. The tombstone includes `resourceType`, `id`, and `meta` fields such as `versionId`, `lastUpdated`, `author`, `project`, and `meta.deleted: true`. This tombstone is used for auditing and data warehouse sync. It is **not** returned as the `resource` body when reading history; delete history entries still return HTTP 410 with an `OperationOutcome` as required by the FHIR specification.
+
+This patient will no longer appear in search results, and attempts to read the resource (using an HTTP `GET Patient/123`) will fail with an "HTTP 410 Gone" response.
+
+However, the original content of the resource is not destroyed. It can still be found using two FHIR operations:
+
+- Reading resource history: `GET Patient/123/_history`
+- Reading a resource version: `GET Patient/123/_history/1`
+
+### Preventing Conflicting Deletes
+
+If another user may have changed a resource since you read it, send its version in the `If-Match` header. The delete only succeeds if the resource is still at that version; otherwise it fails with `412 Precondition Failed` and nothing is deleted.
+
+```bash
+curl -X DELETE 'https://api.medplum.com/fhir/R4/Patient/123' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'If-Match: W/"<versionId>"'
+```
+
+```typescript
+const patient = await medplum.readResource('Patient', '123');
+await medplum.deleteResource('Patient', '123', {
+  headers: { 'If-Match': `W/"${patient.meta?.versionId}"` },
+});
+```
+
+{{< warning title="Referential Integrity on Deletes" >}}
+
+Referential integrity is **not** supported for deletes at this time.
+
+{{< /warning >}}
+
+## Expunge Operation
+
+The Medplum `$expunge` operation performs a "hard" or "physical" delete. The resource data and all prior history versions are permanently removed.
+
+```
+POST [base]/[resourceType]/[id]/$expunge
+```
+
+Subsequent requests for the resource will result in HTTP 404 Not Found, as if the resource never existed.
+
+A minimal tombstone remains in the resource's history table. It contains only the resource type, id, version metadata, the author who performed the expunge, and a `meta.tag` with the ISO 21089 lifecycle code [`destroy`](https://hl7.org/fhir/R4/valueset-audit-event-type.html), which means that the record content was permanently erased. If no actor is present (for example, a system repository with no user context), the tombstone falls back to the system author.
+
+The `$expunge` operation is only available to users with administrator access to the Project in which the resource belongs.
+
+### Expunge Everything Option
+
+The Medplum `$expunge` operation supports an optional `everything` flag to systematically expunge everything in the resource [compartment](https://hl7.org/fhir/R4/compartmentdefinition.html). Currently, only the "Patient" and "Project" compartments are supported. The job iterates every resource type in that compartment and hard-deletes matching rows in batches. Each deleted id still gets a history tombstone.
+
+```
+POST [base]/[resourceType]/[id]/$expunge?everything=true
+```
+
+{{< warning title="Expunging a Project" >}}
+
+If you expunge a [`Project`](/docs/api/fhir/medplum/project), it will be _permanently_ deleted and you will no longer be able to sign in or access it in any way.
+
+{{< /warning >}}
+
+### Restoring Data
+
+Sometimes you may want to restore data that has been accidentally deleted. The following script looks at the history of a resource and restores it if it is currently deleted.
+
+```typescript
+import { MedplumClient } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
+
+async function restoreDeletedResource(
+  medplum: MedplumClient,
+  resourceType: string,
+  resourceId: string
+): Promise<Resource | undefined> {
+  try {
+    // Get the history of the resource
+    const history = await medplum.readHistory(resourceType as Resource['resourceType'], resourceId);
+
+    if (!history || !history.entry || history.entry.length === 0) {
+      console.log(`No history found for ${resourceType}/${resourceId}`);
+      return undefined;
+    }
+
+    // Check if the resource was deleted (410 status with deleted OperationOutcome)
+    const isDeleted = history.entry.some(
+      (entry) =>
+        entry.response?.status === '410' && entry.response?.outcome?.issue?.some((issue) => issue.code === 'deleted')
+    );
+
+    if (isDeleted) {
+      console.log(`Found deleted resource ${resourceType}/${resourceId}`);
+
+      // Get the most recent non-deleted version
+      const latestVersion = history.entry.find((entry) => entry.response?.status === '200' && entry.resource)?.resource;
+
+      if (!latestVersion) {
+        console.log('Could not find a version to restore');
+        return undefined;
+      }
+
+      // Create a new version of the resource
+      const restoredMeta = { ...latestVersion.meta };
+      delete restoredMeta.deleted;
+      const restoredResource = {
+        ...latestVersion,
+        meta: restoredMeta,
+      };
+
+      // Update the resource
+      const result = await medplum.updateResource(restoredResource);
+      console.log(`Successfully restored ${resourceType}/${resourceId}`);
+      return result;
+    } else {
+      console.log(`Resource ${resourceType}/${resourceId} is not deleted`);
+      return undefined;
+    }
+  } catch (error) {
+    console.error('Error restoring resource:', error);
+    throw error;
+  }
+}
+```

@@ -645,7 +645,11 @@ function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientCon
   ) {
     return false;
   }
-  if (existing.criteria && candidate.criteria !== existing.criteria) {
+  if (
+    existing.params &&
+    (existing.params.length !== candidate.params?.length ||
+      existing.params.some(([key, value], i) => candidate.params?.[i][0] !== key || candidate.params[i][1] !== value))
+  ) {
     return false;
   }
   return true;

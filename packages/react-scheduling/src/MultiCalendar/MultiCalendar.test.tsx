@@ -110,6 +110,21 @@ describe('MultiCalendar', () => {
     expect(await within(blocked).findByText('Alice Smith')).toBeInTheDocument();
   });
 
+  test('opens on Weekdays, or on Week when today is on a weekend', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 7, 22, 10, 0, 0) });
+    try {
+      const { unmount } = renderWithMedplum(<MultiCalendar sources={[]} />, medplum);
+      expect(screen.getByLabelText('View')).toHaveValue('timeGridWeek');
+      unmount();
+
+      vi.setSystemTime(new Date(2026, 7, 19, 10, 0, 0));
+      renderWithMedplum(<MultiCalendar sources={[]} />, medplum);
+      expect(screen.getByLabelText('View')).toHaveValue('timeGridWeekdays');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test('draws a source marked not interactive without making its events clickable', async () => {
     const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
       resourceType: 'Appointment',
@@ -249,7 +264,7 @@ describe('MultiCalendar', () => {
 
     // A month has no hours to sit in, so there the event says when it is itself, with room for
     // the service type beside it and not the patient.
-    await userEvent.click(screen.getByText('Month'));
+    await userEvent.selectOptions(screen.getByLabelText('View'), 'Month');
     const monthEvent = within((await screen.findByText('Ultrasound imaging')).closest('.event') as HTMLElement);
     expect(monthEvent.getByText(time)).toBeInTheDocument();
     expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();

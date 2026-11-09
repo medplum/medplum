@@ -1,0 +1,11 @@
+{{ define "title" }}{{ partial "tagged-heading.html" (dict "page" . "noun" "doc") }}{{ end }}
+{{ define "main" }}
+  <h1>{{ partial "tagged-heading.html" (dict "page" . "noun" "doc") }}</h1>
+  <a href="/docs/tags">View All Tags</a>
+  {{ range .Pages.ByTitle }}
+    <article class="tagged-doc">
+      <h2><a href="{{ partial "href" . }}">{{ .Title }}</a></h2>
+      {{ with .Description }}<p>{{ . }}</p>{{ end }}
+    </article>
+  {{ end }}
+{{ end }}

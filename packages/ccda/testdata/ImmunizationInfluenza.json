@@ -44,7 +44,8 @@
             },
             "entry": [
               {
-                "reference": "Immunization/e6f1ba43-c0ed-4b9b-9f12-f435d8ad8f92"
+                "reference": "Immunization/e6f1ba43-c0ed-4b9b-9f12-f435d8ad8f92",
+                "display": "influenza virus vaccine, unspecified formulation"
               }
             ]
           }
