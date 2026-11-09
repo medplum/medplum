@@ -1,11 +1,11 @@
 ---
 id: on-behalf-of
-title: On-Behalf-Of
+title: On-Behalf-Of Delegation
 weight: 310
 docs_tags: [auth]
 ---
 
-On-Behalf-Of lets your backend authenticate as a privileged `ClientApplication` and supply a user's membership context for each Medplum request. Medplum applies the delegated membership's access policy and records the application and delegated profile on resource writes.
+On-Behalf-Of lets your backend use one privileged `ClientApplication` as its machine-to-machine identity and supply a user's membership context for each Medplum request. This is the decision guide's [single machine-to-machine user approach](/docs/decision-guides/authentication#option-c-on-behalf-of-single-machine-to-machine-user). Medplum applies the delegated membership's access policy and records the application and delegated profile on resource writes.
 
 Use this page to implement delegation with an application credential. For a backend using exchanged user credentials, follow [server-held token exchange](/docs/auth/token-exchange#server-held-medplum-tokens).
 

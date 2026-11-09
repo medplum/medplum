@@ -1,6 +1,6 @@
 ---
 id: session-management
-title: Access Token Management
+title: Access and Refresh Tokens
 weight: 80
 docs_tags: [auth]
 ---

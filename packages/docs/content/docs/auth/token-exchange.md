@@ -119,7 +119,7 @@ The client makes a token exchange request to the token endpoint with an extensio
 - **subject_token**: The external access token, or the ID token for the GCIP/Firebase adapter.
 - **subject_token_type**: The constant value "urn:ietf:params:oauth:token-type:access_token".
 - **membership_id**: The ID of the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to select. See the [provider and matching rules](#selecting-a-project-membership) for when it is required and which memberships are eligible.
-- **scope** (optional): The requested Medplum scopes. Defaults to `openid offline_access`, so the default exchange includes a refresh token. See [Access Token Management](/docs/auth/session-management#requesting-refresh-tokens).
+- **scope** (optional): The requested Medplum scopes. Defaults to `openid offline_access`, so the default exchange includes a refresh token. See [Access and Refresh Tokens](/docs/auth/session-management#requesting-refresh-tokens).
 
 {{< tip title="Example" >}}
 
@@ -136,9 +136,9 @@ The client makes a token exchange request to the token endpoint with an extensio
 
 The response will include a Medplum access token, which you can use to access the Medplum API. The Medplum SDK also provides the [`exchangeExternalAccessToken()`](/docs/sdk/core.medplumclient.exchangeexternalaccesstoken) helper method.
 
-## Client-held Medplum tokens
+## Token exchange in the client {#client-held-medplum-tokens}
 
-In this implementation, your browser or native application performs the exchange and calls Medplum directly.
+This implements [B1: In the client](/docs/decision-guides/authentication#b1-in-the-client) from the decision guide. Your browser or native application performs the exchange, retains the Medplum token, and calls Medplum directly.
 
 1. Complete the external IDP login and obtain the user token required by your provider configuration.
 2. Call `exchangeExternalAccessToken(externalToken, clientId, membershipId)` on the `MedplumClient` used by that user's application session. `clientId` selects the provider; supply `membershipId` according to the [membership-selection rules](#selecting-a-project-membership).
@@ -147,9 +147,9 @@ In this implementation, your browser or native application performs the exchange
 
 Use the SDK example in [Exchanging tokens](#exchanging-tokens). Keep the external token for APIs that accept it; use the resulting Medplum token for Medplum API calls. Do not include an application client secret in browser or native code.
 
-## Server-held Medplum tokens
+## Token exchange on the server {#server-held-medplum-tokens}
 
-In this implementation, your backend performs the exchange and makes Medplum requests using the resulting **user-scoped token**. The client continues to authenticate to your backend through your application's existing session mechanism.
+This implements [B2: On the server](/docs/decision-guides/authentication#b2-on-the-server) from the decision guide. Your backend performs the exchange and makes Medplum requests using the resulting **user-scoped token**. The client continues to authenticate to your backend through your application's existing session mechanism.
 
 1. Authenticate the incoming application request and obtain the external user token required by your provider configuration. If your application uses a session cookie, use that session to retrieve the external token through your IDP integration.
 2. Resolve the intended Medplum membership from your trusted identity-to-membership mapping. Check that the requested application context is authorized for that identity.

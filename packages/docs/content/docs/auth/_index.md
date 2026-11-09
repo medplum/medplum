@@ -13,7 +13,7 @@ Use this directory to find setup instructions, SDK examples, and authentication 
 
 ## Sign-in Flows {#browser-based-authentication}
 
-These pages explain sign-in through Medplum-hosted pages, embedded forms, or an external IDP redirect. Provider routing selects where the user authenticates; the login flow determines how your application obtains Medplum credentials.
+These pages cover the decision guide's identity provider choices: Medplum-managed authentication and external IDPs. Sign-in can use a Medplum-hosted page, an embedded form, or an external IDP redirect. Provider routing selects where the user authenticates.
 
 | Implementation task                                                       | Documentation                                                                                          |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -30,12 +30,12 @@ The Medplum App (https://app.medplum.com) is an administrative tool for clinical
 
 ## User Tokens and Delegation
 
-Use these pages when your application already authenticates the user or a trusted system establishes the user context. Token exchange can run in either the client or backend. On-Behalf-Of uses an application's credentials with a user context supplied on each request.
+These pages implement the decision guide's token exchange and On-Behalf-Of options, along with specialized token flows. With token exchange, choose whether to keep the Medplum token in the client or on the server. On-Behalf-Of uses one application's credentials with a user context supplied on each request.
 
 | Implementation task                                                           | Documentation                                                                                      |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Exchange an external user access token, then call Medplum from the client     | [Token Exchange: client-held Medplum tokens](/docs/auth/token-exchange#client-held-medplum-tokens) |
-| Exchange an external user access token and keep Medplum calls in your backend | [Token Exchange: server-held Medplum tokens](/docs/auth/token-exchange#server-held-medplum-tokens) |
+| Exchange an external user token, then call Medplum from the client           | [Token Exchange: in the client](/docs/auth/token-exchange#client-held-medplum-tokens) |
+| Exchange an external user token and keep Medplum calls in your backend       | [Token Exchange: on the server](/docs/auth/token-exchange#server-held-medplum-tokens) |
 | Have a privileged application delegate individual requests to a user          | [On-Behalf-Of Delegation](/docs/auth/on-behalf-of)                                                 |
 | Create a one-time code after user authentication and consent have occurred    | [Pre-Authorized Code](/docs/auth/pre-authorized-code)                                              |
 | Accept external JWTs directly on a self-hosted Medplum server                 | [Direct External Authentication](/docs/auth/direct-external-auth)                                  |
@@ -63,11 +63,11 @@ For delegated user requests, first authenticate the application, then follow [On
 
 ## User Management
 
-See our [User Management](/docs/user-management/) section for more information:
+For the decision guide's matching-key choice, email matching uses the Medplum login email and external ID matching uses the IDP's complete subject identifier. See [User Management](/docs/user-management/) for matching and provisioning:
 
 - scoping users, and distinguishing [Project vs Server Scoped users](/docs/user-management/project-vs-server-scoped-users)
 - enabling [Open Patient Registration](/docs/user-management/open-patient-registration)
-- using [External ID's](/docs/user-management/external-ids)
+- configuring subject matching and provisioning [External IDs](/docs/user-management/external-ids)
 - creating [Custom Emails](/docs/user-management/custom-emails) for user invites
 
 ### Mobile activation before account creation

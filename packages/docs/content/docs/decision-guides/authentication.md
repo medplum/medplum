@@ -34,7 +34,7 @@ Use Medplum's built-in email/password login or Google sign-in. For password-base
   - Does not meet a requirement to use an existing corporate IDP.
 - **Best fit:** Applications without an existing identity system, including patient-facing applications.
 
-Implementation: [Redirect login](/docs/auth/medplum-as-idp), [Embedded Login](/docs/auth/embedded-login), and [Google sign-in](/docs/auth/google-auth).
+Implementation: [Medplum Redirect Login](/docs/auth/medplum-as-idp), [Embedded Login](/docs/auth/embedded-login), and [Google sign-in](/docs/auth/google-auth).
 
 **Next:** Skip Decisions 2 and 3 and continue to [Before You Implement](#before-you-implement).
 
@@ -49,7 +49,7 @@ Configure an external IDP on the Medplum `ClientApplication`. For example, your 
   - Multiple upstream IDPs within one application need additional routing, such as an identity broker.
 - **Best fit:** Each application selects a known IDP or broker for its users.
 
-Implementation: [Application-based routing](/docs/auth/external-identity-providers#application-based-routing).
+Implementation: [External Identity Providers: application-based routing](/docs/auth/external-identity-providers#application-based-routing).
 
 ### Option C: External IDP with domain-based routing
 
@@ -62,7 +62,7 @@ Medplum selects the IDP from the user's email domain, such as routing `user@clin
   - Requires Medplum setup support for both hosted and self-hosted deployments. Hosted setup requires Enterprise.
 - **Best fit:** Customer organizations bring their own IDPs and their email domains should determine where users sign in.
 
-Implementation: [Domain-level Identity Providers](/docs/auth/domain-level-identity-providers).
+Implementation: [Domain-level Identity Providers](/docs/auth/domain-level-identity-providers) for domain-based routing.
 
 **Next for external IDPs:** Choose your token flow below.
 
@@ -84,7 +84,7 @@ Medplum handles the external IDP callback and returns an authorization code to y
   - Does not provide the client with an external access token for other services.
 - **Best fit:** Medplum is the primary client API and redirect login fits your application. Start here unless another flow meets a specific requirement.
 
-Implementation: [External IDP authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow).
+Implementation: [External Identity Providers: authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow).
 
 ### Option B: Token exchange
 
@@ -104,7 +104,7 @@ Choose token exchange when you need to exchange a user's external credential. In
 
 #### If you choose token exchange: where will you keep the Medplum token?
 
-Both options below use **user-scoped Medplum tokens**. Choose based on whether the client should call Medplum directly or through your backend.
+Both options below use **user-scoped Medplum tokens**. Start with the [shared Token Exchange setup](/docs/auth/token-exchange#set-up-your-clientapplication), then choose based on whether the client should call Medplum directly or through your backend.
 
 ##### B1: In the client
 
@@ -116,6 +116,8 @@ The client retains the exchanged Medplum token and calls Medplum directly.
 - **Tradeoffs:**
   - The client manages both credentials, including expiry and logout, with storage appropriate to its platform.
 - **Best fit:** Direct Medplum access is valuable and credentials can reside in the client.
+
+Implementation: [Token Exchange: in the client](/docs/auth/token-exchange#client-held-medplum-tokens).
 
 ##### B2: On the server
 
@@ -130,7 +132,7 @@ Your backend retains each user's exchanged Medplum token and uses it to fulfill 
   - Live updates need a backend-to-client delivery path; components expecting direct Medplum access need adaptation.
 - **Best fit:** Your architecture requires backend mediation or keeping Medplum credentials out of the client.
 
-Implementation: [Shared token exchange setup](/docs/auth/token-exchange#set-up-your-clientapplication), [client-held tokens](/docs/auth/token-exchange#client-held-medplum-tokens), and [server-held tokens](/docs/auth/token-exchange#server-held-medplum-tokens).
+Implementation: [Token Exchange: on the server](/docs/auth/token-exchange#server-held-medplum-tokens).
 
 ### Option C: On-Behalf-Of (single machine-to-machine user)
 
@@ -148,7 +150,7 @@ Your backend uses a single machine-to-machine application identity (`ClientAppli
 
 With server-held token exchange, the Medplum credential represents the user. With On-Behalf-Of, it represents the application, which selects the user context for each request. Prefer user-scoped exchange when either approach meets your requirements.
 
-Implementation: [On-Behalf-Of](/docs/auth/on-behalf-of).
+Implementation: [On-Behalf-Of Delegation](/docs/auth/on-behalf-of). For the application credential, see [Client Credentials](/docs/auth/client-credentials), [Client Assertion (JWT Bearer)](/docs/auth/client-assertion), or [Mutual TLS (mTLS)](/docs/auth/mtls).
 
 **Next:** For authorization-code flow or token exchange, choose your matching key below. For On-Behalf-Of, define your backend's user mapping and continue to [Before You Implement](#before-you-implement).
 
@@ -198,6 +200,11 @@ Use Medplum's MFA for Medplum-managed password login and the external IDP's MFA 
 
 Medplum's [MFA settings flows](/docs/auth/how-mfa-works#flow-self-enrolling-from-a-settings-page) require an authenticated human user without SMART resource scopes or On-Behalf-Of delegation. Server-scoped users must sign in with a password or Google to manage these settings. Plan a supported account-settings login alongside clinical access and test both flows.
 
-Implementation: [MFA](/docs/auth/mfa), [Access Token Management](/docs/auth/session-management), [Logout](/docs/auth/logout).
+Implementation: [Multi-Factor Authentication (MFA)](/docs/auth/mfa), [How MFA Works](/docs/auth/how-mfa-works), [Access and Refresh Tokens](/docs/auth/session-management), and [Logout](/docs/auth/logout).
+
+### Do you need a specialized flow?
+
+- **Direct External Authentication (Self-hosted):** Use an external IDP JWT directly for Medplum API requests when your self-hosted server is configured to accept it. See [Direct External Authentication](/docs/auth/direct-external-auth).
+- **Pre-Authorized Code:** Have a trusted backend issue a one-time code after user authentication and consent, then let the receiving application redeem it for Medplum tokens. See [Pre-Authorized Code](/docs/auth/pre-authorized-code).
 
 Record your choices for each population. Test sign-in, account changes, recovery, token expiry, logout, and offboarding. If your backend mediates access, also verify that requests use the correct user's context and fail when that context is missing.
