@@ -17,7 +17,7 @@ The `$ai` operation provides an interface for calling AI language models (like O
 
 The AI feature must be enabled for your project. Contact your Medplum administrator or ensure `ai` is included in your project's features list.
 
-The operation is intended for practitioners, bots and client applications. For patient-facing AI features, call `$ai` from a [Bot](/docs/bots).
+The operation is intended for practitioners, bots and client applications. For patient-facing AI features, call `$ai` from a [Bot](/docs/bots) that does not [run as the user](/docs/bots/bot-run-as-user): a Bot with `runAsUser` calls `$ai` as the patient, so the call is rejected.
 
 By default the operation calls OpenAI at `https://api.openai.com/v1`. To route requests through a [LiteLLM](https://docs.litellm.ai/) proxy or other OpenAI-compatible endpoint, set the optional project secret `LLM_BASE_URL` (e.g. `https://litellm.example.com/v1`); the `OPENAI_API_KEY` secret is then used as the proxy's bearer token. See [`$ai` Operation](/docs/ai/ai-operation) for details.
 
