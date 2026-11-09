@@ -96,6 +96,8 @@ The form initializes its answer state from the supplied response. Its callbacks 
 
 This helper keeps the assigned response's identity, subject, encounter, and Questionnaire reference. The `If-Match` header protects against overwriting a newer version saved by another editor. Keep the returned resource for the next save. On a `412 Precondition Failed`, reconcile with the current server version before retrying; see [version checking](/docs/fhir-datastore/updating-data#preventing-lost-updates-with-version-checking).
 
+The editor below reports version conflicts and keeps edits visible. It leaves reconciliation to your application. Preserve or reconcile unsaved changes before loading the latest response with `medplum.readResource` and mounting a fresh editor. Retrying in the existing editing session sends the same stale version and fails again.
+
 ### 4. Validate completion across all pages
 
 Drafts can be incomplete. **Validate the whole response before saving it as completed.** The component sets `status: 'completed'` in its submit callback; it does not perform a complete assessment of your form's rules. Next checks browser validity on the current page, and the final page does not contain the earlier pages' input controls.
@@ -112,8 +114,8 @@ Pass the saved response through the `questionnaireResponse` prop. The example be
 
 - **Clone snapshots.** The form manages nested answer objects; copying the response keeps your save operation separate from later edits.
 - **Preserve one mounted editing session.** Load a response before mounting, and use a React `key` based on its ID when switching to another response. Updating the response prop is not a controlled-state mechanism for replacing answers mid-session.
-- **Pass context explicitly.** `subject` is used on submission; `subject` and `encounter` also support reference-input filters. These props do not create `%patient` or `%encounter` FHIRPath variables.
-- **Handle save failures visibly.** Keep edits open, show the failure, and let the user recover. Show success only after the write resolves.
+- **Pass context explicitly.** Omitting `subject` leaves it undefined in the submit snapshot; the save helper restores the assignment's subject. `subject` and `encounter` also support reference-input filters. These props do not create `%patient` or `%encounter` FHIRPath variables.
+- **Handle save failures visibly.** Keep edits open and show success only after the write resolves. Distinguish retryable failures from version conflicts, which require the reconciliation and reload described above.
 
 <details>
 <summary>React example: explicit Save draft and Submit</summary>
@@ -133,7 +135,7 @@ The page below handles loading and errors, then supplies `validateActivityRespon
 
 </details>
 
-Render `<ActivityFormPage key={assignmentId} questionnaireId={questionnaireId} patientId={patientId} assignmentId={assignmentId} />` inside your Medplum and Mantine providers. Supply the published definition ID, the intended patient's ID, and the stable identifier for this assigned form. This example uses explicit saves and closes editing after completion; add your application's navigation and review screen around it.
+Render `<ActivityFormPage questionnaireId={questionnaireId} patientId={patientId} assignmentId={assignmentId} />` inside your Medplum and Mantine providers. Supply the published definition ID, the intended patient's ID, and the stable identifier for this assigned form. The page tracks these inputs to avoid displaying a previous assignment while loading another. This example uses explicit saves and closes editing after completion; add your application's navigation and review screen around it.
 
 Try **Save draft**, unmount the page, and reopen it with the same assignment. The answers and response ID should remain the same. Submit valid answers and confirm that the saved status becomes `completed`.
 

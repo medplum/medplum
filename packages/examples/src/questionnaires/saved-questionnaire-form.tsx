@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 // start-block editorImports
-import { deepClone, normalizeErrorString } from '@medplum/core';
+import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
@@ -26,6 +26,7 @@ export function SavedQuestionnaireForm(props: {
 
   async function persist(response: QuestionnaireResponse): Promise<void> {
     if (saving.current) {
+      // The fieldset disables UI actions; this guard also prevents overlapping calls.
       return;
     }
     const snapshot = deepClone(response);
@@ -40,7 +41,13 @@ export function SavedQuestionnaireForm(props: {
       setSaved(result);
       setMessage(result.status === 'completed' ? 'Response submitted.' : 'Draft saved.');
     } catch (error) {
-      setMessage(`Save failed: ${normalizeErrorString(error)}. Your edits remain open.`);
+      if (normalizeOperationOutcome(error).id === 'precondition-failed') {
+        setMessage(
+          'This response changed elsewhere. Preserve your edits, then reload the latest response before saving again.'
+        );
+      } else {
+        setMessage(`Save failed: ${normalizeErrorString(error)}. Your edits remain open.`);
+      }
     } finally {
       saving.current = false;
       setBusy(false);

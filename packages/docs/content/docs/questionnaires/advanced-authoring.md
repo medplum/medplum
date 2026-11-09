@@ -52,7 +52,7 @@ Try this sequence:
 3. Choose **Back**, change afternoon minutes to **0**, and choose **Next** again. The total becomes **15**, and the comparison question disappears.
 4. Choose **Submit**. The preview response changes to `completed` in browser state. The [next guide](/docs/questionnaires/saving-and-resuming) adds persistence and completion validation.
 
-The preview exposes both the form and response data so you can compare them. The current renderer has [calculated-field display limitations](#expression-behavior-and-limits), including lack of `item.readOnly` enforcement.
+The preview exposes both the form and response data so you can compare them. See [expression behavior and limits](#expression-behavior-and-limits) for calculated-field display considerations.
 
 ### Define the inputs
 
