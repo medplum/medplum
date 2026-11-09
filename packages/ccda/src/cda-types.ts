@@ -354,7 +354,7 @@ export interface CdaAD {
  * during which the address can be used. This is used to specify
  * different addresses for different times of the week or year.
  */
-export type CdaADUseablePeriod = (CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS)[];
+export type CdaADUseablePeriod = CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS;
 
 /**
  * This can be a unit designator, such as apartment number, suite number,
@@ -3109,7 +3109,7 @@ export interface CdaCriterion {
     | CdaII
     | CdaTEL
     | CdaAD
-    | CdaTN
+    | CdaEN
     | CdaINT
     | CdaREAL
     | CdaPQ
@@ -3134,7 +3134,7 @@ export type CdaCriterionValue =
   | CdaII
   | CdaTEL
   | CdaAD
-  | CdaTN
+  | CdaEN
   | CdaINT
   | CdaREAL
   | CdaPQ
@@ -6486,7 +6486,7 @@ export interface CdaLabeledDrug {
 
   code?: CdaCE;
 
-  name?: CdaTN | string;
+  name?: CdaEN | string;
 }
 
 /**
@@ -6991,7 +6991,7 @@ export interface CdaMaterial {
 
   code?: CdaCE;
 
-  name?: CdaTN | string;
+  name?: CdaEN | string;
 
   lotNumberText?: CdaST | string;
 }
@@ -7256,7 +7256,7 @@ export interface CdaObservation {
     | CdaII
     | CdaTEL
     | CdaAD
-    | CdaTN
+    | CdaEN
     | CdaINT
     | CdaREAL
     | CdaPQ
@@ -7309,7 +7309,7 @@ export interface CdaObservation {
   'sdtc:inFulfillmentOf1'?: CdaInFulfillmentOf1[];
 }
 
-export type CdaObservationValue = (
+export type CdaObservationValue =
   | CdaANY
   | CdaBL
   | CdaED
@@ -7323,7 +7323,7 @@ export type CdaObservationValue = (
   | CdaII
   | CdaTEL
   | CdaAD
-  | CdaTN
+  | CdaEN
   | CdaINT
   | CdaREAL
   | CdaPQ
@@ -7334,8 +7334,7 @@ export type CdaObservationValue = (
   | CdaPIVL_TS
   | CdaEIVL_TS
   | CdaSXPR_TS
-  | CdaRTO_PQ_PQ
-)[];
+  | CdaRTO_PQ_PQ;
 
 /**
  * Relates an Observation to the ObservationRange class, where the
@@ -7651,7 +7650,7 @@ export interface CdaObservationRange {
     | CdaII
     | CdaTEL
     | CdaAD
-    | CdaTN
+    | CdaEN
     | CdaINT
     | CdaREAL
     | CdaPQ
@@ -7688,7 +7687,7 @@ export type CdaObservationRangeValue =
   | CdaII
   | CdaTEL
   | CdaAD
-  | CdaTN
+  | CdaEN
   | CdaINT
   | CdaREAL
   | CdaPQ
@@ -9515,7 +9514,7 @@ export interface CdaPlace {
 
   '@_determinerCode'?: string;
 
-  name?: CdaTN | string;
+  name?: CdaEN | string;
 
   addr?: CdaAD | string;
 }
@@ -12085,7 +12084,7 @@ export interface CdaSubstanceAdministration {
   'sdtc:inFulfillmentOf1'?: CdaInFulfillmentOf1[];
 }
 
-export type CdaSubstanceAdministrationEffectiveTime = (CdaSXCM_TS | CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS)[];
+export type CdaSubstanceAdministrationEffectiveTime = CdaSXCM_TS | CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS;
 
 /**
  * The consumable participation is used to bring in the LabeledDrug or
@@ -12318,7 +12317,7 @@ export interface CdaSupply {
   'sdtc:inFulfillmentOf1'?: CdaInFulfillmentOf1[];
 }
 
-export type CdaSupplyEffectiveTime = (CdaSXCM_TS | CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS)[];
+export type CdaSupplyEffectiveTime = CdaSXCM_TS | CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS;
 
 export interface CdaSupplyProduct {
   /**
@@ -12506,7 +12505,7 @@ export interface CdaSXPR_TS {
   comp: (CdaSXCM_TS | CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS)[];
 }
 
-export type CdaSXPR_TSComp = (CdaSXCM_TS | CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS)[];
+export type CdaSXPR_TSComp = CdaSXCM_TS | CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS;
 
 /**
  * A telephone number (voice or fax), e-mail address, or other locator
@@ -12553,7 +12552,7 @@ export interface CdaTEL {
  * web address, it may specify a time range in which the web content is
  * promised to be available under the given address.
  */
-export type CdaTELUseablePeriod = (CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS)[];
+export type CdaTELUseablePeriod = CdaIVL_TS | CdaEIVL_TS | CdaPIVL_TS | CdaSXPR_TS;
 
 /**
  * A restriction of entity name that is effectively a simple string used

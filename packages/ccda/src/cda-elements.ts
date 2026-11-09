@@ -505,7 +505,7 @@ export const CDA_ELEMENTS: Record<string, Record<string, string>> = {
   IVXB_INT: {},
   IVXB_PQ: { translation: 'PQR[]' },
   IVXB_TS: {},
-  LabeledDrug: { realmCode: 'CS[]', typeId: 'LabeledDrugTypeId', templateId: 'II[]', code: 'CE', name: 'TN' },
+  LabeledDrug: { realmCode: 'CS[]', typeId: 'LabeledDrugTypeId', templateId: 'II[]', code: 'CE', name: 'EN' },
   LabeledDrugTypeId: {},
   LanguageCommunication: {
     realmCode: 'CS[]',
@@ -551,7 +551,7 @@ export const CDA_ELEMENTS: Record<string, Record<string, string>> = {
     typeId: 'MaterialTypeId',
     templateId: 'II[]',
     code: 'CE',
-    name: 'TN',
+    name: 'EN',
     lotNumberText: 'ST',
   },
   MaterialTypeId: {},
@@ -830,7 +830,7 @@ export const CDA_ELEMENTS: Record<string, Record<string, string>> = {
   PersonSdtcAsPatientRelationshipTypeId: {},
   PersonTypeId: {},
   PIVL_TS: { phase: 'IVL_TS', period: 'PQ' },
-  Place: { realmCode: 'CS[]', typeId: 'PlaceTypeId', templateId: 'II[]', name: 'TN', addr: 'AD' },
+  Place: { realmCode: 'CS[]', typeId: 'PlaceTypeId', templateId: 'II[]', name: 'EN', addr: 'AD' },
   PlaceTypeId: {},
   PlayingEntity: {
     realmCode: 'CS[]',
