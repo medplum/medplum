@@ -37,6 +37,7 @@ import {
   readInteractions,
   resolveId,
   satisfiedAccessPolicy,
+  satisfiedAccessPolicyOperation,
   sleep,
   stringify,
   toTypedValue,
@@ -95,6 +96,7 @@ import {
   HistoryInteraction,
   isReadOnlyAction,
   logAuditEvent,
+  OperationInteraction,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
@@ -2400,6 +2402,25 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Determines if the current user is granted an operation on the specified resource.
+   * The grant must name the operation; interactions never imply it. The resource must be in the current project.
+   * @param operation - The operation name, without the leading `$`, such as `get-value`.
+   * @param resource - The complete stored resource.
+   * @returns The access policy entry granting the operation, or undefined if not granted.
+   */
+  canPerformOperation(operation: string, resource: Resource): AccessPolicyResource | undefined {
+    if (!this.isSuperAdmin()) {
+      if (protectedResourceTypes.includes(resource.resourceType)) {
+        return undefined;
+      }
+      if (resource.meta?.project !== this.context.projects?.[0]?.id) {
+        return undefined;
+      }
+    }
+    return satisfiedAccessPolicyOperation(resource, operation, this.context.accessPolicy);
+  }
+
+  /**
    * Determines if the current user can perform some interaction on the current version of a resource.
    * The stored resource is read in full, so the check sees fields that access policy hides from the user.
    * @param interaction - The interaction to be performed.
@@ -2589,6 +2610,25 @@ export class Repository extends FhirRepository implements Disposable {
 
   isProjectAdmin(): boolean {
     return !!this.context.projectAdmin;
+  }
+
+  /**
+   * Logs an AuditEvent for a FHIR operation invoked on a resource, sent wherever the server sends AuditEvents.
+   * @param outcome - The AuditEvent outcome.
+   * @param resource - The resource the operation was invoked on.
+   * @param options - Optional details.
+   * @param options.description - Description of the outcome.
+   * @param options.entityDetail - Tagged values to record on the AuditEvent's entity.
+   */
+  logOperationEvent(
+    outcome: AuditEventOutcome,
+    resource: Resource | Reference,
+    options?: { description?: string; entityDetail?: AuditEventEntityDetail[] }
+  ): void {
+    this.logEvent(OperationInteraction, outcome, options?.description, {
+      resource,
+      entityDetail: options?.entityDetail,
+    });
   }
 
   /**
