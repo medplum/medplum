@@ -1,0 +1,22 @@
+{{- /* A page's description, for its meta tags and the blog feeds: the front matter description, else (as on
+  Docusaurus) the first line of the content, except on the home page, the React landing pages (standalone), search,
+  the blog authors page, and tag pages, which had none */ -}}
+{{- $description := .Description -}}
+{{- $excerpt := and (in (slice "page" "section") .Kind) (not .IsHome) (not .Params.standalone) (ne .Path "/search") (ne .Layout "authors") -}}
+{{- if and (not $description) $excerpt -}}
+  {{- if .Params.fhirType -}}
+    {{- /* As the Docusaurus generator wrote it: the StructureDefinition description on one line, followed by the
+      Medplum note for the type */ -}}
+    {{- $key := lower .Params.fhirType -}}
+    {{- /* FHIR's [[[Type]]] links become the type name */ -}}
+    {{- $source := (index (partialCached "fhir/index.html" .).types $key).sd.description | replaceRE `\s+` " " | replaceRE `\[\[\[([^\]]+)\]\]\]` "$1" -}}
+    {{- with resources.Get (printf "fhir/resources/%s.md" $key) -}}
+      {{- /* Only the note before the first heading; the sections after it are tabs (see fhir/page.html) */ -}}
+      {{- with index (split (printf "\n%s" .Content) "\n#") 0 | strings.TrimSpace }}{{ $source = printf "%s %s" $source . }}{{ end -}}
+    {{- end -}}
+    {{- $description = partial "excerpt.html" $source -}}
+  {{- else -}}
+    {{- $description = partial "excerpt.html" .RawContent -}}
+  {{- end -}}
+{{- end -}}
+{{- return $description -}}

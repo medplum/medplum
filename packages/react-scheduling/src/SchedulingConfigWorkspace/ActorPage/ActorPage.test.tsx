@@ -339,6 +339,7 @@ describe('ActorPage', () => {
 
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
     expect(screen.queryByText('Schedule status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Schedule comment' })).not.toBeInTheDocument();
   });
 
   const SCHEDULE_OFF =
@@ -507,6 +508,27 @@ describe('ActorPage', () => {
       { method: 'PUT', url: `Schedule/${schedules[0].id}`, ifMatch: `W/"${schedules[0].meta?.versionId}"` },
     ]);
     expect(getScheduleSchedulingParameterValues(syncedSchedule(onSynced), initialVisit).bufferAfter).toBe(15);
+  });
+
+  test.each([
+    ['  Afternoons only ', 'Afternoons only'],
+    [' ', undefined],
+  ])("editing the Schedule's comment to %j saves only the Schedule, with comment %j", async (typed, expected) => {
+    const { medplum, onSynced, schedules } = await setup(drSmith, [
+      { ...makeSchedule('Practitioner/dr-smith', [initialVisit]), comment: ' Mornings only' },
+    ]);
+    const commentField = within(general()).getByRole('textbox', { name: 'Schedule comment' });
+
+    expect(commentField).toHaveValue(' Mornings only');
+    fireEvent.change(commentField, { target: { value: 'Mornings only ' } });
+    expect(saveBar()).toBeNull();
+
+    fireEvent.change(commentField, { target: { value: typed } });
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual([`Schedule/${schedules[0].id}`]);
+    expect(syncedSchedule(onSynced).comment).toBe(expected);
   });
 
   test('one entry opens at a time, closing leaves none open, and edits survive either', async () => {

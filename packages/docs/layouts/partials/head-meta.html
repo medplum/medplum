@@ -1,0 +1,57 @@
+{{- /*
+  Description, canonical URL, and social sharing (Open Graph and Twitter) tags, matching what Docusaurus emitted.
+  og:title is in baseof.html, next to <title>. main.mjs copies the tags marked data-page-meta from each page into the
+  head on swup navigations, since swup only replaces <title> and the page content.
+*/ -}}
+{{- $path := partial "href" . -}}
+{{- /* Paginated blog lists use the current pager's URL (/blog/page/2); this is the same paginator their templates
+  create, so the call returns it rather than starting another */ -}}
+{{- if or (and (eq .Section "blog") (eq .Kind "section")) (and (eq .Type "blog_tags") (eq .Kind "term")) -}}
+  {{- $path = (.Paginate (partial "blog/sort-posts.html" .Pages)).URL | strings.TrimSuffix "/" | default "/" -}}
+{{- end -}}
+{{- $url := printf "%s%s" (strings.TrimSuffix "/" site.BaseURL) $path -}}
+{{- $image := "https://www.medplum.com/img/medplum-og-cover-image.png" -}}
+
+{{- $description := partial "page-description.html" . -}}
+
+{{- with $description }}
+<meta name="description" content="{{ . }}" data-page-meta />
+<meta property="og:description" content="{{ . }}" data-page-meta />
+{{- end }}
+{{- with .Params.keywords }}
+<meta name="keywords" content="{{ delimit . "," }}" data-page-meta />
+{{- end }}
+{{- if eq .Path "/search" }}
+<meta name="robots" content="noindex, follow" data-page-meta />
+{{- end }}
+<meta property="og:url" content="{{ $url }}" data-page-meta />
+<meta property="og:locale" content="en" />
+<meta property="og:image" content="{{ $image }}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="{{ $image }}" />
+
+{{- /* Blog posts are articles, with comma-separated authors (their profile URLs) and tags */}}
+{{- if and (eq .Section "blog") (eq .Kind "page") (ne .Layout "archive") (ne .Layout "authors") }}
+<meta property="og:type" content="article" data-page-meta />
+<meta property="article:published_time" content="{{ .Date.UTC.Format "2006-01-02T15:04:05.000Z" }}" data-page-meta />
+{{- with .Params.authors }}
+  {{- $urls := slice }}
+  {{- range cond (reflect.IsSlice .) . (slice .) }}
+    {{- range first 1 (where hugo.Data.authors "key" .) }}{{ with .url }}{{ $urls = $urls | append . }}{{ end }}{{ end }}
+  {{- end }}
+  {{- with $urls }}
+<meta property="article:author" content="{{ delimit . "," }}" data-page-meta />
+  {{- end }}
+{{- end }}
+{{- with .Params.blog_tags }}
+<meta property="article:tag" content="{{ delimit . "," }}" data-page-meta />
+{{- end }}
+{{- end }}
+
+<link rel="canonical" href="{{ $url }}" data-page-meta />
+<link rel="alternate" href="{{ $url }}" hreflang="en" data-page-meta />
+<link rel="alternate" href="{{ $url }}" hreflang="x-default" data-page-meta />
+<link rel="alternate" type="application/rss+xml" href="/blog/rss.xml" title="Medplum RSS Feed" />
+<link rel="alternate" type="application/atom+xml" href="/blog/atom.xml" title="Medplum Atom Feed" />
+<link rel="search" type="application/opensearchdescription+xml" title="Medplum" href="/opensearch.xml" />
+<link rel="preconnect" href="https://6A1DXS603N-dsn.algolia.net" crossorigin="anonymous" />

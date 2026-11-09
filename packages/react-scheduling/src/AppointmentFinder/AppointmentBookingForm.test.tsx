@@ -25,10 +25,12 @@ import {
   openTimeFinder,
   patientDetail,
   setupBookingClient,
+  typedTimeField,
 } from '../test-utils/bookingForm';
-import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
+import { formatZonedDateTimeInput } from './AppointmentFinder.times';
 
 installAutocompleteTimers();
 
@@ -332,6 +334,36 @@ describe('AppointmentBookingForm', () => {
 
         expect(screen.getByText(/Rivera's schedule/)).toBeInTheDocument();
         expect(screen.queryByText(/Okafor's schedule/)).not.toBeInTheDocument();
+      });
+    });
+
+    describe('Starting from a time the host names', () => {
+      // The `$find` stub offers times on the runner's clock, and Dr. Rivera's are read in New York.
+      const OFFERED = new Date(2026, 7, 17, 10, 0, 0);
+
+      test('Writes it directly, even when the search offers the same time', async () => {
+        const executeBatch = vi
+          .spyOn(medplum, 'executeBatch')
+          .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
+        const post = vi.spyOn(medplum, 'post');
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: OFFERED });
+        await fillWithoutTime();
+
+        expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(OFFERED, 'America/New_York'));
+        const timeButtons = screen
+          .getAllByTestId(/^slot-group-/)
+          .flatMap((group) => within(group).getAllByRole('button'));
+        expect(timeButtons.filter((button) => button.getAttribute('data-variant') === 'filled')).toHaveLength(0);
+        await clickBook();
+        expect(bookCount(post)).toBe(0);
+        expect(executeBatch).toHaveBeenCalledTimes(1);
+      });
+
+      test('Starts empty when that time has passed', async () => {
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: new Date(2026, 7, 17, 7, 0, 0) });
+        await fillWithoutTime();
+
+        expect(typedTimeField()).toHaveValue('');
       });
     });
   });

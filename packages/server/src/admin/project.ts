@@ -13,7 +13,6 @@ import { getEnrolledMfaMethods } from '../auth/utils';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
-import { reconcileDefaultAccessPolicy } from '../fhir/accesspolicy';
 import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmailInProject } from '../oauth/utils';
@@ -136,10 +135,7 @@ projectAdminRouter.post('/:projectId/members/:membershipId', async (req: Request
     sendOutcome(res, forbidden);
     return;
   }
-  // Keep the default access policy in sync when the admin flag is toggled, so an upgraded
-  // admin isn't left restricted by the Practitioner default (and vice versa).
-  const reconciled = reconcileDefaultAccessPolicy(ctx.project, resource as ProjectMembership);
-  const result = await ctx.repo.updateResource(reconciled);
+  const result = await ctx.repo.updateResource<ProjectMembership>(resource);
   res.json(result);
 });
 

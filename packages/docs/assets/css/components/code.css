@@ -1,0 +1,101 @@
+.highlight {
+  position: relative;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 2px 0px;
+  margin-bottom: 50px;
+}
+
+.highlight pre {
+  background-color: rgb(246, 248, 250) !important;
+  border-radius: 6px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 2px 0px;
+  color: rgb(57, 58, 52);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 15px;
+  padding: 16px;
+  min-width: 0;
+  overflow: auto;
+}
+
+/* Chroma's wrapper (the <pre>, or a <div> around the line number table) used to carry these as inline styles; a grid
+   stretches highlighted lines across the full scroll width */
+.chroma {
+  tab-size: 4;
+
+  &:has(.hl) {
+    display: grid;
+  }
+
+  /* Highlighted lines, as on Docusaurus: its color, stretched across the code box's padding */
+  .hl {
+    background-color: var(--docusaurus-highlighted-code-line-bg);
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+}
+
+/* Chroma marks code its lexer can't parse as errors (white on dark red), including valid syntax its lexers don't
+   handle, such as bash line continuations and TypeScript union types. Docusaurus's highlighter never marked errors, so
+   show them as ordinary code. */
+.chroma .err {
+  color: inherit;
+  background-color: transparent;
+}
+
+.highlight pre code {
+  padding: 0;
+}
+
+code {
+  border-radius: var(--ifm-code-border-radius);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: var(--ifm-code-font-size);
+  padding: var(--ifm-code-padding-vertical) var(--ifm-code-padding-horizontal);
+  vertical-align: middle;
+}
+
+/* The copy button (assets/js/components/copy-code.mjs), as on Docusaurus: hidden until the block is hovered */
+.code-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  padding: 0.4rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  background: rgb(246, 248, 250);
+  color: rgb(57, 58, 52);
+  cursor: pointer;
+  line-height: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+
+  svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .code-copy-success-icon {
+    display: none;
+    color: var(--ifm-color-success);
+  }
+
+  &.copied {
+    .code-copy-icon {
+      display: none;
+    }
+
+    .code-copy-success-icon {
+      display: block;
+    }
+  }
+}
+
+.highlight:hover .code-copy-button {
+  opacity: 0.4;
+}
+
+.highlight .code-copy-button:hover,
+.highlight .code-copy-button:focus-visible,
+.highlight .code-copy-button.copied {
+  opacity: 1;
+}

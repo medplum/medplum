@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, Logger } from '@medplum/core';
+import { ContentType } from '@medplum/core';
 import type { Binary, Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -383,31 +383,26 @@ describe('Deploy', () => {
       return { bot, token: accessToken };
     }
 
-    test('Non-admin caller requires update permission', async () => {
+    test('Non-admin caller is forbidden', async () => {
       // Without update permission on Bot -> 403 Forbidden
-      const forbidden = await setupNonAdmin({ readonly: true });
+      const readonly = await setupNonAdmin({ readonly: true });
       const res1 = await request(app)
-        .post(`/fhir/R4/Bot/${forbidden.bot.id}/$deploy`)
+        .post(`/fhir/R4/Bot/${readonly.bot.id}/$deploy`)
         .set('Content-Type', ContentType.FHIR_JSON)
-        .set('Authorization', 'Bearer ' + forbidden.token)
+        .set('Authorization', 'Bearer ' + readonly.token)
         .send({});
       expect(res1).toHaveStatus(403);
       expect(deployMocks.deployLambda).not.toHaveBeenCalled();
 
-      // With update permission -> 200 OK with log line
-      const { bot, token } = await setupNonAdmin({});
-      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+      // Even with update permission on Bot, a non-admin is still 403 Forbidden
+      const writable = await setupNonAdmin({});
       const res2 = await request(app)
-        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .post(`/fhir/R4/Bot/${writable.bot.id}/$deploy`)
         .set('Content-Type', ContentType.FHIR_JSON)
-        .set('Authorization', 'Bearer ' + token)
+        .set('Authorization', 'Bearer ' + writable.token)
         .send({});
-      expect(res2).toHaveStatus(200);
-      expect(deployMocks.deployLambda).toHaveBeenCalled();
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Bot deployed by non-admin user',
-        expect.objectContaining({ botId: bot.id, botProject: bot.meta?.project })
-      );
+      expect(res2).toHaveStatus(403);
+      expect(deployMocks.deployLambda).not.toHaveBeenCalled();
     });
   });
 });

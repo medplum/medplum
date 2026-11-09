@@ -1,0 +1,18 @@
+{{ define "main" }}
+  {{ if not .Params.hideTitle }}<h1>{{ .Title }}</h1>{{ end }}
+  {{ if .Params.fhirType }}
+    {{ partial "fhir/page.html" . }}
+  {{ else if and (hasPrefix .Path "/docs/decision-guides/") (eq .Kind "page") }}
+    {{- /* "Plan with this guide" goes after the introduction: before the first divider, else the first section */}}
+    {{- $content := string .Content }}
+    {{- $at := index (findRE `<hr>|<h2[ >]` $content 1) 0 | default "" }}
+    {{- if $at }}
+      {{- $parts := split $content $at }}
+      {{ index $parts 0 | safeHTML }}{{ partial "guide-planning.html" . }}{{ delimit (after 1 $parts) $at | printf "%s%s" $at | safeHTML }}
+    {{- else }}
+      {{ .Content }}{{ partial "guide-planning.html" . }}
+    {{- end }}
+  {{ else }}
+    {{ .Content }}
+  {{ end }}
+{{ end }}
