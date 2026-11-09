@@ -28,6 +28,7 @@
   },
   "overrides": {
     "adm-zip": "0.6.1",
+    "dompurify": "3.4.17",
     "esbuild": "0.28.2",
     "typescript": "6.0.3",
     "uuid": "14.0.2",
