@@ -1,0 +1,218 @@
+# Content for the home page (layouts/index.html).
+# Ported from packages/docs/src/components/landing/LandingPage.tsx in the medplum repo.
+
+hero:
+  title: Build and run modern healthcare apps
+  text:
+    - Medplum is the open source developer platform for shipping clinical software.
+    - Start with our production-ready apps, then customize them to fit your needs.
+  primaryButton:
+    label: Explore the Provider App
+    href: /docs/provider
+  image:
+    src: /img/provider/medplum-provider-app-cover-image.webp
+    alt: Medplum Provider App screenshot
+    width: 4320
+    height: 2700
+
+logosTitle: Trusted by Healthcare Leaders & Innovators
+
+logos:
+  - { src: /img/logos/ro.svg, width: 49, height: 28, alt: Ro }
+  - { src: /img/logos/everself.svg, width: 140, height: 28, alt: Everself }
+  - { src: /img/logos/profile-health.svg, width: 113, height: 40, alt: Profile Health }
+  - { src: /img/logos/rad-ai.svg, width: 128, height: 38, alt: Rad AI }
+  - { src: /img/logos/summer-health.svg, width: 208, height: 22, alt: Summer Health }
+  - { src: /img/logos/flexpa.svg, width: 120, height: 40, alt: Flexpa }
+  - { src: /img/logos/thirty-madison.webp, width: 81, height: 48, alt: Thirty Madison }
+  - { src: /img/logos/tia.svg, width: 146, height: 28, alt: Tia }
+  - { src: /img/logos/color.svg, width: 89, height: 29, alt: Color }
+  - { src: /img/logos/seen-health.svg, width: 116, height: 38, alt: Seen Health }
+  - { src: /img/logos/quilted-health.svg, width: 75, height: 86, alt: Quilted Health }
+  - { src: /img/logos/cdc.svg, width: 65, height: 51, alt: CDC }
+  - { src: /img/logos/imagine.svg, width: 119, height: 51, alt: Imagine Pediatrics }
+
+platform:
+  title: A platform built for healthcare complexity
+  text: Build what you need—without rebuilding the foundation. Medplum provides the core primitives required to ship and operate healthcare software in production.
+  features:
+    - title: API-first
+      icon: outline/code
+      text: Integrate with any partner, anywhere, in any way with data share options in a variety of formats.
+    - title: FHIR-native
+      icon: outline/flame
+      text: Anticipate nuances and avoid costly re-writes down the line with default FHIR-standard formatted data storage.
+    - title: Automation-ready
+      icon: outline/settings
+      text: Streamline your operations and automate any workflow to activate, track, manage, and measure tasks of any level of complexity.
+    - title: Open Source
+      icon: outline/brand-open-source
+      text: Medplum's core technology is open source (Apache 2.0 license) and freely available in GitHub, so there’s never a risk of vendor lock-in.
+    - title: Secure & Compliant
+      icon: outline/shield-check
+      text: Comes with HIPAA and SOC2 compliance out of the box, follows all OWASP security guidelines, and is verified by multiple penetration tests.
+    - title: Scalable
+      icon: outline/chart-bar-popular
+      text: From MVP to IPO—and every major milestone in between—Medplum’s technology backs you up and grows with you.
+
+solutions:
+  title: Solutions for all scopes and scales
+  text: Medplum powers a wide range of applications on a single, standards-based platform—giving your team the flexibility to ship and evolve your end-to-end care model.
+  items:
+    - title: Custom EHR
+      icon: outline/heart-rate-monitor
+      link: /solutions/custom-ehr
+      image: /img/solutions/custom-ehr.webp
+      bullets:
+        - Build the exact custom EHR your organization needs, tailored precisely to your unique workflows and specifications
+        - Gain complete control over your clinical data and operations
+    - title: Patient Engagement
+      icon: outline/user-heart
+      link: /solutions/patient-portal
+      image: /img/solutions/patient-engagement.webp
+      imageClass: patient-engagement
+      bullets:
+        - Deepen your connection with patients by creating custom, modern experiences that truly resonate
+        - Drive better health outcomes through seamless and engaging interactions
+    - title: Scribe & Agents
+      icon: outline/file-text-spark
+      link: /solutions
+      image: /img/solutions/scribe-agents.webp
+      imageClass: scribe-agents
+      bullets:
+        - Go beyond simple transcription with agentic scribes that take action, not just notes
+        - Elevate your AI capabilities to streamline operations and enhance decision-making
+    - title: Population Health
+      icon: outline/chart-histogram
+      link: /solutions
+      image: /img/solutions/population-health.webp
+      bullets:
+        - Transform fragmented patient data into powerful insights for coordinated care delivery
+        - Our platform empowers population health teams to improve outcomes and maximize shared savings
+    - title: Care Management
+      icon: outline/first-aid-kit
+      link: /solutions
+      image: /img/solutions/care-management.webp
+      bullets:
+        - Free your care managers to focus on providing truly compassionate and personalized support
+        - 'Streamline administrative tasks so they can dedicate more time to what matters most: patient well-being'
+    - title: Revenue Cycle Management
+      icon: outline/receipt-dollar
+      link: /solutions
+      image: /img/solutions/rcm.webp
+      imageClass: rcm
+      bullets:
+        - Design and automate custom routing and business rules that perfectly fit your financial operations
+        - Optimize your revenue cycle for efficiency and maximum returns
+
+ecosystem:
+  title: Connect to the healthcare ecosystem
+  text: Medplum connects to common external systems while letting you build custom integrations when you need them.
+  features:
+    - title: Labs
+      icon: outline/test-pipe
+      text: Orders, results, and workflows that fit real operations.
+    - title: Medications
+      icon: outline/pills
+      text: Medication workflows and integrations designed for clinical safety.
+    - title: Billing & RCM
+      icon: outline/building-bank
+      text: Integrate financial workflows without duct-taping your system.
+    - title: Health Exchange
+      icon: outline/replace
+      text: Support data exchange patterns used in real-world interoperability.
+    - title: Plugins & Modules
+      icon: outline/plug-connected
+      text: Extend Medplum with reusable integration components.
+    - title: Third-party Tools
+      icon: outline/apps
+      text: Connect CRMs, scheduling, imaging, and specialty systems.
+
+infrastructure:
+  title: Trusted infrastructure, to meet any future you build
+  text: Medplum lets your team skip the plumbing and ship what matters, getting you to market faster with a secure, compliant, and scalable foundation.
+  stats:
+    - value: '99.99'
+      suffix: '%'
+      label: System Uptime
+      description: Operational reliability for mission-critical healthcare, backed by our enterprise SLA.
+    - value: '2.5'
+      suffix: B
+      label: Average API Calls per Month
+      description: Handling massive scale with consistent performance across the platform.
+    - value: '120'
+      suffix: M+
+      label: Custom Workflows
+      description: Powering over 120 million custom workflow actions designed for your requirements.
+    - value: '20'
+      suffix: M+
+      label: Active Patient Records
+      description: From startups to enterprises, Medplum facilitates care for over 20 million patients.
+  complianceTitle: Certified, Compliant & Secure
+  complianceLink: /security
+
+testimonials:
+  title: What healthcare builders are saying
+  text: Founders, directors, and developers on why they build with Medplum.
+  items:
+    - name: Michael Caves
+      title: Director of Product, Thirty Madison
+      image: /img/avatars/michael-caves.webp
+      quote:
+        - Thanks to the expertise of the Medplum team, we were able to swiftly implement their product and get it up and running seamlessly. Their proactive approach in anticipating and mitigating any issues during our ramp-up was an example of first rate partnership.
+        - With their robust product, we've gained the agility to rapidly introduce new features, enabling Thirty Madison to maintain its commitment to putting patients first.
+    - name: Craig Collier
+      title: Senior Software Engineer, Ro
+      image: /img/avatars/craig-collier.webp
+      quote:
+        - The Medplum GUI is very nice. There's a lot of depth there.
+    - name: Joshua Kelly
+      title: CTO, Flexpa
+      image: /img/avatars/joshuakelly.png
+      quote:
+        - Medplum is the best FHIR server implementation. Flexpa uses it to power our API and we wouldn't have nearly as good a product without it.
+    - name: Brendan Keeler
+      title: Health API Guy Newsletter
+      image: /img/avatars/brendan-keeler.webp
+      quote:
+        - 'I want to say it loudly for everyone to hear: I love Medplum, I love it so much. […] They’re awesome.'
+    - name: Florencia Herra Vega
+      title: CEO, AlleyCorp Nord
+      image: /img/avatars/florencia.webp
+      quote:
+        - We have been dreaming of a product that simplifies building custom EHRs and clinical tools for years. Medplum achieves this with an expert team, a fantastic developer experience, and standards compliance.
+    - name: Hassy Veldstra
+      title: Artillery
+      image: /img/avatars/hassy.webp
+      quote:
+        - Love seeing scalability & performance treated as a first-class feature. Always a sign of a project that takes quality seriously.
+    - name: Dima Goncharov
+      title: CEO, Metriport
+      image: /img/avatars/dima.webp
+      quote:
+        - Open source will transform healthcare, and Medplum is a prime example.
+    - name: Stuart Parmenter
+      title: Former CTO, One Medical
+      image: /img/avatars/stuart.webp
+      quote:
+        - I've built healthcare at scale—the hard way. Skip the hidden complexity and start on Medplum's infrastructure so you can ship care, not plumbing.
+    - name: Phil Fung
+      title: Co-founder, Kit.com ∙ Engineer #15, Facebook
+      image: /img/avatars/phil-fung.webp
+      quote:
+        - Quality code base, open source and sets your data on the right path with FHIR. No-brainer for those who need to build for healthcare.
+    - name: Jose Rodriguez
+      title: Head of Engineering, Summer Health
+      image: /img/avatars/jose-rodrigues.webp
+      quote:
+        - If you don't want to reinvent everything, and want standards compliant data and well documented interfaces, Medplum is what you would choose.
+
+cta:
+  title: Start building with Medplum today
+  text: Join 150+ open source contributors and thousands of developers who choose Medplum to build secure and compliant healthcare apps.
+  secondaryButton:
+    label: See Documentation
+    href: /docs
+  primaryButton:
+    label: Book a Demo
+    href: https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a

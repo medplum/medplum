@@ -108,6 +108,8 @@ export default {
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
  * anything booked from the form — opens its details in the same pane the booking form
  * uses, closing the form if one was open; clicking open time again puts the form back.
+ * A form holding answers on either tab asks first, the way the configuration workspace
+ * does; closing it with the ✕ does not.
  * "Cancel Appointment" turns the pane over to a page asking what the visit is being
  * called off for; a reason has to be searched for and picked before it can be confirmed,
  * and "Back" leaves without touching the visit. Confirming runs it through
@@ -149,10 +151,21 @@ export default {
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.
  *
+ * Set **appointmentCommentMaxLength** under Controls to cap the notes: the booking form and the
+ * details' "Edit" count them against it and take no more. At 50, Tuesday's imaging visit has
+ * notes within the cap, and Thursday's infusion has notes already past it, which have to be
+ * shortened before its details can be saved.
+ *
+ * @param args - The props set from the Controls panel.
  * @returns The story.
  */
-export const Basic = (): JSX.Element => <Workspace />;
+export const Basic = (args: WorkspaceProps): JSX.Element => <Workspace {...args} />;
 Basic.decorators = [withFixtures(LOCAL_FIXTURES)];
+Basic.argTypes = {
+  appointmentCommentMaxLength: { control: { type: 'number', min: 1 } },
+};
+// The workspace's other props are inferred from it too, but this story passes none of them on.
+Basic.parameters = { controls: { include: ['appointmentCommentMaxLength'] } };
 
 /**
  * The same workspace when the calendars are not kept on the viewer's clock.
@@ -181,6 +194,9 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * `$book`, which checks it. What this adds is a **Date & time** and a **Minutes** field
  * above the times on offer, for placing a visit the rules would refuse. The read-only
  * time on the left stays where it is; both ways of answering land in it.
+ *
+ * **Date & time** starts out on the time clicked to open the form, unless that time has
+ * passed or a whole day was picked in month view.
  *
  * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
  * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
@@ -236,11 +252,12 @@ AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
   readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
+  readonly appointmentCommentMaxLength?: number;
 }
 
 /**
  * Fills the viewport under the package banner, which is 72px.
- * @param props - Whether the story lets a time be typed, and the site it starts on.
+ * @param props - Whether the story lets a time be typed, the site it starts on, and the cap on notes.
  * @returns The workspace as a host would mount it.
  */
 function Workspace(props: WorkspaceProps): JSX.Element {
@@ -252,6 +269,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultServiceFacility={props.defaultServiceFacility}
+        appointmentCommentMaxLength={props.appointmentCommentMaxLength}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={({ appointments }) => {

@@ -1,0 +1,14 @@
+<div class="animated-circle-container" 
+     data-value="{{ .Get "value" }}" 
+     data-suffix="{{ .Get "suffix" | default "" }}">
+  <svg viewBox="0 0 200 150">
+    <text x="50%" y="50%" text-anchor="middle" font-size="32" font-weight="bold" 
+          fill="#9C36B5" stroke="none" dy="0.4em" class="circle-text">
+      0{{ .Get "suffix" }}
+    </text>
+    <circle class="circle path animate-target" cx="100" cy="75" r="64" 
+            fill="none" stroke="rgba(148,106,249,0.5)" stroke-linecap="round" 
+            stroke-width="8" transform="rotate(-90 100 75)" />
+    <circle cx="100" cy="75" r="64" fill="none" stroke="#9C36B5" stroke-width="1" />
+  </svg>
+</div>

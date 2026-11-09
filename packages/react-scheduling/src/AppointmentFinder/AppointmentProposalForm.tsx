@@ -10,7 +10,6 @@ import {
   Select,
   Stack,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -18,6 +17,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
+  deepEquals,
   getAppointmentSite,
   getDisplayString,
   getReferenceString,
@@ -75,6 +75,7 @@ import {
   parseZonedDateTimeInput,
   startOfDay,
 } from './AppointmentFinder.times';
+import { AppointmentNotesInput } from './AppointmentNotesInput';
 import { AppointmentPatientInput } from './AppointmentPatientInput';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -158,6 +159,12 @@ export interface AppointmentProposalFormProps {
    */
   readonly defaultStart?: Date;
   /**
+   * Where a typed time starts out, such as the time clicked on a calendar, for those who
+   * may bypass scheduling rules. Read when the form opens, and ignored if it has passed by
+   * then or when rescheduling, which starts from the visit's own time.
+   */
+  readonly defaultDateTime?: Date;
+  /**
    * The `Identifier.system` a project issues medical record numbers under.
    *
    * Only needed where identifiers carry no `type`. Which identifier is the
@@ -175,6 +182,8 @@ export interface AppointmentProposalFormProps {
   readonly onToggleTimeFinder?: (open: boolean) => void;
   /** Called with the visit type as it changes. */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
+  /** Called whenever the form starts or stops holding answers beyond the ones it opened with. */
+  readonly onDirtyChange?: (dirty: boolean) => void;
   /**
    * Called with the appointment that would be booked, a searched or typed time, and with
    * `undefined` once there is none. Status `proposed`, so a host can draw it on a calendar of
@@ -185,6 +194,11 @@ export interface AppointmentProposalFormProps {
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
   readonly diagnosisBinding?: string;
+  /**
+   * The most characters the notes (`Appointment.comment`) may hold, counted as typed. Enforced
+   * only in the form: the server accepts notes of any length.
+   */
+  readonly commentMaxLength?: number;
   /**
    * Writes the proposal the form assembled.
    *
@@ -239,12 +253,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     ignoreAppointment,
     ignoreAppointmentSchedules,
     defaultStart,
+    defaultDateTime,
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
+    onDirtyChange,
     onChangeProposal,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
+    commentMaxLength,
     onSubmit,
     canBypassSchedulingRules,
     appointmentExtensions,
@@ -275,6 +292,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
   const [pickCount, setPickCount] = useState(0);
+  const [initial] = useState({ serviceFacility, service, selections, patient });
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
@@ -429,6 +447,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const finderButtonRef = useRef<HTMLButtonElement>(null);
 
+  const dirty =
+    serviceFacility !== initial.serviceFacility ||
+    service !== initial.service ||
+    !deepEquals(selections, initial.selections) ||
+    patient !== initial.patient ||
+    requirementValues !== EMPTY_REQUIREMENT_VALUES ||
+    comment !== '' ||
+    occurrenceCount !== 1 ||
+    manualDateTime !== undefined ||
+    manualDurationMinutes !== undefined ||
+    (chosen !== undefined && chosen !== manualChoice);
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
+
   function toggleFinder(): void {
     setFinding(!finding);
   }
@@ -512,11 +543,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
   // A move starts from where the visit is now, so only what changes needs typing.
   const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
-  const effectiveDateTime = manualDateTime ?? (storedStart ? formatZonedDateTimeInput(storedStart, timezone) : '');
+  const [bookingStart] = useState(() => upcoming(defaultDateTime));
+  const openingTime = mode === 'reschedule' ? storedStart : bookingStart;
+  const effectiveDateTime = manualDateTime ?? (openingTime ? formatZonedDateTimeInput(openingTime, timezone) : '');
 
   // Proposes the time and length on screen, typed or prefilled, against whichever schedules
   // are chosen, so a reassignment needs nothing retyped. A searched time is never replaced.
-  const reproposeKey = searching && canBypassSchedulingRules && storedStart ? scheduleKey : undefined;
+  const reproposeKey =
+    searching && canBypassSchedulingRules && (mode === 'book' || storedStart) ? scheduleKey : undefined;
   const [reproposedKey, setReproposedKey] = useState<string>();
   if (reproposeKey !== reproposedKey) {
     setReproposedKey(reproposeKey);
@@ -771,13 +805,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         )}
 
         {takesDetails && (
-          <Textarea
-            label="Notes"
-            autosize
-            minRows={2}
+          <AppointmentNotesInput
             value={comment}
-            onChange={(event) => {
-              setComment(event.currentTarget.value);
+            maxLength={commentMaxLength}
+            onChange={(value) => {
+              setComment(value);
               setWritten(false);
             }}
           />
@@ -859,7 +891,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   date={day.date}
                   groups={day.groups}
                   timezone={timezone}
-                  selected={chosen}
+                  // A typed time is written as typed, even when the search offers the same one.
+                  selected={manual ? undefined : chosen}
                   onSelectAppointment={chooseTime}
                 />
               ))}
@@ -1221,6 +1254,14 @@ function buildBooking(options: BuildBookingOptions): Appointment {
  */
 function toScheduleKey(references: readonly string[]): string {
   return [...references].sort((a, b) => a.localeCompare(b)).join(',');
+}
+
+/**
+ * @param date - An instant, if any.
+ * @returns The instant while it is still ahead, otherwise undefined.
+ */
+function upcoming(date: Date | undefined): Date | undefined {
+  return date && date.getTime() > Date.now() ? date : undefined;
 }
 
 /**

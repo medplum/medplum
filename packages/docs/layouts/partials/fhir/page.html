@@ -1,0 +1,83 @@
+{{- /*
+  FHIR reference page for .Params.fhirType: the StructureDefinition's description, the hand-written prose in
+  assets/fhir/resources/<name>.md (a Medplum note, then spec sections as tabs), and the element and search parameter tables.
+*/ -}}
+{{- $page := . -}}
+{{- $data := partial "fhir/data.html" . -}}
+{{- $idx := $data.idx -}}
+{{- $key := $data.key -}}
+{{- $sd := $data.sd -}}
+{{- $isResource := $data.isResource -}}
+
+{{- /* Prose: anything before the first heading is a note shown under the description; each ## section is a tab */ -}}
+{{- $note := "" -}}
+{{- $sections := slice -}}
+{{- with resources.Get (printf "fhir/resources/%s.md" $key) -}}
+  {{- $html := $page.RenderString (dict "display" "block") .Content -}}
+  {{- $parts := split $html "<h2" -}}
+  {{- $note = index $parts 0 -}}
+  {{- range after 1 $parts -}}
+    {{- $heading := index (findRESubmatch `(?s)^[^>]*>(.*?)</h2>` . 1) 0 -}}
+    {{- /* The label without the heading's "#" link (layouts/_markup/render-heading.html) */ -}}
+    {{- $label := index $heading 1 | replaceRE `(?s)<a [^>]*class="hash-link".*?</a>` "" | plainify -}}
+    {{- $sections = $sections | append (dict "label" $label "html" (strings.TrimPrefix (index $heading 0) .)) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- partial "fhir/markdown.html" (dict "text" $sd.description "idx" $idx "page" $page) -}}
+{{- $note | safeHTML -}}
+
+{{- /* The selected tab is in the URL, ?section=usage, as on Docusaurus; values are the labels in lowerCamelCase */}}
+<div class="tabs-container fhir-tabs" data-query-string="section">
+  <div class="tab-panel" data-tab-label="Schema" data-tab-value="schema">
+    <h2 id="elements">Elements</h2>
+    {{ partial "fhir/elements.html" (dict "elements" $data.own "idx" $idx "page" $page) }}
+
+    {{- if $isResource }}
+      <h2 id="search-parameters">Search Parameters</h2>
+      {{- with $data.searchParams }}
+        <table class="fhir-search-params">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Expression</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{- range . }}
+              <tr>
+                <td>{{ .code }}</td>
+                <td>{{ .type }}</td>
+                <td>{{ .description }}</td>
+                <td>{{ .expression }}</td>
+              </tr>
+            {{- end }}
+          </tbody>
+        </table>
+      {{- else }}
+        <p><em>None</em></p>
+      {{- end }}
+
+      <h2 id="inherited-elements">Inherited Elements</h2>
+      {{ partial "fhir/elements.html" (dict "elements" $data.inherited "idx" $idx "page" $page) }}
+    {{- end }}
+  </div>
+
+  {{- range $sections }}
+    {{- $words := split (lower .label) " " }}
+    {{- $value := delimit (slice (index $words 0) | append (apply (after 1 $words) "strings.FirstUpper" ".")) "" }}
+    <div class="tab-panel" data-tab-label="{{ .label }}" data-tab-value="{{ $value }}">{{ .html | safeHTML }}</div>
+  {{- end }}
+
+  {{- with index $idx.referencedBy $key }}
+    <div class="tab-panel" data-tab-label="Referenced By" data-tab-value="referencedBy">
+      <ul>
+        {{- range sort . }}
+          <li>{{ partial "fhir/type-link.html" (dict "name" . "idx" $idx) | safeHTML }}</li>
+        {{- end }}
+      </ul>
+    </div>
+  {{- end }}
+</div>

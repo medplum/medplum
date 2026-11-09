@@ -217,6 +217,35 @@ describe('Me', () => {
     expect(res.text).not.toContain(client.secret);
   });
 
+  test('UserConfiguration from a linked project', async () => {
+    const { project, membership, accessToken } = await withTestContext(() =>
+      createTestProject({ withClient: true, withAccessToken: true })
+    );
+    const { project: linkedProject } = await withTestContext(() => createTestProject());
+    const systemRepo = await getProjectSystemRepo(project);
+    const linkedConfig = await systemRepo.createResource<UserConfiguration>({
+      resourceType: 'UserConfiguration',
+      meta: { project: linkedProject.id },
+    });
+    const projectlessConfig = await systemRepo.createResource<UserConfiguration>({ resourceType: 'UserConfiguration' });
+    await withTestContext(() =>
+      systemRepo.updateResource({ ...project, link: [{ project: createReference(linkedProject) }] })
+    );
+
+    await withTestContext(() =>
+      systemRepo.updateResource({ ...membership, userConfiguration: createReference(linkedConfig) })
+    );
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.config.id).toBe(linkedConfig.id);
+
+    await withTestContext(() =>
+      systemRepo.updateResource({ ...membership, userConfiguration: createReference(projectlessConfig) })
+    );
+    const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res2).toHaveStatus(400);
+  });
+
   test('AccessPolicy.basedOn', async () => {
     const { accessToken, accessPolicy } = await withTestContext(() =>
       createTestProject({
