@@ -32,7 +32,7 @@ const guide = readFileSync(new URL('labs.md', docs), 'utf8');
 const index = readFileSync(new URL('_index.md', docs), 'utf8');
 const title = /^title: (.+)$/m.exec(guide)?.[1].replace(/^(['"])(.*)\1$/, '$2');
 
-// Allow a scope qualifier such as "(Labs)" while keeping the app label recognizable.
+// Allow a scope qualifier such as "(Labs & Imaging)" while keeping the app label recognizable.
 assert(title === label || title?.startsWith(`${label} (`), `labs.md title must start with the Provider tab label "${label}"`);
 assert(index.includes(`[${title}](/docs/provider/labs)`), 'Provider index link must use the Orders guide title.');
 assert(guide.includes(`select **${label}**`), `Orders guide instructions must use the Provider tab label "${label}"`);
