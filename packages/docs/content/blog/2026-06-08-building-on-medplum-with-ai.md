@@ -10,7 +10,7 @@ More and more Medplum users are building with AI coding assistants — Cursor, C
 
 <!--more-->
 
-> **Update:** We've expanded our AI coding guidance with decision guides, reusable agent rules, and a planning workflow that saves project decisions alongside the code. See [Helping AI Coding Agents Build on Medplum](/blog/ai-coding-agents-on-medplum) for a vital-signs example, including how individual builders and engineering teams can use the same materials across coding tasks.
+> **Update:** We've expanded our AI coding guidance with decision guides, reusable agent rules, and a planning workflow that saves project decisions alongside the code. See [Teaching Coding Agents to Build Healthcare Workflows](/blog/ai-coding-agents-on-medplum) for a vital-signs example, including how individual builders and engineering teams can use the same materials across coding tasks.
 
 The single biggest lever we have found is this: **make your AI tools learn from Medplum's open-source code and docs rather than from solely generic FHIR training data.** This dramatically improves the outputs you get from any request you make.
 
