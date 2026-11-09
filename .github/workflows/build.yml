@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 10
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -93,7 +93,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          # HEAD is the PR merge commit; HEAD^1 is the base tip
+          fetch-depth: 2
       - name: Detect changed packages
         id: changes
         # Decide which previews to deploy based on what changed in this PR.
@@ -108,9 +109,8 @@ jobs:
         #   - packages/react-scheduling     -> provider + storybook previews
         #   - packages/{core,react,react-hooks} -> all previews (shared deps)
         run: |
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          # Three-dot diff: changes on the PR branch since its merge-base with the target.
-          CHANGED="$(git diff --name-only "$BASE_SHA"...HEAD)"
+          # Diffing the merge commit against its first parent yields exactly the PR's changes.
+          CHANGED="$(git diff --name-only HEAD^1 HEAD)"
           echo "Changed files:"
           echo "$CHANGED"
 
@@ -317,7 +317,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 10
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
@@ -447,7 +447,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          # SonarCloud on main needs full history (blame, new code period); PRs and merge queue only need the merge base with main
+          fetch-depth: ${{ (!github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 && github.event_name == 'push') && '0' || '10' }}
+      - name: Fetch main for SonarCloud merge base
+        if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 && github.event_name != 'push' }}
+        run: git fetch --no-tags --depth=50 origin +refs/heads/main:refs/remotes/origin/main
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -532,7 +536,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 10
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -622,7 +626,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 10
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -760,7 +764,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 10
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
