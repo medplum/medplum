@@ -53,7 +53,7 @@ export function getMcpServer(): McpServer {
       inputSchema: {
         method: z.string(),
         path: z.string(),
-        body: z.any(),
+        body: z.any().optional(),
       },
     },
     async ({ method, path, body }) => {

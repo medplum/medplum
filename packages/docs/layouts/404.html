@@ -1,0 +1,8 @@
+{{ define "title" }}Page Not Found{{ end }}
+{{ define "main" }}
+  {{- /* Deployed as the "404" key; CloudFront's error response should serve it with a 404 status */ -}}
+  <h1>Page Not Found</h1>
+  <p>We could not find what you were looking for.</p>
+  <p>Please contact the owner of the site that linked you to the original URL and let them know their link is broken.</p>
+  <p><a href="/">Go to the home page</a> or <a href="/docs">browse the docs</a>.</p>
+{{ end }}

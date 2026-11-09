@@ -15,6 +15,7 @@ import type { AccessPolicy, Attachment, Binary, Bot, Project, ProjectMembership,
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getDefaultAccessPolicy } from '../../fhir/default-access-policies';
 import type { Repository } from '../../fhir/repo';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
@@ -130,8 +131,7 @@ export async function createBot(
     project: createReference(project),
     user: createReference(bot),
     profile: createReference(bot),
-    accessPolicy:
-      params.accessPolicy ?? project.defaultAccessPolicies?.find((p) => p.profileType === 'Bot')?.accessPolicy,
+    accessPolicy: params.accessPolicy ?? getDefaultAccessPolicy(project, 'Bot'),
   });
 
   if (executableCode) {
