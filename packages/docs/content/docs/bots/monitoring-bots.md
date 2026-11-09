@@ -8,6 +8,8 @@ Monitor the whole operation a Bot performs: whether its trigger fired, whether t
 
 For deployment setup, see [Bots in Production](/docs/bots/bots-in-production).
 
+<span id="viewing-a-bots-events"></span>
+
 ## Find an invocation
 
 In the Medplum App, open the Bot and select its **Event** tab. The route is `/Bot/{id}/event`. Persisted `AuditEvent` records show the outcome and execution information, including captured console output.
@@ -23,6 +25,8 @@ Execution AuditEvents belong to the project whose membership the run assumes. Wh
 
 The standard audit outcome codes are `0` (success), `4` (minor failure), `8` (serious failure), and `12` (major failure). Read the outcome description and associated records to determine the actual failure; the numeric code alone does not describe which business steps completed.
 
+<span id="audit-events-missing"></span>
+
 ## Understand the logging settings
 
 The Event tab shows stored `AuditEvent` resources. Its contents depend on the Bot's audit settings and the viewer's access.
@@ -33,10 +37,14 @@ The Event tab shows stored `AuditEvent` resources. Its contents depend on the Bo
 | `auditEventTrigger: on-error`         | Create an execution audit event when the run reports an error.                                                               |
 | `auditEventTrigger: on-output`        | Create an event when its outcome description is nonempty.                                                                    |
 | `auditEventTrigger: never`            | Skip execution audit event creation, including the execution audit log entry.                                                |
-| `auditEventDestination: ["resource"]` | Write eligible events as FHIR resources, visible in the Event tab. This is the default destination.                          |
+| `auditEventDestination: ["resource"]` | Write eligible events as FHIR resources, visible in the Event tab, and emit audit logs when `logAuditEvents` is enabled. This is the default destination. |
 | `auditEventDestination: ["log"]`      | Send eligible events to the server audit logger without storing FHIR resources. Audit logging must be enabled on the server. |
 
 Execution audit events that pass the trigger filter are also sent to the server audit logger. For self-hosted deployments, `logAuditEvents` must be enabled for those entries to be emitted; use your configured log collector to read them. See [Log Streaming](/docs/integration/log-streaming) for the hosted integration. Review retention and access for the destinations your team uses.
+
+The captured console output in `outcomeDesc` retains the end of the output, so earlier messages can be truncated. The server settings `maxBotLogLengthForResource` and `maxBotLogLengthForLogs` control the limits independently; both default to 10,240 UTF-16 code units.
+
+<span id="troubleshooting"></span>
 
 ## Diagnose by workflow stage
 

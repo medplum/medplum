@@ -16,20 +16,7 @@ The examples in this guide use [Vitest](https://vitest.dev/), which is also the 
 
 Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](#query-the-results) work.
 
-```typescript
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
-import { beforeAll } from 'vitest';
-
-beforeAll(() => {
-  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-  for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-    indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
-  }
-});
-```
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="definitions-import,index-schema" >}}
 
 The maintained [demo Bots example](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots) includes [TypeScript configuration](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/tsconfig.json) and [Vitest configuration](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/vite.config.ts).
 
@@ -64,7 +51,7 @@ We recommend creating a `MockClient` at the beginning of each test, to avoid any
 
 {{< warning title="Verify server behavior separately" >}}
 
-The in-memory repository supports chained searches and `_include` / `_revinclude`. Use a test server to verify behavior that depends on deployment configuration:
+The in-memory repository supports single-hop forward chained searches and `_include` / `_revinclude`. Reverse chaining (`_has`) and chains spanning multiple references are unsupported. Use a test server to verify the exact search filters your application relies on and behavior that depends on deployment configuration:
 
 - Authentication, project membership, and access policies
 - Profile validation and the search filters your application relies on
@@ -82,8 +69,9 @@ Most tests require setting up some resources in the mock environment before runn
 The [finalize-report bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
 <details>
-  <summary>Example: Create Resources</summary>
-  {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="create-resources" >}}
+<summary>Example: Create Resources</summary>
+
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="create-resources" >}}
 </details>
 
 #### Creating Rich Test Data in Batches
@@ -95,8 +83,9 @@ Use `MockClient.executeBatch()` to load the resources, and inspect the entry res
 The below example is from the [find matching patients bot tests](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts). Additionally, you can view the [patient data here](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/patient-data.json).
 
 <details>
-  <summary>Example: Creating a large set of patient data with a batch request</summary>
-  {{< code-example file="examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts" language="ts" blocks="importPatientData,createBatchData" >}}
+<summary>Example: Creating a large set of patient data with a batch request</summary>
+
+{{< code-example file="examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts" language="ts" blocks="importPatientData,createBatchData" >}}
 </details>
 
 The example creates a fresh `MockClient` and loads its test data in `beforeEach`. This gives each test an independent starting state and keeps setup out of the assertions.
@@ -110,8 +99,9 @@ If you have a dev project that already has rich data, you can use the Medplum CL
 The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
-  <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
-  {{< code-example file="packages/examples/src/bots/unit-testing-bots.ts" language="ts" blocks="cliAsTransaction" >}}
+<summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
+
+{{< code-example file="packages/examples/src/bots/unit-testing-bots.ts" language="ts" blocks="cliAsTransaction" >}}
 </details>
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
@@ -137,16 +127,18 @@ To check the bot's response, simply check the return value of your `handler` fun
 After running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
 
 <details>
-  <summary>Example: Query the results</summary>
-  {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="query-results" >}}
+<summary>Example: Query the results</summary>
+
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="query-results" >}}
 </details>
 
 {{< note title="A note on idempotency" >}}
 To check [idempotency](https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning), call the handler twice with the same logical input and assert that the second call produces no duplicate effects. For this example, spies verify that the second call performs no additional resource writes. For a Bot that calls an external service, also assert its request count and idempotency key.
 
 <details>
-  <summary>Example: Idempotency test</summary>
-  {{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="test-idempotent" >}}
+<summary>Example: Idempotency test</summary>
+
+{{< code-example file="examples/medplum-demo-bots/src/finalize-reports.test.ts" language="ts" blocks="test-idempotent" >}}
 </details>
 
 {{< /note >}}

@@ -10,14 +10,6 @@ A production Bot needs a repeatable build, an explicit execution identity, a con
 
 If you are writing your first handler, start with [Bot Basics](/docs/bots/bot-basics). For a local runtime, see [Running Bots Locally](/docs/bots/running-bots-locally).
 
-The release workflow is:
-
-```mermaid
-flowchart LR
-    Build["Build and test"] --> Staging["Validate in staging"]
-    Staging --> Production["Promote to production"]
-```
-
 <span id="this-guide-will-show-you"></span>
 
 ## Understand the deployment model
@@ -107,15 +99,19 @@ Store runtime secrets using [Bot Secrets](/docs/bots/bot-secrets). Deploying the
 
 ## Create and register the Bot {#creating-your-bot}
 
-Build the handler before running `bot create`:
+Build the handler and verify that both files are nonempty before running `bot create`:
 
 ```bash
-npx medplum bot create receive-order-staging YOUR_STAGING_PROJECT_ID src/bots/receive-order.ts dist/bots/receive-order.js
+test -s src/bots/receive-order.ts &&
+  test -s dist/bots/receive-order.js &&
+  npx medplum bot create receive-order-staging YOUR_STAGING_PROJECT_ID src/bots/receive-order.ts dist/bots/receive-order.js
 ```
 
-The command creates the Bot and its membership, saves the source, deploys the executable file, and adds an entry to `medplum.config.json`. The runtime uses the deployment's default unless you specify `--runtime-version`.
+The command creates the Bot and its membership, saves the source, deploys the executable file, and adds an entry to `medplum.config.json` unless you pass `--no-write-config`. The runtime uses the deployment's default unless you specify `--runtime-version`.
 
-Confirm the created Bot ID and configuration before retrying a failed create command. Creation can succeed before a later upload or deployment step fails.
+The CLI silently skips saving or deploying a missing or empty file and can still print `Success! Bot created`. Confirm a successful `Deploy result:` before enabling the trigger.
+
+If an upload or deployment fails after the Bot was created, its ID has not yet been printed or written to `medplum.config.json`. Find the Bot in the project's Bot list by name, confirm its ID and membership, and add its configuration entry manually. Then use `bot deploy` to retry the upload and deployment. Running `bot create` again creates another Bot and membership.
 
 The configuration maps a local name to the server resource and files:
 
@@ -154,7 +150,7 @@ A useful staging scenario follows one operation through its whole lifecycle:
 
 For external calls, preserve the source event identifier and the provider's request or result identifier. Use the provider's idempotency mechanism when available. For FHIR writes, use stable identifiers with [conditional create or update](/docs/fhir-datastore/working-with-fhir), and inspect each result when submitting a batch. A search followed by a create can race with another invocation.
 
-Subscriptions execute after the triggering resource interaction. Put validation that must reject the original write in the applicable validation path. Use a Subscription for subsequent work whose failure you can observe and recover.
+Subscriptions execute after the triggering resource interaction. Use [FHIR profiles](/docs/fhir-datastore/profiles#profile-adoption) for resource constraints that must reject the original write. Use a Subscription for subsequent work whose failure you can observe and recover.
 
 ## Deploy and promote {#deploying-your-bot}
 
@@ -180,9 +176,11 @@ To deploy several configured Bots, quote the pattern so that your shell does not
 npx medplum bot deploy '*-production'
 ```
 
-Check the CLI output before treating the release as complete:
+Verify the configured files and CLI output before treating the release as complete:
 
-- **Saved and deployed counts:** both should match the intended Bot list. A pattern that matches no entries can finish without deploying anything.
+- **Source and artifact files:** verify that each selected Bot's `source` and `dist` files exist and are nonempty, for example with `test -s dist/bots/receive-order.js`.
+- **Saved and deployed counts:** check the intended Bot list, but treat these counts only as a selection check. Missing or empty files are silently skipped and still counted. A pattern that matches no entries can finish without deploying anything.
+- **Deployment results:** confirm a successful `Deploy result:` for every selected Bot. A count alone does not confirm that code was deployed.
 - **Errors:** review each failed Bot before retrying; other Bots in the same command may have deployed successfully.
 - **Execution identity:** confirm the intended membership and access policy, then run a smoke test through the production trigger.
 
@@ -194,7 +192,7 @@ Choose the trigger that matches the source of work:
 
 | Work starts when                               | Use                                                                                                                  |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| An application makes an explicit request       | [Execute the Bot](/docs/bots/bot-basics) or expose a [custom FHIR operation](/docs/bots/custom-fhir-operations)      |
+| An application makes an explicit request       | [Execute the Bot](/docs/api/fhir/operations/bot-execute) or expose a [custom FHIR operation](/docs/bots/custom-fhir-operations)      |
 | A matching FHIR resource is created or updated | A [Subscription](/docs/subscriptions) with narrow criteria and appropriate interaction or transition filters         |
 | An external service sends an event             | A [webhook handler](/docs/bots/consuming-webhooks), including the service's authentication or signature verification |
 | A scheduled time arrives                       | A [Cron schedule](/docs/bots/bot-cron-job)                                                                           |
