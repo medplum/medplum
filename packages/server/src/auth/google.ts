@@ -130,6 +130,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       // is falsy here and falls through to the email verification below.
       emailVerified: claims.email_verified,
       project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
+      meta: projectId && projectId !== 'new' ? { project: projectId } : undefined,
     });
   } else if (claims.email_verified && !user.emailVerified) {
     // Accept Google's assertion for accounts that predate it too, so a user invited or

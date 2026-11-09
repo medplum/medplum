@@ -94,21 +94,13 @@ describe('Cron Worker', () => {
     expect(queue.upsertJobScheduler).toHaveBeenCalled();
   });
 
-  test('should not add a job to the queue when a bot with cronString', async () => {
-    // Add the bot and check that a job was added to the queue.
-    const queue = getCronQueue() as any;
-    queue.upsertJobScheduler.mockClear();
-    const bot = await withTestContext(() =>
-      botRepo.createResource<Bot>({
-        resourceType: 'Bot',
-        name: 'bot-1',
-        cronString: 'testing',
-      })
-    );
-    expect(bot).toBeDefined();
-    await findAndExecDispatchJob(bot, 'create');
-    expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
-  });
+  test.each(['testing', '*/10 * * * * *'])('should reject a bot with an invalid cronString: %s', (cronString) =>
+    withTestContext(async () => {
+      await expect(botRepo.createResource<Bot>({ resourceType: 'Bot', name: 'bot-1', cronString })).rejects.toThrow(
+        'Constraint bot-1 not met'
+      );
+    })
+  );
 
   test('should not have added a job to the queue due to a cron not created', async () => {
     // Add the bot and check that a job was added to the queue.
@@ -372,12 +364,14 @@ describe('Cron resource', () => {
       );
     }));
 
-  test.each(['not a cron expression', '10-2 * * * *'])('An invalid cronString is rejected: %s', (cronString) =>
-    withTestContext(async () => {
-      await expect(repo.createResource<Cron>({ ...validCron(), cronString })).rejects.toThrow(
-        `Invalid cron expression: '${cronString}'`
-      );
-    })
+  test.each(['not a cron expression', '10-2 * * * *', '*/10 * * * * *', '@secondly'])(
+    'An invalid cronString is rejected: %s',
+    (cronString) =>
+      withTestContext(async () => {
+        await expect(repo.createResource<Cron>({ ...validCron(), cronString })).rejects.toThrow(
+          `Invalid cron expression: '${cronString}'`
+        );
+      })
   );
 
   test('An inactive Cron schedules nothing', () =>

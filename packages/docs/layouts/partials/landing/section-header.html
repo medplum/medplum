@@ -1,0 +1,5 @@
+{{- /* Landing page section header: left-aligned h2 with an optional lead paragraph. Params: title, text */ -}}
+<div class="landing-section-header">
+  <h2>{{ .title }}</h2>
+  {{ with .text }}<p>{{ . }}</p>{{ end }}
+</div>

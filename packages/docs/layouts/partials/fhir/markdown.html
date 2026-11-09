@@ -1,0 +1,23 @@
+{{- /*
+  Renders Markdown from a FHIR definition. Links in the spec are relative to hl7.org (patient.html#anchor), and
+  [[[Type]]] is the spec's type link syntax; both go to our reference page when we have one, otherwise to hl7.org.
+  Params: text, idx (fhir/index.html), page
+*/ -}}
+{{- $text := .text -}}
+{{- $idx := .idx -}}
+{{- range findRESubmatch `\[\[\[([A-Za-z]+)\]\]\]` $text -}}
+  {{- $name := index . 1 -}}
+  {{- $replacement := $name -}}
+  {{- with index $idx.types (lower $name) -}}
+    {{- $replacement = printf "[%s](/docs/api/fhir/%s/%s)" $name .location (lower .name) -}}
+  {{- end -}}
+  {{- $text = replace $text (index . 0) $replacement -}}
+{{- end -}}
+{{- range findRESubmatch `\]\(([A-Za-z][\w.-]*)\.html(#[^)\s]*)?\)` $text -}}
+  {{- $target := printf "https://hl7.org/fhir/R4/%s.html%s" (index . 1) (index . 2) -}}
+  {{- with index $idx.types (lower (index . 1)) -}}
+    {{- $target = printf "/docs/api/fhir/%s/%s" .location (lower .name) -}}
+  {{- end -}}
+  {{- $text = replace $text (index . 0) (printf "](%s)" $target) -}}
+{{- end -}}
+{{- return .page.RenderString (dict "display" "block") $text -}}

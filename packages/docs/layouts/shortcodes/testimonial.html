@@ -1,0 +1,24 @@
+{{- $imgSrc := .Get "imgSrc" -}}
+{{- $name := .Get "name" -}}
+{{- $title := .Get "title" -}}
+{{- $twitter := .Get "twitter" -}}
+
+<div class="card">
+  <div class="testimonial-header">
+    <img src="{{ $imgSrc }}" loading="lazy" alt="{{ $name }}">
+    <div class="testimonial-info">
+      <div class="testimonial-name">{{ $name }}</div>
+      {{- with $title }}
+      <div class="testimonial-title">{{ . }}</div>
+      {{- end }}
+    </div>
+    {{- with $twitter }}
+    <a href="{{ . }}" class="testimonial-link">
+      {{ partial "icon" "filled/brand-twitter" }}
+    </a>
+    {{- end }}
+  </div>
+  <div class="testimonial-content">
+    {{ .Inner }}
+  </div>
+</div>
