@@ -31,6 +31,20 @@ export const projectAdminResourceTypes = [
 ];
 
 /**
+ * Resource types that a `"resourceType": "*"` access policy entry never matches; they must be named explicitly.
+ */
+export const wildcardExcludedResourceTypes = [...projectAdminResourceTypes, 'EncryptedSecret'];
+
+/**
+ * Returns true if a `"resourceType": "*"` access policy entry covers the given resource type.
+ * @param resourceType - The resource type.
+ * @returns True if the wildcard matches the resource type.
+ */
+export function wildcardMatchesResourceType(resourceType: string): boolean {
+  return !wildcardExcludedResourceTypes.includes(resourceType);
+}
+
+/**
  * Interactions with a resource that can be controlled via an access policy.
  *
  * Codes taken from http://hl7.org/fhir/codesystem-restful-interaction.html
@@ -176,8 +190,7 @@ function shallowMatchesResourcePolicy(
 ): boolean {
   if (
     policy.resourceType !== resourceType &&
-    // Project admin resource types are not allowed to be wildcarded; they must be explicitly included
-    (policy.resourceType !== '*' || projectAdminResourceTypes.includes(resourceType))
+    (policy.resourceType !== '*' || !wildcardMatchesResourceType(resourceType))
   ) {
     return false;
   }

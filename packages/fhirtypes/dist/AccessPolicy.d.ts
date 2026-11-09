@@ -181,6 +181,13 @@ export interface AccessPolicyResource {
   interaction?: ('read' | 'vread' | 'update' | 'delete' | 'history' | 'create' | 'search')[];
 
   /**
+   * Permitted FHIR operations on this resource type, by name without the
+   * leading $, such as get-value. An entry that lists operations but no
+   * interactions grants no interactions.
+   */
+  operation?: string[];
+
+  /**
    * Optional list of hidden fields.  Hidden fields are not readable or
    * writeable.
    */

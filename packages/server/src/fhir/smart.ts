@@ -15,9 +15,9 @@ import {
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
   OperationOutcomeError,
-  projectAdminResourceTypes,
   readInteractions,
   splitN,
+  wildcardMatchesResourceType,
 } from '@medplum/core';
 import type { AccessPolicy, AccessPolicyResource, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -276,9 +276,9 @@ function intersectSmartScopes(
   const result: PopulatedAccessPolicy = { ...accessPolicy, resource: [] };
   for (const entry of accessPolicy.resource ?? EMPTY) {
     const isWildcard = entry.resourceType === '*';
-    // A wildcard entry is expanded to each scope's resource type; it never covers project admin resource types
+    // A wildcard entry is expanded to each scope's resource type, except types the wildcard never covers
     const scopes = isWildcard
-      ? smartScopes.filter((s) => !projectAdminResourceTypes.includes(s.resourceType))
+      ? smartScopes.filter((s) => wildcardMatchesResourceType(s.resourceType))
       : getScopesForResourceType(smartScopes, entry.resourceType);
     for (const scope of scopes) {
       const narrowed = narrowEntry(entry, isWildcard ? scope.resourceType : entry.resourceType, scope, context);
@@ -368,7 +368,7 @@ function getEntryParams(entry: AccessPolicyResource): URLSearchParams | undefine
 }
 
 function getScopesForResourceType(scopes: SmartScope[], resourceType: string): SmartScope[] {
-  // Project admin resource types are only covered by scopes that name them
-  const wildcardMatches = !projectAdminResourceTypes.includes(resourceType);
+  // Types the wildcard never covers are only covered by scopes that name them
+  const wildcardMatches = wildcardMatchesResourceType(resourceType);
   return scopes.filter((s) => s.resourceType === resourceType || (wildcardMatches && s.resourceType === '*'));
 }

@@ -64362,6 +64362,13 @@
           },
           "type": "array"
         },
+        "operation": {
+          "description": "Permitted FHIR operations on this resource type, by name without the leading $, such as get-value. An entry that lists operations but no interactions grants no interactions.",
+          "items": {
+            "$ref": "#/definitions/code"
+          },
+          "type": "array"
+        },
         "hiddenFields": {
           "description": "Optional list of hidden fields.  Hidden fields are not readable or writeable.",
           "items": {

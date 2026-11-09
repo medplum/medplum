@@ -41,6 +41,7 @@ import {
   stringify,
   toTypedValue,
   validateResourceType,
+  wildcardMatchesResourceType,
 } from '@medplum/core';
 import type {
   CreateResourceOptions,
@@ -1991,11 +1992,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const expressions: Expression[] = [];
 
-    const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType);
+    const wildcardMatches = wildcardMatchesResourceType(resourceType);
 
     for (const policy of accessPolicy.resource) {
       if (
-        (policy.resourceType === resourceType || (policy.resourceType === '*' && !isProjectAdminResource)) &&
+        (policy.resourceType === resourceType || (policy.resourceType === '*' && wildcardMatches)) &&
         (!policy.interaction || policy.interaction.includes(interaction))
       ) {
         const policyCompartmentId = resolveId(policy.compartment);

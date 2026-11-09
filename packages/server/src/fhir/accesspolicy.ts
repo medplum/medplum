@@ -10,6 +10,7 @@ import {
   isResource,
   isString,
   OperationOutcomeError,
+  parseSearchRequest,
   projectAdminResourceTypes,
   readInteractions,
   resolveId,
@@ -231,6 +232,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
       if (!resourcePolicy.interaction && resourcePolicy.readonly) {
         resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
       }
+      normalizeOperations(resourcePolicy);
       resourcePolicies.push(resourcePolicy);
     }
     if (replaced.ipAccessRule) {
@@ -253,6 +255,59 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     resource: resourcePolicies,
     ipAccessRule: ipAccessRules.length ? ipAccessRules : undefined,
   };
+}
+
+/**
+ * Search parameters that may appear in the criteria of an entry granting each operation.
+ *
+ * These operations release protected values, so their grants may only filter on elements that cannot change after
+ * create. Otherwise anyone able to write the resource could edit it into a shape that matches someone else's grant.
+ * Operations not listed here may use any criteria.
+ */
+const operationCriteriaParams: Record<string, string[]> = {
+  'get-value': ['_id', 'owner', 'code'],
+};
+
+/**
+ * Applies the server's rules for `operation` to an access policy entry, in place.
+ *
+ * - An entry that lists operations but no interactions grants no interactions. Otherwise an entry written to grant
+ *   only an operation would, by the default for a missing `interaction`, also grant every interaction.
+ * - An operation is removed from an entry whose criteria use search parameters that operation does not allow.
+ * @param resourcePolicy - The access policy entry, after variables are replaced.
+ */
+function normalizeOperations(resourcePolicy: AccessPolicyResource): void {
+  if (!resourcePolicy.operation) {
+    return;
+  }
+  resourcePolicy.interaction ??= [];
+  resourcePolicy.operation = resourcePolicy.operation.filter((operation) => {
+    const allowed = operationCriteriaAllowed(resourcePolicy, operation);
+    if (!allowed) {
+      getLogger().warn('Access policy operation removed: criteria not allowed', {
+        resourceType: resourcePolicy.resourceType,
+        operation,
+        criteria: resourcePolicy.criteria,
+      });
+    }
+    return allowed;
+  });
+}
+
+function operationCriteriaAllowed(resourcePolicy: AccessPolicyResource, operation: string): boolean {
+  const allowedParams = operationCriteriaParams[operation];
+  if (!allowedParams) {
+    return true;
+  }
+  if (resourcePolicy.compartment) {
+    return false;
+  }
+  if (!resourcePolicy.criteria) {
+    return true;
+  }
+  // Chained and `_has` filters keep their full key as the code, so they never match an allowed parameter
+  const filters = parseSearchRequest(resourcePolicy.criteria).filters ?? EMPTY;
+  return filters.every((filter) => allowedParams.includes(filter.code));
 }
 
 /**
