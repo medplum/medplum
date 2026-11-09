@@ -1,0 +1,52 @@
+{{- /*
+  The data behind a FHIR reference page, shared by its HTML (fhir/page.html) and the /llms-full.txt text
+  (fhir/page.txt.html): the StructureDefinition, its own and inherited elements, and its search parameters with the
+  description and expressions for this type. Context: the page (.Params.fhirType).
+*/ -}}
+{{- $idx := partialCached "fhir/index.html" . -}}
+{{- $key := lower .Params.fhirType -}}
+{{- $type := index $idx.types $key -}}
+{{- $sd := $type.sd -}}
+
+{{- /* Elements inherited from Resource/DomainResource get their own table on resource pages */ -}}
+{{- $own := slice -}}
+{{- $inherited := slice -}}
+{{- range after 1 $sd.snapshot.element -}}
+  {{- $base := index (split (.base.path | default .path) ".") 0 -}}
+  {{- if and (ne $base (index (split .path ".") 0)) (in $base "Resource") -}}
+    {{- $inherited = $inherited | append . -}}
+  {{- else -}}
+    {{- $own = $own | append . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $searchParams := slice -}}
+{{- range index $idx.searchParams $key -}}
+  {{- /* Shared parameters list a description per resource, and a union of expressions; show this type's */ -}}
+  {{- $description := .description -}}
+  {{- if hasPrefix $description "Multiple Resources:" -}}
+    {{- range split $description "\n" -}}
+      {{- if hasPrefix . (printf "* [%s]" $sd.name) }}{{ $description = trim (index (split . ":") 1 | default "") " " }}{{ end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $expressions := slice -}}
+  {{- range split (.expression | default "") " | " -}}
+    {{- if or (eq . $sd.name) (hasPrefix . (printf "%s." $sd.name)) (hasPrefix . (printf "(%s." $sd.name)) }}{{ $expressions = $expressions | append . }}{{ end -}}
+  {{- end -}}
+  {{- $searchParams = $searchParams | append (dict
+    "code" .code
+    "type" .type
+    "description" $description
+    "expression" (cond (gt (len $expressions) 0) (delimit $expressions " | ") .expression)
+  ) -}}
+{{- end -}}
+
+{{- return dict
+  "idx" $idx
+  "key" $key
+  "sd" $sd
+  "isResource" (ne $type.location "datatypes")
+  "own" $own
+  "inherited" $inherited
+  "searchParams" $searchParams
+-}}

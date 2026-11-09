@@ -659,6 +659,28 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow('Invalid access policy configuration');
     }));
 
+  test('Access policy in a linked project', () =>
+    withTestContext(async () => {
+      const { project: sharingProject } = await createTestProject({
+        project: { exportedResourceType: ['AccessPolicy'] },
+      });
+      const accessPolicy = await (
+        await getProjectSystemRepo(sharingProject)
+      ).createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: sharingProject.id },
+        resource: [{ resourceType: 'Patient' }],
+      });
+
+      const { repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: { link: [{ project: createReference(sharingProject) }] },
+        membership: { accessPolicy: createReference(accessPolicy) },
+      });
+      expect(repo.effectiveAccessPolicy()?.basedOn).toEqual([createReference(accessPolicy)]);
+    }));
+
   test('Multiple entries per resource type', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({
@@ -710,6 +732,7 @@ describe('AccessPolicy', () => {
       // Create the access policy
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
         compartment: {
           reference: account,
         },
@@ -890,6 +913,7 @@ describe('AccessPolicy', () => {
       // Create the access policy
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
         resource: [
           {
             resourceType: 'Patient',

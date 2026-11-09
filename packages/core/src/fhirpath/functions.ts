@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Reference, Resource } from '@medplum/fhirtypes';
+import { isValidCronString } from '../cron';
 import type { Atom, AtomContext } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType, isResource } from '../types';
@@ -1910,6 +1911,22 @@ export const functions: Record<string, FhirPathFunction> = {
     }
 
     return [{ type: PropertyType.id, value: resolveId(reference) }];
+  },
+
+  /**
+   * Returns true if the input string is a cron expression the Medplum job scheduler can run.
+   *
+   * This is a Medplum extension, not part of the FHIRPath specification.
+   *
+   * If the input collection is empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @returns True if the input string is a valid cron expression.
+   */
+  isValidCron: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+    return applyStringFunc(isValidCronString, context, input);
   },
 
   extension: (context: AtomContext, input: TypedValue[], urlAtom: Atom): TypedValue[] => {

@@ -1182,7 +1182,7 @@ export const AppointmentPatientFixtures = [
 /**
  * Appointments and Slots for the calendar view, dated Monday, May 4 2020 — the date
  * `MockDateWrapper` freezes the clock to — through Thursday, May 7, so they all fall within
- * the four days `MultiCalendar` opens on.
+ * the weekdays `MultiCalendar` opens on.
  */
 
 /**
