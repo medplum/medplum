@@ -9,8 +9,10 @@ import classes from './LabDocumentSection.module.css';
 export interface LabDocumentSectionProps {
   readonly title: string;
   readonly loading: boolean;
-  readonly loadingText: string;
-  readonly emptyText: string;
+  /** Required when `loading` can be true; unused otherwise. */
+  readonly loadingText?: string;
+  /** Required when `docs` can be empty; unused otherwise. */
+  readonly emptyText?: string;
   readonly docs: DocumentReference[];
 }
 

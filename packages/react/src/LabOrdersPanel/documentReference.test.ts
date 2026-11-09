@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   fetchLabOrderAbnDocuments,
   fetchLabOrderRequisitionDocuments,
+  fetchLabOrderSpecimenLabelDocuments,
   getHealthGorillaRequisitionId,
   resolveDerivedFromAttachments,
 } from './documentReference';
@@ -99,6 +100,30 @@ describe('documentReference utils', () => {
       );
       const searchParams = (searchSpy.mock.calls[0][1] as URLSearchParams).toString();
       expect(searchParams).toContain('category=LabOrderRequisition');
+      expect(searchParams).toContain('identifier=https%3A%2F%2Fwww.healthgorilla.com%7Creq-42');
+      expect(searchParams).toContain('_sort=-_lastUpdated');
+      expect(result).toEqual(documents);
+    });
+  });
+
+  describe('fetchLabOrderSpecimenLabelDocuments', () => {
+    test('fetches specimen label documents for the order requisition', async () => {
+      const request: ServiceRequest = {
+        resourceType: 'ServiceRequest',
+        requisition: { system: 'https://www.healthgorilla.com', value: 'req-42' },
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/patient-1' },
+      };
+      const documents: DocumentReference[] = [
+        { resourceType: 'DocumentReference', id: 'specimen-label-1', status: 'current', content: [] },
+      ];
+      const searchSpy = vi.spyOn(medplum, 'searchResources').mockResolvedValue(documents as any);
+
+      const result = await fetchLabOrderSpecimenLabelDocuments(medplum, request);
+
+      const searchParams = (searchSpy.mock.calls[0][1] as URLSearchParams).toString();
+      expect(searchParams).toContain('category=SpecimenLabel');
       expect(searchParams).toContain('identifier=https%3A%2F%2Fwww.healthgorilla.com%7Creq-42');
       expect(searchParams).toContain('_sort=-_lastUpdated');
       expect(result).toEqual(documents);

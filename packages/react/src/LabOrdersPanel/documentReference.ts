@@ -5,6 +5,12 @@ import type { Attachment, DocumentReference, Observation, Reference, ServiceRequ
 
 const HEALTH_GORILLA_REQUEST_SYSTEM = 'https://www.healthgorilla.com';
 
+/** DocumentReference.category code for a lab order's requisition PDF. */
+export const LAB_ORDER_REQUISITION_CATEGORY = 'LabOrderRequisition';
+
+/** DocumentReference.category code for a lab order's specimen label PDF. */
+export const LAB_ORDER_SPECIMEN_LABEL_CATEGORY = 'SpecimenLabel';
+
 /** DocumentReference.category code for a Medicare Advance Beneficiary Notice PDF. */
 export const LAB_ORDER_ABN_CATEGORY = 'ABN';
 
@@ -38,7 +44,20 @@ export async function fetchLabOrderRequisitionDocuments(
   medplum: MedplumClient,
   serviceRequest: ServiceRequest
 ): Promise<DocumentReference[]> {
-  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, 'LabOrderRequisition');
+  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, LAB_ORDER_REQUISITION_CATEGORY);
+}
+
+/**
+ * Fetches DocumentReference resources with SpecimenLabel category that match a ServiceRequest's Health Gorilla Requisition ID
+ * @param medplum - The Medplum client
+ * @param serviceRequest - The ServiceRequest to fetch the DocumentReference for
+ * @returns The DocumentReference resources
+ */
+export async function fetchLabOrderSpecimenLabelDocuments(
+  medplum: MedplumClient,
+  serviceRequest: ServiceRequest
+): Promise<DocumentReference[]> {
+  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, LAB_ORDER_SPECIMEN_LABEL_CATEGORY);
 }
 
 /**
