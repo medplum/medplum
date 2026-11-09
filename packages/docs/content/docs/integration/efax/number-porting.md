@@ -29,9 +29,9 @@ Toll-free numbers must be ported separately from local numbers, each on its own 
 
 Ports usually take 3-6 weeks. If your current provider rejects the request, it can add up to two weeks. Most rejections happen because the company name, address or ATN doesn't match what the provider has on file.
 
-:::warning[Don't cancel your old service early]
+{{< warning title="Don't cancel your old service early" >}}
 Keep your service with your current provider active until the port is complete. If you cancel early, the provider may disconnect the number, and a disconnected number can't be ported.
-:::
+{{< /warning >}}
 
 ## After the port
 
