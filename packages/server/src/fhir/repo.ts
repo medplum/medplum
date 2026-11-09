@@ -190,6 +190,24 @@ type TransactionBinding = {
   readonly scope: ConnectionScope;
 };
 
+const interactionsWithRead = Object.freeze(
+  Object.fromEntries(
+    Object.values(AccessPolicyInteraction).map((interaction) => [
+      interaction,
+      Object.freeze(
+        interaction === AccessPolicyInteraction.READ ? [interaction] : [AccessPolicyInteraction.READ, interaction]
+      ),
+    ])
+  )
+) as Readonly<Record<AccessPolicyInteraction, readonly AccessPolicyInteraction[]>>;
+
+const writeResultInteractions = Object.freeze({
+  create: Object.freeze([AccessPolicyInteraction.READ, AccessPolicyInteraction.SEARCH, AccessPolicyInteraction.CREATE]),
+  update: Object.freeze([AccessPolicyInteraction.READ, AccessPolicyInteraction.SEARCH, AccessPolicyInteraction.UPDATE]),
+}) satisfies Readonly<Record<'create' | 'update', readonly AccessPolicyInteraction[]>>;
+
+const updatePermission = [AccessPolicyInteraction.UPDATE] as readonly AccessPolicyInteraction[];
+
 function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
   if (context.projects && !context.projects.some((project) => project.id === syntheticR4Project.id)) {
     // Repositories with a project scope can also see the synthetic R4 project,
@@ -660,16 +678,9 @@ export class Repository extends FhirRepository implements Disposable {
     if (!id || !isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
-
     validateResourceType(resourceType);
 
-    // Also load resources the caller can read, so a resource that is readable but not e.g. deletable is
-    // reported as forbidden, not missing
-    const interactions =
-      interaction === AccessPolicyInteraction.READ
-        ? [AccessPolicyInteraction.READ]
-        : [AccessPolicyInteraction.READ, interaction];
-
+    const interactions = interactionsWithRead[interaction];
     if (!interactions.some((i) => this.supportsInteraction(i, resourceType))) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -801,7 +812,7 @@ export class Repository extends FhirRepository implements Disposable {
         }
         return await this.authorizeBinarySecurityContext(cacheEntry.resource);
       }
-      return await this.readResourceFromDatabase(resourceType, id, [AccessPolicyInteraction.READ]);
+      return await this.readResourceFromDatabase(resourceType, id, interactionsWithRead.read);
     } catch (err) {
       if (err instanceof OperationOutcomeError) {
         if (isNotFound(err.outcome) || isGone(err.outcome)) {
@@ -897,9 +908,7 @@ export class Repository extends FhirRepository implements Disposable {
       for (const row of rows) {
         const parsed = parseHistoryContent(row.content);
         const isDeleted = parsed.meta?.deleted;
-        const resource = !isDeleted
-          ? this.removeHiddenFields(parsed as T, [AccessPolicyInteraction.READ, AccessPolicyInteraction.HISTORY])
-          : undefined;
+        const resource = !isDeleted ? this.removeHiddenFields(parsed as T, interactionsWithRead.history) : undefined;
         const outcome: OperationOutcome = !isDeleted
           ? allOk
           : {
@@ -984,7 +993,7 @@ export class Repository extends FhirRepository implements Disposable {
       }
 
       const result = (await this.authorizeBinarySecurityContext(
-        this.removeHiddenFields(parsed as T, [AccessPolicyInteraction.READ, AccessPolicyInteraction.VREAD])
+        this.removeHiddenFields(parsed as T, interactionsWithRead.vread)
       )) as WithId<T>;
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
@@ -1593,10 +1602,7 @@ export class Repository extends FhirRepository implements Disposable {
             if (options?.ifMatch) {
               // Re-check against the snapshot this transaction writes from. A write committed after this
               // read fails the upsert below with a serialization error, and the retry lands back here.
-              const current = await txRepo.readResourceFromDatabase<T>(resourceType, id, [
-                AccessPolicyInteraction.READ,
-                AccessPolicyInteraction.DELETE,
-              ]);
+              const current = await txRepo.readResourceFromDatabase<T>(resourceType, id, interactionsWithRead.delete);
               if (current.meta?.versionId !== options.ifMatch) {
                 throw new OperationOutcomeError(preconditionFailed);
               }
@@ -1690,7 +1696,7 @@ export class Repository extends FhirRepository implements Disposable {
             throw new OperationOutcomeError(forbidden);
           }
           // Hidden fields are restored from the existing resource on update
-          txRepo.removeHiddenFields(resource, AccessPolicyInteraction.UPDATE, true);
+          txRepo.removeHiddenFields(resource, updatePermission, true);
 
           if (Array.isArray(patch)) {
             patchObject(resource, patch);
@@ -2533,11 +2539,15 @@ export class Repository extends FhirRepository implements Disposable {
    */
   removeHiddenFields<T extends Resource>(
     input: T,
-    interaction: AccessPolicyInteraction | readonly AccessPolicyInteraction[] = AccessPolicyInteraction.READ,
+    interaction: readonly AccessPolicyInteraction[] = interactionsWithRead.read,
     extendedMode = this.context.extendedMode
   ): T {
+    const accessPolicy = this.context.accessPolicy;
+    if (!accessPolicy) {
+      return this.removePolicyHiddenFields(input, EMPTY, extendedMode);
+    }
     const interactions = typeof interaction === 'string' ? [interaction] : interaction;
-    const policies = satisfiedAccessPolicies(input, interactions, this.context.accessPolicy);
+    const policies = satisfiedAccessPolicies(input, interactions, accessPolicy);
     return this.removePolicyHiddenFields(input, policies, extendedMode);
   }
 
@@ -2650,10 +2660,15 @@ export class Repository extends FhirRepository implements Disposable {
     interaction: 'create' | 'update',
     restoredFields: readonly string[]
   ): T {
+    const accessPolicy = this.context.accessPolicy;
+    if (!accessPolicy) {
+      // Without an access policy, the caller can read everything
+      return this.removePolicyHiddenFields(output, EMPTY, this.context.extendedMode);
+    }
     const [readPolicy, searchPolicy, writePolicy] = satisfiedAccessPolicies(
       output,
-      [AccessPolicyInteraction.READ, AccessPolicyInteraction.SEARCH, interaction],
-      this.context.accessPolicy
+      writeResultInteractions[interaction],
+      accessPolicy
     );
     // The write passed the project checks, so only the access policy decides whether the caller can see the result.
     // canPerformInteraction would also reject results without meta.project, which repositories with no project write.

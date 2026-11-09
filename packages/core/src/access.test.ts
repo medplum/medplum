@@ -180,16 +180,6 @@ describe('Access', () => {
       update,
       undefined,
     ]);
-    for (const resource of [completed, inProgress]) {
-      expect(satisfiedAccessPolicies(resource, interactions, accessPolicy)).toStrictEqual(
-        interactions.map((i) => satisfiedAccessPolicy(resource, i, accessPolicy))
-      );
-    }
-
-    expect(satisfiedAccessPolicies(completed, [READ, UPDATE], undefined)).toStrictEqual([
-      satisfiedAccessPolicy(completed, READ, undefined),
-      satisfiedAccessPolicy(completed, UPDATE, undefined),
-    ]);
     expect(satisfiedAccessPolicies(completed, [READ], nullPolicy)).toStrictEqual([undefined]);
   });
 
@@ -224,10 +214,8 @@ describe('Access', () => {
     // Binary has no search parameters, so criteria are ignored
     const binary = { resourceType: 'Binary', contentType: 'text/plain' } as const;
     expect(satisfiedAccessPolicies(binary, [READ, UPDATE], accessPolicy)).toStrictEqual([binaryPolicy, undefined]);
-    expect(satisfiedAccessPolicy(binary, READ, accessPolicy)).toBe(binaryPolicy);
 
     expect(satisfiedAccessPolicies(completed, [], accessPolicy)).toStrictEqual([]);
-    expect(satisfiedAccessPolicies(completed, [], undefined)).toStrictEqual([]);
   });
 
   test('Legacy compartment case', () => {

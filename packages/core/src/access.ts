@@ -126,11 +126,7 @@ export function satisfiedAccessPolicy(
   if (!accessPolicy) {
     return universalAccessPolicy;
   }
-  return accessPolicy.resource?.find(
-    (policy) =>
-      shallowMatchesResourcePolicy(policy, resource.resourceType, interaction) &&
-      matchesResourcePolicyFilters(resource, policy)
-  );
+  return satisfiedAccessPolicies(resource, [interaction], accessPolicy)[0];
 }
 
 /**
@@ -144,11 +140,8 @@ export function satisfiedAccessPolicy(
 export function satisfiedAccessPolicies(
   resource: Resource,
   interactions: readonly AccessPolicyInteraction[],
-  accessPolicy: AccessPolicy | undefined
+  accessPolicy: AccessPolicy
 ): (AccessPolicyResource | undefined)[] {
-  if (!accessPolicy) {
-    return interactions.map(() => universalAccessPolicy);
-  }
   const policies = accessPolicy.resource ?? [];
   // Memoized per-policy filter results, so each policy's criteria are evaluated at most once across all interactions
   const filterResults: (boolean | undefined)[] = new Array(policies.length);
