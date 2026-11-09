@@ -14,6 +14,7 @@ import {
   projectAdminResourceTypes,
   readInteractions,
   resolveId,
+  wildcardExcludedResourceTypes,
 } from '@medplum/core';
 import type {
   AccessPolicy,
@@ -414,9 +415,9 @@ function applyProjectAdminAccessPolicy(
   accessPolicy: PopulatedAccessPolicy
 ): PopulatedAccessPolicy {
   if (project.superAdmin) {
-    for (const adminResourceType of projectAdminResourceTypes) {
-      if (!accessPolicy.resource.some((r) => r.resourceType === adminResourceType)) {
-        accessPolicy.resource.push({ resourceType: adminResourceType });
+    for (const resourceType of wildcardExcludedResourceTypes) {
+      if (!accessPolicy.resource.some((r) => r.resourceType === resourceType)) {
+        accessPolicy.resource.push({ resourceType });
       }
     }
   } else if (membership.admin) {
