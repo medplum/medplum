@@ -71,7 +71,7 @@ Load Mantine's styles before Medplum's styles. Wrap your pages with `MedplumProv
 
 ## Simple Example
 
-In your application entry point, replace `YOUR_CLIENT_ID` with your public ClientApplication ID and render your `App` component:
+In your application entry point, replace `YOUR_CLIENT_ID` with your public ClientApplication ID and render your `App` component. The example uses Medplum's hosted API; if you self-host, set `baseUrl` to your own Medplum server URL. Hello World reads this value from `import.meta.env.MEDPLUM_BASE_URL`.
 
 ```tsx
 import { MantineProvider } from '@mantine/core';

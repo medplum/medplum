@@ -1,6 +1,6 @@
 ---
 title: Choosing React Components
-weight: 40
+weight: 35
 description: Choose FHIR field controls, resource forms, and clinical workspaces for your application.
 ---
 

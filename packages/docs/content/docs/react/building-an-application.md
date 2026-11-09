@@ -87,7 +87,9 @@ The search hooks debounce query changes by default. Their `enabled` option can d
 
 {{< code-example file="packages/examples/src/react/application-create.tsx" language="tsx" blocks="example" >}}
 
-This example creates a new Patient and calls `onCreated` with the saved record. Use that callback to navigate to the patient or refresh the parent list. For ingestion or a workflow that may retry a business operation, define an identifier and use [conditional writes](/docs/fhir-datastore/working-with-fhir) to avoid duplicate records.
+This example creates a new Patient and calls `onCreated` with the saved record. Use that callback to navigate to the patient or refresh the parent list. After success, unmount `CreatePatient` or reset it by changing its React `key` if it stays on screen; otherwise, submitting the retained values creates another Patient.
+
+For ingestion or a workflow that may retry a business operation, define an identifier and use [conditional writes](/docs/fhir-datastore/working-with-fhir) to avoid duplicate records.
 
 For an edit screen, start with the full resource and preserve its fields when saving. Use [version-aware updates](/docs/fhir-datastore/updating-data) when concurrent edits matter. The server validates the request; showing a form or having a TypeScript type does not establish conformance to a FHIR profile. See [Profiles](/docs/fhir-datastore/profiles).
 

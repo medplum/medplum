@@ -16,6 +16,7 @@ export function PatientSearch(): JSX.Element {
   });
 
   let results: JSX.Element;
+  // Before the search effect runs, loading is false and both patients and outcome are undefined.
   if (loading || (!patients && !outcome)) {
     results = <p role="status">Loading patients...</p>;
   } else if (outcome && !isOk(outcome)) {

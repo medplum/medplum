@@ -6,7 +6,7 @@ import type { OperationOutcome, Patient, Resource } from '@medplum/fhirtypes';
 import { ResourceForm } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 const newPatient: Patient = { resourceType: 'Patient' };
 
@@ -14,11 +14,14 @@ export function CreatePatient(props: { onCreated: (patient: Patient) => void }):
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   async function save(resource: Resource): Promise<void> {
-    if (saving || resource.resourceType !== 'Patient') {
+    if (savingRef.current || resource.resourceType !== 'Patient') {
       return;
     }
+    // Block repeated submissions before React renders the disabled fieldset.
+    savingRef.current = true;
     setSaving(true);
     setOutcome(undefined);
     try {
@@ -27,6 +30,7 @@ export function CreatePatient(props: { onCreated: (patient: Patient) => void }):
     } catch (error) {
       setOutcome(normalizeOperationOutcome(error));
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
