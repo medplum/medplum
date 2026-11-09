@@ -3,6 +3,7 @@
 import { createReference } from '@medplum/core';
 import type { AccessPolicy, Bot, ClientApplication, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -68,12 +69,16 @@ describe('readMembershipReference', () => {
           { allowLinkedProjects }
         );
 
+      const readSpy = vi.spyOn(systemRepo, 'readReference');
       await expect(read(ownProfile)).resolves.toMatchObject({ id: ownProfile.id });
+      expect(readSpy).toHaveBeenCalledTimes(1); // Same-project reads skip loading projects
+      readSpy.mockRestore();
       await expect(read(otherProfile, true)).rejects.toThrow('Not found');
       await expect(read(linkedProfile)).rejects.toThrow('Not found');
       await expect(read(linkedProfile, true)).resolves.toMatchObject({ id: linkedProfile.id });
-      await expect(read(linkedPolicy, true)).rejects.toThrow('Not found');
-      await expect(read(projectlessPolicy)).resolves.toMatchObject({ id: projectlessPolicy.id });
+      await expect(read(linkedPolicy)).rejects.toThrow('Not found');
+      await expect(read(linkedPolicy, true)).resolves.toMatchObject({ id: linkedPolicy.id });
+      await expect(read(projectlessPolicy, true)).rejects.toThrow('Not found');
       await expect(read(projectlessClient, true)).rejects.toThrow('Not found');
     }));
 
@@ -105,6 +110,10 @@ describe('readMembershipReference', () => {
         resourceType: 'Practitioner',
         meta: { project: linkedProject.id },
       });
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: linkedProject.id },
+      });
 
       await expect(
         readMembershipReference(systemRepo, membership, createReference(bot), membershipProfileTypes, {
@@ -113,6 +122,11 @@ describe('readMembershipReference', () => {
       ).resolves.toMatchObject({ id: bot.id });
       await expect(
         readMembershipReference(systemRepo, membership, createReference(practitioner), membershipProfileTypes, {
+          allowLinkedProjects: true,
+        })
+      ).rejects.toThrow('Not found');
+      await expect(
+        readMembershipReference(systemRepo, membership, createReference(policy), ['AccessPolicy'], {
           allowLinkedProjects: true,
         })
       ).rejects.toThrow('Not found');
