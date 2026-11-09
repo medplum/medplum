@@ -68,6 +68,11 @@
             "definition": "Domain specific configuration for the Medplum application."
           },
           {
+            "code": "EncryptedSecret",
+            "display": "EncryptedSecret",
+            "definition": "A third-party credential, such as an API key, client secret, or OAuth refresh token, stored encrypted."
+          },
+          {
             "code": "Enterprise",
             "display": "Enterprise",
             "definition": "A group of Medplum projects managed as a single enterprise."
@@ -851,6 +856,50 @@
           "include": [
             {
               "system": "https://medplum.com/fhir/CodeSystem/agent-status"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/encrypted-secret-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "encrypted-secret-status",
+        "url": "https://medplum.com/fhir/CodeSystem/encrypted-secret-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/encrypted-secret-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "The secret is in use and its value can be read."
+          },
+          {
+            "code": "inactive",
+            "display": "Inactive",
+            "definition": "The secret is temporarily not in use; its value cannot be read."
+          },
+          {
+            "code": "revoked",
+            "display": "Revoked",
+            "definition": "The secret has been permanently revoked and its value cleared."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/encrypted-secret-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "encrypted-secret-status",
+        "url": "https://medplum.com/fhir/ValueSet/encrypted-secret-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/encrypted-secret-status"
             }
           ]
         }
