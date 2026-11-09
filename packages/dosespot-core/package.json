@@ -1,6 +1,6 @@
 {
   "name": "@medplum/dosespot-core",
-  "version": "5.2.14",
+  "version": "5.2.15",
   "description": "Medplum DoseSpot SDK",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -42,14 +42,14 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "5.2.14",
-    "@medplum/definitions": "5.2.14",
-    "@medplum/fhirtypes": "5.2.14",
-    "@medplum/mock": "5.2.14"
+    "@medplum/core": "5.2.15",
+    "@medplum/definitions": "5.2.15",
+    "@medplum/fhirtypes": "5.2.15",
+    "@medplum/mock": "5.2.15"
   },
   "peerDependencies": {
-    "@medplum/core": "5.2.14",
-    "@medplum/fhirtypes": "5.2.14"
+    "@medplum/core": "5.2.15",
+    "@medplum/fhirtypes": "5.2.15"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

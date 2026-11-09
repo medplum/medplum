@@ -1,0 +1,46 @@
+.tabs-container {
+  margin-bottom: var(--ifm-leading);
+}
+
+/* As Docusaurus's tabs (Infima's .tabs and .tabs__item, through the same variables) */
+.tabs-button-group {
+  display: flex;
+  color: var(--ifm-tabs-color);
+  font-weight: var(--ifm-font-weight-bold);
+  margin-bottom: 0;
+  overflow-x: auto;
+  padding: 0;
+}
+
+.tabs-button {
+  display: inline-flex;
+  padding: var(--ifm-tabs-padding-vertical) var(--ifm-tabs-padding-horizontal);
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: var(--ifm-global-radius);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  transition: background-color var(--ifm-transition-fast);
+
+  &:hover {
+    background-color: var(--ifm-hover-overlay);
+  }
+
+  &.active {
+    border-bottom-color: var(--ifm-tabs-color-active-border);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    color: var(--ifm-tabs-color-active);
+  }
+}
+
+.tab-panel {
+  display: none;
+
+  &.active {
+    display: block;
+    margin-top: 1rem;
+  }
+}

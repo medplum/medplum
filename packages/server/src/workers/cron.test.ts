@@ -33,6 +33,7 @@ import type { TestProjectResult } from '../test.setup';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
 import { buildCronJobData, convertTimingToCron, execBot, getCronQueue } from './cron';
+import { getDispatchQueue } from './dispatch';
 import { findAndExecDispatchJob } from './test-utils';
 
 describe('Cron Worker', () => {
@@ -671,32 +672,49 @@ describe('Cron resource', () => {
       expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
     }));
 
+  async function createBotWithMembership(
+    name: string
+  ): Promise<{ bot: WithId<Bot>; membership: WithId<ProjectMembership> }> {
+    const target = await repo.createResource<Bot>({ resourceType: 'Bot', name });
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(project),
+      user: createReference(target),
+      profile: createReference(target),
+    });
+    return { bot: target, membership };
+  }
+
   // None of these recover on a retry, so the tick unregisters the job rather than failing forever
   test.each([
     ['its target bot is deleted', 'targetReference'],
     ['its onBehalfOf membership is deleted', 'onBehalfOf'],
-  ])('execBot unregisters the job once %s', (_name, field) =>
+  ])('execBot unregisters the job once %s, and repointing the Cron registers it again', (_name, field) =>
     withTestContext(async () => {
-      const doomedBot = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'doomed-target' });
-      const doomedMembership = await systemRepo.createResource<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        project: createReference(project),
-        user: createReference(doomedBot),
-        profile: createReference(doomedBot),
-      });
+      const doomed = await createBotWithMembership('doomed-target');
       const cron = await repo.createResource<Cron>({
         ...validCron(),
-        targetReference: createReference(doomedBot),
-        onBehalfOf: createReference(doomedMembership),
+        targetReference: createReference(doomed.bot),
+        onBehalfOf: createReference(doomed.membership),
       });
 
+      // An edit that leaves the schedule and both references alone does not touch the scheduler
+      const queue = getCronQueue() as any;
+      queue.upsertJobScheduler.mockClear();
+      await repo.updateResource<Cron>({ ...cron, parameter: [{ name: 'greeting', valueString: 'hello' }] });
+      await findAndExecDispatchJob(cron, 'update');
+      expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
+
+      const replacement = await createBotWithMembership('replacement-target');
+      let repointed: Cron;
       if (field === 'targetReference') {
-        await repo.deleteResource('Bot', doomedBot.id);
+        await repo.deleteResource('Bot', doomed.bot.id);
+        repointed = { ...cron, targetReference: createReference(replacement.bot) };
       } else {
-        await systemRepo.deleteResource('ProjectMembership', doomedMembership.id);
+        await systemRepo.deleteResource('ProjectMembership', doomed.membership.id);
+        repointed = { ...cron, onBehalfOf: createReference(replacement.membership) };
       }
 
-      const queue = getCronQueue() as any;
       queue.removeJobScheduler.mockClear();
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
 
@@ -705,6 +723,17 @@ describe('Cron resource', () => {
       expect(executeBotSpy).not.toHaveBeenCalled();
       expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
       executeBotSpy.mockRestore();
+
+      queue.upsertJobScheduler.mockClear();
+      // The dispatch mock still holds the earlier edit, which would otherwise be found first
+      (getDispatchQueue() as any).add.mockClear();
+      await repo.updateResource<Cron>(repointed);
+      await findAndExecDispatchJob(cron, 'update');
+      expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
+        `Cron/${cron.id}`,
+        { pattern: cron.cronString },
+        { data: buildCronJobData(cron) }
+      );
     })
   );
 

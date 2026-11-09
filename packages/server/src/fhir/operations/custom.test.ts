@@ -17,7 +17,7 @@ describe('Custom operation', () => {
     const config = await loadTestConfig();
     config.vmContextBotsEnabled = true;
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ membership: { admin: true } });
   });
 
   afterAll(async () => {

@@ -1,0 +1,4 @@
+{{- /* An included (check) or not included (dash) mark. Params: included, label (omit for a decorative mark) */ -}}
+{{- $icon := partial "icon" (cond .included "outline/check" "outline/minus") | replaceRE `width="24"` `width="20"` | replaceRE `height="24"` `height="20"` | replaceRE `stroke-width="2"` `stroke-width="3"` -}}
+<span class="{{ cond .included "pricing-included" "pricing-excluded" }}"{{ with .label }} role="img" aria-label="{{ . }}"{{ else }} aria-hidden="true"{{ end }}>{{ $icon | safeHTML }}</span>
+{{- /**/ -}}

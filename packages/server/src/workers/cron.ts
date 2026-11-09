@@ -80,7 +80,7 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
 
 /**
  * Updates the Cron job for the given resource.
- * Only applies changes if the effective cron string has changed.
+ * Only applies changes if `shouldUpdateSchedule` says the schedule needs it.
  * @param resource - The resource that was created, updated, or deleted.
  * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
@@ -96,7 +96,7 @@ export async function addCronJobs(
     return;
   }
 
-  if (!isSchedulable(resource)) {
+  if (!isSchedulable(resource) || (previousVersion && !isSchedulable(previousVersion))) {
     return;
   }
 
@@ -119,14 +119,11 @@ export async function addCronJobs(
     return;
   }
 
-  const oldCronStr = isSchedulable(previousVersion) ? getCronString(previousVersion) : undefined;
-  const newCronStr = getCronString(resource);
-  logger.debug('Cron job for resource', { schedulerId, ...resourceIds, oldCronStr, newCronStr });
-
-  if (oldCronStr === newCronStr) {
-    // No change in cron job
+  if (!shouldUpdateSchedule(previousVersion, resource)) {
     return;
   }
+
+  const newCronStr = getCronString(resource);
 
   if (newCronStr) {
     logger.info('Upsert cron job for resource', { schedulerId, ...resourceIds });
@@ -149,6 +146,32 @@ const SCHEDULABLE_TYPES: readonly ResourceType[] = ['Bot', 'Cron'];
 
 function isSchedulable(resource: Resource | undefined): resource is Bot | Cron {
   return resource !== undefined && SCHEDULABLE_TYPES.includes(resource.resourceType);
+}
+
+/**
+ * Returns true if a write changes something the registered job depends on.
+ * @param previousVersion - The previous version of the resource, if available.
+ * @param resource - The new version of the resource.
+ * @returns True if the job scheduler should be upserted or removed.
+ */
+function shouldUpdateSchedule(previousVersion: Bot | Cron | undefined, resource: Bot | Cron): boolean {
+  const oldCronStr = previousVersion ? getCronString(previousVersion) : undefined;
+  if (oldCronStr !== getCronString(resource)) {
+    return true;
+  }
+
+  // The tick unregisters a Cron whose target or identity no longer resolves, so repointing it
+  // has to register the job again even when the schedule is unchanged
+  if (resource.resourceType === 'Cron' && previousVersion?.resourceType === 'Cron') {
+    if (
+      previousVersion.targetReference.reference !== resource.targetReference.reference ||
+      previousVersion.onBehalfOf.reference !== resource.onBehalfOf.reference
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
