@@ -661,10 +661,10 @@ New projects are created with a set of **default access policies**, one per prof
 
 | Profile type        | Default policy grants                                                                                                                                                 |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types.                      |
+| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden. |
 | `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                 |
 | `Patient`           | Access scoped to the patient's own compartment.                                                                                                                       |
-| `RelatedPerson`     | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                                                    |
+| `RelatedPerson`     | Access scoped to the associated patient's compartment. Invite sets `ProjectMembership.access.parameter` named `patient`, which fills `%patient` in the policy criteria. |
 | `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
 | `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
 
