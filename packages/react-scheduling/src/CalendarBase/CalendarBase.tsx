@@ -17,7 +17,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { ActionIcon, Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
+import { ActionIcon, Button, Group, Loader, NativeSelect, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -122,6 +122,26 @@ function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
   );
 }
 
+const VIEWS = {
+  timeGridWeekdays: {
+    type: 'timeGridWeek',
+    weekends: false,
+  },
+  // Fewer, wider days than a week, so overlapping events have room.
+  timeGridFourDay: {
+    type: 'timeGrid',
+    duration: { days: 4 },
+  },
+};
+
+const VIEW_OPTIONS = [
+  { label: 'Month', value: 'dayGridMonth' },
+  { label: 'Week', value: 'timeGridWeek' },
+  { label: 'Weekdays', value: 'timeGridWeekdays' },
+  { label: '4 Day', value: 'timeGridFourDay' },
+  { label: 'Day', value: 'timeGridDay' },
+] as const;
+
 function slotTitle(slot: Slot): string {
   if (slot.status === 'free') {
     return 'Available';
@@ -161,6 +181,8 @@ export interface CalendarBaseProps extends Omit<
   | 'eventClick'
   | 'loading'
   | 'ref'
+  | 'views'
+  | 'initialView'
 > {
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
@@ -171,6 +193,8 @@ export interface CalendarBaseProps extends Omit<
   /** The id of the event to mark `selected`, such as the appointment open in a details pane. */
   selectedId?: string;
   eventSources: FhirEventSource[];
+  /** The view the calendar opens on, which has to be one the view dropdown offers. */
+  initialView?: (typeof VIEW_OPTIONS)[number]['value'];
 
   onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
@@ -186,7 +210,8 @@ export interface CalendarBaseProps extends Omit<
 export interface CalendarHandle {
   /**
    * Pages the calendar to the day holding `date`, such as that of an appointment just booked.
-   * Stays put when that day is already on screen.
+   * Stays put when that day is already on screen; switches the view from "Weekdays" to "Week"
+   * if the date is on a weekend.
    */
   readonly gotoDate: (date: Date) => void;
 }
@@ -209,6 +234,10 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         if (view && date >= view.activeStart && date < view.activeEnd) {
           return;
         }
+        // Weekdays has no column for a weekend day, so show the whole week instead.
+        if (controller.view?.type === 'timeGridWeekdays' && (date.getDay() === 0 || date.getDay() === 6)) {
+          controller.changeView('timeGridWeek');
+        }
         controller.gotoDate(date);
       },
     }),
@@ -229,7 +258,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     loading,
     toolbarStart,
     toolbarEnd,
-    views,
+    initialView = 'timeGridWeek',
     ...fullCalendarProps
   } = props;
 
@@ -392,22 +421,27 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
                 </Text>
               }
               date={controller.getDate() ?? new Date()}
-              onChange={(month) => controller.gotoDate(month)}
+              onChange={(month) => {
+                // Weekdays has no column for a weekend 1st, and a Saturday's week falls in the month
+                // before, so go to the month's first weekday.
+                if (viewType === 'timeGridWeekdays' && (month.getDay() === 0 || month.getDay() === 6)) {
+                  controller.gotoDate(new Date(month.getFullYear(), month.getMonth(), month.getDay() === 6 ? 3 : 2));
+                } else {
+                  controller.gotoDate(month);
+                }
+              }}
             />
             {loading && <Loader size="sm" />}
           </Group>
         </Group>
         <Group gap="sm">
-          <SegmentedControl
-            size="xs"
-            value={controller.view?.type}
-            onChange={(newView) => controller.changeView(newView)}
-            data={[
-              { label: 'Month', value: 'dayGridMonth' },
-              { label: 'Week', value: 'timeGridWeek' },
-              ...(views?.timeGridFourDay ? [{ label: '4 Day', value: 'timeGridFourDay' }] : []),
-              { label: 'Day', value: 'timeGridDay' },
-            ]}
+          <NativeSelect
+            aria-label="View"
+            // Match the toolbar's 32px buttons. Mantine sets `--input-height` from the size itself.
+            styles={{ wrapper: { '--input-height-sm': '32px' } }}
+            value={viewType ?? initialView}
+            onChange={(e) => controller.changeView(e.currentTarget.value)}
+            data={VIEW_OPTIONS}
           />
           {toolbarEnd}
         </Group>
@@ -415,14 +449,14 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
       <FullCalendar
         height="100%"
         plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView={initialView}
         slotMinHeight={38}
         eventShortHeight={33}
         colorScheme={colorScheme}
         displayEventEnd={false}
         eventTimeFormat={{ timeStyle: 'short' }}
         allDaySlot={false}
-        views={views}
+        views={VIEWS}
         selectable={selectable}
         unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
         select={(eventInfo) => {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { InviteRequest, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   badRequest,
   conflict,
@@ -35,6 +36,7 @@ import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
+import { getAllowedProjects, getRepoForProjects } from '../fhir/accesspolicy';
 import { getDefaultAccessPolicy } from '../fhir/default-access-policies';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
@@ -373,6 +375,7 @@ async function validateAccessPolicies(
 
   // Batch read all access policies at once
   const results = await systemRepo.readReferences<AccessPolicy>(references);
+  const projectRepo = getRepoForProjects(await getAllowedProjects(project, systemRepo));
 
   // Validate each result
   for (let i = 0; i < results.length; i++) {
@@ -389,8 +392,7 @@ async function validateAccessPolicies(
       throw result;
     }
 
-    // Check if the access policy belongs to the project
-    if (result.meta?.project && result.meta.project !== project.id) {
+    if (!projectRepo.canPerformInteraction(AccessPolicyInteraction.READ, result)) {
       throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not belong to this project`));
     }
   }
