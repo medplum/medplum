@@ -112,9 +112,18 @@ export async function getRepoForLogin(
 export async function getRepoForProject(projectId: string): Promise<Repository> {
   const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readResource<Project>('Project', projectId);
+  return getRepoForProjects(await getAllowedProjects(project, globalSystemRepo));
+}
+
+/**
+ * Creates a repository that is limited to reading from the given projects, as in `getRepoForProject`.
+ * @param projects - The current project, followed by any linked projects it may read from.
+ * @returns A repository scoped to the projects.
+ */
+export function getRepoForProjects(projects: WithId<Project>[]): Repository {
   return new Repository({
     routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
-    projects: await getAllowedProjects(project, globalSystemRepo),
+    projects,
     author: { reference: 'system' },
     extendedMode: true,
   });
@@ -168,10 +177,7 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
     throw new OperationOutcomeError(badRequest('SMART scopes are not supported for super admin logins'));
   }
 
-  // Heal any drift between the admin flag and the default access policy before building.
-  // If a member's admin flag was toggled without updating their (still-default) access policy,
-  // this substitutes the correct role default so an upgraded admin isn't left half-restricted.
-  const membership = reconcileDefaultAccessPolicy(project, authState.onBehalfOfMembership ?? authState.membership);
+  const membership = authState.onBehalfOfMembership ?? authState.membership;
 
   let accessPolicy = await buildAccessPolicy(membership);
 
@@ -188,38 +194,6 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
   }
 
   return accessPolicy;
-}
-
-/**
- * Reconciles a project membership's default access policy with its admin flag.
- *
- * The `admin` flag does not bypass the access policy, so toggling it without also swapping the
- * access policy leaves a member "half-upgraded" (e.g. an admin still blocked from editing knowledge
- * resources by the Practitioner default). This keeps the two in sync: when the membership's current
- * access policy is exactly the *other* role's recognized project default, it is swapped to the
- * default that matches the current admin flag. Custom (non-default) access policies are left
- * untouched, and the operation is idempotent.
- * @param project - The project, which holds the recognized role defaults in `defaultAccessPolicies`.
- * @param membership - The project membership to reconcile.
- * @returns The membership, with its `accessPolicy` swapped to the matching role default if needed.
- */
-export function reconcileDefaultAccessPolicy<T extends ProjectMembership>(project: Project, membership: T): T {
-  const defaults = project.defaultAccessPolicies;
-  const currentPolicy = membership.accessPolicy?.reference;
-  if (!defaults || !currentPolicy) {
-    return membership;
-  }
-
-  const practitionerDefault = defaults.find((p) => p.profileType === 'Practitioner')?.accessPolicy;
-  const adminDefault = defaults.find((p) => p.profileType === 'Admin')?.accessPolicy;
-
-  if (membership.admin && adminDefault && currentPolicy === practitionerDefault?.reference) {
-    return { ...membership, accessPolicy: adminDefault };
-  }
-  if (!membership.admin && practitionerDefault && currentPolicy === adminDefault?.reference) {
-    return { ...membership, accessPolicy: practitionerDefault };
-  }
-  return membership;
 }
 
 /**
@@ -305,7 +279,9 @@ async function buildAccessPolicyResources(
   let original = accessPolicyMap.get(policyReferenceString);
   if (!original) {
     try {
-      original = await readMembershipReference(systemRepo, membership, accessPolicyReference, ['AccessPolicy']);
+      original = await readMembershipReference(systemRepo, membership, accessPolicyReference, ['AccessPolicy'], {
+        allowLinkedProjects: true,
+      });
       accessPolicyMap.set(policyReferenceString, original);
     } catch {
       // Intentionally catch and rethrow with a generic error message for security

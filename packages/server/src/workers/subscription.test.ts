@@ -3186,11 +3186,6 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
         const {
           repo: wsRepo,
           project,
@@ -3204,8 +3199,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy No Membership Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
@@ -3254,12 +3249,8 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
         const {
+          accessPolicy,
           repo: wsRepo,
           membership,
           project,
@@ -3272,8 +3263,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy Error Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
