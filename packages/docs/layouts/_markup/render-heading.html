@@ -1,0 +1,8 @@
+{{- /* Headings with a "#" link to themselves, shown on hover, as Docusaurus renders them (styled in main.css). One line:
+  fhir/page.html splits rendered prose on its <h2>s. .PlainText stops at code or a link inside emphasis, so the link's
+  label comes from .Text. */ -}}
+{{- $label := printf "Direct link to %s" (.Text | plainify | htmlUnescape) -}}
+<h{{ .Level }} id="{{ .Anchor }}"
+  {{- range $key, $value := .Attributes }}{{ if ne $key "id" }} {{ $key }}="{{ $value }}"{{ end }}{{ end -}}
+>{{ .Text }}<a href="#{{ .Anchor }}" class="hash-link" aria-label="{{ $label }}" title="{{ $label }}" translate="no">&#8203;</a></h{{ .Level }}>
+{{- /**/ -}}

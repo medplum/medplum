@@ -12,18 +12,10 @@ import type { CalendarHandle, ExtendedEvent, FhirEventSource } from '../Calendar
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { SlotEvent } from '../CalendarBase/SlotEvent';
 import { getSchedulingColor, resolveThemeColor } from '../colors';
-import type { DateTimeRange } from '../types';
+import type { CalendarSelection, DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
 
 export type { CalendarHandle } from '../CalendarBase/CalendarBase';
-
-// Fewer, wider days than a week, so overlapping events from several calendars have room.
-const VIEWS = {
-  timeGridFourDay: {
-    type: 'timeGrid',
-    duration: { days: 4 },
-  },
-};
 
 export interface MultiCalendarSource {
   schedule?: WithId<Schedule>;
@@ -43,7 +35,7 @@ export interface MultiCalendarSource {
 
 export interface MultiCalendarProps {
   sources: MultiCalendarSource[];
-  onSelectInterval?: (slotInfo: DateTimeRange) => void;
+  onSelectInterval?: (slotInfo: CalendarSelection) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
@@ -89,6 +81,9 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
     });
   }, [sources, theme]);
 
+  // A weekend today has no column in Weekdays, so open on the whole week.
+  const today = new Date().getDay();
+
   return (
     <CalendarBase
       ref={ref}
@@ -117,8 +112,7 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
         omitZeroMinute: true,
         meridiem: 'lowercase',
       }}
-      views={VIEWS}
-      initialView="timeGridFourDay"
+      initialView={today === 0 || today === 6 ? 'timeGridWeek' : 'timeGridWeekdays'}
     />
   );
 });

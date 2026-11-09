@@ -1,0 +1,12 @@
+{{- /* /llms.txt (llmstxt.org): an index of the docs with a short description of each */ -}}
+# Medplum
+
+> Fast and easy healthcare dev
+
+This file contains links to documentation sections following the llmstxt.org standard.
+
+## Table of Contents
+
+{{ range partial "llms/pages.html" . -}}
+- [{{ .Title }}]({{ strings.TrimSuffix "/" site.BaseURL }}{{ partial "href" . }}){{ with partial "llms/description.html" . }}: {{ . }}{{ end }}
+{{ end -}}
