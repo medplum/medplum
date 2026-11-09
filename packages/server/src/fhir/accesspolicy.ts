@@ -234,6 +234,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
         resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
       }
       normalizeOperations(resourcePolicy);
+      applyServerWriteRules(resourcePolicy);
       resourcePolicies.push(resourcePolicy);
     }
     if (replaced.ipAccessRule) {
@@ -256,6 +257,51 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     resource: resourcePolicies,
     ipAccessRule: ipAccessRules.length ? ipAccessRules : undefined,
   };
+}
+
+/**
+ * Write rules the server adds to every access policy entry for a resource type.
+ *
+ * The repository applies `readonlyFields` and `writeConstraint` from the first entry that matches a write, so the
+ * rules go on each entry. Repositories without an access policy are not bound by them, which is how server code
+ * writes the fields these rules protect.
+ */
+const serverWriteRules: Record<string, Pick<AccessPolicyResource, 'readonlyFields' | 'writeConstraint'>> = {
+  EncryptedSecret: {
+    // Written only by $set-value
+    readonlyFields: ['encryptedValue'],
+    writeConstraint: [
+      {
+        // owner is bound into the encryption context and matched by %profile criteria, so it must be literal
+        language: 'text/fhirpath',
+        expression: `owner.empty() or owner.reference.matches('^[A-Za-z]+/[A-Za-z0-9.-]{1,64}$')`,
+      },
+      {
+        // owner and code are bound into the encryption context and may appear in get-value grant criteria
+        language: 'text/fhirpath',
+        expression:
+          '%before.empty() or (code = %before.code and owner.reference.empty() = %before.owner.reference.empty() ' +
+          'and (owner.reference.empty() or owner.reference = %before.owner.reference))',
+      },
+      {
+        language: 'text/fhirpath',
+        expression: `%before.empty() or %before.status != 'revoked'`,
+      },
+    ],
+  },
+};
+
+/**
+ * Adds the server's write rules for the entry's resource type to an access policy entry, in place.
+ * @param resourcePolicy - The access policy entry.
+ */
+function applyServerWriteRules(resourcePolicy: AccessPolicyResource): void {
+  const rules = serverWriteRules[resourcePolicy.resourceType];
+  if (!rules) {
+    return;
+  }
+  resourcePolicy.readonlyFields = [...(resourcePolicy.readonlyFields ?? EMPTY), ...(rules.readonlyFields ?? EMPTY)];
+  resourcePolicy.writeConstraint = [...(resourcePolicy.writeConstraint ?? EMPTY), ...(rules.writeConstraint ?? EMPTY)];
 }
 
 /**
