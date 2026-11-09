@@ -11,6 +11,10 @@
      among the workspace's own layers rather than the host page's. */
   container-type: inline-size;
   --pane-width: 320px;
+  /* Paints the whole workspace, not just the pane, so the pane matches what is around it on a
+     host page of any color. A host can set this through `className` to match its own page. */
+  --scheduling-workspace-background: var(--mantine-color-body);
+  background-color: var(--scheduling-workspace-background);
 }
 
 /* Gives way once the calendar has no width left, so the pane beside it stays on screen. */
@@ -75,7 +79,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background-color: var(--mantine-color-body);
+  background-color: var(--scheduling-workspace-background);
 }
 
 /* Widened, it slides out over the calendar like a drawer: the narrow pane's form, then the
