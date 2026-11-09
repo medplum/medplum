@@ -99,6 +99,10 @@ flowchart BT
 
 Encounter billing often references [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval) and [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) on billing-related structures; see [Provider visits](/docs/provider/visits) and [Billing](/docs/billing/).
 
+### Encounter Locations
+
+Use `Encounter.location[].location` to record the Locations involved in the visit, with `status` and `period` when tracking planned or actual presence and movement. Populate these references in the clinical workflow, including when the Encounter is linked to an Appointment. They can differ from the facility selected during booking or submitted for billing. See [Organizations and Locations](/docs/administration/locations-and-facilities#choose-the-reference-for-each-workflow) for the shared model.
+
 ## Patient Demographics
 
 Capturing patient demographics is a core EHR capability. ONC references this under [demographics (a)(5)](https://www.healthit.gov/test-method/demographics). Data may arrive via UI, integration, or API.

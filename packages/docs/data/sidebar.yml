@@ -96,6 +96,8 @@ items:
     id: "docs/scheduling"
     items:
       - type: "doc"
+        id: "docs/scheduling/react-components"
+      - type: "doc"
         id: "docs/scheduling/defining-availability"
       - type: "doc"
         id: "docs/scheduling/state-by-state-licensure"
@@ -205,6 +207,8 @@ items:
         id: "docs/administration/provider-directory/provider-networks"
       - type: "doc"
         id: "docs/administration/provider-directory/provider-credentials"
+  - type: "doc"
+    id: "docs/administration/locations-and-facilities"
   - type: "category"
     label: "Questionnaires & Assessments"
     id: "docs/questionnaires"
