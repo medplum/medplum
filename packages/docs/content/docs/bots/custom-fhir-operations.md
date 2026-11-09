@@ -62,7 +62,7 @@ See [Bot Basics](/docs/bots/bot-basics) for more details on creating Bots.
 
 - Your Medplum project must have the `bots` feature enabled
 - The handler function receives `medplum` (SDK instance) and `event` (operation context)
-- `event.input` contains the operation input (request body for POST, query params for GET)
+- `event.input` contains the request body for a system-level or type-level POST, query parameters for a system-level or type-level GET, or the target resource for an instance-level operation
 - Return value becomes the operation output
 
 ### Step 2: Deploy the Bot
@@ -97,9 +97,10 @@ Create an `OperationDefinition` that describes your operation and links to your 
   "status": "active",
   "kind": "operation",
   "code": "my-custom-operation",
-  "system": true,
-  "type": false,
+  "system": false,
+  "type": true,
   "instance": false,
+  "resource": ["Patient"],
   "parameter": [
     {
       "use": "in",
@@ -158,9 +159,12 @@ Configure the operation type using the `system`, `type`, and `instance` properti
 
 ### Input Processing
 
-- **POST requests**: Request body is passed as `event.input`
-- **GET requests**: Query parameters are passed as `event.input`
+- **System-level and type-level POST requests**: Request body is passed as `event.input`
+- **System-level and type-level GET requests**: Query parameters are passed as `event.input`
+- **Instance-level requests**: The server reads the target resource and passes it as `event.input`, rather than the request body or query parameters
 - Access to full request context via `event.headers`, etc.
+
+Custom operations wait for Bot execution and do not implement the `Prefer: respond-async` behavior of [Bot `$execute`](/docs/api/fhir/operations/bot-execute#asynchronous-execution). To accept work for later processing, persist that work in the handler and use a separate worker; see [Implementing Event Processing](/docs/bots/event-processing#accept-work-for-background-processing).
 
 ### Output Processing
 

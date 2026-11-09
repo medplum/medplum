@@ -13,7 +13,7 @@ Use the guides and technical docs together: the guide explains which approach fi
 
 ## Application Design
 
-Define the identity, tenancy, and access rules shared across your workflows.
+Define the identity, tenancy, access, and processing responsibilities shared across your workflows.
 
 ### Authentication
 
@@ -28,6 +28,13 @@ Scope your authorization model – user types and organizational structure, mult
 
 - **[Decision Guide →](/docs/decision-guides/access-control)**
 - **Docs:** [Authorization and Access Control](/docs/access)
+
+### Event Processing and Automation
+
+Choose where each processing flow runs, what triggers it, and whether the caller waits. Understand the resulting requirements for work state, retries, duplicate prevention, permissions, and monitoring.
+
+- **[Decision Guide →](/docs/decision-guides/event-processing-and-automation)**
+- **Docs:** [Implementing Event Processing](/docs/bots/event-processing)
 
 ## Clinical and Operational Workflows
 

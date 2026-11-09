@@ -3,6 +3,9 @@
   {{ if .Params.fhirType }}
     {{ partial "fhir/page.html" . }}
   {{ else if and (hasPrefix .Path "/docs/decision-guides/") (eq .Kind "page") }}
+    {{ with .Params.download_slug }}
+      <p>Download this guide: <a href="{{ printf "/decision-guides/%s.pdf" . | relURL }}" download>PDF</a> · <a href="{{ printf "/decision-guides/%s.docx" . | relURL }}" download>Word</a></p>
+    {{ end }}
     {{- /* "Plan with this guide" goes after the introduction: before the first divider, else the first section */}}
     {{- $content := string .Content }}
     {{- $at := index (findRE `<hr>|<h2[ >]` $content 1) 0 | default "" }}

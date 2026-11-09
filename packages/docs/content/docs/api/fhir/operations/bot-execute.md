@@ -190,16 +190,22 @@ The input data that will be parsed according to `CONTENT_TYPE` and passed into y
 
 ## Asynchronous Execution
 
-To run bots asynchronously, you can specify the `Prefer: respond-async` header to move execution of the bot to the background. Asynchronous execution will result in an HTTP `202 Accepted` response immediately, and the bot will continue running in the background.
+For authenticated Bot `$execute` requests, specify `Prefer: respond-async` to receive HTTP `202 Accepted` with a job status URL while the Bot runs in the background. Use this for non-streaming execution; it does not extend the Bot runtime's limits. Custom FHIR operations and public `/webhook/` routes do not implement this response mechanism.
+
+{{< note title="Execution tracking and recovery" >}}
+
+The server records an `AsyncJob`, but this execution path does not persist the request body as a resumable queue or automatically retry Bot failures. An interruption can leave a job unfinished. Retain the inputs and operation identity separately when recovery needs them, and reconcile an uncertain outcome before resubmitting. See [background processing and recovery](/docs/bots/event-processing#accept-work-for-background-processing).
+
+{{< /note >}}
 
 ### Making an Async Request
 
-Add the `Prefer: respond-async` header to any bot execution request:
+Add the `Prefer: respond-async` header to the `$execute` request:
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
 
-{{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="execute-async" >}}
+{{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="async-imports, execute-async" >}}
 
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
@@ -236,12 +242,18 @@ You can poll this URL to check the status of your bot execution. In general, for
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
-The `MedplumClient` provides helper utilities to poll job status automatically
+The SDK can poll automatically. Its resolved value is the terminal `AsyncJob`, not the Bot's unwrapped result. Inspect both the job status and output:
 {{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="execute-async-with-polling" >}}
 
-However, you can also manually poll the status URL
+Use this helper with either polling approach. It rejects terminal job failures and error `OperationOutcome` output, including errors inside a `completed` job. Interpret custom Bot response data according to your application's result contract as well.
+
+{{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="inspect-job-output" >}}
+
+Alternatively, capture the status URL and poll with a limit. Use the same authenticated identity, or another identity authorized to read the job. A polling timeout stops waiting; it does not cancel execution or authorize resubmitting the action.
 
 {{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="check-job-status-manual" >}}
+
+{{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="wait-for-job" >}}
 
   {{< /tab >}}
   {{< tab value="cli" label="CLI" >}}
@@ -265,18 +277,19 @@ curl 'https://api.medplum.com/fhir/R4/job/[job-id]/status' \
 
 ### AsyncJob Resource Structure
 
-The status endpoint returns an `AsyncJob` resource with the following key fields:
+The status endpoint returns an `AsyncJob` resource. HTTP `202` means it is nonterminal; HTTP `200` means it has reached a terminal status, which can include failure or cancellation.
 
 - **`status`**: Current job status
-  - `accepted` - Job has been queued
-  - `active` - Job is currently running
-  - `completed` - Job finished successfully
-  - `error` - Job failed
-  - `cancelled` - Job was cancelled
+  - `accepted` - Job was accepted. Bot `$execute` can retain this status while processing; it is not proof that work is still waiting to start.
+  - `active` - An in-progress status used by some asynchronous operations; do not require this transition when polling Bot execution.
+  - `completed` - The asynchronous wrapper finished. Inspect the output before treating the Bot's business operation as successful.
+  - `error` - The asynchronous operation reported a failure. Inspect its output.
+  - `cancelled` - Cancellation was recorded. Do not rely on this to interrupt an already running Bot or undo its effects.
 
-- **`output`**: Contains the results when status is `completed` or `error`
-  - For successful bot execution: `parameter[0].name` will be `responseBody`
-  - For failed execution: `parameter[0].name` will be `outcome` with error details
+- **`output`**: A `Parameters` resource containing the result or failure details. Look up parameters by name rather than position.
+  - `responseBody` contains ordinary Bot return data. Objects are JSON-encoded in `valueString`; booleans use `valueBoolean`.
+  - `outcome` contains an `OperationOutcome`, which can indicate success or failure. A Bot error can appear here even when the job status is `completed`.
+  - Errors from the asynchronous wrapper can also produce `error` and `stack` parameters. Avoid exposing internal diagnostics to end users.
 
 - **`requester`**: The user or client application that started the execution
 
@@ -286,7 +299,7 @@ When the bot execution completes successfully:
 
 {{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="example-success-response" >}}
 
-When the bot execution fails:
+An example of an asynchronous operation failure follows. A Bot execution failure can instead have `status: completed` with an error outcome, so do not use status alone to detect it.
 
 {{< code-example file="packages/examples/src/api/fhir/operations/bot-execute.ts" language="ts" blocks="example-error-response" >}}
 

@@ -252,7 +252,7 @@ To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/
 The default number of attempts is 4.
 
 {{< warning title="Note" >}}
-Subscriptions with Bot endpoints will only execute once and will not retry on failure. The `subscription-max-attempts` extension only applies to rest-hook subscriptions with external HTTP endpoints.
+For `Bot/<id>` endpoints, a failed Bot execution can be recorded in its AuditEvent without triggering a Subscription retry. Delivery or execution setup errors can still cause retries, so handlers must tolerate repeated execution. Do not use `subscription-max-attempts` as a recovery mechanism for Bot business logic; use [persisted work and reconciliation](/docs/bots/event-processing#recover-failed-or-missed-work).
 {{< /warning >}}
 
 ```json
@@ -435,7 +435,7 @@ Here is an example `Subscription` resource with a `fhir-path-criteria-expression
 ```
 
 {{< warning title="Note" >}}
-Upon the creation of a resource, there won't be a previous version of the resource: `%previous` will be empty.
+Upon creation, there is no previous resource version. Medplum supplies an empty object for `%previous`, so fields such as `%previous.id` and `%previous.status` are empty.
 
 FHIRPath generally [treats empty values as "null"](https://www.hl7.org/fhirpath/#null-and-empty) and most operators
 and functions — including `!=` — evaluate to be empty if any of their operands are empty. This means that when a
@@ -443,8 +443,11 @@ resource is created, the above expression will always be falsy, and the subscrip
 {{< /warning >}}
 
 If resource creations should also be included, the FHIRPath expression must account for that case
-specifically: `%previous.exists() implies %previous.status != %current.status`. With this expression,
-if `%previous` is empty, the overall expression will still evaluate to `true` and trigger the subscription.
+specifically: `%previous.id.exists() implies %previous.status != %current.status`. On creation,
+`%previous.id.exists()` is false, so the implication is true. On update, the expression compares
+the statuses. Test for the previous resource's `id`, rather than `%previous.exists()`, because
+the empty object supplied on creation still exists as a FHIRPath value. Use the interaction
+extensions above to explicitly exclude deletes when handling only creations and updates.
 
 ### Handling array fields
 

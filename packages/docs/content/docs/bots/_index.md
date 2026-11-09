@@ -4,6 +4,12 @@ title: Bots
 weight: 10
 ---
 
+{{< tip title="Planning event processing" >}}
+
+Use the [Event Processing and Automation Decision Guide](/docs/decision-guides/event-processing-and-automation) to choose between Bots and external services, select triggers, and define completion and recovery requirements.
+
+{{< /tip >}}
+
 Medplum bots are functions that execute when triggered. They are similar to AWS Lambda functions, and in Medplum we make them easy to write and deploy and trigger with [FHIR Subscriptions](/docs/subscriptions). For the purpose of the tutorials found in this section, it's important to understand that **Bots drive many of the major integrations that you see in Medplum**.
 
 If you are new to Medplum Bots, we encourage you to read the intro material in the [**Bot Guide**](/docs/bots/bot-basics).
@@ -39,6 +45,7 @@ Configure how and when your bots execute, from scheduled tasks to real-time even
 
 ## Common Use Cases & Patterns
 Implement frequently-needed functionality like file handling, document generation, and data transformation.
+- [Implementing Event Processing](/docs/bots/event-processing)
 - [Uploading Files](/docs/bots/file-uploads)
 - [Create a PDF](/docs/bots/creating-a-pdf)
 - [HL7 to FHIR](/docs/bots/hl7-into-fhir)
