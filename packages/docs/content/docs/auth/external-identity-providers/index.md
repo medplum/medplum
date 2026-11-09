@@ -5,13 +5,17 @@ weight: 80
 docs_tags: [auth]
 ---
 
-Along with [Google Authentication](/docs/auth/google-auth), Medplum supports other external identity providers using the OAuth2 protocol such as Auth0 and AWS Cognito for end user authentication. This is sometimes known as "Federated Identities".
+Configure an OpenID Connect (OIDC) identity provider (IDP), such as Auth0 or AWS Cognito, and use the authorization-code flow to sign users in. This page covers both [provider routing](#idp-routing-strategies) and the [authorization-code flow](#authorization-code-flow), including Medplum handling the external IDP callback. For Medplum's Google-specific setup, see [Google Authentication](/docs/auth/google-auth).
+
+If your application obtains an external access token through its own login flow, use [Token Exchange](/docs/auth/token-exchange) to obtain a Medplum token. Both approaches can use the same external IDP.
 
 ## IDP Routing Strategies
 
 When using external identity providers, you need to decide how to route users to the correct IDP. Medplum supports two primary strategies:
 
-### 1. App-based Routing (Client ID)
+<span id="1-app-based-routing-client-id"></span>
+
+### Application-based Routing {#application-based-routing}
 
 In this model, the Identity Provider is determined by the application the user is logging into. This is configured on the `ClientApplication` resource.
 
@@ -19,7 +23,9 @@ In this model, the Identity Provider is determined by the application the user i
 - **Use Case:** You have a "Patient App" that uses Auth0 for all users, and a separate "Provider App" that uses Okta.
 - **Setup:** Follow the [Setup](#setup) instructions below to configure the IDP on your `ClientApplication`.
 
-### 2. Domain-based Routing (Email Domain)
+<span id="2-domain-based-routing-email-domain"></span>
+
+### Domain-based Routing {#domain-based-routing}
 
 In this model, the Identity Provider is determined by the user's email address. This is configured using [Domain Configuration](/docs/auth/domain-level-identity-providers).
 
@@ -27,9 +33,15 @@ In this model, the Identity Provider is determined by the user's email address. 
 - **Use Case:** You have enterprise customers who want their employees to log in with their corporate credentials (SSO), regardless of which app they are using.
 - **Setup:** See the [Domain-level Identity Providers](/docs/auth/domain-level-identity-providers) guide.
 
-## Auth flow
+Account matching is separate from provider routing. Medplum can match users by email or by an external subject identifier; see [Using External IDs](/docs/user-management/external-ids) for provisioning and configuration.
 
-When an end user authenticates with your client-side web application, we will use the following authentication flow:
+<span id="auth-flow"></span>
+
+## Authorization-code Flow
+
+This flow is also called **three-legged OAuth**. The user authenticates with the external IDP, which redirects to Medplum's external authentication callback. Medplum then redirects to your application with a Medplum authorization code. Your application redeems that code for Medplum tokens.
+
+The callback and code exchange are shown below:
 
 ![External identity providers flow](external-identity-providers.webp)
 
@@ -37,7 +49,7 @@ When an end user authenticates with your client-side web application, we will us
 
 ## Example repo
 
-Medplum provides a minimal example application which demonstrates using Auth0 as an external identity provider. The example is approximately 100 lines of TypeScript code, and can be used as a starting point for any standard OAuth2/OpenID identity provider.
+Medplum provides a minimal example application which demonstrates using Auth0 as an external identity provider. The example is approximately 100 lines of TypeScript code, and can be used as a starting point for an OIDC identity provider.
 
 > [https://github.com/medplum/medplum-client-external-idp-demo](https://github.com/medplum/medplum-client-external-idp-demo)
 
@@ -45,7 +57,9 @@ Medplum provides a minimal example application which demonstrates using Auth0 as
 
 Setup your external authentication provider (Auth0, AWS Cognito, Okta, etc). Use "https://api.medplum.com/auth/external" as the "redirect URI" (also known as the "callback URL" in some systems).
 
-Also make sure that your provider accepts the `profile` OIDC scope.
+The provider must support OIDC and return an `id_token` from its token endpoint. Request the `openid` scope; the SDK helper defaults to `openid profile email`. Configure the provider to return `email` for email matching or `sub` for subject matching.
+
+Configure `jwksUrl` and `issuer` on the identity provider to enable ID-token signature and issuer verification. Medplum checks the audience against `audience` when configured, otherwise against the provider's `clientId`.
 
 Note the following details:
 
