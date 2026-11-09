@@ -402,7 +402,12 @@ export class FhirRouter extends EventTarget {
   }
 }
 
-function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
+/**
+ * Parses the version ID from an `If-Match` header, such as `W/"123"`.
+ * @param ifMatch - The `If-Match` header value.
+ * @returns The version ID, or undefined if the header is missing or malformed.
+ */
+export function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   if (!ifMatch) {
     return undefined;
   }

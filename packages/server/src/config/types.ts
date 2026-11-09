@@ -69,6 +69,11 @@ export interface MedplumServerConfig {
   awsRegion: string;
   /** Optional base64-encoded 256-bit key for S3 SSE-C (Server-Side Encryption with Customer-Provided Keys) */
   sseCustomerKey?: string;
+  /**
+   * Keys for EncryptedSecret values. Exactly one key is `active` and encrypts new values; `decrypt-only` keys
+   * still decrypt values written under them until those are re-encrypted. Each `key` is a base64-encoded 256-bit key.
+   */
+  encryptedSecretKeys?: EncryptedSecretKeyConfig[];
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `true`. */
@@ -461,4 +466,12 @@ export interface MedplumShardConfig {
   isDefaultShard?: boolean;
   database: MedplumDatabaseConfig;
   readonlyDatabase?: MedplumDatabaseConfig;
+}
+
+export interface EncryptedSecretKeyConfig {
+  /** Key ID, recorded with each value so the key can be found on read. */
+  kid: string;
+  /** Base64-encoded 256-bit AES key. */
+  key: string;
+  status: 'active' | 'decrypt-only';
 }
