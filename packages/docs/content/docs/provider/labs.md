@@ -1,10 +1,10 @@
 ---
-title: Labs
+title: Orders (Labs)
 weight: 5200
-description: Prepare and submit lab orders, resume drafts, and review preliminary and final results in Provider.
+description: Use Orders in Provider to prepare and submit lab orders, resume drafts, and review preliminary and final results.
 ---
 
-The **Labs** area in a patient's chart brings together lab orders, requisition documents, and results. Use it to prepare an order, return to a draft, and review a report when results arrive.
+The **Orders** area in a patient's chart brings together lab orders, requisition documents, and results. This guide covers the lab workflow: preparing an order, returning to a draft, and reviewing a report when results arrive.
 
 {{< info title="Before you start" >}}
 Ordering through the standard Provider application uses the [Health Gorilla integration](/docs/integration/health-gorilla). Configure the project, ordering practitioner, and lab accounts before submitting an order.
@@ -35,7 +35,7 @@ The **Completed** view includes preliminary and partial results, marked with a s
 
 ## Create an order
 
-1. Open the patient's chart and select **Labs**.
+1. Open the patient's chart and select **Orders**.
 2. Select **Order Labs**, the plus button above the list.
 3. Confirm the patient and requester, then select the performing lab and account information.
 4. Choose the tests, diagnoses, and billing information required for the order. Add order notes and specimen collection time when applicable.
@@ -78,4 +78,4 @@ After reviewing a result, follow your organization's process for acknowledgement
 
 - [Ordering Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging) covers the broader workflow and data model.
 - [Health Gorilla](/docs/integration/health-gorilla) covers integration setup and operations.
-- The public [Provider Labs page](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/patient/LabsPage.tsx) demonstrates the `LabOrdersPanel` component for custom applications.
+- The public [Provider Orders page implementation](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/patient/LabsPage.tsx) demonstrates the `LabOrdersPanel` component for custom applications.

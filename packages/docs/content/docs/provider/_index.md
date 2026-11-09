@@ -91,7 +91,7 @@ The following sections outline the primary functionality of the Medplum Provider
 
 Create conversations, manage the inbox, and complete threads when their work is finished.
 
-#### [Labs](/docs/provider/labs)
+#### [Orders (Labs)](/docs/provider/labs)
 
 Prepare and submit orders, resume drafts, and review preliminary and final results and requisition documents.
 
