@@ -11,9 +11,9 @@ The [Authentication Decision Guide](/docs/decision-guides/authentication) helps 
 
 Use this directory to find setup instructions, SDK examples, and authentication reference material. User authentication can run in a browser, a native application, or through your backend. Application authentication gives a service its own access to Medplum.
 
-## Sign-in and Identity Providers {#browser-based-authentication}
+## Sign-in Flows {#browser-based-authentication}
 
-These pages explain login flows and provider configuration. Provider routing selects where the user authenticates; the login flow determines how your application obtains Medplum credentials.
+These pages explain sign-in through Medplum-hosted pages, embedded forms, or an external IDP redirect. Provider routing selects where the user authenticates; the login flow determines how your application obtains Medplum credentials.
 
 | Implementation task                                                       | Documentation                                                                                          |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -36,7 +36,7 @@ Use these pages when your application already authenticates the user or a truste
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Exchange an external user access token, then call Medplum from the client     | [Token Exchange: client-held Medplum tokens](/docs/auth/token-exchange#client-held-medplum-tokens) |
 | Exchange an external user access token and keep Medplum calls in your backend | [Token Exchange: server-held Medplum tokens](/docs/auth/token-exchange#server-held-medplum-tokens) |
-| Have a privileged application delegate individual requests to a user          | [On-Behalf-Of](/docs/auth/on-behalf-of)                                                            |
+| Have a privileged application delegate individual requests to a user          | [On-Behalf-Of Delegation](/docs/auth/on-behalf-of)                                                 |
 | Create a one-time code after user authentication and consent have occurred    | [Pre-Authorized Code](/docs/auth/pre-authorized-code)                                              |
 | Accept external JWTs directly on a self-hosted Medplum server                 | [Direct External Authentication](/docs/auth/direct-external-auth)                                  |
 
@@ -54,9 +54,10 @@ For delegated user requests, first authenticate the application, then follow [On
 
 ## Sessions and MFA
 
-- [Access Token Management](/docs/auth/session-management): token lifetimes and refresh behavior.
+- [Access and Refresh Tokens](/docs/auth/session-management): token lifetimes and refresh behavior.
 - [Logout](/docs/auth/logout): session revocation.
 - [Multi-Factor Authentication](/docs/auth/mfa): enrollment, login challenges, and recovery administration for Medplum-managed authentication. Configure external-IDP MFA with that provider.
+- [How MFA Works](/docs/auth/how-mfa-works): HTTP routes and flows for building your own MFA interface.
 
 ---
 
