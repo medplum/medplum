@@ -195,6 +195,9 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * above the times on offer, for placing a visit the rules would refuse. The read-only
  * time on the left stays where it is; both ways of answering land in it.
  *
+ * **Date & time** starts out on the time clicked to open the form, unless that time has
+ * passed or a whole day was picked in month view.
+ *
  * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
  * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
  * **Ultrasound Imaging** and **Dr. Maya Rivera**, then **Find a time**. Above the times

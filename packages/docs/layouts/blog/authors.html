@@ -1,0 +1,20 @@
+{{ define "main" }}
+  <h1>{{ .Title }}</h1>
+  {{- $posts := where site.RegularPages "Section" "blog" -}}
+  <ul class="blog-author-list">
+    {{- range hugo.Data.authors }}
+      {{- $key := .key -}}
+      {{- $count := 0 -}}
+      {{- range $posts }}{{ if in (cond (reflect.IsSlice .Params.authors) .Params.authors (slice .Params.authors)) $key }}{{ $count = add $count 1 }}{{ end }}{{ end -}}
+      {{- if gt $count 0 }}
+        <li class="blog-author">
+          {{- with .image_url }}<img class="blog-author-image" src="{{ . }}" alt="" width="64" height="64" loading="lazy" />{{ end }}
+          <div>
+            <h2>{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }} <span class="tag-count">{{ $count }}</span></h2>
+            {{ with .title }}<div class="blog-author-title">{{ . }}</div>{{ end }}
+          </div>
+        </li>
+      {{- end }}
+    {{- end }}
+  </ul>
+{{ end }}

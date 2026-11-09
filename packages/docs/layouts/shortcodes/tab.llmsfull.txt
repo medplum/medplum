@@ -1,0 +1,4 @@
+{{- /* Plain text for /llms-full.txt: each tab's content under its label */ -}}
+**{{ .Get "label" }}**
+
+{{ trim .Inner "\n" }}
