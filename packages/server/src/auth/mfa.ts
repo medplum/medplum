@@ -352,9 +352,8 @@ mfaRouter.post(
       return;
     }
 
-    // Regenerate the authenticator secret whenever TOTP is being removed, so a
-    // future re-enrollment gets a fresh secret. This covers the lost / stolen
-    // device case. Email-only removals leave the secret untouched.
+    // Replace the stored authenticator secret whenever TOTP is being removed, so
+    // the old one is no longer kept. Email-only removals leave it untouched.
     const totpRemoved = !methodToRemove || methodToRemove === 'totp';
 
     await ctx.systemRepo.updateResource({

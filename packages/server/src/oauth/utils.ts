@@ -325,7 +325,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * Verifies the MFA token for a login.
  * Ensures that the login is valid.
  * Ensures that the token is valid.
- * On success, updates the login with the MFA status.
+ * On success, enrolls the user in TOTP if `enrollSecret` is given, then updates the login with the MFA status.
  * On error, throws an error.
  * @param login - The login resource.
  * @param token - The user supplied MFA token.
