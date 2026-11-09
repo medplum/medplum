@@ -31,10 +31,10 @@
     "dcmjs": "0.52.2",
     "dcmjs-dimse": "0.3.4",
     "iconv-lite": "0.7.3",
-    "semver": "7.8.5",
+    "semver": "7.8.6",
     "winston": "3.19.0",
     "winston-daily-rotate-file": "5.0.0",
-    "ws": "8.22.0"
+    "ws": "8.22.1"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.2.15",

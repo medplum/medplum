@@ -113,9 +113,18 @@ export async function getRepoForLogin(
 export async function getRepoForProject(projectId: string): Promise<Repository> {
   const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readResource<Project>('Project', projectId);
+  return getRepoForProjects(await getAllowedProjects(project, globalSystemRepo));
+}
+
+/**
+ * Creates a repository that is limited to reading from the given projects, as in `getRepoForProject`.
+ * @param projects - The current project, followed by any linked projects it may read from.
+ * @returns A repository scoped to the projects.
+ */
+export function getRepoForProjects(projects: WithId<Project>[]): Repository {
   return new Repository({
     routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
-    projects: await getAllowedProjects(project, globalSystemRepo),
+    projects,
     author: { reference: 'system' },
     extendedMode: true,
   });
@@ -271,7 +280,9 @@ async function buildAccessPolicyResources(
   let original = accessPolicyMap.get(policyReferenceString);
   if (!original) {
     try {
-      original = await readMembershipReference(systemRepo, membership, accessPolicyReference, ['AccessPolicy']);
+      original = await readMembershipReference(systemRepo, membership, accessPolicyReference, ['AccessPolicy'], {
+        allowLinkedProjects: true,
+      });
       accessPolicyMap.set(policyReferenceString, original);
     } catch {
       // Intentionally catch and rethrow with a generic error message for security

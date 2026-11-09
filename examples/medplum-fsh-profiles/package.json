@@ -12,9 +12,9 @@
   },
   "devDependencies": {
     "fsh-sushi": "3.21.0",
-    "rimraf": "6.1.3"
+    "rimraf": "6.1.4"
   },
-  "packageManager": "npm@11.21.1",
+  "packageManager": "npm@11.21.2",
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
   }

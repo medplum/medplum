@@ -138,9 +138,13 @@ export async function getUserConfiguration(
   let result: UserConfiguration;
 
   if (membership.userConfiguration) {
-    result = await readMembershipReference<UserConfiguration>(systemRepo, membership, membership.userConfiguration, [
-      'UserConfiguration',
-    ]);
+    result = await readMembershipReference<UserConfiguration>(
+      systemRepo,
+      membership,
+      membership.userConfiguration,
+      ['UserConfiguration'],
+      { allowLinkedProjects: true }
+    );
   } else {
     result = { resourceType: 'UserConfiguration' };
   }
