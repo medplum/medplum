@@ -1,0 +1,48 @@
+.doc-footer {
+  display: none; /* Hidden by default */
+  margin-top: 3rem;
+}
+
+.doc-footer svg {
+  width: 16px;
+  height: 16px;
+}
+
+.doc-footer-edit-row,
+.doc-footer-pagination-row {
+  margin: 32px auto;
+  gap: 16px;
+}
+
+.doc-footer-edit-cell {
+  padding: 0 4px 8px 4px;
+}
+
+.doc-footer-pagination-link {
+  grid-column: 2 / 3;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  height: 100%;
+  line-height: 1.25;
+  padding: 16px;
+  transition: border-color 0.2s cubic-bezier(0.08, 0.52, 0.52, 1);
+  display: block;
+}
+
+.doc-footer-pagination-link:hover {
+  border-color: var(--ifm-pagination-nav-color-hover);
+  text-decoration: none;
+}
+
+.doc-footer-pagination-sublabel {
+  color: var(--oc-gray-6);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.doc-footer-pagination-label {
+  font-size: 1rem;
+  font-weight: 700;
+  word-break: break-word;
+}

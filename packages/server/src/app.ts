@@ -182,6 +182,11 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest(err.message));
     return;
   }
+  if (err.expose && err.status === 400) {
+    // http-errors marks client errors as safe to expose, e.g. body-parser decompression failures
+    sendOutcome(res, badRequest(err.message));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }

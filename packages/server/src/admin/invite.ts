@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { InviteRequest, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   badRequest,
   conflict,
@@ -28,13 +29,14 @@ import type {
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
-import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
+import { getAllowedProjects, getRepoForProjects } from '../fhir/accesspolicy';
+import { getDefaultAccessPolicy } from '../fhir/default-access-policies';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
@@ -197,11 +199,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     project = createReference(request.project);
   }
 
-  let mfaSecret: string | undefined = undefined;
-  if (mfaRequired) {
-    mfaSecret = authenticator.generateSecret();
-  }
-
   return {
     resourceType: 'User',
     meta: project ? { project: resolveId(project) } : undefined,
@@ -211,7 +208,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     passwordHash,
     project,
     mfaRequired,
-    mfaSecret,
   };
 }
 
@@ -372,6 +368,7 @@ async function validateAccessPolicies(
 
   // Batch read all access policies at once
   const results = await systemRepo.readReferences<AccessPolicy>(references);
+  const projectRepo = getRepoForProjects(await getAllowedProjects(project, systemRepo));
 
   // Validate each result
   for (let i = 0; i < results.length; i++) {
@@ -388,8 +385,7 @@ async function validateAccessPolicies(
       throw result;
     }
 
-    // Check if the access policy belongs to the project
-    if (result.meta?.project && result.meta.project !== project.id) {
+    if (!projectRepo.canPerformInteraction(AccessPolicyInteraction.READ, result)) {
       throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not belong to this project`));
     }
   }
@@ -418,9 +414,9 @@ async function upsertProjectMembership(
   // Also applies on upsert when no policy is provided in the request.
   // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
   if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    const defaultPolicy = getDefaultAccessPolicy(project, 'Patient');
     if (defaultPolicy) {
-      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+      partialMembership.accessPolicy = defaultPolicy;
     } else if (project.defaultPatientAccessPolicy) {
       // Fallback to legacy field for backwards compatibility
       partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
@@ -433,12 +429,12 @@ async function upsertProjectMembership(
     !partialMembership.accessPolicy &&
     !partialMembership.access?.length
   ) {
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    const defaultPolicy = getDefaultAccessPolicy(project, 'RelatedPerson');
     const patientRef = (profile as RelatedPerson).patient;
     if (defaultPolicy && patientRef) {
       partialMembership.access = [
         {
-          policy: defaultPolicy.accessPolicy,
+          policy: defaultPolicy,
           parameter: [{ name: 'patient', valueReference: patientRef }],
         },
       ];
@@ -448,10 +444,9 @@ async function upsertProjectMembership(
   // Apply default membership policy for Practitioner invites, based on whether the member is
   // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
   if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
+    const defaultPolicy = getDefaultAccessPolicy(project, partialMembership.admin ? 'Admin' : 'Practitioner');
     if (defaultPolicy) {
-      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+      partialMembership.accessPolicy = defaultPolicy;
     }
   }
 
