@@ -3,7 +3,7 @@
 import { Alert, Group, Stack, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { isOk } from '@medplum/core';
-import type { ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
+import type { ProjectMembership, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,
   Loading,
@@ -11,11 +11,13 @@ import {
   OperationOutcomeAlert,
   ResourceTable,
   useMedplum,
-  useResource,
   useSearchResources,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
+import { MembershipUserDetails } from '../admin/MembershipUserDetails';
+import { useMembershipUser } from '../admin/useMembershipUser';
+import { getProjectId } from '../utils';
 
 export function MembershipPage(): JSX.Element {
   const medplum = useMedplum();
@@ -70,31 +72,23 @@ export function MembershipPage(): JSX.Element {
 }
 
 function MembershipDetails({ membership }: { membership: WithId<ProjectMembership> }): JSX.Element {
-  const userRef = membership.user?.reference?.startsWith('User/')
-    ? { reference: membership.user.reference }
-    : undefined;
-  const user = useResource<User>(userRef);
+  const medplum = useMedplum();
+  const { userRef, user, outcome } = useMembershipUser(membership);
+  // Admin pages act on the active project
+  const inActiveProject = membership.project?.reference === `Project/${getProjectId(medplum)}`;
 
   return (
     <Stack gap="sm">
       <Group gap="md">
         <MedplumLink to={membership}>Go to ProjectMembership</MedplumLink>
-        <MedplumLink to={getAdminMemberPath(membership)}>View in project admin</MedplumLink>
+        {inActiveProject ? (
+          <MedplumLink to={getAdminMemberPath(membership)}>View in project admin</MedplumLink>
+        ) : (
+          membership.project && <MedplumLink to={membership.project}>Go to Project</MedplumLink>
+        )}
       </Group>
       <ResourceTable value={membership} ignoreMissingValues />
-      {userRef && (
-        <>
-          <Title mt="md">User Details</Title>
-          {user?.project ? (
-            <>
-              <MedplumLink to={`/User/${user.id}/email`}>Go to User (change login email)</MedplumLink>
-              <ResourceTable value={user} ignoreMissingValues />
-            </>
-          ) : (
-            <Alert color="yellow">This User is server-scoped and cannot be viewed in this project.</Alert>
-          )}
-        </>
-      )}
+      {userRef && <MembershipUserDetails user={user} outcome={outcome} />}
     </Stack>
   );
 }

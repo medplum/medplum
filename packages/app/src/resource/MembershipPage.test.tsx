@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { forbidden, OperationOutcomeError } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -22,7 +23,34 @@ describe('MembershipPage', () => {
 
   function asAdmin(medplum = new MockClient()): MockClient {
     vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    });
     return medplum;
+  }
+
+  async function createPatientMembership(
+    medplum: MockClient,
+    userReference: string,
+    project = 'Project/123'
+  ): Promise<Patient> {
+    const patient = await medplum.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Bob'] }] });
+    await medplum.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: project },
+      user: { reference: userReference },
+      profile: { reference: `Patient/${patient.id}` },
+    });
+    return patient;
+  }
+
+  function mockUserRead(medplum: MockClient, read: () => Promise<never>): void {
+    const readReference = medplum.readReference.bind(medplum);
+    vi.spyOn(medplum, 'readReference').mockImplementation(((ref: { reference?: string }) =>
+      ref.reference?.startsWith('User/') ? read() : readReference(ref as never)) as typeof medplum.readReference);
   }
 
   test.each(['Bot', 'ClientApplication', 'Patient', 'Practitioner', 'RelatedPerson'] as const)(
@@ -94,29 +122,71 @@ describe('MembershipPage', () => {
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
   });
 
-  test('Shows server-scoped user alert', async () => {
+  test('Shows a readable server-scoped user with a note and no email link', async () => {
     const medplum = asAdmin();
-    const patient = await medplum.createResource<Patient>({
-      resourceType: 'Patient',
-      name: [{ given: ['Bob'], family: 'Jones' }],
-    });
     const user = await medplum.createResource<User>({
       resourceType: 'User',
       firstName: 'Bob',
       lastName: 'Jones',
       email: 'bob@example.com',
     });
-    await medplum.createResource<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: `User/${user.id}` },
-      profile: { reference: `Patient/${patient.id}` },
-    });
+    const patient = await createPatientMembership(medplum, `User/${user.id}`);
+
+    await setup(`/Patient/${patient.id}/membership`, medplum);
+
+    expect(await screen.findByText('This User is server-scoped.')).toBeInTheDocument();
+    expect(screen.getByText('bob@example.com')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Go to User (change login email)' })).not.toBeInTheDocument();
+  });
+
+  test('Shows loading while the user is being read', async () => {
+    const medplum = asAdmin();
+    const patient = await createPatientMembership(medplum, 'User/pending');
+    mockUserRead(
+      medplum,
+      () =>
+        new Promise<never>(() => {
+          // never resolves
+        })
+    );
 
     await setup(`/Patient/${patient.id}/membership`, medplum);
 
     expect(await screen.findByText('User Details')).toBeInTheDocument();
-    expect(screen.getByText('This User is server-scoped and cannot be viewed in this project.')).toBeInTheDocument();
+    expect(document.querySelector('.mantine-Loader-root')).toBeInTheDocument();
+    expect(screen.queryByText(/server-scoped/)).not.toBeInTheDocument();
+  });
+
+  test('Shows likely server-scoped alert when the user is not found', async () => {
+    const medplum = asAdmin();
+    const patient = await createPatientMembership(medplum, 'User/missing');
+
+    await setup(`/Patient/${patient.id}/membership`, medplum);
+
+    expect(
+      await screen.findByText('This User could not be found in this project. It is likely server-scoped.')
+    ).toBeInTheDocument();
+  });
+
+  test('Shows the error when the user read fails', async () => {
+    const medplum = asAdmin();
+    const patient = await createPatientMembership(medplum, 'User/denied');
+    mockUserRead(medplum, () => Promise.reject(new OperationOutcomeError(forbidden)));
+
+    await setup(`/Patient/${patient.id}/membership`, medplum);
+
+    expect(await screen.findByText('Forbidden')).toBeInTheDocument();
+    expect(screen.queryByText(/server-scoped/)).not.toBeInTheDocument();
+  });
+
+  test('Links to the project instead of project admin for other projects', async () => {
+    const medplum = asAdmin();
+    const patient = await createPatientMembership(medplum, 'Patient/123', 'Project/other');
+
+    await setup(`/Patient/${patient.id}/membership`, medplum);
+
+    expect(await screen.findByRole('link', { name: 'Go to Project' })).toHaveAttribute('href', '/Project/other');
+    expect(screen.queryByRole('link', { name: 'View in project admin' })).not.toBeInTheDocument();
   });
 
   test('Bot membership links to the bots admin page and hides User details', async () => {
