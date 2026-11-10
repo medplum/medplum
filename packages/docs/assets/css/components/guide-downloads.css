@@ -1,0 +1,87 @@
+.guide-page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.guide-page-header .breadcrumbs {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.guide-page-header .breadcrumbs > :not(.active) {
+  flex-shrink: 0;
+}
+
+.guide-page-header .breadcrumbs .active {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guide-downloads {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.guide-download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--oc-grape-2);
+  border-radius: 8px;
+  background: var(--oc-grape-0);
+  color: var(--ifm-color-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.guide-download-button span {
+  display: flex;
+}
+
+.guide-download-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.guide-download-button:hover {
+  border-color: var(--ifm-color-primary);
+  background: var(--oc-grape-1);
+  text-decoration: none;
+}
+
+.guide-download-button:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+}
+
+[data-theme='dark'] .guide-download-button {
+  border-color: var(--oc-grape-8);
+  background: var(--oc-gray-9);
+}
+
+[data-theme='dark'] .guide-download-button:hover {
+  border-color: var(--ifm-color-primary);
+  background: var(--oc-gray-8);
+}
+
+@media (max-width: 576px) {
+  .guide-page-header {
+    flex-wrap: wrap;
+  }
+
+  .guide-page-header .breadcrumbs {
+    flex-basis: 100%;
+  }
+}
