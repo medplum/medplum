@@ -38,8 +38,7 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState, repo, systemRepo } = getAuthenticatedContext();
-  const { project, membership } = authState;
+  const { authState, repo, systemRepo, project, membership } = getAuthenticatedContext();
   const profileRef = membership.profile as Reference<ProfileResource>;
   const profile = await readMembershipReference<ProfileResource>(
     systemRepo,
@@ -53,7 +52,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
-  if (membership.user?.reference?.startsWith('User/')) {
+  if (!authState.onBehalfOfMembership && membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
   }
 
