@@ -1,13 +1,20 @@
 ---
 title: Saving and Resuming Questionnaire Responses
-description: Embed a QuestionnaireForm, save drafts, reopen responses, and submit completed answers for processing.
+description: Let users save their progress, return to a form, and submit completed answers.
 ---
+
+People do not always finish a form in one sitting. Saving a draft lets them pause and return to their answers later. This guide connects the [activity-log example](/docs/questionnaires/advanced-authoring) to Medplum so users can save progress, resume the same response, and submit it when they are ready.
 
 `QuestionnaireForm` manages answers and page navigation in the browser. Your application saves the `QuestionnaireResponse`, loads it when the user returns, and starts processing after completion.
 
-This guide adds persistence to forms such as the [advanced activity-log example](/docs/questionnaires/advanced-authoring). It assumes an authenticated [Medplum React application](/docs/react) and access to the intended patient. The first step stores the form definition.
+Before you begin, you'll need:
+
+- An authenticated [Medplum React application](/docs/react).
+- Access to the patient whose response you will save.
 
 ## Plan the response lifecycle
+
+Keep one response per assigned instance of a form. A patient completing the same assessment at two visits usually needs two responses, while saving a draft several times should update the same response.
 
 ```mermaid
 flowchart TD
@@ -18,8 +25,6 @@ flowchart TD
     E -->|"Validate and save"| C["Stored: completed"]
     C --> P["Extract resources or run a Bot"]
 ```
-
-Keep one response per assigned instance of a form. A patient completing the same assessment at two visits usually needs two responses, while saving a draft several times should update the same response.
 
 | Boundary        | Form behavior                                                            | Application responsibility                                        |
 | --------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |

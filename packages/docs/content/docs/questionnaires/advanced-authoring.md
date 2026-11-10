@@ -9,6 +9,8 @@ Start with [Modeling Questionnaires and Responses](/docs/questionnaires/question
 
 ## Choose the feature you need
 
+Medplum's form renderer supports a subset of Structured Data Capture (SDC). Use the table below to choose an approach, and check the [feature compatibility table](#supported-features-and-imported-forms) before importing a questionnaire from another authoring tool.
+
 | Goal                                                  | Use                                                                                                                           |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Show a question based on another answer               | `enableWhen`; set `enableBehavior` when combining conditions                                                                  |
@@ -18,11 +20,15 @@ Start with [Modeling Questionnaires and Responses](/docs/questionnaires/question
 | Collect several entries, such as multiple medications | A repeating group; see [intake questionnaire design](/docs/intake/intake-questionnaires#structure-groups-and-repeating-items) |
 | Prefill from patient or encounter data                | Load the data in your application and supply a `QuestionnaireResponse`                                                        |
 
-The [compatibility table](#supported-features-and-imported-forms) describes the supported subset of Structured Data Capture (SDC). Check it before importing a form from another authoring tool.
-
 ## Build a two-page activity log
 
-The example records morning and afternoon activity, calculates their total, and asks for a comparison when both values are greater than zero.
+Suppose your application asks patients to record their morning and afternoon activity in minutes. The form should calculate the total and ask a comparison question only when they recorded activity in both periods.
+
+This example brings together three patterns you can reuse in other questionnaires:
+
+- **Pages** separate entering answers from reviewing them.
+- **Calculated answers** derive a total from earlier inputs.
+- **Conditional questions** show follow-ups when the relevant answers are present.
 
 ```mermaid
 flowchart LR
@@ -32,7 +38,7 @@ flowchart LR
 
 ### Try the complete example
 
-The definition is authored in TypeScript with `@medplum/fhirtypes`; its extensions are stored as ordinary Questionnaire JSON. Save the definition below as `advanced-questionnaires.ts`. The following sections explain its parts.
+Save the definition below as `advanced-questionnaires.ts` to try all three features together. It uses `@medplum/fhirtypes` for TypeScript checking; its extensions are stored as ordinary Questionnaire JSON. After the preview, the following sections walk through each part of the definition.
 
 <details>
 <summary>Complete TypeScript definition</summary>
