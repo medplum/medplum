@@ -9,7 +9,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { getUserConfigurationMenu } from './me';
 import { registerNew } from './register';
 
@@ -210,6 +210,48 @@ describe('Me', () => {
     });
     expect(storedClient.secret).toBe(client.secret);
     expect(storedClient.retiringSecret).toBe(retiringSecret);
+  });
+
+  test.each([false, true])('Get me on behalf of a Patient (cross-project: %s)', async (crossProject) => {
+    const { client, project } = await withTestContext(() =>
+      createTestProject({ withClient: true, membership: { admin: true }, superAdmin: crossProject })
+    );
+    const targetProject = crossProject ? (await withTestContext(() => createTestProject())).project : project;
+    const patient = await withTestContext(() =>
+      addTestUser(targetProject, {
+        resourceType: 'Patient',
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: '%patient' },
+          resource: [{ resourceType: 'Patient' }],
+        },
+      })
+    );
+    const config = await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(targetProject);
+      const config = await systemRepo.createResource<UserConfiguration>({
+        resourceType: 'UserConfiguration',
+        menu: [{ title: 'Patient menu', link: [{ name: 'Home', target: '/' }] }],
+      });
+      await systemRepo.updateResource({ ...patient.membership, userConfiguration: createReference(config) });
+      return config;
+    });
+
+    const res = await request(app)
+      .get('/auth/me')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
+      .set('X-Medplum-On-Behalf-Of', `ProjectMembership/${patient.membership.id}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.project.id).toBe(targetProject.id);
+    expect(res.body.profile).toMatchObject({ resourceType: 'Patient', id: patient.profile.id });
+    expect(res.body.membership).toMatchObject({
+      id: patient.membership.id,
+      profile: createReference(patient.profile),
+    });
+    expect(res.body.config).toMatchObject({ id: config.id, menu: config.menu });
+    expect(res.body.accessPolicy.compartment.reference).toBe(`Patient/${patient.profile.id}`);
+    expect(res.body.user).toBeUndefined();
+    expect(res.body.security).toBeUndefined();
   });
 
   test('Profile in another project', async () => {
