@@ -163,7 +163,7 @@ The response confirms acceptance. The caller or an operator determines completio
   - An asynchronous response does not itself guarantee automatic retry or recovery after interruption.
 - **Best fit:** Delayed completion is acceptable and your application can expose and recover unfinished work.
 
-For authenticated Bot `$execute`, Medplum supports asynchronous execution with a status URL. That mechanism provides execution tracking. Recovery after interrupted execution requires retained work state and application logic. Custom FHIR operations and public webhook routes do not automatically acquire the same behavior. Use the implementation docs to choose the supported path and determine whether a separate persisted work item is required.
+For authenticated Bot `$execute`, Medplum supports asynchronous execution with a status URL. That mechanism provides execution tracking. Recovery after interrupted execution requires retained work state and application logic. Custom FHIR operations and public webhook routes do not support `Prefer: respond-async`. Use the implementation docs to choose the supported path and determine whether a separate persisted work item is required.
 
 Implementation: [Background execution and recovery](/docs/bots/event-processing#accept-work-for-background-processing), [Asynchronous Bot execution](/docs/api/fhir/operations/bot-execute#asynchronous-execution).
 

@@ -83,7 +83,7 @@ Use the following function from an authorized recovery script or a separately sc
 
 {{< code-example file="packages/examples/src/bots/event-processing.ts" language="ts" blocks="review-recovery" >}}
 
-This small example scans all completed preparation Tasks and stops on an error so the run reports failure. For larger workloads, process bounded partitions with saved progress and record individual failures for repair. A checkpoint must not permanently exclude failed items. Fit each run within execution and API rate limits.
+This small example scans all completed preparation Tasks and stops on an error so the run reports failure. Each run makes paginated search requests, then a fresh read and conditional-create request for each still-eligible preparation, including those with existing reviews. API usage therefore grows with the completed history. For larger workloads, process bounded partitions with saved progress and record individual failures for repair. A checkpoint must not permanently exclude failed items. Fit each run within execution and API rate limits.
 
 The persisted preparation and review resources supply recovery evidence for this step. An execution log alone does not. If you add more steps, persist their outcomes or use an explicit work item so recovery can determine which step remains.
 

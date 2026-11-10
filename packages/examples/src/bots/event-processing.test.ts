@@ -23,10 +23,10 @@ test('a repeated event reuses the review and preserves its progress and patient 
   if (!first) {
     throw new Error('Expected a review Task');
   }
-  expect(first?.for).toEqual(source.for);
-  expect(first?.focus?.reference).toBe('Task/preparation');
-  expect(first?.status).toBe('ready');
-  expect(first?.owner).toBeUndefined();
+  expect(first.for).toEqual(source.for);
+  expect(first.focus?.reference).toBe('Task/preparation');
+  expect(first.status).toBe('ready');
+  expect(first.owner).toBeUndefined();
   const completed = await client.updateResource({ ...first, status: 'completed' });
   const repeated = await ensureReviewTask(client, source.id as string);
   expect(repeated?.id).toBe(completed.id);
