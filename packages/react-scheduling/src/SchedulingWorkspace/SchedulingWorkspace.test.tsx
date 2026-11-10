@@ -338,6 +338,50 @@ describe('SchedulingWorkspace', () => {
       clock = undefined;
     });
 
+    test('focusing on a calendar shows all of it, what the filters leave out muted, until left', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+      renderWithMedplum(<SchedulingWorkspace />, await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]));
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
+
+      // Focused on Dr. Chen, only Dr. Chen's two visits with Jordan Reyes and the buffer after one are drawn: not Dr.
+      // Brown's visit with Liam Jones, Dr. Rivera's with Miles Cooper, or Exam Room A's maintenance.
+      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(0));
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(0);
+      expect(appointmentEvents('Jordan Reyes')).toHaveLength(2);
+      expect(screen.getAllByText('Blocked')).toHaveLength(1);
+      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+
+      // Under Infusion Therapy, Dr. Chen's visit with Jordan Reyes naming no service type goes, and its details, open,
+      // say why. Hidden, so does the other.
+      const untyped = appointmentEvents('Jordan Reyes').find((event) => event.textContent?.includes('no service type'));
+      await userEvent.click(untyped as HTMLElement);
+      const details = screen.getByRole('region', { name: 'Appointment details' });
+      await chooseFilter('All visit types', 'Infusion Therapy');
+      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(1));
+      expect(within(details).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+      await userEvent.click(calendarRow('Dr. Wei Chen'));
+      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(0));
+
+      // Focused, the calendar is shown, hidden or not, with the visit the filter leaves out muted, named for
+      // its visit type rather than its patient.
+      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(1));
+      const muted = document.querySelectorAll('.appointment.muted');
+      expect(muted).toHaveLength(1);
+      expect(muted[0]).toHaveTextContent('Appointment (no service type)');
+      expect(within(details).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
+
+      // Left, it is hidden again, under the filter it was.
+      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(0));
+      expect(calendarRow('Dr. Wei Chen')).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByText('Infusion Therapy')).toBeInTheDocument();
+      expect(within(details).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+    });
+
     test('the filters narrow the appointments drawn on the calendars they leave listed', async () => {
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
 
