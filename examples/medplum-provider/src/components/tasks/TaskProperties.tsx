@@ -7,6 +7,18 @@ import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes'
 import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 
+/** Resource types that can be assigned as the Task owner. */
+const TASK_OWNER_TYPES: ResourceType[] = [
+  'Practitioner',
+  'PractitionerRole',
+  'Organization',
+  'CareTeam',
+  'HealthcareService',
+  'Patient',
+  'Device',
+  'RelatedPerson',
+];
+
 interface TaskPropertiesProps extends PaperProps {
   task: Task;
   onTaskChange: (task: Task) => void;
@@ -76,16 +88,7 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
             </Text>
             <ReferenceInput
               name="owner"
-              targetTypes={[
-                'Practitioner',
-                'PractitionerRole',
-                'Organization',
-                'CareTeam',
-                'HealthcareService',
-                'Patient',
-                'Device',
-                'RelatedPerson',
-              ]}
+              targetTypes={TASK_OWNER_TYPES}
               defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
               onChange={async (value: Task['owner']) => {
                 await handleOwnerChange(value ? { reference: value.reference } : undefined);

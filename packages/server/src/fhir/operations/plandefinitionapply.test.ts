@@ -22,7 +22,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import { applyDynamicValues, resolveTaskElements } from './plandefinitionapply';
+import { applyDynamicValues } from './plandefinitionapply';
 
 const app = express();
 let accessToken: string;
@@ -1741,22 +1741,127 @@ describe('PlanDefinition apply', () => {
     }
   });
 
-  test('task-elements rejects unsupported owner reference type', () => {
-    expect(() =>
-      resolveTaskElements(
-        {
-          extension: [
-            {
-              url: 'https://medplum.com/fhir/StructureDefinition/task-elements',
-              extension: [{ url: 'owner', valueReference: { reference: 'Location/123' } }],
-            },
-          ],
-        },
-        { subject: { reference: 'Patient/123' } }
-      )
-    ).toThrow(
+  test('task-elements rejects unsupported owner reference type without creating resources', async () => {
+    const taskElementsUrl = 'https://medplum.com/fhir/StructureDefinition/task-elements';
+
+    const resPatient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resPatient).toHaveStatus(201);
+
+    const resPD = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        title: 'Invalid owner',
+        action: [
+          { title: 'First action' },
+          {
+            title: 'Second action',
+            extension: [
+              {
+                url: taskElementsUrl,
+                extension: [{ url: 'owner', valueReference: { reference: 'Location/123' } }],
+              },
+            ],
+          },
+        ],
+      });
+    expect(resPD).toHaveStatus(201);
+
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPD.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
+      });
+    expect(resApply).toHaveStatus(400);
+    expect(resApply.body.issue[0].details.text).toStrictEqual(
       'task-elements owner must reference one of Practitioner, PractitionerRole, Organization, CareTeam, HealthcareService, Patient, Device, RelatedPerson (got Location/123)'
     );
+
+    const resTasks = await request(app)
+      .get(`/fhir/R4/Task?based-on=${getReferenceString(resPD.body as PlanDefinition)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resTasks).toHaveStatus(200);
+    expect(resTasks.body.entry ?? []).toHaveLength(0);
+  });
+
+  test('task-elements action owner skips the ActivityDefinition owner', async () => {
+    const taskElementsUrl = 'https://medplum.com/fhir/StructureDefinition/task-elements';
+
+    const resPatient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resPatient).toHaveStatus(201);
+
+    const resAD = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        status: 'active',
+        url: 'http://example.com/ActivityDefinition/' + randomUUID(),
+        extension: [
+          {
+            url: taskElementsUrl,
+            extension: [{ url: 'owner', valueReference: { reference: 'Location/123' } }],
+          },
+        ],
+      });
+    expect(resAD).toHaveStatus(201);
+
+    const resPD = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        title: 'Action owner override',
+        action: [
+          {
+            title: 'Follow up',
+            definitionCanonical: (resAD.body as ActivityDefinition).url,
+            extension: [
+              {
+                url: taskElementsUrl,
+                extension: [{ url: 'owner', valueReference: createReference(resPatient.body as Patient) }],
+              },
+            ],
+          },
+        ],
+      });
+    expect(resPD).toHaveStatus(201);
+
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPD.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
+      });
+    expect(resApply).toHaveStatus(200);
+
+    const resTasks = await request(app)
+      .get(`/fhir/R4/Task?based-on=${getReferenceString(resPD.body as PlanDefinition)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resTasks).toHaveStatus(200);
+    expect(resTasks.body.entry).toHaveLength(1);
+    expect((resTasks.body.entry[0].resource as Task).owner).toMatchObject({
+      reference: getReferenceString(resPatient.body as Patient),
+    });
   });
 
   test('Populates instantiates link when PlanDefinition has url', async () => {

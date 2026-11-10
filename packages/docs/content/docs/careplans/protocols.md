@@ -221,7 +221,9 @@ Medplum supports a custom extension to assign Task parameters when `$apply` is r
   - `owner` with `valueExpression` resolves the owner from a FHIRPath expression based on the `$apply` parameters (e.g., `%subject`, `%practitioner`, `%organization`).
   - `performerType` with `valueCodeableConcept` sets a fixed performer type.
 
-The extension on the action applies to every action type, including Questionnaire actions and actions with no definition. When both the action and its ActivityDefinition carry the extension, each field on the action takes precedence and the ActivityDefinition fills in any field the action leaves unset.
+The extension on the action applies to every action type, including Questionnaire actions and actions with no definition. When both the action and its ActivityDefinition carry the extension, each field on the action takes precedence and the ActivityDefinition fills in any field the action leaves unset. A field set on the action means the ActivityDefinition's value for that field is ignored.
+
+An `owner` must be a literal `ResourceType/id` reference. If any action resolves to an invalid owner, the whole `$apply` fails with a `400` and no resources are created.
 
 {{< warning title="ActivityDefinition placement is deprecated" >}}
 Placing `task-elements` on an `ActivityDefinition` is deprecated and will be removed in a future major release. An ActivityDefinition describes the resource it generates, such as a `ServiceRequest`, not the Task that tracks the action. Put `task-elements` on the `PlanDefinition.action` instead. To set fields on the generated resource itself, use `ActivityDefinition.dynamicValue`.
