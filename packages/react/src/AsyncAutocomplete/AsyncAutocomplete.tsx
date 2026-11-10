@@ -146,6 +146,8 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   useEffect(() => {
     if (capReached) {
+      // The cap cleared the options, so the same search text has to load again.
+      lastValueRef.current = undefined;
       combobox.closeDropdown();
     }
   }, [capReached, combobox]);

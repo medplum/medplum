@@ -607,7 +607,7 @@ describe('AsyncAutocomplete', () => {
       expect(pills().getByText('Apple')).toBeInTheDocument();
     });
 
-    test('clears the search text when value fills the last slot', async () => {
+    test('clears the search when value fills the last slot', async () => {
       const props = { maxValues: 1, toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
       const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={null} />);
       await typeInAutocomplete(screen.getByRole('searchbox'), 'ch');
@@ -617,6 +617,9 @@ describe('AsyncAutocomplete', () => {
 
       rerender(<AsyncAutocomplete<TestOption> {...props} value={null} />);
       expect(screen.getByRole('searchbox')).toHaveValue('');
+
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'ch');
+      expect(screen.getByText('Cherry')).toBeInTheDocument();
     });
 
     test('drops a search still pending when value fills the last slot', async () => {
