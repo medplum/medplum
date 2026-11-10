@@ -1257,6 +1257,10 @@ class CcdaToFhirConverter {
           };
           break;
 
+        case 'REAL': // Real number, with a unit only if the document gives one
+          result.valueQuantity = this.mapQuantity(observation.value);
+          break;
+
         case 'CD': // Code
         case 'CE': // Code with Extensions
           result.valueCodeableConcept = this.mapCode(observation.value);
