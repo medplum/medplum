@@ -17,6 +17,8 @@
 
 .eyeSlot {
   display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .eyeOff {
