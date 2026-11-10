@@ -244,7 +244,7 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
   );
   // The AI gateway parses its own bodies, which are often larger than maxJsonSize
   if (config.aiGatewayEnabled) {
-    app.use(ANTHROPIC_GATEWAY_PATHS, createAnthropicGatewayRouter(config.awsRegion));
+    app.use(ANTHROPIC_GATEWAY_PATHS, createAnthropicGatewayRouter());
   }
 
   // Handle async batch by enqueueing job

@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeModelCommand, InvokeModelWithResponseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { getStatus, normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { json, Router } from 'express';
+import { BedrockAnthropicProvider } from '../../cloud/aws/bedrock';
+import { getConfig } from '../../config/loader';
 import { closeRequestContext, getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { authenticateRequest } from '../../oauth/middleware';
@@ -16,8 +17,8 @@ import {
   RestfulOperationType,
 } from '../../util/auditevent';
 import { isSupportedAiCaller } from '../access';
-import type { AnthropicError } from './bedrock';
-import { anthropicErrorType, getBedrockClient, toAnthropicError, toBedrockBody } from './bedrock';
+import type { AnthropicError, AnthropicMessagesProvider } from './types';
+import { anthropicErrorType } from './types';
 
 export const ANTHROPIC_GATEWAY_PATHS = [
   '/ai/anthropic',
@@ -25,9 +26,6 @@ export const ANTHROPIC_GATEWAY_PATHS = [
   '/projects/:projectId/ai/anthropic',
   '/api/projects/:projectId/ai/anthropic',
 ];
-
-/** An Anthropic model ID on Bedrock, optionally with a cross-region inference profile prefix. */
-const BEDROCK_ANTHROPIC_MODEL = /^((us|eu|apac|global)\.)?anthropic\.claude-[a-z0-9.:-]+$/;
 
 /** The status recorded when the client closes the connection before the response completes. */
 const CLIENT_CLOSED_REQUEST = 499;
@@ -54,14 +52,14 @@ export function apiKeyAsBearer(req: Request, _res: Response, next: NextFunction)
 }
 
 /**
- * Creates the Anthropic Messages front door of the AI gateway, served by AWS Bedrock.
- * @param region - The AWS region to call Bedrock in.
+ * Creates the Anthropic Messages front door of the AI gateway.
  * @returns The router.
  */
-export function createAnthropicGatewayRouter(region: string): Router {
+export function createAnthropicGatewayRouter(): Router {
+  const provider = new BedrockAnthropicProvider(getConfig().awsRegion);
   const router = Router().use(authenticateRequest);
   router.use(json({ limit: '20mb' }));
-  router.post('/v1/messages', (req, res) => handleMessages(region, req, res));
+  router.post('/v1/messages', (req, res) => handleMessages(provider, req, res));
   router.use(gatewayErrorHandler);
   return router;
 }
@@ -96,7 +94,7 @@ function gatewayErrorHandler(err: unknown, _req: Request, res: Response, next: N
   sendError(res, status, message);
 }
 
-async function handleMessages(region: string, req: Request, res: Response): Promise<void> {
+async function handleMessages(provider: AnthropicMessagesProvider, req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai-gateway') || !isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
     sendError(res, 403, 'The AI gateway is not enabled for this account');
@@ -109,7 +107,7 @@ async function handleMessages(region: string, req: Request, res: Response): Prom
     sendError(res, 400, 'model is required');
     return;
   }
-  if (!BEDROCK_ANTHROPIC_MODEL.test(model)) {
+  if (!provider.isModelSupported(model)) {
     sendError(res, 400, `Model not available: ${model}`);
     return;
   }
@@ -123,29 +121,24 @@ async function handleMessages(region: string, req: Request, res: Response): Prom
     }
   });
 
-  const command = {
-    modelId: model,
-    contentType: 'application/json',
-    accept: 'application/json',
-    body: JSON.stringify(toBedrockBody(body, req.get('anthropic-beta'))),
-  };
+  const { model: _model, stream: _stream, ...params } = body;
+  const betas = (req.get('anthropic-beta') ?? '')
+    .split(',')
+    .map((b) => b.trim())
+    .filter(Boolean);
 
   let status = 200;
   let usage: Usage = {};
   try {
-    const client = getBedrockClient(region);
     if (stream) {
-      const output = await client.send(new InvokeModelWithResponseStreamCommand(command), {
-        abortSignal: abortController.signal,
-      });
+      const events = await provider.streamMessage(model, params, betas, abortController.signal);
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders();
-      usage = await streamToClient(output.body, res);
+      usage = await streamToClient(events, res);
     } else {
-      const output = await client.send(new InvokeModelCommand(command), { abortSignal: abortController.signal });
-      const text = output.body.transformToString();
+      const text = await provider.createMessage(model, params, betas, abortController.signal);
       usage = readUsage(JSON.parse(text));
       res.status(200).type('application/json').send(text);
     }
@@ -153,7 +146,7 @@ async function handleMessages(region: string, req: Request, res: Response): Prom
     if (abortController.signal.aborted) {
       status = CLIENT_CLOSED_REQUEST;
     } else {
-      const error = toAnthropicError(err);
+      const error = provider.toError(err);
       status = error.status;
       if (error.misconfigured) {
         getLogger().error('AI gateway misconfigured', { model, status, error: err });
@@ -185,23 +178,15 @@ async function handleMessages(region: string, req: Request, res: Response): Prom
 }
 
 /**
- * Re-encodes a Bedrock response stream as Anthropic server-sent events.
- * Each Bedrock chunk is one Anthropic stream event whose `type` is the SSE event name.
- * @param body - The Bedrock response stream.
+ * Writes Anthropic stream events as server-sent events.
+ * The `type` of each event is the SSE event name.
+ * @param events - The Anthropic stream events as JSON text.
  * @param res - The response to write to.
  * @returns The token usage reported in the stream.
  */
-async function streamToClient(
-  body: AsyncIterable<{ chunk?: { bytes?: Uint8Array } }> | undefined,
-  res: Response
-): Promise<Usage> {
-  const decoder = new TextDecoder();
+async function streamToClient(events: AsyncIterable<string>, res: Response): Promise<Usage> {
   const usage: Usage = {};
-  for await (const event of body ?? []) {
-    if (!event.chunk?.bytes) {
-      continue;
-    }
-    const data = decoder.decode(event.chunk.bytes);
+  for await (const data of events) {
     const parsed = JSON.parse(data) as { type: string; message?: unknown; usage?: unknown };
     if (parsed.type === 'message_start') {
       usage.inputTokens = readUsage(parsed.message).inputTokens;
