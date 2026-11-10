@@ -251,7 +251,7 @@
           {
             "code": "ai-gateway",
             "display": "AI Gateway",
-            "definition": "Enable the AI gateway at /ai/anthropic"
+            "definition": "Enable the AI gateway at /ai/anthropic, which uses the server's AWS Bedrock credentials"
           },
           {
             "code": "ai-realtime",

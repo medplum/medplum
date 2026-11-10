@@ -18,8 +18,8 @@ The request and response bodies are those of the [Anthropic Messages API](https:
 
 ## Requirements
 
-- The project must have the `ai` feature enabled.
-- The caller must be a Practitioner or a ClientApplication. Patient and RelatedPerson logins, and logins limited by SMART resource scopes, are not allowed.
+- The project must have the `ai-gateway` feature enabled.
+- Patient and RelatedPerson logins, and logins limited by SMART resource scopes, are not allowed.
 - The `model` is an Anthropic model ID on Bedrock, such as `us.anthropic.claude-sonnet-4-5-20250929-v1:0`. See [Choosing a model](#choosing-a-model).
 
 ## Choosing a model

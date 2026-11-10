@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeModelCommand, InvokeModelWithResponseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
+import { getStatus, normalizeErrorString } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { json, Router } from 'express';
-import { getAuthenticatedContext } from '../../context';
+import { closeRequestContext, getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { authenticateRequest } from '../../oauth/middleware';
 import {
@@ -26,6 +28,9 @@ export const ANTHROPIC_GATEWAY_PATHS = [
 
 /** An Anthropic model ID on Bedrock, optionally with a cross-region inference profile prefix. */
 const BEDROCK_ANTHROPIC_MODEL = /^((us|eu|apac|global)\.)?anthropic\.claude-[a-z0-9.:-]+$/;
+
+/** The status recorded when the client closes the connection before the response completes. */
+const CLIENT_CLOSED_REQUEST = 499;
 
 /** Token usage reported by the model. */
 interface Usage {
@@ -57,7 +62,38 @@ export function createAnthropicGatewayRouter(region: string): Router {
   const router = Router().use(authenticateRequest);
   router.use(json({ limit: '20mb' }));
   router.post('/v1/messages', (req, res) => handleMessages(region, req, res));
+  router.use(gatewayErrorHandler);
   return router;
+}
+
+/**
+ * Returns authentication and body parsing errors in the Anthropic error shape.
+ * Other errors are left to the global error handler.
+ * @param err - The error.
+ * @param _req - The request.
+ * @param res - The response.
+ * @param next - The next handler.
+ */
+function gatewayErrorHandler(err: unknown, _req: Request, res: Response, next: NextFunction): void {
+  const e = err as { outcome?: OperationOutcome; type?: string };
+  let status: number | undefined;
+  let message = '';
+  if (e.outcome) {
+    status = getStatus(e.outcome);
+    message = normalizeErrorString(e.outcome);
+  } else if (e.type === 'entity.parse.failed') {
+    status = 400;
+    message = 'Content could not be parsed';
+  } else if (e.type === 'entity.too.large') {
+    status = 413;
+    message = 'Request body too large';
+  }
+  if (status === undefined || status >= 500 || res.headersSent) {
+    next(err);
+    return;
+  }
+  closeRequestContext();
+  sendError(res, status, message);
 }
 
 async function handleMessages(region: string, req: Request, res: Response): Promise<void> {
@@ -114,14 +150,22 @@ async function handleMessages(region: string, req: Request, res: Response): Prom
       res.status(200).type('application/json').send(text);
     }
   } catch (err) {
-    const error = toAnthropicError(err);
-    status = error.status;
-    getLogger().warn('AI gateway request failed', { model, status, error: err });
-    if (res.headersSent) {
-      writeEvent(res, 'error', JSON.stringify(error.body));
-      res.end();
+    if (abortController.signal.aborted) {
+      status = CLIENT_CLOSED_REQUEST;
     } else {
-      res.status(status).json(error.body);
+      const error = toAnthropicError(err);
+      status = error.status;
+      if (error.misconfigured) {
+        getLogger().error('AI gateway misconfigured', { model, status, error: err });
+      } else {
+        getLogger().warn('AI gateway request failed', { model, status, error: err });
+      }
+      if (res.headersSent) {
+        writeEvent(res, 'error', JSON.stringify(error.body));
+        res.end();
+      } else {
+        res.status(status).json(error.body);
+      }
     }
   }
 

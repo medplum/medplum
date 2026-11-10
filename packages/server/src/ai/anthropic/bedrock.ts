@@ -87,15 +87,26 @@ const SERVER_DETAIL = /arn:|\d{12}/i;
  *
  * Request validation messages describe the request body, so they are returned as is.
  * Every other error gets a generic message; the status and error type identify the failure.
+ * An upstream 401, or a 403 that names server-side resources, describes the server's own
+ * configuration, so it is returned as 500 and flagged as `misconfigured`. Any other upstream 403
+ * means the model is not enabled for the account, so it is returned as 404.
  * @param err - The error thrown by the Bedrock SDK.
- * @returns The HTTP status and Anthropic error body.
+ * @returns The HTTP status, the Anthropic error body, and whether the server is misconfigured.
  */
-export function toAnthropicError(err: unknown): { status: number; body: AnthropicError } {
+export function toAnthropicError(err: unknown): { status: number; body: AnthropicError; misconfigured: boolean } {
   const e = err as { name?: string; $metadata?: { httpStatusCode?: number }; message?: string };
-  const status = e.$metadata?.httpStatusCode ?? 500;
+  const upstream = e.$metadata?.httpStatusCode ?? 500;
+  const serverDetail = !e.message || SERVER_DETAIL.test(e.message);
+  const misconfigured = upstream === 401 || (upstream === 403 && serverDetail);
+  let status = upstream;
   let message = DEFAULT_ERROR_MESSAGE;
-  if (e.name === 'ValidationException' && e.message && !SERVER_DETAIL.test(e.message)) {
+  if (misconfigured) {
+    status = 500;
+  } else if (upstream === 403) {
+    status = 404;
+    message = 'Model not available';
+  } else if (e.name === 'ValidationException' && e.message && !serverDetail) {
     message = e.message;
   }
-  return { status, body: { type: 'error', error: { type: anthropicErrorType(status), message } } };
+  return { status, body: { type: 'error', error: { type: anthropicErrorType(status), message } }, misconfigured };
 }

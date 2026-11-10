@@ -118,9 +118,25 @@ describe('AI gateway', () => {
       { type: 'invalid_request_error', message: 'max_tokens: Field required' },
     ],
     [
+      new ValidationException({
+        message: 'Invocation of arn:aws:bedrock:us-east-1:123456789012:inference-profile/x failed',
+        $metadata: { httpStatusCode: 400 },
+      }),
+      400,
+      { type: 'invalid_request_error', message: 'Upstream model error' },
+    ],
+    [
       new AccessDeniedException({ message: 'Not enabled', $metadata: { httpStatusCode: 403 } }),
-      403,
-      { type: 'permission_error', message: 'Upstream model error' },
+      404,
+      { type: 'not_found_error', message: 'Model not available' },
+    ],
+    [
+      new AccessDeniedException({
+        message: 'User: arn:aws:sts::123456789012:assumed-role/x is not authorized',
+        $metadata: { httpStatusCode: 403 },
+      }),
+      500,
+      { type: 'api_error', message: 'Upstream model error' },
     ],
   ])('Returns Bedrock errors in the Anthropic error shape %#', async (err, status, error) => {
     bedrock.on(InvokeModelCommand).rejects(err);
@@ -170,6 +186,21 @@ describe('AI gateway', () => {
       .send({ model: MODEL_ID, max_tokens: 100, messages: [{ role: 'user', content: 'Hi' }] });
 
     expect(res.status).toBe(401);
+    expect(res.body).toStrictEqual({ type: 'error', error: { type: 'authentication_error', message: 'Unauthorized' } });
+  });
+
+  test('Returns body parsing errors in the Anthropic error shape', async () => {
+    const res = await request(app)
+      .post('/ai/anthropic/v1/messages')
+      .set('x-api-key', accessToken)
+      .set('Content-Type', 'application/json')
+      .send('{ not json');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toStrictEqual({
+      type: 'error',
+      error: { type: 'invalid_request_error', message: 'Content could not be parsed' },
+    });
   });
 
   test('Supported account types', async () => {
