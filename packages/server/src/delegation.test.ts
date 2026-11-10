@@ -28,7 +28,13 @@ import { loadTestConfig } from './config/loader';
 import { getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
-import { addTestUser, createTestProject, getSuperAdminAccessToken, mockStdoutWrite } from './test.setup';
+import {
+  addTestUser,
+  createTestProject,
+  getSuperAdminAccessToken,
+  getSuperAdminTestProject,
+  mockStdoutWrite,
+} from './test.setup';
 import { queueRegistry } from './workers/utils';
 
 // Every route here must act as the effective identity: the On-Behalf-Of member if given, otherwise the caller.
@@ -44,6 +50,7 @@ import { queueRegistry } from './workers/utils';
 const DELEGATION_CASES = [
   'admin user',
   'member user',
+  'admin user as member user',
   'admin client as admin user',
   'admin client as member user',
   'super admin as member of another project',
@@ -54,8 +61,10 @@ type DelegationCaseName = (typeof DELEGATION_CASES)[number];
 
 interface DelegationCase {
   readonly headers: Readonly<Record<string, string>>;
+  readonly actor: 'user' | 'admin client' | 'super admin';
+  readonly callerUserId: string;
+  readonly smartScoped: boolean;
   readonly delegated: boolean;
-  readonly superAdminActor: boolean;
   readonly effective: {
     readonly project: WithId<Project>;
     readonly membership: WithId<ProjectMembership>;
@@ -68,52 +77,66 @@ interface DelegationFixture {
   readonly project: WithId<Project>;
   readonly otherProject: WithId<Project>;
   readonly adminClient: WithId<ClientApplication>;
+  readonly adminClientToken: string;
   readonly cases: Readonly<Record<DelegationCaseName, DelegationCase>>;
 }
 
-async function createDelegationFixture(): Promise<DelegationFixture> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-  const memberPolicy: AccessPolicy = {
-    resourceType: 'AccessPolicy',
-    resource: [{ resourceType: 'Observation' }, { resourceType: 'AsyncJob' }, { resourceType: 'Binary' }],
-  };
-  const features: Project['features'] = ['email', 'async-batch'];
-
-  const {
-    project,
-    client,
-    membership: clientMembership,
-    accessToken: clientToken,
-  } = await createTestProject({
-    project: { features },
-    withClient: true,
-    withAccessToken: true,
-    membership: { admin: true },
-  });
-  const adminUser = await addTestUser(project);
-  const adminMembership = await systemRepo.updateResource({ ...adminUser.membership, admin: true });
-  const memberUser = await addTestUser(project, { accessPolicy: memberPolicy });
-  const { project: otherProject } = await createTestProject({ project: { features } });
-  const otherMember = await addTestUser(otherProject, { accessPolicy: memberPolicy });
-
-  const scope = 'openid user/Observation.rs user/AsyncJob.cruds user/Binary.cruds';
-  const scopedLogin = await systemRepo.createResource<Login>({
+async function createClientToken(
+  client: WithId<ClientApplication>,
+  membership: WithId<ProjectMembership>,
+  scope: string
+): Promise<string> {
+  const login = await getShardSystemRepo(PLACEHOLDER_SHARD_ID).createResource<Login>({
     resourceType: 'Login',
     authMethod: 'client',
     user: createReference(client),
     client: createReference(client),
-    membership: createReference(clientMembership),
+    membership: createReference(membership),
     authTime: new Date().toISOString(),
+    granted: true,
     scope,
   });
-  const scopedToken = await generateAccessToken({
-    login_id: scopedLogin.id,
+  return generateAccessToken({
+    login_id: login.id,
     sub: client.id,
     username: client.id,
     client_id: client.id,
     profile: getReferenceString(client),
     scope,
   });
+}
+
+async function createDelegationFixture(): Promise<DelegationFixture> {
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+  const memberPolicy: AccessPolicy = {
+    resourceType: 'AccessPolicy',
+    resource: [
+      { resourceType: 'Practitioner', criteria: 'Practitioner?_id=%profile.id', readonly: true },
+      { resourceType: 'Observation' },
+      { resourceType: 'AsyncJob' },
+      { resourceType: 'Binary' },
+    ],
+  };
+  const features: Project['features'] = ['email', 'async-batch', 'ai'];
+
+  const {
+    project,
+    client,
+    membership: clientMembership,
+  } = await createTestProject({ project: { features }, withClient: true, membership: { admin: true } });
+  const adminUser = await addTestUser(project);
+  const adminMembership = await systemRepo.updateResource({ ...adminUser.membership, admin: true });
+  const memberUser = await addTestUser(project, { accessPolicy: memberPolicy });
+  const { project: otherProject } = await createTestProject({ project: { features } });
+  const otherMember = await addTestUser(otherProject, { accessPolicy: memberPolicy });
+
+  const clientToken = await createClientToken(client, clientMembership, 'openid');
+  const scopedToken = await createClientToken(
+    client,
+    clientMembership,
+    'openid user/Observation.rs user/AsyncJob.cruds user/Binary.cruds'
+  );
+  const superAdmin = await getSuperAdminTestProject();
 
   const headers = (token: string, onBehalfOf?: WithId<ProjectMembership>): Record<string, string> => ({
     Authorization: 'Bearer ' + token,
@@ -121,48 +144,66 @@ async function createDelegationFixture(): Promise<DelegationFixture> {
   });
   const admin = { project, membership: adminMembership, admin: true };
   const member = { project, membership: memberUser.membership, admin: false };
-  const base = { delegated: true, superAdminActor: false };
+  const direct = { actor: 'user', smartScoped: false, delegated: false } as const;
+  const delegated = { smartScoped: false, delegated: true } as const;
 
   return {
     project,
     otherProject,
     adminClient: client,
+    adminClientToken: clientToken,
     cases: {
       'admin user': {
+        ...direct,
+        callerUserId: adminUser.user.id,
         headers: headers(adminUser.accessToken),
-        delegated: false,
-        superAdminActor: false,
         effective: admin,
         canReadPatient: true,
       },
       'member user': {
+        ...direct,
+        callerUserId: memberUser.user.id,
         headers: headers(memberUser.accessToken),
-        delegated: false,
-        superAdminActor: false,
+        effective: member,
+        canReadPatient: false,
+      },
+      'admin user as member user': {
+        ...delegated,
+        actor: 'user',
+        callerUserId: adminUser.user.id,
+        headers: headers(adminUser.accessToken, memberUser.membership),
         effective: member,
         canReadPatient: false,
       },
       'admin client as admin user': {
-        ...base,
+        ...delegated,
+        actor: 'admin client',
+        callerUserId: client.id,
         headers: headers(clientToken, adminMembership),
         effective: admin,
         canReadPatient: true,
       },
       'admin client as member user': {
-        ...base,
+        ...delegated,
+        actor: 'admin client',
+        callerUserId: client.id,
         headers: headers(clientToken, memberUser.membership),
         effective: member,
         canReadPatient: false,
       },
       'super admin as member of another project': {
-        headers: headers(await getSuperAdminAccessToken(), otherMember.membership),
-        delegated: true,
-        superAdminActor: true,
+        ...delegated,
+        actor: 'super admin',
+        callerUserId: superAdmin.client.id,
+        headers: headers(superAdmin.accessToken, otherMember.membership),
         effective: { project: otherProject, membership: otherMember.membership, admin: false },
         canReadPatient: false,
       },
       'SMART-scoped admin client as admin user': {
-        ...base,
+        ...delegated,
+        actor: 'admin client',
+        smartScoped: true,
+        callerUserId: client.id,
         headers: headers(scopedToken, adminMembership),
         effective: admin,
         canReadPatient: false,
@@ -342,18 +383,31 @@ describe('On-Behalf-Of delegation matrix', () => {
 
   test.each(DELEGATION_CASES)('Account routes refuse delegation as %s', async (name) => {
     const c = fixture.cases[name];
-    const mfa = await request(app).get('/auth/mfa/status').set(c.headers);
-    const revoke = await request(app)
-      .post('/auth/revoke')
-      .set(c.headers)
-      .type(ContentType.JSON)
-      .send({ loginId: randomUUID() });
+    const json = (path: string, body: object): request.Test =>
+      request(app).post(path).set(c.headers).type(ContentType.JSON).send(body);
+    const statuses = {
+      mfaStatus: (await request(app).get('/auth/mfa/status').set(c.headers)).status,
+      mfaEnroll: (await json('/auth/mfa/enroll', { token: '000000' })).status,
+      mfaEmailChallenge: (await json('/auth/mfa/send-email-challenge', {})).status,
+      mfaDisable: (await json('/auth/mfa/disable', { token: '000000' })).status,
+      revoke: (await json('/auth/revoke', { loginId: randomUUID() })).status,
+    };
     if (c.delegated) {
-      expect(mfa).toHaveStatus(403);
-      expect(revoke).toHaveStatus(403);
+      expect(statuses).toStrictEqual({
+        mfaStatus: 403,
+        mfaEnroll: 403,
+        mfaEmailChallenge: 403,
+        mfaDisable: 403,
+        revoke: 403,
+      });
     } else {
-      expect(mfa).toHaveStatus(200);
-      expect(revoke).toHaveStatus(404);
+      expect(statuses).toStrictEqual({
+        mfaStatus: 200,
+        mfaEnroll: 400,
+        mfaEmailChallenge: 400,
+        mfaDisable: 400,
+        revoke: 404,
+      });
     }
   });
 
@@ -367,7 +421,7 @@ describe('On-Behalf-Of delegation matrix', () => {
     if (!c.delegated) {
       expect(res).toHaveStatus(c.effective.admin ? 400 : 403);
     } else {
-      expect(res).toHaveStatus(c.superAdminActor ? 403 : 200);
+      expect(res).toHaveStatus(c.actor === 'super admin' ? 403 : 200);
     }
   });
 
@@ -381,6 +435,83 @@ describe('On-Behalf-Of delegation matrix', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'query', valueString: 'Patient' }],
       } satisfies Parameters);
-    expect(res).toHaveStatus(c.superAdminActor ? 200 : 403);
+    expect(res).toHaveStatus(c.actor === 'super admin' ? 200 : 403);
+  });
+
+  test.each(DELEGATION_CASES)('Patient $export as %s', async (name) => {
+    const c = fixture.cases[name];
+    const res = await request(app).post('/fhir/R4/Patient/$export').set(c.headers).type(ContentType.FHIR_JSON).send({});
+    expect(res).toHaveStatus(202);
+    const status = await readAsSuperAdmin<{ output: { type: string }[] }>(
+      new URL(res.headers['content-location']).pathname
+    );
+    expect(status.output.some((o) => o.type === 'Patient')).toBe(c.canReadPatient);
+  });
+
+  test.each(DELEGATION_CASES)('GET /oauth2/userinfo as %s', async (name) => {
+    const c = fixture.cases[name];
+    const res = await request(app).get('/oauth2/userinfo').set(c.headers);
+    // `sub` is the caller's User, even under On-Behalf-Of
+    expect(res).toHaveStatus(c.smartScoped ? 403 : 200);
+    expect(res.body.sub).toBe(c.smartScoped ? undefined : c.callerUserId);
+  });
+
+  test.each(DELEGATION_CASES)('POST /oauth2/introspect as %s', async (name) => {
+    const c = fixture.cases[name];
+    const res = await request(app)
+      .post('/oauth2/introspect')
+      .set(c.headers)
+      .type('form')
+      .send({ token: fixture.adminClientToken });
+    expect(res).toHaveStatus(200);
+    // Only the token's client may introspect it; a super admin under On-Behalf-Of loses super admin access
+    expect(res.body.active).toBe(c.actor === 'admin client');
+  });
+
+  test.each(DELEGATION_CASES)('POST /scim/v2/Users as %s', async (name) => {
+    const c = fixture.cases[name];
+    const res = await request(app)
+      .post('/scim/v2/Users')
+      .set(c.headers)
+      .type(ContentType.JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        userName: randomUUID(),
+        name: { givenName: 'Scim', familyName: 'User' },
+        emails: [{ value: randomUUID() + '@example.com' }],
+      });
+    // `invitedBy` comes from the caller's login, which must be a User
+    if (c.effective.admin) {
+      expect(res).toHaveStatus(c.actor === 'user' ? 201 : 400);
+    } else {
+      expect(res).toHaveStatus(403);
+    }
+  });
+
+  test.each(DELEGATION_CASES)('POST /admin/projects/:projectId/invite as %s', async (name) => {
+    const c = fixture.cases[name];
+    const res = await request(app)
+      .post(`/admin/projects/${c.effective.project.id}/invite`)
+      .set(c.headers)
+      .type(ContentType.JSON)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Invited',
+        lastName: 'User',
+        email: randomUUID() + '@example.com',
+        sendEmail: false,
+      });
+    expect(res).toHaveStatus(c.effective.admin ? 200 : 403);
+  });
+
+  test.each(DELEGATION_CASES)('$ai as %s', async (name) => {
+    const c = fixture.cases[name];
+    const res = await request(app)
+      .post('/fhir/R4/$ai')
+      .set(c.headers)
+      .type(ContentType.FHIR_JSON)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'messages', valueString: '[]' }] });
+    // Permitted callers reach the missing API key check
+    expect(res).toHaveStatus(c.smartScoped ? 403 : 400);
   });
 });
