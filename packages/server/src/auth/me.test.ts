@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, resolveId } from '@medplum/core';
-import type { Binary, UserConfiguration } from '@medplum/fhirtypes';
+import type { Binary, ClientApplication, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -179,8 +179,8 @@ describe('Me', () => {
     expect(res2.body.config.menu).toMatchObject(getUserConfigurationMenu(project, membership));
   });
 
-  test('Get me as ClientApplication', async () => {
-    const { client } = await withTestContext(() =>
+  test('Get me as ClientApplication without exposing its secrets', async () => {
+    const { client, project } = await withTestContext(() =>
       registerNew({
         firstName: 'Client',
         lastName: 'Test',
@@ -190,11 +190,26 @@ describe('Me', () => {
       })
     );
 
+    const retiringSecret = randomUUID();
+    await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(project);
+      await systemRepo.updateResource({ ...client, retiringSecret });
+    });
+
     const res = await request(app)
       .get('/auth/me')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
     expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
+    expect(res.body.profile).toMatchObject({ resourceType: 'ClientApplication', id: client.id });
+    expect(res.body.profile).not.toHaveProperty('secret');
+    expect(res.body.profile).not.toHaveProperty('retiringSecret');
+    const storedClient = await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(project);
+      return systemRepo.readResource<ClientApplication>('ClientApplication', client.id);
+    });
+    expect(storedClient.secret).toBe(client.secret);
+    expect(storedClient.retiringSecret).toBe(retiringSecret);
   });
 
   test.each([false, true])('Get me on behalf of a Patient (cross-project: %s)', async (crossProject) => {
