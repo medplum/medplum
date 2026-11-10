@@ -567,6 +567,7 @@ export class BackEnd extends Construct {
 
     // Load Balancer
     const loadBalancingAlgorithm = resolveLoadBalancingAlgorithmType(config.loadBalancerAlgorithm);
+    const sslPolicy = (config.loadBalancerSslPolicy as elbv2.SslPolicy | undefined) ?? elbv2.SslPolicy.RECOMMENDED_TLS;
 
     this.loadBalancer = this.createLoadBalancer(
       config.stackName,
@@ -574,6 +575,7 @@ export class BackEnd extends Construct {
       config.apiPort,
       config.apiInternetFacing !== false,
       config.apiSslCertArn,
+      sslPolicy,
       config.loadBalancerLoggingPrefix,
       config.apiWafIpSetArn,
       config.wafLogGroupName,
@@ -590,6 +592,7 @@ export class BackEnd extends Construct {
         config.apiPort,
         config.mtlsInternetFacing !== false,
         config.mtlsSslCertArn,
+        sslPolicy,
         config.loadBalancerLoggingPrefix,
         config.mtlsWafIpSetArn,
         config.wafLogGroupName,
@@ -991,6 +994,7 @@ export class BackEnd extends Construct {
    * @param port - The port for the target group health checks and Fargate container (default: config.apiPort).
    * @param internetFacing - Whether the load balancer is internet-facing (default: config.apiInternetFacing).
    * @param certificateArn - The ARN of the SSL certificate for the HTTPS listener.
+   * @param sslPolicy - The ELB security policy for the HTTPS listener.
    * @param loadBalancerLoggingPrefix - Optional prefix for load balancer access log object keys.
    * @param wafIpSetArn - Optional WAF IP set ARN.
    * @param wafLogGroupName - Optional WAF log group name.
@@ -1005,6 +1009,7 @@ export class BackEnd extends Construct {
     port: number,
     internetFacing: boolean,
     certificateArn: string,
+    sslPolicy: elbv2.SslPolicy,
     loadBalancerLoggingPrefix: string | undefined,
     wafIpSetArn: string | undefined,
     wafLogGroupName: string | undefined,
@@ -1041,7 +1046,7 @@ export class BackEnd extends Construct {
     loadBalancer.addListener(`${namePrefix}HttpsListener`, {
       port: 443,
       certificates: [{ certificateArn }],
-      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+      sslPolicy,
       defaultAction: elbv2.ListenerAction.forward([targetGroup]),
       mutualAuthentication,
     });
