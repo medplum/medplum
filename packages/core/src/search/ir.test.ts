@@ -182,7 +182,10 @@ describe('Search IR', () => {
   });
 
   test('convertToSearchableTokens deduplicates by system and normalized value', () => {
-    const coding = (system: string | undefined, code: string): TypedValue => ({ type: 'Coding', value: { system, code } });
+    const coding = (system: string | undefined, code: string): TypedValue => ({
+      type: 'Coding',
+      value: { system, code },
+    });
     expect(
       convertToSearchableTokens([coding('a', 'X'), coding('b', 'X'), coding(undefined, 'X'), coding('a', 'X')])
     ).toStrictEqual([
