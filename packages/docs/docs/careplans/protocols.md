@@ -217,9 +217,18 @@ The FHIR standard allows for very complex workflow modeling, including hierarchi
 
 Medplum supports a custom extension to assign Task parameters when `$apply` is run. It can be placed on a `PlanDefinition.action` or on an `ActivityDefinition`.
 
-- `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task `owner` and `performerType` using FHIRPath expressions based on the `$apply` parameters (e.g., `%subject`, `%practitioner`, `%organization`).
+- `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task `owner` and `performerType`:
+  - `owner` with `valueReference` assigns every Task to a fixed `Practitioner`, `PractitionerRole`, `Organization`, `CareTeam`, `HealthcareService`, `Patient`, `Device`, or `RelatedPerson` (for example, an intake care team). Any other resource type is rejected.
+  - `owner` with `valueExpression` resolves the owner from a FHIRPath expression based on the `$apply` parameters (e.g., `%subject`, `%practitioner`, `%organization`).
+  - `performerType` with `valueCodeableConcept` sets a fixed performer type.
 
 The extension on the action applies to every action type, including Questionnaire actions and actions with no definition. When both the action and its ActivityDefinition carry the extension, each field on the action takes precedence and the ActivityDefinition fills in any field the action leaves unset.
+
+:::caution[ActivityDefinition placement is deprecated]
+
+Placing `task-elements` on an `ActivityDefinition` is deprecated and will be removed in a future major release. An ActivityDefinition describes the resource it generates, such as a `ServiceRequest`, not the Task that tracks the action. Put `task-elements` on the `PlanDefinition.action` instead. To set fields on the generated resource itself, use `ActivityDefinition.dynamicValue`.
+
+:::
 
 **Example PlanDefinition action with Task Extensions:**
 
@@ -243,12 +252,24 @@ The extension on the action applies to every action type, including Questionnair
           }
         ]
       }]
+    },
+    {
+      "title": "Verify insurance",
+      "extension": [{
+        "url": "https://medplum.com/fhir/StructureDefinition/task-elements",
+        "extension": [
+          {
+            "url": "owner",
+            "valueReference": { "reference": "CareTeam/intake-team" }
+          }
+        ]
+      }]
     }
   ]
 }
 ```
 
-**Example ActivityDefinition with Task Extensions:**
+**Example ActivityDefinition with Task Extensions (deprecated):**
 
 ```json
 {
