@@ -102,6 +102,22 @@ describe('CalendarsPanel', () => {
     );
   });
 
+  test('gives each row a button focusing on its calendar, pressed on the one focused', async () => {
+    const onToggle = vi.fn();
+    const onToggleFocus = vi.fn();
+    setup({ onToggle, focusedId: 'room-1', onToggleFocus });
+
+    expect(screen.getByRole('button', { name: 'Focus Exam Room A' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Focus Lisa Caddy' })).toHaveAttribute('aria-pressed', 'false');
+    // The rest are dimmed, as they aren't shown.
+    expect(screen.getByText('Lisa Caddy').closest('button')).toHaveAttribute('data-outside-focus');
+    expect(screen.getByText('Exam Room A').closest('button')).not.toHaveAttribute('data-outside-focus');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Focus Lisa Caddy' }));
+    expect(onToggleFocus).toHaveBeenCalledWith('prov-1');
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
   test('leaves the filters out entirely when none are handed over', () => {
     setup();
     expect(screen.queryByRole('group', { name: 'Filter calendars' })).not.toBeInTheDocument();

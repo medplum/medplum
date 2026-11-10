@@ -50,14 +50,22 @@ function toggleItem(items: PanelItems, actorType: BookableActorType, id: string)
   };
 }
 
+/**
+ * Rows to hide and show calendars by, each with a button, on hover, focusing on its calendar alone.
+ *
+ * @returns The story.
+ */
 export const Basic = (): JSX.Element => {
   const [panelItems, setPanelItems] = useState(items);
+  const [focusedId, setFocusedId] = useState<string>();
 
   return (
     <div style={{ width: 300 }}>
       <CalendarsPanel
         items={panelItems}
         onToggle={(actorType, id) => setPanelItems((prev) => toggleItem(prev, actorType, id))}
+        focusedId={focusedId}
+        onToggleFocus={(id) => setFocusedId((prev) => (prev === id ? undefined : id))}
       />
     </div>
   );
