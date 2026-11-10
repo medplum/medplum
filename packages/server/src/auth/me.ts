@@ -3,6 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { getReferenceString, Operator } from '@medplum/core';
 import type {
+  ClientApplication,
   Login,
   Project,
   ProjectMembership,
@@ -40,14 +41,18 @@ interface UserSecurity {
 export async function meHandler(req: Request, res: Response): Promise<void> {
   const { authState, repo, systemRepo } = getAuthenticatedContext();
   const { project, membership } = authState;
-  const profileRef = membership.profile as Reference<ProfileResource>;
-  const profile = await readMembershipReference<ProfileResource>(
+  const profileRef = membership.profile as Reference<ProfileResource | ClientApplication>;
+  const profile = await readMembershipReference<ProfileResource | ClientApplication>(
     systemRepo,
     membership,
     profileRef,
     membershipProfileTypes,
     { allowLinkedProjects: true }
   );
+  const responseProfile = { ...profile };
+  if (responseProfile.resourceType === 'ClientApplication') {
+    delete responseProfile.secret;
+  }
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
   let user: WithId<User> | undefined = undefined;
@@ -121,7 +126,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
       profile: membership.profile,
       admin: membership.admin,
     },
-    profile,
+    profile: responseProfile,
     config,
     accessPolicy,
     security,
