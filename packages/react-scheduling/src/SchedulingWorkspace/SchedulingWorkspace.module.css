@@ -11,6 +11,8 @@
      among the workspace's own layers rather than the host page's. */
   container-type: inline-size;
   --pane-width: 320px;
+  /* The pane's color, so the pane matches what it docks beside and slides over on any host page. */
+  background-color: var(--mantine-color-body);
 }
 
 /* Gives way once the calendar has no width left, so the pane beside it stays on screen. */
@@ -66,7 +68,7 @@
 /*
  * The pane beside the calendar, holding the booking form, or the details of the
  * appointment or blocked time that is open. Only one at a time — each takes the
- * others' place. Unpainted, so beside the calendar it shows the host page as the sidebar does.
+ * others' place.
  */
 .pane {
   position: absolute;
@@ -75,14 +77,13 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  background-color: var(--mantine-color-body);
 }
 
 /* Widened, it slides out over the calendar like a drawer: the narrow pane's form, then the
-   finder's times column, so the form keeps its width when the times open beside it.
-   Painted only here, where it covers the calendar, through to the end of its slide back. */
+   finder's times column, so the form keeps its width when the times open beside it. */
 .paneWide {
   left: auto;
-  background-color: var(--mantine-color-body);
   width: calc(var(--mantine-spacing-md) + var(--pane-width) + var(--mantine-spacing-lg) + 350px);
   max-width: 100cqi;
   padding-inline-start: var(--mantine-spacing-md);
@@ -130,11 +131,10 @@
   flex-direction: column;
 }
 
-/* Pill colors, through the variables Mantine's pills variant reads. Tints rather than fixed
-   grays, so they show against the host page the narrow pane lets through. */
+/* Pill colors, as ListWithDetailPane's, through the variables Mantine's pills variant reads. */
 .paneTab {
-  --tab-hover-color: light-dark(rgb(0 0 0 / 4%), rgb(255 255 255 / 5%));
-  --tabs-color: light-dark(rgb(0 0 0 / 8%), rgb(255 255 255 / 10%));
+  --tab-hover-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  --tabs-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
   --tabs-text-color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
 }
 
