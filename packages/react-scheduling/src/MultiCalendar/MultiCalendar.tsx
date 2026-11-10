@@ -31,6 +31,12 @@ export interface MultiCalendarSource {
   draft?: boolean;
   /** Names each of the source's appointments in place of its patient. */
   label?: string;
+  /**
+   * Draws the source's appointments as there for the time they take, such as ones a filter leaves out: faintly
+   * tinted, with no bar, and named by their visit type and site in place of their patient, and of `label`.
+   * Hovering one still opens its card. Pair it with `interactive: false` to keep them from being clicked.
+   */
+  muted?: boolean;
 }
 
 export interface MultiCalendarProps {
@@ -77,7 +83,11 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
       // Convert color name into a concrete color value we can pass to FullCalendar, and a class
       // that styles can pick the color out by.
       const resolved = resolveThemeColor(theme, colorName, i);
-      return { ...source, color: theme.colors[resolved][7], className: cx(`color-${resolved}`, draft && 'draft') };
+      return {
+        ...source,
+        color: theme.colors[resolved][7],
+        className: cx(`color-${resolved}`, draft && 'draft', source.muted && 'muted'),
+      };
     });
   }, [sources, theme]);
 
@@ -98,7 +108,7 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
       eventContent={(info) => {
         const ext = info.event.extendedProps as ExtendedEvent;
         if (ext.type === 'appointment') {
-          return <AppointmentEvent appointment={ext.appointment} label={ext.label} info={info} />;
+          return <AppointmentEvent appointment={ext.appointment} label={ext.label} muted={ext.muted} info={info} />;
         } else if (ext.type === 'slot') {
           return <SlotEvent slot={ext.slot} schedule={ext.schedule} info={info} />;
         } else {

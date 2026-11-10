@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { EventDisplayInfo } from '@fullcalendar/react';
 import { Badge, Divider, Group, Popover, Stack, Text } from '@mantine/core';
-import { getExtension, getPrimaryProvider, RecurrenceIdExtensionURI } from '@medplum/core';
+import { getAppointmentSite, getExtension, getPrimaryProvider, RecurrenceIdExtensionURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
 import { IconRepeat } from '@tabler/icons-react';
@@ -23,6 +23,11 @@ export interface AppointmentEventProps {
   readonly appointment: Appointment;
   /** Shown in place of the patient's name. */
   readonly label?: string;
+  /**
+   * Names the site the appointment records under its service type, in place of its patient, as for one
+   * there for the time it takes. Its card still names everyone.
+   */
+  readonly muted?: boolean;
   /** What FullCalendar hands its event content, to draw the event as it would. */
   readonly info: EventDisplayInfo;
 }
@@ -37,8 +42,9 @@ export interface AppointmentEventProps {
  * @returns The event's content.
  */
 export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
-  const { appointment, label, info } = props;
+  const { appointment, label, muted, info } = props;
   const hasServiceType = !!partitionServiceTypes(appointment).visitType;
+  const site = muted ? getAppointmentSite(appointment) : undefined;
   // A time grid says when the visit is by where it is drawn, so there the line under the service
   // type names the patient; a month's row has room for the service type and its time alone.
   const inTimeGrid = info.view.type.startsWith('timeGrid');
@@ -58,7 +64,9 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
     >
       {inTimeGrid ? (
         <div className={cx(info.timeClass, classes.patient)}>
-          {label ?? <AppointmentPatientName appointment={appointment} />}
+          {muted
+            ? site && <ResourceName value={site} link={false} inherit />
+            : (label ?? <AppointmentPatientName appointment={appointment} />)}
         </div>
       ) : (
         info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
