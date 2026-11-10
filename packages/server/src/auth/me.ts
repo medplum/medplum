@@ -42,16 +42,17 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const { authState, repo, systemRepo } = getAuthenticatedContext();
   const { project, membership } = authState;
   const profileRef = membership.profile as Reference<ProfileResource | ClientApplication>;
-  const profile = await readMembershipReference<ProfileResource | ClientApplication>(
+  let profile = await readMembershipReference<ProfileResource | ClientApplication>(
     systemRepo,
     membership,
     profileRef,
     membershipProfileTypes,
     { allowLinkedProjects: true }
   );
-  const responseProfile = { ...profile };
-  if (responseProfile.resourceType === 'ClientApplication') {
-    delete responseProfile.secret;
+  if (profile.resourceType === 'ClientApplication') {
+    profile = { ...profile };
+    delete profile.secret;
+    delete profile.retiringSecret;
   }
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
@@ -126,7 +127,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
       profile: membership.profile,
       admin: membership.admin,
     },
-    profile: responseProfile,
+    profile,
     config,
     accessPolicy,
     security,
