@@ -117,7 +117,10 @@ export type CcdaNarrative = Record<string, unknown>;
 export interface CcdaReference {
   '@_xsi:type'?: 'ED';
   '@_value'?: string;
+  '@_mediaType'?: string;
+  '@_representation'?: 'TXT' | 'B64';
   reference?: CcdaReference;
+  '#text'?: string;
 }
 
 export interface CcdaEntry {
