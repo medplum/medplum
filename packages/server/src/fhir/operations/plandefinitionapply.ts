@@ -55,6 +55,17 @@ interface PlanDefinitionApplyParameters {
   readonly organization?: string;
 }
 
+interface TaskElements {
+  readonly owner?: Reference<Practitioner | Organization>;
+  readonly performerType?: CodeableConcept;
+}
+
+interface TaskElementsContext {
+  readonly subject: Reference<Patient>;
+  readonly practitioner?: Reference<Practitioner>;
+  readonly organization?: Reference<Organization>;
+}
+
 /**
  * Handles a PlanDefinition $apply request.
  *
@@ -161,17 +172,30 @@ async function createAction(
     definition = await readCanonical(repo, action.definitionCanonical);
   }
 
+  const context: TaskElementsContext = { subject, practitioner, organization };
+  const actionElements = resolveTaskElements(action, context);
+
   switch (definition?.resourceType) {
     case 'Questionnaire':
-      return createTask(repo, planDefinition, requester, subject, action, encounter, undefined, undefined, [
-        {
-          type: { text: 'Questionnaire' },
-          valueReference: {
-            display: action.title,
-            reference: getReferenceString(definition),
+      return createTask(
+        repo,
+        planDefinition,
+        requester,
+        subject,
+        action,
+        encounter,
+        actionElements.owner,
+        actionElements.performerType,
+        [
+          {
+            type: { text: 'Questionnaire' },
+            valueReference: {
+              display: action.title,
+              reference: getReferenceString(definition),
+            },
           },
-        },
-      ]);
+        ]
+      );
     case 'ActivityDefinition':
       return createActivityDefinitionTask(
         repo,
@@ -181,12 +205,56 @@ async function createAction(
         action,
         definition,
         encounter,
-        practitioner,
-        organization
+        context,
+        actionElements
       );
     default:
-      return createTask(repo, planDefinition, requester, subject, action, encounter);
+      return createTask(
+        repo,
+        planDefinition,
+        requester,
+        subject,
+        action,
+        encounter,
+        actionElements.owner,
+        actionElements.performerType
+      );
   }
+}
+
+/**
+ * Resolves Task `owner` and `performerType` from a `task-elements` extension on the given element.
+ * The `owner` sub-extension holds a FHIRPath expression evaluated against the `$apply` parameters,
+ * and the `performerType` sub-extension holds a literal CodeableConcept.
+ * @param source - The PlanDefinition action or ActivityDefinition that may carry the extension.
+ * @param context - The `$apply` parameters exposed to the FHIRPath expression.
+ * @returns The resolved Task elements; fields are undefined when not configured.
+ */
+export function resolveTaskElements(
+  source: PlanDefinitionAction | ActivityDefinition | undefined,
+  context: TaskElementsContext
+): TaskElements {
+  const taskElementsExtension = getExtension(source, TASK_ELEMENTS_URL);
+  if (!taskElementsExtension) {
+    return {};
+  }
+
+  let owner: Reference<Practitioner | Organization> | undefined = undefined;
+  const expression = getExtension(taskElementsExtension, 'owner')?.valueExpression?.expression;
+  if (expression) {
+    const result = evalFhirPathTyped(expression, [toTypedValue(context)], {
+      '%practitioner': toTypedValue(context.practitioner),
+      '%organization': toTypedValue(context.organization),
+      '%subject': toTypedValue(context.subject),
+    });
+    const resultValue = result[0]?.value;
+    if (resultValue && typeof resultValue === 'object' && 'reference' in resultValue) {
+      owner = resultValue as Reference<Practitioner | Organization>;
+    }
+  }
+
+  const performerType = getExtension(taskElementsExtension, 'performerType')?.valueCodeableConcept;
+  return { owner, performerType };
 }
 
 /**
@@ -198,8 +266,8 @@ async function createAction(
  * @param action - The PlanDefinition action.
  * @param activityDefinition - The resolved ActivityDefinition resource.
  * @param encounter - Optional encounter reference.
- * @param practitioner - Optional practitioner reference.
- * @param organization - Optional organization reference.
+ * @param context - The `$apply` parameters exposed to task-elements expressions.
+ * @param actionElements - Task elements resolved from the PlanDefinition action, which take precedence.
  * @returns The RequestGroup action.
  */
 async function createActivityDefinitionTask(
@@ -210,40 +278,13 @@ async function createActivityDefinitionTask(
   action: PlanDefinitionAction,
   activityDefinition: WithId<ActivityDefinition>,
   encounter: Reference<Encounter> | undefined,
-  practitioner?: Reference<Practitioner>,
-  organization?: Reference<Organization>
+  context: TaskElementsContext,
+  actionElements: TaskElements
 ): Promise<RequestGroupAction> {
-  const parameters = {
-    practitioner: practitioner,
-    organization: organization,
-    subject: subject,
-  };
-
-  const taskElementsExtension = getExtension(activityDefinition, TASK_ELEMENTS_URL);
-  const ownerExtension = getExtension(taskElementsExtension, 'owner');
-  let owner: Reference<Practitioner | Organization> | undefined = undefined;
-  if (ownerExtension) {
-    const expression = ownerExtension.valueExpression?.expression;
-    if (expression) {
-      const parametersValue = toTypedValue(parameters);
-      const result = evalFhirPathTyped(expression, [parametersValue], {
-        '%practitioner': toTypedValue(practitioner),
-        '%organization': toTypedValue(organization),
-        '%subject': toTypedValue(subject),
-      });
-      if (result.length !== 0) {
-        const resultValue = result[0].value;
-        if (resultValue && typeof resultValue === 'object' && 'reference' in resultValue) {
-          owner = resultValue as Reference<Practitioner | Organization>;
-        }
-      }
-    }
-  }
-
-  const performerTypeExtension = getExtension(taskElementsExtension, 'performerType');
-  const performerType: CodeableConcept | undefined = performerTypeExtension
-    ? performerTypeExtension.valueCodeableConcept
-    : undefined;
+  const { practitioner, organization } = context;
+  const definitionElements = resolveTaskElements(activityDefinition, context);
+  const owner = actionElements.owner ?? definitionElements.owner;
+  const performerType = actionElements.performerType ?? definitionElements.performerType;
 
   switch (activityDefinition.kind) {
     case 'ServiceRequest': {

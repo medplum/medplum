@@ -215,9 +215,38 @@ The FHIR standard allows for very complex workflow modeling, including hierarchi
 
 ### Task Extensions
 
-Medplum supports custom extensions on `ActivityDefinition` resources to dynamically assign Task parameters when `$apply` is run. 
+Medplum supports a custom extension to assign Task parameters when `$apply` is run. It can be placed on a `PlanDefinition.action` or on an `ActivityDefinition`.
 
-- `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task `owner` and `performerType` using FHIRPath expressions based on the `$apply` parameters (e.g., `%patient`, `%practitioner`, `%organization`).
+- `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task `owner` and `performerType` using FHIRPath expressions based on the `$apply` parameters (e.g., `%subject`, `%practitioner`, `%organization`).
+
+The extension on the action applies to every action type, including Questionnaire actions and actions with no definition. When both the action and its ActivityDefinition carry the extension, each field on the action takes precedence and the ActivityDefinition fills in any field the action leaves unset.
+
+**Example PlanDefinition action with Task Extensions:**
+
+```json
+{
+  "resourceType": "PlanDefinition",
+  "status": "active",
+  "action": [
+    {
+      "title": "Complete intake questionnaire",
+      "definitionCanonical": "http://example.com/Questionnaire/intake",
+      "extension": [{
+        "url": "https://medplum.com/fhir/StructureDefinition/task-elements",
+        "extension": [
+          {
+            "url": "owner",
+            "valueExpression": {
+              "language": "text/fhirpath",
+              "expression": "%practitioner"
+            }
+          }
+        ]
+      }]
+    }
+  ]
+}
+```
 
 **Example ActivityDefinition with Task Extensions:**
 
