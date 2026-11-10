@@ -13,6 +13,7 @@ import {
   getElementDefinition,
   getExtension,
   getReferenceString,
+  isReference,
   OperationOutcomeError,
   Operator,
   toTypedValue,
@@ -25,6 +26,7 @@ import type {
   ClientApplication,
   CodeableConcept,
   Encounter,
+  ExtractResource,
   Organization,
   Patient,
   PlanDefinition,
@@ -47,6 +49,18 @@ import { parseInputParameters } from './utils/parameters';
 
 const TASK_ELEMENTS_URL = 'https://medplum.com/fhir/StructureDefinition/task-elements';
 const operation = getOperationDefinition('PlanDefinition', 'apply');
+const TASK_OWNER_RESOURCE_TYPES = [
+  'Practitioner',
+  'PractitionerRole',
+  'Organization',
+  'CareTeam',
+  'HealthcareService',
+  'Patient',
+  'Device',
+  'RelatedPerson',
+] as const;
+
+type TaskOwner = Reference<ExtractResource<(typeof TASK_OWNER_RESOURCE_TYPES)[number]>>;
 
 interface PlanDefinitionApplyParameters {
   readonly subject: string[];
@@ -56,7 +70,7 @@ interface PlanDefinitionApplyParameters {
 }
 
 interface TaskElements {
-  readonly owner?: Reference<Practitioner | Organization>;
+  readonly owner?: TaskOwner;
   readonly performerType?: CodeableConcept;
 }
 
@@ -224,8 +238,9 @@ async function createAction(
 
 /**
  * Resolves Task `owner` and `performerType` from a `task-elements` extension on the given element.
- * The `owner` sub-extension holds a FHIRPath expression evaluated against the `$apply` parameters,
- * and the `performerType` sub-extension holds a literal CodeableConcept.
+ * The `owner` sub-extension holds either a `valueReference` to one of the supported Task owner types,
+ * or a `valueExpression` FHIRPath expression evaluated against the `$apply` parameters.
+ * The `performerType` sub-extension holds a literal CodeableConcept.
  * @param source - The PlanDefinition action or ActivityDefinition that may carry the extension.
  * @param context - The `$apply` parameters exposed to the FHIRPath expression.
  * @returns The resolved Task elements; fields are undefined when not configured.
@@ -239,22 +254,40 @@ export function resolveTaskElements(
     return {};
   }
 
-  let owner: Reference<Practitioner | Organization> | undefined = undefined;
-  const expression = getExtension(taskElementsExtension, 'owner')?.valueExpression?.expression;
-  if (expression) {
-    const result = evalFhirPathTyped(expression, [toTypedValue(context)], {
+  const ownerExtension = getExtension(taskElementsExtension, 'owner');
+  let owner: TaskOwner | undefined = undefined;
+  if (ownerExtension?.valueReference) {
+    owner = validateTaskOwnerReference(ownerExtension.valueReference);
+  } else if (ownerExtension?.valueExpression?.expression) {
+    const result = evalFhirPathTyped(ownerExtension.valueExpression.expression, [toTypedValue(context)], {
       '%practitioner': toTypedValue(context.practitioner),
       '%organization': toTypedValue(context.organization),
       '%subject': toTypedValue(context.subject),
     });
     const resultValue = result[0]?.value;
-    if (resultValue && typeof resultValue === 'object' && 'reference' in resultValue) {
-      owner = resultValue as Reference<Practitioner | Organization>;
+    if (isReference(resultValue)) {
+      owner = resultValue as TaskOwner;
     }
   }
 
   const performerType = getExtension(taskElementsExtension, 'performerType')?.valueCodeableConcept;
   return { owner, performerType };
+}
+
+/**
+ * Validates a fixed `task-elements` owner reference.
+ * @param reference - The `valueReference` from the `owner` sub-extension.
+ * @returns The reference, when it points to one of `TASK_OWNER_RESOURCE_TYPES`.
+ */
+function validateTaskOwnerReference(reference: Reference): TaskOwner {
+  if (!TASK_OWNER_RESOURCE_TYPES.some((resourceType) => isReference(reference, resourceType))) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `task-elements owner must reference one of ${TASK_OWNER_RESOURCE_TYPES.join(', ')} (got ${reference.reference ?? 'no reference'})`
+      )
+    );
+  }
+  return reference as TaskOwner;
 }
 
 /**
@@ -356,7 +389,7 @@ async function createTask(
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>,
-  owner?: Reference<Practitioner | Organization>,
+  owner?: TaskOwner,
   performerType?: CodeableConcept,
   input?: TaskInput[]
 ): Promise<RequestGroupAction> {

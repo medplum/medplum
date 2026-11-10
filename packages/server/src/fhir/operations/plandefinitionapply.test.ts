@@ -22,7 +22,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import { applyDynamicValues } from './plandefinitionapply';
+import { applyDynamicValues, resolveTaskElements } from './plandefinitionapply';
 
 const app = express();
 let accessToken: string;
@@ -1660,6 +1660,103 @@ describe('PlanDefinition apply', () => {
     // Action without a definition: assigned from the action extension
     expect(tasks[2].owner).toMatchObject(createReference(resOrg.body));
     expect(tasks[2].performerType).toBeUndefined();
+  });
+
+  test('task-elements fixed owner references', async () => {
+    const taskElementsUrl = 'https://medplum.com/fhir/StructureDefinition/task-elements';
+
+    const resPatient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resPatient).toHaveStatus(201);
+
+    const resPractitioner = await request(app)
+      .post(`/fhir/R4/Practitioner`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Practitioner', name: [{ given: ['John'], family: 'Doe' }] });
+    expect(resPractitioner).toHaveStatus(201);
+
+    const resOrg = await request(app)
+      .post(`/fhir/R4/Organization`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Organization', name: 'Example Clinic' });
+    expect(resOrg).toHaveStatus(201);
+
+    const resCareTeam = await request(app)
+      .post(`/fhir/R4/CareTeam`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'CareTeam', name: 'Intake Team' });
+    expect(resCareTeam).toHaveStatus(201);
+
+    const owners = [resPractitioner.body, resOrg.body, resCareTeam.body, resPatient.body];
+
+    const resPD = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        title: 'Fixed owners',
+        action: owners.map((owner) => ({
+          title: `Assigned to ${owner.resourceType}`,
+          extension: [
+            {
+              url: taskElementsUrl,
+              extension: [{ url: 'owner', valueReference: createReference(owner) }],
+            },
+          ],
+        })),
+      });
+    expect(resPD).toHaveStatus(201);
+
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPD.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
+      });
+    expect(resApply).toHaveStatus(200);
+
+    const resRG = await request(app)
+      .get(`/fhir/R4/${(resApply.body as CarePlan).activity?.[0]?.reference?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resRG).toHaveStatus(200);
+    const requestGroup = resRG.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(owners.length);
+
+    for (let i = 0; i < owners.length; i++) {
+      const resTask = await request(app)
+        .get(`/fhir/R4/${requestGroup.action?.[i]?.resource?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(resTask).toHaveStatus(200);
+      expect((resTask.body as Task).owner).toMatchObject({ reference: getReferenceString(owners[i]) });
+    }
+  });
+
+  test('task-elements rejects unsupported owner reference type', () => {
+    expect(() =>
+      resolveTaskElements(
+        {
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/task-elements',
+              extension: [{ url: 'owner', valueReference: { reference: 'Location/123' } }],
+            },
+          ],
+        },
+        { subject: { reference: 'Patient/123' } }
+      )
+    ).toThrow(
+      'task-elements owner must reference one of Practitioner, PractitionerRole, Organization, CareTeam, HealthcareService, Patient, Device, RelatedPerson (got Location/123)'
+    );
   });
 
   test('Populates instantiates link when PlanDefinition has url', async () => {
