@@ -67,6 +67,18 @@ The `logs` parameter contains a newline-separated string of JSON objects, where 
 - `msg`: Log message
 - Additional fields may be present (e.g., `error` for error logs)
 
+## Save fetched logs in Medplum App
+
+For a single Agent, the **Agent Tools** page can persist the currently fetched log payload for later troubleshooting and audit review:
+
+1. Open the Agent's **Tools** page.
+2. Select **Fetch Logs** and optionally load additional pages.
+3. Select **Save Logs**.
+
+Medplum stores the newline-delimited JSON log payload in a FHIR `Binary` and creates a `DocumentReference` that points to it. The `DocumentReference.context.related` field links the saved artifact back to the Agent. The existing `createDocumentReference()` helper uses the `DocumentReference` as the Binary security context unless another security context is supplied.
+
+Saving logs does not change the `Agent/$fetch-logs` operation or the Agent wire protocol; it only persists the payload already returned to the App.
+
 ## Multi-Agent Response
 
 When querying multiple agents, the response is a `Bundle` of `Parameters`. Each `Parameters` within the `Bundle` contains an `agent` and a `result`, which is the result of calling the `$fetch-logs` operation on this `Agent`, either a `Parameters` or `OperationOutcome` resource.
