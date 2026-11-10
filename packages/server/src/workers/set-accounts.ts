@@ -45,12 +45,7 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
   if (options?.workerEnabled !== false) {
     worker = new Worker<SetAccountsJobData>(
       queueName,
-      trackJobMetrics('set-accounts', (job) => {
-        const { authState, requestId, traceId } = job.data;
-        return runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () =>
-          execSetAccountsJob(job)
-        );
-      }),
+      trackJobMetrics('set-accounts', processSetAccountsJob),
       getWorkerBullmqConfig(config, 'set-accounts', queueOptions)
     );
     addVerboseQueueLogging<SetAccountsJobData>(queue, worker, (job) => {
@@ -90,6 +85,11 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
     throw new Error(`Job queue ${queueName} not available`);
   }
   return queue.add(jobName, job);
+}
+
+export async function processSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
 }
 
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
