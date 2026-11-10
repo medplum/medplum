@@ -557,7 +557,7 @@ items:
   - type: "header"
     value: "Deploy & Operate"
   - type: "doc"
-    id: "docs/deploying-application-configuration"
+    id: "docs/deploying-resources-from-source-control"
   - type: "category"
     label: "Self-Hosting"
     id: "docs/self-hosting"
