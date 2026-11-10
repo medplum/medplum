@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  AccessDeniedException,
   BedrockRuntimeClient,
   InvokeModelCommand,
   InvokeModelWithResponseStreamCommand,
   ThrottlingException,
+  ValidationException,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -40,7 +42,7 @@ describe('AI gateway', () => {
     const config = await loadTestConfig();
     config.aiGatewayEnabled = true;
     await initApp(app, config);
-    ({ accessToken } = await createTestProject({ withAccessToken: true, project: { features: ['ai'] } }));
+    ({ accessToken } = await createTestProject({ withAccessToken: true, project: { features: ['ai-gateway'] } }));
   });
 
   afterAll(async () => {
@@ -104,21 +106,32 @@ describe('AI gateway', () => {
     expect(JSON.parse(input.body as string).stream).toBeUndefined();
   });
 
-  test('Returns Bedrock errors in the Anthropic error shape', async () => {
-    bedrock
-      .on(InvokeModelCommand)
-      .rejects(new ThrottlingException({ message: 'Too many requests', $metadata: { httpStatusCode: 429 } }));
+  test.each([
+    [
+      new ThrottlingException({ message: 'Slow down', $metadata: { httpStatusCode: 429 } }),
+      429,
+      { type: 'rate_limit_error', message: 'Upstream model error' },
+    ],
+    [
+      new ValidationException({ message: 'max_tokens: Field required', $metadata: { httpStatusCode: 400 } }),
+      400,
+      { type: 'invalid_request_error', message: 'max_tokens: Field required' },
+    ],
+    [
+      new AccessDeniedException({ message: 'Not enabled', $metadata: { httpStatusCode: 403 } }),
+      403,
+      { type: 'permission_error', message: 'Upstream model error' },
+    ],
+  ])('Returns Bedrock errors in the Anthropic error shape %#', async (err, status, error) => {
+    bedrock.on(InvokeModelCommand).rejects(err);
 
     const res = await request(app)
       .post('/ai/anthropic/v1/messages')
       .set('x-api-key', accessToken)
       .send({ model: MODEL_ID, max_tokens: 100, messages: [{ role: 'user', content: 'Hi' }] });
 
-    expect(res.status).toBe(429);
-    expect(res.body).toStrictEqual({
-      type: 'error',
-      error: { type: 'rate_limit_error', message: 'Too many requests' },
-    });
+    expect(res.status).toBe(status);
+    expect(res.body).toStrictEqual({ type: 'error', error });
   });
 
   test('Passes Anthropic Bedrock model IDs through', async () => {
@@ -164,8 +177,8 @@ describe('AI gateway', () => {
       body: { transformToString: () => JSON.stringify(message) } as any,
       contentType: 'application/json',
     });
-    const { project } = await createTestProject({ project: { features: ['ai'] } });
-    const noAi = await createTestProject({ withAccessToken: true });
+    const { project } = await createTestProject({ project: { features: ['ai-gateway'] } });
+    const noAi = await createTestProject({ withAccessToken: true, project: { features: ['ai'] } });
     const [patient, smartApp, practitioner] = await withTestContext(async () => [
       await addTestUser(project, { resourceType: 'Patient' }),
       await addTestUser(project, { scope: 'openid user/Observation.rs' }),

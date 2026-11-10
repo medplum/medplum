@@ -29,6 +29,7 @@ are:
 
 | Feature                   | Description                                                                                                                      |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `ai-gateway`              | Project can call the [AI gateway](/docs/ai/ai-gateway), when the server has `aiGatewayEnabled` set                               |
 | `bots`                    | Project is allowed to create and run [Bots](/docs/bots/bot-basics)                                                               |
 | `cron`                    | Can run Bots periodically on [CRON timers](/docs/bots/bot-cron-job)                                       |
 | `email`                   | Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail)                                                   |

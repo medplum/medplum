@@ -62,6 +62,6 @@ Set the small model too: agents use it for background tasks, and without it they
 
 ## Self-hosting
 
-The gateway is off by default. Enable it on the server with the `aiGatewayEnabled` server setting, and per project with the `ai` project feature. The server calls Bedrock in `awsRegion`, and request bodies may be up to 20 MB.
+The gateway is off by default. Enable it on the server with the `aiGatewayEnabled` server setting, and per project with the `ai-gateway` project feature. The server calls Bedrock in `awsRegion`, and request bodies may be up to 20 MB.
 
 The server uses its own AWS credentials. Grant its role `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream`. With the Medplum CDK, set `aiGatewayBedrockEnabled: true` in the infra config.

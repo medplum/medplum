@@ -77,14 +77,25 @@ export function anthropicErrorType(status: number): string {
   }
 }
 
+const DEFAULT_ERROR_MESSAGE = 'Upstream model error';
+
+/** Text that identifies server-side resources rather than the request. */
+const SERVER_DETAIL = /arn:|\d{12}/i;
+
 /**
  * Converts a Bedrock SDK error to an HTTP status and an Anthropic error body.
+ *
+ * Request validation messages describe the request body, so they are returned as is.
+ * Every other error gets a generic message; the status and error type identify the failure.
  * @param err - The error thrown by the Bedrock SDK.
  * @returns The HTTP status and Anthropic error body.
  */
 export function toAnthropicError(err: unknown): { status: number; body: AnthropicError } {
-  const e = err as { $metadata?: { httpStatusCode?: number }; message?: string };
+  const e = err as { name?: string; $metadata?: { httpStatusCode?: number }; message?: string };
   const status = e.$metadata?.httpStatusCode ?? 500;
-  const message = status < 500 && e.message ? e.message : 'Upstream model error';
+  let message = DEFAULT_ERROR_MESSAGE;
+  if (e.name === 'ValidationException' && e.message && !SERVER_DETAIL.test(e.message)) {
+    message = e.message;
+  }
   return { status, body: { type: 'error', error: { type: anthropicErrorType(status), message } } };
 }

@@ -62,7 +62,7 @@ export function createAnthropicGatewayRouter(region: string): Router {
 
 async function handleMessages(region: string, req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  if (!ctx.project.features?.includes('ai') || !isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
+  if (!ctx.project.features?.includes('ai-gateway') || !isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
     sendError(res, 403, 'The AI gateway is not enabled for this account');
     return;
   }
