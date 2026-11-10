@@ -50,7 +50,7 @@ import { SearchSortEditor } from '../SearchSortEditor/SearchSortEditor';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import { getPaginationControlProps } from '../utils/pagination';
 import classes from './SearchControl.module.css';
-import { getFieldDefinitions } from './SearchControlField';
+import { getFieldDefinitions, getFieldElements } from './SearchControlField';
 import { addFilter, buildFieldNameString, DEFAULT_SORT_RULES, getOpString, renderValue, setPage } from './SearchUtils';
 
 export class SearchChangeEvent extends Event {
@@ -158,6 +158,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const [activeRowId, setActiveRowId] = useState<string>();
 
   const total = memoizedSearch.total ?? 'accurate';
+  const hasAdditionalColumns = !!props.additionalColumns?.length;
 
   const loadResults = useCallback(
     (options?: RequestInit) => {
@@ -167,7 +168,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         .then(() =>
           medplum.search(
             memoizedSearch.resourceType,
-            formatSearchQuery({ ...memoizedSearch, total, fields: undefined }),
+            formatSearchQuery({
+              ...memoizedSearch,
+              total,
+              fields: hasAdditionalColumns ? undefined : getRequestElements(memoizedSearch),
+            }),
             options
           )
         )
@@ -182,7 +187,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(normalizeOperationOutcome(reason));
         });
     },
-    [medplum, memoizedSearch, total, onLoad]
+    [medplum, memoizedSearch, total, hasAdditionalColumns, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -723,4 +728,17 @@ function getTotal(search: SearchRequest, lastResult: Bundle): number {
       (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
   }
   return total;
+}
+
+/**
+ * Returns the elements behind the search's fields, to request via `_fields`.
+ * Full resources are fetched when the search has no fields or a field can't be mapped.
+ * @param search - The search request.
+ * @returns The elements to request, or undefined to fetch full resources.
+ */
+function getRequestElements(search: SearchRequest): string[] | undefined {
+  if (!search.fields?.length) {
+    return undefined;
+  }
+  return getFieldElements(search.resourceType, getFieldDefinitions(search));
 }
