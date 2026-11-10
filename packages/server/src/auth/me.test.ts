@@ -231,6 +231,7 @@ describe('Me', () => {
       const systemRepo = await getProjectSystemRepo(targetProject);
       const config = await systemRepo.createResource<UserConfiguration>({
         resourceType: 'UserConfiguration',
+        meta: { project: targetProject.id },
         menu: [{ title: 'Patient menu', link: [{ name: 'Home', target: '/' }] }],
       });
       await systemRepo.updateResource({ ...patient.membership, userConfiguration: createReference(config) });
