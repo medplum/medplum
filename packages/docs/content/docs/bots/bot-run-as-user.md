@@ -19,3 +19,17 @@ const Bot = await medplum.createResource({
 ```
 
 Then, when you execute the Bot, it will inherit the access of the User who triggered it instead of the Bot. For example, if [client credentials auth](/docs/auth/client-credentials) are used to generate the access token that is used to execute the Bot, then the Bot's access will be defined by the AccessPolicy on the ProjectMembership for that Client Application that was used to trigger the Bot.
+
+## Subscriptions
+
+When a [Subscription](/docs/subscriptions) triggers a `runAsUser` Bot, the "user" is the author of the triggering resource (its `meta.author`). The Bot runs with that author's ProjectMembership, in that membership's project:
+
+- The project must have Bots enabled.
+- The Bot receives that project's [secrets](/docs/bots/bot-secrets), which take precedence over secrets from the Bot's own project.
+- Bot execution AuditEvents are written to that project.
+
+{{< warning title="System-authored resources" >}}
+
+Resources written by the Medplum server itself (for example, by background jobs) have `meta.author` set to `system`, which has no ProjectMembership. A `runAsUser` Bot is **not** executed for these changes: the server logs a warning and skips the Bot, and no AuditEvent is written. If a Bot must react to system-authored changes, don't set `runAsUser`.
+
+{{< /warning >}}

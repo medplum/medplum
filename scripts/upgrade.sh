@@ -97,13 +97,12 @@ fi
 # eslint - version 10 is incompatible with some plugins we use, holding back until we can upgrade all at once and test
 # hibp - version 15 is ESM-only and we can't use it until we configure Jest/Babel to work with ESM packages
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-# zod - version 4+ is incompatible with MCP SDK
 # otplib - version 13+ requires ESM, holding back until server supports ESM
 # @mantine/* - version 9 has a few small backwards-incompatible changes, namely affecting at least our `PatientSummary` component, which would make it hard to support both Mantine 8 and 9 simultaneously
 # typescript - v7 needs us to do some work before we can use it
 # undici - version 8 not compatible with node's built-in fetch, e.g. in `safeFetch`
 # vitest - v5 needs to wait until our mock libraries can catch up on compatibility
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib @mantine/* typescript undici vitest @vitest/coverage-v8 @vitest/ui"
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm otplib @mantine/* typescript undici vitest @vitest/coverage-v8 @vitest/ui"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
