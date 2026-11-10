@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
+import type { MedplumClient } from '@medplum/core';
 import { getDisplayString, getReferenceString, isReference, isResource } from '@medplum/core';
 import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
@@ -270,8 +271,9 @@ function useControlledResources<T extends Resource>(
   value: readonly (T | Reference<T>)[] | undefined
 ): { resources: T[] | undefined; pending: boolean } {
   const medplum = useMedplum();
-  // The last read, for the uncached references it covered. null marks a reference that could not be read.
-  const [read, setRead] = useState<{ key: string; results: Map<string, T | null> }>();
+  // The last read, by the client that made it and the uncached references it covered. null marks a
+  // reference that could not be read.
+  const [read, setRead] = useState<{ medplum: MedplumClient; key: string; results: Map<string, T | null> }>();
 
   const { resolved, pendingKey } = useMemo(() => {
     if (!value) {
@@ -284,7 +286,7 @@ function useControlledResources<T extends Resource>(
       }
     }
     const key = uncached.size > 0 ? JSON.stringify([...uncached]) : '';
-    const results = read?.key === key ? read.results : undefined;
+    const results = read?.medplum === medplum && read.key === key ? read.results : undefined;
 
     const resolved: T[] = [];
     for (const item of value) {
@@ -313,7 +315,7 @@ function useControlledResources<T extends Resource>(
           settled.forEach((result, i) => {
             results.set(references[i], result.status === 'fulfilled' ? result.value : null);
           });
-          setRead({ key: pendingKey, results });
+          setRead({ medplum, key: pendingKey, results });
         }
       })
       .catch(() => {});

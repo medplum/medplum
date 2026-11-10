@@ -220,9 +220,9 @@ describe('MultiResourceInput', () => {
       expect(pills().queryByText('Marge Simpson')).not.toBeInTheDocument();
     });
 
-    test('resolves references when the client cache is off', async () => {
-      render(
-        <MedplumProvider medplum={new MockClient({ cacheTime: 0 })}>
+    test('resolves references when the client cache is off, again for a new client', async () => {
+      const ui = (client: MockClient): JSX.Element => (
+        <MedplumProvider medplum={client}>
           <MultiResourceInput<Patient>
             resourceType="Patient"
             name="foo"
@@ -231,7 +231,13 @@ describe('MultiResourceInput', () => {
           />
         </MedplumProvider>
       );
+      const { rerender } = render(ui(new MockClient({ cacheTime: 0 })));
       expect(await pills().findByText('Homer Simpson')).toBeInTheDocument();
+
+      const next = new MockClient({ cacheTime: 0 });
+      const readReference = vi.spyOn(next, 'readReference');
+      await act(async () => rerender(ui(next)));
+      expect(readReference).toHaveBeenCalledTimes(1);
     });
 
     test('is disabled while references are read', async () => {
