@@ -29,7 +29,6 @@ import type {
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
-import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -200,11 +199,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     project = createReference(request.project);
   }
 
-  let mfaSecret: string | undefined = undefined;
-  if (mfaRequired) {
-    mfaSecret = authenticator.generateSecret();
-  }
-
   return {
     resourceType: 'User',
     meta: project ? { project: resolveId(project) } : undefined,
@@ -214,7 +208,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     passwordHash,
     project,
     mfaRequired,
-    mfaSecret,
   };
 }
 
