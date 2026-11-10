@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 // start-block example
+import { Alert, Group, List, Loader, Stack, Text, TextInput } from '@mantine/core';
 import { isOk } from '@medplum/core';
 import { ResourceName } from '@medplum/react';
 import { useSearchResources } from '@medplum/react-hooks';
@@ -18,34 +19,40 @@ export function PatientSearch(): JSX.Element {
   let results: JSX.Element;
   // Before the search effect runs, loading is false and both patients and outcome are undefined.
   if (loading || (!patients && !outcome)) {
-    results = <p role="status">Loading patients...</p>;
+    results = (
+      <Group role="status">
+        <Loader size="sm" aria-hidden="true" />
+        <Text>Loading patients...</Text>
+      </Group>
+    );
   } else if (outcome && !isOk(outcome)) {
-    results = <p role="alert">Unable to load patients. Check your connection and access, then try again.</p>;
+    results = (
+      <Alert color="red" title="Unable to load patients">
+        Check your connection and access, then try again.
+      </Alert>
+    );
   } else if (!patients?.length) {
-    results = <p>No matching patients.</p>;
+    results = <Text>No matching patients.</Text>;
   } else {
     results = (
-      <>
-        <p>First page of matching patients</p>
-        <ul>
+      <Stack gap="xs">
+        <Text>First page of matching patients</Text>
+        <List>
           {patients.map((patient) => (
-            <li key={patient.id}>
+            <List.Item key={patient.id}>
               <ResourceName value={patient} />
-            </li>
+            </List.Item>
           ))}
-        </ul>
-      </>
+        </List>
+      </Stack>
     );
   }
 
   return (
-    <section>
-      <label>
-        Patient name
-        <input value={name} onChange={(event) => setName(event.currentTarget.value)} />
-      </label>
+    <Stack component="section">
+      <TextInput label="Patient name" value={name} onChange={(event) => setName(event.currentTarget.value)} />
       {results}
-    </section>
+    </Stack>
   );
 }
 // end-block example

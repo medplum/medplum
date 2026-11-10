@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 // start-block example
+import { Text } from '@mantine/core';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react';
@@ -10,7 +11,7 @@ export function AuthenticationBoundary(props: { signIn: ReactNode; children: Rea
   const profile = useMedplumProfile();
 
   if (medplum.isLoading()) {
-    return <p role="status">Loading your session...</p>;
+    return <Text role="status">Loading your session...</Text>;
   }
   if (!profile) {
     return <>{props.signIn}</>;

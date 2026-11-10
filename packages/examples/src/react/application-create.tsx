@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 // start-block example
+import { Fieldset, Text } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Patient, Resource } from '@medplum/fhirtypes';
 import { ResourceForm } from '@medplum/react';
@@ -26,6 +27,7 @@ export function CreatePatient(props: { onCreated: (patient: Patient) => void }):
     setOutcome(undefined);
     try {
       const saved = await medplum.createResource(resource);
+      // The callback should navigate away or reset this form to avoid resubmitting the same patient.
       props.onCreated(saved);
     } catch (error) {
       setOutcome(normalizeOperationOutcome(error));
@@ -36,11 +38,10 @@ export function CreatePatient(props: { onCreated: (patient: Patient) => void }):
   }
 
   return (
-    <fieldset disabled={saving}>
-      <legend>New patient</legend>
+    <Fieldset legend="New patient" disabled={saving}>
       <ResourceForm defaultValue={newPatient} outcome={outcome} onSubmit={save} />
-      {saving && <p role="status">Saving patient...</p>}
-    </fieldset>
+      {saving && <Text role="status">Saving patient...</Text>}
+    </Fieldset>
   );
 }
 // end-block example
