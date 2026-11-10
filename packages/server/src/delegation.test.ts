@@ -18,6 +18,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { mockClient } from 'aws-sdk-client-mock';
 import type { Job } from 'bullmq';
+import { Worker } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -28,12 +29,6 @@ import { getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
 import { addTestUser, createTestProject, getSuperAdminAccessToken, mockStdoutWrite } from './test.setup';
-import type { BatchJobData } from './workers/batch';
-import { getBatchQueue, processBatchJob } from './workers/batch';
-import type { BulkExportJobData } from './workers/bulk-export';
-import { execBulkExportJob } from './workers/bulk-export';
-import type { SetAccountsJobData } from './workers/set-accounts';
-import { getSetAccountsQueue, processSetAccountsJob } from './workers/set-accounts';
 import { queueRegistry } from './workers/utils';
 
 // Every route here must act as the effective identity: the On-Behalf-Of member if given, otherwise the caller.
@@ -204,21 +199,17 @@ describe('On-Behalf-Of delegation matrix', () => {
       seeded.set(project.id, { patient, organization });
     }
 
-    vi.mocked(getBatchQueue()?.add)?.mockImplementation(async (name, data) => {
-      const job = mockJob<BatchJobData>(name, data);
-      await processBatchJob(job);
-      return job;
-    });
-    vi.mocked(getSetAccountsQueue()?.add)?.mockImplementation(async (name, data) => {
-      const job = mockJob<SetAccountsJobData>(name, data);
-      await processSetAccountsJob(job);
-      return job;
-    });
-    vi.mocked(queueRegistry.get('BulkExportQueue')?.add)?.mockImplementation(async (name, data) => {
-      const job = mockJob<BulkExportJobData>(name, data as BulkExportJobData);
-      await execBulkExportJob(job);
-      return job;
-    });
+    // Run queued jobs through the processors the workers registered with the mocked bullmq Worker
+    for (const queueName of ['BatchQueue', 'SetAccountsQueue', 'BulkExportQueue']) {
+      const processor = vi.mocked(Worker).mock.calls.findLast(([name]) => name === queueName)?.[1] as (
+        job: Job
+      ) => Promise<void>;
+      vi.mocked(queueRegistry.get(queueName)?.add)?.mockImplementation(async (name, data) => {
+        const job = mockJob(name, data);
+        await processor(job);
+        return job;
+      });
+    }
   });
 
   afterAll(async () => {

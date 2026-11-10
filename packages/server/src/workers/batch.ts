@@ -115,7 +115,12 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
   if (options?.workerEnabled !== false) {
     worker = new Worker<BatchJobData>(
       queueName,
-      trackJobMetrics('batch', processBatchJob),
+      trackJobMetrics('batch', (job) => {
+        const { authState, requestId, traceId } = job.data;
+        return runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
+          return execBatchJob(job);
+        });
+      }),
       getWorkerBullmqConfig(config, 'batch', queueOptions, { concurrency: 15 })
     );
 
@@ -170,11 +175,6 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
  */
 export function getBatchQueue(): Queue<BatchJobData> | undefined {
   return queueRegistry.get(queueName);
-}
-
-export async function processBatchJob(job: Job<BatchJobData>): Promise<void> {
-  const { authState, requestId, traceId } = job.data;
-  await runJobInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJob(job));
 }
 
 /**
