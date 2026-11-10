@@ -55,7 +55,7 @@ Agents that read the Anthropic base URL from the environment can use the gateway
 export ANTHROPIC_BASE_URL=https://api.medplum.com/ai/anthropic
 export ANTHROPIC_AUTH_TOKEN=<medplum access token>
 export ANTHROPIC_MODEL=us.anthropic.claude-sonnet-4-5-20250929-v1:0
-export ANTHROPIC_SMALL_FAST_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
 Set the small model too: agents use it for background tasks, and without it they request a model name the gateway does not accept.
