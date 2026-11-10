@@ -17,7 +17,7 @@ export default {
 } as Meta;
 
 const TAB_SEARCH: Record<LabTab, string> = {
-  completed: 'DiagnosticReport?status=final,corrected,amended&_sort=-_lastUpdated&_count=20',
+  completed: 'DiagnosticReport?status=final,corrected,amended,preliminary,partial&_sort=-_lastUpdated&_count=20',
   open: 'ServiceRequest?status=active,draft,on-hold&_sort=-_lastUpdated&_count=20',
   revoked: 'ServiceRequest?status=revoked&_sort=-_lastUpdated&_count=20',
 };

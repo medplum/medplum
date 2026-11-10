@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, resolveId } from '@medplum/core';
-import type { Binary, UserConfiguration } from '@medplum/fhirtypes';
+import type { Binary, ClientApplication, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -9,7 +9,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { getUserConfigurationMenu } from './me';
 import { registerNew } from './register';
 
@@ -179,8 +179,8 @@ describe('Me', () => {
     expect(res2.body.config.menu).toMatchObject(getUserConfigurationMenu(project, membership));
   });
 
-  test('Get me as ClientApplication', async () => {
-    const { client } = await withTestContext(() =>
+  test('Get me as ClientApplication without exposing its secrets', async () => {
+    const { client, project } = await withTestContext(() =>
       registerNew({
         firstName: 'Client',
         lastName: 'Test',
@@ -190,11 +190,69 @@ describe('Me', () => {
       })
     );
 
+    const retiringSecret = randomUUID();
+    await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(project);
+      await systemRepo.updateResource({ ...client, retiringSecret });
+    });
+
     const res = await request(app)
       .get('/auth/me')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
     expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
+    expect(res.body.profile).toMatchObject({ resourceType: 'ClientApplication', id: client.id });
+    expect(res.body.profile).not.toHaveProperty('secret');
+    expect(res.body.profile).not.toHaveProperty('retiringSecret');
+    const storedClient = await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(project);
+      return systemRepo.readResource<ClientApplication>('ClientApplication', client.id);
+    });
+    expect(storedClient.secret).toBe(client.secret);
+    expect(storedClient.retiringSecret).toBe(retiringSecret);
+  });
+
+  test.each([false, true])('Get me on behalf of a Patient (cross-project: %s)', async (crossProject) => {
+    const { client, project } = await withTestContext(() =>
+      createTestProject({ withClient: true, membership: { admin: true }, superAdmin: crossProject })
+    );
+    const targetProject = crossProject ? (await withTestContext(() => createTestProject())).project : project;
+    const patient = await withTestContext(() =>
+      addTestUser(targetProject, {
+        resourceType: 'Patient',
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: '%patient' },
+          resource: [{ resourceType: 'Patient' }],
+        },
+      })
+    );
+    const config = await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(targetProject);
+      const config = await systemRepo.createResource<UserConfiguration>({
+        resourceType: 'UserConfiguration',
+        meta: { project: targetProject.id },
+        menu: [{ title: 'Patient menu', link: [{ name: 'Home', target: '/' }] }],
+      });
+      await systemRepo.updateResource({ ...patient.membership, userConfiguration: createReference(config) });
+      return config;
+    });
+
+    const res = await request(app)
+      .get('/auth/me')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
+      .set('X-Medplum-On-Behalf-Of', `ProjectMembership/${patient.membership.id}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.project.id).toBe(targetProject.id);
+    expect(res.body.profile).toMatchObject({ resourceType: 'Patient', id: patient.profile.id });
+    expect(res.body.membership).toMatchObject({
+      id: patient.membership.id,
+      profile: createReference(patient.profile),
+    });
+    expect(res.body.config).toMatchObject({ id: config.id, menu: config.menu });
+    expect(res.body.accessPolicy.compartment.reference).toBe(`Patient/${patient.profile.id}`);
+    expect(res.body.user).toBeUndefined();
+    expect(res.body.security).toBeUndefined();
   });
 
   test('Profile in another project', async () => {
@@ -215,6 +273,35 @@ describe('Me', () => {
     const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res).toHaveStatus(404);
     expect(res.text).not.toContain(client.secret);
+  });
+
+  test('UserConfiguration from a linked project', async () => {
+    const { project, membership, accessToken } = await withTestContext(() =>
+      createTestProject({ withClient: true, withAccessToken: true })
+    );
+    const { project: linkedProject } = await withTestContext(() => createTestProject());
+    const systemRepo = await getProjectSystemRepo(project);
+    const linkedConfig = await systemRepo.createResource<UserConfiguration>({
+      resourceType: 'UserConfiguration',
+      meta: { project: linkedProject.id },
+    });
+    const projectlessConfig = await systemRepo.createResource<UserConfiguration>({ resourceType: 'UserConfiguration' });
+    await withTestContext(() =>
+      systemRepo.updateResource({ ...project, link: [{ project: createReference(linkedProject) }] })
+    );
+
+    await withTestContext(() =>
+      systemRepo.updateResource({ ...membership, userConfiguration: createReference(linkedConfig) })
+    );
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.config.id).toBe(linkedConfig.id);
+
+    await withTestContext(() =>
+      systemRepo.updateResource({ ...membership, userConfiguration: createReference(projectlessConfig) })
+    );
+    const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res2).toHaveStatus(400);
   });
 
   test('AccessPolicy.basedOn', async () => {

@@ -2523,7 +2523,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       const fileData = createBinaryOptions.data;
       let fileStr: string;
 
-      if (fileData instanceof Blob) {
+      // Prefer FileReader: readAsText honors a UTF-16 BOM, and React Native's Blob has no text()
+      if (fileData instanceof Blob && typeof FileReader !== 'undefined') {
         fileStr = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -2533,8 +2534,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
             }
             resolve(reader.result as string);
           };
+          reader.onerror = () => reject(reader.error ?? new Error('Failed to load file'));
           reader.readAsText(fileData, 'utf-8');
         });
+      } else if (fileData instanceof Blob) {
+        // Node has no FileReader
+        fileStr = await fileData.text();
       } else if (ArrayBuffer.isView(fileData)) {
         fileStr = new TextDecoder().decode(fileData);
       } else {

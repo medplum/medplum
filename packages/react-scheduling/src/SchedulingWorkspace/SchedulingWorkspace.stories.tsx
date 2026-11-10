@@ -108,6 +108,8 @@ export default {
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
  * anything booked from the form — opens its details in the same pane the booking form
  * uses, closing the form if one was open; clicking open time again puts the form back.
+ * A form holding answers on either tab asks first, the way the configuration workspace
+ * does; closing it with the ✕ does not.
  * "Cancel Appointment" turns the pane over to a page asking what the visit is being
  * called off for; a reason has to be searched for and picked before it can be confirmed,
  * and "Back" leaves without touching the visit. Confirming runs it through
@@ -192,6 +194,9 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * `$book`, which checks it. What this adds is a **Date & time** and a **Minutes** field
  * above the times on offer, for placing a visit the rules would refuse. The read-only
  * time on the left stays where it is; both ways of answering land in it.
+ *
+ * **Date & time** starts out on the time clicked to open the form, unless that time has
+ * passed or a whole day was picked in month view.
  *
  * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
  * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose

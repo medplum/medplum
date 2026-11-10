@@ -1,0 +1,4 @@
+{{- /* Port of FeatureGrid (src/components/landing/FeatureGrid.tsx). Params: columns, variant ("ecosystem" | "complexity") */ -}}
+<div class="landing-feature-grid{{ with .Get "variant" }} landing-feature-grid-{{ . }}{{ end }}" style="--columns: {{ .Get "columns" | default "3" }}">
+  {{ .Inner | safeHTML }}
+</div>

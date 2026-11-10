@@ -65104,43 +65104,6 @@
     }
   },
   {
-    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ValueSet-code",
-    "resource" : {
-      "resourceType" : "SearchParameter",
-      "id" : "ValueSet-code",
-      "extension" : [{
-        "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
-        "valueCode" : "trial-use"
-      }],
-      "url" : "http://hl7.org/fhir/SearchParameter/ValueSet-code",
-      "version" : "4.0.1",
-      "name" : "code",
-      "status" : "draft",
-      "experimental" : false,
-      "date" : "2019-11-01T09:29:23+11:00",
-      "publisher" : "Health Level Seven International (Vocabulary)",
-      "contact" : [{
-        "telecom" : [{
-          "system" : "url",
-          "value" : "http://hl7.org/fhir"
-        }]
-      },
-      {
-        "telecom" : [{
-          "system" : "url",
-          "value" : "http://www.hl7.org/Special/committees/Vocab/index.cfm"
-        }]
-      }],
-      "description" : "This special parameter searches for codes in the value set. See additional notes on the ValueSet resource",
-      "code" : "code",
-      "base" : ["ValueSet"],
-      "type" : "token",
-      "expression" : "ValueSet.expansion.contains.code | ValueSet.compose.include.concept.code",
-      "xpath" : "f:ValueSet/f:expansion/f:contains/f:code | f:ValueSet/f:compose/f:include/f:concept/f:code",
-      "xpathUsage" : "normal"
-    }
-  },
-  {
     "fullUrl" : "http://hl7.org/fhir/SearchParameter/ValueSet-expansion",
     "resource" : {
       "resourceType" : "SearchParameter",
