@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { EMPTY, normalizeErrorString } from '@medplum/core';
+import { badRequest, EMPTY, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { Binary, Project } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
@@ -12,6 +12,7 @@ import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
+import { safeFetch } from '../util/url';
 import {
   applyFromDisplayName,
   getFromAddress,
@@ -47,6 +48,7 @@ export async function sendEmail(repo: Repository, options: Mail.Options, project
   // Disable file access
   // "if set to true then fails with an error when a node tries to load content from a file"
   options.disableFileAccess = true;
+  options.disableUrlAccess = true;
 
   globalLogger.info('Sending email', { to: options.to, subject: options.subject, projectId: project?.id });
 
@@ -98,6 +100,21 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
     attachment.content = await getBinaryStorage().readBinary(binary);
 
     // And then delete the original path
+    delete attachment.path;
+  }
+
+  // Same pattern nodemailer uses to treat a path as a URL
+  if (/^https?:\/\//i.test(path)) {
+    // safeFetch blocks private, link-local, and metadata addresses, including on redirect
+    const response = await safeFetch(path, { signal: AbortSignal.timeout(30_000) }).catch((err: Error) => {
+      throw new OperationOutcomeError(
+        badRequest('Failed to fetch attachment: ' + normalizeErrorString(err.cause ?? err))
+      );
+    });
+    if (!response.ok) {
+      throw new OperationOutcomeError(badRequest(`Failed to fetch attachment: HTTP ${response.status}`));
+    }
+    attachment.content = Buffer.from(await response.arrayBuffer());
     delete attachment.path;
   }
 }
