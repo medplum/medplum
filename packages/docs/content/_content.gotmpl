@@ -1,0 +1,12 @@
+{{- /* A redirect page at each old URL in data/redirects.yaml (layouts/_default/redirect.html). Left out of page lists, so
+  they're not in the sitemap, the sidebar, or llms.txt. s3deploy.mjs serves foo/index.html at /foo, so they work there. */ -}}
+{{- range hugo.Data.redirects -}}
+  {{- $.AddPage (dict
+    "path" (strings.TrimPrefix "/" .from)
+    "title" .to
+    "params" (dict "redirect" .to)
+    "layout" "redirect"
+    "build" (dict "list" "never" "render" "always" "publishResources" false)
+    "sitemap" (dict "disable" true)
+  ) -}}
+{{- end -}}

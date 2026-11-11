@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { concatUrls, isString, MEDPLUM_VERSION, MedplumClient } from '@medplum/core';
+import { concatUrls, getReferenceString, isString, MEDPLUM_VERSION, MedplumClient } from '@medplum/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getConfig } from '../config/loader';
@@ -53,7 +53,7 @@ export function getMcpServer(): McpServer {
       inputSchema: {
         method: z.string(),
         path: z.string(),
-        body: z.any(),
+        body: z.any().optional(),
       },
     },
     async ({ method, path, body }) => {
@@ -71,8 +71,12 @@ export function getMcpServer(): McpServer {
         throw new Error('Invalid path: must be relative to the FHIR base URL');
       }
 
-      const accessToken = ctx.authState.accessToken;
-      const proxy = new MedplumClient({ baseUrl, accessToken, fetch: globalThis.fetch });
+      const { accessToken, onBehalfOfMembership } = ctx.authState;
+      const defaultHeaders: Record<string, string> = {};
+      if (onBehalfOfMembership) {
+        defaultHeaders['X-Medplum-On-Behalf-Of'] = getReferenceString(onBehalfOfMembership);
+      }
+      const proxy = new MedplumClient({ baseUrl, accessToken, defaultHeaders, fetch: globalThis.fetch });
 
       // MCP allows sending JSON, but some clients (like Claude) send the body as a string
       if (isString(body)) {

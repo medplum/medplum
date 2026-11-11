@@ -263,6 +263,17 @@ export function parseZonedDateTimeInput(value: string, timezone?: string): Date 
 }
 
 /**
+ * Writes an instant as a native datetime input's value, the inverse of {@link parseZonedDateTimeInput}.
+ * @param date - The instant to write.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns A `YYYY-MM-DDTHH:MM` value, read in that timezone.
+ */
+export function formatZonedDateTimeInput(date: Date, timezone?: string): string {
+  const { year, month, day, hour, minute } = getZonedParts(date, timezone);
+  return `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}`;
+}
+
+/**
  * Restricts appointments to a half of the day, read in the scheduling timezone.
  * @param appointments - Appointments to filter.
  * @param timeOfDay - The half of the day to keep, or `any` to keep all.

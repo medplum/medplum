@@ -6,12 +6,15 @@ import type {
   Address,
   Appointment,
   AppointmentParticipant,
+  AuditEvent,
   Binary,
+  Bot,
   Bundle,
   CarePlan,
   CodeSystem,
   Condition,
   Consent,
+  Cron,
   DiagnosticReport,
   DocumentReference,
   ElementDefinition,
@@ -1103,7 +1106,13 @@ describe('FHIR resource validation', () => {
     patient.birthDate = 'x';
     expect(() => validateResource(patient)).toThrow('Invalid date format');
 
+    patient.birthDate = '2023-02-29';
+    expect(() => validateResource(patient)).toThrow('Invalid date value');
+
     patient.birthDate = '2000-01-01';
+    expect(() => validateResource(patient)).not.toThrow();
+
+    patient.birthDate = '2024-02-29';
     expect(() => validateResource(patient)).not.toThrow();
   });
 
@@ -1205,7 +1214,20 @@ describe('FHIR resource validation', () => {
     sp.numberOfSubunits = 123.5;
     expect(() => validateResource(sp)).toThrow('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
 
-    sp.numberOfSubunits = 10;
+    sp.numberOfSubunits = -2_147_483_649;
+    expect(() => validateResource(sp)).toThrow(
+      'Expected number to be in the range -2147483648..2147483647 (SubstanceProtein.numberOfSubunits)'
+    );
+
+    sp.numberOfSubunits = 2_147_483_648;
+    expect(() => validateResource(sp)).toThrow(
+      'Expected number to be in the range -2147483648..2147483647 (SubstanceProtein.numberOfSubunits)'
+    );
+
+    sp.numberOfSubunits = -2_147_483_648;
+    expect(() => validateResource(sp)).not.toThrow();
+
+    sp.numberOfSubunits = 2_147_483_647;
     expect(() => validateResource(sp)).not.toThrow();
   });
 
@@ -1257,12 +1279,24 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.minutesDuration)');
 
     appt.minutesDuration = -1;
-    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
 
     appt.minutesDuration = 0;
-    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
 
-    appt.minutesDuration = 10;
+    appt.minutesDuration = 2_147_483_648;
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 1..2147483647 (Appointment.minutesDuration)'
+    );
+
+    appt.minutesDuration = 1;
+    expect(() => validateResource(appt)).not.toThrow();
+
+    appt.minutesDuration = 2_147_483_647;
     expect(() => validateResource(appt)).not.toThrow();
   });
 
@@ -1292,12 +1326,19 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.priority)');
 
     appt.priority = -1;
-    expect(() => validateResource(appt)).toThrow('Expected number to be non-negative (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 0..2147483647 (Appointment.priority)'
+    );
+
+    appt.priority = 2_147_483_648;
+    expect(() => validateResource(appt)).toThrow(
+      'Expected number to be in the range 0..2147483647 (Appointment.priority)'
+    );
 
     appt.priority = 0;
     expect(() => validateResource(appt)).not.toThrow();
 
-    appt.priority = 10;
+    appt.priority = 2_147_483_647;
     expect(() => validateResource(appt)).not.toThrow();
   });
 
@@ -1700,6 +1741,19 @@ describe('FHIR resource validation', () => {
     expect(issues[0].details?.text).toContain('Organization');
   });
 
+  test('System reference in AuditEvent.agent.who should not warn', () => {
+    const auditEvent: AuditEvent = {
+      resourceType: 'AuditEvent',
+      type: { code: 'rest', system: 'http://dicom.nema.org/resources/ontology/DCM' },
+      recorded: '2024-01-01T00:00:00Z',
+      agent: [{ who: { reference: 'system' }, requestor: true }],
+      source: { observer: { reference: 'Device/1' } },
+    };
+
+    const issues = validateResource(auditEvent);
+    expect(issues).toHaveLength(0);
+  });
+
   test('Nested recursive properties', () => {
     const consent: Consent = {
       resourceType: 'Consent',
@@ -1732,6 +1786,27 @@ describe('FHIR resource validation', () => {
     expect(() => validateTypedValue({ type: 'Address', value: { foo: 'bar' } })).toThrow(
       'Invalid additional property "foo" (Address.foo)'
     );
+  });
+
+  test('Cron schedules must be valid cron expressions', () => {
+    const cron: Cron = {
+      resourceType: 'Cron',
+      active: true,
+      cronString: '*/5 * * * *',
+      targetReference: { reference: 'Bot/123' },
+      onBehalfOf: { reference: 'ProjectMembership/456' },
+    };
+    expect(() => validateResource(cron)).not.toThrow();
+    expect(() => validateResource({ ...cron, cronString: '10-2 * * * *' })).toThrow('cron-4');
+    expect(() => validateResource({ ...cron, cronString: '0 */5 * * * *' })).toThrow('cron-4');
+
+    const bot: Bot = { resourceType: 'Bot', cronString: '0 0 * * MON-FRI' };
+    expect(() => validateResource(bot)).not.toThrow();
+    expect(() => validateResource({ ...bot, cronString: 'not a cron' })).toThrow('bot-1');
+    expect(() => validateResource({ ...bot, cronString: '30 0 0 * * MON-FRI' })).toThrow('bot-1');
+    expect(() =>
+      validateResource({ resourceType: 'Bot', cronTiming: { repeat: { period: 1, periodUnit: 'h' } } })
+    ).not.toThrow();
   });
 
   describe('Value collection', () => {

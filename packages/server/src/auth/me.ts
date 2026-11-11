@@ -3,6 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { getReferenceString, Operator } from '@medplum/core';
 import type {
+  ClientApplication,
   Login,
   Project,
   ProjectMembership,
@@ -15,9 +16,10 @@ import Bowser from 'bowser';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { isMfaRequired } from './utils';
+import { canManageUserAccount, hasSmartResourceScopes, isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
@@ -37,18 +39,31 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState, systemRepo } = getAuthenticatedContext();
-  const { project, membership } = authState;
-  const profileRef = membership.profile as Reference<ProfileResource>;
-  const profile = await systemRepo.readReference<ProfileResource>(profileRef);
+  const { authState, repo, systemRepo, project, membership } = getAuthenticatedContext();
+  const profileRef = membership.profile as Reference<ProfileResource | ClientApplication>;
+  let profile = await readMembershipReference<ProfileResource | ClientApplication>(
+    systemRepo,
+    membership,
+    profileRef,
+    membershipProfileTypes,
+    { allowLinkedProjects: true }
+  );
+  if (profile.resourceType === 'ClientApplication') {
+    profile = { ...profile };
+    delete profile.secret;
+    delete profile.retiringSecret;
+  }
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
   let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
-  if (membership.user?.reference?.startsWith('User/')) {
+  if (!authState.onBehalfOfMembership && membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
-    const sessions = await getSessions(systemRepo, user);
+  }
+
+  // Account security details are only for logins that can manage the account (see getCallerUserReference)
+  if (user && !hasSmartResourceScopes(authState.login)) {
     const memberships = await systemRepo.searchResources<ProjectMembership>({
       resourceType: 'ProjectMembership',
       filters: [
@@ -64,6 +79,11 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
         },
       ],
     });
+    const sessions = await getSessions(
+      systemRepo,
+      user,
+      canManageUserAccount(authState.login) ? undefined : memberships
+    );
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       mfaRequired: isMfaRequired(user, project),
@@ -112,7 +132,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     security,
   };
 
-  res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
+  res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result));
 }
 
 export async function getUserConfiguration(
@@ -123,7 +143,13 @@ export async function getUserConfiguration(
   let result: UserConfiguration;
 
   if (membership.userConfiguration) {
-    result = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+    result = await readMembershipReference<UserConfiguration>(
+      systemRepo,
+      membership,
+      membership.userConfiguration,
+      ['UserConfiguration'],
+      { allowLinkedProjects: true }
+    );
   } else {
     result = { resourceType: 'UserConfiguration' };
   }
@@ -170,7 +196,19 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
   return result;
 }
 
-async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Promise<UserSession[]> {
+/**
+ * Returns the user's recent sessions.
+ * @param systemRepo - The system repository.
+ * @param user - The user.
+ * @param memberships - Optional memberships; if set, only sessions for one of these memberships are returned.
+ * @returns The user's sessions.
+ */
+async function getSessions(
+  systemRepo: SystemRepository,
+  user: WithId<User>,
+  memberships?: WithId<ProjectMembership>[]
+): Promise<UserSession[]> {
+  const membershipRefs = memberships && new Set(memberships.map((m) => getReferenceString(m)));
   const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [
@@ -189,7 +227,11 @@ async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Pr
 
   const result = [];
   for (const login of logins) {
-    if (!login.membership || login.revoked) {
+    // A login that has not been granted yet is not a session
+    if (!login.membership?.reference || !login.granted || login.revoked) {
+      continue;
+    }
+    if (membershipRefs && !membershipRefs.has(login.membership.reference)) {
       continue;
     }
 

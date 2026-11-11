@@ -1,9 +1,47 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { Operator } from '@medplum/core';
-import type { ProjectMembership, Reference } from '@medplum/fhirtypes';
+import {
+  AccessPolicyInteraction,
+  badRequest,
+  notFound,
+  OperationOutcomeError,
+  Operator,
+  parseReference,
+  resolveId,
+} from '@medplum/core';
+import type { Project, ProjectMembership, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { getAllowedProjects, getRepoForProjects } from './accesspolicy';
+import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo } from './repo';
+
+export const membershipProfileTypes: readonly ResourceType[] = [
+  'Bot',
+  'ClientApplication',
+  'Patient',
+  'Practitioner',
+  'RelatedPerson',
+];
+
+/**
+ * Returns why a membership cannot be used, or undefined if it can.
+ * As with Patient.active, a missing `active` means active.
+ * @param project - The project.
+ * @param membership - The membership, if there is one. Without it, only the project is checked.
+ * @returns The reason the membership or project is inactive, or undefined if both are active.
+ */
+export function getInactiveReason(
+  project: Project,
+  membership?: ProjectMembership
+): 'Profile not active' | 'Project not active' | undefined {
+  if (membership?.active === false) {
+    return 'Profile not active';
+  }
+  if (project.active === false) {
+    return 'Project not active';
+  }
+  return undefined;
+}
 
 /**
  * @param projectId - The ID of the project to search in.
@@ -31,4 +69,51 @@ export function findProjectMembership(
       },
     ],
   });
+}
+
+/**
+ * Reads a resource referenced by a ProjectMembership, such as the profile, access policy, or user configuration.
+ *
+ * Reads the target with `systemRepo`, so the read joins the caller's transaction and shard, then checks it against
+ * the project rules of a repository scoped to the membership's project (and its linked projects, if allowed).
+ * Always use this function instead of reading membership references directly.
+ * @param systemRepo - The system repository used for the reads.
+ * @param membership - The project membership that holds the reference.
+ * @param reference - The reference to read.
+ * @param allowedTypes - The resource types the reference may point to.
+ * @param options - Optional read options.
+ * @param options.allowLinkedProjects - Whether the target may belong to a project linked from the membership's project.
+ *   Do not set this when the result is written back with a system repository, which would write into the linked project.
+ * @returns The referenced resource.
+ */
+export async function readMembershipReference<T extends Resource>(
+  systemRepo: SystemRepository,
+  membership: ProjectMembership,
+  reference: Reference<T>,
+  allowedTypes: readonly ResourceType[],
+  options?: { allowLinkedProjects?: boolean }
+): Promise<WithId<T>> {
+  let resourceType: string;
+  try {
+    [resourceType] = parseReference(reference);
+  } catch {
+    throw new OperationOutcomeError(badRequest('Invalid reference'));
+  }
+  if (!allowedTypes.includes(resourceType as ResourceType)) {
+    throw new OperationOutcomeError(notFound);
+  }
+
+  const resource = await systemRepo.readReference<T>(reference);
+
+  // Runs on every authenticated request, so skip loading projects in the common case
+  if (resource.meta?.project && resource.meta.project === resolveId(membership.project)) {
+    return resource;
+  }
+
+  const project = await systemRepo.readReference<Project>(membership.project);
+  const projects = options?.allowLinkedProjects ? await getAllowedProjects(project, systemRepo) : [project];
+  if (!getRepoForProjects(projects).canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+    throw new OperationOutcomeError(notFound);
+  }
+  return resource;
 }

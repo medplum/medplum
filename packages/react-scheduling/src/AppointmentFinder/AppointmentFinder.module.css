@@ -13,6 +13,10 @@
   align-items: flex-start;
   flex: 1 1 auto;
   min-height: 0;
+  container-type: inline-size;
+  /* A container sizes as though empty, so a host that fits the form to its content would
+     squeeze it to nothing. It gets the form at its widest instead. */
+  contain-intrinsic-inline-size: 420px;
 }
 
 /* Each column scrolls on its own, so a wide stretch of days does not carry the form
@@ -24,21 +28,60 @@
   max-width: 420px;
   max-height: 100%;
   overflow-y: auto;
+  padding-bottom: var(--mantine-spacing-sm);
 }
 
-/* Only present while the time search is open, which is what widens the panel. */
+/* Only present while the time search is open, which is what widens the panel. No wider
+   than CalendarDateInput's max-width, so the calendar at its top fills it. */
 .results {
-  flex: 1 1 380px;
+  flex: 1 1 350px;
   min-width: 0;
+  max-width: 350px;
   max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The times scroll under the column's header. Spaced from it by padding rather than a
+   gap, so they scroll out of sight at the divider rather than a gap's width below it. */
+.resultsList {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  padding-top: var(--mantine-spacing-sm);
+  padding-bottom: var(--mantine-spacing-sm);
+}
+
+/* The calendar sets its month on a bare `<p>`, whose browser margins would push it away
+   from the header above and the weekdays below. */
+.monthPicker p {
+  margin: 0;
+}
+
+.monthPicker table {
+  margin-top: var(--mantine-spacing-xs);
+}
+
+/* Stacked, as they are below the two columns' bases and the gap between them (300px + 350px
+   + 20px), the columns scroll as one with whatever holds them, rather than each in its own
+   box with the times out of view below the form. */
+@container (width < 670px) {
+  .form,
+  .results {
+    max-height: none;
+  }
+
+  .form,
+  .resultsList {
+    overflow-y: visible;
+  }
 }
 
 /* Both columns are stacks, so everything in them is a flex item, and a clamped column
    squeezes its items to fit before it agrees to scroll — enough to press a button flat.
    They keep their own heights and the column scrolls instead. */
 .form > *,
-.results > * {
+.resultsList > * {
   flex-shrink: 0;
 }
 
@@ -50,8 +93,46 @@
   max-width: 14rem;
 }
 
+/* Flashes the chosen time as the search closes on it, drawing the eye from where the time
+   was picked to where it landed. */
+.justPicked {
+  animation: justPicked 0.8s linear;
+}
+
+@keyframes justPicked {
+  0%,
+  50% {
+    border-color: var(--mantine-primary-color-filled);
+    box-shadow: 0 0 16px 2px color-mix(in srgb, var(--mantine-primary-color-filled) 25%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .justPicked {
+    animation: none;
+  }
+}
+
 /* Mantine doesn't include asterisks for Checkboxes marked as required, so we add them here. */
 .requiredLabel::after {
   content: ' *';
+  color: var(--mantine-color-error);
+}
+
+/* The notes' count sits at the end of the label's line, so the field below it starts where
+   every other field's does. */
+.notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--mantine-spacing-xs);
+}
+
+.notesField {
+  flex-basis: 100%;
+}
+
+.notes .notesCountOver {
   color: var(--mantine-color-error);
 }

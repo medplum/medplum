@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
+import { allOk, badRequest, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter } from '@medplum/fhir-router';
-import type { ResourceType } from '@medplum/fhirtypes';
+import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
@@ -74,8 +74,10 @@ import { patientMatchHandler } from './operations/patientmatch';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
+import { projectArchiveHandler } from './operations/projectarchive';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { projectRestoreHandler } from './operations/projectrestore';
 import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { appointmentRescheduleHandler } from './operations/reschedule';
@@ -94,6 +96,7 @@ import type { ResendSubscriptionsOptions } from './repo';
 import { validateRepositoryResourceStrictly } from './repository/validation';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { getTerminologyCapabilities } from './terminology-capabilities';
 
 export const fhirRouter = Router();
 
@@ -165,8 +168,9 @@ const publicRoutes = Router();
 fhirRouter.use(publicRoutes);
 
 // Metadata / CapabilityStatement
-publicRoutes.get('/metadata', (_req: Request, res: Response) => {
-  res.status(200).json(getCapabilityStatement());
+publicRoutes.get('/metadata', async (req: Request, res: Response) => {
+  const metadata = req.query.mode === 'terminology' ? await getTerminologyCapabilities() : getCapabilityStatement();
+  res.status(200).json(metadata);
 });
 
 // FHIR Versions
@@ -247,6 +251,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Project $clone
   router.add('POST', '/Project/:id/$clone', projectCloneHandler);
 
+  // Project $archive and $restore
+  router.add('POST', '/Project/:id/$archive', projectArchiveHandler);
+  router.add('POST', '/$restore', projectRestoreHandler);
+
   // Project $rate-limits
   router.add('GET', '/Project/:id/$rate-limits', projectRateLimitsHandler);
 
@@ -272,6 +280,8 @@ function initInternalFhirRouter(): FhirRouter {
   // ValueSet $expand operation
   router.add('GET', '/ValueSet/$expand', expandOperator);
   router.add('POST', '/ValueSet/$expand', expandOperator);
+  router.add('GET', '/ValueSet/:id/$expand', expandOperator);
+  router.add('POST', '/ValueSet/:id/$expand', expandOperator);
 
   // CodeSystem $import operation
   router.add('POST', '/CodeSystem/$import', codeSystemImportHandler);
@@ -437,7 +447,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await validateRepositoryResourceStrictly(ctx.repo, req.body);
+    await validateRepositoryResourceStrictly(ctx.repo, getValidateInput(req));
     return [allOk];
   });
 
@@ -496,10 +506,12 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
     body: req.body ?? {},
     headers: req.headers,
     config: {
+      chainedSearchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'chainedSearchOnReader')?.valueBoolean,
       graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
         ?.valueInteger,
       graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
       graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+      readonlyBatchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'readonlyBatchOnReader')?.valueBoolean,
       searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
       transactions: ctx.project.features?.includes('transaction-bundles'),
     },
@@ -508,7 +520,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
   if (isNotFound(result[0])) {
-    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo, res.locals.rawBody);
     if (customOperationResponse) {
       result = customOperationResponse;
     }
@@ -527,4 +539,27 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
 
 function stripPrefix(str: string, prefix: string): string {
   return str.substring(str.indexOf(prefix) + prefix.length);
+}
+
+/**
+ * Returns the resource to validate from a $validate request.
+ * The resource can be posted directly, or wrapped in the "resource" parameter of a Parameters body.
+ * See: https://hl7.org/fhir/R4/resource-operation-validate.html
+ * @param req - The FHIR request.
+ * @returns The resource to validate.
+ */
+function getValidateInput(req: FhirRequest): Resource {
+  const body = req.body as Resource;
+  if (body?.resourceType !== 'Parameters') {
+    return body;
+  }
+  const resourceParam = body.parameter?.find((p) => p.name === 'resource');
+  if (resourceParam?.resource) {
+    return resourceParam.resource;
+  }
+  if (req.params.resourceType === 'Parameters') {
+    // Validating a Parameters resource posted directly
+    return body;
+  }
+  throw new OperationOutcomeError(badRequest('Missing resource parameter'));
 }

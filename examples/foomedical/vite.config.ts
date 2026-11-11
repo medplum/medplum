@@ -11,13 +11,13 @@ if (!existsSync(path.join(import.meta.dirname, '.env'))) {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
+  envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_', 'FOOMEDICAL_PROJECT_ID'],
   plugins: [react()],
   server: {
     port: 3000,
   },
   test: {
-    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     environment: 'jsdom',
     setupFiles: ['./src/test.setup.ts'],
     globals: true,

@@ -272,6 +272,20 @@ describe('SignInForm', () => {
     expect(input.innerHTML).toBe('Sign in to Medplum');
   });
 
+  test('Requests login status only for a login ID', async () => {
+    const getSpy = vi.spyOn(medplum, 'get');
+    try {
+      await setup({ login: '../../fhir/R4/Patient' });
+      expect(getSpy).not.toHaveBeenCalled();
+
+      const loginId = crypto.randomUUID();
+      await setup({ login: loginId });
+      expect(getSpy).toHaveBeenCalledWith('auth/login/' + loginId);
+    } finally {
+      getSpy.mockRestore();
+    }
+  });
+
   test('Submit success', async () => {
     let success = false;
 

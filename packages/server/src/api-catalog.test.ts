@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import express from 'express';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
@@ -33,7 +31,10 @@ describe('API catalog', () => {
     expect(linkset).toStrictEqual([
       {
         anchor: `${baseUrl}fhir/R4`,
-        'service-desc': [{ href: `${baseUrl}fhir/R4/metadata`, type: ContentType.FHIR_JSON }],
+        'service-desc': [
+          { href: `${baseUrl}fhir/R4/metadata`, type: ContentType.FHIR_JSON },
+          { href: `${baseUrl}openapi.json`, type: 'application/vnd.oai.openapi+json' },
+        ],
         'service-doc': [{ href: 'https://www.medplum.com/docs/api/fhir', type: ContentType.HTML }],
       },
       {
@@ -75,22 +76,11 @@ describe('API catalog', () => {
     const serviceDescPaths = linkset
       .flatMap((context: any) => context['service-desc'] ?? [])
       .map((target: any) => target.href.substring(baseUrl.length - 1));
-    expect(serviceDescPaths).toHaveLength(3);
+    expect(serviceDescPaths).toHaveLength(4);
 
     for (const path of serviceDescPaths) {
       expect(await request(app).get(path)).toHaveStatus(200);
     }
-  });
-
-  test('www.medplum.com redirects to the canonical catalog', () => {
-    // RFC 9727 section 5.1 - other instances redirect to the canonical instance.
-    // www.medplum.com is served by Vercel, so the redirect lives in the docs site config.
-    const vercelConfig = JSON.parse(readFileSync(resolve(__dirname, '../../docs/vercel.json'), 'utf8'));
-    expect(vercelConfig.redirects).toContainEqual({
-      source: '/.well-known/api-catalog',
-      destination: 'https://api.medplum.com/.well-known/api-catalog',
-      permanent: true,
-    });
   });
 
   test('Catalog is not project scoped', async () => {

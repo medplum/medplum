@@ -35,3 +35,36 @@
 .contentContainer.selected {
   background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-8));
 }
+
+/* Hairline divider between rows, inset to match the row's rounded highlight. */
+.itemWrapper {
+  position: relative;
+}
+
+.itemWrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 1px;
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-4));
+}
+
+/*
+ * The MedplumLink renders an inline <a>; without forcing it to a full-width block
+ * the long medication name escapes this flex column and slides under the actions.
+ * `min-width: 0` + `overflow: hidden` lets the column shrink and the title's own
+ * ellipsis clamp, keeping the actions clear.
+ */
+.rowContent {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rowContent a {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}

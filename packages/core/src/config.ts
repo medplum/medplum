@@ -94,9 +94,13 @@ export interface MedplumSourceInfraConfig {
   loadBalancerLoggingBucket?: ValueOrExternalSecret<string>;
   loadBalancerLoggingPrefix?: ValueOrExternalSecret<string>;
   loadBalancerAlgorithm?: ValueOrExternalSecret<'round_robin' | 'least_outstanding_requests' | 'weighted_random'>;
+  /** ELB security policy for the HTTPS listeners, e.g. `ELBSecurityPolicy-TLS13-1-2-PQ-2025-09`. Defaults to `ELBSecurityPolicy-TLS13-1-2-2021-06`. */
+  loadBalancerSslPolicy?: ValueOrExternalSecret<string>;
   guardDutyMalwareProtectionEnabled?: ValueOrExternalSecret<boolean>;
   /** With guardDutyMalwareProtectionEnabled, scan only via Binary $scan, and only block Binaries with threats found. */
   guardDutyMalwareProtectionOnDemandOnly?: ValueOrExternalSecret<boolean>;
+  /** Delete bot inputs written by the server's `storeBotInput` setting (`bot/` prefix) after this many days. */
+  storageBotInputExpirationDays?: ValueOrExternalSecret<number>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled?: ValueOrExternalSecret<boolean>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
@@ -119,6 +123,8 @@ export interface MedplumSourceInfraConfig {
     };
   }[];
   containerRegistryCredentialsSecretArn?: ValueOrExternalSecret<string>;
+  /** Resolve each additional container image tag to its current digest at synth time, so tasks only change on deploy. */
+  pinAdditionalContainerImages?: ValueOrExternalSecret<boolean>;
   containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
@@ -269,9 +275,13 @@ export interface MedplumInfraConfig {
   loadBalancerLoggingBucket?: string;
   loadBalancerLoggingPrefix?: string;
   loadBalancerAlgorithm?: 'round_robin' | 'least_outstanding_requests' | 'weighted_random';
+  /** ELB security policy for the HTTPS listeners, e.g. `ELBSecurityPolicy-TLS13-1-2-PQ-2025-09`. Defaults to `ELBSecurityPolicy-TLS13-1-2-2021-06`. */
+  loadBalancerSslPolicy?: string;
   guardDutyMalwareProtectionEnabled?: boolean;
   /** With guardDutyMalwareProtectionEnabled, scan only via Binary $scan, and only block Binaries with threats found. */
   guardDutyMalwareProtectionOnDemandOnly?: boolean;
+  /** Delete bot inputs written by the server's `storeBotInput` setting (`bot/` prefix) after this many days. */
+  storageBotInputExpirationDays?: number;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled: boolean;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
@@ -282,6 +292,7 @@ export interface MedplumInfraConfig {
   hostedZoneName?: string;
   wafLogGroupName?: string;
   wafLogGroupCreate?: boolean;
+  blockedEmailDomains?: string;
   additionalContainers?: {
     name: string;
     image: string;
@@ -294,6 +305,8 @@ export interface MedplumInfraConfig {
     };
   }[];
   containerRegistryCredentialsSecretArn?: string;
+  /** Resolve each additional container image tag to its current digest at synth time, so tasks only change on deploy. */
+  pinAdditionalContainerImages?: boolean;
   containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;

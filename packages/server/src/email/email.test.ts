@@ -17,6 +17,7 @@ import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
+import { PROJECT_SMTP_SOCKET_TIMEOUT_MS, PROJECT_SMTP_TIMEOUT_MS } from './utils';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
@@ -296,6 +297,53 @@ describe('Email', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
+  test('Fetch URL attachment via safeFetch', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('hello world'));
+    try {
+      await sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'text1.txt', path: 'https://example.com/text1.txt' }],
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.com/text1.txt',
+        expect.objectContaining({ dispatcher: expect.anything() })
+      );
+    } finally {
+      fetchSpy.mockRestore();
+    }
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.attachments).toHaveLength(1);
+    expect(parsed.attachments[0].content.toString()).toBe('hello world');
+  });
+
+  test('Block metadata URL attachment', async () => {
+    await expect(
+      sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'creds.json', path: 'https://169.254.170.2/v2/metadata' }],
+      })
+    ).rejects.toThrow('Failed to fetch attachment: Outbound request to unsafe hostname 169.254.170.2 is blocked');
+
+    expect(mockSESv2Client.send.callCount).toBe(0);
+  });
+
+  test('Block nodemailer URL access', async () => {
+    await expect(
+      sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'creds.json', href: 'https://169.254.170.2/v2/metadata' }],
+      })
+    ).rejects.toThrow('Invalid email options: Url access rejected for https://169.254.170.2/v2/metadata');
+  });
+
   test('Catch invalid options', async () => {
     await expect(
       sendEmail(systemRepo, {
@@ -336,7 +384,11 @@ describe('Email', () => {
         text: 'Hello Alice',
       });
 
-      expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+      expect(mockCreateTransport).toHaveBeenCalledExactlyOnceWith({
+        host: 'smtp.example.com',
+        port: 587,
+        auth: { user: 'user', pass: 'pass' },
+      });
       expect(mockSendMail).toHaveBeenCalledTimes(1);
       expect(mockSESv2Client.send.callCount).toBe(0);
     } finally {
@@ -365,6 +417,7 @@ describe('Email', () => {
 
     afterEach(() => {
       getConfig().allowProjectSmtp = undefined;
+      getConfig().allowUnsafeOutbound = undefined;
       getConfig().smtp = undefined;
     });
 
@@ -379,10 +432,22 @@ describe('Email', () => {
           port: 587,
           secure: false,
           auth: { user: 'projectuser', pass: 'projectpass' },
+          getSocket: expect.any(Function),
+          connectionTimeout: PROJECT_SMTP_TIMEOUT_MS,
+          greetingTimeout: PROJECT_SMTP_TIMEOUT_MS,
+          socketTimeout: PROJECT_SMTP_SOCKET_TIMEOUT_MS,
         })
       );
       expect(mockSendMail).toHaveBeenCalledTimes(1);
       expect(mockSESv2Client.send.callCount).toBe(0);
+    });
+
+    test('allowUnsafeOutbound uses the default project SMTP socket', async () => {
+      getConfig().allowUnsafeOutbound = true;
+      const project = makeProject(baseSecrets);
+      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.not.objectContaining({ getSocket: expect.anything() }));
     });
 
     test('Infers secure for port 465', async () => {

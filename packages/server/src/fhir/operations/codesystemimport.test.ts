@@ -9,10 +9,12 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
+import { normalizeShardId, TODO_SHARD_ID } from '../sharding';
 import { Column, Condition, SelectQuery } from '../sql';
 import { selectCoding } from './utils/terminology';
 
 const app = express();
+let shardId: string;
 
 export const snomedJSON: CodeSystem = {
   resourceType: 'CodeSystem',
@@ -49,7 +51,7 @@ describe('CodeSystem $import', () => {
 
   beforeEach(async () => {
     accessToken = await getSuperAdminAccessToken();
-    expect(accessToken).toBeDefined();
+    shardId = normalizeShardId(TODO_SHARD_ID); // get via getSuperAdminTestProject
 
     const resS = await request(app)
       .get(`/fhir/R4/CodeSystem?url=${snomedJSON.url}`)
@@ -404,6 +406,58 @@ describe('CodeSystem $import', () => {
     await assertCodeMissing(codeSystem.id, code);
   });
 
+  test('Requires update permission on own Project CodeSystem by URL', async () => {
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      accessPolicy: { resource: [{ resourceType: 'CodeSystem', interaction: ['create', 'read', 'search'] }] },
+    });
+    const codeSystem = await repo.createResource<CodeSystem>({
+      ...snomedJSON,
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+    });
+
+    const code = 'ZZ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: codeSystem.url },
+          { name: 'concept', valueCoding: { code, display: 'Read-only policy' } },
+        ],
+      });
+    expect(res).toHaveStatus(403);
+    await assertCodeMissing(codeSystem.id, code);
+  });
+
+  test('Imports into own Project CodeSystem by ID without extended mode', async () => {
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    const codeSystem = await repo.createResource<CodeSystem>({
+      ...snomedJSON,
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+    });
+
+    const code = 'ZZ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'concept', valueCoding: { code, display: 'Own project concept' } }],
+      });
+    expect(res).toHaveStatus(200);
+    await assertCodeExists(codeSystem.id, code);
+  });
+
   test('Imports concepts and synonym designations', async () => {
     const res = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -580,7 +634,7 @@ describe('CodeSystem $import', () => {
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const coding = await selectCoding(system as string, code)
     .column('isSynonym')
     .where('synonymOf', '=', null)
@@ -590,7 +644,7 @@ async function assertCodeExists(system: string | undefined, code: string): Promi
 }
 
 async function assertCodeMissing(system: string | undefined, code: string): Promise<void> {
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const coding = await selectCoding(system as string, code).execute(db);
   expect(coding).toHaveLength(0);
 }
@@ -601,7 +655,7 @@ async function assertPropertyExists(
   property: string,
   value: string
 ): Promise<any> {
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const query = new SelectQuery('Coding_Property');
   const codingTable = query.getNextJoinAlias();
   query.join(

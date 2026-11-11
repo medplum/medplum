@@ -150,34 +150,78 @@ describe('ReferenceTable', () => {
       ).rejects.toThrow('batchIndexResources must be called with resources of the same type: Patient vs Observation');
     });
 
-    test('handles update with unchanged references', async () => {
+    test('diffs each resource independently in a multi-resource batch', async () => {
       const patientId = randomUUID();
-
-      const obs = await systemRepo.createResource<Observation>({
+      const encounter1 = randomUUID();
+      const encounter2 = randomUUID();
+      const makeObs = (): WithId<Observation> => ({
         resourceType: 'Observation',
+        id: randomUUID(),
         subject: { reference: 'Patient/' + patientId },
+        encounter: { reference: 'Encounter/' + encounter1 },
         status: 'registered',
         code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
       });
+      const unchanged = makeObs();
+      const changed = makeObs();
+      const cleared = makeObs();
+      const ids = [unchanged.id, changed.id, cleared.id];
 
-      // Update with the same reference - should detect no changes
-      await systemRepo.updateResource<Observation>({
-        ...obs,
-        status: 'final', // Change something else, not the reference
-      });
+      const client = getReferenceTestClient('Observation');
+      await refTable.batchIndexResources(client, [unchanged, changed, cleared], true);
 
-      const rows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
+      // All rows came from one INSERT and share an xmin; a deleted and re-inserted row would get a new one
+      const sql =
+        'SELECT "resourceId", "code", "targetId", xmin::text FROM "Observation_References" WHERE "resourceId" = ANY($1::uuid[])';
+      const { xmin } = (await client.query(sql, [ids])).rows[0];
+
+      await refTable.batchIndexResources(
+        client,
+        [
+          unchanged,
+          { ...changed, encounter: { reference: 'Encounter/' + encounter2 } },
+          { ...cleared, subject: undefined, encounter: undefined },
+        ],
+        false
+      );
+
+      const after = (await client.query(sql, [ids])).rows;
+      expect(after).toContainExactly([
+        { resourceId: unchanged.id, code: 'encounter', targetId: encounter1, xmin },
+        { resourceId: unchanged.id, code: 'patient', targetId: patientId, xmin },
+        { resourceId: unchanged.id, code: 'subject', targetId: patientId, xmin },
+        { resourceId: changed.id, code: 'encounter', targetId: encounter2, xmin: expect.any(String) },
+        { resourceId: changed.id, code: 'patient', targetId: patientId, xmin },
+        { resourceId: changed.id, code: 'subject', targetId: patientId, xmin },
+      ]);
+    });
+
+    test('deletes stale rows spanning multiple delete batches', async () => {
+      const patientId = randomUUID();
+      const obs: WithId<Observation> = {
+        resourceType: 'Observation',
+        id: randomUUID(),
+        subject: { reference: 'Patient/' + patientId },
+        status: 'registered',
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+      };
+      const client = getReferenceTestClient('Observation');
+      await refTable.batchIndexResources(client, [obs], true);
+
+      // One more than the 10,000-row delete batch size
+      const staleRows = Array.from({ length: 10_001 }, () => ({
+        resourceId: obs.id,
+        targetId: randomUUID(),
+        code: 'subject',
+      }));
+      await refTable.batchInsertRows(client, 'Observation', staleRows);
+
+      await refTable.batchIndexResources(client, [obs], false);
+
+      const rows = await refTable.getExistingRows(client, [obs]);
       expect(rows).toContainExactly([
-        {
-          resourceId: obs.id,
-          code: 'patient',
-          targetId: patientId,
-        },
-        {
-          resourceId: obs.id,
-          code: 'subject',
-          targetId: patientId,
-        },
+        { resourceId: obs.id, code: 'patient', targetId: patientId },
+        { resourceId: obs.id, code: 'subject', targetId: patientId },
       ]);
     });
 

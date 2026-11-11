@@ -8,7 +8,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { createPdf } from '../../util/pdf';
 import { makeOperationDefinition } from './definitions';
-import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
+import { getClaimPDFDocDefinition, getCms1500ClaimTypeError } from './utils/cms1500pdf';
 import { parseInputParameters } from './utils/parameters';
 
 /**
@@ -54,6 +54,11 @@ interface ClaimExportParameters {
 async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
+  const claimTypeError = getCms1500ClaimTypeError(claim);
+  if (claimTypeError) {
+    return [badRequest(claimTypeError)];
+  }
+
   try {
     // Generate PDF from claim
     const docDefinition = await getClaimPDFDocDefinition(claim);
@@ -63,6 +68,7 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
     const binary = await repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'application/pdf',
+      securityContext: claim.patient,
     });
 
     // Write PDF to binary storage

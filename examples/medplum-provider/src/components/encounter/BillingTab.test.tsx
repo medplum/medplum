@@ -12,6 +12,7 @@ import type {
   CodeableConcept,
   Coverage,
   Encounter,
+  Location,
   Organization,
   Patient,
   Practitioner,
@@ -25,6 +26,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CPT_COPYRIGHT_NOTICE, SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
+import * as operationsUtils from '../../utils/operations';
 import { BillingTab } from './BillingTab';
 
 vi.mock('@mantine/notifications', async () => {
@@ -112,6 +114,8 @@ describe('BillingTab', () => {
     vi.clearAllMocks();
     // BillingTab fetches its own charge items; default to a single CPT charge item.
     vi.spyOn(chargeItemsUtils, 'getChargeItemsForEncounter').mockResolvedValue([mockChargeItem]);
+    // Both claim submission operations are deployed unless a test says otherwise.
+    vi.spyOn(operationsUtils, 'isCustomOperationAvailable').mockResolvedValue(true);
   });
 
   const setup = async (props: Partial<Parameters<typeof BillingTab>[0]> = {}): Promise<void> => {
@@ -281,6 +285,41 @@ describe('BillingTab', () => {
     });
 
     windowOpenSpy.mockRestore();
+  });
+
+  test('disables Submit Claim when no claim submission operation is deployed', async () => {
+    vi.spyOn(operationsUtils, 'isCustomOperationAvailable').mockResolvedValue(false);
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({ Claim: mockClaim });
+    await setup();
+
+    const button = await screen.findByText('Submit Claim');
+    await waitFor(() => expect(button.closest('[data-disabled]')).toBeInTheDocument());
+    await userEvent.setup().hover(button);
+    expect(await screen.findByText('Claim submission is not enabled for this project')).toBeInTheDocument();
+  });
+
+  test('only offers the deployed claim submission operations', async () => {
+    vi.spyOn(operationsUtils, 'isCustomOperationAvailable').mockImplementation(
+      async (_medplum, code) => code === operationsUtils.CANDID_SUBMIT_CLAIM_OPERATION
+    );
+    vi.spyOn(medplum, 'readReference').mockResolvedValue({
+      resourceType: 'Condition',
+      id: 'condition-1',
+      code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R51', display: 'Headache' }] },
+    } as any);
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({ Claim: mockClaim });
+    await setup({
+      encounter: { ...mockEncounter, diagnosis: [{ condition: { reference: 'Condition/condition-1' } }] },
+    });
+    await screen.findByText('Headache');
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByText('Submit Claim'));
+
+    expect(await screen.findByRole('button', { name: /Submit to Candid/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Submit to Stedi/i })).not.toBeInTheDocument();
   });
 
   test('shows missing diagnosis notification when submitting without conditions', async () => {
@@ -865,6 +904,70 @@ describe('BillingTab', () => {
     expect(createSpy).not.toHaveBeenCalled();
 
     windowOpenSpy.mockRestore();
+  });
+
+  test('clears a stale service facility from the stored claim when the encounter has no location', async () => {
+    const user = userEvent.setup();
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({ Claim: { ...mockClaim, facility: { reference: 'Location/stale' } } });
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/c.pdf' },
+    });
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await setup();
+    await user.click(await screen.findByText('Export Claim'));
+    await user.click(await screen.findByText('CMS 1500 Form'));
+
+    await waitFor(() => expect(updateSpy).toHaveBeenCalled());
+    expect(updateSpy.mock.calls[0][0]).toEqual(expect.objectContaining({ id: 'claim-123', facility: undefined }));
+    windowOpenSpy.mockRestore();
+  });
+
+  test('drops a service facility removal when the encounter has no location', async () => {
+    const patchSpy = vi.spyOn(medplum, 'patchResource');
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne();
+    // Select then clear within one debounce: the pending add is replaced by a remove, which is dropped.
+    await medplum.createResource<Location>({ resourceType: 'Location', id: 'loc-1', name: 'Main Clinic' });
+    vi.spyOn(medplum, 'searchResources').mockImplementation(((resourceType: string) =>
+      Promise.resolve(
+        resourceType === 'Location' ? [{ resourceType: 'Location', id: 'loc-1', name: 'Main Clinic' }] : []
+      )) as any);
+
+    await setup();
+    const facilityInput = await screen.findByPlaceholderText('Search for location');
+    await act(async () => {
+      fireEvent.change(facilityInput, { target: { value: 'Main' } });
+    });
+    await waitFor(
+      () => {
+        expect(medplum.searchResources).toHaveBeenCalledWith(
+          'Location',
+          expect.any(URLSearchParams),
+          expect.any(Object)
+        );
+        expect(screen.getByText('Main Clinic')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByText('Main Clinic'));
+    });
+    // The practitioner picker has a clear button too; the service facility picker is rendered last
+    const clearButtons = screen.getAllByTitle('Clear all');
+    await act(async () => {
+      fireEvent.click(clearButtons[clearButtons.length - 1]);
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, SAVE_TIMEOUT_MS + 50);
+      });
+    });
+    expect(patchSpy).not.toHaveBeenCalled();
   });
 
   test('shows error when export fails to return Media', async () => {

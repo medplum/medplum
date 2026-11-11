@@ -6,9 +6,9 @@ import * as MultiCalendarStories from './MultiCalendar.stories';
 # Viewing multiple Schedules in a single calendar UI
 
 Pass an array of objects as the `sources` prop. You may specify the name of a
-Mantine theme color to use for the appointments and slots of a source as its
-`color` attribute. You may also specify this on the Schedule included in a
-source via a custom extension:
+Mantine theme color to use for the appointments of a source as its `color`
+attribute; slots are drawn in gray, whichever source they come from. You may
+also specify this on the Schedule included in a source via a custom extension:
 
 ```
 {

@@ -61454,6 +61454,10 @@
           },
           "type": "array"
         },
+        "active": {
+          "description": "Whether this project is in active use. When a project is inactive, no one can log in to the project, existing sessions in the project stop working, and its subscriptions, cron bots, and async jobs do not run. Can only be set by a super admin.",
+          "$ref": "#/definitions/boolean"
+        },
         "name": {
           "description": "A name associated with the Project.",
           "$ref": "#/definitions/string"
@@ -61498,7 +61502,8 @@
               "validate-terminology",
               "range-search",
               "log-streaming",
-              "async-batch"
+              "async-batch",
+              "archive"
             ]
           },
           "type": "array"
@@ -62621,7 +62626,7 @@
           "$ref": "#/definitions/boolean"
         },
         "rawBody": {
-          "description": "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
+          "description": "Whether public webhooks, $execute, and custom operations provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
           "$ref": "#/definitions/boolean"
         },
         "streamingEnabled": {
@@ -63479,6 +63484,10 @@
         "request": {
           "description": "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
           "$ref": "#/definitions/uri"
+        },
+        "requester": {
+          "description": "The user or client application that started the job. Assigned by the server when the job is created.",
+          "$ref": "#/definitions/Reference"
         },
         "output": {
           "description": "Outputs resulting from the async job.",

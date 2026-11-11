@@ -3,6 +3,7 @@
 
 import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { notFound, OperationOutcomeError } from '@medplum/core';
 import type { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -47,7 +48,7 @@ describe('ChargeItemPanel', () => {
     medplum.valueSetExpand = vi
       .fn()
       .mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
-        if (params.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers') {
+        if (params.url === 'https://medplum.com/fhir/ValueSet/procedure-modifiers') {
           const allModifiers = [
             {
               system: 'http://terminology.hl7.org/CodeSystem/modifiers',
@@ -105,7 +106,7 @@ describe('ChargeItemPanel', () => {
           return {
             resourceType: 'ValueSet',
             id: '9a6769a5-e60e-415b-ac35-8ed865336521',
-            url: 'http://hl7.org/fhir/ValueSet/claim-modifiers',
+            url: 'https://medplum.com/fhir/ValueSet/procedure-modifiers',
             version: '4.0.1',
             name: 'ModifierTypeCodes',
             title: 'Modifier type Codes',
@@ -147,6 +148,15 @@ describe('ChargeItemPanel', () => {
   test('renders modifiers input', () => {
     setup();
     expect(screen.getByText('Modifiers')).toBeInTheDocument();
+  });
+
+  test('disables the modifiers input when the procedure modifiers ValueSet is not registered', async () => {
+    vi.mocked(medplum.valueSetExpand).mockRejectedValue(new OperationOutcomeError(notFound));
+    setup();
+
+    expect(await screen.findByText('This field is unavailable.')).toBeInTheDocument();
+    // A disabled autocomplete renders no searchbox, so there is nothing to type a modifier into
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
 
   test('handles delete charge item', async () => {
@@ -375,10 +385,10 @@ describe('ChargeItemPanel', () => {
         () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const claimModifiersCall = calls.find(
-            (call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers'
+          const modifiersCall = calls.find(
+            (call) => call[0]?.url === 'https://medplum.com/fhir/ValueSet/procedure-modifiers'
           );
-          expect(claimModifiersCall).toBeDefined();
+          expect(modifiersCall).toBeDefined();
         },
         { timeout: 5000 }
       );
@@ -572,10 +582,10 @@ describe('ChargeItemPanel', () => {
         () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const claimModifiersCall = calls.find(
-            (call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers'
+          const modifiersCall = calls.find(
+            (call) => call[0]?.url === 'https://medplum.com/fhir/ValueSet/procedure-modifiers'
           );
-          expect(claimModifiersCall).toBeDefined();
+          expect(modifiersCall).toBeDefined();
         },
         { timeout: 5000 }
       );

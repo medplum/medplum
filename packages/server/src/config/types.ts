@@ -53,6 +53,7 @@ export interface MedplumServerConfig {
    * Separating background job queues from other purposes can improve performance under high load by isolating job queue operations.
    */
   backgroundJobsRedis?: MedplumRedisConfig;
+  shards?: Record<string, MedplumShardConfig>;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
   /** Allow projects to configure their own SMTP transport via Project.secret entries. Default is `true`. */
@@ -70,13 +71,14 @@ export interface MedplumServerConfig {
   sseCustomerKey?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
-  botCustomFunctionsEnabled?: boolean;
   /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `true`. */
   storeBotInput?: boolean;
   logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
   registerEnabled?: boolean;
+  /** When `false`, new users can still register but cannot create new projects. Default is `true`. */
+  newProjectRegistrationEnabled?: boolean;
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
@@ -425,6 +427,7 @@ export type WorkerName =
   | 'cron'
   | 'reindex'
   | 'batch'
+  | 'bulk-export'
   | 'post-deploy-migration'
   | 'set-accounts'
   | 'lambda-cleaner'
@@ -451,4 +454,11 @@ export interface MedplumFissionConfig {
   readonly environmentName: string;
   readonly routerHost: string;
   readonly routerPort: number;
+}
+
+export interface MedplumShardConfig {
+  /** Place new projects on this shard. Only one shard may set this; when none do, new projects go on the global shard. */
+  isDefaultShard?: boolean;
+  database: MedplumDatabaseConfig;
+  readonlyDatabase?: MedplumDatabaseConfig;
 }

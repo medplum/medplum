@@ -185,5 +185,23 @@
   },
   "v51": {
     "serverVersion": "5.2.1"
+  },
+  "v52": {
+    "serverVersion": "5.2.2"
+  },
+  "v53": {
+    "serverVersion": "5.2.11"
+  },
+  "v54": {
+    "serverVersion": "5.2.12"
+  },
+  "v55": {
+    "serverVersion": "5.2.14"
+  },
+  "v56": {
+    "serverVersion": "5.2.14"
+  },
+  "v57": {
+    "serverVersion": "5.2.16"
   }
 }

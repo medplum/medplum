@@ -13,6 +13,8 @@ describe('utils', () => {
     expect(isBooleanConfig('rateLimitsEnabled')).toBe(true);
     expect(isBooleanConfig('requireVerifiedEmailForProjectCreation')).toBe(true);
     expect(isBooleanConfig('storeBotInput')).toBe(true);
+    expect(isBooleanConfig('allowProjectSmtp')).toBe(true);
+    expect(isBooleanConfig('vmContextBotsEnabled')).toBe(true);
   });
 
   test('isIntegerConfig', () => {
@@ -106,5 +108,50 @@ describe('utils', () => {
         password: 'p@ssw0rd',
       },
     });
+  });
+
+  test('setValue types shard settings like their top-level equivalents', () => {
+    const config = {};
+    setValue(config, 'shards.shard-1.isDefaultShard', 'false');
+    setValue(config, 'shards.shard-1.database.port', '5432');
+    setValue(config, 'shards.shard-1.database.ssl.require', 'true');
+    setValue(config, 'shards.shard-1.readonlyDatabase.maxConnections', '10');
+    setValue(config, 'shards.shard-1.database.host', 'db.example.com');
+    expect(config).toStrictEqual({
+      shards: {
+        'shard-1': {
+          isDefaultShard: false,
+          database: { port: 5432, ssl: { require: true }, host: 'db.example.com' },
+          readonlyDatabase: { maxConnections: 10 },
+        },
+      },
+    });
+  });
+
+  test('setValue parses shards as JSON', () => {
+    const config = {};
+    setValue(config, 'shards', '{"shard-1":{"isDefaultShard":true,"database":{"host":"h","port":5432}}}');
+    expect(config).toStrictEqual({
+      shards: { 'shard-1': { isDefaultShard: true, database: { host: 'h', port: 5432 } } },
+    });
+  });
+
+  test('setValue does not descend into inherited members', () => {
+    const config: Record<string, unknown> = {};
+    setValue(config, 'x.toString.y', 'v');
+    expect((Object.prototype.toString as unknown as Record<string, unknown>)['y']).toBeUndefined();
+    expect(config).toStrictEqual({ x: { toString: { y: 'v' } } });
+  });
+
+  test.each([
+    '__proto__.polluted',
+    'shards.__proto__.database.host',
+    'a.constructor.prototype.polluted',
+    'constructor',
+  ])('setValue rejects unsafe key %s', (key) => {
+    const config: Record<string, unknown> = {};
+    expect(() => setValue(config, key, 'v')).toThrow(`Invalid config key: ${key}`);
+    expect(config).toStrictEqual({});
+    expect((Object.prototype as unknown as Record<string, unknown>)['polluted']).toBeUndefined();
   });
 });

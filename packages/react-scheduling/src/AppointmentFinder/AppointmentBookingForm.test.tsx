@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import { SchedulingUnvalidatedBookingURI } from '@medplum/core';
-import type { Appointment, Bundle, Extension } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, SchedulingUnvalidatedBookingURI } from '@medplum/core';
+import type { Appointment, Bundle, Extension, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
-import { ElderJordanPatient } from '../stories/scheduling';
-import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
+import { DrOkaforPractitioner, DrOkaforSchedule, DrRiveraSchedule, ElderJordanPatient } from '../stories/scheduling';
+import { installAutocompleteTimers, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   bookButton,
   chooseActor,
@@ -25,10 +25,12 @@ import {
   openTimeFinder,
   patientDetail,
   setupBookingClient,
+  typedTimeField,
 } from '../test-utils/bookingForm';
-import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
+import { formatZonedDateTimeInput } from './AppointmentFinder.times';
 
 installAutocompleteTimers();
 
@@ -153,7 +155,7 @@ describe('AppointmentBookingForm', () => {
       await chooseRepeat('Once a week for 2 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       await clickBook();
 
       expect(onBooked).toHaveBeenCalledWith(expect.objectContaining({ appointments: TWO_WEEKS }));
@@ -169,7 +171,7 @@ describe('AppointmentBookingForm', () => {
       await chooseRepeat('Once a week for 2 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
       await clickBook();
 
       const [first, second] = reportedBooking().appointments;
@@ -227,7 +229,7 @@ describe('AppointmentBookingForm', () => {
   async function fillWithoutTime(): Promise<void> {
     await chooseImagingService();
     await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
     await openTimeFinder();
   }
 
@@ -286,6 +288,83 @@ describe('AppointmentBookingForm', () => {
       typeTime('', '45');
 
       expect(bookButton()).toBeDisabled();
+    });
+
+    describe('With either of two providers in one row', () => {
+      async function fillWithEitherProvider(): Promise<void> {
+        await chooseImagingService();
+        await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+        await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+        await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
+        await openTimeFinder();
+      }
+
+      test('Holds a typed time on the first of them only', async () => {
+        const executeBatch = vi
+          .spyOn(medplum, 'executeBatch')
+          .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
+        setup(medplum, { canBypassSchedulingRules: true });
+        await fillWithEitherProvider();
+        typeTime('2026-08-17T14:07', '45');
+        await clickBook();
+
+        const resources = executeBatch.mock.calls[0][0].entry?.map((entry) => entry.resource) ?? [];
+        const slots = resources.filter((resource): resource is Slot => resource?.resourceType === 'Slot');
+        const appointment = resources.find((resource) => resource?.resourceType === 'Appointment') as Appointment;
+        expect(slots.map((slot) => slot.schedule.reference)).toStrictEqual([getReferenceString(DrRiveraSchedule)]);
+        expect(appointment.participant.map((participant) => participant.actor?.reference)).not.toContain(
+          getReferenceString(DrOkaforPractitioner)
+        );
+      });
+
+      test('Warns only about clashes on the provider it is held on', async () => {
+        for (const schedule of [DrRiveraSchedule, DrOkaforSchedule]) {
+          await medplum.createResource<Slot>({
+            resourceType: 'Slot',
+            status: 'busy',
+            schedule: createReference(schedule),
+            start: '2026-08-17T00:00:00Z',
+            end: '2026-08-18T12:00:00Z',
+          });
+        }
+        setup(medplum, { canBypassSchedulingRules: true });
+        await fillWithEitherProvider();
+        typeTime('2026-08-17T14:07', '45');
+        await settleAutocomplete();
+
+        expect(screen.getByText(/Rivera's schedule/)).toBeInTheDocument();
+        expect(screen.queryByText(/Okafor's schedule/)).not.toBeInTheDocument();
+      });
+    });
+
+    describe('Starting from a time the host names', () => {
+      // The `$find` stub offers times on the runner's clock, and Dr. Rivera's are read in New York.
+      const OFFERED = new Date(2026, 7, 17, 10, 0, 0);
+
+      test('Writes it directly, even when the search offers the same time', async () => {
+        const executeBatch = vi
+          .spyOn(medplum, 'executeBatch')
+          .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
+        const post = vi.spyOn(medplum, 'post');
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: OFFERED });
+        await fillWithoutTime();
+
+        expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(OFFERED, 'America/New_York'));
+        const timeButtons = screen
+          .getAllByTestId(/^slot-group-/)
+          .flatMap((group) => within(group).getAllByRole('button'));
+        expect(timeButtons.filter((button) => button.getAttribute('data-variant') === 'filled')).toHaveLength(0);
+        await clickBook();
+        expect(bookCount(post)).toBe(0);
+        expect(executeBatch).toHaveBeenCalledTimes(1);
+      });
+
+      test('Starts empty when that time has passed', async () => {
+        setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: new Date(2026, 7, 17, 7, 0, 0) });
+        await fillWithoutTime();
+
+        expect(typedTimeField()).toHaveValue('');
+      });
     });
   });
 

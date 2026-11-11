@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, accepted } from '@medplum/core';
+import { accepted, OperationOutcomeError } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError } from 'bullmq';
 import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
-import { getAuthenticatedContext } from '../../../context';
-import { DatabaseMode, getDatabasePool } from '../../../database';
+import { AuthenticatedRequestContext, getAuthenticatedContext, tryGetRequestContext } from '../../../context';
 import { getLogger } from '../../../logger';
-import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
+import { LogThrottle } from '../../../util/logthrottle';
 import { getProjectScopedUrl } from '../../../util/url';
-import { CancelledError } from '../../../workers/utils';
+import { CancelledError, isJobActive } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
+
+const asyncJobAccessLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -68,6 +68,7 @@ export class AsyncJobExecutor {
       resourceType: 'AsyncJob',
       status: 'accepted',
       request: url,
+      requester: getAsyncJobRequester(),
       requestTime: new Date().toISOString(),
     });
     return this.resource;
@@ -145,26 +146,14 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
-    let updatedJob: WithId<AsyncJob> = {
+    const updatedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
     };
-    if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
-      // This probably needs more validation that its a system-owned AsyncJob.
-      const completedDataVersion = updatedJob.dataVersion;
-      getLogger().info('Marking post-deploy migration complete', {
-        version: `v${completedDataVersion}`,
-      });
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      this.resource = updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
-      await maybeAutoRunPendingPostDeployMigration();
-      return updatedJob;
-    } else {
-      this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
-      return this.resource;
-    }
+    this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
+    return this.resource;
   }
 
   async failJob(err?: Error, output?: Parameters): Promise<WithId<AsyncJob>> {
@@ -182,6 +171,9 @@ export class AsyncJobExecutor {
     if (err instanceof CancelledError) {
       return this.resource;
     }
+    if (!isJobActive(this.resource)) {
+      return this.resource;
+    }
 
     const failedJob: WithId<AsyncJob> = {
       ...this.resource,
@@ -195,8 +187,10 @@ export class AsyncJobExecutor {
       };
       failedJob.output.parameter ??= [];
 
-      if (err instanceof OperationOutcomeError) {
-        failedJob.output.parameter.push({ name: 'outcome', resource: err.outcome });
+      // A wrapper such as BullMQ's UnrecoverableError keeps the structured outcome as its cause.
+      const outcomeErr = err instanceof OperationOutcomeError ? err : err.cause;
+      if (outcomeErr instanceof OperationOutcomeError) {
+        failedJob.output.parameter.push({ name: 'outcome', resource: outcomeErr.outcome });
       } else {
         failedJob.output.parameter.push(
           { name: 'error', valueString: err.message },
@@ -215,6 +209,58 @@ export class AsyncJobExecutor {
 
     return `${baseUrl}fhir/R4/job/${this.resource.id}/status`;
   }
+}
+
+/**
+ * Returns the requester of an AsyncJob started by the current request: the user's profile, or with
+ * On-Behalf-Of, the profile of the user the request acts for.
+ * @returns The requester, or undefined outside of an authenticated request.
+ */
+export function getAsyncJobRequester(): AsyncJob['requester'] {
+  const ctx = tryGetRequestContext();
+  return ctx instanceof AuthenticatedRequestContext ? ctx.profile : undefined;
+}
+
+/**
+ * Diagnostic logging for access to an AsyncJob by users other than its requester and admins of its project.
+ * @param repo - The repository of the access.
+ * @param asyncJob - The AsyncJob, including `meta.project`.
+ */
+export function logAsyncJobAccess(repo: Repository, asyncJob: WithId<AsyncJob>): void {
+  if (repo.isSuperAdmin()) {
+    return;
+  }
+  const projectId = asyncJob.meta?.project;
+  if (repo.isProjectAdmin() && projectId === repo.currentProject()?.id) {
+    return;
+  }
+  const reader = getAsyncJobRequester()?.reference;
+  if (asyncJob.requester?.reference === reader) {
+    return;
+  }
+  asyncJobAccessLogThrottle.maybeLog([projectId, asyncJob.id, reader].join('|'), (suppressed) => {
+    getLogger().warn('AsyncJob accessed by another user', {
+      asyncJobId: asyncJob.id,
+      projectId,
+      requester: asyncJob.requester?.reference,
+      reader,
+      suppressed,
+    });
+  });
+}
+
+/**
+ * Reads an AsyncJob for the current user, logging access by users other than its requester and admins of its
+ * project (see `logAsyncJobAccess`).
+ * @param id - The AsyncJob ID.
+ * @returns The AsyncJob.
+ */
+export async function readAsyncJob(id: string): Promise<WithId<AsyncJob>> {
+  const { repo } = getAuthenticatedContext();
+  // Extended mode for meta.project
+  const asyncJob = await repo.withOverrideConfig({ extendedMode: true }).readResource<AsyncJob>('AsyncJob', id);
+  logAsyncJobAccess(repo, asyncJob);
+  return repo.removeHiddenFields(asyncJob);
 }
 
 export async function sendAsyncResponse(

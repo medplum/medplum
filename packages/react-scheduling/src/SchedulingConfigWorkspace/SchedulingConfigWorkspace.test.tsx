@@ -5,7 +5,7 @@ import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { ConfigFixtures } from '../stories/scheduling';
-import { act, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingConfigWorkspace } from './SchedulingConfigWorkspace';
 
 async function setup(resources: readonly Resource[] = ConfigFixtures): Promise<MockClient> {
@@ -47,6 +47,16 @@ function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
 
+function offeringSchedules(): HTMLElement {
+  return within(details()).getByRole('region', { name: 'Schedules offering this visit type' });
+}
+
+function groupTitles(region: HTMLElement): (string | undefined)[] {
+  return within(region)
+    .getAllByRole('group')
+    .map((group) => group.firstElementChild?.textContent);
+}
+
 function nameField(): HTMLElement {
   return within(details()).getByLabelText(/Name/);
 }
@@ -74,6 +84,7 @@ describe('SchedulingConfigWorkspace', () => {
     await setup();
 
     expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
+    expect(within(details()).queryByRole('button')).not.toBeInTheDocument();
     expect(
       within(sidebar())
         .queryAllByRole('button')
@@ -257,14 +268,171 @@ describe('SchedulingConfigWorkspace', () => {
     expect(search).not.toHaveBeenCalled();
   });
 
-  test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
+  test("offering a room's first visit type creates its Schedule, and the room stays selected and in place", async () => {
+    await setup();
+    await userEvent.click(row('Exam Room C'));
+
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer visit types' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'Telehealth');
+    await userEvent.click(screen.getByRole('option', { name: 'Telehealth Consult' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 1 visit type' }));
+    details().scrollTop = 300;
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
+    expect(entry('Telehealth Consult')).not.toHaveTextContent('Unsaved');
+    expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
+    expect(details().scrollTop).toBe(300);
+  });
+
+  test('Schedules offering this visit type marks the ones that customize it', async () => {
+    await setup();
+
+    await userEvent.click(row('Telehealth Consult'));
+    const telehealth = offeringSchedules();
+    expect(await within(telehealth).findByText('Customized')).toHaveTextContent(
+      'Parameter values defined here override those on the Telehealth Consult visit type.'
+    );
+    expect(within(telehealth).getAllByText('Customized')).toHaveLength(1);
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    const ultrasound = offeringSchedules();
+    const okafor = (await within(ultrasound).findByText('Dr. Tunde Okafor')).closest('button') as HTMLElement;
+    expect(within(okafor).getByText('Customized')).toBeInTheDocument();
+    const nguyen = within(ultrasound).getByText('Dr. Linh Nguyen').closest('button') as HTMLElement;
+    expect(within(nguyen).queryByText('Customized')).not.toBeInTheDocument();
+  });
+
+  test('Schedules offering this visit type groups them as the sidebar does, and leaves out actors booking skips', async () => {
+    await setup();
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    await within(offeringSchedules()).findByText('Dr. Maya Rivera');
+    expect(groupTitles(offeringSchedules())).toEqual(['Providers', 'Devices', 'Rooms']);
+    const devices = within(offeringSchedules()).getByRole('group', { name: 'Devices' });
+    expect(within(devices).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
+    const rooms = within(offeringSchedules()).getByRole('group', { name: 'Rooms' });
+    expect(within(rooms).getByText('Exam Room A')).toBeInTheDocument();
+    // Dr. Reyes is on leave with her Schedule switched off, and Ultrasound 3 is retired.
+    expect(within(offeringSchedules()).queryByText('Dr. Sofia Reyes')).not.toBeInTheDocument();
+    expect(within(offeringSchedules()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
+
+    await userEvent.click(row('Telehealth Consult'));
+    await within(offeringSchedules()).findByText('Dr. Linh Nguyen');
+    expect(groupTitles(offeringSchedules())).toEqual(['Providers']);
+  });
+
+  test("selecting a Schedule offering a visit type opens its actor's page from the top, with that visit type's entry open", async () => {
+    await setup();
+    await userEvent.click(row('Telehealth Consult'));
+
+    details().scrollTop = 400;
+    await userEvent.click(within(offeringSchedules()).getByText('Dr. Linh Nguyen'));
+
+    expect(within(details()).getByRole('heading', { name: 'Dr. Linh Nguyen' })).toBeInTheDocument();
+    expect(details().scrollTop).toBe(0);
+    expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'false');
+    expect(row('Dr. Linh Nguyen')).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('Schedules offering this visit type says when there are none, and where visit types are offered from', async () => {
+    await setup();
+
+    await userEvent.click(row('Unconfigured Visit'));
+
+    expect(
+      within(details()).getByText(
+        "Nothing offers Unconfigured Visit yet. Visit types are offered from a provider's, room's, or device's page."
+      )
+    ).toBeInTheDocument();
+  });
+
+  test('a new provider is listed under Providers and selected once created, and can then offer visit types', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New provider' }));
+    await userEvent.type(within(details()).getByLabelText(/First name/), 'Mary');
+    await userEvent.type(within(details()).getByLabelText(/Last name/), 'Lee');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Mary Lee')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Providers')).getByText('Mary Lee')).toBeInTheDocument();
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeChecked();
+    expect(within(details()).getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
+    expect(await within(details()).findByRole('searchbox', { name: 'Service facilities' })).toBeInTheDocument();
+  });
+
+  test('a new room is listed under Rooms and selected once created, with its Schedule, and can then offer visit types', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New room' }));
+    expect(within(details()).getByText('Not saved yet')).toBeInTheDocument();
+    await userEvent.type(nameField(), 'Room 9');
+    expect(within(sidebar()).queryByText('Room 9')).not.toBeInTheDocument();
+
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Room 9')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Rooms')).getByText('Room 9')).toBeInTheDocument();
+    expect(within(details()).getByRole('heading', { name: 'Room 9' })).toBeInTheDocument();
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeChecked();
+    expect(within(details()).getByText('Room 9 offers no visit types yet.')).toBeInTheDocument();
+    expect(within(details()).getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
+  });
+
+  test('a new device is listed under Devices once created', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New device' }));
+    await userEvent.type(nameField(), 'Ultrasound 4');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Ultrasound 4')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Devices')).getByText('Ultrasound 4')).toBeInTheDocument();
+  });
+
+  test('discarding a new room lists nothing and leaves nothing selected', async () => {
+    await setup();
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New room' }));
+    await userEvent.type(nameField(), 'Room 9');
+
+    await userEvent.click(
+      within(screen.getByRole('region', { name: 'Unsaved changes' })).getByRole('button', { name: 'Discard' })
+    );
+
+    expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Room 9')).not.toBeInTheDocument();
+  });
+
+  test("a provider's saved time zone is kept on the page, and the row stays selected", async () => {
+    await setup();
+    await userEvent.click(row('Dr. Anika Patel'));
+    const general = within(details()).getByRole('region', { name: 'General' });
+    const timezone = within(general).getByRole('textbox', { name: 'Time zone' });
+
+    fireEvent.focus(timezone);
+    fireEvent.change(timezone, { target: { value: 'America/Chicago' } });
+    fireEvent.click(screen.getByRole('option'));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument());
+    expect(row('Dr. Anika Patel')).toHaveAttribute('aria-current', 'true');
+    expect(
+      within(within(details()).getByRole('region', { name: 'General' })).getByRole('textbox', { name: 'Time zone' })
+    ).toHaveValue('(CT) Central Time');
+  });
+
+  test('an empty project says each section has nothing yet, and still offers to create a visit type, room, or device', async () => {
     const medplum = new MockClient({ seedDefaultData: false });
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
 
     for (const noun of ['visit types', 'providers', 'rooms', 'devices']) {
       expect(await within(sidebar()).findByText(`No ${noun} yet`)).toBeInTheDocument();
     }
-    expect(within(sidebar()).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
+    for (const label of ['New visit type', 'New room', 'New device']) {
+      expect(within(sidebar()).getByRole('button', { name: label })).toBeInTheDocument();
+    }
   });
 
   test('says when the visit types could not be loaded', async () => {

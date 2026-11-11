@@ -7,6 +7,7 @@ import type { Decorator } from '@storybook/react';
 import { MockDateWrapper } from './MockDateWrapper';
 import { WithBookStub } from './WithBookStub';
 import { WithCancelStub } from './WithCancelStub';
+import { WithConfirmStub } from './WithConfirmStub';
 import { WithFindStub } from './WithFindStub';
 import { WithFixtures } from './WithFixtures';
 import { WithRescheduleStub } from './WithRescheduleStub';
@@ -86,6 +87,17 @@ export const withCancelStub = (): Decorator => (Story) => (
   <WithCancelStub>
     <Story />
   </WithCancelStub>
+);
+
+/**
+ * Answers `Appointment/[id]/$confirm` by booking what it names, which MockClient
+ * cannot.
+ * @returns The decorator.
+ */
+export const withConfirmStub = (): Decorator => (Story) => (
+  <WithConfirmStub>
+    <Story />
+  </WithConfirmStub>
 );
 
 /**

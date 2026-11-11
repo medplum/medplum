@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { Operator, badRequest } from '@medplum/core';
-import type { OperationOutcome, User } from '@medplum/fhirtypes';
+import type { OperationOutcome, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -16,6 +17,14 @@ import { registerNew } from './register';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
+
+async function enableOpenRegistration(project: WithId<Project>): Promise<void> {
+  const patientPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient')?.accessPolicy;
+  await withTestContext(async () => {
+    const systemRepo = await getProjectSystemRepo(project);
+    await systemRepo.updateResource({ ...project, defaultPatientAccessPolicy: patientPolicy });
+  });
+}
 
 describe('New user', () => {
   let prevRecaptchaSecretKey: string | undefined;
@@ -467,6 +476,9 @@ describe('New user', () => {
     );
     expect(reg3).toBeDefined();
 
+    await enableOpenRegistration(reg2.project);
+    await enableOpenRegistration(reg3.project);
+
     // Try to register as a patient in Project P2
     const res1 = await request(app)
       .post('/auth/newuser')
@@ -586,6 +598,7 @@ describe('New user', () => {
     const { project } = await withTestContext(() =>
       registerNew({ firstName: 'Owner', lastName: 'Owner', projectName: 'MetaProjectTest', email, password })
     );
+    await enableOpenRegistration(project);
 
     // Register a new user into that project via the self-registration endpoint
     const newEmail = `patient${randomUUID()}@example.com`;
