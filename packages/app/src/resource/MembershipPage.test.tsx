@@ -35,12 +35,12 @@ describe('MembershipPage', () => {
   async function createPatientMembership(
     medplum: MockClient,
     userReference: string,
-    project = 'Project/123'
+    project: ProjectMembership['project'] = { reference: 'Project/123' }
   ): Promise<Patient> {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Bob'] }] });
     await medplum.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
-      project: { reference: project },
+      project,
       user: { reference: userReference },
       profile: { reference: `Patient/${patient.id}` },
     });
@@ -181,11 +181,14 @@ describe('MembershipPage', () => {
 
   test('Links to the project instead of project admin for other projects', async () => {
     const medplum = asAdmin();
-    const patient = await createPatientMembership(medplum, 'Patient/123', 'Project/other');
+    const patient = await createPatientMembership(medplum, 'Patient/123', {
+      reference: 'Project/other',
+      display: 'Other Project',
+    });
 
     await setup(`/Patient/${patient.id}/membership`, medplum);
 
-    expect(await screen.findByRole('link', { name: 'Go to Project' })).toHaveAttribute('href', '/Project/other');
+    expect(await screen.findByRole('link', { name: 'Go to Other Project' })).toHaveAttribute('href', '/Project/other');
     expect(screen.queryByRole('link', { name: 'View in project admin' })).not.toBeInTheDocument();
   });
 

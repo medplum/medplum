@@ -25,7 +25,7 @@ import { cleanResource } from './utils';
 
 const MEMBERSHIP_PROFILE_TYPES = ['Bot', 'ClientApplication', 'Patient', 'Practitioner', 'RelatedPerson'];
 
-function getTabs(resourceType: string, isAdmin: boolean): string[] {
+function getTabs(resourceType: string, options: { isAdmin: boolean }): string[] {
   const result = ['Timeline'];
 
   if (resourceType === 'Bot') {
@@ -70,7 +70,7 @@ function getTabs(resourceType: string, isAdmin: boolean): string[] {
 
   result.push('Details');
 
-  if (isAdmin && MEMBERSHIP_PROFILE_TYPES.includes(resourceType)) {
+  if (options.isAdmin && MEMBERSHIP_PROFILE_TYPES.includes(resourceType)) {
     result.push('Membership');
   }
 
@@ -90,7 +90,7 @@ export function ResourcePage(): JSX.Element | null {
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const value = useResource(reference, setOutcome);
   const isAdmin = medplum.isProjectAdmin() || medplum.isSuperAdmin();
-  const tabs = getTabs(resourceType, isAdmin);
+  const tabs = getTabs(resourceType, { isAdmin });
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);

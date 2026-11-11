@@ -84,7 +84,9 @@ function MembershipDetails({ membership }: { membership: WithId<ProjectMembershi
         {inActiveProject ? (
           <MedplumLink to={getAdminMemberPath(membership)}>View in project admin</MedplumLink>
         ) : (
-          membership.project && <MedplumLink to={membership.project}>Go to Project</MedplumLink>
+          membership.project && (
+            <MedplumLink to={membership.project}>Go to {membership.project.display ?? 'Project'}</MedplumLink>
+          )
         )}
       </Group>
       <ResourceTable value={membership} ignoreMissingValues />
