@@ -639,7 +639,10 @@ describe('Infra', () => {
         Match.objectLike({
           PolicyDocument: Match.objectLike({
             Statement: Match.arrayWith([
-              Match.objectLike({ Action: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'] }),
+              Match.objectLike({
+                Action: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+                Resource: Match.arrayWith([Match.stringLikeRegexp('inference-profile/\\*\\.anthropic\\.\\*$')]),
+              }),
             ]),
           }),
         }),

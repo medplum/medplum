@@ -475,7 +475,7 @@ export class BackEnd extends Construct {
           actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
           resources: [
             'arn:aws:bedrock:*::foundation-model/anthropic.*',
-            `arn:aws:bedrock:*:${accountNumber}:inference-profile/*`,
+            `arn:aws:bedrock:*:${accountNumber}:inference-profile/*.anthropic.*`,
           ],
         })
       );
