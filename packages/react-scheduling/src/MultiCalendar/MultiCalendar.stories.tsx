@@ -540,9 +540,9 @@ export const ShortAppointments = (): JSX.Element => {
 ShortAppointments.decorators = [withFixtures([followUpVisit])];
 
 /**
- * Appointments drawn muted, such as ones a filter leaves out that still take up time: a fainter tint
- * with no bar, in italics, named by their visit type and the site they record rather than their
- * patient. They aren't clickable, but hovering one opens its card, naming the patient. On Tuesday,
+ * Appointments drawn muted, such as ones a filter leaves out that still take up time: faint gray
+ * boxes with no bar or text. They aren't clickable, but hovering one opens its card, naming the
+ * patient. On Tuesday,
  * May 5, the 9 o'clock visit sits beside a muted one, and the one at 1 is alone.
  *
  * @returns The story.

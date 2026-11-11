@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { EventDisplayInfo } from '@fullcalendar/react';
-import { Badge, Divider, Group, Popover, Stack, Text } from '@mantine/core';
+import { Badge, Divider, Group, Popover, Stack, Text, VisuallyHidden } from '@mantine/core';
 import { getAppointmentSite, getExtension, getPrimaryProvider, RecurrenceIdExtensionURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
@@ -24,8 +24,8 @@ export interface AppointmentEventProps {
   /** Shown in place of the patient's name. */
   readonly label?: string;
   /**
-   * Names the site the appointment records under its service type, in place of its patient, as for one
-   * there for the time it takes. Its card still names everyone.
+   * Draws no text, as for one there for the time it takes: its service type and the site it records are
+   * left to screen readers. Its card still names everyone.
    */
   readonly muted?: boolean;
   /** What FullCalendar hands its event content, to draw the event as it would. */
@@ -53,6 +53,12 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
   // Each card is mounted only while its event is hovered: a card per event costs about twice
   // what drawing the event does, on every render, and most events are never hovered.
   const [opened, setOpened] = useState(false);
+  // With no service type, a placeholder holds the title's place, so the patient stays under it.
+  const serviceType = hasServiceType ? (
+    <ServiceTypeDisplay appointment={appointment} inherit />
+  ) : (
+    'Appointment (no service type)'
+  );
 
   return (
     <div
@@ -62,20 +68,26 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
       onMouseEnter={() => setOpened(true)}
       onMouseLeave={() => setOpened(false)}
     >
-      {inTimeGrid ? (
-        <div className={cx(info.timeClass, classes.patient)}>
-          {muted
-            ? site && <ResourceName value={site} link={false} inherit />
-            : (label ?? <AppointmentPatientName appointment={appointment} />)}
-        </div>
+      {muted ? (
+        <VisuallyHidden>
+          {serviceType}
+          {site && <ResourceName value={site} link={false} inherit />}
+        </VisuallyHidden>
       ) : (
-        info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
+        <>
+          {inTimeGrid ? (
+            <div className={cx(info.timeClass, classes.patient)}>
+              {label ?? <AppointmentPatientName appointment={appointment} />}
+            </div>
+          ) : (
+            info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
+          )}
+          <div className={cx(info.titleClass, classes.title)}>
+            {recurring && <IconRepeat size="1em" className={classes.recurring} role="img" aria-label="Recurring" />}
+            {serviceType}
+          </div>
+        </>
       )}
-      <div className={cx(info.titleClass, classes.title)}>
-        {recurring && <IconRepeat size="1em" className={classes.recurring} role="img" aria-label="Recurring" />}
-        {/* With no service type, a placeholder holds the title's place, so the patient stays under it. */}
-        {hasServiceType ? <ServiceTypeDisplay appointment={appointment} inherit /> : 'Appointment (no service type)'}
-      </div>
       {opened && (
         <Popover opened shadow="md" position="right-start">
           <Popover.Target>

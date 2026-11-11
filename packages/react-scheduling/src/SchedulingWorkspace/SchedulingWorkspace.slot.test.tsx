@@ -49,8 +49,6 @@ beforeEach(async () => {
   }
 });
 
-const FILTERED_NOTICE = 'The calendar filters hide this blocked time.';
-
 function slotDetails(): HTMLElement | null {
   return screen.queryByRole('region', { name: 'Blocked time details' });
 }
@@ -126,7 +124,7 @@ describe('SchedulingWorkspace blocked time details', () => {
     expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
   });
 
-  test('a filter hiding a visit hides the Slots it holds, saying so on one left open', async () => {
+  test('a site filter muting a visit keeps the Slots it holds', async () => {
     await medplum.deleteResource('Slot', BLOCKED_SLOT.id);
     const buffer = await medplum.createResource<Slot>({
       resourceType: 'Slot',
@@ -141,11 +139,12 @@ describe('SchedulingWorkspace blocked time details', () => {
 
     await userEvent.click(await screen.findByText('Blocked'));
 
-    // The visit records no site, so a site filter hides it, and its buffer with it.
+    // The visit records no site, so a site filter draws it muted: it and its buffer still take Dr. Rivera's time.
     await userEvent.click(screen.getByPlaceholderText('All service facilities'));
     await userEvent.click(await within(await screen.findByRole('listbox')).findByText('Uro Associates - Main Clinic'));
-    await waitFor(() => expect(screen.queryByText('Blocked')).not.toBeInTheDocument());
-    expect(within(slotDetails() as HTMLElement).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+    await waitFor(() => expect(document.querySelectorAll('.appointment.muted')).toHaveLength(1));
+    expect(screen.getByText('Blocked')).toBeInTheDocument();
+    expect(within(slotDetails() as HTMLElement).queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true })).toBeInTheDocument();
   });
 

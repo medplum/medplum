@@ -173,7 +173,7 @@ describe('MultiCalendar', () => {
     expect(screen.getByText('Draft').closest('.event')).toHaveClass('draft');
   });
 
-  test("names a muted source's appointments by where they are, not who for, until hovered, and makes none clickable", async () => {
+  test("draws a muted source's appointments with no text, read out by where they are, not who for, until hovered, and makes none clickable", async () => {
     const site = await medplum.createResource<Location>({ resourceType: 'Location', name: 'Main Clinic' });
     const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
       resourceType: 'Appointment',
@@ -195,6 +195,7 @@ describe('MultiCalendar', () => {
     const muted = (await screen.findByText('Main Clinic')).closest('.event') as HTMLElement;
     expect(muted).toHaveClass('muted');
     expect(muted).toHaveTextContent('Appointment (no service type)');
+    expect(within(muted).getByText('Main Clinic').closest('.mantine-VisuallyHidden-root')).toBeInTheDocument();
     expect(muted).not.toHaveAttribute('role', 'button');
     expect(screen.queryByText('Jane Williams')).not.toBeInTheDocument();
 

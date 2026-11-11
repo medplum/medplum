@@ -32,9 +32,9 @@ export interface MultiCalendarSource {
   /** Names each of the source's appointments in place of its patient. */
   label?: string;
   /**
-   * Draws the source's appointments as there for the time they take, such as ones a filter leaves out: faintly
-   * tinted, with no bar, and named by their visit type and site in place of their patient, and of `label`.
-   * Hovering one still opens its card. Pair it with `interactive: false` to keep them from being clicked.
+   * Draws the source's appointments as there for the time they take, such as ones a filter leaves out: faint
+   * gray boxes with no bar or text, whatever the source's color or `label`. Hovering one still opens its
+   * card. Pair it with `interactive: false` to keep them from being clicked.
    */
   muted?: boolean;
 }

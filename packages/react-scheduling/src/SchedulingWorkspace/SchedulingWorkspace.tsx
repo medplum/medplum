@@ -53,6 +53,7 @@ import {
   filterSlotsByDrawnAppointments,
   getCalendarTimezones,
   groupAppointmentsByService,
+  isAtAnotherServiceFacility,
   matchesCalendarFilters,
 } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
@@ -170,13 +171,13 @@ export interface SchedulingWorkspaceProps {
  * - Filters calendars and what is booked on them: the Service facility and Visit Type filters
  *   narrow the calendars listed to the ones held at that site and offering that service type,
  *   and the appointments drawn to the ones recording that site and naming that service type.
- *   Under either filter, the Slots of an appointment it hides, such as its buffers, are hidden
- *   with it. Blocked time stays on every calendar left listed: Slots record no site, and a
- *   block takes its actor's time whatever the visit type.
- * - Focuses on one calendar from its row: the calendar shows only what is booked or blocked on
- *   it, hidden or not, and draws what the filters leave out of it muted, so
- *   its open time is really open. Leaving it, or a filter that no longer lists it, shows what
- *   was shown before, as hidden and filtered as it was.
+ *   An appointment at another site, on a calendar still listed, is drawn as a faint gray box
+ *   rather than hidden, so the calendar's open time is really open. Hiding the calendar hides
+ *   it too. The Slots of an appointment a filter hides, such as
+ *   its buffers, are hidden with it. Blocked time stays on every calendar left listed: Slots
+ *   record no site, and a block takes its actor's time whatever the visit type.
+ * - Shows one calendar alone from its row's context menu, hidden or not. Leaving it, or a
+ *   filter that no longer lists it, shows what was shown before, as hidden as it was.
  * - Keeps an open appointment or blocked time open until it is closed, even once paging,
  *   filtering, or hiding its calendars takes it off the calendar, with a notice saying when the
  *   filters or hidden calendars are why.
@@ -208,7 +209,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [candidatesLoading, setCandidatesLoading] = useState(false);
 
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
-  // The schedule id of the calendar focused on. Held apart from what is hidden, so leaving it restores that.
+  // The schedule id of the calendar shown alone. Held apart from what is hidden, so leaving it restores that.
   const [focusedId, setFocusedId] = useState<string>();
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
@@ -341,11 +342,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
       );
     const appointmentsOnShow = (appointments ?? []).filter(isOnShownCalendar);
-    // Focused, the ones the filters leave out are drawn muted rather than not at all.
+    // One at another site than the one chosen still takes its calendar's time, so it is drawn muted
+    // rather than not at all.
     const visibleAppointments: WithId<Appointment>[] = [];
-    const filteredOut: WithId<Appointment>[] = [];
+    const mutedAppointments: WithId<Appointment>[] = [];
     for (const appointment of appointmentsOnShow) {
-      (matchesCalendarFilters(appointment, filters) ? visibleAppointments : filteredOut).push(appointment);
+      if (matchesCalendarFilters(appointment, filters)) {
+        visibleAppointments.push(appointment);
+      } else if (isAtAnotherServiceFacility(appointment, filters)) {
+        mutedAppointments.push(appointment);
+      }
     }
     const allGroups = Array.from(groupAppointmentsByService(visibleAppointments));
     // Held back until the service is read, or has failed to be, rather than drawn in one color
@@ -356,27 +362,20 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
     // its own appointments. A held-back appointment's Slots stay, so its time isn't shown as free.
-    // Under a filter, the Slots of an appointment it hides go with it. Blocked time stays: the
-    // calendars listed are already the ones the filters keep.
+    // Under a filter, the Slots of an appointment it hides go with it. A muted appointment's stay,
+    // its booked ones cleared below, leaving its buffers. Blocked time stays: the calendars listed
+    // are already the ones the filters keep.
     const shownSlots =
       filters.service || filters.serviceFacility
-        ? filterSlotsByDrawnAppointments(slots ?? [], appointments ?? [], visibleAppointments)
+        ? filterSlotsByDrawnAppointments(slots ?? [], appointments ?? [], [
+            ...visibleAppointments,
+            ...mutedAppointments,
+          ])
         : (slots ?? []);
-    // Focused, what the filters leave out still takes the calendar's time, so it is drawn muted, and the Slots
-    // that go with it are kept on the calendar: its booked ones are cleared below, leaving its buffers.
-    let drawnSlots = shownSlots;
-    if (focused) {
-      const focusedReference = getReferenceString(focused.schedule);
-      const shown = new Set(shownSlots);
-      drawnSlots = [
-        ...shownSlots,
-        ...(slots ?? []).filter((slot) => slot.schedule.reference === focusedReference && !shown.has(slot)),
-      ];
-    }
-    const mutedSources: MultiCalendarSource[] = focused
-      ? [{ muted: true, interactive: false, color: 'gray', slots: [], appointments: filteredOut }]
+    const mutedSources: MultiCalendarSource[] = mutedAppointments.length
+      ? [{ muted: true, interactive: false, color: 'gray', slots: [], appointments: mutedAppointments }]
       : [];
-    const openSlots = filterBookedSlots(drawnSlots, [...groups.flatMap(({ group }) => group), ...filteredOut]);
+    const openSlots = filterBookedSlots(shownSlots, [...groups.flatMap(({ group }) => group), ...mutedAppointments]);
     const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
       const scheduleReference = getReferenceString(candidate.schedule);
       return {
@@ -423,7 +422,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       shownSlots,
       isOnShownCalendar,
     };
-  }, [activeCandidates, focused, slots, appointments, filters, services, medplum, theme, paneTab, proposal]);
+  }, [activeCandidates, slots, appointments, filters, services, medplum, theme, paneTab, proposal]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -592,8 +591,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
   if (openAppointment && statuses.includes(openAppointment.status)) {
     if (!matchesCalendarFilters(openAppointment, filters)) {
-      // Focused on one of its calendars, it is drawn muted instead.
-      if (!focused || !isOnShownCalendar(openAppointment)) {
+      // At another site, on a calendar shown, it is drawn muted instead.
+      if (!isAtAnotherServiceFacility(openAppointment, filters) || !isOnShownCalendar(openAppointment)) {
         hiddenNotice = 'The calendar filters hide this appointment.';
       }
     } else if (!isOnShownCalendar(openAppointment)) {
@@ -614,8 +613,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   let slotNotice: string | undefined;
   if (openSlot && !schedules.some((schedule) => getReferenceString(schedule) === openSlot.schedule.reference)) {
     slotNotice = "This blocked time's calendar isn't shown.";
-  } else if (loadedSlot && !focused && !shownSlots.includes(loadedSlot)) {
-    // Focused, every Slot on its calendar is drawn, the ones the filters would hide too.
+  } else if (loadedSlot && !shownSlots.includes(loadedSlot)) {
     slotNotice = 'The calendar filters hide this blocked time.';
   }
   const otherBlockSlots =

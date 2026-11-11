@@ -177,8 +177,7 @@ describe('SchedulingWorkspace appointment details', () => {
     // only after it is checked in.
     hold = true;
     await userEvent.click(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
-    // Anchored, as the row's focus button is named for Dr. Rivera too, and isn't pressed.
-    await userEvent.click(await screen.findByRole('button', { name: /^DM Dr. Maya Rivera$/, pressed: false }));
+    await userEvent.click(await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: false }));
     await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
     await Promise.all(held);
     vi.setSystemTime(new Date(TODAY_AT_TEN.getTime() + 60 * 1000));

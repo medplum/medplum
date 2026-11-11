@@ -10,7 +10,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures, TelehealthService } from '../stories/scheduling';
 import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
-import { act, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 /**
@@ -338,48 +338,59 @@ describe('SchedulingWorkspace', () => {
       clock = undefined;
     });
 
-    test('focusing on a calendar shows all of it, what the filters leave out muted, until left', async () => {
+    test('a calendar shown alone from its context menu is the only one drawn, hidden or not, until left', async () => {
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
       renderWithMedplum(<SchedulingWorkspace />, await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]));
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
       expect(screen.getAllByText('Blocked')).toHaveLength(2);
+      const toggleShownAlone = async (label: string, item: string): Promise<void> => {
+        fireEvent.contextMenu(calendarRow(label));
+        await userEvent.click(await screen.findByRole('menuitem', { name: item }));
+      };
 
-      // Focused on Dr. Chen, only Dr. Chen's two visits with Jordan Reyes and the buffer after one are drawn: not Dr.
-      // Brown's visit with Liam Jones, Dr. Rivera's with Miles Cooper, or Exam Room A's maintenance.
-      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      // Only Dr. Chen's two visits with Jordan Reyes and the buffer after one are drawn: not Dr. Brown's visit
+      // with Liam Jones, Dr. Rivera's with Miles Cooper, or Exam Room A's maintenance.
+      await toggleShownAlone('Dr. Wei Chen', 'Show only this calendar');
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(0));
       expect(appointmentEvents('Miles Cooper')).toHaveLength(0);
       expect(appointmentEvents('Jordan Reyes')).toHaveLength(2);
       expect(screen.getAllByText('Blocked')).toHaveLength(1);
-      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      await toggleShownAlone('Dr. Wei Chen', 'Show all calendars');
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
 
-      // Under Infusion Therapy, Dr. Chen's visit with Jordan Reyes naming no service type goes, and its details, open,
-      // say why. Hidden, so does the other.
-      const untyped = appointmentEvents('Jordan Reyes').find((event) => event.textContent?.includes('no service type'));
-      await userEvent.click(untyped as HTMLElement);
-      const details = screen.getByRole('region', { name: 'Appointment details' });
-      await chooseFilter('All visit types', 'Infusion Therapy');
-      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(1));
-      expect(within(details).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+      // Hidden, it is still shown when asked for alone, and hidden again once left.
       await userEvent.click(calendarRow('Dr. Wei Chen'));
       await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(0));
-
-      // Focused, the calendar is shown, hidden or not, with the visit the filter leaves out muted, named for
-      // its visit type rather than its patient.
-      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
-      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(1));
-      const muted = document.querySelectorAll('.appointment.muted');
-      expect(muted).toHaveLength(1);
-      expect(muted[0]).toHaveTextContent('Appointment (no service type)');
-      expect(within(details).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
-
-      // Left, it is hidden again, under the filter it was.
-      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      await toggleShownAlone('Dr. Wei Chen', 'Show only this calendar');
+      await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(2));
+      await toggleShownAlone('Dr. Wei Chen', 'Show all calendars');
       await waitFor(() => expect(appointmentEvents('Jordan Reyes')).toHaveLength(0));
       expect(calendarRow('Dr. Wei Chen')).toHaveAttribute('aria-pressed', 'false');
-      expect(screen.getByText('Infusion Therapy')).toBeInTheDocument();
-      expect(within(details).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+    });
+
+    test('a site filter draws the visits at other sites muted, on the calendars it leaves shown', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+      renderWithMedplum(<SchedulingWorkspace />, await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]));
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      const atMainClinic = (): Element[] =>
+        [...document.querySelectorAll('.appointment.muted')].filter((event) =>
+          event.textContent?.includes('Uro Associates - Main Clinic')
+        );
+      expect(atMainClinic()).toHaveLength(0);
+
+      // Dr. Rivera names no site, so stays listed under the satellite. Miles Cooper's visit with her is at the
+      // main clinic, so it is named for that rather than for him, and can't be opened.
+      await chooseFilter('All service facilities', 'Uro Associates - Satellite');
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(0));
+      await waitFor(() => expect(atMainClinic().length).toBeGreaterThan(0));
+      const shown = atMainClinic().length;
+      await userEvent.click(atMainClinic()[0]);
+      expect(screen.queryByRole('region', { name: 'Appointment details' })).not.toBeInTheDocument();
+
+      // It is also held on an ultrasound machine naming no site, so it goes once both calendars are hidden.
+      await userEvent.click(calendarRow('Dr. Maya Rivera'));
+      await userEvent.click(calendarRow('Ultrasound 1 (Main Campus)'));
+      await waitFor(() => expect(atMainClinic().length).toBeLessThan(shown));
     });
 
     test('the filters narrow the appointments drawn on the calendars they leave listed', async () => {
@@ -412,11 +423,13 @@ describe('SchedulingWorkspace', () => {
       expect(within(appointmentDetails).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
 
       // Dr. Brown names no site and Exam Room A is at the main clinic, so both stay listed. Liam
-      // Jones's visit records no site, so goes. Exam Room A's maintenance is held by no visit, so
-      // stays on its calendar, beside the buffer of Dr. Chen's infusion at the main clinic.
+      // Jones's visit records no site, so is drawn muted, no longer named for him, with no notice
+      // on its details. Exam Room A's maintenance is held by no visit, so stays on its calendar,
+      // beside the buffer of Dr. Chen's infusion at the main clinic.
       await chooseFilter('All service facilities', 'Uro Associates - Main Clinic');
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(0));
-      expect(within(appointmentDetails).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+      expect(document.querySelectorAll('.appointment.muted').length).toBeGreaterThan(0);
+      expect(within(appointmentDetails).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
       expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
       expect(screen.getAllByText('Blocked')).toHaveLength(2);
       expect(calendarRow('Dr. Olivia Brown')).toHaveAttribute('aria-pressed', 'true');

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, test, vi } from 'vitest';
-import { render, screen, userEvent } from '../../test-utils/render';
+import { fireEvent, render, screen, userEvent } from '../../test-utils/render';
 import type { CalendarsPanelProps } from './CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel';
 
@@ -102,19 +102,25 @@ describe('CalendarsPanel', () => {
     );
   });
 
-  test('gives each row a button focusing on its calendar, pressed on the one focused', async () => {
+  test("offers to show a calendar alone from its row's context menu, and all of them from the one shown", async () => {
     const onToggle = vi.fn();
     const onToggleFocus = vi.fn();
     setup({ onToggle, focusedId: 'room-1', onToggleFocus });
 
-    expect(screen.getByRole('button', { name: 'Focus Exam Room A' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Focus Lisa Caddy' })).toHaveAttribute('aria-pressed', 'false');
+    const shownAlone = screen.getByText('Exam Room A').closest('button') as HTMLElement;
+    const other = screen.getByText('Lisa Caddy').closest('button') as HTMLElement;
+    expect(shownAlone).toHaveAttribute('data-focused');
     // The rest are dimmed, as they aren't shown.
-    expect(screen.getByText('Lisa Caddy').closest('button')).toHaveAttribute('data-outside-focus');
-    expect(screen.getByText('Exam Room A').closest('button')).not.toHaveAttribute('data-outside-focus');
+    expect(other).toHaveAttribute('data-outside-focus');
+    expect(shownAlone).not.toHaveAttribute('data-outside-focus');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Focus Lisa Caddy' }));
+    fireEvent.contextMenu(other);
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Show only this calendar' }));
     expect(onToggleFocus).toHaveBeenCalledWith('prov-1');
+
+    fireEvent.contextMenu(shownAlone);
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Show all calendars' }));
+    expect(onToggleFocus).toHaveBeenLastCalledWith('room-1');
     expect(onToggle).not.toHaveBeenCalled();
   });
 
