@@ -1,0 +1,535 @@
+{
+  "timezone": "America/Chicago",
+  "clinic": {
+    "slug": "precision-dpc",
+    "name": "Precision Direct Primary Care",
+    "alias": [
+      "Precision DPC"
+    ],
+    "phone": "940-900-6050",
+    "website": "https://precisiondpc.com",
+    "address": {
+      "line": [
+        "1104 N. Elm St"
+      ],
+      "city": "Denton",
+      "state": "TX",
+      "postalCode": "76201",
+      "country": "US"
+    },
+    "content": {
+      "tagline": "Direct Primary Care in Denton, TX",
+      "heroTitle": "Precision DPC",
+      "heroSubtitle": "Affordable, price-transparent primary care with no hidden costs. Serving Denton, TX and beyond.",
+      "coverImageUrl": "https://cdcssl.ibsrv.net/ibimg/smb/900x600_80/webmgr/0x/c/i/office-front.jpg.webp?547d290c05ea96d5423f3884eda35df7",
+      "logoUrl": "https://cdcssl.ibsrv.net/ibimg/smb/450x450_80/webmgr/0x/c/i/doc-home.jpg.webp?547d290c05ea96d5423f3884eda35df7",
+      "about": "Precision Direct Primary Care offers state-of-the-art treatments and personalized care plans to help you achieve your health and wellness goals.\n\nAffordable, accessible, and personalized primary care for you and your family.",
+      "highlights": [
+        "Direct Primary Care — no insurance middleman",
+        "Longer visits & same-day appointments",
+        "24/7 direct access to Dr. Farley",
+        "Wholesale pricing on labs & medications",
+        "Comprehensive family care, all ages"
+      ],
+      "stats": [
+        {
+          "label": "Years Exp.",
+          "value": "25"
+        },
+        {
+          "label": "Rating",
+          "value": "5.0"
+        },
+        {
+          "label": "Availability",
+          "value": "Same Day"
+        },
+        {
+          "label": "Patients recommend",
+          "value": "100%"
+        }
+      ],
+      "services": [
+        "Primary Care",
+        "Urgent Care",
+        "Chronic Disease",
+        "Wellness Program",
+        "Procedures"
+      ],
+      "featureChips": [
+        "Same/Next Day Appts",
+        "Unlimited Visits",
+        "No Copays"
+      ],
+      "membershipBenefits": [
+        {
+          "title": "Unlimited Visits",
+          "description": "Primary care, urgent care & same-day visits included."
+        },
+        {
+          "title": "No Co-Pays",
+          "description": "No hidden costs. Wholesale labs, imaging & medications."
+        },
+        {
+          "title": "24/7 Access",
+          "description": "Call, text, or email Dr. Farley directly any time."
+        },
+        {
+          "title": "Full-Scope Care",
+          "description": "Wellness, chronic disease, procedures & prevention."
+        }
+      ],
+      "included": [
+        "Unlimited visits — primary care, urgent care & same-day",
+        "24/7 physician access — call, text, or email Dr. Farley",
+        "No co-pays or hidden fees for current members",
+        "Annual wellness exams & prevention planning",
+        "Wholesale pricing on labs, imaging & medications",
+        "Chronic disease management (diabetes, BP, thyroid, etc.)",
+        "In-office procedures (biopsies, laceration repair, splinting)",
+        "10% off Precision Aesthetics procedures for DPC members"
+      ],
+      "journey": [
+        {
+          "title": "Join",
+          "subtitle": "From $50/mo"
+        },
+        {
+          "title": "Connect",
+          "subtitle": "Call or text"
+        },
+        {
+          "title": "Save",
+          "subtitle": "90%+ on labs"
+        },
+        {
+          "title": "Thrive",
+          "subtitle": "Unlimited care"
+        }
+      ],
+      "education": {
+        "title": "Direct Primary Care",
+        "subtitle": "Healthcare that puts you first — not insurance companies"
+      },
+      "faq": [
+        {
+          "q": "What is Direct Primary Care?",
+          "a": "DPC is a membership-based healthcare model where you pay your doctor directly — no insurance billing for routine care.",
+          "bullets": [
+            "Monthly membership covers all primary care visits",
+            "Like a gym membership, but for your healthcare",
+            "Longer visits, better access, transparent pricing"
+          ],
+          "keyPoint": "No insurance middleman"
+        },
+        {
+          "q": "How is DPC different from concierge medicine?",
+          "a": "Concierge practices charge $2,000–$10,000/year and still bill insurance. DPC is more affordable and fully transparent.",
+          "bullets": [
+            "DPC: $50–$130/mo — Concierge: $2K–$10K/year",
+            "DPC does NOT bill insurance for covered services",
+            "Same great access at a fraction of the cost"
+          ],
+          "keyPoint": "Up to 90% less than concierge"
+        },
+        {
+          "q": "Do I still need health insurance?",
+          "a": "Yes — keep insurance for major events. DPC handles your day-to-day primary care.",
+          "bullets": [
+            "Insurance covers: hospital stays, specialists, emergencies",
+            "DPC covers: office visits, labs, routine procedures",
+            "Many members pair DPC with a high-deductible plan (HDHP)"
+          ],
+          "keyPoint": "DPC + HDHP = maximum savings"
+        },
+        {
+          "q": "What services are included?",
+          "a": "Your membership covers a wide range of primary and preventive care:",
+          "bullets": [
+            "Unlimited office visits (primary & urgent care)",
+            "Same-day / next-day appointments guaranteed",
+            "24/7 direct access — call, text, or email Dr. Farley",
+            "Annual wellness exams & basic in-office procedures",
+            "Wholesale labs & medications (90%+ savings)",
+            "Chronic disease management"
+          ],
+          "keyPoint": "Unlimited visits included"
+        },
+        {
+          "q": "How do I schedule appointments?",
+          "a": "Multiple convenient options:",
+          "bullets": [
+            "Call, text, or email Dr. Farley directly",
+            "Schedule through the CareDevi app",
+            "Walk-ins welcome during office hours",
+            "Same-day or next-day availability guaranteed"
+          ],
+          "keyPoint": "Same-day guarantee"
+        },
+        {
+          "q": "Are family plans available?",
+          "a": "Yes! Great rates for the whole family:",
+          "bullets": [
+            "Ages 0-22: $50/mo — lowest rate",
+            "Ages 23-39: $80/mo",
+            "Ages 40-64: $100/mo",
+            "Ages 65+: $130/mo",
+            "Family maximum of $300/mo",
+            "50% off 5th+ member ($25/mo each additional child)"
+          ],
+          "keyPoint": "Family max $300/mo"
+        },
+        {
+          "q": "What about labs & prescriptions?",
+          "a": "Members get wholesale pricing — often 90-95% less than hospital prices.",
+          "bullets": [
+            "Basic metabolic panel: $3-5 (vs $100+ at hospital)",
+            "Negotiated wholesale medication prices",
+            "Generic alternatives at a fraction of retail cost"
+          ],
+          "keyPoint": "Up to 95% savings on labs"
+        },
+        {
+          "q": "Is there a contract?",
+          "a": "There is a minimum 6-month commitment to give DPC a fair chance. After that, you can cancel anytime.",
+          "bullets": [
+            "Minimum 6-month membership commitment",
+            "Cancel anytime after 6 months with 30 days notice",
+            "No cancellation fees or penalties after commitment period",
+            "The 6-month window lets you experience the full benefits"
+          ],
+          "keyPoint": "6-month minimum, then flexible"
+        }
+      ],
+      "plans": [
+        {
+          "label": "Ages 0-22",
+          "price": "$50/mo",
+          "note": "Lowest rate",
+          "popular": true
+        },
+        {
+          "label": "Ages 23-39",
+          "price": "$80/mo"
+        },
+        {
+          "label": "Ages 40-64",
+          "price": "$100/mo"
+        },
+        {
+          "label": "Ages 65+",
+          "price": "$130/mo"
+        }
+      ],
+      "planFootnotes": [
+        "Monthly membership · 6-month minimum commitment",
+        "Family Plan: Family max $300/mo. 50% off 5th+ member ($25/mo each additional child)."
+      ],
+      "costComparison": [
+        {
+          "item": "Office Visit",
+          "typical": "$150–250",
+          "withClinic": "$0",
+          "icon": "medkit-outline"
+        },
+        {
+          "item": "Urgent Care",
+          "typical": "$75–200",
+          "withClinic": "$0",
+          "icon": "pulse-outline"
+        },
+        {
+          "item": "Lab Panel",
+          "typical": "$100–300",
+          "withClinic": "$3–5",
+          "icon": "flask-outline"
+        },
+        {
+          "item": "Annual Physical",
+          "typical": "$250–500",
+          "withClinic": "$0",
+          "icon": "body-outline"
+        },
+        {
+          "item": "After-Hours Call",
+          "typical": "$50–100",
+          "withClinic": "$0",
+          "icon": "moon-outline"
+        }
+      ],
+      "comparisonLabels": {
+        "typical": "Traditional",
+        "withClinic": "DPC"
+      },
+      "savingsNote": "Average member saves $1,500–$3,000/year",
+      "startingPrice": "$50/mo",
+      "video": {
+        "title": "Watch: What is DPC?",
+        "subtitle": "3-minute overview • Dr. Farley",
+        "url": "https://precisiondpc.com/what-is-direct-primary-care/"
+      },
+      "links": [
+        {
+          "label": "PrecisionDPC.com — What is DPC?",
+          "url": "https://precisiondpc.com/what-is-direct-primary-care/"
+        },
+        {
+          "label": "How DPC Lowers Healthcare Costs",
+          "url": "https://precisiondpc.com/how-dpc-lowers-costs/"
+        },
+        {
+          "label": "DPC Alliance — National Resources",
+          "url": "https://www.dpcare.org/"
+        }
+      ],
+      "primaryCta": {
+        "label": "Free Consultation",
+        "serviceSlug": "precision-dpc-meet-and-greet"
+      },
+      "membershipCta": {
+        "label": "Get Membership"
+      }
+    }
+  },
+  "location": {
+    "slug": "precision-dpc-denton",
+    "name": "Precision Direct Primary Care — Denton",
+    "phone": "940-900-6050",
+    "position": {
+      "latitude": 33.2246,
+      "longitude": -97.1334
+    },
+    "hoursOfOperation": [
+      {
+        "daysOfWeek": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri"
+        ],
+        "openingTime": "09:00:00",
+        "closingTime": "17:00:00"
+      }
+    ]
+  },
+  "practitioners": [
+    {
+      "slug": "derek-farley",
+      "prefix": [
+        "Dr."
+      ],
+      "given": [
+        "Derek"
+      ],
+      "family": "Farley",
+      "suffix": [
+        "D.O."
+      ],
+      "gender": "male",
+      "photoUrl": "https://cdcssl.ibsrv.net/ibimg/smb/450x450_80/webmgr/0x/c/i/doc-home.jpg.webp?547d290c05ea96d5423f3884eda35df7",
+      "qualification": {
+        "code": "DO",
+        "display": "Doctor of Osteopathy"
+      },
+      "specialty": {
+        "system": "http://snomed.info/sct",
+        "code": "419772000",
+        "display": "Family practice"
+      },
+      "specialtyText": "Family Medicine (DPC)",
+      "roleText": "Physician"
+    }
+  ],
+  "services": [
+    {
+      "slug": "precision-dpc-meet-and-greet",
+      "name": "Free Consultation (Meet & Greet)",
+      "comment": "A private 30-minute session with Dr. Derek Farley, D.O.",
+      "extraDetails": "**Completely Free · No Obligation**\n\nThis consultation is at no cost to you. Ask questions, learn about DPC, and decide if it's right for you — zero pressure.\n\n- **30 min** — Quick, focused session\n- **Q & A** — Get your questions answered\n- **Health goals** — Personalized care plan\n- **Free** — No cost, no obligation",
+      "durationMinutes": 30,
+      "alignmentIntervalMinutes": 30,
+      "intakeQuestionnaire": true,
+      "bookingConfig": {
+        "priceLabel": "Complimentary",
+        "isFree": true,
+        "durationLabel": "About 30 minutes",
+        "modes": [
+          {
+            "code": "phone",
+            "label": "Phone Call",
+            "detail": "We'll call you at your number",
+            "recommended": true
+          },
+          {
+            "code": "in-person",
+            "label": "In Office",
+            "detail": "1104 N. Elm St, Denton, TX 76201"
+          },
+          {
+            "code": "video",
+            "label": "Video",
+            "detail": "A video link will be sent before your session"
+          }
+        ],
+        "expectations": [
+          "Learn about the DPC model",
+          "Discuss your specific health needs",
+          "Ask any questions you have",
+          "No obligation — zero pressure"
+        ],
+        "confirmationNotes": [
+          "Your complimentary session with Dr. Derek Farley, D.O. is being confirmed.",
+          "For phone visits, Dr. Farley's office will call the number on your profile.",
+          "Need to change something? Call (940) 900-6050."
+        ],
+        "daysAhead": 14,
+        "minNoticeMinutes": 120,
+        "requiresMembership": false,
+        "notifyEmails": []
+      }
+    }
+  ],
+  "schedules": [
+    {
+      "slug": "precision-dpc--derek-farley",
+      "practitioner": "derek-farley",
+      "services": [
+        "precision-dpc-meet-and-greet"
+      ],
+      "comment": "Dr. Derek Farley — clinic hours",
+      "availability": [
+        {
+          "daysOfWeek": [
+            "mon",
+            "tue",
+            "wed",
+            "thu",
+            "fri"
+          ],
+          "start": "09:00:00",
+          "end": "17:00:00"
+        }
+      ]
+    }
+  ],
+  "questionnaire": {
+    "url": "https://caredevi.com/fhir/Questionnaire/precision-dpc-intake",
+    "version": "1",
+    "name": "PrecisionDpcIntake",
+    "title": "New patient intake",
+    "description": "Short intake completed before your Precision DPC visit.",
+    "item": [
+      {
+        "linkId": "intro",
+        "type": "display",
+        "text": "This helps Dr. Farley prepare for your visit. It takes about 2 minutes."
+      },
+      {
+        "linkId": "reason",
+        "type": "text",
+        "text": "What would you like to discuss at your visit?",
+        "required": true
+      },
+      {
+        "linkId": "medications",
+        "type": "text",
+        "text": "Current medications (name and dose), if any"
+      },
+      {
+        "linkId": "allergies",
+        "type": "text",
+        "text": "Allergies (medications, foods, other), if any"
+      },
+      {
+        "linkId": "conditions",
+        "type": "choice",
+        "text": "Do you have any of these conditions?",
+        "repeats": true,
+        "answerOption": [
+          {
+            "valueCoding": {
+              "code": "hypertension",
+              "display": "High blood pressure"
+            }
+          },
+          {
+            "valueCoding": {
+              "code": "diabetes",
+              "display": "Diabetes / prediabetes"
+            }
+          },
+          {
+            "valueCoding": {
+              "code": "high-cholesterol",
+              "display": "High cholesterol"
+            }
+          },
+          {
+            "valueCoding": {
+              "code": "thyroid",
+              "display": "Thyroid condition"
+            }
+          },
+          {
+            "valueCoding": {
+              "code": "asthma-copd",
+              "display": "Asthma / COPD"
+            }
+          },
+          {
+            "valueCoding": {
+              "code": "heart-disease",
+              "display": "Heart disease"
+            }
+          },
+          {
+            "valueCoding": {
+              "code": "anxiety-depression",
+              "display": "Anxiety / depression"
+            }
+          },
+          {
+            "valueCoding": {
+              "code": "none",
+              "display": "None of these"
+            }
+          }
+        ]
+      },
+      {
+        "linkId": "conditions-other",
+        "type": "string",
+        "text": "Other conditions not listed"
+      },
+      {
+        "linkId": "smoker",
+        "type": "boolean",
+        "text": "Do you currently smoke?"
+      },
+      {
+        "linkId": "packs-per-day",
+        "type": "decimal",
+        "text": "About how many packs per day?",
+        "enableWhen": [
+          {
+            "question": "smoker",
+            "operator": "=",
+            "answerBoolean": true
+          }
+        ]
+      },
+      {
+        "linkId": "pharmacy",
+        "type": "string",
+        "text": "Preferred pharmacy (name and location)"
+      },
+      {
+        "linkId": "consent",
+        "type": "boolean",
+        "text": "I confirm this information is accurate and consent to share it with Precision Direct Primary Care for my care.",
+        "required": true
+      }
+    ]
+  }
+}
