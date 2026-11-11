@@ -544,6 +544,7 @@ export class BackEnd extends Construct {
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
       minHealthyPercent: 100, // 50% is the default
+      circuitBreaker: { enable: true, rollback: true },
     });
 
     // Add autoscaling
@@ -913,6 +914,7 @@ export class BackEnd extends Construct {
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
       minHealthyPercent: 100, // 50% is the default
+      circuitBreaker: { enable: true, rollback: true },
     });
 
     // Add dependencies - same as primary service
