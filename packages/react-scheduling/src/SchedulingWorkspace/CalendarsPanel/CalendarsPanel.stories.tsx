@@ -51,7 +51,7 @@ function toggleItem(items: PanelItems, actorType: BookableActorType, id: string)
 }
 
 /**
- * Rows to hide and show calendars by, each with a button, on hover, focusing on its calendar alone.
+ * Rows to hide and show calendars by, each with a context menu showing its calendar alone.
  *
  * @returns The story.
  */

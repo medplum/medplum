@@ -28,9 +28,12 @@ export interface CalendarsPanelProps {
   /** The rows to show in each section, keyed by the actor type whose schedules they are. */
   readonly items: Readonly<Record<BookableActorType, readonly CalendarsPanelItem[]>>;
   readonly onToggle?: (actorType: BookableActorType, id: string) => void;
-  /** The id of the calendar focused on, if any. */
+  /** The id of the calendar shown alone, if any. */
   readonly focusedId?: string;
-  /** Focuses on one calendar, or leaves it when it is the one focused. When given, each row gets a button for it. */
+  /**
+   * Shows one calendar alone, or all of them again when it is the one shown. When given, each row gets a
+   * context menu for it.
+   */
   readonly onToggleFocus?: (id: string) => void;
   readonly className?: string;
 }

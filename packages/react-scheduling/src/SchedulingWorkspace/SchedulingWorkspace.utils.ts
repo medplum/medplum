@@ -91,11 +91,23 @@ export function groupAppointmentsByService(
  * @returns Whether the appointment is at the chosen site and for the chosen service type.
  */
 export function matchesCalendarFilters(appointment: Appointment, filters: CalendarFilterValues): boolean {
-  const { serviceFacility, service } = filters;
-  if (serviceFacility && getAppointmentSite(appointment)?.reference !== getReferenceString(serviceFacility)) {
+  if (isAtAnotherServiceFacility(appointment, filters)) {
     return false;
   }
-  return !service || serviceTypeIncludesService(appointment.serviceType, service);
+  return !filters.service || serviceTypeIncludesService(appointment.serviceType, filters.service);
+}
+
+/**
+ * Reports whether the Service facility filter leaves an appointment out. Such an appointment still
+ * takes the time of whoever it is held on, so the calendar draws it muted rather than not at all.
+ *
+ * @param appointment - The appointment to check.
+ * @param filters - The chosen site and service type, either absent for all of them.
+ * @returns Whether a site is chosen and the appointment records another, or none.
+ */
+export function isAtAnotherServiceFacility(appointment: Appointment, filters: CalendarFilterValues): boolean {
+  const { serviceFacility } = filters;
+  return !!serviceFacility && getAppointmentSite(appointment)?.reference !== getReferenceString(serviceFacility);
 }
 
 /**

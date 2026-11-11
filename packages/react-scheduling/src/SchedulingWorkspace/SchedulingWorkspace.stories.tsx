@@ -222,9 +222,9 @@ export default {
  *
  * Dr. Rivera also sees two imaging patients at the satellite: Theo Novak on Wednesday morning and
  * Priya Shah on Thursday afternoon. Choose **Uro Associates - Main Clinic**, the only site Dr.
- * Rivera's role names, and they go. Then focus on Dr. Rivera's calendar from its row: the satellite
- * visits come back muted, named by their visit type and site, beside the visits at the main clinic,
- * so the open time left is really open. Hover one for its patient.
+ * Rivera's role names, and they are drawn as faint gray boxes beside the visits at the main
+ * clinic, so the open time left is really open. Hover one for its patient. Hide
+ * Dr. Rivera's calendar and they go with it. Right-click a calendar's row to show it alone.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
