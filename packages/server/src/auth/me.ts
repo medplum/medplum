@@ -15,11 +15,11 @@ import type {
 import Bowser from 'bowser';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
-import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { canManageUserAccount, hasSmartResourceScopes, isMfaRequired } from './utils';
+import { hasSmartResourceScopes } from '../fhir/smart';
+import { canManageUserAccount, isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
@@ -39,7 +39,8 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState, repo, systemRepo, project, membership } = getAuthenticatedContext();
+  const ctx = getAuthenticatedContext();
+  const { repo, systemRepo, project, membership, session } = ctx;
   const profileRef = membership.profile as Reference<ProfileResource | ClientApplication>;
   let profile = await readMembershipReference<ProfileResource | ClientApplication>(
     systemRepo,
@@ -54,16 +55,16 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     delete profile.retiringSecret;
   }
   const config = await getUserConfiguration(systemRepo, project, membership);
-  const accessPolicy = await getAccessPolicyForLogin(authState);
+  const accessPolicy = repo.effectiveAccessPolicy();
   let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
-  if (!authState.onBehalfOfMembership && membership.user?.reference?.startsWith('User/')) {
+  if (!ctx.getAttribution().onBehalfOf && membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
   }
 
-  // Account security details are only for logins that can manage the account (see getCallerUserReference)
-  if (user && !hasSmartResourceScopes(authState.login)) {
+  // Account security details are only for logins that can manage the account (see requireCallerUser)
+  if (user && !hasSmartResourceScopes(session)) {
     const memberships = await systemRepo.searchResources<ProjectMembership>({
       resourceType: 'ProjectMembership',
       filters: [
@@ -79,11 +80,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
         },
       ],
     });
-    const sessions = await getSessions(
-      systemRepo,
-      user,
-      canManageUserAccount(authState.login) ? undefined : memberships
-    );
+    const sessions = await getSessions(systemRepo, user, canManageUserAccount(session) ? undefined : memberships);
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       mfaRequired: isMfaRequired(user, project),

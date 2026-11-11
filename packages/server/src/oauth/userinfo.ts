@@ -11,7 +11,7 @@ import {
   getReferenceString,
   HTTP_HL7_ORG,
 } from '@medplum/core';
-import type { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
+import type { Bot, ClientApplication, User } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 
@@ -23,18 +23,18 @@ import { getAuthenticatedContext } from '../context';
  */
 export const userInfoHandler: RequestHandler = async (_req: Request, res: Response): Promise<void> => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference(ctx.login.user as Reference<User>);
+  const actor = await ctx.systemRepo.readReference(ctx.getAttribution().actor);
   const profile = await ctx.repo.readReference(ctx.profile);
   const userInfo: Record<string, any> = {
-    sub: user.id,
+    sub: actor.id,
   };
 
-  const scopes = ctx.login.scope?.split(' ');
+  const scopes = ctx.session.scope?.split(' ');
   if (scopes?.includes('profile')) {
     buildProfile(userInfo, profile);
   }
   if (scopes?.includes('email')) {
-    buildEmail(userInfo, profile, user);
+    buildEmail(userInfo, profile, actor);
   }
   if (scopes?.includes('phone')) {
     buildPhone(userInfo, profile);
@@ -82,11 +82,11 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource | 
 function buildEmail(
   userInfo: Record<string, any>,
   profile: ProfileResource | Bot | ClientApplication,
-  user: User
+  actor: Bot | ClientApplication | User
 ): void {
-  if (user.email) {
-    userInfo.email = user.email;
-    userInfo.email_verified = Boolean(user.emailVerified);
+  if (actor.resourceType === 'User' && actor.email) {
+    userInfo.email = actor.email;
+    userInfo.email_verified = Boolean(actor.emailVerified);
   } else {
     const contactPoint = 'telecom' in profile ? profile.telecom?.find((cp) => cp.system === 'email') : undefined;
     if (contactPoint) {

@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Login, OperationDefinitionParameter, ParametersParameter } from '@medplum/fhirtypes';
+import type { OperationDefinitionParameter, ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
 import type { AiApi, AiContext, AiResult } from '../../ai/openai';
 import { callOpenAi, streamOpenAi } from '../../ai/openai';
-import { hasSmartResourceScopes } from '../../auth/utils';
+import type { AuthenticatedSession } from '../../context';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { sendOutcome } from '../outcomes';
 import { sendFhirResponse } from '../response';
+import { hasSmartResourceScopes } from '../smart';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
@@ -117,15 +118,15 @@ export const aiOperationHandler = async (req: Request, res: ExpressResponse): Pr
 /**
  * Returns true if the AI operation supports the caller's account type.
  * @param profileReference - The caller's profile reference.
- * @param login - The caller's login.
+ * @param session - The session of the authenticated request.
  * @returns True if the account type is supported.
  */
-function isSupportedAiCaller(profileReference: string | undefined, login: Login): boolean {
+function isSupportedAiCaller(profileReference: string | undefined, session: AuthenticatedSession): boolean {
   const profileType = profileReference?.split('/')[0];
   if (profileType === 'Patient' || profileType === 'RelatedPerson') {
     return false;
   }
-  return !hasSmartResourceScopes(login);
+  return !hasSmartResourceScopes(session);
 }
 
 /**
@@ -146,7 +147,7 @@ export async function aiOperation(
     return [forbidden];
   }
 
-  if (!isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
+  if (!isSupportedAiCaller(ctx.profile.reference, ctx.session)) {
     return [forbidden];
   }
 

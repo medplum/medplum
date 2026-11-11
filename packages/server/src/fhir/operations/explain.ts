@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, forbidden, getSearchResourceTypes, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
+import { allOk, getSearchResourceTypes, parseSearchRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type { Project, Reference } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
-import { getAuthenticatedContext, requireSuperAdmin } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { repoAccess } from '../repository/access-tracker';
 import { getCount, getSelectQueryForSearch } from '../search';
@@ -119,16 +119,6 @@ function formatQueryParam(param: any): string {
  */
 function requireExplainAccess(): AuthenticatedRequestContext {
   const ctx = getAuthenticatedContext();
-
-  if (ctx.authState.onBehalfOfMembership) {
-    // if onBehalfOf, must check if the actor's project is a super admin
-    if (!ctx.authState.project.superAdmin) {
-      throw new OperationOutcomeError(forbidden);
-    }
-  } else {
-    // if no onBehalfOfMembership, just check for super admin
-    return requireSuperAdmin();
-  }
-
+  ctx.requireSuperAdminCaller();
   return ctx;
 }

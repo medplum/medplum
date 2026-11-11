@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, createReference, forbidden, notFound, OperationOutcomeError } from '@medplum/core';
+import { badRequest, createReference, notFound, OperationOutcomeError } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -25,18 +25,13 @@ export const preAuthorizeValidator = makeValidationMiddleware([
 ]);
 
 export async function preAuthorizeHandler(req: Request, res: Response): Promise<void> {
-  const { authState, repo } = getAuthenticatedContext();
-  const { project, membership, onBehalfOfMembership, login } = authState;
-  if (project.superAdmin || !membership.admin) {
-    throw new OperationOutcomeError(forbidden);
-  }
-  if (!onBehalfOfMembership) {
-    throw new OperationOutcomeError(badRequest('Pre-authorization requires onBehalfOfMembership'));
-  }
+  const ctx = getAuthenticatedContext();
+  const onBehalfOfMembership = ctx.requireDelegatingAdmin();
+  const { project, repo } = ctx;
 
   // A caller restricted by SMART scopes can only mint codes within its own scope:
   // by default it passes on just its resource scopes, and any other requested term must be one it holds
-  const callerScope = login.scope;
+  const callerScope = ctx.session.scope;
   const callerTerms = callerScope?.split(' ').filter(Boolean) ?? [];
   const callerSmartTerms = callerTerms.filter((term) => parseSmartScopeString(term));
   const scope: string =

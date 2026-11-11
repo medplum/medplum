@@ -70,7 +70,7 @@ describe('Pre-authorize', () => {
       .type('json')
       .send({ clientId: client.id });
     expect(res).toHaveStatus(400);
-    expect(res.body).toMatchObject(badRequest('Pre-authorization requires onBehalfOfMembership'));
+    expect(res.body).toMatchObject(badRequest('Requires X-Medplum-On-Behalf-Of'));
   });
 
   test('Client not found', async () => {

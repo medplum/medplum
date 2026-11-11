@@ -15,6 +15,7 @@ import type {
   Patient,
   Project,
   ProjectMembership,
+  Subscription,
 } from '@medplum/fhirtypes';
 import { mockClient } from 'aws-sdk-client-mock';
 import type { Job } from 'bullmq';
@@ -111,13 +112,19 @@ async function createDelegationFixture(): Promise<DelegationFixture> {
   const memberPolicy: AccessPolicy = {
     resourceType: 'AccessPolicy',
     resource: [
+      // Own profile, for /oauth2/userinfo
       { resourceType: 'Practitioner', criteria: 'Practitioner?_id=%profile.id', readonly: true },
+      // Readable data, while Patient stays denied
       { resourceType: 'Observation' },
+      // Starting async requests, so the job decides what members can access
       { resourceType: 'AsyncJob' },
+      // Async batch results
       { resourceType: 'Binary' },
+      // $get-ws-binding-token, so delegated rows are refused for On-Behalf-Of, not for missing access
+      { resourceType: 'Subscription', readonly: true },
     ],
   };
-  const features: Project['features'] = ['email', 'async-batch', 'ai'];
+  const features: Project['features'] = ['email', 'async-batch', 'ai', 'websocket-subscriptions'];
 
   const {
     project,
@@ -137,6 +144,8 @@ async function createDelegationFixture(): Promise<DelegationFixture> {
     'openid user/Observation.rs user/AsyncJob.cruds user/Binary.cruds'
   );
   const superAdmin = await getSuperAdminTestProject();
+  // Logout revokes the caller's login, so do not use the super admin login shared by the test run
+  const superAdminToken = await createClientToken(superAdmin.client, superAdmin.membership, 'openid');
 
   const headers = (token: string, onBehalfOf?: WithId<ProjectMembership>): Record<string, string> => ({
     Authorization: 'Bearer ' + token,
@@ -195,7 +204,7 @@ async function createDelegationFixture(): Promise<DelegationFixture> {
         ...delegated,
         actor: 'super admin',
         callerUserId: superAdmin.client.id,
-        headers: headers(superAdmin.accessToken, otherMember.membership),
+        headers: headers(superAdminToken, otherMember.membership),
         effective: { project: otherProject, membership: otherMember.membership, admin: false },
         canReadPatient: false,
       },
@@ -216,7 +225,10 @@ describe('On-Behalf-Of delegation matrix', () => {
   const app = express();
   const ses = mockClient(SESv2Client);
   let fixture: DelegationFixture;
-  const seeded = new Map<string, { patient: Patient; organization: Organization }>();
+  const seeded = new Map<
+    string,
+    { patient: Patient; organization: Organization; subscription: WithId<Subscription> }
+  >();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -237,7 +249,15 @@ describe('On-Behalf-Of delegation matrix', () => {
         subject: createReference(patient),
       });
       const organization = await systemRepo.createResource<Organization>({ resourceType: 'Organization', meta });
-      seeded.set(project.id, { patient, organization });
+      const subscription = await systemRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        meta,
+        status: 'active',
+        reason: 'test',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      seeded.set(project.id, { patient, organization, subscription });
     }
 
     // Run queued jobs through the processors the workers registered with the mocked bullmq Worker
@@ -446,6 +466,21 @@ describe('On-Behalf-Of delegation matrix', () => {
       new URL(res.headers['content-location']).pathname
     );
     expect(status.output.some((o) => o.type === 'Patient')).toBe(c.canReadPatient);
+  });
+
+  test.each(DELEGATION_CASES)('POST /oauth2/logout as %s', async (name) => {
+    // A successful logout revokes the token's login, so use new tokens rather than the shared fixture's
+    const c = (await createDelegationFixture()).cases[name];
+    const res = await request(app).post('/oauth2/logout').set(c.headers);
+    expect(res).toHaveStatus(c.delegated ? 403 : 200);
+  });
+
+  test.each(DELEGATION_CASES)('$get-ws-binding-token as %s', async (name) => {
+    const c = fixture.cases[name];
+    const { subscription } = seeded.get(c.effective.project.id) as { subscription: WithId<Subscription> };
+    const res = await request(app).get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`).set(c.headers);
+    // The token is issued for the caller's own login
+    expect(res).toHaveStatus(c.delegated ? 403 : 200);
   });
 
   test.each(DELEGATION_CASES)('GET /oauth2/userinfo as %s', async (name) => {

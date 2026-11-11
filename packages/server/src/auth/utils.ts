@@ -34,7 +34,6 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getInactiveReason } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 import { getCacheRedis } from '../redis';
@@ -48,57 +47,36 @@ const DEFAULT_APP_NAME = 'Medplum';
 const DEFAULT_MFA_ISSUER = 'medplum.com';
 
 /**
- * Returns true if the login is limited by SMART resource scopes (e.g. `patient/Observation.rs`).
- * @param login - The login.
- * @returns True if the login has SMART resource scopes.
- */
-export function hasSmartResourceScopes(login: Login): boolean {
-  return parseSmartScopes(login.scope).length > 0;
-}
-
-/**
- * Returns the User reference of the authenticated caller, for routes that manage the caller's own account.
- * On-Behalf-Of is not allowed, because these routes must act on the caller's account, not the target's.
- * Logins with SMART resource scopes are not allowed, because they grant access to specific FHIR resources
- * rather than to the user's account.
- * @param ctx - The authenticated request context.
- * @returns The caller's User reference.
- */
-export function getCallerUserReference(ctx: AuthenticatedRequestContext): Reference<User> {
-  const { login, membership, onBehalfOfMembership } = ctx.authState;
-  if (onBehalfOfMembership || !membership.user?.reference?.startsWith('User/') || hasSmartResourceScopes(login)) {
-    throw new OperationOutcomeError(forbidden);
-  }
-  return membership.user as Reference<User>;
-}
-
-/**
  * Returns true if the user signed in directly (password or Google).
  * Such logins may manage the user's account and sessions across all of the user's projects.
- * @param login - The login.
+ * @param login - The login, or the session of an authenticated request.
  * @returns True if the login may manage the user's account.
  */
-export function canManageUserAccount(login: Login): boolean {
+export function canManageUserAccount(login: Pick<Login, 'authMethod'>): boolean {
   return login.authMethod === 'password' || login.authMethod === 'google';
 }
 
 /**
- * Reads the User of the authenticated caller, for routes that manage the caller's own account.
- * A server-scoped User can only be managed from a login where the user signed in directly.
+ * Reads the account of the authenticated caller, for routes that manage the caller's own account.
+ * Refuses On-Behalf-Of. A server-scoped User can only be managed from a login where the user signed in directly.
  * @param ctx - The authenticated request context.
- * @returns The caller's User.
+ * @returns The caller's User and Login.
  */
-export async function readUserForAccountManagement(ctx: AuthenticatedRequestContext): Promise<WithId<User>> {
-  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
-  if (!user.project && !canManageUserAccount(ctx.authState.login)) {
+export async function readAccountForManagement(
+  ctx: AuthenticatedRequestContext
+): Promise<{ user: WithId<User>; login: WithId<Login> }> {
+  const user = await ctx.systemRepo.readReference<User>(ctx.requireCallerUser());
+  if (!user.project && !canManageUserAccount(ctx.session)) {
     getLogger().warn('Account update denied', {
       userId: user.id,
       projectId: ctx.project.id,
-      authMethod: ctx.authState.login.authMethod,
+      authMethod: ctx.session.authMethod,
     });
     throw new OperationOutcomeError(forbidden);
   }
-  return user;
+  // Only Basic auth logins lack an id, and those belong to ClientApplications, which requireCallerUser refuses
+  const login = ctx.requireCallerLogin() as WithId<Login>;
+  return { user, login };
 }
 
 /**

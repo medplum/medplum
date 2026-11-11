@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, forbidden, isResourceType, normalizeErrorString, resolveId } from '@medplum/core';
+import { allOk, badRequest, isResourceType, normalizeErrorString, resolveId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
@@ -140,13 +140,11 @@ const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { authState, login, profile, repo, project, membership } = getAuthenticatedContext();
-  const { baseUrl } = getConfig();
-
+  const ctx = getAuthenticatedContext();
   // The token is issued for the caller's own login, which cannot represent an On-Behalf-Of member
-  if (authState.onBehalfOfMembership) {
-    return [forbidden];
-  }
+  const login = ctx.requireCallerLogin();
+  const { profile, repo, project, membership } = ctx;
+  const { baseUrl } = getConfig();
 
   if (!project.features?.includes('websocket-subscriptions')) {
     return [badRequest('WebSocket subscriptions not enabled for current project')];
