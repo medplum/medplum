@@ -6,6 +6,12 @@
 */ -}}
 {{- $label := .label | default "Build on the Platform" -}}
 {{- $triggerClass := .triggerClass | default "landing-button landing-button-white" -}}
+{{- $agentPrompt := delimit (slice
+  "Read https://www.medplum.com/docs/building-with-ai-coding-assistants#plan-your-application."
+  "Ask me what I want to build, then follow the linked setup and planning instructions."
+  "Carry out the setup in my workspace, reusing anything already configured."
+  "Verify what you configured and summarize what is ready and anything still needed."
+) " " -}}
 <div class="build-dropdown">
   <button type="button" class="build-dropdown-trigger {{ $triggerClass }}" aria-haspopup="true" aria-expanded="false">
     {{ $label }}
@@ -23,6 +29,18 @@
           <span class="build-dropdown-copy-icon">{{ partial "icon" "outline/copy" }}</span>
         </button>
       {{ end }}
+    </div>
+    <div class="build-dropdown-divider"></div>
+    <div class="build-dropdown-copy-item">
+      <div class="build-dropdown-item-header">
+        {{ partial "icon" "outline/code-ai" }}
+        <span>Start with your agent</span>
+      </div>
+      <button type="button" class="build-dropdown-copy" data-copy="{{ $agentPrompt }}" aria-label="Copy the agent prompt to clipboard">
+        <code>{{ $agentPrompt }}</code>
+        <span class="build-dropdown-copy-icon">{{ partial "icon" "outline/copy" }}</span>
+      </button>
+      <p class="build-dropdown-item-description">Paste this prompt into your coding agent to get started.</p>
     </div>
     <div class="build-dropdown-divider"></div>
     <a class="build-dropdown-item" href="/docs">
