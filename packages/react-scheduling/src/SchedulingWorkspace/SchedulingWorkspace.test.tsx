@@ -351,8 +351,10 @@ describe('SchedulingWorkspace', () => {
       expect(appointmentEvents('Miles Cooper')).toHaveLength(0);
       expect(appointmentEvents('Jordan Reyes')).toHaveLength(2);
       expect(screen.getAllByText('Blocked')).toHaveLength(1);
-      await userEvent.click(screen.getByRole('button', { name: 'Focus Dr. Wei Chen' }));
+      // Clicking another calendar's row leaves the focus, rather than hiding that calendar.
+      await userEvent.click(calendarRow('Dr. Olivia Brown'));
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+      expect(calendarRow('Dr. Olivia Brown')).toHaveAttribute('aria-pressed', 'true');
 
       // Under Infusion Therapy, Dr. Chen's visit with Jordan Reyes naming no service type goes, and its details, open,
       // say why. Hidden, so does the other.

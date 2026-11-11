@@ -115,6 +115,13 @@ describe('CalendarsPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Focus Lisa Caddy' }));
     expect(onToggleFocus).toHaveBeenCalledWith('prov-1');
+
+    // Clicking any row leaves the focus rather than hiding the row's calendar, so no row is pressed or not.
+    onToggleFocus.mockClear();
+    const row = screen.getByText('Lisa Caddy').closest('button');
+    expect(row).not.toHaveAttribute('aria-pressed');
+    await userEvent.click(row as HTMLElement);
+    expect(onToggleFocus).toHaveBeenCalledWith('room-1');
     expect(onToggle).not.toHaveBeenCalled();
   });
 

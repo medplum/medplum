@@ -9,6 +9,7 @@ import type { CalendarsPanelItem } from './CalendarsPanel';
 export interface CalendarRowProps {
   readonly item: CalendarsPanelItem;
   readonly icon?: ReactNode;
+  /** Called when the row is clicked: to hide or show its calendar, or, while one is focused on, to leave it. */
   readonly onToggle?: (id: string) => void;
   /** Whether the calendar is the one focused on. */
   readonly focused?: boolean;
@@ -22,12 +23,14 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
   const { item, icon, onToggle, focused, outsideFocus, onToggleFocus } = props;
   const selected = item.selected ?? true;
   const interactive = !!onToggle;
+  // While one is focused on, a click leaves it, so the row is no toggle of its calendar's visibility.
+  const toggles = interactive && !focused && !outsideFocus;
 
   const row = (
     <UnstyledButton
       className={classes.row}
       onClick={interactive ? () => onToggle(item.id) : undefined}
-      aria-pressed={interactive ? selected : undefined}
+      aria-pressed={toggles ? selected : undefined}
       data-selected={selected || undefined}
       data-interactive={interactive || undefined}
       data-outside-focus={outsideFocus || undefined}
@@ -46,7 +49,7 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
         </Text>
         <div className={classes.eyeSlot}>
           {selected ? (
-            interactive && <IconEye size={16} aria-hidden="true" className={classes.eyeHint} />
+            toggles && <IconEye size={16} aria-hidden="true" className={classes.eyeHint} />
           ) : (
             <IconEyeOff size={16} aria-hidden="true" className={classes.eyeOff} />
           )}
