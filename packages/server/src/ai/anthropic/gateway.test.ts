@@ -8,10 +8,15 @@ import {
   ThrottlingException,
   ValidationException,
 } from '@aws-sdk/client-bedrock-runtime';
+import { Logger } from '@medplum/core';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
@@ -104,6 +109,143 @@ describe('AI gateway', () => {
     expect(res.text).toBe(streamEvents.map((e) => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`).join(''));
     const input = bedrock.commandCalls(InvokeModelWithResponseStreamCommand)[0].args[0].input;
     expect(JSON.parse(input.body as string).stream).toBeUndefined();
+  });
+
+  test('Logs cache token usage', async () => {
+    const infoSpy = vi.spyOn(Logger.prototype, 'info');
+    const usage = { input_tokens: 10, output_tokens: 2, cache_creation_input_tokens: 30, cache_read_input_tokens: 40 };
+    bedrock.on(InvokeModelCommand).resolves({
+      body: { transformToString: () => JSON.stringify({ ...message, usage }) } as any,
+      contentType: 'application/json',
+    });
+
+    const res = await request(app)
+      .post('/ai/anthropic/v1/messages')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ model: MODEL_ID, max_tokens: 100, messages: [{ role: 'user', content: 'Hi' }] });
+
+    expect(res.status).toBe(200);
+    expect(infoSpy).toHaveBeenCalledWith(
+      'AI gateway request',
+      expect.objectContaining({
+        status: 200,
+        inputTokens: 10,
+        outputTokens: 2,
+        cacheCreationInputTokens: 30,
+        cacheReadInputTokens: 40,
+      })
+    );
+    infoSpy.mockRestore();
+  });
+
+  test('Reports a mid-stream error as a stream event', async () => {
+    const infoSpy = vi.spyOn(Logger.prototype, 'info');
+    const encoder = new TextEncoder();
+    const usage = { input_tokens: 10, output_tokens: 1, cache_read_input_tokens: 40 };
+    const start = { type: 'message_start', message: { ...message, content: [], usage } };
+    bedrock.on(InvokeModelWithResponseStreamCommand).resolves({
+      body: (async function* () {
+        yield { chunk: { bytes: encoder.encode(JSON.stringify(start)) } };
+        throw new ThrottlingException({ message: 'Slow down', $metadata: { httpStatusCode: 429 } });
+      })() as any,
+      contentType: 'application/json',
+    });
+
+    const res = await request(app)
+      .post('/ai/anthropic/v1/messages')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ model: MODEL_ID, max_tokens: 100, stream: true, messages: [{ role: 'user', content: 'Hi' }] });
+
+    const error = { type: 'error', error: { type: 'rate_limit_error', message: 'Upstream model error' } };
+    expect(res.status).toBe(200);
+    expect(res.text).toBe(
+      `event: message_start\ndata: ${JSON.stringify(start)}\n\nevent: error\ndata: ${JSON.stringify(error)}\n\n`
+    );
+    expect(infoSpy).toHaveBeenCalledWith(
+      'AI gateway request',
+      expect.objectContaining({ status: 429, inputTokens: 10, outputTokens: 1, cacheReadInputTokens: 40 })
+    );
+    infoSpy.mockRestore();
+  });
+
+  test('Records a client disconnect as 499', async () => {
+    const infoSpy = vi.spyOn(Logger.prototype, 'info');
+    const encoder = new TextEncoder();
+    let release = (): void => undefined;
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    bedrock.on(InvokeModelWithResponseStreamCommand).resolves({
+      body: (async function* () {
+        yield { chunk: { bytes: encoder.encode(JSON.stringify(streamEvents[0])) } };
+        await released;
+        throw new Error('Request aborted');
+      })() as any,
+      contentType: 'application/json',
+    });
+    const server = await new Promise<Server>((resolve) => {
+      const s = app.listen(0, '127.0.0.1', () => resolve(s));
+    });
+
+    const client = new AbortController();
+    const res = await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/ai/anthropic/v1/messages`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: MODEL_ID,
+        max_tokens: 100,
+        stream: true,
+        messages: [{ role: 'user', content: 'Hi' }],
+      }),
+      signal: client.signal,
+    });
+    await res.body?.getReader().read();
+
+    const sendArgs: unknown[] = bedrock.commandCalls(InvokeModelWithResponseStreamCommand)[0].args;
+    const upstream = (sendArgs[1] as { abortSignal: AbortSignal }).abortSignal;
+    const upstreamAborted = new Promise((resolve) => {
+      upstream.addEventListener('abort', resolve, { once: true });
+    });
+    client.abort();
+    await upstreamAborted;
+    release();
+
+    await vi.waitFor(() =>
+      expect(infoSpy).toHaveBeenCalledWith(
+        'AI gateway request',
+        expect.objectContaining({ status: 499, inputTokens: 10, outputTokens: 1 })
+      )
+    );
+    infoSpy.mockRestore();
+    server.closeAllConnections();
+    await new Promise((resolve) => {
+      server.close(resolve);
+    });
+  });
+
+  test('Rejects a project path for another project', async () => {
+    const res = await request(app)
+      .post(`/projects/${randomUUID()}/ai/anthropic/v1/messages`)
+      .set('x-api-key', accessToken)
+      .send({ model: MODEL_ID, max_tokens: 100, messages: [{ role: 'user', content: 'Hi' }] });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toStrictEqual({ type: 'error', error: { type: 'authentication_error', message: 'Unauthorized' } });
+    expect(bedrock.calls()).toHaveLength(0);
+  });
+
+  test('Rejects a request body over the size limit', async () => {
+    const res = await request(app)
+      .post('/ai/anthropic/v1/messages')
+      .set('x-api-key', accessToken)
+      .send({ model: MODEL_ID, max_tokens: 100, messages: [{ role: 'user', content: 'a'.repeat(21 * 1024 * 1024) }] });
+
+    expect(res.status).toBe(413);
+    expect(res.body).toStrictEqual({
+      type: 'error',
+      error: { type: 'request_too_large', message: 'Request body too large' },
+    });
+    expect(bedrock.calls()).toHaveLength(0);
   });
 
   test.each([

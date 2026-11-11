@@ -34,6 +34,8 @@ const CLIENT_CLOSED_REQUEST = 499;
 interface Usage {
   inputTokens?: number;
   outputTokens?: number;
+  cacheCreationInputTokens?: number;
+  cacheReadInputTokens?: number;
 }
 
 /**
@@ -128,7 +130,7 @@ async function handleMessages(provider: AnthropicMessagesProvider, req: Request,
     .filter(Boolean);
 
   let status = 200;
-  let usage: Usage = {};
+  const usage: Usage = {};
   try {
     if (stream) {
       const events = await provider.streamMessage(model, params, betas, abortController.signal);
@@ -136,10 +138,10 @@ async function handleMessages(provider: AnthropicMessagesProvider, req: Request,
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders();
-      usage = await streamToClient(events, res);
+      await streamToClient(events, res, usage);
     } else {
       const text = await provider.createMessage(model, params, betas, abortController.signal);
-      usage = readUsage(JSON.parse(text));
+      recordUsage(usage, JSON.parse(text));
       res.status(200).type('application/json').send(text);
     }
   } catch (err) {
@@ -182,21 +184,19 @@ async function handleMessages(provider: AnthropicMessagesProvider, req: Request,
  * The `type` of each event is the SSE event name.
  * @param events - The Anthropic stream events as JSON text.
  * @param res - The response to write to.
- * @returns The token usage reported in the stream.
+ * @param usage - Updated in place as the stream reports token usage, so it survives an interrupted stream.
  */
-async function streamToClient(events: AsyncIterable<string>, res: Response): Promise<Usage> {
-  const usage: Usage = {};
+async function streamToClient(events: AsyncIterable<string>, res: Response, usage: Usage): Promise<void> {
   for await (const data of events) {
     const parsed = JSON.parse(data) as { type: string; message?: unknown; usage?: unknown };
     if (parsed.type === 'message_start') {
-      usage.inputTokens = readUsage(parsed.message).inputTokens;
+      recordUsage(usage, parsed.message);
     } else if (parsed.type === 'message_delta') {
-      usage.outputTokens = readUsage(parsed).outputTokens;
+      recordUsage(usage, parsed);
     }
     writeEvent(res, parsed.type, data);
   }
   res.end();
-  return usage;
 }
 
 function writeEvent(res: Response, event: string, data: string): void {
@@ -204,9 +204,26 @@ function writeEvent(res: Response, event: string, data: string): void {
   res.flush();
 }
 
-function readUsage(message: unknown): Usage {
-  const usage = (message as { usage?: { input_tokens?: number; output_tokens?: number } } | undefined)?.usage;
-  return { inputTokens: usage?.input_tokens, outputTokens: usage?.output_tokens };
+/** The `usage` object of an Anthropic message or `message_delta` event. */
+interface AnthropicUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
+/**
+ * Copies the token counts reported by a message or stream event into `usage`.
+ * Counts the source does not report are left as they were.
+ * @param usage - The usage to update.
+ * @param source - The message or stream event carrying a `usage` object.
+ */
+function recordUsage(usage: Usage, source: unknown): void {
+  const reported = (source as { usage?: AnthropicUsage } | undefined)?.usage;
+  usage.inputTokens = reported?.input_tokens ?? usage.inputTokens;
+  usage.outputTokens = reported?.output_tokens ?? usage.outputTokens;
+  usage.cacheCreationInputTokens = reported?.cache_creation_input_tokens ?? usage.cacheCreationInputTokens;
+  usage.cacheReadInputTokens = reported?.cache_read_input_tokens ?? usage.cacheReadInputTokens;
 }
 
 function sendError(res: Response, status: number, message: string): void {
