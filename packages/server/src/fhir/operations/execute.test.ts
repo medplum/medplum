@@ -156,6 +156,18 @@ exports.handler = async function (medplum, event) {
 };
 `,
   ],
+  [
+    `
+export async function handler(medplum, event) {
+  return event.headers;
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  return event.headers;
+};
+`,
+  ],
 ] as [string, string][];
 
 type BotName =
@@ -166,7 +178,8 @@ type BotName =
   | 'binaryBot'
   | 'streamingBot'
   | 'streamingErrorBot'
-  | 'streamingHeadersBot';
+  | 'streamingHeadersBot'
+  | 'headersBot';
 const botDefinitions: {
   name: BotName;
   system: boolean;
@@ -182,6 +195,7 @@ const botDefinitions: {
   { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
   { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
   { name: 'streamingHeadersBot', system: false, code: botCodes[5], streaming: true },
+  { name: 'headersBot', system: false, code: botCodes[6] },
 ];
 
 describe('Execute', () => {
@@ -270,6 +284,20 @@ describe('Execute', () => {
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
+  });
+
+  test('Request headers passed to bot without Authorization', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.headersBot.id}/$execute`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .set('Cookie', 'session=abc')
+      .set('X-Test', 'test')
+      .send({});
+    expect(res).toHaveStatus(200);
+    expect(res.body['x-test']).toBe('test');
+    expect(res.body.authorization).toBeUndefined();
+    expect(res.body.cookie).toBe('session=abc');
   });
 
   test('Submit FHIR with content type returns non-FHIR JSON', async () => {

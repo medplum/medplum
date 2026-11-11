@@ -127,6 +127,18 @@ export function logBotCallerSmartScopes(request: BotExecutionRequest): void {
 }
 
 /**
+ * Returns the HTTP request headers to pass to the bot as `event.headers`.
+ * The bot acts with the access token that `executeBot` creates for the `runAs` membership,
+ * so the caller's own Authorization header is removed.
+ * @param req - The HTTP request.
+ * @returns The HTTP request headers without the Authorization header.
+ */
+export function getBotRequestHeaders(req: Request | FhirRequest): BotExecutionRequest['headers'] {
+  const { authorization: _authorization, ...headers } = req.headers ?? {};
+  return headers;
+}
+
+/**
  * Returns the default headers to add to the MedplumClient.
  * If the bot is configured to run as the user, then include the HTTP cookies from the request.
  * Otherwise, no default headers are added.
