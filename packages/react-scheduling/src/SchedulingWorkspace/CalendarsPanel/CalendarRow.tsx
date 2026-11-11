@@ -25,13 +25,15 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
   const interactive = !!onToggle;
   // While one is focused on, a click leaves it, so the row is no toggle of its calendar's visibility.
   const toggles = interactive && !focused && !outsideFocus;
+  // Focused on, a hidden calendar is drawn, so its row isn't drawn as hidden.
+  const shown = selected || !!focused;
 
   const row = (
     <UnstyledButton
       className={classes.row}
       onClick={interactive ? () => onToggle(item.id) : undefined}
       aria-pressed={toggles ? selected : undefined}
-      data-selected={selected || undefined}
+      data-selected={shown || undefined}
       data-interactive={interactive || undefined}
       data-outside-focus={outsideFocus || undefined}
       component={interactive ? 'button' : 'div'}
@@ -44,11 +46,11 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
         ) : (
           <Avatar src={item.imageUrl} name={item.label} color="gray" radius="xl" size={28} />
         )}
-        <Text truncate c={selected ? undefined : 'dimmed'}>
+        <Text truncate c={shown ? undefined : 'dimmed'}>
           {item.label}
         </Text>
         <div className={classes.eyeSlot}>
-          {selected ? (
+          {shown ? (
             toggles && <IconEye size={16} aria-hidden="true" className={classes.eyeHint} />
           ) : (
             <IconEyeOff size={16} aria-hidden="true" className={classes.eyeOff} />

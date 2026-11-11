@@ -125,6 +125,13 @@ describe('CalendarsPanel', () => {
     expect(onToggle).not.toHaveBeenCalled();
   });
 
+  test('draws a hidden row as shown while it is the one focused on, as its calendar is drawn', () => {
+    setup({ focusedId: 'prov-2', onToggleFocus: vi.fn() });
+    const row = screen.getByText('Michelle Bryant').closest('button') as HTMLElement;
+    expect(row).toHaveAttribute('data-selected');
+    expect(row.querySelector('.tabler-icon-eye-off')).toBeNull();
+  });
+
   test('leaves the filters out entirely when none are handed over', () => {
     setup();
     expect(screen.queryByRole('group', { name: 'Filter calendars' })).not.toBeInTheDocument();
