@@ -1,14 +1,16 @@
 ---
-title: Deploying Resources from Source Control
+title: Deploying Resource Definitions from Source Control
 description: Keep resource definitions in source control and deploy the same reviewed version to staging and production.
-sidebar_label: Resources from Source Control
+sidebar_label: Resource Definitions from Source Control
 ---
 
-Once your intake form works in staging, you need a reliable way to deploy it to production—including the answer choices and other definitions it depends on.
+Once your intake form works in staging, you need a reliable way to deploy it to production, including the answer choices and other definitions it depends on.
 
 By keeping these resources in source control, you can review their changes alongside your application code and deploy the same reviewed definitions to each environment.
 
 This guide walks through a contact-preference form built from a Questionnaire, ValueSet, and CodeSystem. You'll preview and deploy those resources to staging, verify the form, and deploy the same source-controlled version to production. Patient records and completed responses stay in their original environment.
+
+You can also adapt this approach to profiles, policies, plans, and Subscriptions. [Later sections](#apply-the-pattern-to-other-resources) explain the identity, update, and verification choices for each.
 
 ## What are we deploying?
 
@@ -138,7 +140,7 @@ Use synthetic patient data and the same user roles your application uses in prod
 
 ## Deploy the same version to production
 
-Once staging verification passes, record the Git commit or tag. Deploy those exact files and dependency versions to production—not an export of the staging project:
+Once staging verification passes, record the Git commit or tag. Deploy those exact files and dependency versions to production:
 
 ```mermaid
 flowchart TD

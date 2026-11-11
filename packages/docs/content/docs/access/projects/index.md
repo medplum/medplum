@@ -7,7 +7,7 @@ docs_tags: [auth]
 
 Medplum [`Projects`](/docs/api/fhir/medplum/project) are the primary mechanism of access control. [`Projects`](/docs/api/fhir/medplum/project) are isolated containers of FHIR resources that are administered separately, and which can have different settings.
 
-A common setup uses a staging project for development and integration testing and a production project for live workflows. Paid hosted plans include staging and production environments; see [pricing](/pricing). Use synthetic data for testing. For a repeatable workflow to deploy reviewed resource definitions to each project, see [Deploying Resources from Source Control](/docs/deploying-resources-from-source-control).
+A common setup uses a staging project for development and integration testing and a production project for live workflows. Paid hosted plans include staging and production environments; see [pricing](/pricing). Use synthetic data for testing. For a repeatable workflow to deploy reviewed resource definitions to each project, see [Deploying Resource Definitions from Source Control](/docs/deploying-resources-from-source-control).
 
 ## Isolation Model
 

@@ -240,7 +240,7 @@ issue: [ { severity: 'error', code: 'invalid', details: [Object] } ]
 
 A common usage pattern is to set up two Medplum Projects for an application: A `staging` project for development and integration testing, and a `production` project to power workflows.
 
-If your Bots depend on Questionnaires, profiles, terminology, policies, or Subscriptions, use [Deploying Resources from Source Control](/docs/deploying-resources-from-source-control) to coordinate those resources with your Bot deployment.
+If your Bots depend on Questionnaires, profiles, terminology, policies, or Subscriptions, use [Deploying Resource Definitions from Source Control](/docs/deploying-resources-from-source-control) to coordinate those resources with your Bot deployment.
 
 The same Bot source code can be deployed to multiple Medplum projects by creating two separate entries in `medplum.config.json` with different names, pointing to the same source/compiled files.
 
