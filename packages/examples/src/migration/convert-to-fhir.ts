@@ -106,3 +106,32 @@ const conditionalReferenceExample: Condition =
 // end-block conditional-reference-example
 
 await medplum.createResource(conditionalReferenceExample);
+
+// Identifier-Only References
+const identifierOnlyReferenceExample: Condition =
+  // start-block identifier-only-reference-example
+  {
+    ...conditionalReferenceExample,
+    // highlight-start
+    asserter: {
+      type: 'Practitioner',
+      identifier: {
+        system: 'http://your-source-system.com/practitionerId',
+        value: 'PR001',
+      },
+    },
+    // highlight-end
+    // ...
+  };
+// end-block identifier-only-reference-example
+
+await medplum.createResource(identifierOnlyReferenceExample);
+
+export const reconciledConditionExample: Condition = {
+  ...identifierOnlyReferenceExample,
+  // start-block resolved-asserter-reference-example
+  asserter: {
+    reference: 'Practitioner/<matched-practitioner-id>',
+  },
+  // end-block resolved-asserter-reference-example
+};

@@ -142,6 +142,32 @@ Let's amend the previous example to use a conditional reference to link our [`Co
 
 With this modification, we no longer have to look up the [`Patient's`][patient] `id` value in Medplum before writing the [`Condition`][condition]. The server resolves `identifier=http://your-source-system.com/patientId|P001` to the existing Patient during the write.
 
+## Linking Data Using Identifier-Only References
+
+Conditional references require exactly one matching resource to exist in Medplum. When possible, import that resource first. Sometimes, however, you need to import a record before a related resource is available. For example, you might import a `Condition` before importing the `Practitioner` who asserted it.
+
+An identifier-only reference identifies the related resource using `Reference.identifier.system` and `Reference.identifier.value`, without requiring that resource to exist in Medplum yet.
+
+### Example
+
+Let's add the practitioner to our `Condition` using an identifier-only reference.
+
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="identifier-only-reference-example" >}}
+
+Medplum stores `asserter.identifier` without looking up a `Practitioner` during the write. Importing the `Practitioner` later does not automatically update `asserter`.
+
+To resolve this reference, search for `Practitioner?identifier=http://your-source-system.com/practitionerId|PR001`, using the `system` and `value` from `asserter.identifier`. If exactly one `Practitioner` matches, replace `asserter` with a reference containing that resource's Medplum `id`:
+
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="resolved-asserter-reference-example" >}}
+
+If no `Practitioner` matches, or more than one matches, leave `asserter` unchanged and flag the `Condition` for review.
+
+{{< warning >}}
+
+Do not use this approach for `Condition.subject` when referencing a `Patient`. An identifier-only `Patient` reference does not establish the patient-compartment membership required for patient-scoped access.
+
+{{< /warning >}}
+
 ## Next Steps
 
 Continue with patient `P001` in [Building Migration Pipelines](/docs/migration/migration-pipelines), which applies these mapping, identifier, coding, and reference patterns to batches and staged conditional upserts.
