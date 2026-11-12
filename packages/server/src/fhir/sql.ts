@@ -807,7 +807,7 @@ export class SelectQuery extends BaseQuery {
   private readonly alias?: string;
   with?: CTE;
   limit_: number;
-  offset_: number;
+  offset_?: number;
   joinCount = 0;
 
   constructor(tableName: string, innerQuery?: BaseQuery | Union | ValuesQuery, alias?: string) {
@@ -820,7 +820,6 @@ export class SelectQuery extends BaseQuery {
     this.orderBys = [];
     this.alias = alias;
     this.limit_ = 0;
-    this.offset_ = 0;
   }
 
   get effectiveTableName(): string {
@@ -894,7 +893,7 @@ export class SelectQuery extends BaseQuery {
     return this;
   }
 
-  offset(offset: number): this {
+  offset(offset: number | undefined): this {
     this.offset_ = offset;
     return this;
   }
@@ -931,7 +930,7 @@ export class SelectQuery extends BaseQuery {
       sql.append(this.limit_);
     }
 
-    if (this.offset_ > 0) {
+    if (this.offset_ !== undefined && this.offset_ >= 0) {
       sql.append(' OFFSET ');
       sql.append(this.offset_);
     }
