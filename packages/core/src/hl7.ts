@@ -856,21 +856,28 @@ export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7D
     return undefined;
   }
 
-  const year = parseIntOrDefault(hl7DateTime.slice(0, 4), 0);
-  const month = parseIntOrDefault(hl7DateTime.slice(4, 6), 1) - 1; // Months are 0-indexed in JavaScript Date
-  const day = parseIntOrDefault(hl7DateTime.slice(6, 8), 1); // Default to first day of month
-  const hour = parseIntOrDefault(hl7DateTime.slice(8, 10), 0);
-  const minute = parseIntOrDefault(hl7DateTime.slice(10, 12), 0);
-  const second = parseIntOrDefault(hl7DateTime.slice(12, 14), 0);
+  // The time zone offset is always the suffix. Split it off before reading the fixed-width fields,
+  // otherwise its digits are read as minutes/seconds when the value has less than full precision
+  // (e.g. "2024011509-0500").
+  const offsetMatch = /[+-]\d{2}:?\d{2}$/.exec(hl7DateTime);
+  const value = offsetMatch ? hl7DateTime.slice(0, offsetMatch.index) : hl7DateTime;
+  const dotIndex = value.indexOf('.');
+  const main = dotIndex === -1 ? value : value.slice(0, dotIndex);
+  const fraction = dotIndex === -1 ? '' : value.slice(dotIndex + 1);
 
-  let millisecond = 0;
-  if (hl7DateTime.includes('.')) {
-    millisecond = parseIntOrDefault(hl7DateTime.slice(15, 19), 0);
-  }
+  const year = parseIntOrDefault(main.slice(0, 4), 0);
+  const month = parseIntOrDefault(main.slice(4, 6), 1) - 1; // Months are 0-indexed in JavaScript Date
+  const day = parseIntOrDefault(main.slice(6, 8), 1); // Default to first day of month
+  const hour = parseIntOrDefault(main.slice(8, 10), 0);
+  const minute = parseIntOrDefault(main.slice(10, 12), 0);
+  const second = parseIntOrDefault(main.slice(12, 14), 0);
+
+  // The fraction is a decimal fraction of a second (".5" = 500 ms, ".1234" = 123 ms)
+  const millisecond = fraction ? parseIntOrDefault(fraction.slice(0, 3).padEnd(3, '0'), 0) : 0;
 
   let date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
 
-  const tzOffset = parseTimeZoneOffset(hl7DateTime, options?.tzOffset);
+  const tzOffset = parseTimeZoneOffset(offsetMatch?.[0] ?? '', options?.tzOffset);
   if (tzOffset !== 0) {
     date = new Date(date.getTime() - tzOffset);
   }
@@ -936,9 +943,10 @@ export function formatHl7DateTime(isoDate: Date | string): string {
   // Replace the last 3 digits before 'Z' with the 4-digit milliseconds
   let result = isoString.replaceAll(/[-:T]/g, '').replace(/(\.\d+)?Z$/, '');
 
+  // Pad to 3 digits: the fraction is a decimal fraction of a second, so 50 ms is ".050", not ".50"
   const milliseconds = date.getUTCMilliseconds();
   if (milliseconds > 0) {
-    result += '.' + milliseconds.toString();
+    result += '.' + milliseconds.toString().padStart(3, '0');
   }
 
   return result;

@@ -572,6 +572,32 @@ describe('Date time parsing', () => {
     const expectedResult = '2023-05-08T12:30:04.000Z';
     expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
   });
+
+  test.each([
+    ['2024011509-0500', '2024-01-15T14:00:00.000Z'],
+    ['20240115-0500', '2024-01-15T05:00:00.000Z'],
+    ['202401-0500', '2024-01-01T05:00:00.000Z'],
+    ['20240115+0530', '2024-01-14T18:30:00.000Z'],
+    ['202401150930-0500', '2024-01-15T14:30:00.000Z'],
+  ])('Time zone offset with less than full precision: %s', (hl7Date, expectedResult) => {
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
+  });
+
+  test.each([
+    ['20240115093000.5', '2024-01-15T09:30:00.500Z'],
+    ['20240115093000.25', '2024-01-15T09:30:00.250Z'],
+    ['20240115093000.1234', '2024-01-15T09:30:00.123Z'],
+    ['20240115093000.5-0500', '2024-01-15T14:30:00.500Z'],
+  ])('Fractional seconds are a decimal fraction: %s', (hl7Date, expectedResult) => {
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Round trip with formatHl7DateTime', () => {
+    for (let ms = 0; ms < 1000; ms++) {
+      const date = new Date(Date.UTC(2024, 0, 15, 9, 30, 0, ms));
+      expect(parseHl7DateTime(formatHl7DateTime(date))).toBe(date.toISOString());
+    }
+  });
 });
 
 describe('Date time formatting', () => {
@@ -591,6 +617,11 @@ describe('Date time formatting', () => {
     const isoDateTime = '2023-05-08T10:30:04.123Z';
     const expectedResult = '20230508103004.123';
     expect(formatHl7DateTime(isoDateTime)).toBe(expectedResult);
+  });
+
+  test('Milliseconds below 100 are zero-padded', () => {
+    expect(formatHl7DateTime('2024-01-15T09:30:00.050Z')).toBe('20240115093000.050');
+    expect(formatHl7DateTime('2024-01-15T09:30:00.005Z')).toBe('20240115093000.005');
   });
 });
 
