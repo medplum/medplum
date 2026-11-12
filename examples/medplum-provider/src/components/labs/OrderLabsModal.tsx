@@ -36,6 +36,7 @@ import {
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
+import { relinkChargeItemToLabOrder } from '../../utils/chargeitems';
 import { addDiagnosesToEncounter } from '../../utils/encounter';
 import type { LabOrderDraftDefaults } from '../../utils/labOrderDraft';
 import { getLabOrderDraftDefaults, saveLabOrderDraft } from '../../utils/labOrderDraft';
@@ -252,6 +253,14 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
           ],
           focus: createReference(serviceRequest),
         });
+        if (encounterResource) {
+          await relinkChargeItemToLabOrder(
+            medplum,
+            createReference(encounterResource),
+            taskResource.focus?.reference,
+            serviceRequest
+          ).catch(showErrorNotification);
+        }
       }
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
 
