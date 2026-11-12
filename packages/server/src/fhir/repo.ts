@@ -55,6 +55,7 @@ import type {
   AuditEvent,
   AuditEventEntityDetail,
   Binary,
+  Bot,
   Bundle,
   BundleEntry,
   Meta,
@@ -1069,6 +1070,11 @@ export class Repository extends FhirRepository implements Disposable {
       deepClone(this.restoreReadonlyFields(validatedResource, existing))
     );
     updated = await replaceConditionalReferences(this, updated);
+
+    if (updated.resourceType === 'Bot' && !this.isSuperAdmin()) {
+      // Only super admins can set or change Bot.system; everyone else keeps the existing value
+      updated.system = (existing as Bot | undefined)?.system;
+    }
 
     const resultMeta: Meta = {
       ...updated.meta,

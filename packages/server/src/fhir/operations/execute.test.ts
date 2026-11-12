@@ -230,13 +230,18 @@ describe('Execute', () => {
           name: `${name} Test Bot`,
           runtimeVersion: 'vmcontext',
           code: esmCode,
-          system,
           ...(streaming && { streamingEnabled: true }),
           ...(rawBody && { rawBody: true }),
         });
 
       expect(res1).toHaveStatus(201);
       const bot = res1.body as WithId<Bot>;
+
+      if (system) {
+        // Only super admins can set Bot.system
+        const systemRepo = await getProjectSystemRepo(project1);
+        await systemRepo.patchResource('Bot', bot.id, [{ op: 'add', path: '/system', value: true }]);
+      }
 
       const res2 = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
