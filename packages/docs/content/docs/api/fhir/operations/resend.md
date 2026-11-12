@@ -29,9 +29,8 @@ The operation takes an optional request body, which is an object containing the 
 | Option              | Description                                                                                                                                                                                                                                                          | Data Type                                | Default Value |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------- |
 | `verbose`           | Indicates if verbose logging should be enabled.                                                                                                                                                                                                                      | `boolean`                                | `false`       |
-| `interaction`       | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent. `delete` requires a [specific version](#resend-a-specific-version). | `update` &#124; `create` &#124; `delete` | `update`      |
+| `interaction`       | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent. For `delete`, the resource must currently be deleted, and the last version before the delete is sent. | `update` &#124; `create` &#124; `delete` | `update`      |
 | `subscription`      | A specific [`Subscription`](/docs/api/fhir/resources/subscription) to trigger, formatted as `Subscription/<id>`. If left undefined, all [`Subscriptions`](/docs/api/fhir/resources/subscription) will be triggered.                                                   | `string`                                 | `undefined`   |
-| `previousVersionId` | Only for a [specific version](#resend-a-specific-version) with the `update` interaction. The version ID used as the previous version (`%previous`) when evaluating subscription criteria.                                                                             | `string`                                 | `undefined`   |
 
 By default, `$resend` sends the current version of the resource. With the `update` interaction, the resource must not have changed since the version being resent, and the previous version in the resource history is used when evaluating subscription criteria.
 
@@ -78,18 +77,17 @@ To replay the original event for a historical version of a resource, for example
 POST /fhir/R4/<resourceType>/<id>/_history/<versionId>/$resend
 ```
 
-The subscription criteria are evaluated against that version, and that version is delivered, even if the resource has changed since.
+The subscription criteria are evaluated against that version, and that version is delivered, even if the resource has changed since. The version before it in the resource history is used as the previous version (`%previous`), so the same subscriptions match as for the original event.
 
 - **Create**: pass `"interaction": "create"` to replay the event for the version that was created.
-- **Update**: pass `"interaction": "update"` (the default). Optionally pass `previousVersionId` to compare against the version that came before it, which is needed for criteria that use `%previous`. If omitted, criteria are evaluated without a previous version.
-- **Delete**: pass `"interaction": "delete"`, and use the last version before the delete as `<versionId>`. The resource must currently be deleted.
+- **Update**: pass `"interaction": "update"` (the default).
+- **Delete**: pass `"interaction": "delete"`. The resource must currently be deleted. The server sends the last version before the delete, so the version can be omitted by using the instance URL (`/<resourceType>/<id>/$resend`). If a version is specified, it must be the last version before the delete.
 
 {{< tabs >}}
   {{< tab value="ts" label="TypeScript" >}}
 {{< highlight ts >}}
 await medplum.post(medplum.fhirUrl(<resourceType>, <id>, '_history', <versionId>, '$resend'), {
   interaction: 'update',
-  previousVersionId: <previousVersionId>,
   subscription: 'Subscription/123'
 });
 {{< /highlight >}}
@@ -101,7 +99,7 @@ curl 'https://api.medplum.com/fhir/R4/<resourceType>/<resourceId>/_history/<vers
 -X 'POST' \
 -H 'authorization: Bearer MY_ACCESS_TOKEN' \
 -H 'content-type: application/fhir+json' \
---data-raw '{"interaction":"update","previousVersionId":"<previousVersionId>","subscription":"Subscription/123"}'
+--data-raw '{"interaction":"update","subscription":"Subscription/123"}'
 ```
 
   {{< /tab >}}

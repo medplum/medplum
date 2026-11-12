@@ -177,15 +177,11 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
   /**
    * Optional version ID of the resource to resend.
    * When specified, subscriptions are evaluated and delivered for that historical version,
-   * rather than the current version.
-   * Required when `interaction` is `delete`, in which case it must be the last version before the delete.
+   * rather than the current version, and the version before it is used as the previous version.
+   * For the `delete` interaction, the server uses the last version before the delete;
+   * if specified, `versionId` must match it.
    */
   versionId?: string;
-  /**
-   * Optional version ID of the previous version, used with `versionId` when evaluating `update` criteria.
-   * If omitted, the historical version is evaluated without a previous version.
-   */
-  previousVersionId?: string;
 }
 
 export interface ProcessAllResourcesOptions {
@@ -1501,40 +1497,38 @@ export class Repository extends FhirRepository implements Disposable {
 
     const interaction = options?.interaction ?? 'update';
     const versionId = options?.versionId;
-    if (options?.previousVersionId && (!versionId || interaction !== 'update')) {
-      throw new OperationOutcomeError(
-        badRequest('previousVersionId is only supported with versionId and the update interaction')
-      );
-    }
     let resource: WithId<T>;
     let previousVersion: T | undefined;
 
-    if (versionId) {
-      if (interaction === 'delete') {
-        // Only replay a delete event for a resource that is actually deleted
-        const current = await this.readResourceImpl<T>(resourceType, id).catch((err) => {
-          if (isGone(normalizeOperationOutcome(err))) {
-            return undefined;
-          }
-          throw err;
-        });
-        if (current) {
-          throw new OperationOutcomeError(preconditionFailed);
-        }
+    if (interaction === 'delete') {
+      // The newest history entry must be the delete, and the entry before it is the version that was deleted.
+      // Reading history with the caller's repo applies the caller's access checks.
+      const history = await this.readHistory<T>(resourceType, id, { limit: 2 });
+      const deletedVersionId = history.entry?.[1]?.resource?.meta?.versionId;
+      if (history.entry?.[0]?.request?.method !== 'DELETE' || !deletedVersionId) {
+        throw new OperationOutcomeError(preconditionFailed);
       }
+      if (versionId && versionId !== deletedVersionId) {
+        throw new OperationOutcomeError(badRequest('versionId must be the last version before the delete'));
+      }
+      // Load the unredacted version, exactly as the subscription worker does for delivery.
+      resource = await this.getSystemRepo().readVersion<T>(resourceType, id, deletedVersionId);
+      // Matches deleteResource, which uses the deleted resource as both the current and previous version.
+      previousVersion = resource;
+    } else if (versionId) {
       // Authorize with the caller's access checks first.
       await this.readVersion<T>(resourceType, id, versionId);
       // Then load the unredacted versions, exactly as the subscription worker does for delivery,
       // so that meta.project is present and criteria are evaluated against the delivered payload.
       const systemRepo = this.getSystemRepo();
       resource = await systemRepo.readVersion<T>(resourceType, id, versionId);
-      if (options?.previousVersionId) {
-        previousVersion = await systemRepo.readVersion<T>(resourceType, id, options.previousVersionId);
+      if (interaction === 'update') {
+        const previousVersionId = await findPreviousVersionId(systemRepo, resourceType, id, versionId);
+        if (previousVersionId) {
+          previousVersion = await systemRepo.readVersion<T>(resourceType, id, previousVersionId);
+        }
       }
     } else {
-      if (interaction === 'delete') {
-        throw new OperationOutcomeError(badRequest('versionId is required to resend a delete interaction'));
-      }
       resource = await this.readResourceImpl<T>(resourceType, id);
       if (interaction === 'update') {
         const history = await this.readHistory(resourceType, id, { limit: 2 });
@@ -3264,4 +3258,39 @@ function replaceSuperAdminProjectFields(project: Project, existing: Project | un
     }
   }
   return result;
+}
+
+const RESEND_HISTORY_PAGE_SIZE = 100;
+
+/**
+ * Returns the version ID immediately before the specified version in the resource history.
+ * Returns undefined if the version is the first version, or if the previous history entry is a delete.
+ * The caller is responsible for authorizing access to the resource.
+ * @param repo - The repository used to read history.
+ * @param resourceType - The resource type.
+ * @param id - The resource ID.
+ * @param versionId - The version ID.
+ * @returns The previous version ID, if available.
+ */
+async function findPreviousVersionId(
+  repo: Repository,
+  resourceType: ResourceType,
+  id: string,
+  versionId: string
+): Promise<string | undefined> {
+  // History is sorted newest first, so the previous version is the entry after the target version.
+  let found = false;
+  for (let offset = 0; ; offset += RESEND_HISTORY_PAGE_SIZE) {
+    const history = await repo.readHistory(resourceType, id, { limit: RESEND_HISTORY_PAGE_SIZE, offset });
+    const entries = history.entry ?? [];
+    for (const entry of entries) {
+      if (found) {
+        return entry.resource?.meta?.versionId;
+      }
+      found = entry.resource?.meta?.versionId === versionId;
+    }
+    if (entries.length < RESEND_HISTORY_PAGE_SIZE) {
+      return undefined;
+    }
+  }
 }
