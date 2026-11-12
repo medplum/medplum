@@ -20,20 +20,21 @@ This operation supports filtering and pagination, enabling responsive user inter
 
 ```
 [base]/ValueSet/$expand
+[base]/ValueSet/[id]/$expand
 ```
 
 ### Parameters
 
-| Name                  | Type       | Description                                                                 | Required |
-| --------------------- | ---------- | --------------------------------------------------------------------------- | -------- |
-| `url`                 | `string`   | The URL of the value set to expand                                          | Yes      |
-| `filter`              | `string`   | A filter to apply to the value set                                          | No       |
-| `offset`              | `number`   | The offset to start the expansion                                           | No       |
-| `count`               | `number`   | The number of results to return                                             | No       |
-| `displayLanguage`     | `string`   | The [language code][bcp47] to search with `filter`                          | No       |
-| `excludeNotForUI`     | `boolean`  | Exclude abstract concepts that shouldn't be displayed in user interfaces    | No       |
-| `includeDesignations` | `boolean`  | Include translations and synonyms (designations) in the expansion results   | No       |
-| `valueSet`            | `ValueSet` | An inline ValueSet resource to expand (alternative to providing a URL)      | No       |
+| Name                  | Type       | Description                                                               | Required                                                                  |
+| --------------------- | ---------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `url`                 | `string`   | The URL of the value set to expand; ignored at the instance level         | Yes, unless `valueSet` is given or the operation is called on an instance |
+| `filter`              | `string`   | A filter to apply to the value set                                        | No                                                                        |
+| `offset`              | `number`   | The offset to start the expansion                                         | No                                                                        |
+| `count`               | `number`   | The number of results to return                                           | No                                                                        |
+| `displayLanguage`     | `string`   | The [language code][bcp47] to search with `filter`                        | No                                                                        |
+| `excludeNotForUI`     | `boolean`  | Exclude abstract concepts that shouldn't be displayed in user interfaces  | No                                                                        |
+| `includeDesignations` | `boolean`  | Include translations and synonyms (designations) in the expansion results | No                                                                        |
+| `valueSet`            | `ValueSet` | An inline ValueSet resource to expand (alternative to providing a URL)    | No                                                                        |
 
 [bcp47]: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
 

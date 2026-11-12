@@ -99,6 +99,52 @@ describe('FHIR Routes', () => {
     expect(res.body.resourceType).toStrictEqual('CapabilityStatement');
   });
 
+  test('Get TerminologyCapabilities anonymously', async () => {
+    const res = await request(app).get(`/fhir/R4/metadata?mode=terminology`);
+    expect(res).toHaveStatus(200);
+    expect(res.body).toMatchObject({
+      resourceType: 'TerminologyCapabilities',
+      kind: 'instance',
+      status: 'active',
+      name: 'MedplumTerminologyCapabilities',
+    });
+    expect(res.body.codeSystem).toBeUndefined();
+  });
+
+  test('Get TerminologyCapabilities authenticated', async () => {
+    const url = 'http://example.com/CodeSystem/' + randomUUID();
+    const versionlessUrl = 'http://example.com/CodeSystem/' + randomUUID();
+    const retiredUrl = 'http://example.com/CodeSystem/' + randomUUID();
+    const codeSystems = [
+      { url, version: '2.0.0', status: 'active' },
+      { url, version: '1.0.0', status: 'active' },
+      { url, status: 'active' },
+      { url: versionlessUrl, status: 'active' },
+      { url: retiredUrl, version: '1.0.0', status: 'retired' },
+    ];
+    for (const codeSystem of codeSystems) {
+      const res = await request(app)
+        .post(`/fhir/R4/CodeSystem`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'CodeSystem', content: 'not-present', ...codeSystem });
+      expect(res).toHaveStatus(201);
+    }
+
+    const res = await request(app)
+      .get(`/fhir/R4/metadata?mode=terminology`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(200);
+    const codeSystem = res.body.codeSystem as { uri: string }[];
+    expect(codeSystem).toContainEqual({ uri: url, version: [{ code: '1.0.0' }, { code: '2.0.0' }] });
+    expect(codeSystem).toContainEqual({ uri: versionlessUrl });
+    expect(codeSystem.find((cs) => cs.uri === retiredUrl)).toBeUndefined();
+
+    const anonymousRes = await request(app).get(`/fhir/R4/metadata?mode=terminology`);
+    expect(anonymousRes).toHaveStatus(200);
+    expect(anonymousRes.body.codeSystem).toBeUndefined();
+  });
+
   test('Get versions anonymously', async () => {
     const res = await request(app).get(`/fhir/R4/$versions`);
     expect(res).toHaveStatus(200);
