@@ -10,7 +10,7 @@ import { loadTestConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
 import { createTestProject } from '../test.setup';
 import type { PopulatedAccessPolicy } from './accesspolicy';
-import { applySmartScopes, getPartialPermissionScopes, parseSmartScopes } from './smart';
+import { applySmartScopes, getPartialPermissionScopes, hasSmartResourceScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {
@@ -529,5 +529,18 @@ describe('SMART on FHIR', () => {
         ).toMatchObject(expected(launchId));
       });
     });
+  });
+});
+
+describe('hasSmartResourceScopes', () => {
+  test.each([
+    [undefined, false],
+    ['openid', false],
+    ['openid profile email fhirUser launch/patient offline_access', false],
+    ['openid user/Observation.rs', true],
+    ['openid patient/*.rs', true],
+    ['openid user/*.*', true],
+  ])('%s', (scope, expected) => {
+    expect(hasSmartResourceScopes({ scope })).toBe(expected);
   });
 });

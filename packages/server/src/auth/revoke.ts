@@ -10,7 +10,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { revokeLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { canManageUserAccount, getCallerUserReference } from './utils';
+import { canManageUserAccount } from './utils';
 
 export const revokeValidator = makeValidationMiddleware([
   body('loginId').isUUID().withMessage('Login ID is required.'),
@@ -18,7 +18,7 @@ export const revokeValidator = makeValidationMiddleware([
 
 export async function revokeHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const userRef = getCallerUserReference(ctx);
+  const userRef = ctx.requireCallerUser();
 
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.loginId);
@@ -30,7 +30,7 @@ export async function revokeHandler(req: Request, res: Response): Promise<void> 
   }
 
   // Other logins can only revoke sessions in the current project
-  if (!canManageUserAccount(ctx.authState.login)) {
+  if (!canManageUserAccount(ctx.session)) {
     const loginMembership =
       login.membership &&
       (await systemRepo.searchOne<ProjectMembership>({
@@ -44,7 +44,7 @@ export async function revokeHandler(req: Request, res: Response): Promise<void> 
       getLogger().warn('Revoke denied', {
         loginId: login.id,
         projectId: ctx.project.id,
-        authMethod: ctx.authState.login.authMethod,
+        authMethod: ctx.session.authMethod,
       });
       sendOutcome(res, notFound);
       return;

@@ -19,7 +19,7 @@ import {
   readInteractions,
   splitN,
 } from '@medplum/core';
-import type { AccessPolicy, AccessPolicyResource, Reference } from '@medplum/fhirtypes';
+import type { AccessPolicy, AccessPolicyResource, Login, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { getConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
@@ -149,6 +149,15 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
   }
 
   return result;
+}
+
+/**
+ * Returns true if the login is limited by SMART resource scopes (e.g. `patient/Observation.rs`).
+ * @param login - The login, or the session of an authenticated request.
+ * @returns True if the login has SMART resource scopes.
+ */
+export function hasSmartResourceScopes(login: Pick<Login, 'scope'>): boolean {
+  return parseSmartScopes(login.scope).length > 0;
 }
 
 export function parseSmartScopeString(scope: string): SmartScope | undefined {

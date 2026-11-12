@@ -259,5 +259,25 @@ describe('RequestContext', () => {
         dbErr
       );
     });
+
+    test('requireCallerUser refuses On-Behalf-Of and SMART resource scopes', async () => {
+      const { membership } = await createMembership();
+      const { profile: onBehalfOf, membership: onBehalfOfMembership } = await createMembership();
+      const requireCallerUser = (state: AuthState): Promise<unknown> =>
+        runInAuthenticatedContext(state, undefined, undefined, undefined, () =>
+          getAuthenticatedContext().requireCallerUser()
+        );
+      const login = (scope: string): AuthState['login'] => ({ ...authState.login, scope });
+
+      await expect(requireCallerUser({ ...authState, membership, login: login('openid') })).resolves.toStrictEqual(
+        membership.user
+      );
+      await expect(
+        requireCallerUser({ ...authState, membership, login: login('openid user/Observation.rs') })
+      ).rejects.toThrow('Forbidden');
+      await expect(
+        requireCallerUser({ ...authState, membership, login: login('openid'), onBehalfOf, onBehalfOfMembership })
+      ).rejects.toThrow('Forbidden');
+    });
   });
 });

@@ -9,7 +9,6 @@ import {
   OperationOutcomeError,
   singularize,
 } from '@medplum/core';
-import type { User } from '@medplum/fhirtypes';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
@@ -37,10 +36,11 @@ scimRouter.post(
   '/Users',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    if (!isReference<User>(ctx.login.user, 'User')) {
+    const { actor } = ctx.getAttribution();
+    if (!isReference(actor, 'User')) {
       throw new OperationOutcomeError(badRequest('Disallowed login user type'));
     }
-    const result = await createScimUser(ctx.login.user, ctx.project, req.body);
+    const result = await createScimUser(actor, ctx.project, req.body);
     res.status(201).json(result);
   })
 );
