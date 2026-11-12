@@ -1072,8 +1072,14 @@ export class Repository extends FhirRepository implements Disposable {
     updated = await replaceConditionalReferences(this, updated);
 
     if (updated.resourceType === 'Bot' && !this.isSuperAdmin()) {
+      const existingBot = existing as Bot | undefined;
       // Only super admins can set or change Bot.system; everyone else keeps the existing value
-      updated.system = (existing as Bot | undefined)?.system;
+      updated.system = existingBot?.system;
+      if (!this.isProjectAdmin()) {
+        // Like Bot/$deploy, the bot's code and whose access it runs with are managed by project admins
+        updated.executableCode = existingBot?.executableCode;
+        updated.runAsUser = existingBot?.runAsUser;
+      }
     }
 
     const resultMeta: Meta = {

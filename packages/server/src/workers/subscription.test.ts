@@ -127,8 +127,12 @@ describe('Subscription Worker', () => {
       author: createReference(client),
     });
 
-    // Create another project, this one with bots enabled
-    const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+    // Create another project, this one with bots enabled and managed by a project admin
+    const botProjectDetails = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
     botRepo = botProjectDetails.repo;
 
     mockLambdaClient = mockClient(LambdaClient);

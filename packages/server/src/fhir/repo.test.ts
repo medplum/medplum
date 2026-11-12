@@ -2185,6 +2185,54 @@ describe('FHIR Repo', () => {
       expect(bot5.system).toBe(true);
     }));
 
+  test('Only project admins can edit Bot code and runAsUser', async () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+      const adminRepo = new Repository({ ...repo.getConfig(), projectAdmin: true });
+      const executableCode = { contentType: 'text/javascript', url: 'Binary/' + randomUUID() };
+
+      // A non-admin's create, update and patch silently drop the fields
+      const bot1 = await repo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        executableCode,
+        runAsUser: true,
+      });
+      expect(bot1.executableCode).toBeUndefined();
+      expect(bot1.runAsUser).toBeUndefined();
+
+      const bot2 = await repo.updateResource<Bot>({ ...bot1, description: 'update', executableCode, runAsUser: true });
+      expect(bot2.description).toStrictEqual('update');
+      expect(bot2.executableCode).toBeUndefined();
+      expect(bot2.runAsUser).toBeUndefined();
+
+      const bot3 = await repo.patchResource<Bot>('Bot', bot1.id, [
+        { op: 'add', path: '/description', value: 'patch' },
+        { op: 'add', path: '/executableCode', value: executableCode },
+        { op: 'add', path: '/runAsUser', value: true },
+      ]);
+      expect(bot3.description).toStrictEqual('patch');
+      expect(bot3.executableCode).toBeUndefined();
+      expect(bot3.runAsUser).toBeUndefined();
+
+      // A project admin can set them
+      const bot4 = await adminRepo.updateResource<Bot>({ ...bot3, executableCode, runAsUser: true });
+      expect(bot4.executableCode).toStrictEqual(executableCode);
+      expect(bot4.runAsUser).toBe(true);
+      expect(bot4.meta?.project).toStrictEqual(project.id);
+
+      // Later non-admin edits keep them
+      const bot5 = await repo.updateResource<Bot>({
+        ...bot4,
+        description: 'after',
+        executableCode: undefined,
+        runAsUser: false,
+      });
+      expect(bot5.description).toStrictEqual('after');
+      expect(bot5.executableCode).toStrictEqual(executableCode);
+      expect(bot5.runAsUser).toBe(true);
+    }));
+
   test('Handles resources with many entries stored in lookup table', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
