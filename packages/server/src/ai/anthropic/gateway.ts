@@ -4,6 +4,7 @@ import { getStatus, normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { json, Router } from 'express';
+import { once } from 'node:events';
 import { BedrockAnthropicProvider } from '../../cloud/aws/bedrock';
 import { getConfig } from '../../config/loader';
 import { closeRequestContext, getAuthenticatedContext } from '../../context';
@@ -138,7 +139,7 @@ async function handleMessages(provider: AnthropicMessagesProvider, req: Request,
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders();
-      await streamToClient(events, res, usage);
+      await streamToClient(events, res, usage, abortController.signal);
     } else {
       const text = await provider.createMessage(model, params, betas, abortController.signal);
       recordUsage(usage, JSON.parse(text));
@@ -182,11 +183,18 @@ async function handleMessages(provider: AnthropicMessagesProvider, req: Request,
 /**
  * Writes Anthropic stream events as server-sent events.
  * The `type` of each event is the SSE event name.
+ * Waits for the client to drain the response when it reads slower than the model writes.
  * @param events - The Anthropic stream events as JSON text.
  * @param res - The response to write to.
  * @param usage - Updated in place as the stream reports token usage, so it survives an interrupted stream.
+ * @param signal - Aborted when the client disconnects.
  */
-async function streamToClient(events: AsyncIterable<string>, res: Response, usage: Usage): Promise<void> {
+async function streamToClient(
+  events: AsyncIterable<string>,
+  res: Response,
+  usage: Usage,
+  signal: AbortSignal
+): Promise<void> {
   for await (const data of events) {
     const parsed = JSON.parse(data) as { type: string; message?: unknown; usage?: unknown };
     if (parsed.type === 'message_start') {
@@ -194,14 +202,24 @@ async function streamToClient(events: AsyncIterable<string>, res: Response, usag
     } else if (parsed.type === 'message_delta') {
       recordUsage(usage, parsed);
     }
-    writeEvent(res, parsed.type, data);
+    if (!writeEvent(res, parsed.type, data)) {
+      await once(res, 'drain', { signal });
+    }
   }
   res.end();
 }
 
-function writeEvent(res: Response, event: string, data: string): void {
-  res.write(`event: ${event}\ndata: ${data}\n\n`);
+/**
+ * Writes one server-sent event.
+ * @param res - The response to write to.
+ * @param event - The SSE event name.
+ * @param data - The SSE data.
+ * @returns False when the response buffer is full and the caller should wait for `drain`.
+ */
+function writeEvent(res: Response, event: string, data: string): boolean {
+  const writable = res.write(`event: ${event}\ndata: ${data}\n\n`);
   res.flush();
+  return writable;
 }
 
 /** The `usage` object of an Anthropic message or `message_delta` event. */
