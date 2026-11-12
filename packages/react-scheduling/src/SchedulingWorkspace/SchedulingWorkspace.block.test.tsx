@@ -185,7 +185,7 @@ describe('SchedulingWorkspace blocking', () => {
     expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 25, 12, 0).toISOString());
   });
 
-  test('Opens a block the filters hide, saying so', async () => {
+  test('Draws a block written under a filter, with no notice', async () => {
     renderWithMedplum(<SchedulingWorkspace defaultServiceFacility={{ reference: 'Location/main-clinic' }} />, medplum);
 
     await dragCalendar();
@@ -195,10 +195,10 @@ describe('SchedulingWorkspace blocking', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
     });
 
-    // No appointment holds it, so under a filter it isn't drawn.
-    expect(screen.queryByText('slot Schedule/schedule-dr-rivera busy-unavailable')).not.toBeInTheDocument();
+    // No appointment holds it, so the filter leaves it on its calendar.
+    expect(await screen.findByText('slot Schedule/schedule-dr-rivera busy-unavailable')).toBeInTheDocument();
     const details = screen.getByRole('region', { name: 'Blocked time details' });
-    expect(within(details).getByText(FILTERED_NOTICE)).toBeInTheDocument();
+    expect(within(details).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
   });
 
   test('Keeps each tab’s answers and its own highlight across a switch, and the tab across clicks', async () => {

@@ -71,6 +71,11 @@ if [[ "$FILES_CHANGED" =~ examples/foomedical ]] || [[ "$FILES_CHANGED" =~ deplo
   DEPLOY_FOOMEDICAL=true
 fi
 
+# The docs build reads code examples from here (see packages/docs/hugo.toml)
+if [[ "$FILES_CHANGED" =~ examples/medplum-demo-bots ]]; then
+  DEPLOY_DOCS=true
+fi
+
 if [[ "$FILES_CHANGED" =~ examples/medplum-provider ]] || [[ "$FILES_CHANGED" =~ deploy-provider-app.sh ]]; then
   DEPLOY_PROVIDER=true
 fi
@@ -91,8 +96,10 @@ if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_SERVER=true
 fi
 
+# The docs build generates the FHIR reference from the definitions
 if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
+  DEPLOY_DOCS=true
   DEPLOY_SERVER=true
 fi
 
@@ -101,6 +108,11 @@ if [[ "$FILES_CHANGED" =~ packages/dosespot ]]; then
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
+  DEPLOY_DOCS=true
+fi
+
+# The docs build reads code examples from here (see packages/docs/hugo.toml)
+if [[ "$FILES_CHANGED" =~ packages/examples ]]; then
   DEPLOY_DOCS=true
 fi
 
@@ -199,6 +211,7 @@ build_with_placeholders() {
   (
     export MEDPLUM_BASE_URL="__MEDPLUM_BASE_URL__"
     export MEDPLUM_CLIENT_ID="__MEDPLUM_CLIENT_ID__"
+    export FOOMEDICAL_PROJECT_ID="__FOOMEDICAL_PROJECT_ID__"
     export MEDPLUM_REGISTER_ENABLED="__MEDPLUM_REGISTER_ENABLED__"
     export MEDPLUM_AWS_TEXTRACT_ENABLED="__MEDPLUM_AWS_TEXTRACT_ENABLED__"
     export GOOGLE_CLIENT_ID="__GOOGLE_CLIENT_ID__"

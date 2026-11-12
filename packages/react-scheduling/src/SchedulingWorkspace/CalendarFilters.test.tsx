@@ -94,7 +94,8 @@ describe('CalendarFilters', () => {
       // The server did the narrowing, so a tenant with more sites than one page holds
       // still reaches the one it typed for.
       const criteria = searchResources.mock.calls.find(([resourceType]) => resourceType === 'Location')?.[1];
-      expect(new URLSearchParams(criteria as Record<string, string>).get('name')).toBe('Satellite');
+      // Matched anywhere in the name, as "Satellite" is past its first word.
+      expect(new URLSearchParams(criteria as Record<string, string>).get('name:contains')).toBe('Satellite');
       searchResources.mockRestore();
     });
 

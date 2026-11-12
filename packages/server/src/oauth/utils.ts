@@ -43,6 +43,7 @@ import type { IncomingMessage } from 'node:http';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
+import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
@@ -51,7 +52,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
-import { parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
+import { getPartialPermissionScopes, parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import {
@@ -67,6 +68,8 @@ import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
 import type { AuthenticationResult, AuthState } from './middleware';
 import { isExtendedMode } from './middleware';
+
+const INVALID_CREDENTIALS_MESSAGE = 'Email or password is invalid';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -187,6 +190,11 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
 
   if (!user) {
     getLogger().warn('tryLogin User not found', { ...request, password: undefined, codeChallenge: undefined });
+    if (request.password) {
+      // Spend the same bcrypt time as a real check, so the response does not reveal whether the email exists
+      await verifyPassword(request.password, undefined);
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
+    }
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
@@ -280,11 +288,22 @@ export function validatePkce(request: LoginRequest, client: ClientApplication | 
   }
 }
 
+/**
+ * Verifies a password against a bcrypt hash using timing-safe comparison.
+ * @param password - The password provided by the client.
+ * @param passwordHash - The user's bcrypt password hash, if any.
+ * @returns True if the password matches the user's hash.
+ */
+async function verifyPassword(password: string, passwordHash: string | undefined): Promise<boolean> {
+  const hash = passwordHash || bcrypt.genSaltSync(getConfig().bcryptHashSalt) + '.'.repeat(31);
+  const matches = await bcrypt.compare(password, hash);
+  return Boolean(matches && passwordHash?.length);
+}
+
 async function authenticate(request: LoginRequest, user: User): Promise<void> {
-  if (request.password && user.passwordHash) {
-    const bcryptResult = await bcrypt.compare(request.password, user.passwordHash);
-    if (!bcryptResult) {
-      throw new OperationOutcomeError(badRequest('Email or password is invalid'));
+  if (request.password) {
+    if (!(await verifyPassword(request.password, user.passwordHash))) {
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
     }
     return;
   }
@@ -306,24 +325,31 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * Verifies the MFA token for a login.
  * Ensures that the login is valid.
  * Ensures that the token is valid.
- * On success, updates the login with the MFA status.
+ * On success, enrolls the user in TOTP if `enrollSecret` is given, then updates the login with the MFA status.
  * On error, throws an error.
  * @param login - The login resource.
  * @param token - The user supplied MFA token.
+ * @param enrollSecret - The authenticator (TOTP) secret offered to this login, when the token confirms an enrollment.
  * @returns The updated login resource.
  */
-export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
+export async function verifyMfaToken(login: Login, token: string, enrollSecret?: string): Promise<Login> {
   assertMfaLoginActive(login);
 
-  if (login.emailMfa && new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
+  // A code that confirms an enrollment must be for the offered secret, not an emailed code
+  const emailMfa = enrollSecret ? undefined : login.emailMfa;
+  if (emailMfa && new Date(emailMfa.expiresAt).getTime() < Date.now()) {
     throw new OperationOutcomeError(badRequest('MFA code expired'));
   }
 
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
+  if (enrollSecret && user.mfaEnrolled) {
+    throw new OperationOutcomeError(badRequest('Already enrolled'));
+  }
 
-  const secret = user.mfaSecret;
-  if (!login.emailMfa && !secret) {
+  // The stored authenticator secret is only a factor once TOTP is enrolled
+  const secret = enrollSecret ?? (getEnrolledMfaMethods(user).includes('totp') ? user.mfaSecret : undefined);
+  if (!emailMfa && !secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
@@ -335,8 +361,8 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
   // user. login.emailMfa holds a bcrypt hash of that code and its expiration;
   // clear it on success.
 
-  if (login.emailMfa) {
-    emailCodeVerified = await bcrypt.compare(token, login.emailMfa.codeHash);
+  if (emailMfa) {
+    emailCodeVerified = await bcrypt.compare(token, emailMfa.codeHash);
     verified = emailCodeVerified;
   }
 
@@ -357,6 +383,11 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
 
   if (emailCodeVerified && !user.emailVerified) {
     await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
+  }
+
+  if (enrollSecret) {
+    // Enroll before verifying the login, so a login whose enrollment lost a race is not verified
+    await enrollTotp(login, user, enrollSecret);
   }
 
   const result = await systemRepo.updateResource<Login>({
@@ -614,7 +645,11 @@ function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientCon
   ) {
     return false;
   }
-  if (existing.criteria && candidate.criteria !== existing.criteria) {
+  if (
+    existing.params &&
+    (existing.params.length !== candidate.params?.length ||
+      existing.params.some(([key, value], i) => candidate.params?.[i][0] !== key || candidate.params[i][1] !== value))
+  ) {
     return false;
   }
   return true;
@@ -739,6 +774,23 @@ export async function getAuthTokens(
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
+  }
+
+  const partialPermissionScopes = getPartialPermissionScopes(login.scope);
+  if (partialPermissionScopes.length > 0) {
+    let projectId = resolveId(login.project);
+    if (!projectId) {
+      // A logging lookup must not prevent token issuance.
+      const membership = await getGlobalSystemRepo()
+        .readReference(login.membership)
+        .catch(() => undefined);
+      projectId = resolveId(membership?.project);
+    }
+    getLogger().warn('SMART scopes with partial permissions', {
+      clientId,
+      projectId,
+      scopes: partialPermissionScopes,
+    });
   }
 
   if (!login.granted) {
@@ -1291,9 +1343,21 @@ async function makeAuthResult(
   // Resolve "on behalf of" before building the repository, so that the access policy is built from
   // the effective membership.  Resolving it afterwards would require a repository to already exist,
   // which cannot be built for a login whose scopes depend on the on-behalf-of membership.
-  await tryAddOnBehalfOf(systemRepo, req, authState);
-  const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  return { authState, repo };
+  try {
+    await tryAddOnBehalfOf(systemRepo, req, authState);
+    const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
+    return { authState, repo };
+  } catch (err) {
+    // The caller is known here, but the "Authentication error" log line does not include it
+    getLogger().warn('Authentication failed for known caller', {
+      login: login.id,
+      project: project.id,
+      membership: membership.id,
+      profile: membership.profile?.reference,
+      onBehalfOf: req?.headers?.['x-medplum-on-behalf-of'],
+    });
+    throw err;
+  }
 }
 
 /**

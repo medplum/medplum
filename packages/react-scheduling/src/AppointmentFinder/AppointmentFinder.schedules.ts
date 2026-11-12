@@ -13,13 +13,7 @@ import {
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
-import {
-  BOOKABLE_ACTOR_TYPES,
-  getActorType,
-  getActorTypeLabel,
-  isBookableActorType,
-  REQUIRED_ACTOR_TYPES,
-} from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel, isBookableActorType } from '../actors';
 import { getActorsKey } from './AppointmentFinder.times';
 
 /**
@@ -560,14 +554,9 @@ const listAlternatives = new Intl.ListFormat('en', { type: 'disjunction' });
  * @returns The blocker to show the user, or undefined when the search can run.
  */
 export function getSelectionError(selections: ActorSelections): SelectionBlocker | undefined {
-  const missing = [...REQUIRED_ACTOR_TYPES].find(
-    (actorType) => !(selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
-  );
-  if (missing) {
-    return {
-      message: `Choose at least one ${getActorTypeLabel(missing).toLowerCase()} first.`,
-      severity: 'incomplete',
-    };
+  if (getSelectedActorTypes(selections).length === 0) {
+    const anyType = listAlternatives.format(BOOKABLE_ACTOR_TYPES.map((type) => getActorTypeLabel(type).toLowerCase()));
+    return { message: `Choose at least one ${anyType} first.`, severity: 'incomplete' };
   }
   if (countActorCombinations(selections) > MAX_ACTOR_COMBINATIONS) {
     // Naming only the types in play keeps the advice actionable: there is nothing

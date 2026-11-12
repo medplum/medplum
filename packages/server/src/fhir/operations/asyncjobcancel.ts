@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, assert, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { AsyncJob } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
+import { readAsyncJob } from './utils/asyncjobexecutor';
 
 export const operation = makeOperationDefinition(
   { scope: 'instance', resource: 'AsyncJob' },
@@ -27,8 +27,7 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
   assert(req.params.id, 'This operation can only be executed on an instance');
   // Update status of async job
   const ctx = getAuthenticatedContext();
-  // We read with the users repo to make sure they have permissions for this
-  const job = await ctx.repo.readResource<AsyncJob>('AsyncJob', req.params.id);
+  const job = await readAsyncJob(req.params.id);
   switch (job.status) {
     case 'accepted':
       // We patch with system repo so that AsyncJob is not added to a project

@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { getReferenceString, Operator } from '@medplum/core';
+import { AccessPolicyInteraction, getReferenceString, Operator } from '@medplum/core';
 import type {
+  ClientApplication,
   Login,
   Project,
   ProjectMembership,
@@ -18,7 +19,7 @@ import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { hasSmartResourceScopes, isMfaRequired } from './utils';
+import { canManageUserAccount, hasSmartResourceScopes, isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
@@ -38,28 +39,35 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState, repo, systemRepo } = getAuthenticatedContext();
-  const { project, membership } = authState;
-  const profileRef = membership.profile as Reference<ProfileResource>;
-  const profile = await readMembershipReference<ProfileResource>(
+  const { authState, repo, systemRepo, project, membership } = getAuthenticatedContext();
+  const profileRef = membership.profile as Reference<ProfileResource | ClientApplication>;
+  let profile = await readMembershipReference<ProfileResource | ClientApplication>(
     systemRepo,
     membership,
     profileRef,
     membershipProfileTypes,
     { allowLinkedProjects: true }
   );
+  if (hasSmartResourceScopes(authState.login) && !repo.canPerformInteraction(AccessPolicyInteraction.READ, profile)) {
+    profile = { resourceType: profile.resourceType, id: profile.id } as WithId<ProfileResource>;
+  }
+  profile = repo.removeHiddenFields(profile, AccessPolicyInteraction.READ, true);
+  if (profile.resourceType === 'ClientApplication') {
+    profile = { ...profile };
+    delete profile.secret;
+    delete profile.retiringSecret;
+  }
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
   let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
-  if (membership.user?.reference?.startsWith('User/')) {
+  if (!authState.onBehalfOfMembership && membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
   }
 
   // Account security details are only for logins that can manage the account (see getCallerUserReference)
   if (user && !hasSmartResourceScopes(authState.login)) {
-    const sessions = await getSessions(systemRepo, user);
     const memberships = await systemRepo.searchResources<ProjectMembership>({
       resourceType: 'ProjectMembership',
       filters: [
@@ -75,6 +83,11 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
         },
       ],
     });
+    const sessions = await getSessions(
+      systemRepo,
+      user,
+      canManageUserAccount(authState.login) ? undefined : memberships
+    );
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       mfaRequired: isMfaRequired(user, project),
@@ -134,9 +147,13 @@ export async function getUserConfiguration(
   let result: UserConfiguration;
 
   if (membership.userConfiguration) {
-    result = await readMembershipReference<UserConfiguration>(systemRepo, membership, membership.userConfiguration, [
-      'UserConfiguration',
-    ]);
+    result = await readMembershipReference<UserConfiguration>(
+      systemRepo,
+      membership,
+      membership.userConfiguration,
+      ['UserConfiguration'],
+      { allowLinkedProjects: true }
+    );
   } else {
     result = { resourceType: 'UserConfiguration' };
   }
@@ -183,7 +200,19 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
   return result;
 }
 
-async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Promise<UserSession[]> {
+/**
+ * Returns the user's recent sessions.
+ * @param systemRepo - The system repository.
+ * @param user - The user.
+ * @param memberships - Optional memberships; if set, only sessions for one of these memberships are returned.
+ * @returns The user's sessions.
+ */
+async function getSessions(
+  systemRepo: SystemRepository,
+  user: WithId<User>,
+  memberships?: WithId<ProjectMembership>[]
+): Promise<UserSession[]> {
+  const membershipRefs = memberships && new Set(memberships.map((m) => getReferenceString(m)));
   const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [
@@ -203,7 +232,10 @@ async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Pr
   const result = [];
   for (const login of logins) {
     // A login that has not been granted yet is not a session
-    if (!login.membership || !login.granted || login.revoked) {
+    if (!login.membership?.reference || !login.granted || login.revoked) {
+      continue;
+    }
+    if (membershipRefs && !membershipRefs.has(login.membership.reference)) {
       continue;
     }
 

@@ -120,6 +120,7 @@ describe('getBotAccessToken', () => {
 
       const authState = (await getLoginForAccessToken(undefined, token2))?.authState;
       expect(authState?.membership.id).toBe(membership.id);
+      expect(authState?.login.meta?.project).toBe(resolveId(membership.project));
     }));
 
   test('Token carries the SMART scopes and launch context of the caller', () =>

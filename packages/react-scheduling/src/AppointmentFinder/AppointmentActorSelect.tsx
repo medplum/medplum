@@ -9,7 +9,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { BookableActorType } from '../actors';
-import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel, isActorTypeRequired } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel } from '../actors';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from './AppointmentFinder.schedules';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
@@ -34,7 +34,7 @@ export interface AppointmentActorSelectProps {
   readonly description?: ReactNode;
   /** What the empty field invites. Defaults to searching the actor type by name. */
   readonly placeholder?: string;
-  /** Whether the field must be answered. Defaults to whether its actor type is required. */
+  /** Whether the field must be answered. Defaults to false. */
   readonly required?: boolean;
   /** Whether to mark the field with an asterisk. Defaults to `required`. */
   readonly withAsterisk?: boolean;
@@ -64,7 +64,6 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
   const serviceFacilityReference = serviceFacility && getReferenceString(serviceFacility);
   const lowercaseLabel = getActorTypeLabel(actorType).toLowerCase();
   const label = props.label ?? getActorTypeLabel(actorType);
-  const required = props.required ?? isActorTypeRequired(actorType);
   const placeholder = props.placeholder ?? `Search ${lowercaseLabel}s`;
 
   const search = useCallback(
@@ -91,7 +90,7 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
     <AsyncAutocomplete<ScheduleCandidate>
       name={actorType}
       label={label}
-      required={required}
+      required={props.required}
       withAsterisk={props.withAsterisk}
       description={props.description}
       placeholder={placeholder}

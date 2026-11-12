@@ -166,23 +166,23 @@ export async function getSearchIncludeEntries(
     ? references.filter((reference) => reference.reference?.startsWith(targetType + '/'))
     : references;
 
-  const includedResources = (await repo.readReferences(targetReferences)).filter((v) =>
+  // Many base resources often share a target (e.g. Slots in one Schedule), so read each target once
+  const uniqueReferences = [...new Set(flatMapFilter(targetReferences, (r) => r.reference))].map((reference) => ({
+    reference,
+  }));
+  const includedResources = (await repo.readReferences(uniqueReferences)).filter((v) =>
     isResource(v)
   ) as WithId<Resource>[];
 
   const canonicalTargets = targetType ? searchParam.target?.filter((t) => t === targetType) : searchParam.target;
   if (canonicalTargets?.length && canonicalReferences.length > 0) {
     const executeSearch = options?.executeSearch ?? ((s: SearchRequest) => repo.searchResources(s));
+    const wanted = new Set(canonicalReferences);
+    const value = [...wanted].join(',');
     const canonicalSearches = canonicalTargets.map((canonicalTargetType) =>
       executeSearch({
         resourceType: canonicalTargetType,
-        filters: [
-          {
-            code: 'url',
-            operator: Operator.EQUALS,
-            value: canonicalReferences.join(','),
-          },
-        ],
+        filters: [{ code: 'url', operator: Operator.EQUALS, value }],
         count: DEFAULT_MAX_SEARCH_COUNT,
         offset: 0,
       })
@@ -191,7 +191,6 @@ export async function getSearchIncludeEntries(
     // The `url` search is an exact match in the SQL implementation, but `matchesSearchRequest`
     // treats `uri` parameters as a substring match, so filter the results to exact hits here.
     // This is a no-op for repositories that already match exactly.
-    const wanted = new Set(canonicalReferences);
     for (const searchResult of await Promise.all(canonicalSearches)) {
       for (const resource of searchResult) {
         const url = getCanonicalUrl(resource);

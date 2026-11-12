@@ -13,6 +13,7 @@ import {
   DEFAULT_PROCEDURE_VALUE_SET,
   hasRequiredValues,
 } from '../../AppointmentFinder/AppointmentFinder.requirements';
+import { AppointmentNotesInput } from '../../AppointmentFinder/AppointmentNotesInput';
 import { BookingRequirementFields } from '../../AppointmentFinder/BookingRequirementFields';
 import { buildAppointmentUpdate, isEdited, readRequirementValues } from './AppointmentDetails.utils';
 
@@ -20,12 +21,17 @@ export interface AppointmentDetailsFormProps {
   readonly appointment: WithId<Appointment>;
   readonly procedureBinding?: string;
   readonly diagnosisBinding?: string;
+  /**
+   * See {@link AppointmentProposalFormProps.commentMaxLength}. Notes already longer than this
+   * have to be shortened before anything can be saved.
+   */
+  readonly commentMaxLength?: number;
   readonly onCancel?: () => void;
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
 
 /**
- * Edits whatever the visit type asked for at booking.
+ * Edits whatever the visit type asked for at booking, and the notes.
  *
  * Fields are filled from the appointment at mount. Saving is a plain update: the time and
  * Slots are untouched.
@@ -38,6 +44,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     appointment,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
+    commentMaxLength,
     onUpdated,
     onCancel,
   } = props;
@@ -47,13 +54,15 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
   const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
 
   const [values, setValues] = useState<BookingRequirementValues>(() => readRequirementValues(appointment));
+  const [comment, setComment] = useState(appointment.comment ?? '');
   const [saving, setSaving] = useState(false);
   // A host still handing over the pre-save appointment would otherwise re-offer the same write.
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<unknown>();
 
-  const edited = isEdited(appointment, values, requirements);
+  const edited = isEdited(appointment, values, requirements) || comment.trim() !== (appointment.comment ?? '');
   const complete = hasRequiredValues(values, requirements);
+  const commentTooLong = commentMaxLength !== undefined && comment.trim().length > commentMaxLength;
 
   function chooseValues(next: BookingRequirementValues): void {
     setValues(next);
@@ -61,13 +70,17 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
   }
 
   async function save(): Promise<void> {
-    if (!complete) {
+    if (!complete || commentTooLong) {
       return;
     }
     setSaving(true);
     setSaveError(undefined);
     try {
-      const updated = await medplum.updateResource(buildAppointmentUpdate(appointment, values, requirements));
+      const updated = await medplum.updateResource({
+        ...buildAppointmentUpdate(appointment, values, requirements),
+        // FHIR has no empty strings, so cleared notes are left off.
+        comment: comment.trim() || undefined,
+      });
       setSaved(true);
       try {
         await onUpdated?.(updated);
@@ -83,6 +96,14 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
 
   return (
     <Stack gap="sm">
+      <AppointmentNotesInput
+        value={comment}
+        maxLength={commentMaxLength}
+        onChange={(value) => {
+          setComment(value);
+          setSaved(false);
+        }}
+      />
       {service && requirements.size > 0 && (
         <BookingRequirementFields
           key={service.id}
@@ -99,7 +120,12 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
           {normalizeErrorString(saveError)}
         </Alert>
       )}
-      <Button variant="outline" loading={saving} disabled={!edited || !complete || saved} onClick={save}>
+      <Button
+        variant="outline"
+        loading={saving}
+        disabled={!edited || !complete || commentTooLong || saved}
+        onClick={save}
+      >
         Save Changes
       </Button>
       {onCancel && (

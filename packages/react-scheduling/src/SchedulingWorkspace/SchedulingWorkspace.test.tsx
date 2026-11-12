@@ -149,7 +149,9 @@ describe('SchedulingWorkspace', () => {
     const providerRow = calendarRow('Dr. Maya Rivera');
     await userEvent.click(providerRow);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Hide calendars' }));
+    const toggle = screen.getByRole('button', { name: 'Hide calendars' });
+    expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).toContainElement(providerRow);
+    await userEvent.click(toggle);
     expect(providerRow).not.toBeVisible();
 
     await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));
@@ -366,13 +368,13 @@ describe('SchedulingWorkspace', () => {
       expect(within(appointmentDetails).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
 
       // Dr. Brown names no site and Exam Room A is at the main clinic, so both stay listed. Liam
-      // Jones's visit records no site, and no visit drawn holds Exam Room A's maintenance, so the one
-      // block left is the buffer of Dr. Chen's infusion, at the main clinic.
+      // Jones's visit records no site, so goes. Exam Room A's maintenance is held by no visit, so
+      // stays on its calendar, beside the buffer of Dr. Chen's infusion at the main clinic.
       await chooseFilter('All service facilities', 'Uro Associates - Main Clinic');
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(0));
       expect(within(appointmentDetails).getByText(FILTERED_NOTICE)).toBeInTheDocument();
       expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
-      expect(screen.getAllByText('Blocked')).toHaveLength(1);
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
       expect(calendarRow('Dr. Olivia Brown')).toHaveAttribute('aria-pressed', 'true');
       expect(calendarRow('Exam Room A')).toHaveAttribute('aria-pressed', 'true');
     });
@@ -421,8 +423,8 @@ describe('SchedulingWorkspace', () => {
     );
 
     test(`shows the fixtures' booked appointments and blocked slots on the pinned "today"`, async () => {
-      // The same frozen "today" Storybook's `MockDateWrapper` uses, so `timeGridWeek`
-      // renders the same Sun May 3 – Sat May 9 2020 week the fixtures are dated within.
+      // The same frozen "today" Storybook's `MockDateWrapper` uses, so the calendar opens on
+      // the same Mon May 4 – Thu May 7 2020 the fixtures are dated within.
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
 
       const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);

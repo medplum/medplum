@@ -15,6 +15,7 @@ import type { Request, Response } from 'express';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionResult } from '../../bots/types';
 import {
+  getBotBodyInput,
   getBotDefaultHeaders,
   getBotProjectMembership,
   getOutParametersFromResult,
@@ -123,7 +124,7 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
     callerLogin: runAs.id === ctx.membership.id ? ctx.login : undefined,
     runAsProject: ctx.project,
     requester: ctx.membership.profile,
-    input: req.method === 'POST' ? req.body : req.query,
+    input: req.method === 'POST' ? getBotBodyInput(bot, req.body, res.locals.rawBody) : req.query,
     contentType: req.header('content-type') as string,
     headers: req.headers,
     traceId: ctx.traceId,

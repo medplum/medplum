@@ -1,0 +1,7 @@
+{{- /* Newer/older links between blog list pages, as on Docusaurus. Page URLs drop the trailing slash (see href.html) */ -}}
+{{- if or .HasPrev .HasNext -}}
+  <nav class="blog-pagination" aria-label="Blog list page navigation">
+    {{- with .Prev }}<a class="blog-pagination-newer" href="{{ strings.TrimSuffix "/" .URL | default "/" }}">« Newer entries</a>{{ end -}}
+    {{- with .Next }}<a class="blog-pagination-older" href="{{ strings.TrimSuffix "/" .URL }}">Older entries »</a>{{ end -}}
+  </nav>
+{{- end -}}

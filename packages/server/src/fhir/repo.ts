@@ -107,6 +107,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import { FhirQuotaCost } from './fhirquota';
+import { logAsyncJobAccess } from './operations/utils/asyncjobexecutor';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -119,7 +120,6 @@ import type {
 } from './repository/access-tracker';
 import { normalizeResourceTypes, repoAccess } from './repository/access-tracker';
 import { removeField } from './repository/field-utils';
-import { removeCachedProfile } from './repository/profile-cache';
 import type {
   ConnectionScope,
   RepositoryConnection,
@@ -199,8 +199,9 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 /**
  * Returns the project IDs a caller may read for the given resource type.
  *
- * Linked projects are readable only when they export the resource type, and project admin
- * resource types never cross a link at all.
+ * Linked projects are readable when they export the resource type or export nothing. Project admin
+ * resource types never cross a link, except `Project` and `AccessPolicy`, so memberships can
+ * reference access policies shared by linked projects.
  * @param projects - Projects the caller may access; the first is the caller's own.
  * @param resourceType - The resource type being read.
  * @returns The permitted project IDs, or undefined if all projects are permitted.
@@ -216,8 +217,13 @@ export function getPermittedProjectIds(
 
   const projectIds = [projects[0].id]; // Always include the first project
 
-  if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
+  if (
+    resourceType !== 'Project' &&
+    resourceType !== 'AccessPolicy' &&
+    projectAdminResourceTypes.includes(resourceType)
+  ) {
     // If the resource type is a project admin resource, only include the current project (the first project)
+    // AccessPolicy is exempt so memberships can reference policies shared by linked projects
     return projectIds;
   }
 
@@ -288,8 +294,9 @@ export class Repository extends FhirRepository implements Disposable {
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
    * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
    * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
+   * 20. 10/28/26 - Added search param: AsyncJob-requester
    */
-  static readonly VERSION: number = 19;
+  static readonly VERSION: number = 20;
 
   /**
    * Constructs a new Repository instance.
@@ -466,6 +473,20 @@ export class Repository extends FhirRepository implements Disposable {
     await limiter?.consume(points);
   }
 
+  /**
+   * Executes a read-only SQL query.
+   *
+   * The `READER` default permits the reader pool but does not select it: the query runs on the
+   * writer unless this repository was put in reader mode via `setMode(RepositoryMode.READER)`.
+   * See `RepositoryConnection.getDatabaseClient`.
+   * @param query - The query to execute.
+   * @param query.execute - Runs the query on the selected database client.
+   * @param resourceTypes - The resource types involved, used for shard routing and access tracking.
+   * @param options - Optional settings.
+   * @param options.mode - Lowest permitted database mode; defaults to `READER`.
+   * @param options.source - Short label identifying the call site.
+   * @returns The result rows.
+   */
   async sqlRead<R extends QueryResultRow = any>(
     query: { execute(conn: PgQueryable): Promise<R[]> },
     resourceTypes: ResourceTypeInput,
@@ -698,7 +719,13 @@ export class Repository extends FhirRepository implements Disposable {
       if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
       }
-      await this.readReference(resource.securityContext);
+      // Extended mode for meta.project
+      const securityContext = await this.withOverrideConfig({ extendedMode: true }).readReference(
+        resource.securityContext
+      );
+      if (securityContext.resourceType === 'AsyncJob') {
+        logAsyncJobAccess(this, securityContext);
+      }
     }
     return resource;
   }
@@ -1106,7 +1133,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
-    if (!this.context.skipBackgroundJobs) {
+    if (this.shouldAddBackgroundJobs(result)) {
       await this.postCommit(async () => {
         const project = await this.getProjectById(projectId);
         await addBackgroundJobs(result, existing, { project, interaction });
@@ -1115,6 +1142,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
+  }
+
+  private shouldAddBackgroundJobs(resource: Resource): boolean {
+    // Cache-only resources have no history rows for the dispatch worker to read
+    return !this.context.skipBackgroundJobs && !this.isCacheOnly(resource);
   }
 
   /**
@@ -1191,10 +1223,6 @@ export class Repository extends FhirRepository implements Disposable {
         criteria: resource.criteria,
         user: resource.meta?.author?.reference,
       });
-    }
-
-    if (resource.resourceType === 'StructureDefinition') {
-      await removeCachedProfile(resource);
     }
   }
 
@@ -1596,7 +1624,7 @@ export class Repository extends FhirRepository implements Disposable {
         );
       }
 
-      if (!this.context.skipBackgroundJobs) {
+      if (this.shouldAddBackgroundJobs(resource)) {
         await this.postCommit(async () => {
           const project = await this.getProjectById(resource.meta?.project);
           await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
@@ -2201,6 +2229,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (updated.resourceType === 'ProjectMembership') {
       return resolveId(updated.project);
+    }
+
+    if (updated.resourceType === 'Login') {
+      // A Login joins its project once a membership is selected
+      return updated.membership ? resolveId(updated.project) : undefined;
     }
 
     if (this.isSuperAdmin() && SuperAdminProjectIdEditableResourceTypes.includes(updated.resourceType)) {
