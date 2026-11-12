@@ -15,6 +15,7 @@ import {
   isString,
   matchesSearchRequest,
   normalizeOperationOutcome,
+  OperationOutcomeError,
   parseSearchRequest,
   resolveId,
   resourceMatchesSubscriptionCriteria,
@@ -96,17 +97,13 @@ const MAX_JOB_ATTEMPTS = 19;
 const DEFAULT_ATTEMPTS = 4;
 
 /**
- * The default number of times a Bot subscription handler execution will be attempted
- * when subscription-max-attempts is not specified.
+ * The default number of retries for a failed Bot handler when subscription-max-attempts is not specified.
+ * Bot handlers are not guaranteed to be idempotent, so they run once unless retries are opted into.
  */
-const DEFAULT_BOT_MAX_ATTEMPTS = 1;
+const DEFAULT_BOT_HANDLER_ATTEMPTS = 0;
 
-class BotExecutionFailedError extends Error {
-  constructor(botId: string) {
-    super(`Bot execution failed (Bot/${botId})`);
-    this.name = 'BotExecutionFailedError';
-  }
-}
+/** Thrown when a Bot subscription's handler runs and fails. Setup errors before the handler runs use other error types. */
+class BotExecutionFailedError extends OperationOutcomeError {}
 
 /**
  * The maximum number of attempts to get through the preamble (loading subscription and resource).
@@ -1027,7 +1024,11 @@ async function execBot(
   // returns { success: false, logResult: 'Bots not enabled' }; treat this project configuration
   // state as a no-op rather than failing or retrying the subscription job.
   if (!result.success && isBotEnabledForProject(runAsProject)) {
-    throw new BotExecutionFailedError(bot.id);
+    // Keep logResult (which may contain PHI) out of the error; it is already on the AuditEvent
+    throw new BotExecutionFailedError({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'processing', details: { text: `Bot execution failed (Bot/${bot.id})` } }],
+    });
   }
 }
 
@@ -1038,27 +1039,17 @@ async function catchJobError(
   job: Job<SubscriptionJobData>,
   err: unknown
 ): Promise<void> {
-  const configuredMaxAttempts = getExtension(
-    subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts'
-  )?.valueInteger;
-  const isBotExecutionFailure = err instanceof BotExecutionFailedError;
-  const maxJobAttempts = configuredMaxAttempts ?? (isBotExecutionFailure ? DEFAULT_BOT_MAX_ATTEMPTS : DEFAULT_ATTEMPTS);
-  const attemptsExhausted = isBotExecutionFailure
-    ? job.attemptsMade + 1 >= maxJobAttempts
-    : job.attemptsMade >= maxJobAttempts;
+  const maxJobAttempts =
+    getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
+      ?.valueInteger ?? (err instanceof BotExecutionFailedError ? DEFAULT_BOT_HANDLER_ATTEMPTS : DEFAULT_ATTEMPTS);
 
-  if (attemptsExhausted) {
-    // All retries exhausted - record as a final failure for auto-disable tracking.
-    // For Bot handler failures, only track toward auto-disable when subscription-max-attempts
-    // was explicitly configured so existing single-attempt Bot subscriptions are not auto-disabled.
+  if (job.attemptsMade >= maxJobAttempts) {
+    // All retries exhausted - record as a final failure for auto-disable tracking
     globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
-    if (!isBotExecutionFailure || configuredMaxAttempts !== undefined) {
-      const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
-      const result = await recordSubscriptionFailure(subscription.id, triggers);
-      if (result) {
-        await autoDisableSubscription(systemRepo, project, result.trigger, subscription, result.failureCount);
-      }
+    const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
+    const result = await recordSubscriptionFailure(subscription.id, triggers);
+    if (result) {
+      await autoDisableSubscription(systemRepo, project, result.trigger, subscription, result.failureCount);
     }
     // Throw a special error type to force BullMQ to move the job to failed state, instead of retrying again
     throw new UnrecoverableError(err instanceof Error ? err.message : 'Subscription exhausted available retries');

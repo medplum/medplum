@@ -1673,7 +1673,7 @@ describe('Subscription Worker', () => {
 
   test('Bot subscription retries on failure when subscription-max-attempts is configured', () =>
     withTestContext(async () => {
-      const { subscription } = await createBotSubscriptionFixture(3);
+      const { subscription } = await createBotSubscriptionFixture(2);
 
       let callCount = 0;
       mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
@@ -1733,8 +1733,9 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
+      // Same counting as rest-hooks: the initial run plus subscription-max-attempts retries
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
-      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(2);
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(3);
     }));
 
   test('Bot subscription setup errors still retry by default when subscription-max-attempts is omitted', () =>
@@ -1828,17 +1829,14 @@ describe('Subscription Worker', () => {
       }
     }));
 
-  test('Bot subscription auto-disable only tracks handler failures when subscription-max-attempts is configured', () =>
+  test('Bot subscription handler failures count toward auto-disable without subscription-max-attempts', () =>
     withTestContext(async () => {
       const savedAutoDisable = getConfig().subscriptionAutoDisable;
       getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 2, timeWindowSeconds: 600 }];
 
       try {
-        const { subscription: defaultSub } = await createBotSubscriptionFixture();
-        const { subscription: configuredSub } = await createBotSubscriptionFixture(2);
-
-        await clearSubscriptionFailures(defaultSub.id);
-        await clearSubscriptionFailures(configuredSub.id);
+        const { subscription } = await createBotSubscriptionFixture();
+        await clearSubscriptionFailures(subscription.id);
 
         mockLambdaClient.on(InvokeCommand).callsFake(() => ({
           FunctionError: 'Unhandled',
@@ -1851,18 +1849,14 @@ describe('Subscription Worker', () => {
             resourceType: 'Patient',
             name: [{ given: ['Alice'], family: `AutoDisableBot${i}` }],
           });
-          await expect(findAndExecSubscriptionJob(patient, 'create', defaultSub)).rejects.toThrow(UnrecoverableError);
-          await expect(findAndExecSubscriptionJob(patient, 'create', configuredSub)).rejects.toThrow(
+          await expect(findAndExecSubscriptionJob(patient, 'create', subscription)).rejects.toThrow(
             UnrecoverableError
           );
         }
 
-        const updatedDefault = await systemRepo.readResource<Subscription>('Subscription', defaultSub.id);
-        expect(updatedDefault.status).toBe('active');
-
-        const updatedConfigured = await systemRepo.readResource<Subscription>('Subscription', configuredSub.id);
-        expect(updatedConfigured.status).toBe('off');
-        expect(updatedConfigured.error).toContain('Automatically disabled');
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('off');
+        expect(updated.error).toContain('Automatically disabled');
       } finally {
         getConfig().subscriptionAutoDisable = savedAutoDisable;
       }
