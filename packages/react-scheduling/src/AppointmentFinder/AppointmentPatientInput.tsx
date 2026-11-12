@@ -20,6 +20,10 @@ const NAME_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 // systems that share the value and are filtered out below.
 const IDENTIFIER_SEARCH_CRITERIA = { _count: '10' };
 
+// `:not=true` rather than `=false`, which would also drop a patient whose
+// `deceased` was never indexed.
+const LIVING_CRITERIA = { 'deceased:not': 'true' };
+
 export interface AppointmentPatientInputProps {
   /** Read once, at mount. */
   readonly defaultValue?: WithId<Patient>;
@@ -44,8 +48,14 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
     async (input: string, signal: AbortSignal): Promise<WithId<Patient>[]> => {
       const mrn = input.trim();
       const [byIdentifier, byName] = await Promise.all([
-        mrn ? medplum.searchResources('Patient', { identifier: mrn, ...IDENTIFIER_SEARCH_CRITERIA }, { signal }) : [],
-        medplum.searchResources('Patient', { name: input, ...NAME_SEARCH_CRITERIA }, { signal }),
+        mrn
+          ? medplum.searchResources(
+              'Patient',
+              { identifier: mrn, ...IDENTIFIER_SEARCH_CRITERIA, ...LIVING_CRITERIA },
+              { signal }
+            )
+          : [],
+        medplum.searchResources('Patient', { name: input, ...NAME_SEARCH_CRITERIA, ...LIVING_CRITERIA }, { signal }),
       ]);
 
       // `identifier` matches every system, and a number typed may be somebody's

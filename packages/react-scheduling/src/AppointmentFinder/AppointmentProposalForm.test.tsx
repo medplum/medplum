@@ -1403,6 +1403,24 @@ describe('AppointmentProposalForm', () => {
       expect(options[0]).toHaveTextContent('Pat Quinn');
     });
 
+    test('Offers no patient who has died, by name or by medical record number', async () => {
+      await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Lee'], family: 'Whitfield' }],
+        birthDate: '1940-02-03',
+        deceasedDateTime: '2026-07-30T15:45:00.000Z',
+        identifier: [{ type: { coding: [MRN_IDENTIFIER_TYPE] }, value: '100200' }],
+      });
+      setup(medplum);
+
+      await typeInAutocomplete(field(/patient/i), 'Whitfield');
+      expect(await screen.findByText('Sam Whitfield')).toBeInTheDocument();
+      expect(screen.queryByText('Lee Whitfield')).not.toBeInTheDocument();
+
+      await typeInAutocomplete(field(/patient/i), '100200');
+      expect(await screen.findByText('Nothing found')).toBeInTheDocument();
+    });
+
     test('Leaves the patient out of the search for times', async () => {
       const get = vi.spyOn(medplum, 'get');
       setup(medplum);

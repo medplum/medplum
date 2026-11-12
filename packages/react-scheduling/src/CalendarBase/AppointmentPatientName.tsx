@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getDisplayString, isOk, normalizeErrorString } from '@medplum/core';
+import { getDisplayString, isDeceased, isOk, normalizeErrorString } from '@medplum/core';
 import type { Appointment, OperationOutcome } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -12,7 +12,8 @@ export interface AppointmentPatientNameProps {
 }
 
 /**
- * The appointment's patient, named as their own record names them.
+ * The appointment's patient, named as their own record names them, and marked
+ * "(deceased)" when that record says they have died.
  * @param props - The React props.
  * @returns The patient's name, or "No Patient" when the appointment has none.
  */
@@ -24,7 +25,11 @@ export function AppointmentPatientName(props: AppointmentPatientNameProps): JSX.
     return <>No Patient</>;
   }
   if (patient) {
-    return <>{getDisplayString(patient)}</>;
+    let name = getDisplayString(patient);
+    if (isDeceased(patient)) {
+      name += ' (deceased)';
+    }
+    return <>{name}</>;
   }
   // The reference's display is a copy from when it was written, so it only stands in until the
   // patient is read.
