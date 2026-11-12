@@ -24,13 +24,16 @@ The User, Bot, or ClientApplication invoking this operation must have [project a
 
 ## Parameters
 
-The operation takes an optional `option` parameter, which is an object containing three fields:
+The operation takes an optional request body, which is an object containing the following fields:
 
-| Option         | Description                                                                                                                                                                                                                       | Data Type                                | Default Value |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------- |
-| `verbose`      | Indicates if verbose logging should be enabled.                                                                                                                                                                                   | `boolean`                                | `false`       |
-| `interaction`  | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent. | `update` &#124; `create` &#124; `delete` | `update`      |
-| `subscription` | A specific [`Subscription`](/docs/api/fhir/resources/subscription) to trigger, formatted as `Subscription/<id>`. If left undefined, all [`Subscriptions`](/docs/api/fhir/resources/subscription) will be triggered.               | `string`                                 | `undefined`   |
+| Option              | Description                                                                                                                                                                                                                                                          | Data Type                                | Default Value |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------- |
+| `verbose`           | Indicates if verbose logging should be enabled.                                                                                                                                                                                                                      | `boolean`                                | `false`       |
+| `interaction`       | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent. `delete` requires a [specific version](#resend-a-specific-version). | `update` &#124; `create` &#124; `delete` | `update`      |
+| `subscription`      | A specific [`Subscription`](/docs/api/fhir/resources/subscription) to trigger, formatted as `Subscription/<id>`. If left undefined, all [`Subscriptions`](/docs/api/fhir/resources/subscription) will be triggered.                                                   | `string`                                 | `undefined`   |
+| `previousVersionId` | Only for a [specific version](#resend-a-specific-version) with the `update` interaction. The version ID used as the previous version (`%previous`) when evaluating subscription criteria.                                                                             | `string`                                 | `undefined`   |
+
+By default, `$resend` sends the current version of the resource. With the `update` interaction, the resource must not have changed since the version being resent, and the previous version in the resource history is used when evaluating subscription criteria.
 
 ## Invoke the `$resend` operation
 
@@ -66,6 +69,48 @@ curl 'https://api.medplum.com/fhir/R4/<resourceType>/<resourceId>/$resend' \
 
   {{< /tab >}}
 {{< /tabs >}}
+
+## Resend a specific version
+
+To replay the original event for a historical version of a resource, for example after a webhook endpoint outage, invoke `$resend` on the version URL:
+
+```
+POST /fhir/R4/<resourceType>/<id>/_history/<versionId>/$resend
+```
+
+The subscription criteria are evaluated against that version, and that version is delivered, even if the resource has changed since.
+
+- **Create**: pass `"interaction": "create"` to replay the event for the version that was created.
+- **Update**: pass `"interaction": "update"` (the default). Optionally pass `previousVersionId` to compare against the version that came before it, which is needed for criteria that use `%previous`. If omitted, criteria are evaluated without a previous version.
+- **Delete**: pass `"interaction": "delete"`, and use the last version before the delete as `<versionId>`. The resource must currently be deleted.
+
+{{< tabs >}}
+  {{< tab value="ts" label="TypeScript" >}}
+{{< highlight ts >}}
+await medplum.post(medplum.fhirUrl(<resourceType>, <id>, '_history', <versionId>, '$resend'), {
+  interaction: 'update',
+  previousVersionId: <previousVersionId>,
+  subscription: 'Subscription/123'
+});
+{{< /highlight >}}
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/<resourceType>/<resourceId>/_history/<versionId>/$resend' \
+-X 'POST' \
+-H 'authorization: Bearer MY_ACCESS_TOKEN' \
+-H 'content-type: application/fhir+json' \
+--data-raw '{"interaction":"update","previousVersionId":"<previousVersionId>","subscription":"Subscription/123"}'
+```
+
+  {{< /tab >}}
+{{< /tabs >}}
+
+{{< note title="Limitations" >}}
+- A historical version is delivered with a single attempt. Retries are skipped once the resource has changed since that version, so check the subscription's AuditEvents after a replay and resend again if needed.
+- A `create` or `update` replay is not delivered if the resource has been deleted since.
+{{< /note >}}
 
 ### Output
 
