@@ -20,8 +20,9 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
   /**
-   * Names the search field for assistive technology, for use without a visible `label`. The name is
-   * attached to the field, which is hidden while disabled or once a resource is chosen.
+   * Names the field for assistive technology, for use instead of a visible `label` (don't pass both). The name
+   * goes on the search box and on a group around the whole field, which keeps the chosen resource named while the
+   * search box is hidden (disabled or once a resource is chosen).
    */
   readonly 'aria-label'?: AsyncAutocompleteProps<T>['aria-label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
