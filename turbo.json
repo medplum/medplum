@@ -17,7 +17,8 @@
         "MEDPLUM_REGISTER_ENABLED",
         "GOOGLE_CLIENT_ID",
         "RECAPTCHA_SITE_KEY",
-        "FOOMEDICAL_PROJECT_ID"
+        "FOOMEDICAL_PROJECT_ID",
+        "MEDPLUM_PROJECT_ID"
       ]
     },
     "test": {

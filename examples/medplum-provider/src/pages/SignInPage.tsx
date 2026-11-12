@@ -20,7 +20,7 @@ export function SignInPage(): JSX.Element {
           ? () => navigate('/register')?.catch(console.error)
           : undefined
       }
-      projectId={searchParams.get('project') || undefined}
+      projectId={searchParams.get('project') || import.meta.env.MEDPLUM_PROJECT_ID || undefined}
       login={searchParams.get('login') || undefined}
     >
       <Logo size={32} />
