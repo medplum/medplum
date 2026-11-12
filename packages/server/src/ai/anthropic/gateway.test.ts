@@ -345,6 +345,19 @@ describe('AI gateway', () => {
     });
   });
 
+  test('Checks access before parsing the body', async () => {
+    const noAi = await createTestProject({ withAccessToken: true });
+
+    const res = await request(app)
+      .post('/ai/anthropic/v1/messages')
+      .set('x-api-key', noAi.accessToken)
+      .set('Content-Type', 'application/json')
+      .send('{ not json');
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.type).toBe('permission_error');
+  });
+
   test('Supported account types', async () => {
     bedrock.on(InvokeModelCommand).resolves({
       body: { transformToString: () => JSON.stringify(message) } as any,

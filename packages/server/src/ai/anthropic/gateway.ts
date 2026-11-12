@@ -61,6 +61,7 @@ export function apiKeyAsBearer(req: Request, _res: Response, next: NextFunction)
 export function createAnthropicGatewayRouter(): Router {
   const provider = new BedrockAnthropicProvider(getConfig().awsRegion);
   const router = Router().use(authenticateRequest);
+  router.use(requireGatewayAccess);
   router.use(json({ limit: '20mb' }));
   router.post('/v1/messages', (req, res) => handleMessages(provider, req, res));
   router.use(gatewayErrorHandler);
@@ -97,13 +98,24 @@ function gatewayErrorHandler(err: unknown, _req: Request, res: Response, next: N
   sendError(res, status, message);
 }
 
-async function handleMessages(provider: AnthropicMessagesProvider, req: Request, res: Response): Promise<void> {
+/**
+ * Rejects callers that may not use the AI gateway.
+ * Runs before the body parser, so a rejected request body is never read.
+ * @param _req - The request.
+ * @param res - The response.
+ * @param next - The next handler.
+ */
+function requireGatewayAccess(_req: Request, res: Response, next: NextFunction): void {
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai-gateway') || !isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
     sendError(res, 403, 'The AI gateway is not enabled for this account');
     return;
   }
+  next();
+}
 
+async function handleMessages(provider: AnthropicMessagesProvider, req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const body = req.body as Record<string, unknown> | undefined;
   const model = body?.model;
   if (!body || typeof model !== 'string') {
