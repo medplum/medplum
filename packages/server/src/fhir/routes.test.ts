@@ -6,13 +6,14 @@ import type { Bundle, Meta, Organization, Parameters, Patient, Reference } from 
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import type { MockInstance } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { getSubscriptionQueue } from '../workers/subscription';
 
 const app = express();
 let accessToken: string;
@@ -912,6 +913,58 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res5).toHaveStatus(404);
+  });
+
+  test('Resend specific version queues subscription job', async () => {
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // No X-Medplum: extended header, like a normal API client
+    const subRes = await request(app)
+      .post(`/fhir/R4/Subscription`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: 'https://example.com/subscription' },
+      });
+    expect(subRes).toHaveStatus(201);
+
+    const patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ family: 'Smith' }] });
+    expect(patientRes).toHaveStatus(201);
+    const patient = patientRes.body as WithId<Patient>;
+
+    const add = getSubscriptionQueue()?.add as Mock;
+    add.mockClear();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/_history/${patient.meta?.versionId}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ interaction: 'create', subscription: `Subscription/${subRes.body.id}` });
+    expect(res).toHaveStatus(200);
+    expect(add).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        subscriptionId: subRes.body.id,
+        id: patient.id,
+        versionId: patient.meta?.versionId,
+        interaction: 'create',
+      })
+    );
   });
 
   test('Resend specific version access denied', async () => {

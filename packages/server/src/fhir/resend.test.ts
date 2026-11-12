@@ -70,6 +70,71 @@ describe('Resend subscriptions', () => {
       });
     }));
 
+  test('Resend historical version without extended mode', () =>
+    withTestContext(async () => {
+      // Normal API requests do not use extended mode, which strips meta.project from read results
+      const { repo: nonExtendedRepo } = await createTestProject({
+        withRepo: true,
+        membership: { admin: true },
+        extendedMode: false,
+      });
+      const subscription = await nonExtendedRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: 'https://example.com/subscription' },
+      });
+      const v1 = await nonExtendedRepo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'One' }] });
+      const v2 = await nonExtendedRepo.updateResource<Patient>({ ...v1, name: [{ family: 'Two' }] });
+
+      const add = clearQueue();
+      await nonExtendedRepo.resendSubscriptions('Patient', v1.id, {
+        versionId: v1.meta?.versionId,
+        interaction: 'create',
+      });
+      await nonExtendedRepo.resendSubscriptions('Patient', v1.id, {
+        versionId: v2.meta?.versionId,
+        previousVersionId: v1.meta?.versionId,
+      });
+
+      const jobs = getQueuedJobs(add);
+      expect(jobs).toHaveLength(2);
+      expect(jobs[0]).toMatchObject({ subscriptionId: subscription.id, versionId: v1.meta?.versionId });
+      expect(jobs[1]).toMatchObject({ subscriptionId: subscription.id, versionId: v2.meta?.versionId });
+    }));
+
+  test('Historical version criteria are evaluated against hidden fields', () =>
+    withTestContext(async () => {
+      // The subscription worker delivers the full version, so criteria must see the full version too
+      const { repo: policyRepo } = await createTestProject({
+        withRepo: true,
+        membership: { admin: true },
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient', hiddenFields: ['gender'] }, { resourceType: 'Subscription' }],
+        },
+      });
+      await policyRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient?gender=female',
+        channel: { type: 'rest-hook', endpoint: 'https://example.com/subscription' },
+      });
+      const patient = await policyRepo.getSystemRepo().createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: policyRepo.currentProject()?.id },
+        gender: 'female',
+      });
+
+      const add = clearQueue();
+      await policyRepo.resendSubscriptions('Patient', patient.id, {
+        versionId: patient.meta?.versionId,
+        interaction: 'create',
+      });
+      expect(getQueuedJobs(add)).toHaveLength(1);
+    }));
+
   test('Historical version is compared against the specified previous version', () =>
     withTestContext(async () => {
       // Only fires when the family name changed from the previous version

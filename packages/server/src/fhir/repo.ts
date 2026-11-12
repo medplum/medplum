@@ -1522,9 +1522,14 @@ export class Repository extends FhirRepository implements Disposable {
           throw new OperationOutcomeError(preconditionFailed);
         }
       }
-      resource = await this.readVersion<T>(resourceType, id, versionId);
+      // Authorize with the caller's access checks first.
+      await this.readVersion<T>(resourceType, id, versionId);
+      // Then load the unredacted versions, exactly as the subscription worker does for delivery,
+      // so that meta.project is present and criteria are evaluated against the delivered payload.
+      const systemRepo = this.getSystemRepo();
+      resource = await systemRepo.readVersion<T>(resourceType, id, versionId);
       if (options?.previousVersionId) {
-        previousVersion = await this.readVersion<T>(resourceType, id, options.previousVersionId);
+        previousVersion = await systemRepo.readVersion<T>(resourceType, id, options.previousVersionId);
       }
     } else {
       if (interaction === 'delete') {
