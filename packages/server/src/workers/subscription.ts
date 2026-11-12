@@ -646,7 +646,8 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     error = err;
     throw err;
   } finally {
-    getLogger().info('Subscription job attempt', {
+    const logger = getLogger();
+    const fields = {
       jobId: job.id,
       resource: `${job.data.resourceType}/${job.data.id}`,
       versionId: job.data.versionId,
@@ -654,9 +655,19 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       attemptsMade: job.attemptsMade,
       ...summary,
       error: error === undefined ? undefined : normalizeErrorString(error),
-      queuedDurationMs: job.processedOn && job.processedOn - job.timestamp,
+      // Only the first attempt has a meaningful queue wait; on retries it includes previous attempts and requeue
+      queuedDurationMs: job.attemptsMade === 0 && job.processedOn ? job.processedOn - job.timestamp : undefined,
+      totalDelayMs: job.processedOn ? job.processedOn - job.timestamp : undefined,
       executionDurationMs: Date.now() - startTime,
-    });
+    };
+
+    if (error instanceof UnrecoverableError) {
+      logger.error('Subscription job attempt', fields);
+    } else if (error !== undefined) {
+      logger.warn('Subscription job attempt', fields);
+    } else {
+      logger.info('Subscription job attempt', fields);
+    }
   }
 }
 
@@ -735,10 +746,8 @@ async function deliverSubscriptionJob(job: Job<SubscriptionJobData>, summary: Su
       throw err;
     }
 
-    // Too many errors in the preamble, give up
-    globalLogger.error('Subscription job preamble failed too many times, giving up', getLoggingFields(job));
-    summary.skipReason = 'Preamble failed too many times';
-    return;
+    // Too many errors in the preamble, give up. UnrecoverableError moves the job to failed instead of retrying.
+    throw new UnrecoverableError(`Preamble failed too many times: ${normalizeErrorString(err)}`);
   }
 
   try {
@@ -842,6 +851,7 @@ async function sendRestHook(
     return;
   }
   summary.delivery = 'rest-hook';
+  summary.url = url;
 
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   const headers = buildRestHookHeaders(job, subscription, resource, interaction, body);
@@ -891,7 +901,6 @@ async function sendRestHook(
   recordHistogramValue('medplum.subscription.restHookFetchDuration', summary.fetchDurationMs / 1000);
 
   if (error) {
-    summary.url = url;
     throw error;
   }
 }
