@@ -297,6 +297,53 @@ describe('Email', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
+  test('Fetch URL attachment via safeFetch', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('hello world'));
+    try {
+      await sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'text1.txt', path: 'https://example.com/text1.txt' }],
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.com/text1.txt',
+        expect.objectContaining({ dispatcher: expect.anything() })
+      );
+    } finally {
+      fetchSpy.mockRestore();
+    }
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.attachments).toHaveLength(1);
+    expect(parsed.attachments[0].content.toString()).toBe('hello world');
+  });
+
+  test('Block metadata URL attachment', async () => {
+    await expect(
+      sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'creds.json', path: 'https://169.254.170.2/v2/metadata' }],
+      })
+    ).rejects.toThrow('Failed to fetch attachment: Outbound request to unsafe hostname 169.254.170.2 is blocked');
+
+    expect(mockSESv2Client.send.callCount).toBe(0);
+  });
+
+  test('Block nodemailer URL access', async () => {
+    await expect(
+      sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'creds.json', href: 'https://169.254.170.2/v2/metadata' }],
+      })
+    ).rejects.toThrow('Invalid email options: Url access rejected for https://169.254.170.2/v2/metadata');
+  });
+
   test('Catch invalid options', async () => {
     await expect(
       sendEmail(systemRepo, {

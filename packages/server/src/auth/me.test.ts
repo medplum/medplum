@@ -457,9 +457,44 @@ describe('Me', () => {
 
     const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res).toHaveStatus(200);
-    expect(res.body.profile.resourceType).toBe('Practitioner');
+    expect(res.body.profile).toStrictEqual({
+      resourceType: 'Practitioner',
+      id: resolveId(res.body.membership.profile),
+    });
     expect(res.body.user).toBeDefined();
     expect(res.body.security).toBeUndefined();
+  });
+
+  test('Profile hidden fields are removed', async () => {
+    const { project } = await createTestProject();
+    const { accessToken } = await withTestContext(() =>
+      addTestUser(project, {
+        resourceType: 'Patient',
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?_id=%profile.id', hiddenFields: ['name'] }],
+        },
+      })
+    );
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.profile.resourceType).toBe('Patient');
+    expect(res.body.profile.name).toBeUndefined();
+    expect(res.body.profile.meta.project).toBe(project.id);
+  });
+
+  test('Profile returned when access policy does not grant the profile type', async () => {
+    const { project } = await createTestProject();
+    const { accessToken } = await withTestContext(() =>
+      addTestUser(project, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Observation' }] },
+      })
+    );
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res).toHaveStatus(200);
+    expect(res.body.profile.name).toStrictEqual([{ given: ['Bob'], family: 'Jones' }]);
   });
 
   test('Project features are returned in /auth/me', async () => {

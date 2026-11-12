@@ -827,4 +827,21 @@ describe('Infra', () => {
       0
     );
   });
+
+  test('HTTPS listeners use loadBalancerSslPolicy', async () => {
+    const sslPolicy = 'ELBSecurityPolicy-TLS13-1-2-Res-FIPS-PQ-2025-09';
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumSslPolicyStack',
+      loadBalancerSslPolicy: sslPolicy,
+      mtlsDomainName: 'mtls.medplum.com',
+      mtlsSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.resourcePropertiesCountIs('AWS::ElasticLoadBalancingV2::Listener', { SslPolicy: sslPolicy }, 2);
+  });
 });

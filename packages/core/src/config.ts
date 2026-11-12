@@ -94,6 +94,8 @@ export interface MedplumSourceInfraConfig {
   loadBalancerLoggingBucket?: ValueOrExternalSecret<string>;
   loadBalancerLoggingPrefix?: ValueOrExternalSecret<string>;
   loadBalancerAlgorithm?: ValueOrExternalSecret<'round_robin' | 'least_outstanding_requests' | 'weighted_random'>;
+  /** ELB security policy for the HTTPS listeners, e.g. `ELBSecurityPolicy-TLS13-1-2-PQ-2025-09`. Defaults to `ELBSecurityPolicy-TLS13-1-2-2021-06`. */
+  loadBalancerSslPolicy?: ValueOrExternalSecret<string>;
   guardDutyMalwareProtectionEnabled?: ValueOrExternalSecret<boolean>;
   /** With guardDutyMalwareProtectionEnabled, scan only via Binary $scan, and only block Binaries with threats found. */
   guardDutyMalwareProtectionOnDemandOnly?: ValueOrExternalSecret<boolean>;
@@ -275,6 +277,8 @@ export interface MedplumInfraConfig {
   loadBalancerLoggingBucket?: string;
   loadBalancerLoggingPrefix?: string;
   loadBalancerAlgorithm?: 'round_robin' | 'least_outstanding_requests' | 'weighted_random';
+  /** ELB security policy for the HTTPS listeners, e.g. `ELBSecurityPolicy-TLS13-1-2-PQ-2025-09`. Defaults to `ELBSecurityPolicy-TLS13-1-2-2021-06`. */
+  loadBalancerSslPolicy?: string;
   guardDutyMalwareProtectionEnabled?: boolean;
   /** With guardDutyMalwareProtectionEnabled, scan only via Binary $scan, and only block Binaries with threats found. */
   guardDutyMalwareProtectionOnDemandOnly?: boolean;
