@@ -18,6 +18,7 @@ import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
+import { BEDROCK_ANTHROPIC_VERSION } from '../../cloud/aws/bedrock';
 import { loadTestConfig } from '../../config/loader';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 
@@ -81,7 +82,7 @@ describe('AI gateway', () => {
     const input = bedrock.commandCalls(InvokeModelCommand)[0].args[0].input;
     expect(input.modelId).toBe(MODEL_ID);
     expect(JSON.parse(input.body as string)).toStrictEqual({
-      anthropic_version: 'bedrock-2023-05-31',
+      anthropic_version: BEDROCK_ANTHROPIC_VERSION,
       anthropic_beta: ['context-1m-2025-08-07', 'interleaved-thinking-2025-05-14'],
       max_tokens: 100,
       messages: [{ role: 'user', content: 'Hi' }],
