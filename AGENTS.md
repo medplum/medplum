@@ -11,7 +11,7 @@ including when starting from Medplum Provider.
 
 Read these files before proposing an approach or beginning setup or implementation:
 
-- `packages/docs/docs/building-with-ai-coding-assistants.md`
+- `packages/docs/content/docs/building-with-ai-coding-assistants.md`
 - `packages/docs/static/ai/medplum-rules.md`
 
 Apply the rules to the current conversation immediately, even before an application folder exists. Initial planning does
@@ -27,8 +27,8 @@ this checkout's actual location.
 
 ## Changes to Medplum
 
-Follow `packages/docs/docs/contributing/index.md` and the relevant package documentation. For local development setup, read
-`packages/docs/docs/contributing/local-dev-setup/local-dev-setup.md`.
+Follow `packages/docs/content/docs/contributing/_index.md` and the relevant package documentation. For local development setup, read
+`packages/docs/content/docs/contributing/local-dev-setup/index.md`.
 
 Read the relevant technical and workflow documentation before proposing an approach. Plan, set up, or implement as
 requested; routine fixes do not require a new application plan.
