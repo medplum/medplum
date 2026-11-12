@@ -51,7 +51,6 @@ function isOriginAllowed(origin: string | undefined): boolean {
 const prefixes = [
   '/.well-known/',
   '/admin/',
-  '/ai/',
   '/auth/',
   '/cds-services',
   '/dicomweb/',

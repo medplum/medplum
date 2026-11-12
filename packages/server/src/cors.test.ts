@@ -167,19 +167,6 @@ describe('CORS', () => {
     }
   );
 
-  test.each(['/ai/anthropic/v1/messages', '/api/ai/anthropic/v1/messages'])('Allow AI path %s', (path) => {
-    const req = {
-      header: () => 'http://localhost:3000',
-      path,
-    } as unknown as Request;
-    const callback = vi.fn();
-    corsOptions(req, callback);
-    expect(callback).toHaveBeenCalledWith(
-      null,
-      expect.objectContaining({ credentials: true, origin: 'http://localhost:3000' })
-    );
-  });
-
   test('FHIR response includes RateLimit in Access-Control-Expose-Headers', async () => {
     const app = express();
     const config = await loadTestConfig();

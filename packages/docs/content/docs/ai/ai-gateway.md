@@ -38,9 +38,6 @@ import Anthropic from '@anthropic-ai/sdk';
 const anthropic = new Anthropic({
   baseURL: 'https://api.medplum.com/ai/anthropic',
   apiKey: medplum.getAccessToken(),
-  // Required when running in a browser. The key is the user's own Medplum access token,
-  // not a model provider credential, so it is safe to use client-side.
-  dangerouslyAllowBrowser: true,
 });
 
 const message = await anthropic.messages.create({
