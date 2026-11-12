@@ -898,6 +898,28 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ subscription: 'Subscription/123' });
     expect(res3).toHaveStatus(200);
+
+    // Resend a specific version
+    const res4 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/_history/${profile.meta?.versionId}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ interaction: 'create' });
+    expect(res4).toHaveStatus(200);
+
+    // Resend an unknown version
+    const res5 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/_history/${randomUUID()}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res5).toHaveStatus(404);
+  });
+
+  test('Resend specific version access denied', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patientId}/_history/${patientVersionId}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res).toHaveStatus(403);
   });
 
   test('ProjectMembership with null access policy', async () =>

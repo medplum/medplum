@@ -174,6 +174,18 @@ export interface ReadResourceOptions extends InteractionOptions {
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
   subscription?: string;
+  /**
+   * Optional version ID of the resource to resend.
+   * When specified, subscriptions are evaluated and delivered for that historical version,
+   * rather than the current version.
+   * Required when `interaction` is `delete`, in which case it must be the last version before the delete.
+   */
+  versionId?: string;
+  /**
+   * Optional version ID of the previous version, used with `versionId` when evaluating `update` criteria.
+   * If omitted, the historical version is evaluated without a previous version.
+   */
+  previousVersionId?: string;
 }
 
 export interface ProcessAllResourcesOptions {
@@ -1468,6 +1480,10 @@ export class Repository extends FhirRepository implements Disposable {
    * Resends subscriptions for the resource.
    * This is only available to the admin accounts.
    * This should not result in any change to the resource or its history.
+   *
+   * By default, subscriptions are resent for the current version of the resource.
+   * If `options.versionId` is specified, subscriptions are resent for that historical version,
+   * which allows replaying the original event after a delivery outage.
    * @param resourceType - The resource type.
    * @param id - The resource ID.
    * @param options - Additional options.
@@ -1483,16 +1499,45 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(forbidden);
     }
 
-    const resource = await this.readResourceImpl<T>(resourceType, id);
     const interaction = options?.interaction ?? 'update';
+    const versionId = options?.versionId;
+    if (options?.previousVersionId && (!versionId || interaction !== 'update')) {
+      throw new OperationOutcomeError(
+        badRequest('previousVersionId is only supported with versionId and the update interaction')
+      );
+    }
+    let resource: WithId<T>;
     let previousVersion: T | undefined;
 
-    if (interaction === 'update') {
-      const history = await this.readHistory(resourceType, id, { limit: 2 });
-      if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
-        throw new OperationOutcomeError(preconditionFailed);
+    if (versionId) {
+      if (interaction === 'delete') {
+        // Only replay a delete event for a resource that is actually deleted
+        const current = await this.readResourceImpl<T>(resourceType, id).catch((err) => {
+          if (isGone(normalizeOperationOutcome(err))) {
+            return undefined;
+          }
+          throw err;
+        });
+        if (current) {
+          throw new OperationOutcomeError(preconditionFailed);
+        }
       }
-      previousVersion = history.entry?.[1]?.resource;
+      resource = await this.readVersion<T>(resourceType, id, versionId);
+      if (options?.previousVersionId) {
+        previousVersion = await this.readVersion<T>(resourceType, id, options.previousVersionId);
+      }
+    } else {
+      if (interaction === 'delete') {
+        throw new OperationOutcomeError(badRequest('versionId is required to resend a delete interaction'));
+      }
+      resource = await this.readResourceImpl<T>(resourceType, id);
+      if (interaction === 'update') {
+        const history = await this.readHistory(resourceType, id, { limit: 2 });
+        if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
+          throw new OperationOutcomeError(preconditionFailed);
+        }
+        previousVersion = history.entry?.[1]?.resource;
+      }
     }
 
     return addSubscriptionJobs(
