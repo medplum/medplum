@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, parseJWTPayload } from '@medplum/core';
+import { ContentType, getReferenceString, Logger, parseJWTPayload } from '@medplum/core';
 import type { Bot, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -163,7 +163,7 @@ describe('CDS Hooks', () => {
     expect(res.body.cards).toBeDefined();
   });
 
-  test('CDS hook bot runs with the SMART scopes of the caller', async () => {
+  test('CDS hook bot run by a caller with SMART scopes is logged', async () => {
     const res1 = await request(app)
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -186,13 +186,32 @@ describe('CDS Hooks', () => {
 
     const scope = 'openid user/Bot.rs';
     const user = await withTestContext(() => addTestUser(project, { scope }));
-    const res3 = await request(app)
-      .post(`/cds-services/${bot.id}`)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + user.accessToken)
-      .send({ hookInstance: 'd1577c69-dfbe-44ad-ba6d-3e05e953b2ea', hook: 'patient-view', context: {} });
-    expect(res3).toHaveStatus(200);
-    expect(parseJWTPayload(res3.body.cards[0].summary).scope).toBe(scope);
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      const res3 = await request(app)
+        .post(`/cds-services/${bot.id}`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + user.accessToken)
+        .send({ hookInstance: 'd1577c69-dfbe-44ad-ba6d-3e05e953b2ea', hook: 'patient-view', context: {} });
+      expect(res3).toHaveStatus(200);
+      expect(parseJWTPayload(res3.body.cards[0].summary).scope).toBe('openid');
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Bot ran as a caller with SMART scopes');
+      expect(calls.map(([, data]) => data)).toStrictEqual([
+        {
+          botId: bot.id,
+          runAsProject: project.id,
+          callerMembership: getReferenceString(user.membership),
+          callerProfile: getReferenceString(user.profile),
+          scope,
+          launch: undefined,
+          entryPoint: 'cds',
+          suppressed: 0,
+        },
+      ]);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('Cannot call normal bot as CDS service', async () => {

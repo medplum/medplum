@@ -91,6 +91,7 @@ export async function tryCustomOperation(
     bot,
     runAs,
     callerLogin: runAs.id === ctx.membership.id ? ctx.login : undefined,
+    entryPoint: 'custom-operation',
     runAsProject: ctx.project,
     requester: ctx.membership.profile,
     input,

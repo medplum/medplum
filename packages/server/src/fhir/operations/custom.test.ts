@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, ContentType, createReference, parseJWTPayload } from '@medplum/core';
+import { badRequest, ContentType, createReference, getReferenceString, Logger, parseJWTPayload } from '@medplum/core';
 import type { Bot, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -280,8 +280,11 @@ describe('Custom operation', () => {
     });
   });
 
-  test('Bot runs with the SMART scopes of the caller', async () => {
-    const { project, accessToken: adminToken } = await createTestProject({ withAccessToken: true });
+  test('Bot run by a caller with SMART scopes is logged', async () => {
+    const { project, accessToken: adminToken } = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+    });
 
     const res1 = await request(app)
       .post('/fhir/R4/Bot')
@@ -323,13 +326,32 @@ describe('Custom operation', () => {
 
     const scope = 'openid user/Bot.rs user/OperationDefinition.rs';
     const user = await withTestContext(() => addTestUser(project, { scope }));
-    const res4 = await request(app)
-      .post('/fhir/R4/$scope-operation')
-      .set('Authorization', 'Bearer ' + user.accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
-    expect(res4).toHaveStatus(200);
-    expect(parseJWTPayload(res4.body.parameter[0].valueString).scope).toBe(scope);
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      const res4 = await request(app)
+        .post('/fhir/R4/$scope-operation')
+        .set('Authorization', 'Bearer ' + user.accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res4).toHaveStatus(200);
+      expect(parseJWTPayload(res4.body.parameter[0].valueString).scope).toBe('openid');
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Bot ran as a caller with SMART scopes');
+      expect(calls.map(([, data]) => data)).toStrictEqual([
+        {
+          botId: bot.id,
+          runAsProject: project.id,
+          callerMembership: getReferenceString(user.membership),
+          callerProfile: getReferenceString(user.profile),
+          scope,
+          launch: undefined,
+          entryPoint: 'custom-operation',
+          suppressed: 0,
+        },
+      ]);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('Returns Parameters from bot unchanged', async () => {

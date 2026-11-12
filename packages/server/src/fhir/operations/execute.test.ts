@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import {
   ContentType,
+  Logger,
   Operator,
   badRequest,
   createReference,
@@ -769,11 +770,11 @@ describe('Execute', () => {
     expect(profileToken.profile).toEqual(getReferenceString(profile));
   });
 
-  test.each<[string, Partial<Bot>, boolean, string]>([
-    ['runAsUser', { runAsUser: true }, false, 'openid user/Bot.rs'],
-    ['without a membership', {}, false, 'openid user/Bot.rs'],
-    ['with its own membership', {}, true, 'openid'],
-  ])('Bot %s and a caller with SMART scopes', async (_name, botProps, withMembership, expectedScope) => {
+  test.each<[string, Partial<Bot>, boolean]>([
+    ['runAsUser', { runAsUser: true }, false],
+    ['without a membership', {}, false],
+    ['with its own membership', {}, true],
+  ])('Bot %s and a caller with SMART scopes', async (_name, botProps, withMembership) => {
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -799,19 +800,43 @@ describe('Execute', () => {
       .send({ code: `exports.handler = async (medplum) => ({ token: medplum.getAccessToken() });` });
     expect(res2).toHaveStatus(200);
 
-    const user = await withTestContext(() => addTestUser(project1, { scope: 'openid user/Bot.rs' }));
-    const res3 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + user.accessToken)
-      .send({});
-    expect(res3).toHaveStatus(200);
-    expect(parseJWTPayload(res3.body.token).scope).toBe(expectedScope);
+    const scope = 'openid user/Bot.rs';
+    const user = await withTestContext(() => addTestUser(project1, { scope }));
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      const res3 = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + user.accessToken)
+        .send({});
+      expect(res3).toHaveStatus(200);
+      expect(parseJWTPayload(res3.body.token).scope).toBe('openid');
 
-    const res4 = await request(app)
-      .get(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + res3.body.token);
-    expect(res4).toHaveStatus(withMembership ? 200 : 403);
+      const res4 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + res3.body.token);
+      expect(res4).toHaveStatus(200);
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Bot ran as a caller with SMART scopes');
+      expect(calls.map(([, data]) => data)).toStrictEqual(
+        withMembership
+          ? []
+          : [
+              {
+                botId: bot.id,
+                runAsProject: project1.id,
+                callerMembership: getReferenceString(user.membership),
+                callerProfile: getReferenceString(user.profile),
+                scope,
+                launch: undefined,
+                entryPoint: 'execute',
+                suppressed: 0,
+              },
+            ]
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('Propagates trace ID', async () => {

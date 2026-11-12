@@ -122,6 +122,7 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
     bot,
     runAs,
     callerLogin: runAs.id === ctx.membership.id ? ctx.login : undefined,
+    entryPoint: 'execute',
     runAsProject: ctx.project,
     requester: ctx.membership.profile,
     input: req.method === 'POST' ? getBotBodyInput(bot, req.body, res.locals.rawBody) : req.query,

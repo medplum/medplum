@@ -22,8 +22,10 @@ export interface BotExecutionRequest {
   readonly bot: WithId<Bot>;
   readonly runAs: WithId<ProjectMembership>;
   readonly runAsProject?: WithId<Project>;
-  /** The caller's login when `runAs` is the caller's own membership; its SMART scopes and launch context also limit the bot */
+  /** The caller's login when `runAs` is the caller's own membership */
   readonly callerLogin?: Pick<Login, 'scope' | 'launch'>;
+  /** The route a caller invoked the bot through */
+  readonly entryPoint?: 'execute' | 'custom-operation' | 'cds' | 'agent';
   readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   readonly input: any;
   readonly contentType: string;

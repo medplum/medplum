@@ -6,6 +6,7 @@ import {
   badRequest,
   ContentType,
   createReference,
+  getReferenceString,
   getStatus,
   Hl7Message,
   isGone,
@@ -42,6 +43,7 @@ import { findProjectMembership } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getPermittedProjectIds } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
+import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
@@ -49,6 +51,7 @@ import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
 const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
+const callerSmartScopesLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
  * Returns the bot's project membership.
@@ -95,6 +98,32 @@ export async function getBotProjectMembership(
  */
 export function getBotBodyInput(bot: Bot, body: unknown, rawBody: Buffer | undefined): unknown {
   return bot.rawBody && rawBody ? rawBody.toString('utf8') : body;
+}
+
+/**
+ * Diagnostic logging for bots that run as a caller whose login has SMART resource scopes or a SMART App Launch
+ * context. The bot's access token does not carry them, so they do not limit the bot.
+ * @param request - The bot execution request.
+ */
+export function logBotCallerSmartScopes(request: BotExecutionRequest): void {
+  const { bot, runAs, callerLogin, entryPoint } = request;
+  if (!callerLogin || (parseSmartScopes(callerLogin.scope).length === 0 && !callerLogin.launch)) {
+    return;
+  }
+  const runAsProject = resolveId(runAs.project);
+  const key = [runAsProject, bot.id, runAs.id, entryPoint, callerLogin.scope].join('|');
+  callerSmartScopesLogThrottle.maybeLog(key, (suppressed) => {
+    getLogger().warn('Bot ran as a caller with SMART scopes', {
+      botId: bot.id,
+      runAsProject,
+      callerMembership: getReferenceString(runAs),
+      callerProfile: runAs.profile?.reference,
+      scope: callerLogin.scope,
+      launch: callerLogin.launch?.reference,
+      entryPoint,
+      suppressed,
+    });
+  });
 }
 
 /**
@@ -307,34 +336,24 @@ export function clearBotAccessTokenCache(): void {
   botAccessTokenInFlight.clear();
 }
 
-export function getBotAccessToken(
-  bot: WithId<Bot>,
-  runAs: WithId<ProjectMembership>,
-  callerLogin?: BotExecutionRequest['callerLogin']
-): Promise<string> {
+export function getBotAccessToken(bot: WithId<Bot>, runAs: WithId<ProjectMembership>): Promise<string> {
   const versionId = runAs.meta?.versionId;
   if (!versionId) {
     // Without a versionId, changes to the membership can't be detected, so the token is never cached
-    return ensureBotAccessToken(runAs, callerLogin, undefined);
+    return ensureBotAccessToken(runAs, undefined);
   }
 
-  // Scope is last because it is the only segment that may contain ':'
-  const cacheKey = `${bot.id}:${runAs.id}:${versionId}:${callerLogin?.launch?.reference ?? ''}:${callerLogin?.scope ?? ''}`;
+  const cacheKey = `${bot.id}:${runAs.id}:${versionId}`;
   let pending = botAccessTokenInFlight.get(cacheKey);
   if (!pending) {
-    pending = ensureBotAccessToken(runAs, callerLogin, cacheKey).finally(() => botAccessTokenInFlight.delete(cacheKey));
+    pending = ensureBotAccessToken(runAs, cacheKey).finally(() => botAccessTokenInFlight.delete(cacheKey));
     botAccessTokenInFlight.set(cacheKey, pending);
   }
   return pending;
 }
 
-async function ensureBotAccessToken(
-  runAs: WithId<ProjectMembership>,
-  callerLogin: BotExecutionRequest['callerLogin'],
-  cacheKey: string | undefined
-): Promise<string> {
+async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: string | undefined): Promise<string> {
   const systemRepo = getGlobalSystemRepo();
-  const scope = callerLogin?.scope ?? 'openid';
   if (cacheKey) {
     const cached = botAccessTokenCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt && (await isLoginValid(systemRepo, cached.loginId))) {
@@ -352,8 +371,7 @@ async function ensureBotAccessToken(
     project: runAs.project,
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
-    scope,
-    launch: callerLogin?.launch,
+    scope: 'openid',
     granted: true,
   });
 
@@ -363,7 +381,7 @@ async function ensureBotAccessToken(
     sub: resolveId(runAs.user?.reference as Reference),
     username: resolveId(runAs.user?.reference as Reference) as string,
     profile: runAs.profile?.reference as string,
-    scope,
+    scope: 'openid',
   });
 
   if (cacheKey) {

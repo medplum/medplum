@@ -7,6 +7,7 @@ import {
   createReference,
   getReferenceString,
   Hl7Message,
+  Logger,
   MEDPLUM_VERSION,
   parseJWTPayload,
   sleep,
@@ -158,7 +159,7 @@ describe('Agent WebSockets', () => {
       .expectClosed();
   });
 
-  test('Transmit runs the bot with the SMART scopes of the access token', async () => {
+  test('Transmit by a caller with SMART scopes is logged', async () => {
     const { project, accessToken: adminToken } = await createTestProject({
       withAccessToken: true,
       membership: { admin: true },
@@ -170,9 +171,10 @@ describe('Agent WebSockets', () => {
       .set('Authorization', 'Bearer ' + adminToken)
       .send({ resourceType: 'Bot', name: 'Scope Bot', runtimeVersion: 'vmcontext' });
     expect(res1.status).toBe(201);
+    const bot = res1.body as WithId<Bot>;
 
     const res2 = await request(server)
-      .post(`/fhir/R4/Bot/${res1.body.id}/$deploy`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + adminToken)
       .send({ code: `exports.handler = async (medplum) => medplum.getAccessToken();` });
@@ -186,35 +188,54 @@ describe('Agent WebSockets', () => {
         resourceType: 'Agent',
         name: 'Scope Agent',
         status: 'active',
-        channel: [
-          { name: 'test', endpoint: { reference: 'Endpoint/123' }, targetReference: createReference(res1.body) },
-        ],
+        channel: [{ name: 'test', endpoint: { reference: 'Endpoint/123' }, targetReference: createReference(bot) }],
       });
     expect(res3.status).toBe(201);
 
     const scope = 'openid user/Agent.rs user/Bot.rs';
     const user = await withTestContext(() => addTestUser(project, { scope }));
 
-    await request(server)
-      .ws('/ws/agent')
-      .sendText(JSON.stringify({ type: 'agent:connect:request', accessToken: user.accessToken, agentId: res3.body.id }))
-      .expectText('{"type":"agent:connect:response"}')
-      .sendText(
-        JSON.stringify({
-          type: 'agent:transmit:request',
-          accessToken: user.accessToken,
-          channel: 'test',
-          remote: '0.0.0.0:57000',
-          contentType: ContentType.TEXT,
-          body: 'input',
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      await request(server)
+        .ws('/ws/agent')
+        .sendText(
+          JSON.stringify({ type: 'agent:connect:request', accessToken: user.accessToken, agentId: res3.body.id })
+        )
+        .expectText('{"type":"agent:connect:response"}')
+        .sendText(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            accessToken: user.accessToken,
+            channel: 'test',
+            remote: '0.0.0.0:57000',
+            contentType: ContentType.TEXT,
+            body: 'input',
+          })
+        )
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({ type: 'agent:transmit:response', statusCode: 200 });
+          expect(parseJWTPayload(actual.body).scope).toBe('openid');
         })
-      )
-      .expectJson((actual) => {
-        expect(actual).toMatchObject({ type: 'agent:transmit:response', statusCode: 200 });
-        expect(parseJWTPayload(actual.body).scope).toBe(scope);
-      })
-      .close()
-      .expectClosed();
+        .close()
+        .expectClosed();
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Bot ran as a caller with SMART scopes');
+      expect(calls.map(([, data]) => data)).toStrictEqual([
+        {
+          botId: bot.id,
+          runAsProject: project.id,
+          callerMembership: getReferenceString(user.membership),
+          callerProfile: getReferenceString(user.profile),
+          scope,
+          launch: undefined,
+          entryPoint: 'agent',
+          suppressed: 0,
+        },
+      ]);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test('Send non-JSON', async () => {
