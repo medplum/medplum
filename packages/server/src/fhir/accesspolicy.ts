@@ -439,5 +439,24 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push(...policyReadRules);
   }
 
+  if (!project.superAdmin) {
+    // Only super admins can set Bot.system
+    accessPolicy.resource = accessPolicy.resource.flatMap((r) => {
+      if (r.resourceType === 'Bot') {
+        return [withReadonlyFields(r, ['system'])];
+      }
+      if (r.resourceType === '*') {
+        // The first matching entry applies, so wildcard grants get a Bot entry ahead of them
+        const botEntry = { ...r, resourceType: 'Bot', criteria: r.criteria?.replace(/^\*\?/, 'Bot?') };
+        return [withReadonlyFields(botEntry, ['system']), r];
+      }
+      return [r];
+    });
+  }
+
   return accessPolicy;
+}
+
+function withReadonlyFields(entry: AccessPolicyResource, fields: string[]): AccessPolicyResource {
+  return { ...entry, readonlyFields: [...(entry.readonlyFields ?? []), ...fields] };
 }

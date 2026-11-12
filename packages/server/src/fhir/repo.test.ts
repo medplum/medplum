@@ -22,7 +22,6 @@ import { RepositoryMode } from '@medplum/fhir-router';
 import type {
   AuditEvent,
   Binary,
-  Bot,
   BundleEntry,
   Login,
   OperationOutcome,
@@ -2156,34 +2155,6 @@ describe('FHIR Repo', () => {
     expect(sub3.meta?.project).toBeUndefined();
     expect(await getProjectIdColumn('Subscription', sub3.id)).toStrictEqual(systemResourceProjectId);
   });
-
-  test('Only super admin can edit Bot.system', async () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
-
-      // A project admin's create, update and patch silently drop the flag
-      const bot1 = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test Bot', system: true });
-      expect(bot1.system).toBeUndefined();
-
-      const bot2 = await repo.updateResource<Bot>({ ...bot1, description: 'update', system: true });
-      expect(bot2.description).toStrictEqual('update');
-      expect(bot2.system).toBeUndefined();
-      const bot3 = await repo.patchResource<Bot>('Bot', bot1.id, [
-        { op: 'add', path: '/description', value: 'patch' },
-        { op: 'add', path: '/system', value: true },
-      ]);
-      expect(bot3.description).toStrictEqual('patch');
-      expect(bot3.system).toBeUndefined();
-
-      // A super admin can set the flag
-      const bot4 = await systemRepo.updateResource<Bot>({ ...bot3, system: true });
-      expect(bot4.system).toBe(true);
-
-      // Later project admin edits keep it
-      const bot5 = await repo.updateResource<Bot>({ ...bot4, description: 'after', system: undefined });
-      expect(bot5.description).toStrictEqual('after');
-      expect(bot5.system).toBe(true);
-    }));
 
   test('Handles resources with many entries stored in lookup table', async () =>
     withTestContext(async () => {

@@ -46,6 +46,7 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
+import type { TestProjectOptions } from '../test.setup';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin, getRepoForProject } from './accesspolicy';
 import type { SystemRepository } from './repo';
@@ -78,6 +79,64 @@ describe('AccessPolicy', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  test.each<[string, TestProjectOptions]>([
+    ['without an access policy', {}],
+    ['with a wildcard access policy', { accessPolicy: { resource: [{ resourceType: '*' }] } }],
+    ['with a Bot access policy', { accessPolicy: { resource: [{ resourceType: 'Bot' }] } }],
+    ['as a project admin', { membership: { admin: true } }],
+  ])('Only super admins can set Bot.system %s', (_, options) =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ ...options, withRepo: true });
+
+      // Create, update and patch silently drop the flag
+      const bot1 = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test Bot', system: true });
+      expect(bot1.system).toBeUndefined();
+
+      const bot2 = await repo.updateResource<Bot>({ ...bot1, description: 'update', system: true });
+      expect(bot2.description).toStrictEqual('update');
+      expect(bot2.system).toBeUndefined();
+
+      const bot3 = await repo.patchResource<Bot>('Bot', bot1.id, [
+        { op: 'add', path: '/description', value: 'patch' },
+        { op: 'add', path: '/system', value: true },
+      ]);
+      expect(bot3.description).toStrictEqual('patch');
+      expect(bot3.system).toBeUndefined();
+
+      // A super admin can set the flag, and later edits keep it
+      const bot4 = await (await getProjectSystemRepo(project)).updateResource<Bot>({ ...bot3, system: true });
+      expect(bot4.system).toBe(true);
+
+      const bot5 = await repo.updateResource<Bot>({ ...bot4, description: 'after', system: undefined });
+      expect(bot5.description).toStrictEqual('after');
+      expect(bot5.system).toBe(true);
+    })
+  );
+
+  test('Bot.system rule is added only for wildcard and Bot entries', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resource: [
+            { resourceType: 'Patient' },
+            { resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01', readonlyFields: ['identifier'] },
+          ],
+        },
+      });
+      expect(repo.getConfig().accessPolicy?.resource?.slice(0, 3)).toStrictEqual([
+        { resourceType: 'Patient' },
+        { resourceType: 'Bot', criteria: 'Bot?_lastUpdated=gt2000-01-01', readonlyFields: ['identifier', 'system'] },
+        { resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01', readonlyFields: ['identifier'] },
+      ]);
+
+      const { repo: patientOnlyRepo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+      });
+      expect(patientOnlyRepo.getConfig().accessPolicy?.resource?.map((r) => r.resourceType)).not.toContain('Bot');
+    }));
 
   test('Access policy restricting read', () =>
     withTestContext(async () => {
