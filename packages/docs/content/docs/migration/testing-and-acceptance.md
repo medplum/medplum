@@ -31,7 +31,7 @@ For representative and risk-based samples:
 - Confirm the patient, encounter, and authoring context.
 - Test access with intended and unauthorized roles.
 - Verify that `Binary.securityContext` supports the intended access model.
-- For [presigned transfers](/docs/migration/migration-pipelines#uploading-and-downloading-with-presigned-urls), test upload and download, expired-link renewal, interrupted transfers, and reuse of the recorded Binary ID. Verify that unauthorized users cannot obtain URLs, and that the URLs stay out of logs and manifests.
+- For [presigned transfers](/docs/migration/migration-pipelines#uploading-and-downloading-with-presigned-urls), test upload and download, expired-link renewal, interrupted transfers, and recovery when the Binary version changes. Verify the current version's bytes and confirm that replacement preserves earlier content when required. Verify that unauthorized users cannot obtain URLs, and that the URLs stay out of logs and manifests.
 
 Use `createBinary`, `createMedia`, or `createAttachment` patterns and reference stored content with a `Binary/{id}` URL. Do not place large base64 payloads in `Attachment.data`. See [Binary Data](/docs/fhir-datastore/binary-data).
 

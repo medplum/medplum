@@ -93,17 +93,29 @@ After the target resources have been imported successfully:
 1. Read each pending dependent resource again and search for the target by its identifier system and value within the intended project and tenant scope. Leave zero matches pending; quarantine multiple matches for review.
 2. Verify the target's resource type, source identifier, patient, and clinical context. An identifier match alone does not establish that the relationship is correct.
 3. Confirm the dependent field still contains the expected logical reference. If it already points to the correct target, mark the link complete. If another writer changed it, route the conflict for review instead of overwriting it.
-4. [Patch](/docs/fhir-datastore/updating-data#patch-operation) the field's `reference` with the saved target reference, for example `Condition.encounter.reference = Encounter/{id}`. Preserve the source identifier for traceability. Include a JSON Patch `test` on the freshly read `meta.versionId`; on conflict, re-read and repeat the checks.
+4. [Patch](/docs/fhir-datastore/updating-data#patch-operation) the field's `reference` with the saved target reference, for example `Condition.encounter.reference = Encounter/{id}`. Preserve the source identifier for traceability. Include a JSON Patch `test` on the freshly read `meta.versionId`, or send `If-Match: W/"{versionId}"`; on conflict, re-read and repeat the checks.
 5. Mark the manifest entry complete only after the patch succeeds, and verify the stored link. Retry pending or failed links from the manifest without rerunning successful imports.
 
 A successful first-pass import is incomplete until its required links are reconciled. Track pending, resolved, ambiguous, and failed links separately; see [Reconcile References and Identity](/docs/migration/validation-and-reconciliation#reconcile-references-and-identity).
+
+### Finding Dependents by Their Logical Reference
+
+Medplum supports the `:identifier` modifier on reference search parameters. To find Conditions whose `encounter.identifier` contains source Encounter `E001`:
+
+```http
+GET /fhir/R4/Condition?encounter:identifier=http://your-source-system.com/encounterId%7CE001
+```
+
+This matches the identifier stored on the Condition's reference. Paginate through all results using an identity whose AccessPolicy enforces the intended tenant scope. Because pass 2 preserves the identifier, results can include completed links: inspect `encounter.reference`, skip links already pointing to the verified target, and route conflicting links for review. Only identifier-only links need a new reference.
+
+A Bot can use this query to discover dependents directly in Medplum. Compare the results with the pending-link manifest to recover untracked links after an interrupted write. Retain the manifest for checkpoints, failures, expected targets, and completion evidence; the query does not establish whether every expected source record was imported.
 
 ### Automating Reconciliation
 
 Medplum does not provide a built-in process that revisits identifier-only references when another resource is created. You can implement the second pass as a migration worker or automate it with a [Subscription](/docs/subscriptions#planning-automations) that invokes a Bot when target resources arrive.
 
 - Scope the Subscription to the migration's target resources and tenant. Use [create/update interaction and transition criteria](/docs/subscriptions/subscription-extensions) for target creation or relevant identifier changes, and give the Bot the search, read, and update permissions it needs.
-- Have the Bot find pending links in the manifest by target type, identifier system and value, and tenant scope, then apply the same validation and version-checked patch process as pass 2. Make repeat events safe and skip links already resolved.
+- Have the Bot find dependents using the [reference identifier search](#finding-dependents-by-their-logical-reference), or pending entries in the manifest, then apply the same validation and version-checked patch process as pass 2. If the manifest is external, give the Bot an approved way to access it. Make repeat events safe and skip links already resolved.
 - Reconcile when a pending link is registered as well as when a target arrives. Either may happen first. Keep a scheduled or final sweep over the manifest to recover missed events and links registered after the target's event.
 - Track handler failures and provide an explicit retry path. Subscription retry settings do not automatically retry application-level Bot handler failures; see [Planning Automations](/docs/subscriptions#planning-automations).
 
@@ -214,16 +226,18 @@ Reconcile file counts and bytes, verify downloads complete, open representative 
 
 Use [Binary `$presigned-url`](/docs/api/fhir/operations/binary-presigned-url) when a transfer process needs temporary access to a specific file. The authenticated migration service obtains the URL; the process transferring the bytes can use it without Medplum credentials.
 
-| Transfer | Authenticated request to Medplum | Use the returned URL |
-| --- | --- | --- |
-| Upload | `GET /fhir/R4/Binary/{id}/$presigned-url?upload=true` | Send the file bytes with HTTP `PUT` and a `Content-Type` matching `Binary.contentType`. |
-| Download | `GET /fhir/R4/Binary/{id}/$presigned-url` | Retrieve the file bytes with HTTP `GET`. |
+| Transfer | Authenticated request to Medplum                      | Use the returned URL                                                                    |
+| -------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Upload   | `GET /fhir/R4/Binary/{id}/$presigned-url?upload=true` | Send the file bytes with HTTP `PUT` and a `Content-Type` matching `Binary.contentType`. |
+| Download | `GET /fhir/R4/Binary/{id}/$presigned-url`             | Retrieve the file bytes with HTTP `GET`.                                                |
 
 Both requests return a FHIR `Parameters` resource with the URL in the parameter named `url`, in `valueUri`.
 
-For uploads, create the Binary metadata first, with the correct `contentType` and a `securityContext` pointing to an existing, appropriately protected resource. For a patient document, use a patient-linked DocumentReference as that security context. The identity requesting an upload URL needs read and update access to that Binary. Record the Binary ID before transferring bytes so a retry can reuse the same resource.
+For uploads, finalize the Binary metadata first, with the correct `contentType` and a `securityContext` pointing to an existing, appropriately protected resource. For a patient document, use a patient-linked DocumentReference as that security context. The identity requesting an upload URL needs read and update access to that Binary. Record the Binary ID and `meta.versionId` before transferring bytes so retries can detect a changed version.
 
-After a successful upload, populate the document's attachment with `Binary/{id}`, verify the content, and only then mark the file complete in the manifest. Metadata creation and byte transfer are separate steps; a Binary ID alone does not prove that the file was uploaded. Do not overwrite a completed file unless the migration's source-of-truth rules authorize replacement.
+Keep the Binary unchanged until the upload is verified. Direct storage URLs, including S3 upload URLs, target the Binary version used when the URL was issued. Updating Binary metadata during a transfer can leave uploaded bytes attached to an older version. If the Binary changes, stop outstanding transfers, re-read it, obtain a fresh upload URL, and retry against the current version. Do not mix old and renewed URLs across versions; verify the bytes retrieved through the current Binary before marking the transfer complete.
+
+After a successful upload, populate the document's attachment with `Binary/{id}`, verify the content, and only then mark the file complete in the manifest. Metadata creation and byte transfer are separate steps; a Binary ID alone does not prove that the file was uploaded. A presigned `PUT` replaces bytes in place without creating a new FHIR Binary version or history entry. Do not overwrite a completed file unless the migration's source-of-truth rules authorize replacement. When earlier bytes must be preserved, upload the replacement to a new Binary and update the attachment after verification.
 
 For downloads, obtain a fresh URL when the transfer is ready to run. Medplum also supplies presigned download URLs when reading attachments that reference a Binary; see [Consuming a FHIR Binary](/docs/fhir-datastore/binary-data#consuming-a-fhir-binary-in-an-application). Verify retrieved bytes and content type against the source manifest.
 

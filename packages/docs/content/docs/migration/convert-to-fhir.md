@@ -146,7 +146,7 @@ The query must match exactly one resource visible to the migration identity. Zer
 
 ## Preserving Links to Resources That Arrive Later
 
-When a referenced resource is not available yet, a [FHIR logical reference](https://hl7.org/fhir/R4/references.html#logical) can preserve its source identifier in `Reference.identifier`. For example, a Condition linked to an existing Patient can carry the following `encounter` value before the Encounter is imported:
+When a referenced resource is not available yet, a [FHIR logical reference](https://hl7.org/fhir/R4/references.html#logical) can preserve its source identifier in `Reference.identifier`. This example links a Condition to the saved Patient while preserving an Encounter identifier for a later import:
 
 {{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="logical-reference-example" >}}
 
