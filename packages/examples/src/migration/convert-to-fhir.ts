@@ -106,3 +106,13 @@ const conditionalReferenceExample: Condition =
 // end-block conditional-reference-example
 
 await medplum.createResource(conditionalReferenceExample);
+
+// start-block logical-reference-example
+export const logicalEncounterReference: Condition['encounter'] = {
+  type: 'Encounter',
+  identifier: {
+    system: 'http://your-source-system.com/encounterId',
+    value: 'E001',
+  },
+};
+// end-block logical-reference-example

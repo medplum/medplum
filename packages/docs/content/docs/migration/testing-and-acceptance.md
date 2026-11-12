@@ -31,6 +31,7 @@ For representative and risk-based samples:
 - Confirm the patient, encounter, and authoring context.
 - Test access with intended and unauthorized roles.
 - Verify that `Binary.securityContext` supports the intended access model.
+- For [presigned transfers](/docs/migration/migration-pipelines#uploading-and-downloading-with-presigned-urls), test upload and download, expired-link renewal, interrupted transfers, and reuse of the recorded Binary ID. Verify that unauthorized users cannot obtain URLs, and that the URLs stay out of logs and manifests.
 
 Use `createBinary`, `createMedia`, or `createAttachment` patterns and reference stored content with a `Binary/{id}` URL. Do not place large base64 payloads in `Attachment.data`. See [Binary Data](/docs/fhir-datastore/binary-data).
 
@@ -63,6 +64,8 @@ When data volume, performance, or a fixed cutover window creates material risk, 
 - Final change synchronization and rollback duration
 
 Use the same credential type and equivalent permissions, but use environment-specific credentials and secrets. Mirror the planned feature flags, scripts, manifests, and commands. Test transient throttling, repeatable data failures, worker interruption, and a failed cutover gate.
+
+For a [two-pass backfill](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references), rehearse targets arriving both before and after their pending links are registered, duplicate identifiers, concurrent edits, and an interruption between patching a link and recording completion. If a Bot performs reconciliation, test repeated events, handler failure recovery, and the final manifest sweep. Confirm that rerunning pass 1 preserves links already resolved by pass 2.
 
 ## Review Exceptions and Obtain Sign-off
 
