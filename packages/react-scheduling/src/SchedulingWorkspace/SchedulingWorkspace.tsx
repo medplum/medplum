@@ -86,9 +86,9 @@ const RESOURCE_OPTIONS = {
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
   /**
-   * The workspace's background, a theme color such as `gray.0` or any CSS color. Pass the host
-   * page's color so the drawer the pane widens into matches the page. Without one the workspace
-   * is unpainted, showing the page behind it, and the drawer paints the body color.
+   * The workspace's background: behind the calendars, the calendar and the pane beside it, and
+   * the drawer the pane widens into. Pass the host page's color to sit the workspace flush on
+   * the page. A theme color such as `gray.0`, or any CSS color. Defaults to the body color.
    */
   readonly backgroundColor?: MantineColor;
   /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
