@@ -68,6 +68,8 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
     bot,
     runAs: ctx.membership,
     runAsProject: ctx.project,
+    callerLogin: ctx.login,
+    entryPoint: 'cds',
     requester: ctx.membership.profile,
     input: req.body,
     contentType: ContentType.JSON,

@@ -6,6 +6,7 @@ import {
   badRequest,
   ContentType,
   createReference,
+  getReferenceString,
   getStatus,
   Hl7Message,
   isGone,
@@ -42,6 +43,7 @@ import { findProjectMembership } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getPermittedProjectIds } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
+import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
@@ -49,6 +51,7 @@ import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
 const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
+const callerSmartScopesLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
  * Returns the bot's project membership.
@@ -95,6 +98,32 @@ export async function getBotProjectMembership(
  */
 export function getBotBodyInput(bot: Bot, body: unknown, rawBody: Buffer | undefined): unknown {
   return bot.rawBody && rawBody ? rawBody.toString('utf8') : body;
+}
+
+/**
+ * Diagnostic logging for bots that run as a caller whose login has SMART resource scopes or a SMART App Launch
+ * context. The bot's access token does not carry them, so they do not limit the bot.
+ * @param request - The bot execution request.
+ */
+export function logBotCallerSmartScopes(request: BotExecutionRequest): void {
+  const { bot, runAs, callerLogin, entryPoint } = request;
+  if (!callerLogin || (parseSmartScopes(callerLogin.scope).length === 0 && !callerLogin.launch)) {
+    return;
+  }
+  const runAsProject = resolveId(runAs.project);
+  const key = [runAsProject, bot.id, runAs.id, entryPoint, callerLogin.scope].join('|');
+  callerSmartScopesLogThrottle.maybeLog(key, (suppressed) => {
+    getLogger().warn('Bot ran as a caller with SMART scopes', {
+      botId: bot.id,
+      runAsProject,
+      callerMembership: getReferenceString(runAs),
+      callerProfile: runAs.profile?.reference,
+      scope: callerLogin.scope,
+      launch: callerLogin.launch?.reference,
+      entryPoint,
+      suppressed,
+    });
+  });
 }
 
 /**
