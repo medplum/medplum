@@ -23,7 +23,7 @@ import { getConfig } from '../config/loader';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { Repository } from '../fhir/repo';
-import type { CacheEntry } from '../fhir/repository/resource-cache';
+import { parseResourceCacheEntry } from '../fhir/repository/resource-cache';
 import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
@@ -275,11 +275,10 @@ async function handleDeadSubscriptions(deadSubscriptionIds: string[]): Promise<v
     const cacheEntries = await redis.mget(...redisKeys);
     const projectToSubsByResourceType = new Map<string, Map<ResourceType, string[]>>();
     for (let i = 0; i < deadSubscriptionIds.length; i++) {
-      const cacheEntryStr = cacheEntries[i];
-      if (!cacheEntryStr) {
+      const cacheEntry = parseResourceCacheEntry<Subscription>(cacheEntries[i]);
+      if (!cacheEntry) {
         continue;
       }
-      const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
       const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0] as ResourceType;
       let subsByResourceType = projectToSubsByResourceType.get(cacheEntry.projectId);
       if (!subsByResourceType) {
@@ -464,14 +463,15 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
     }
 
     await ensureSubscriptionHandler();
-    const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
-    if (!cacheEntryStr) {
+    const cacheEntry = parseResourceCacheEntry<Subscription>(
+      await redis.get(`Subscription/${verifiedToken.subscription_id}`)
+    );
+    if (!cacheEntry) {
       globalLogger.warn('[WS] Failed to retrieve subscription cache entry when binding to token', {
         subscriptionId: verifiedToken.subscription_id,
       });
       return;
     }
-    const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
 
     // When the socket was opened on a project-scoped URL, the project in the URL must match the
     // subscription's project. This mirrors the check that authenticateRequest applies to HTTP
@@ -560,14 +560,15 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
     // Read metadata before unsubscribing, since unsubscribe removes it from the map
     const subMetadata = wsToSubLookup.get(socket)?.get(verifiedToken.subscription_id);
     unsubscribeWsFromSubscription(socket, verifiedToken.subscription_id);
-    const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
-    if (!cacheEntryStr) {
+    const cacheEntry = parseResourceCacheEntry<Subscription>(
+      await redis.get(`Subscription/${verifiedToken.subscription_id}`)
+    );
+    if (!cacheEntry) {
       globalLogger.warn('[WS] Failed to retrieve subscription cache entry when unbinding from token', {
         subscriptionId: verifiedToken.subscription_id,
       });
       return;
     }
-    const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
     const subIdsByResourceType = new Map<ResourceType, string[]>();
     if (subMetadata) {
       subIdsByResourceType.set(subMetadata.criteriaResourceType, [verifiedToken.subscription_id]);
@@ -771,11 +772,10 @@ export async function markInMemorySubscriptionsInactive(
     const cacheEntries = await cacheRedis.mget(...refStrs);
     authorToRefs = new Map();
     for (let i = 0; i < refStrs.length; i++) {
-      const entryStr = cacheEntries[i];
-      if (!entryStr) {
+      const entry = parseResourceCacheEntry<Subscription>(cacheEntries[i]);
+      if (!entry) {
         continue;
       }
-      const entry = JSON.parse(entryStr) as CacheEntry<Subscription>;
       const author = entry.resource.meta?.author?.reference;
       if (!author) {
         continue;

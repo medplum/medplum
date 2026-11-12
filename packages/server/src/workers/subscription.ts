@@ -47,6 +47,7 @@ import { isPreCommitSubscription } from '../fhir/precommit';
 import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { parseResourceCacheEntry } from '../fhir/repository/resource-cache';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
@@ -581,13 +582,16 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     if (project.features?.includes('websocket-subscriptions')) {
       // for consistency, keep the active-set ref (the cache key) for each hit instead
       // of rebuilding it from the subscription data
-      const activeSubStrs: string[] = [];
+      const activeSubs: WithId<Subscription>[] = [];
       const activeSubRefs: string[] = [];
+      const inactiveSubs: string[] = [];
       for (let i = 0; i < redisOnlySubStrs.length; i++) {
-        const subStr = redisOnlySubStrs[i];
-        if (subStr) {
-          activeSubStrs.push(subStr);
+        const cacheEntry = parseResourceCacheEntry<WithId<Subscription>>(redisOnlySubStrs[i]);
+        if (cacheEntry) {
+          activeSubs.push(cacheEntry.resource);
           activeSubRefs.push(activeSubKeys[i]);
+        } else {
+          inactiveSubs.push(activeSubKeys[i]);
         }
       }
       // This used to be set to 50 because we evaluated every Subscription for the entire project at this point
@@ -596,25 +600,17 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       // Would be in the list by now
       // That means for subscriptions with niche criteria we may not get enough subs to trigger any GC unless the threshold is pretty low
       // Trying 5 for now (50 -> 5)
-      if (redisOnlySubStrs.length - activeSubStrs.length >= 5) {
+      if (inactiveSubs.length >= 5) {
         getLogger().warn('Excessive subscription cache miss', {
           numKeys: redisOnlySubStrs.length,
-          hitRate: activeSubStrs.length / redisOnlySubStrs.length,
+          hitRate: activeSubs.length / redisOnlySubStrs.length,
           projectId,
         });
-        const inactiveSubs: string[] = [];
-        for (let i = 0; i < redisOnlySubStrs.length; i++) {
-          if (!redisOnlySubStrs[i]) {
-            inactiveSubs.push(activeSubKeys[i]);
-          }
-        }
         await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
       }
-      const subArrStr = '[' + activeSubStrs.join(',') + ']';
-      const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
-      for (let i = 0; i < inMemorySubs.length; i++) {
+      for (let i = 0; i < activeSubs.length; i++) {
         subscriptionsWithMetadata.push({
-          subscription: inMemorySubs[i].resource,
+          subscription: activeSubs[i],
           authorMembershipId: activeSubEntries[activeSubRefs[i]].membershipId,
         });
       }

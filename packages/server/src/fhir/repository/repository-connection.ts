@@ -20,6 +20,8 @@ import type {
   TransactionSqlOptions,
 } from './access-tracker';
 import { RepositoryAccessTracker } from './access-tracker';
+import type { ResourceCacheWrite } from './resource-cache';
+import { applyResourceCacheWrites, prepareResourceCacheCommit, writeResourceCache } from './resource-cache';
 import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -55,6 +57,8 @@ type TransactionScope = ConnectionScope & {
   state: 'active' | 'committing' | 'post-commit' | 'ended';
   preCommitCallbacks: (() => Promise<void>)[];
   postCommitCallbacks: (() => Promise<void>)[];
+  /** Resource cache writes applied in one ordered batch the moment COMMIT returns. */
+  cacheWrites: ResourceCacheWrite[];
 };
 type SavepointScope = ConnectionScope & {
   readonly kind: 'savepoint';
@@ -63,6 +67,8 @@ type SavepointScope = ConnectionScope & {
   state: 'active' | 'released' | 'ended';
   preCommitCallbacks: (() => Promise<void>)[];
   postCommitCallbacks: (() => Promise<void>)[];
+  /** Hoisted to the parent scope on release; discarded on rollback. */
+  cacheWrites: ResourceCacheWrite[];
 };
 
 /** For internal use within the RepositoryConnection class. */
@@ -76,6 +82,7 @@ function createScope(kind: 'transaction' | 'savepoint', parent: Scope): Transact
     parent,
     preCommitCallbacks: [],
     postCommitCallbacks: [],
+    cacheWrites: [],
   };
 }
 
@@ -740,12 +747,20 @@ export class RepositoryConnection implements Disposable {
       await this.processPreCommit(this.currentScope);
     }
 
+    let cacheFlush: Promise<void> = Promise.resolve();
     await this.withConnectionStateLock(async () => {
       this.assertCurrentScope(txScope); // defense in depth, make sure we're still working on the same scope passed in
       this.assertInTransaction();
       const conn = await this.getConnection(DatabaseMode.WRITER);
       if (this.currentScope.kind === 'transaction') {
         assert(this.currentScope.state === 'committing');
+        const cacheWrites = this.currentScope.cacheWrites;
+        for (const write of cacheWrites) {
+          this.recordResourceAccess('cache', 'write', write.resourceType, 'repo.cacheWrite');
+        }
+        // Markers go in before COMMIT, so a post-commit write lost to a Redis failure or an ambiguous COMMIT error
+        // expires to a miss rather than leaving the old version cached. A failure here aborts the transaction.
+        const committedCacheWrites = await prepareResourceCacheCommit(cacheWrites);
         await conn.query('COMMIT');
         this.currentScope.state = 'post-commit';
         this.finishTransactionIdleTracking('committed');
@@ -753,6 +768,9 @@ export class RepositoryConnection implements Disposable {
         this.transactionIsolationLevel = undefined;
         this.releaseConnection();
         this.accessTracker.finishTransaction('committed');
+        // Started in the same tick COMMIT resolves, before any post-commit work can delay it,
+        // so concurrent writers have the shortest possible window to interleave stale cache writes
+        cacheFlush = this.flushResourceCacheWrites(committedCacheWrites);
       } else {
         assert(this.currentScope.kind === 'savepoint');
         assert(this.currentScope.parent.kind !== 'root');
@@ -764,6 +782,7 @@ export class RepositoryConnection implements Disposable {
         this.currentScope.state = 'released';
         this.currentScope.parent.preCommitCallbacks.push(...this.currentScope.preCommitCallbacks);
         this.currentScope.parent.postCommitCallbacks.push(...this.currentScope.postCommitCallbacks);
+        this.currentScope.parent.cacheWrites.push(...this.currentScope.cacheWrites);
         this.currentScope = this.currentScope.parent;
       }
     });
@@ -771,6 +790,8 @@ export class RepositoryConnection implements Disposable {
     if (this.currentScope.state === 'post-commit') {
       this.assertCurrentScope(txScope); // defense in depth, make sure we're still working on the same scope passed in
       try {
+        // Post-commit callbacks (e.g. background jobs and subscriptions) read the committed versions from cache
+        await cacheFlush;
         await this.processPostCommit(this.currentScope);
       } finally {
         this.currentScope.state = 'ended';
@@ -949,6 +970,44 @@ export class RepositoryConnection implements Disposable {
       this.currentScope.postCommitCallbacks.push(fn);
     } else {
       await this.invokePostCommitCallback(fn);
+    }
+  }
+
+  /**
+   * Queues a resource cache write until the current transaction commits; applies it immediately when there is
+   * no uncommitted transaction. Before COMMIT, every database-backed key is replaced by a short-lived marker; the
+   * queued writes are applied in one ordered Redis round trip the moment COMMIT returns, before any post-commit
+   * callback runs.
+   * @param scope - The scope presented by the caller.
+   * @param write - The cache write.
+   */
+  async queueResourceCacheWrite(scope: ConnectionScope, write: ResourceCacheWrite): Promise<void> {
+    this.assertScope(scope);
+    if (this.currentScope.kind !== 'root' && this.currentScope.state !== 'post-commit') {
+      this.currentScope.cacheWrites.push(write);
+    } else {
+      this.recordResourceAccess('cache', 'write', write.resourceType, 'repo.cacheWrite');
+      await writeResourceCache([write]);
+    }
+  }
+
+  /**
+   * Applies the cache writes of a committed transaction. Never rejects: the transaction has already committed, so a
+   * failure is logged, and the markers written before COMMIT expire to misses.
+   * @param writes - The queued cache writes, in order.
+   */
+  private async flushResourceCacheWrites(writes: readonly ResourceCacheWrite[]): Promise<void> {
+    if (writes.length === 0) {
+      return;
+    }
+    try {
+      await applyResourceCacheWrites(writes);
+    } catch (err) {
+      if (err instanceof Error) {
+        getLogger().error('Error writing resource cache after commit', err);
+      } else {
+        getLogger().error('Error writing resource cache after commit', { err });
+      }
     }
   }
 

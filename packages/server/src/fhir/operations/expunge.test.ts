@@ -8,7 +8,6 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { getCacheRedis } from '../../redis';
 import { getBinaryStorage } from '../../storage/loader';
 import {
   createTestProject,
@@ -17,6 +16,7 @@ import {
   waitForAsyncJob,
   withTestContext,
 } from '../../test.setup';
+import { getResourceCacheEntry } from '../repository/resource-cache';
 import { ExpungedHistoryTag } from '../repository/row-builder';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 import type { PgQueryable } from '../sql';
@@ -384,9 +384,8 @@ describe('Expunge', () => {
   });
 });
 
-async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {
-  const redis = await getCacheRedis().get(`${resourceType}/${id}`);
-  return !!redis;
+async function existsInCache(resourceType: string, id: string): Promise<boolean> {
+  return (await getResourceCacheEntry(resourceType, id)) !== undefined;
 }
 
 async function existsInDatabase(conn: PgQueryable, tableName: string, id: string | undefined): Promise<boolean> {
