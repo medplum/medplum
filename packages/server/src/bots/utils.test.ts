@@ -98,17 +98,24 @@ describe('normalizeBotExecutionResult', () => {
 describe('logBotCallerSmartScopes', () => {
   const message = 'Bot ran as a caller with SMART scopes';
 
-  function makeRequest(callerLogin?: BotExecutionRequest['callerLogin']): BotExecutionRequest {
+  function makeRequest(callerLogin?: Partial<Login>): BotExecutionRequest {
+    const user = { reference: 'User/' + randomUUID() };
     return {
       bot: { resourceType: 'Bot', id: randomUUID() },
       runAs: {
         resourceType: 'ProjectMembership',
         id: randomUUID(),
         project: { reference: 'Project/' + randomUUID() },
-        user: { reference: 'User/' + randomUUID() },
+        user,
         profile: { reference: 'Practitioner/' + randomUUID() },
       },
-      callerLogin,
+      callerLogin: callerLogin && {
+        resourceType: 'Login',
+        user,
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        ...callerLogin,
+      },
       entryPoint: 'execute',
       input: {},
       contentType: 'application/json',
