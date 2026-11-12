@@ -186,12 +186,14 @@ describe('MedicationsPage', () => {
     expect(await screen.findByText('Draft')).toBeInTheDocument();
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(await screen.findByLabelText('Order medication')).toBeInTheDocument();
+    expect(screen.getByLabelText('ScriptSure reports')).toBeInTheDocument();
   });
 
   test('Defaults to active status filter on first render', async () => {
     const medplum = new MockClient();
     const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
     await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
+    expect(screen.queryByLabelText('ScriptSure reports')).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(searchSpy).toHaveBeenCalled();

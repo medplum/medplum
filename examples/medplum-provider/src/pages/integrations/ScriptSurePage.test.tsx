@@ -4,7 +4,8 @@ import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
-import { useScriptSureIFrame } from '@medplum/scriptsure-react';
+import { SCRIPTSURE_IFRAME_BOT, useScriptSureIFrame } from '@medplum/scriptsure-react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { applyDarkmode } from '../../components/meds/applyDarkmode';
@@ -30,10 +31,10 @@ describe('ScriptSurePage', () => {
     vi.mocked(useScriptSureIFrame).mockReturnValue(mockIframeUrl);
   });
 
-  function setup(): ReturnType<typeof render> {
+  function setup(url = '/scriptsure'): ReturnType<typeof render> {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={['/scriptsure']}>
+        <MemoryRouter initialEntries={[url]}>
           <Notifications />
           <ScriptSurePage />
         </MemoryRouter>
@@ -113,6 +114,42 @@ describe('ScriptSurePage', () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByText(/trace/)).not.toBeInTheDocument();
+  });
+
+  test('Audit log tab loads the widget and keeps the prescribing iframe mounted', async () => {
+    const executeBot = vi
+      .spyOn(medplum, 'executeBot')
+      .mockResolvedValue({ url: 'https://ssu.example/widgets/auditlog?sessiontoken=abc' });
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('tab', { name: 'Audit log' }));
+
+    expect(executeBot).toHaveBeenCalledWith(SCRIPTSURE_IFRAME_BOT, { widget: 'auditlog', organizationId: undefined });
+    expect(await screen.findByTitle('ScriptSure audit log')).toHaveAttribute(
+      'src',
+      'https://ssu.example/widgets/auditlog?sessiontoken=abc&darkmode=off'
+    );
+    expect(screen.getByTitle('ScriptSure e-Prescribing')).toBeInTheDocument();
+  });
+
+  test('Opens the Reports tab directly from the tab query param', async () => {
+    const executeBot = vi
+      .spyOn(medplum, 'executeBot')
+      .mockResolvedValue({ url: 'https://ssu.example/widgets/report?sessiontoken=abc' });
+    setup('/scriptsure?tab=report');
+
+    expect(screen.getByRole('tab', { name: 'Reports' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByTitle('ScriptSure reports')).toBeInTheDocument();
+    expect(executeBot).toHaveBeenCalledWith(SCRIPTSURE_IFRAME_BOT, { widget: 'report', organizationId: undefined });
+  });
+
+  test('Shows an error when the report widget URL cannot be created', async () => {
+    vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('ScriptSure is down'));
+    setup('/scriptsure?tab=auditlog');
+
+    expect(await screen.findByText('ScriptSure is down')).toBeInTheDocument();
+    expect(screen.queryByTitle('ScriptSure audit log')).not.toBeInTheDocument();
   });
 
   test('Iframe fills its container', async () => {
