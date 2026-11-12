@@ -270,6 +270,7 @@ export function ToolsPage(): JSX.Element | null {
   const [reloadingConfig, setReloadingConfig] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [fetchingLogs, setFetchingLogs] = useState(false);
+  const [savingLogs, setSavingLogs] = useState(false);
   const [fetchingStats, setFetchingStats] = useState(false);
   const [status, setStatus] = useState<string>();
   const [version, setVersion] = useState<MedplumSemver | 'unknown'>();
@@ -283,7 +284,7 @@ export function ToolsPage(): JSX.Element | null {
   const [stats, setStats] = useState<AgentStats | undefined>();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
-  const working = loadingStatus || reloadingConfig || upgrading || pinging || fetchingLogs || fetchingStats;
+  const working = loadingStatus || reloadingConfig || upgrading || pinging || fetchingLogs || savingLogs || fetchingStats;
 
   const handleStatus = useCallback(() => {
     setLoadingStatus(true);
@@ -391,6 +392,31 @@ export function ToolsPage(): JSX.Element | null {
   const handleLoadMoreLogs = useCallback(() => {
     fetchLogsPage(logLimit, logsNextBefore);
   }, [fetchLogsPage, logLimit, logsNextBefore]);
+
+  const handleSaveLogs = useCallback(() => {
+    if (!logs) {
+      return;
+    }
+
+    setSavingLogs(true);
+    const createdAt = new Date().toISOString();
+    const filename = `agent-${id}-logs-${createdAt.replace(/[:.]/g, '-')}.ndjson`;
+
+    medplum
+      .createDocumentReference({
+        data: logs,
+        contentType: 'application/x-ndjson',
+        filename,
+        additionalFields: {
+          description: `Agent logs for Agent/${id}`,
+          date: createdAt,
+          context: { related: [reference] },
+        },
+      })
+      .then(() => showSuccess('Agent logs saved successfully.'))
+      .catch((err) => showError(normalizeErrorString(err)))
+      .finally(() => setSavingLogs(false));
+  }, [medplum, id, logs, reference]);
 
   const handleFetchStats = useCallback(() => {
     setFetchingStats(true);
@@ -506,6 +532,19 @@ export function ToolsPage(): JSX.Element | null {
               aria-label="Load more logs"
             >
               Load More
+            </Button>
+          ) : null}
+          {logs?.length ? (
+            <Button
+              mt={22}
+              type="button"
+              variant="default"
+              onClick={handleSaveLogs}
+              loading={savingLogs}
+              disabled={working && !savingLogs}
+              aria-label="Save logs"
+            >
+              Save Logs
             </Button>
           ) : null}
         </Group>
