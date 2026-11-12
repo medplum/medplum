@@ -11,11 +11,11 @@
      among the workspace's own layers rather than the host page's. */
   container-type: inline-size;
   --pane-width: 320px;
-  /* A surface of the pane's color, so the pane matches what it docks beside and slides over on
-     any host page, with room inside it so nothing runs up against its edges. */
+  /* One surface under the pane and everything it docks beside and slides over, in the color
+     the host passes as `backgroundColor`, with room inside so nothing runs up against its edges. */
   --workspace-padding: var(--mantine-spacing-md);
   padding: var(--workspace-padding);
-  background-color: var(--mantine-color-body);
+  background-color: var(--scheduling-workspace-background, var(--mantine-color-body));
 }
 
 /* Gives way once the calendar has no width left, so the pane beside it stays on screen. */
@@ -82,7 +82,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background-color: var(--mantine-color-body);
+  background-color: var(--scheduling-workspace-background, var(--mantine-color-body));
 }
 
 /* Widened, it slides out over the calendar like a drawer: the narrow pane's form, then the
@@ -138,10 +138,11 @@
   flex-direction: column;
 }
 
-/* Pill colors, as ListWithDetailPane's, through the variables Mantine's pills variant reads. */
+/* Pill colors, through the variables Mantine's pills variant reads. Tints rather than fixed grays,
+   so they show on whatever color the workspace is given. */
 .paneTab {
-  --tab-hover-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
-  --tabs-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  --tab-hover-color: light-dark(rgb(0 0 0 / 4%), rgb(255 255 255 / 5%));
+  --tabs-color: light-dark(rgb(0 0 0 / 8%), rgb(255 255 255 / 10%));
   --tabs-text-color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
 }
 
