@@ -12,6 +12,14 @@ Creating, updating and embedding FHIR Questionnaires for both patients and pract
 - [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response) is one of the most common automations
 - [Questionnaire Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aquestionnaires) on Github
 
+## Guides
+
+- [Upload and Use Questionnaires](/docs/questionnaires/basic-tutorial): try a form in the Medplum App.
+- [Modeling Questionnaires and Responses](/docs/questionnaires/questionnaires-and-responses): define questions, initial values, and basic conditions.
+- [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring): add pages, calculations, and expression-based conditions; check supported SDC features.
+- [Saving and Resuming Responses](/docs/questionnaires/saving-and-resuming): embed a form, save drafts, reopen responses, and submit them for processing.
+- [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses): extract resources or process answers with a Bot.
+
 ## Key Resources
 
 ```mermaid

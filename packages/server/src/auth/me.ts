@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { getReferenceString, Operator } from '@medplum/core';
+import { AccessPolicyInteraction, getReferenceString, Operator } from '@medplum/core';
 import type {
   ClientApplication,
   Login,
@@ -48,6 +48,10 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     membershipProfileTypes,
     { allowLinkedProjects: true }
   );
+  if (hasSmartResourceScopes(authState.login) && !repo.canPerformInteraction(AccessPolicyInteraction.READ, profile)) {
+    profile = { resourceType: profile.resourceType, id: profile.id } as WithId<ProfileResource>;
+  }
+  profile = repo.removeHiddenFields(profile, AccessPolicyInteraction.READ, true);
   if (profile.resourceType === 'ClientApplication') {
     profile = { ...profile };
     delete profile.secret;

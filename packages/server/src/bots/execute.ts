@@ -14,6 +14,7 @@ import {
   getBotAccessToken,
   getBotSecrets,
   isBotEnabledForProject,
+  logBotCallerSmartScopes,
   normalizeBotExecutionResult,
   writeBotInputToStorage,
 } from './utils';
@@ -44,6 +45,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       await writeBotInputToStorage(request);
     }
 
+    logBotCallerSmartScopes(request);
     const context: BotExecutionContext = {
       ...request,
       accessToken: await getBotAccessToken(bot, runAs),

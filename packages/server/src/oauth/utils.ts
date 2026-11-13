@@ -626,7 +626,8 @@ export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolic
  * @returns True if the remote address matches the rule value; otherwise false.
  */
 function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean {
-  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
+  const prefix = ruleValue.endsWith('.') ? ruleValue : ruleValue + '.';
+  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(prefix);
 }
 
 function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientContext = false): boolean {

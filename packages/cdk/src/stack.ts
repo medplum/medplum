@@ -20,7 +20,7 @@ export class MedplumStack {
       // For example, CloudFront distributions and ACM certificates
       // If the primary region is not us-east-1, create these resources in us-east-1
       this.globalStack = new MedplumGlobalStack(scope, config);
-      this.globalStack.addDependency(this.primaryStack);
+      this.globalStack.addStackDependency(this.primaryStack);
     }
   }
 }

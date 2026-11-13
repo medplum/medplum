@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, ContentType, createReference } from '@medplum/core';
+import { badRequest, ContentType, createReference, getReferenceString, Logger, parseJWTPayload } from '@medplum/core';
 import type { Bot, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 describe('Custom operation', () => {
   const app = express();
@@ -280,6 +280,80 @@ describe('Custom operation', () => {
     });
   });
 
+  test('Bot run by a caller with SMART scopes is logged', async () => {
+    const { project, accessToken: adminToken } = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+    });
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + adminToken)
+      .send({ resourceType: 'Bot', name: 'Scope Operation Bot', runtimeVersion: 'vmcontext', runAsUser: true });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + adminToken)
+      .send({ code: `exports.handler = async (medplum) => ({ token: medplum.getAccessToken() });` });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + adminToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'scope-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'scope-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [{ use: 'out', name: 'token', type: 'string', min: 1, max: '1' }],
+      });
+    expect(res3).toHaveStatus(201);
+
+    const scope = 'openid user/Bot.rs user/OperationDefinition.rs';
+    const user = await withTestContext(() => addTestUser(project, { scope }));
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      const res4 = await request(app)
+        .post('/fhir/R4/$scope-operation')
+        .set('Authorization', 'Bearer ' + user.accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res4).toHaveStatus(200);
+      expect(parseJWTPayload(res4.body.parameter[0].valueString).scope).toBe('openid');
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Bot ran as a caller with SMART scopes');
+      expect(calls.map(([, data]) => data)).toStrictEqual([
+        {
+          botId: bot.id,
+          runAsProject: project.id,
+          callerMembership: getReferenceString(user.membership),
+          callerProfile: getReferenceString(user.profile),
+          scope,
+          launch: undefined,
+          entryPoint: 'custom-operation',
+          suppressed: 0,
+        },
+      ]);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   test('Returns Parameters from bot unchanged', async () => {
     const botRes = await request(app)
       .post('/fhir/R4/Bot')
@@ -397,6 +471,59 @@ describe('Custom operation', () => {
       .send({});
     expect(result).toHaveStatus(400);
     expect(result.body.issue[0].details.text).toStrictEqual('Bot returned a Binary without data');
+  });
+
+  test('Request headers passed to bot without Authorization', async () => {
+    const botRes = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Bot', name: 'Headers Bot', runtimeVersion: 'vmcontext' });
+    expect(botRes).toHaveStatus(201);
+    const bot = botRes.body as WithId<Bot>;
+
+    const deployRes = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: 'exports.handler = async (medplum, event) => ({ headers: JSON.stringify(event.headers) });' });
+    expect(deployRes).toHaveStatus(200);
+
+    const operationRes = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'headers-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'headers-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [{ use: 'out', name: 'headers', type: 'string', min: 1, max: '1' }],
+      });
+    expect(operationRes).toHaveStatus(201);
+
+    const res = await request(app)
+      .post('/fhir/R4/$headers-operation')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Cookie', 'session=abc')
+      .set('X-Test', 'test')
+      .send({});
+    expect(res).toHaveStatus(200);
+    const headers = JSON.parse(res.body.parameter[0].valueString);
+    expect(headers['x-test']).toBe('test');
+    expect(headers.authorization).toBeUndefined();
+    expect(headers.cookie).toBe('session=abc');
   });
 
   test('Error value returned all the way to the client', async () => {

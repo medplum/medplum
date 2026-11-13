@@ -253,9 +253,9 @@ Decide who manages users and memberships, who manages Bots, ClientApplications, 
 
 **Project admins are trusted administrators.** They can manage access policies and memberships, and act on behalf of users. A clinical policy limits their routine access but does not prevent them from changing grants. The admin flag does not bypass clinical policies; omitting a policy can still grant broad access.
 
-**Default or custom policy?** The built-in Admin default grants broad read/write access. When admin status changes, Medplum swaps the recognized Practitioner/Admin default to the matching default, if configured. Custom policy assignments are unchanged by this swap; the admin flag still changes administrative capabilities. Use an explicit custom policy when the defaults are too broad.
+**Default or custom policy?** The built-in Admin default grants broad read/write access. Changing only a membership's admin flag leaves its access policies unchanged, so review the user's policy when you promote or demote them. Use an explicit custom policy when the defaults are too broad.
 
-Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/docs/access/access-policies#default-access-policies), [On-Behalf-Of](/docs/auth/on-behalf-of).
+Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/docs/access/access-policies#default-access-policies), [Switching a User to or from Admin](/docs/access/access-policies#switching-a-user-to-or-from-admin), [On-Behalf-Of](/docs/auth/on-behalf-of).
 
 **Next:** Review the additional decisions below that apply to your application.
 
@@ -274,9 +274,9 @@ Choose how patients register, whether caregivers or proxies need access (such as
 | Registration option    | Approach                                                                 |
 | :--------------------- | :----------------------------------------------------------------------- |
 | Invite-only            | Use the Invite API with a patient-scoped policy                          |
-| Open self-registration | Set `Project.defaultPatientAccessPolicy`; this enables open registration |
+| Open self-registration | Set `Project.setting` `openPatientRegistration` to `true`, and keep a Patient policy in `defaultAccessPolicies` (or the deprecated `defaultPatientAccessPolicy` when that entry is absent) |
 
-**Check both enrollment paths.** Open registration uses `Project.defaultPatientAccessPolicy`. Patient invitations without an explicit policy prefer the Patient entry in `Project.defaultAccessPolicies`, falling back to `defaultPatientAccessPolicy` if that entry is absent. Align these defaults if both paths should grant the same access. Changing the registration default affects future registrations; it does not migrate existing memberships. See [Default Access Policies](/docs/access/access-policies#default-access-policies).
+**Check both enrollment paths.** Open registration requires the `openPatientRegistration` setting and a Patient access policy. The policy is the Patient entry in `Project.defaultAccessPolicies`, falling back to the deprecated `defaultPatientAccessPolicy` when that entry is absent. Patient invitations and [SCIM](/docs/api/scim/users) patient provisioning use the same resolution and do not require the setting. SCIM refuses to create a Patient when neither policy is set. Changing the policy affects future registrations and invites; it does not migrate existing memberships. See [Default Access Policies](/docs/access/access-policies#default-access-policies).
 
 ### Which patient records can each person access?
 

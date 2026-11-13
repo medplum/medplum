@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, Title } from '@mantine/core';
+import { Button, Group, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import type { User } from '@medplum/fhirtypes';
 import { Loading, MedplumLink, ResourceTable, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { getProjectId } from '../utils';
 import { AccountSecurityCard } from './AccountSecurity';
+import { MembershipUserDetails } from './MembershipUserDetails';
+import { useMembershipUser } from './useMembershipUser';
 
 function getMemberListPath(pathname: string): string {
   if (pathname.includes('/admin/bots/')) {
@@ -30,10 +31,7 @@ export function MemberDetailsPage(): JSX.Element {
   const isAdmin = medplum.getProjectMembership()?.admin;
   const membership = medplum.readResource('ProjectMembership', membershipId).read();
   const profile = useResource(membership.profile);
-  const userRef = membership.user?.reference?.startsWith('User/')
-    ? { reference: membership.user.reference }
-    : undefined;
-  const user = useResource<User>(userRef);
+  const { userRef, user, outcome: userOutcome } = useMembershipUser(membership);
   const isOwner = medplum.getProject()?.owner?.reference === membership.user?.reference;
 
   const listPath = getMemberListPath(location.pathname);
@@ -64,19 +62,7 @@ export function MemberDetailsPage(): JSX.Element {
       <Title mt="md">Profile Details</Title>
       <MedplumLink to={profile}>Go to {profile.resourceType}</MedplumLink>
       <ResourceTable value={profile} ignoreMissingValues />
-      {membership.user?.reference?.startsWith('User/') && (
-        <>
-          <Title mt="md">User Details</Title>
-          {user?.project ? (
-            <>
-              <MedplumLink to={`/User/${user.id}/email`}>Go to User (change login email)</MedplumLink>
-              <ResourceTable value={user} ignoreMissingValues />
-            </>
-          ) : (
-            <Alert color="yellow">This User is server-scoped and cannot be viewed in this project.</Alert>
-          )}
-        </>
-      )}
+      {userRef && <MembershipUserDetails user={user} outcome={userOutcome} />}
       {isAdmin && user?.project && projectId && (
         <AccountSecurityCard projectId={projectId} membershipId={membershipId} user={user} />
       )}

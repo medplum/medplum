@@ -13,7 +13,7 @@ import {
   aws_route53_targets as targets,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { grantBucketAccessToOriginAccessIdentity } from './oai';
+import { acknowledgeImportedBucketPolicyWarning, grantBucketAccessToOriginAccessIdentity } from './oai';
 import { buildWaf } from './waf';
 
 /**
@@ -186,6 +186,7 @@ export class FrontEnd extends Construct {
           : undefined,
         logFilePrefix: config.appLoggingPrefix,
       });
+      acknowledgeImportedBucketPolicyWarning(this.distribution);
 
       // DNS
       if (!config.skipDns) {

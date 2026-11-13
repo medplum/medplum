@@ -14,6 +14,7 @@ import { inviteUser } from '../admin/invite';
 import { retireAllSecurityRequests } from '../auth/securityrequest';
 import { revokeUserLogins } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
+import { getDefaultPatientAccessPolicy } from '../fhir/default-access-policies';
 import type { SystemRepository } from '../fhir/repo';
 import { patchObject } from '../util/patch';
 import type { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
@@ -91,11 +92,9 @@ export async function createScimUser(
 ): Promise<ScimUser> {
   const resourceType = getScimUserResourceType(scimUser);
 
-  // SCIM Patient provisioning requires a configured default policy. inviteUser applies
-  // defaultPatientAccessPolicy for Patients automatically, but admin invite allows
-  // creating Patients without one.
-  if (resourceType === 'Patient' && !project.defaultPatientAccessPolicy) {
-    throw new OperationOutcomeError(badRequest('Missing defaultPatientAccessPolicy'));
+  // inviteUser creates a Patient with no policy when the project has none. SCIM refuses that case.
+  if (resourceType === 'Patient' && !getDefaultPatientAccessPolicy(project)) {
+    throw new OperationOutcomeError(badRequest('Missing default patient access policy'));
   }
 
   const { user, membership } = await inviteUser({
