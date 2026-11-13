@@ -426,7 +426,7 @@ Decide how protected data is extracted, staged, transmitted, logged, retained, a
 | Extracts contain PHI                | Use approved encrypted storage, restrict access, and destroy temporary copies after acceptance.                                                   |
 | Logs contain source data            | Minimize fields and apply regulated-data access and retention controls.                                                                           |
 | Production-like test data is needed | Prefer synthetic or de-identified data unless approved controls authorize PHI.                                                                    |
-| Multi-tenant target                 | Define the tenant `AccessPolicy`; populate each resource's own patient references and/or governed `meta.account`; test allowed and denied access. |
+| Multi-tenant target                 | Define the tenant `AccessPolicy`; preserve each resource's patient references and assign tenant `meta.accounts` through [`$set-accounts`](/docs/api/fhir/operations/set-accounts) where required; test allowed and denied access. |
 | Wrong-scope load                    | Stop the pipeline, preserve evidence, assess exposure, and use a reviewed correction plan.                                                        |
 
 Security review covers the pipeline and temporary artifacts, not only final FHIR resources.

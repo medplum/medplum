@@ -39,6 +39,7 @@ const DOCS_DIR = path.join(__dirname, '..', 'content', 'docs', 'decision-guides'
 const OUT_DIR = path.join(__dirname, '..', 'static', 'decision-guides');
 const REFERENCE_DOCX = path.join(__dirname, 'decision-guide-reference.docx');
 const WORDMARK_PNG = path.join(__dirname, 'assets', 'medplum-wordmark-grape.png');
+const STATIC_DIR = path.join(__dirname, '..', 'static');
 
 // The guide's body for pandoc. Hugo pages render their title from front matter, so the H1 is restored here.
 function guideMarkdown(markdown) {
@@ -67,7 +68,9 @@ function isMissingToolError(err) {
 // pandoc succeeded) can't leave a raw even-columns docx sitting in static/.
 function buildDocx(slug, markdownBody, tmpDir) {
   const tmpMd = path.join(tmpDir, `${slug}.md`);
-  const content = `![Medplum](${WORDMARK_PNG})\n\n${markdownBody}`;
+  // Resolve site image paths for pandoc, which reads the Markdown from a temporary directory.
+  const bodyWithImages = markdownBody.replace(/(!\[[^\]]*\]\()\/(img\/[^)]+)\)/g, (_, prefix, asset) => `${prefix}<${path.join(STATIC_DIR, asset)}>)`);
+  const content = `![Medplum](${WORDMARK_PNG})\n\n${bodyWithImages}`;
   fs.writeFileSync(tmpMd, content);
 
   const tmpDocx = path.join(tmpDir, `${slug}.docx`);

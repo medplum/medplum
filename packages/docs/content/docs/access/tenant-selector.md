@@ -1,133 +1,74 @@
 ---
 id: tenant-selector
-title: Building a Tenant Selector
+title: Identity, Memberships, and Sessions
+breadcrumb_parent: docs/tenancy-design
 weight: 110
+toc_max_heading_level: 3
 docs_tags: [auth, multi-tenant]
-keywords: [tenant selector, active tenant, allowed tenants, MSO, multi-tenant, ProjectMembership, organization, tenant context]
+keywords: [tenant selector, active tenant, allowed tenants, multi-tenant, ProjectMembership, patient login]
 ---
 
-This document is a follow-up to [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy).
+This page covers providers, staff, and patient portals. First choose your [Patient and clinical-record model](/docs/tenancy-design/patient-records) and configure [tenant permissions](/docs/access/multi-tenant-access-policy).
 
-In an MSO Access Control model, a single practitioner often has access to multiple tenants (for example, multiple `Organization` clinics) within the same Medplum `Project`. After login, most applications need an answer to:
+{{< tip title="Choosing an account experience?" >}}
+Use [Tenancy Design: How should people work across tenants?](/docs/decision-guides/tenancy-design#staff-workflows-and-patient-accounts) to compare separate practice sessions, access across practices, and independent accounts.
+{{< /tip >}}
 
-- Which tenant context is the user working in right now?
-- When should the UI show a consolidated cross-tenant view vs. a tenant-scoped view?
+An account identifies the person signing in. A session selects their membership and permissions. The application can then display one practice or a combined workspace within those permissions. Separate Patient records can use any of the account approaches below.
 
-This guide describes three common approaches and how to implement a tenant selector when you need one.
+**Building a tenant picker?** See [Tenant selector](#building-the-selector) to change the displayed practice within one session, or [Switching the active ProjectMembership](#switching-the-active-projectmembership) to switch authenticated practice sessions.
 
-## At a Glance
+## Resource connections {#patient-login-and-memberships}
 
-Use the decision tree to pick the option that fits your product, then jump to that section for implementation details.
+| Resource | Role and connections |
+| :--- | :--- |
+| `User` | Sign-in identity, including the login email and credential configuration. One User can have several memberships. |
+| `Login` | Created during authentication. `user` references the User; `membership` references the selected ProjectMembership once selection completes. The issued token uses that membership. |
+| `ProjectMembership` | Connects `user` to a `project`, one `profile`, and access grants. Staff normally use a Practitioner profile; portal users normally use a Patient profile. |
+| `AccessPolicy` | Defines permissions. `ProjectMembership.access` supplies policy references and parameters for the approved tenants or patients. |
+| `Patient` / `Practitioner` | The profile resource is distinct from the User's sign-in identity. A Patient can exist without portal access. |
 
-```mermaid
-%%{init: {'theme': 'neutral', 'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40}}}%%
-flowchart LR
-    Q1{"Hard PHI isolation?"} -->|Yes| O1[Option 1: Strict Isolation]
-    Q1 -->|No| Q2{"Tenant-scoped views?"}
-    Q2 -->|Yes| O2[Option 2: Tenant Selector]
-    Q2 -->|No| O3[Option 3: Unified View]
+**Read the diagrams:** Purple boxes are FHIR resources; solid arrows follow their reference fields. Dashed arrows show permissions. Labels identify Practice A, Practice B, and shared resources. The examples use two tenant-specific Patients for the same person in one project; each membership also references that Project and its User. For staff, substitute the intended Practitioner profile; separate memberships can share one Practitioner.
 
-    style O1 fill:#fce4ec
-    style O2 fill:#e8f5e9
-    style O3 fill:#e1f5ff
-```
+## At a glance
 
-| | Option 1: Strict Isolation | Option 2: Single Account + Selector | Option 3: Unified View |
-| :--- | :--- | :--- | :--- |
-| API-level tenant isolation | Strongest (one tenant per token) | Allowed tenants enforced; UI scopes within them | None beyond the project |
-| Consolidated cross-tenant views | Difficult | Supported (when UI omits the filter) | Default |
-| Tenant-scoped PHI screens | Yes (always) | Yes (when UI applies the filter) | No |
-| Login / membership model | One membership per tenant per user | One membership covering multiple tenants | One membership covering all tenants |
-| Tenant switching | Re-auth or saved-login swap | UI control (no re-auth) | N/A |
-| Implementation complexity | Highest | Medium | Lowest |
+| Approach | Identity and membership arrangement | Switching behavior |
+| :--- | :--- | :--- |
+| [1. One account, separate practice sessions](#option-1-one-tenant-per-session) | One User; a membership per practice. | Switch the authenticated Login. A saved login may avoid another password prompt. |
+| [2. One account, access across practices](#option-2-combined-access-with-a-tenant-selector) | One User and membership with combined grants. | Change the displayed practice or use a combined workspace. Permissions stay the same. |
+| [3. Independent practice accounts](#independent-user-identities) | Separate Users with their own memberships. | Use each practice's account. Credential prompts depend on authentication and SSO. |
 
-## Key Concept: Allowed Tenants vs Active Tenant
+<div id="option-1-strict-isolation-separate-accounts--separate-projects"></div>
+<div id="one-user-with-separate-patient-memberships"></div>
 
-- Allowed tenants: The set of tenant references the user is permitted to access (enforced by `ProjectMembership` + `AccessPolicy`).
-- Active tenant: A single tenant reference that your application uses as the default filter for PHI (a UI/application concept).
+## 1. One account, separate practice sessions {#option-1-one-tenant-per-session}
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    U([Practitioner]) --> PM[ProjectMembership]
-    PM --> OA[Org A]
-    PM --> OB["Org B<br/>★ Active Tenant"]
-    PM --> OC[Org C]
+Providers switch between practice schedules and charts; patients select a practice before using its forms or messages. Each authenticated session has the permissions of one practice membership. Shared credentials and recovery belong to the User.
 
-    style PM fill:#e1f5ff
-    style OB fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
-```
+For tenant-specific Patients, create one membership per intended Patient profile:
 
-_`ProjectMembership` defines the allowed tenants (Org A, B, C). The application picks one as the active tenant (Org B above) and uses it as the default filter on PHI queries._
+![Two Logins share one User. Each Login selects a membership with its own Patient profile.](/img/tenancy-design/login-separate-sessions.svg)
 
-When you build a "tenant selector", you're choosing and persisting the active tenant.
+_Two Logins share one User. Each Login selects one membership, which supplies its Patient profile and permissions._
 
-## Option 1: Strict Isolation (Separate Accounts / Separate Projects)
+### Provision the memberships {#how-to-configure-a-user-with-multiple-memberships}
 
-Goal: Hard isolation of PHI at the API level. At any given time, the "active tenant" is the only "allowed tenant" for the user.
+Use the [Invite API](/docs/api/project-admin/invite) from a trusted backend with project-admin authority:
 
-### What This Looks Like
+1. Supply the intended `membership.profile` and tenant- or patient-scoped policy grants.
+2. Keep the same email and identity scope to reuse the User. Use `forceNewMembership: true` for each additional membership; normal User and profile matching still runs.
+3. Save the returned membership IDs. Repeating a forced invite creates another membership, so reconcile uncertain results before retrying.
 
-- The user has separate logins per tenant.
-- Each login/profile has a `ProjectMembership` that only includes access to one tenant.
+For patients, provision and assign the [tenant-specific Patients](/docs/tenancy-design/patient-records#provision-the-data-before-access) first. The following example assumes the referenced policy restricts access to the selected profile's patient compartment using `%profile`. Use actual resource IDs and the same project-scoped email for both calls; set `additionalMembership` false for the first and true for the second.
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    U([Practitioner])
+{{< code-example file="packages/examples/src/access/tenant-patient-records.ts" language="ts" blocks="invite-tenant-patient" >}}
 
-    L1["Login 1<br/>ProjectMembership: Org A only"]
-    L2["Login 2<br/>ProjectMembership: Org B only"]
+Supplying only an email may reuse an existing Patient by email or fail if multiple Patients match. Explicit `membership.profile` selects the intended record. The example uses `sendEmail: false`; complete activation through your [custom invitation flow](/docs/user-management/custom-emails), or enable built-in invitation email. Adding a membership preserves an existing User's sign-in identity.
 
-    OA[Org A patients]
-    OB[Org B patients]
+<details>
+<summary>Practitioner invitation examples</summary>
 
-    U --> L1
-    U --> L2
-    L1 --> OA
-    L2 --> OB
-
-    style L1 fill:#e8f5e9
-    style L2 fill:#e1f5ff
-```
-
-_Each login is bound to a single tenant. Switching tenants requires switching the active login._
-
-{{< note >}}
-In Medplum, a user/profile has a single `ProjectMembership` per `Project` (it is resolved by `project` + `profile`). If you want strict separation *within the same project*, you typically use separate user accounts (separate profiles) rather than "two memberships for one profile".
-{{< /note >}}
-
-### Switching the Active `ProjectMembership`
-
-In Medplum, the "active membership" is not a client-side flag you can flip on an existing token. The OAuth login flow selects a membership, and the issued access token is bound to that membership.
-
-Practically, "switching memberships" means one of:
-
-- Switching to another existing login (you already authenticated previously and have a saved token pair).
-- Starting a new login and selecting a different membership during the login handshake.
-
-#### How Membership Selection Works in the Login Flow
-
-- If a user only has one membership, Medplum selects it automatically.
-- If a user has multiple memberships, the client displays a "choose profile" screen and posts the selected membership ID to `POST /auth/profile`.
-- After that, the client exchanges the login code for tokens; the token response includes the `project` and `profile` for the selected membership.
-
-#### How Switching Works in the Medplum App / SDK
-
-The Medplum App supports "Add another account" and project switching by storing multiple login states locally and switching the active one. In the TypeScript SDK this is done with:
-
-- `medplum.getLogins()` to list saved logins
-- `medplum.setActiveLogin(login)` to switch the active login (and therefore the active membership)
-
-#### How to Configure a User with Multiple Memberships
-
-You need to invite the user once per membership you want in the project (for example one membership per tenant in a strict-isolation MSO model). See the [Invite User endpoint](/docs/api/project-admin/invite).
-
-Parameterized access policy: put the policy and its substitution values on `membership.access`. Each entry is one [`ProjectMembership.access`](/docs/api/fhir/medplum/projectmembership) rule: a `policy` reference plus an optional `parameter` array. The `name` of each parameter must match your policy placeholders (for example `%organization` uses `"name": "organization"`). A single-tenant membership has one access entry and one parameter object.
-
-`forceNewMembership`: set `true` when the user is already a member of this project but you need an additional `ProjectMembership` row (same email address). The first invite for that email in the project does not need it; the second and later ones do, or the server returns a conflict.
-
-Example: invite a practitioner with one organization-scoped policy and a single `organization` parameter (replace ids with your `AccessPolicy` and `Organization`).
+A staff membership uses a Practitioner profile and grants for the approved tenant. A membership can have several grants for finer groups within that tenant; preserve any [care-team restrictions](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access).
 
 #### Creating the First `ProjectMembership`
 
@@ -137,39 +78,32 @@ Example: invite a practitioner with one organization-scoped policy and a single 
 
 {{< code-example file="packages/examples/src/access/tenant-selector.ts" language="ts" blocks="invite-practitioner-second-membership" >}}
 
-### Selector UX
+</details>
 
-Often resembles the Medplum App profile selector: users switch "logins" to switch tenant context.
+### Switching the active ProjectMembership {#switching-the-active-projectmembership}
 
-## Option 2: Single Account, Multi-Tenant Access + UI-Level Tenant Context
+The OAuth login flow selects a membership before issuing tokens. With one membership it is selected automatically; with several, the login UI submits the chosen membership to `POST /auth/profile`. A UI preference alone cannot change the token's permissions.
 
-Goal: One login (`ProjectMembership`) can access one or multiple defined tenants, but the FE application chooses an "active tenant".
+Switch to another saved Login, or start a login flow that selects the other membership. The SDK exposes `medplum.getLogins()` and `medplum.setActiveLogin(login)` for saved logins. Its saved-login list identifies entries by profile reference. If staff memberships share one Practitioner, use explicit membership selection and manage session state by membership instead of expecting separate saved-login entries. Label the selected practice and clear or partition caches when switching. Carry the selected Patient through forms and messages, and define what happens to unsaved work.
 
-### What This Looks Like
+<div id="option-2-single-account-multi-tenant-access--ui-level-tenant-context"></div>
+<div id="one-membership-with-a-combined-portal"></div>
 
-- One `ProjectMembership` grants access to multiple tenant references (e.g., multiple `Organization` values).
-- API level access is still enforced to "allowed tenants" only.
-- Your UI applies a tenant-scoping to the "active tenant" by the search parameter `_compartment`, but can intentionally show consolidated views when needed.
+## 2. One account, access across practices {#option-2-combined-access-with-a-tenant-selector}
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    U([Practitioner]) --> PM["Single ProjectMembership<br/>(Org A + Org B allowed)"]
-    PM --> OA[Org A patients]
-    PM --> OB["Org B patients<br/>★ Active Tenant"]
+One membership grants the approved cross-practice access. Providers can work through a combined queue; patients can view appointments from several practices. A practice selector can narrow the view without another login.
 
-    Sel[/"UI Selector<br/>(stored in UserConfiguration)"/] --> OB
+![One Login and membership use Patient A as the profile. AccessPolicy grants access to both Patient A and Patient B.](/img/tenancy-design/login-combined.svg)
 
-    style PM fill:#e1f5ff
-    style OB fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
-    style Sel fill:#fff4e1
-```
+_One Login selects one membership and Patient A profile. Its policy grants access to both Patients. Patient B remains a separate record and is not the membership’s profile._
 
-_One membership grants access to multiple tenants. The UI selector designates one as the active tenant; the user can switch it without re-authenticating._
+For patient portals, add separate parameterized policy entries for explicitly verified Patient records, as in [Caregiver Access](/docs/access/access-policies#caregiver-access). Verify the person's relationship to each Patient before granting access.
 
-### How to Grant Access to Multiple Tenants
+The membership still has **one profile**. `medplum.getProfile()` returns Patient A in this example, even while the portal displays Patient B. Use the selected Patient for clinical subjects and recipients, including in components that default to the authenticated profile. Ordinary direct writes retain that authenticated profile as `meta.author`; use separate sessions if actions must be attributed to each tenant-specific Patient profile.
 
-If your `AccessPolicy` uses `%organization`:
+### Grant staff access across practices {#how-to-grant-access-to-multiple-tenants}
+
+For an Organization-based policy using `%organization`, repeat the grant with each approved organization reference. These are illustrative IDs; substitute actual stored resources.
 
 ```json
 {
@@ -178,7 +112,12 @@ If your `AccessPolicy` uses `%organization`:
     {
       "policy": { "reference": "AccessPolicy/mso-policy" },
       "parameter": [
-        { "name": "organization", "valueReference": { "reference": "Organization/clinic-a" } },
+        { "name": "organization", "valueReference": { "reference": "Organization/clinic-a" } }
+      ]
+    },
+    {
+      "policy": { "reference": "AccessPolicy/mso-policy" },
+      "parameter": [
         { "name": "organization", "valueReference": { "reference": "Organization/clinic-b" } }
       ]
     }
@@ -186,19 +125,24 @@ If your `AccessPolicy` uses `%organization`:
 }
 ```
 
-With that membership, an access policy criteria like `Patient?_compartment=%organization` can allow access to patients across both tenants.
+A criterion such as `Patient?_compartment=%organization` then permits reads across the approved assignments. Where care-team or patient restrictions also apply, [combine the conditions](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) in each grant. Independent grants add access.
 
-### Building the Selector
+### Choose the workspace {#key-concept-allowed-tenants-vs-active-tenant}
 
-At login (or on first use), your app decides an "active tenant" and persists it. Common patterns:
+- **Allowed tenants** are enforced by membership policy grants.
+- **Active tenant** is an application preference selecting the current view from those allowed tenants.
 
-- URL: `?tenant=Organization/clinic-a` (easy to deep-link, but must be validated server-side against allowed tenants).
-- Local storage/session: fast, but not shared across devices.
-- FHIR-backed preference: store the active tenant in `UserConfiguration` so it follows the user.
+A selector changes the active tenant; it leaves the session's permissions unchanged. Both workspace choices below use the same combined grants.
 
-#### Persisting the Active Tenant in `UserConfiguration`
+#### Tenant selector {#building-the-selector}
 
-`UserConfiguration` supports per-user options. One common approach is to store a reference-valued option:
+Persist the selected practice in a URL, local session state, or `UserConfiguration`. Validate the selection against approved tenants, particularly before a backend acts on it. Apply the selected practice to displayed records and write destinations.
+
+![The membership permits Patient A and Patient B. Selecting Practice B shows Patient B while both permissions remain.](/img/tenancy-design/workspace-selector.svg)
+
+_Left: the membership’s permitted Patient records. Right: the same records as displayed in the application. Selecting Practice B changes the view while access to A and B remains. No new login is required._
+
+##### Persisting the Active Tenant in `UserConfiguration`
 
 ```json
 {
@@ -206,46 +150,48 @@ At login (or on first use), your app decides an "active tenant" and persists it.
   "option": [
     {
       "id": "activeTenant",
-      "valueReference": { "reference": "Organization/clinic-a" }
+      "valueReference": { "reference": "Organization/clinic-b" }
     }
   ]
 }
 ```
 
-Then reference that `UserConfiguration` from the user's `ProjectMembership` (see [User Configuration](/docs/access/user-configuration)).
+Reference this configuration from the membership as described in [User Configuration](/docs/access/user-configuration).
 
-#### Enforcing the Active Tenant in Queries
+##### Filtering the active tenant in queries {#enforcing-the-active-tenant-in-queries}
 
-Once you have an active tenant reference (e.g., `Organization/clinic-a`), apply it as a default filter for tenant-scoped screen queries.
+UI filtering does not require compartments. Use supported [search parameters](/docs/search/basic-search) for existing resource fields and relationships, or filter already-loaded authorized data. For example, a "My tasks" view can filter by owner and status. Compartment filters are useful when your model already uses those assignments.
 
-Examples (MSO model using `Organization` as tenant):
+For Organization-based assignment, a screen can filter with `Patient?_compartment=Organization/clinic-b`. Omitting that UI filter shows the records permitted by the effective policy across practices. The API continues to enforce all policy restrictions.
 
-- Tenant-scoped PHI view: `Patient?_compartment=Organization/clinic-a`
-- Consolidated schedule view (cross-tenant): omit tenant filter (or intentionally include multiple tenants)
+With a shared Patient and separate clinical audiences, use the [resource-specific clinical rules](/docs/tenancy-design/patient-records#clinical-record-isolation) for those screens. A Patient-wide compartment filter alone does not express that separation.
 
-## Option 3: Unified View (No Tenant Context)
+#### Combined workspace {#option-3-unified-view-no-tenant-context}
 
-Goal: Treat the project as the only boundary; the user always sees everything they're allowed to see.
+Show a consolidated work queue, schedule, or portal across authorized practices. Label each item with its practice, and require a clear destination for every form, order, and message. Shared account access does not merge the underlying Patients or clinical records.
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-flowchart TB
-    U([Practitioner]) --> PM["Single ProjectMembership"]
-    PM --> All["Patients across<br/>Org A + Org B + Org C<br/>(no tenant filter)"]
+![The same membership permits Patient A and Patient B. A combined workspace displays both records.](/img/tenancy-design/workspace-combined.svg)
 
-    style PM fill:#e1f5ff
-    style All fill:#e8f5e9
-```
+_The same permissions now support a view of both Patient records. The underlying records stay separate, and each write still needs an explicit destination._
 
-_The user sees a single consolidated view of all allowed tenants. There is no active-tenant concept and no UI selector._
+## 3. Independent practice accounts {#independent-user-identities}
 
-### When to Choose It
+Providers and patients activate and use a distinct account for each practice. The application must identify which account is in use and which practice handles its support and offboarding.
 
-- Your product model is truly unified (e.g., one clinical ops team across all clinics).
-- Your contracts and workflows do not require tenant-scoped PHI screens.
+![Separate Users have separate Logins, memberships, and Patient profiles for practices A and B.](/img/tenancy-design/login-independent.svg)
 
-## See Also
+_Each User has separate account state and memberships. Each membership grants access to its intended Patient records._
 
-- [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy)
-- [Access Policies](/docs/access/access-policies)
-- [User Configuration](/docs/access/user-configuration)
+Within one project, email-based invites normally reuse a User in the selected scope. Inviting the same email twice with `forceNewMembership` adds memberships to that identity. A separate Patient or Organization alone does not establish another sign-in identity. For email/password accounts in the same project scope, use distinct sign-in email addresses. For externally managed identities, consider [subject-based matching](/docs/user-management/external-ids) and define the identities in your [authentication design](/docs/decision-guides/authentication).
+
+Separate Medplum Users do not guarantee independent upstream credentials. If SSO maps both accounts to one identity-provider account, that provider's password, MFA, and recovery remain shared. Require independent upstream identities when independent credential lifecycles are part of your design.
+
+## Account lifecycle and project boundaries
+
+Editing Patient or Practitioner contact information leaves `User.email` unchanged. For a User with multiple memberships, use [`$update-email`](/docs/api/fhir/operations/user-update-email) with `updateProfileTelecom: false`, then update intended profiles explicitly. Its optional profile update selects one membership and cannot target a particular Patient. Changing a shared User's login email affects every membership and revokes its active sessions.
+
+When access to one practice ends, revoke the intended membership or grants and verify existing-session behavior while preserving other authorized access. If credentials come from an identity provider, coordinate its account lifecycle too.
+
+Each Login selects a membership in one project. For [project-per-tenant designs](/docs/access/projects#project-per-customer-tenancy), shared server-scoped identities can have memberships in several projects; project-scoped identities have separate account scope. A combined workspace must coordinate the authorized project sessions. See [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users).
+
+**Next:** Verify sign-in, practice switching, write destinations, and revocation for both staff and patient users against your [Access Control](/docs/decision-guides/access-control) decisions.

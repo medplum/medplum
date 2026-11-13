@@ -12,7 +12,7 @@ This section will discuss the major decisions you will need to make when designi
 
 The FHIR [Patient](/docs/api/fhir/resources) has features to represent the link between source and master records.
 
-The `Patient.active` element is used to indicate the master record for the patient. When there are multiple `Patient` resources per-patient in the target system, all but the master record should be marked as "inactive."
+In this merge pattern, retain the master record as active and mark superseded source records inactive. Apply this only to records you intend to consolidate. Independently maintained [tenant-specific Patients](/docs/tenancy-design/patient-records#tenant-specific-patient-records) can remain active for the same person; sharing an identity does not make them obsolete duplicates.
 
 The `Patient.link` element is used to connect duplicate patient records via reference.
 

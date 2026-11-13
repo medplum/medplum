@@ -7,20 +7,17 @@ download_slug: access-control
 toc_max_heading_level: 2
 ---
 
-Use this guide to define who can access which data and how organizational boundaries are enforced in Medplum. Work through tenancy, patient and practitioner sharing, role permissions, and administration to produce a membership and access-policy model. Use the [Authentication Decision Guide](/docs/decision-guides/authentication) for login and identity-provider choices.
+Use this guide to define who can access which resources and what actions they can perform in your application. It applies whether you serve one care operation or multiple tenants. If you need separate tenant boundaries, choose them in the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design#do-you-need-tenant-boundaries), then carry those choices into the permissions below.
 
 _Companion to the [Authorization and Access Control](/docs/access) docs._
 
-Plan access control around four choices:
+Plan access control around three choices:
 
-1. **[Define data separation and sharing](#data-separation-and-sharing)** if organizations, locations, teams, or service lines need isolation. Choose tenant boundaries, shared resources, and how enrollment or transfers change access.
-2. **[Choose each role's data scope](#role-data-scope).** For multiple tenants, decide whether access is combined across tenants or separated by authenticated session.
-3. **[Define role permissions](#role-permissions).** Choose resource types and interactions, then add field restrictions, write constraints, or attribute filters where needed.
-4. **[Assign administration](#administration).** Decide who manages users, memberships, and configuration, including the clinical access those administrators need.
+1. **[Choose each role's data scope](#role-data-scope).** Decide whether each role can access all permitted patients or only assigned patients or care teams. Add tenant scope when your application has tenant boundaries.
+2. **[Define role permissions](#role-permissions).** Choose resource types and interactions, then add field restrictions, write constraints, or attribute filters where needed.
+3. **[Assign administration](#administration).** Decide who manages users, memberships, and configuration, including the clinical access those administrators need.
 
-Also plan [patient and caregiver access](#patient-and-caregiver-access) if you offer a patient portal, [third-party app access](#third-party-app-access) if you need SMART launch or delegated access, and [network restrictions](#network-restrictions) if IP-based controls are required.
-
-Use the [questions below](#before-you-start) to identify your users and organizational structure, then distinguish API restrictions from UI filtering before choosing the relevant access controls. Add requirements beyond these examples where needed.
+Also plan [patient and caregiver access](#patient-and-caregiver-access), [third-party app access](#third-party-app-access), and [network restrictions](#network-restrictions) where applicable. Use the [Authentication Decision Guide](/docs/decision-guides/authentication) for login and identity-provider choices.
 
 ## Before you start
 
@@ -30,14 +27,6 @@ Use the [questions below](#before-you-start) to identify your users and organiza
 - Providers / staff / partners (clients or outside vendors) only
 - Both
 
-### How is your organization structured?
-
-- Single organization
-- Multiple locations of one organization
-- Multiple independent organizations (MSO-style)
-- Departments or service lines within one organization
-- Combination
-
 ### Does this restriction need to prevent API access, or only change what the UI displays?
 
 #### Option A: Prevent access to the data
@@ -46,7 +35,7 @@ The user must not retrieve or modify the data, including through direct API requ
 
 #### Option B: Change the displayed view
 
-The user is authorized to access the data, but the application should show a narrower view. Use UI filters or display settings within the user's permitted access.
+The user is authorized to access the data, but the application should show a narrower view. **UI filtering does not require compartments.** Use [search parameters](/docs/search/basic-search) based on existing fields and relationships, such as a Task's owner and status, or filter already-loaded authorized data. Compartment filters are an option when you use those assignments.
 
 For example, a clinician authorized for three clinics can view one clinic at a time using a UI selector. If each session must only access one clinic's data, its authenticated permissions must also be limited to that clinic.
 
@@ -56,112 +45,58 @@ For example, a clinician authorized for three clinics can view one clinic at a t
 
 ## Data separation and sharing
 
-**For applications that need isolation between organizations, locations, teams, or service lines.** If you have a single organization with no internal isolation, skip to [Role data scope](#role-data-scope).
+If you have tenant boundaries, use the decisions from [Tenancy Design](/docs/decision-guides/tenancy-design) as inputs to authorization. Otherwise, continue to [Role data scope](#role-data-scope).
 
-Within a project, tenant isolation uses **compartments** matched by parameterized access policies. Use `$set-accounts` to assign tenant references; Medplum computes `meta.compartment`. These tenant assignments extend the standard FHIR patient-compartment model.
+| Design decision | Permission design it informs |
+| :--- | :--- |
+| Project boundary and trusted administrators | Where memberships live and who can administer their grants. |
+| One shared Patient per person or a separate Patient per tenant | Which Patient records a role can access and whose updates affect their fields. |
+| Clinical sharing and transfer behavior | Which clinical resources are accessible to each tenant before and after enrollment changes. |
+| Provider, staff, and patient account experience | Whether people use separate accounts, switch practice sessions, or work across practices in one session. |
 
-**Recommended pattern:** Assign patients to tenants through enrollment workflows, then grant practitioners access through parameterized `ProjectMembership.access` entries. See [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy).
+Implementation details live in [Patient Records and Clinical Sharing](/docs/tenancy-design/patient-records) and [Tenant Assignment and Access](/docs/access/multi-tenant-access-policy).
 
-### What does a tenant represent?
-
-Choose what a tenant represents in your application. What do you call these groups: clinics, programs, sites, or accounts?
-
-#### Option A: Organizations, clinics, or practices
-
-Use `Organization` when tenants represent clinics, practices, or healthcare organizations in an MSO model.
-
-#### Option B: Service lines or departments
-
-Use `HealthcareService` to represent functional groups within an organization.
-
-#### Option C: A dedicated team for each patient
-
-Use a `CareTeam` per patient.
-
-#### If tenants form a hierarchy: how will access extend to child tenants?
-
-One approach for nested tenants, such as region → clinic, is to grant access through the lowest-level tenants:
-
-- Patients are tagged only at the **lowest level** they belong to.
-- Practitioners enrolled at an intermediary level get one `ProjectMembership.access` entry per lowest-level tenant under it (iteratively expanded).
-- Adding a new lowest-level tenant requires a workflow to update every practitioner membership at or above that intermediary.
-
-### Can a patient belong to one tenant or several?
-
-| Patient access                | Approach                                   |
-| :---------------------------- | :----------------------------------------- |
-| One tenant per patient        | One tenant assignment on the Patient       |
-| Patient shared across tenants | Multiple tenant assignments on the Patient |
-
-### Are practitioners visible across tenants or only within their own?
-
-| Practitioner visibility                  | Approach                                                      |
-| :--------------------------------------- | :------------------------------------------------------------ |
-| Shared across tenants (global directory) | Allow `Practitioner` reads without a tenant filter            |
-| Visible only within their tenant         | Tag with tenant compartment; policy filters by `_compartment` |
-
-### Which resources are shared across tenants?
-
-For terminology (`CodeSystem`, `ValueSet`), Questionnaires, PlanDefinitions, and ActivityDefinitions, decide whether resources are shared or tenant-specific. Also identify any resources shared across projects.
-
-| Situation                             | Approach                                                                                                                                                        |
-| :------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| All resources of a type are shared    | Allow reads without a tenant filter for that type                                                                                                               |
-| Tenant-specific Questionnaires        | Use `$set-accounts` to assign the tenant; filter by `_compartment`                                                                                              |
-| Some resources of a type are shared   | Use separate criteria for authorized tenant resources and explicitly designated shared resources. An unfiltered rule would also expose other tenants' resources |
-| Bots used across tenants              | Configure access to the Bot separately from its execution permissions; by default it uses its own `ProjectMembership` policy                                    |
-| Reference data shared across projects | A super admin configures a linked project and its exported resource types; access through the link is read-only and still subject to policy                     |
-
-Allow the terminology resources your UI needs; overly restrictive policies can leave dropdowns empty. For Bots, see [Run as User](/docs/bots/bot-run-as-user); for shared reference data, see [Linked Projects](/docs/access/projects#project-linking).
-
-### How will patients be enrolled or transferred between tenants?
-
-**Questions:**
-
-- When does a patient get enrolled in a tenant? (registration, first appointment, referral, insurance, geography)
-- Who is authorized to move a patient between tenants?
-- On transfer: do records follow the patient, stay with the original tenant, or become shared?
-
-| Situation                                        | Approach                                                                                                                                                                                     |
-| :----------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Patient enrollment                               | An authorized admin or Bot calls [`$set-accounts`](/docs/api/fhir/operations/set-accounts) with the full tenant list; use `propagate: true` to update existing patient-compartment resources |
-| Transfer all patient-compartment data            | Replace the old tenant in the list and propagate the change. Verify completion and any other grants before treating access as revoked                                                        |
-| Share data with both tenants                     | Include both tenants in the list and propagate the change                                                                                                                                    |
-| Keep historical records with the original tenant | Design a separate record-level assignment workflow; patient-wide propagation does not distinguish historical from future records                                                             |
-
-`$set-accounts` requires project-admin or super-admin authority and checks access to the affected resources. Propagation follows each resource's own [patient-compartment references](/docs/access/multi-tenant-access-policy#why-is-patient-a-special-case), not arbitrary links between resources.
-
-**Reference implementation:** [MSO demo `enrollment.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-mso-demo/src/utils/enrollment.ts).
-
-**Next:** Define each role's data scope in [Role data scope](#role-data-scope).
+**Next:** Define each role's data scope below.
 
 <div id="decision-2-which-data-should-each-role-be-able-to-access"></div>
 
 ## Role data scope
 
-List your roles, such as physician, RN, MA, front desk, billing, care coordinator, and medical director. **If you have multiple tenants, choose the data scope for each role below.** Otherwise, continue to [Role permissions](#role-permissions).
+List your roles, such as physician, RN, MA, front desk, billing, care coordinator, and medical director. Choose each role's patient scope, then its tenant scope if applicable.
 
-### Option A: Access to one tenant
+### Patient and care-team scope
 
-Use a single `ProjectMembership.access` entry parameterized with that tenant.
+| Your requirement | Permission design |
+| :--- | :--- |
+| A role may access all patients in its authorized organization | Grant the required resource types across that scope; use UI filters for focused worklists. |
+| A role must only access specific patients | Grant only the verified Patient references and their permitted records. |
+| A role must only access patients assigned to its care teams | Maintain care-team assignments and matching policy grants. Team participation alone does not grant access. |
 
-### Option B: Combined access to several tenants
+These choices apply with or without multi-tenancy. A "My team's patients" view can use UI filters while the clinician retains practice-wide access. If the API must restrict the clinician to Team 1 within Practice A, apply both restrictions together; granting all of Practice A would also expose patients outside that team. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access).
 
-Use one `access` entry per tenant with the same policy.
+### Tenant scope, if applicable
 
-### Option C: Organization-wide or cross-tenant oversight
+#### Option A: Access to one tenant
 
-Use an unparameterized policy with no `_compartment` filter.
+Parameterize each grant with the intended tenant. Use a tenant-wide grant only when the role may access all relevant records within it.
 
-### Option D: Separate authenticated sessions for each tenant
+#### Option B: Combined access to several tenants
 
-Give each session a membership limited to one tenant. Switching context means switching the authenticated login, rather than changing a UI filter. Separate credentials are not always necessary: the [Invite API](/docs/api/project-admin/invite) supports creating additional memberships with `forceNewMembership`.
+Repeat the policy with the approved tenant parameters, preserving any patient or care-team restrictions within each tenant.
+
+#### Option C: Organization-wide or cross-tenant oversight
+
+Grant the approved resource types across the project only when that role is authorized for every tenant. Otherwise enumerate the permitted tenants, so later tenant additions do not silently expand access.
+
+#### Option D: Separate authenticated sessions for each tenant
+
+Give each session a membership limited to one tenant. Switching practices then changes the session’s permissions. One account can have several memberships, and switching to a saved login can avoid another password prompt. See [One account, separate practice sessions](/docs/access/tenant-selector#option-1-one-tenant-per-session).
 
 ### How do these policies combine?
 
 **Policy grants are additive, not a way to subtract access.** Do not add a restrictive policy to narrow an existing broad grant. For overlapping resource rules, the first matching rule determines field restrictions and write constraints; design and test those rules together.
 
-Implementation: [Parameterized Policies](/docs/access/access-policies#parameterized-policies), [Invite API](/docs/api/project-admin/invite).
+Implementation: [Parameterized Policies](/docs/access/access-policies#parameterized-policies), [Identity, Memberships, and Sessions](/docs/access/tenant-selector), [Invite API](/docs/api/project-admin/invite).
 
 **Next:** Choose what each role can do with that data in [Role permissions](#role-permissions).
 
@@ -267,6 +202,8 @@ Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/do
 
 **For applications with a patient portal.**
 
+For a single care operation, start with each person's verified Patient and caregiver relationships. If your portal spans tenants, use the account experience chosen in [Tenancy Design](/docs/decision-guides/tenancy-design#staff-workflows-and-patient-accounts). A person may have multiple tenant-specific Patient records; each grant must identify the intended record. See [Patient login and memberships](/docs/access/tenant-selector#patient-login-and-memberships).
+
 Choose how patients register, whether caregivers or proxies need access (such as parents, adult children, or guardians), and how those relationships are established and revoked.
 
 ### How will patients register?
@@ -282,7 +219,7 @@ Choose how patients register, whether caregivers or proxies need access (such as
 
 | Access option                                          | Approach                                                                                                   |
 | :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
-| Patient sees own data                                  | Parameterized policy with `%patient` on clinical resources                                                 |
+| Patient sees own data                                  | Parameterized policy with an explicitly verified `%patient` reference on clinical resources                                                 |
 | Single caregiver, single patient                       | One `access` entry with `%patient`                                                                         |
 | One caregiver, multiple patients                       | Multiple `access` entries, different `%patient`                                                            |
 | Multiple caregivers per patient                        | Each caregiver has their own ProjectMembership                                                             |

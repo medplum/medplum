@@ -16,7 +16,7 @@ Staff, partner clinicians, patients, and caregivers may need different approache
 2. **[Choose your token flow](#decision-2-what-is-your-token-flow-architecture)** if you use external or existing authentication.
 3. **[Choose your matching key](#decision-3-how-will-you-match-external-identities-to-medplum-users)** if you use an external IDP authorization-code flow or token exchange.
 
-All approaches need [user provisioning and session lifecycle decisions](#before-you-implement). For tenancy and permissions, use the [Access Control Decision Guide](/docs/decision-guides/access-control).
+All approaches need [user provisioning and session lifecycle decisions](#before-you-implement). For application tenant boundaries and shared or tenant-specific Patient records, use the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design). Define role permissions in the [Access Control Decision Guide](/docs/decision-guides/access-control).
 
 ---
 

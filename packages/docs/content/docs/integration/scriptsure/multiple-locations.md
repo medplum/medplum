@@ -6,6 +6,8 @@ weight: 110
 
 A single Medplum Project can serve many ScriptSure practice locations. This guide describes the data model and how prescribing resolves the correct practice per request.
 
+ScriptSure practice locations describe prescribing affiliations. They may represent sites within one care operation or separate application tenants. Choose your boundaries in [Tenancy Design](/docs/decision-guides/tenancy-design), and enforce Medplum data access through policies.
+
 ## Data model
 
 ScriptSure's administrative hierarchy is **Organization → Business Unit → Practice → User**. Medplum maps it as follows:
@@ -60,7 +62,9 @@ Each prescriber must be associated with the practice(s) they prescribe from on t
 
 ## Sharing pharmacy Organizations
 
-A pharmacy directory record can be shared across practices while each patient's preference remains private to their practice. For example, Maya at Practice A and Noah at Practice B can both reference the same Example Pharmacy Organization. Practice A can read Maya and the pharmacy; it cannot read Noah. Practice B can read Noah and the pharmacy; it cannot read Maya.
+This example assumes practice-scoped Patient records. With a [shared Patient](/docs/tenancy-design/patient-records#shared-patient-records), a pharmacy preference stored on that Patient is shared with authorized readers too.
+
+A pharmacy directory record can be shared across practices while each practice-scoped Patient's preference remains private to that practice. For example, Maya at Practice A and Noah at Practice B can both reference the same Example Pharmacy Organization. Practice A can read Maya and the pharmacy; it cannot read Noah. Practice B can read Noah and the pharmacy; it cannot read Maya.
 
 Keep public directory data on the pharmacy Organization and the preference on each Patient. Give trusted clinical callers access to pharmacy Organizations independently of the practice filter used for Patients and other clinical resources. Do not store patient-specific or practice-private information on shared pharmacy records.
 

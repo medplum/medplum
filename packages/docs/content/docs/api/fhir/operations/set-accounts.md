@@ -4,22 +4,25 @@ title: Resource $set-accounts
 weight: 61
 ---
 
-Medplum implements a custom `$set-accounts` operation to manage account references. **This is the recommended way to manage account references for all resources**.
+Medplum implements a custom `$set-accounts` operation to manage `meta.accounts` references for compartment-based access. The server includes these references in the resource's computed `meta.compartment`.
+
+Within one project, an account reference can identify a tenant or finer access group, such as an `Organization`, `HealthcareService`, or `CareTeam`. It does not have to reference the FHIR `Account` resource. Choose the representation in [Modeling your tenants](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants). Multiple assignments form a set; they do not create nested compartments. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) when both scopes must apply.
 
 ## Use Cases
 
-- **Multi-Tenant Data Segmentation**: Assign resources to specific accounts for organization-based data isolation
-- **Organization-Based Access Control**: Set account references to enable access policies based on organizational membership
+- **Multi-Tenant Data Segmentation**: Assign resources to application tenants represented by organizations or services
+- **Care-Team Access**: Assign finer access groups within a tenant or a single care operation
+- **Tenant Access Control**: Set account references that parameterized access policies can match
 - **Patient Compartment Management**: Propagate account assignments to all resources in a patient's compartment for consistent access
 - **Batch Account Assignment**: Update account references across large sets of resources during migrations or onboarding
 
-This operation sets the target resource's `meta.accounts` references and optionally propagates changes to resources in that resources's compartment. This is useful when you need to ensure consistent `meta.accounts` access across all resources related to a patient, for example.
+For a Patient target, optional propagation applies account additions and removals to existing resources in its patient compartment. Use this when the Patient and those resources have the same intended tenant audience. Resource assignment and permission grants must both be configured.
 
 ## Required access
 
-Calling `$set-accounts` requires explicit permission to run the operation. Generic read, create, update, or delete access to the target resource type does not automatically grant access to `$set-accounts`.
+Calling `$set-accounts` requires project-admin or super-admin authority, and access checks apply to the target resource. Generic read/write access alone does not grant permission to run this operation. This requirement also applies to the membership used by a Bot or ClientApplication.
 
-If a `User`, `Bot`, or `ClientApplication` receives `403 Forbidden` when calling `$set-accounts`, confirm that the principal's access configuration grants the operation in addition to the resource interactions needed for the target resources.
+Propagation applies only to compartment resources in the target project that the caller can read and update. It skips inaccessible or read-only resources and resources in linked projects. Verify the resulting assignments before treating a transfer as complete; successful completion can leave some resources unchanged.
 
 {{< warning >}}
 
@@ -35,6 +38,12 @@ Resources in a patient's compartment are defined by the [FHIR Patient Compartmen
 
 {{< /note >}}
 
+## Patient sharing and clinical isolation
+
+Choose [shared or tenant-specific Patient records](/docs/tenancy-design/patient-records) before applying patient-wide assignments. Propagating two tenant references to one Patient's compartment can make the clinical records match both tenant policies.
+
+`propagate: false` skips updates to existing compartment resources. It does not disable account inheritance on later resource writes. A shared Patient with separate clinical records needs [resource-specific access rules and write handling](/docs/tenancy-design/patient-records#clinical-record-isolation).
+
 ## Invoke the `$set-accounts` operation
 
 ```
@@ -45,8 +54,8 @@ POST [base]/R4/<ResourceType>/<id>/$set-accounts
 
 The input is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource containing:
 
-- `accounts` a reference to set in each resource's _meta.accounts_
-- `propagate` an optional boolean, which instructs the operation to also update resources in the target compartment
+- `accounts`: repeat this parameter for every intended account reference. The list replaces the target resource’s account list; include existing accounts that should remain.
+- `propagate`: an optional boolean that applies the Patient account additions and removals to existing resources in its patient compartment.
 
 Example request payload:
 

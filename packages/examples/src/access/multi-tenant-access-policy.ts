@@ -97,7 +97,7 @@ await medplum2.post(`fhir/R4/Patient/${patientId2}/$set-accounts`, {
 // end-block set-accounts-healthcare-service
 
 // start-block set-accounts-careteam
-//Assigning a specific Patient to the diabetes-care-team tenant
+//Assigning a specific Patient to the diabetes-care-team access group
 const medplum3: MedplumClient = {} as MedplumClient;
 const patientId3 = 'patient-id';
 await medplum3.post(`fhir/R4/Patient/${patientId3}/$set-accounts`, {
@@ -142,7 +142,7 @@ await medplum5.post(`fhir/R4/Questionnaire/${questionnaireId2}/$set-accounts`, {
 // end-block set-accounts-questionnaire-healthcare-service
 
 // start-block set-accounts-questionnaire-careteam
-//Assigning a specific Questionnaire to the diabetes-care-team tenant
+//Assigning a specific Questionnaire to the diabetes-care-team access group
 const medplum6: MedplumClient = {} as MedplumClient;
 const questionnaireId3 = 'questionnaire-id';
 await medplum6.post(`fhir/R4/Questionnaire/${questionnaireId3}/$set-accounts`, {
@@ -195,7 +195,7 @@ await medplum8.post(`fhir/R4/Patient/${patientId5}/$set-accounts`, {
 // end-block set-accounts-propagate-healthcare-service
 
 // start-block set-accounts-propagate-careteam
-//Assigning a specific Patient to the diabetes-care-team tenant and propagating to all resources that _"belong"_ to that Patient
+//Assigning a specific Patient to the diabetes-care-team access group and propagating to all resources that _"belong"_ to that Patient
 const medplum9: MedplumClient = {} as MedplumClient;
 const patientId6 = 'patient-id';
 await medplum9.post(`fhir/R4/Patient/${patientId6}/$set-accounts`, {
@@ -260,7 +260,7 @@ await medplum11.post(`fhir/R4/Patient/${patientId8}/$set-accounts`, {
 // end-block set-accounts-multiple-healthcare-service
 
 // start-block set-accounts-multiple-careteam
-//Assigning a specific Patient to the diabetes-care-team and hypertension-care-team tenants
+//Assigning a specific Patient to the diabetes-care-team and hypertension-care-team access groups
 const medplum12: MedplumClient = {} as MedplumClient;
 const patientId9 = 'patient-id';
 await medplum12.post(`fhir/R4/Patient/${patientId9}/$set-accounts`, {
@@ -463,9 +463,11 @@ export const _accessPolicyMixed = {
     //Non tenant level restricted resources
     {
       resourceType: 'Questionnaire',
+      readonly: true,
     },
     {
       resourceType: 'Practitioner',
+      readonly: true,
     },
     //...
 
