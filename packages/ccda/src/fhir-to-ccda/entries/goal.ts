@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { arrayify } from '@medplum/core';
 import type { CompositionSection, Goal } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDateTime } from '../../datetime';
 import {
@@ -57,36 +58,32 @@ export function createGoalEntry(section: CompositionSection, resource: Goal): Cc
   }
 
   return {
-    observation: [
-      {
-        '@_classCode': 'OBS',
-        '@_moodCode': 'GOL',
-        templateId,
-        id: mapIdentifiers(resource.id, resource.identifier),
-        code,
-        statusCode: { '@_code': mapGoalStatus(resource.lifecycleStatus) },
-        effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
-        value,
-        text: createTextFromExtensions(resource.extension),
-        entryRelationship: resource.target?.map((target) => ({
-          '@_typeCode': 'RSON',
-          '@_inversionInd': 'true',
-          act: [
-            {
-              '@_classCode': 'ACT',
-              '@_moodCode': 'EVN',
-              templateId: [
-                { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
-                { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
-              ],
-              code: mapCodeableConceptToCcdaCode(target.measure) as CcdaCode,
-              statusCode: { '@_code': 'completed' },
-              effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
-            },
+    observation: {
+      '@_classCode': 'OBS',
+      '@_moodCode': 'GOL',
+      templateId,
+      id: mapIdentifiers(resource.id, resource.identifier),
+      code: code as CcdaCode,
+      statusCode: { '@_code': mapGoalStatus(resource.lifecycleStatus) },
+      effectiveTime: { '@_value': mapFhirToCcdaDateTime(resource.startDate) },
+      value: arrayify(value),
+      text: createTextFromExtensions(resource.extension),
+      entryRelationship: resource.target?.map((target) => ({
+        '@_typeCode': 'RSON',
+        '@_inversionInd': 'true',
+        act: {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
+            { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
           ],
-        })),
-      },
-    ],
+          code: mapCodeableConceptToCcdaCode(target.measure) as CcdaCode,
+          statusCode: { '@_code': 'completed' },
+          effectiveTime: { '@_value': mapFhirToCcdaDateTime(resource.startDate) },
+        },
+      })),
+    },
   };
 }
 

@@ -5,7 +5,7 @@ import { mapCodeableConceptToCcdaCode } from '../systems';
 import type { CcdaDocumentationOf } from '../types';
 import { mapEffectiveDate } from './utils';
 
-export function mapDocumentationOf(events: CompositionEvent[] | undefined): CcdaDocumentationOf | undefined {
+export function mapDocumentationOf(events: CompositionEvent[] | undefined): CcdaDocumentationOf[] | undefined {
   if (!events || events.length === 0) {
     return undefined;
   }
@@ -15,11 +15,13 @@ export function mapDocumentationOf(events: CompositionEvent[] | undefined): Ccda
     return undefined;
   }
 
-  return {
-    serviceEvent: {
-      '@_classCode': 'PCPR',
-      code: mapCodeableConceptToCcdaCode(event.code?.[0]),
-      effectiveTime: mapEffectiveDate(undefined, event.period),
+  return [
+    {
+      serviceEvent: {
+        '@_classCode': 'PCPR',
+        code: mapCodeableConceptToCcdaCode(event.code?.[0]),
+        effectiveTime: mapEffectiveDate(undefined, event.period),
+      },
     },
-  };
+  ];
 }

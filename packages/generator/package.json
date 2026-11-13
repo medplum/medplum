@@ -14,6 +14,7 @@
   "scripts": {
     "baseschema": "tsx src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
     "build": "npm run clean && tsc",
+    "ccdatypes": "tsx src/ccda.ts && npx prettier ../ccda/src/cda-types.ts ../ccda/src/cda-elements.ts --write",
     "clean": "rimraf dist",
     "compare": "tsx src/compare.ts",
     "fhirtypes": "tsx src/index.ts && cd ../fhirtypes && tsc",

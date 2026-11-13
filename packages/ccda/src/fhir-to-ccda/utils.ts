@@ -11,6 +11,7 @@ import type {
   Patient,
   Period,
 } from '@medplum/fhirtypes';
+import type { CdaIVL_TS } from '../cda-types';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from '../datetime';
 import { OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM, OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM } from '../oids';
 import {
@@ -26,7 +27,6 @@ import {
 import type {
   CcdaAddr,
   CcdaCode,
-  CcdaEffectiveTime,
   CcdaId,
   CcdaLanguageCommunication,
   CcdaName,
@@ -65,7 +65,7 @@ export function mapNames(names: HumanName[] | undefined): CcdaName[] | undefined
   return names?.map((name) => ({
     '@_use': name.use ? HUMAN_NAME_USE_MAPPER.mapFhirToCcdaWithDefault(name.use, 'L') : undefined,
     prefix: name.prefix,
-    family: name.family,
+    family: name.family ? [name.family] : undefined,
     given: name.given,
     suffix: name.suffix,
   }));
@@ -155,10 +155,10 @@ export function mapFhirAddressToCcdaAddress(address: Address | undefined): CcdaA
   const result: CcdaAddr = {
     '@_use': address.use ? ADDRESS_USE_MAPPER.mapFhirToCcda(address.use as 'home' | 'work') : undefined,
     streetAddressLine: address.line || [],
-    city: address.city,
-    state: address.state,
-    postalCode: address.postalCode,
-    country: address.country,
+    city: address.city ? [address.city] : undefined,
+    state: address.state ? [address.state] : undefined,
+    postalCode: address.postalCode ? [address.postalCode] : undefined,
+    country: address.country ? [address.country] : undefined,
   };
 
   return result;
@@ -169,24 +169,18 @@ export function mapFhirAddressToCcdaAddress(address: Address | undefined): CcdaA
  * @param patient - The patient to map.
  * @returns The C-CDA race.
  */
-export function mapRace(patient: Patient): CcdaCode[] | undefined {
+export function mapRace(patient: Patient): CcdaCode {
   const ombCategory = getExtension(patient, US_CORE_RACE_URL, 'ombCategory')?.valueCoding;
   if (!ombCategory) {
-    return [
-      {
-        '@_nullFlavor': 'UNK',
-      },
-    ];
+    return { '@_nullFlavor': 'UNK' };
   }
 
-  return [
-    {
-      '@_code': ombCategory.code,
-      '@_displayName': ombCategory.display,
-      '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
-      '@_codeSystemName': 'CDC Race and Ethnicity',
-    },
-  ];
+  return {
+    '@_code': ombCategory.code,
+    '@_displayName': ombCategory.display,
+    '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+    '@_codeSystemName': 'CDC Race and Ethnicity',
+  };
 }
 
 /**
@@ -215,26 +209,20 @@ export function mapDetailedRace(patient: Patient): CcdaCode[] | undefined {
  * @param extensions - The extensions to map.
  * @returns The C-CDA ethnicity.
  */
-export function mapEthnicity(extensions: Extension[] | undefined): CcdaCode[] | undefined {
+export function mapEthnicity(extensions: Extension[] | undefined): CcdaCode {
   const ethnicityExt = extensions?.find((e) => e.url === US_CORE_ETHNICITY_URL);
   const ombCategory = ethnicityExt?.extension?.find((e) => e.url === 'ombCategory')?.valueCoding;
 
   if (!ombCategory) {
-    return [
-      {
-        '@_nullFlavor': 'UNK',
-      },
-    ];
+    return { '@_nullFlavor': 'UNK' };
   }
 
-  return [
-    {
-      '@_code': ombCategory.code,
-      '@_displayName': ombCategory.display,
-      '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
-      '@_codeSystemName': 'CDC Race and Ethnicity',
-    },
-  ];
+  return {
+    '@_code': ombCategory.code,
+    '@_displayName': ombCategory.display,
+    '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+    '@_codeSystemName': 'CDC Race and Ethnicity',
+  };
 }
 
 /**
@@ -279,47 +267,29 @@ export function mapIdentifiers(id: string | undefined, identifiers: Identifier[]
   return result;
 }
 
-export function mapEffectiveTime(
-  dateTime: string | undefined,
-  period: Period | undefined
-): CcdaEffectiveTime[] | undefined {
+export function mapEffectiveTime(dateTime: string | undefined, period: Period | undefined): CdaIVL_TS | undefined {
   if (period) {
-    return [
-      {
-        low: { '@_value': mapFhirToCcdaDateTime(period.start) },
-        high: { '@_value': mapFhirToCcdaDateTime(period.end) },
-      },
-    ];
+    return {
+      low: { '@_value': mapFhirToCcdaDateTime(period.start) },
+      high: { '@_value': mapFhirToCcdaDateTime(period.end) },
+    };
   }
   if (dateTime) {
-    return [
-      {
-        '@_value': mapFhirToCcdaDateTime(dateTime),
-      },
-    ];
+    return { '@_value': mapFhirToCcdaDateTime(dateTime) };
   }
   return undefined;
 }
 
-export function mapEffectiveDate(
-  dateTime: string | undefined,
-  period: Period | undefined
-): CcdaEffectiveTime[] | undefined {
+export function mapEffectiveDate(dateTime: string | undefined, period: Period | undefined): CdaIVL_TS | undefined {
   if (period) {
-    return [
-      {
-        '@_xsi:type': 'IVL_TS',
-        low: period.start ? { '@_value': mapFhirToCcdaDate(period.start) } : undefined,
-        high: period.end ? { '@_value': mapFhirToCcdaDate(period.end) } : undefined,
-      },
-    ];
+    return {
+      '@_xsi:type': 'IVL_TS',
+      low: period.start ? { '@_value': mapFhirToCcdaDate(period.start) } : undefined,
+      high: period.end ? { '@_value': mapFhirToCcdaDate(period.end) } : undefined,
+    };
   }
   if (dateTime) {
-    return [
-      {
-        '@_value': mapFhirToCcdaDate(dateTime),
-      },
-    ];
+    return { '@_value': mapFhirToCcdaDate(dateTime) };
   }
   return undefined;
 }
@@ -328,12 +298,12 @@ export function mapEffectivePeriod(
   start: string | undefined,
   end: string | undefined,
   useNullFlavor = false
-): CcdaEffectiveTime[] | undefined {
+): CdaIVL_TS | undefined {
   if (!start && !end) {
     return undefined;
   }
 
-  const result: CcdaEffectiveTime = {};
+  const result: CdaIVL_TS = {};
 
   if (start) {
     result['low'] = { '@_value': mapFhirToCcdaDateTime(start) };
@@ -347,7 +317,7 @@ export function mapEffectivePeriod(
     result['high'] = { '@_nullFlavor': 'NI' };
   }
 
-  return [result];
+  return result;
 }
 
 /**

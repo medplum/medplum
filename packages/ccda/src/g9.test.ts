@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { createReference, generateId, LOINC, RXNORM, SNOMED, UCUM } from '@medplum/core';
 import type { AllergyIntolerance, Bundle, Composition, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
+import type { CdaIVL_TS } from './cda-types';
 import { convertFhirToCcda } from './fhir-to-ccda/convert';
 import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
@@ -45,21 +46,25 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import type { CcdaCode, CcdaNarrative, CcdaQuantity, CcdaText } from './types';
+import type { CcdaAddr, CcdaCode, CcdaName, CcdaQuantity, CcdaText } from './types';
 
 describe('170.315(g)(9)', () => {
   describe('Patient Demographics', () => {
     test('should export first name', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', name: [{ given: ['John'] }] });
       const output = convertFhirToCcda(input);
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.given?.[0]).toEqual('John');
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[0] as CcdaName | undefined)?.given?.[0]).toEqual(
+        'John'
+      );
     });
 
     // Last Name
     test('should export last name', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', name: [{ family: 'Doe' }] });
       const output = convertFhirToCcda(input);
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.family).toEqual('Doe');
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[0] as CcdaName | undefined)?.family).toEqual([
+        'Doe',
+      ]);
     });
 
     // Previous Name (if applicable)
@@ -72,19 +77,33 @@ describe('170.315(g)(9)', () => {
         ],
       });
       const output = convertFhirToCcda(input);
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.['@_use']).toEqual('L');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.given?.[0]).toEqual('Sarah');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.family).toEqual('Johnson');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[1]?.['@_use']).toEqual('L');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[1]?.given?.[0]).toEqual('Sarah');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[1]?.family).toEqual('Smith');
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[0] as CcdaName | undefined)?.['@_use']).toEqual(
+        'L'
+      );
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[0] as CcdaName | undefined)?.given?.[0]).toEqual(
+        'Sarah'
+      );
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[0] as CcdaName | undefined)?.family).toEqual([
+        'Johnson',
+      ]);
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[1] as CcdaName | undefined)?.['@_use']).toEqual(
+        'L'
+      );
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[1] as CcdaName | undefined)?.given?.[0]).toEqual(
+        'Sarah'
+      );
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[1] as CcdaName | undefined)?.family).toEqual([
+        'Smith',
+      ]);
     });
 
     // Middle Name
     test('should export middle name', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', name: [{ given: ['John', 'Doe'] }] });
       const output = convertFhirToCcda(input);
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.given?.[1]).toEqual('Doe');
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[0] as CcdaName | undefined)?.given?.[1]).toEqual(
+        'Doe'
+      );
     });
 
     // Suffix
@@ -94,7 +113,9 @@ describe('170.315(g)(9)', () => {
         name: [{ given: ['John'], suffix: ['Jr.'] }],
       });
       const output = convertFhirToCcda(input);
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.suffix?.[0]).toEqual('Jr.');
+      expect((output.recordTarget?.[0]?.patientRole?.patient?.name?.[0] as CcdaName | undefined)?.suffix?.[0]).toEqual(
+        'Jr.'
+      );
     });
 
     // Birth Sex
@@ -157,12 +178,12 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
 
       // Test race code
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_code']).toEqual('2106-3');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_displayName']).toEqual('White');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_codeSystem']).toEqual(
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.['@_code']).toEqual('2106-3');
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.['@_displayName']).toEqual('White');
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.['@_codeSystem']).toEqual(
         OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM
       );
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_codeSystemName']).toEqual(
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.['@_codeSystemName']).toEqual(
         'CDC Race and Ethnicity'
       );
 
@@ -174,14 +195,14 @@ describe('170.315(g)(9)', () => {
       expect(detailed?.['@_codeSystemName']).toEqual('CDC Race and Ethnicity');
 
       // Test ethnicity code
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.[0]?.['@_code']).toEqual('2186-5');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.[0]?.['@_displayName']).toEqual(
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.['@_code']).toEqual('2186-5');
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.['@_displayName']).toEqual(
         'Not Hispanic or Latino'
       );
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.[0]?.['@_codeSystem']).toEqual(
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.['@_codeSystem']).toEqual(
         OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM
       );
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.[0]?.['@_codeSystemName']).toEqual(
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.['@_codeSystemName']).toEqual(
         'CDC Race and Ethnicity'
       );
     });
@@ -244,11 +265,13 @@ describe('170.315(g)(9)', () => {
         address: [{ use: 'home', line: ['123 Main St'], city: 'Anytown', state: 'CA', postalCode: '12345' }],
       });
       const output = convertFhirToCcda(input);
-      expect(output.recordTarget?.[0]?.patientRole?.addr?.[0]?.['@_use']).toEqual('HP');
-      expect(output.recordTarget?.[0]?.patientRole?.addr?.[0]?.streetAddressLine?.[0]).toEqual('123 Main St');
-      expect(output.recordTarget?.[0]?.patientRole?.addr?.[0]?.city).toEqual('Anytown');
-      expect(output.recordTarget?.[0]?.patientRole?.addr?.[0]?.state).toEqual('CA');
-      expect(output.recordTarget?.[0]?.patientRole?.addr?.[0]?.postalCode).toEqual('12345');
+      expect((output.recordTarget?.[0]?.patientRole?.addr?.[0] as CcdaAddr | undefined)?.['@_use']).toEqual('HP');
+      expect(
+        (output.recordTarget?.[0]?.patientRole?.addr?.[0] as CcdaAddr | undefined)?.streetAddressLine?.[0]
+      ).toEqual('123 Main St');
+      expect((output.recordTarget?.[0]?.patientRole?.addr?.[0] as CcdaAddr | undefined)?.city).toEqual(['Anytown']);
+      expect((output.recordTarget?.[0]?.patientRole?.addr?.[0] as CcdaAddr | undefined)?.state).toEqual(['CA']);
+      expect((output.recordTarget?.[0]?.patientRole?.addr?.[0] as CcdaAddr | undefined)?.postalCode).toEqual(['12345']);
     });
 
     // Phone Number
@@ -272,10 +295,10 @@ describe('170.315(g)(9)', () => {
 
       const output = convertFhirToCcda(input);
       const observation =
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
-          ?.observation?.[0]?.entryRelationship?.[0]?.observation?.[0];
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.entryRelationship?.[0]?.observation
+          ?.entryRelationship?.[0]?.observation;
       expect(observation).toBeDefined();
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('123');
+      expect((observation?.value?.[0] as CcdaCode)?.['@_code']).toEqual('123');
     });
 
     // Include timing information and concern status Reference: Section III.A in test data samples [2]
@@ -311,27 +334,25 @@ describe('170.315(g)(9)', () => {
       // Check that category="medication" converts to the correct code
       expect(
         (
-          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
-            ?.observation?.[0]?.value as CcdaCode
+          output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.entryRelationship?.[0]
+            ?.observation?.value?.[0] as CcdaCode
         )?.['@_code']
       ).toEqual('419511003');
 
       // Check act timing (when recorded)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
-          '@_value'
-        ]
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.effectiveTime?.low?.['@_value']
       ).toEqual('20240101');
 
       // Check observation timing (when started)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
-          ?.observation?.[0]?.effectiveTime?.[0]?.low?.['@_value']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.entryRelationship?.[0]?.observation
+          ?.effectiveTime?.low?.['@_value']
       ).toEqual('20231225');
 
       // Check status
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.statusCode?.['@_code']
       ).toEqual('active');
     });
 
@@ -367,15 +388,15 @@ describe('170.315(g)(9)', () => {
       // Check that empty category converts to the default code
       expect(
         (
-          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
-            ?.observation?.[0]?.value as CcdaCode
+          output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.entryRelationship?.[0]
+            ?.observation?.value?.[0] as CcdaCode
         )?.['@_code']
       ).toEqual('419199007');
 
       // Look for the special NKA code
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
-          ?.observation?.[0]?.participant?.[0]?.participantRole?.playingEntity?.code?.['@_nullFlavor']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.entryRelationship?.[0]?.observation
+          ?.participant?.[0]?.participantRole?.playingEntity?.code?.['@_nullFlavor']
       ).toEqual('NA');
     });
   });
@@ -435,25 +456,28 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
 
       // Check timing
-      expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.effectiveTime?.[0]?.low?.['@_value']
-      ).toEqual('20240101');
+      const effectiveTime: CdaIVL_TS | undefined =
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration
+          ?.effectiveTime?.[0];
+      expect(effectiveTime?.low?.['@_value']).toEqual('20240101');
 
       // Check dose quantity
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.doseQuantity?.['@_value']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration?.doseQuantity?.[
+          '@_value'
+        ]
       ).toEqual('40');
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.doseQuantity?.['@_unit']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration?.doseQuantity?.[
+          '@_unit'
+        ]
       ).toEqual('[IU]');
 
       // Check route
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.routeCode?.['@_code']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration?.routeCode?.[
+          '@_code'
+        ]
       ).toEqual('34206005');
     });
   });
@@ -488,20 +512,18 @@ describe('170.315(g)(9)', () => {
 
       // Check act timing (when recorded)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
-          '@_value'
-        ]
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.effectiveTime?.low?.['@_value']
       ).toEqual('20240101');
 
       // Check observation timing (when started)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
-          ?.observation?.[0]?.effectiveTime?.[0]?.low?.['@_value']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.entryRelationship?.[0]?.observation
+          ?.effectiveTime?.low?.['@_value']
       ).toEqual('20231225');
 
       // Check status
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.act?.statusCode?.['@_code']
       ).toEqual('active');
     });
   });
@@ -513,7 +535,7 @@ describe('170.315(g)(9)', () => {
       });
       const output = convertFhirToCcda(input);
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration
       ).toBeDefined();
     });
 
@@ -525,13 +547,14 @@ describe('170.315(g)(9)', () => {
       });
       const output = convertFhirToCcda(input);
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.statusCode?.['@_code']
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration?.statusCode?.[
+          '@_code'
+        ]
       ).toEqual('completed');
-      expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.effectiveTime?.[0]?.['@_value']
-      ).toEqual('20100815');
+      const effectiveTime: CdaIVL_TS | undefined =
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration
+          ?.effectiveTime?.[0];
+      expect(effectiveTime?.['@_value']).toEqual('20100815');
     });
 
     test('should include lot number and manufacturer', () => {
@@ -542,12 +565,12 @@ describe('170.315(g)(9)', () => {
       });
       const output = convertFhirToCcda(input);
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0]
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration?.consumable
+          ?.manufacturedProduct?.manufacturedMaterial?.lotNumberText
       ).toEqual('1');
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
-          ?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0]
+        output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.substanceAdministration?.consumable
+          ?.manufacturedProduct?.manufacturerOrganization?.name?.[0]
       ).toEqual('Manufacturer');
     });
   });
@@ -558,7 +581,7 @@ describe('170.315(g)(9)', () => {
         resourceType: 'Observation',
       });
       const output = convertFhirToCcda(input);
-      expect(output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation).toBeDefined();
+      expect(output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.observation).toBeDefined();
     });
 
     test('should include values and units', () => {
@@ -567,9 +590,9 @@ describe('170.315(g)(9)', () => {
         valueQuantity: { value: 100, unit: 'mg' },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.observation;
       expect(observation).toBeDefined();
-      const value = observation?.value as CcdaQuantity;
+      const value = observation?.value?.[0] as CcdaQuantity;
       expect(value?.['@_value']).toEqual('100');
       expect(value?.['@_unit']).toEqual('mg');
     });
@@ -593,12 +616,12 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const organizer = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[1]?.organizer?.[0];
+      const organizer = output.component?.structuredBody?.component?.[0]?.section?.entry?.[1]?.organizer;
       expect(organizer).toBeDefined();
       const components = organizer?.component;
       expect(components).toBeDefined();
-      expect((components?.[0]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('100');
-      expect((components?.[1]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('200');
+      expect((components?.[0]?.observation?.value?.[0] as CcdaQuantity)['@_value']).toEqual('100');
+      expect((components?.[1]?.observation?.value?.[0] as CcdaQuantity)['@_value']).toEqual('200');
     });
   });
 
@@ -611,10 +634,10 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: SNOMED, code: '449868002' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.observation;
       expect(observation).toBeDefined();
       expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_SMOKING_STATUS_OBSERVATION);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('449868002');
+      expect((observation?.value?.[0] as CcdaCode)?.['@_code']).toEqual('449868002');
     });
 
     test('should handle history of tobacco use', () => {
@@ -625,10 +648,10 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: SNOMED, code: '449868002' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.observation;
       expect(observation).toBeDefined();
       expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_TOBACCO_USE_OBSERVATION);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('449868002');
+      expect((observation?.value?.[0] as CcdaCode)?.['@_code']).toEqual('449868002');
     });
 
     test('should handle administrative gender', () => {
@@ -639,10 +662,10 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: SNOMED, code: '248152002' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.observation;
       expect(observation).toBeDefined();
       expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_SEX_OBSERVATION);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('248152002');
+      expect((observation?.value?.[0] as CcdaCode)?.['@_code']).toEqual('248152002');
     });
 
     test('should handle birth sex', () => {
@@ -653,11 +676,11 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: ADMINISTRATIVE_GENDER_CODE_SYSTEM, code: 'F' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.observation;
       expect(observation).toBeDefined();
       expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_BIRTH_SEX);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('F');
-      expect((observation?.value as CcdaCode)?.['@_codeSystem']).toEqual(OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM);
+      expect((observation?.value?.[0] as CcdaCode)?.['@_code']).toEqual('F');
+      expect((observation?.value?.[0] as CcdaCode)?.['@_codeSystem']).toEqual(OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM);
     });
   });
 
@@ -669,7 +692,7 @@ describe('170.315(g)(9)', () => {
         location: { reference: 'Location/123' },
       });
       const output = convertFhirToCcda(input);
-      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.procedure;
       expect(procedure).toBeDefined();
     });
 
@@ -688,7 +711,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.procedure;
       expect(procedure).toBeDefined();
       const participant = procedure?.participant?.[0];
       expect(participant).toBeDefined();
@@ -712,14 +735,16 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.entry?.[0]?.procedure;
       expect(procedure).toBeDefined();
       const participant = procedure?.participant?.[0];
       expect(participant).toBeDefined();
-      expect(participant?.participantRole?.addr?.[0]?.streetAddressLine?.[0]).toEqual('123 Main St');
-      expect(participant?.participantRole?.addr?.[0]?.city).toEqual('Anytown');
-      expect(participant?.participantRole?.addr?.[0]?.state).toEqual('CA');
-      expect(participant?.participantRole?.addr?.[0]?.postalCode).toEqual('12345');
+      expect((participant?.participantRole?.addr?.[0] as CcdaAddr | undefined)?.streetAddressLine?.[0]).toEqual(
+        '123 Main St'
+      );
+      expect((participant?.participantRole?.addr?.[0] as CcdaAddr | undefined)?.city).toEqual(['Anytown']);
+      expect((participant?.participantRole?.addr?.[0] as CcdaAddr | undefined)?.state).toEqual(['CA']);
+      expect((participant?.participantRole?.addr?.[0] as CcdaAddr | undefined)?.postalCode).toEqual(['12345']);
       expect(participant?.participantRole?.telecom?.[0]?.['@_value']).toEqual('tel:123-456-7890');
       expect(participant?.participantRole?.playingEntity?.name?.[0]).toEqual('Test Location');
     });
@@ -744,13 +769,13 @@ describe('170.315(g)(9)', () => {
         authoredOn: '2025-02-27T01:32:00.000Z',
       });
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_PLAN_OF_TREATMENT_SECTION);
-      const observation = section?.entry?.[0]?.observation?.[0];
+      const observation = section?.entry?.[0]?.observation;
       expect(observation).toBeDefined();
       expect(observation?.code?.['@_code']).toEqual('24357-6');
-      expect(observation?.effectiveTime?.[0]?.['@_value']).toMatch('20150629');
+      expect(observation?.effectiveTime?.['@_value']).toMatch('20150629');
     });
 
     test('should handle reports', () => {
@@ -791,14 +816,14 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_RESULTS_SECTION);
-      const organizer = section?.entry?.[1]?.organizer?.[0];
+      const organizer = section?.entry?.[1]?.organizer;
       expect(organizer).toBeDefined();
       const components = organizer?.component;
       expect(components).toBeDefined();
-      expect((components?.[0]?.observation?.[0]?.value as CcdaText)['#text']).toEqual('YELLOW');
+      expect((components?.[0]?.observation?.value?.[0] as CcdaText)['#text']).toEqual('YELLOW');
     });
   });
 
@@ -810,7 +835,7 @@ describe('170.315(g)(9)', () => {
         device: { reference: 'Device/123' },
       });
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
       expect(section?.entry).toHaveLength(0);
@@ -848,10 +873,10 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
-      const procedure = section?.entry?.[0]?.procedure?.[0];
+      const procedure = section?.entry?.[0]?.procedure;
       expect(procedure).toBeDefined();
       expect(procedure?.code?.['@_code']).toEqual('360030002');
       expect(procedure?.participant?.length).toEqual(1);
@@ -888,7 +913,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_ASSESSMENTS_SECTION);
       expect(section?.text).toEqual('Lorem ipsum');
@@ -910,13 +935,13 @@ describe('170.315(g)(9)', () => {
         },
       });
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_GOALS_SECTION);
 
-      const observation = section?.entry?.[0]?.observation?.[0];
+      const observation = section?.entry?.[0]?.observation;
       expect(observation).toBeDefined();
-      expect((observation?.value as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+      expect((observation?.value?.[0] as CcdaText)['#text']).toEqual('Lorem ipsum');
     });
   });
 
@@ -946,11 +971,11 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_HEALTH_CONCERNS_SECTION);
-      const act = section?.entry?.[0]?.act?.[0];
-      expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+      const act = section?.entry?.[0]?.act;
+      expect((act?.text as CcdaText)['#text']).toEqual('Lorem ipsum');
     });
   });
 
@@ -980,11 +1005,11 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section;
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
-      const act = section?.entry?.[0]?.act?.[0];
-      expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+      const act = section?.entry?.[0]?.act;
+      expect((act?.text as CcdaText)['#text']).toEqual('Lorem ipsum');
     });
   });
 
@@ -1023,16 +1048,16 @@ describe('170.315(g)(9)', () => {
       }
     );
     const output = convertFhirToCcda(input);
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody?.component?.[0]?.section;
     expect(section).toBeDefined();
     expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
 
-    const act = section?.entry?.[0]?.act?.[0];
-    expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+    const act = section?.entry?.[0]?.act;
+    expect((act?.text as CcdaText)['#text']).toEqual('Lorem ipsum');
 
     const author = act?.author?.[0];
     expect(author).toBeDefined();
-    expect(author?.assignedAuthor?.assignedPerson?.name?.[0]?.family).toEqual('Davis');
+    expect((author?.assignedAuthor?.assignedPerson?.name?.[0] as CcdaName | undefined)?.family).toEqual(['Davis']);
     expect(author?.assignedAuthor?.representedOrganization?.name?.[0]).toEqual('Hospital');
   });
 
@@ -1051,12 +1076,12 @@ describe('170.315(g)(9)', () => {
       summary: 'Lorem ipsum',
     });
     const output = convertFhirToCcda(input);
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody?.component?.[0]?.section;
     expect(section).toBeDefined();
     expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
 
-    const act = section?.entry?.[0]?.act?.[0];
-    expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+    const act = section?.entry?.[0]?.act;
+    expect((act?.text as CcdaText)['#text']).toEqual('Lorem ipsum');
 
     const author = act?.author?.[0];
     expect(author).toBeUndefined();
@@ -1091,17 +1116,17 @@ describe('Encounters', () => {
       }
     );
     const output = convertFhirToCcda(input);
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody?.component?.[0]?.section;
     expect(section).toBeDefined();
     expect(section?.code?.['@_code']).toEqual(LOINC_ENCOUNTERS_SECTION);
 
-    const encounter = section?.entry?.[0]?.encounter?.[0];
+    const encounter = section?.entry?.[0]?.encounter;
     expect(encounter).toBeDefined();
 
-    const observation = encounter?.entryRelationship?.[0]?.act?.[0]?.entryRelationship?.[0]?.observation;
+    const observation = encounter?.entryRelationship?.[0]?.act?.entryRelationship?.[0]?.observation;
     expect(observation).toBeDefined();
-    expect(observation?.[0]?.code?.['@_code']).toEqual('282291009'); // Diagnostic interpretation
-    expect((observation?.[0]?.value as CcdaCode)['@_code']).toEqual('386661006');
+    expect(observation?.code?.['@_code']).toEqual('282291009'); // Diagnostic interpretation
+    expect((observation?.value?.[0] as CcdaCode)['@_code']).toEqual('386661006');
   });
 });
 
@@ -1132,12 +1157,12 @@ describe('Reason for Referral', () => {
     expect(output).toBeDefined();
     expect(output.code?.['@_code']).toEqual(LOINC_REFERRAL_NOTE);
 
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody?.component?.[0]?.section;
     expect(section).toBeDefined();
     expect(section?.text).toEqual('Lorem ipsum');
     expect(section?.code?.['@_code']).toEqual(LOINC_REASON_FOR_REFERRAL_SECTION);
 
-    const act = section?.entry?.[0]?.act?.[0];
+    const act = section?.entry?.[0]?.act;
     expect(act).toBeDefined();
   });
 });

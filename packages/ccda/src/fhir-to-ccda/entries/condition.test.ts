@@ -66,7 +66,7 @@ describe('Condition Entry Functions', () => {
 
       expect(result).toBeDefined();
       expect(result?.act).toBeDefined();
-      expect(result?.act?.[0]?.templateId).toContainEqual({ '@_root': OID_PROBLEM_ACT });
+      expect(result?.act?.templateId).toContainEqual({ '@_root': OID_PROBLEM_ACT });
     });
 
     test('should return health concern entry for health concerns section', () => {
@@ -90,7 +90,7 @@ describe('Condition Entry Functions', () => {
 
       expect(result).toBeDefined();
       expect(result?.act).toBeDefined();
-      expect(result?.act?.[0]?.templateId).toContainEqual({
+      expect(result?.act?.templateId).toContainEqual({
         '@_root': OID_HEALTH_CONCERN_ACT,
         '@_extension': '2015-08-01',
       });
@@ -131,9 +131,9 @@ describe('Condition Entry Functions', () => {
 
       expect(result).toBeDefined();
       expect(result.act).toBeDefined();
-      expect(result.act?.length).toBe(1);
+      expect(result.act).toBeDefined();
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.['@_classCode']).toBe('ACT');
       expect(act?.['@_moodCode']).toBe('EVN');
       expect(act?.code?.['@_code']).toBe('CONC');
@@ -155,7 +155,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createProblemEntry(converter, condition);
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.statusCode?.['@_code']).toBe('inactive');
     });
 
@@ -174,12 +174,12 @@ describe('Condition Entry Functions', () => {
 
       const result = createProblemEntry(converter, condition);
 
-      const act = result.act?.[0];
-      expect(act?.effectiveTime?.[0]?.low?.['@_value']).toBe('20240101');
+      const act = result.act;
+      expect(act?.effectiveTime?.low?.['@_value']).toBe('20240101');
 
-      const observation = act?.entryRelationship?.[0]?.observation?.[0];
-      expect(observation?.effectiveTime?.[0]?.low?.['@_value']).toBe('20231225');
-      expect(observation?.effectiveTime?.[0]?.high?.['@_value']).toBe('20240115');
+      const observation = act?.entryRelationship?.[0]?.observation;
+      expect(observation?.effectiveTime?.low?.['@_value']).toBe('20231225');
+      expect(observation?.effectiveTime?.high?.['@_value']).toBe('20240115');
     });
 
     test('should handle condition with identifiers', () => {
@@ -195,7 +195,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createProblemEntry(converter, condition);
 
-      const observation = result.act?.[0]?.entryRelationship?.[0]?.observation?.[0];
+      const observation = result.act?.entryRelationship?.[0]?.observation;
       expect(observation?.id).toBeDefined();
       expect(Array.isArray(observation?.id)).toBe(true);
     });
@@ -222,7 +222,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createProblemEntry(converter, condition);
 
-      const observation = result.act?.[0]?.entryRelationship?.[0]?.observation?.[0];
+      const observation = result.act?.entryRelationship?.[0]?.observation;
       expect(observation?.author).toBeDefined();
     });
   });
@@ -242,9 +242,9 @@ describe('Condition Entry Functions', () => {
 
       expect(result).toBeDefined();
       expect(result.act).toBeDefined();
-      expect(result.act?.length).toBe(1);
+      expect(result.act).toBeDefined();
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.['@_classCode']).toBe('ACT');
       expect(act?.['@_moodCode']).toBe('EVN');
       expect(act?.code?.['@_code']).toBe(LOINC_HEALTH_CONCERNS_SECTION);
@@ -267,7 +267,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createHealthConcernEntry(converter, condition);
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.statusCode?.['@_code']).toBe('inactive');
     });
 
@@ -307,7 +307,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createHealthConcernEntry(converter, condition);
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.entryRelationship).toBeDefined();
       expect(act?.entryRelationship?.length).toBe(1);
 
@@ -315,7 +315,7 @@ describe('Condition Entry Functions', () => {
       expect(entryRel?.['@_typeCode']).toBe('REFR');
       expect(entryRel?.observation).toBeDefined();
 
-      const obsEntry = entryRel?.observation?.[0];
+      const obsEntry = entryRel?.observation;
       expect(obsEntry?.['@_classCode']).toBe('OBS');
       expect(obsEntry?.['@_moodCode']).toBe('EVN');
       expect(obsEntry?.templateId).toContainEqual({ '@_root': OID_PROBLEM_OBSERVATION });
@@ -338,7 +338,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createHealthConcernEntry(converter, condition);
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.entryRelationship).toEqual([]);
     });
 
@@ -359,7 +359,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createHealthConcernEntry(converter, condition);
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.entryRelationship).toEqual([]);
     });
 
@@ -376,7 +376,7 @@ describe('Condition Entry Functions', () => {
 
       const result = createHealthConcernEntry(converter, condition);
 
-      const act = result.act?.[0];
+      const act = result.act;
       expect(act?.entryRelationship).toEqual([]);
     });
 
@@ -393,8 +393,8 @@ describe('Condition Entry Functions', () => {
 
       const result = createHealthConcernEntry(converter, condition);
 
-      const act = result.act?.[0];
-      expect(act?.effectiveTime?.[0]?.low?.['@_value']).toBe('20240101');
+      const act = result.act;
+      expect(act?.effectiveTime?.low?.['@_value']).toBe('20240101');
     });
   });
 });

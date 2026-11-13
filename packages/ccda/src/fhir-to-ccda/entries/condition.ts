@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { EMPTY, generateId } from '@medplum/core';
+import { arrayify, EMPTY, generateId } from '@medplum/core';
 import type { CompositionSection, Condition } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from '../../datetime';
 import {
@@ -41,70 +41,64 @@ export function createConditionEntry(
 
 export function createProblemEntry(converter: FhirToCcdaConverter, problem: Condition): CcdaEntry {
   return {
-    act: [
-      {
-        '@_classCode': 'ACT',
-        '@_moodCode': 'EVN',
-        templateId: [{ '@_root': OID_PROBLEM_ACT }, { '@_root': OID_PROBLEM_ACT, '@_extension': '2015-08-01' }],
-        id: mapIdentifiers(problem.id, undefined),
-        code: {
-          '@_code': 'CONC',
-          '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
-        },
-        statusCode: {
-          '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(problem.clinicalStatus?.coding?.[0]?.code, 'active'),
-        },
-        effectiveTime: mapEffectivePeriod(problem.recordedDate, undefined),
-        entryRelationship: [
-          {
-            '@_typeCode': 'SUBJ',
-            observation: [
-              {
-                '@_classCode': 'OBS',
-                '@_moodCode': 'EVN',
-                templateId: [
-                  { '@_root': OID_PROBLEM_OBSERVATION },
-                  { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
-                ],
-                id: problem.identifier
-                  ? mapIdentifiers(undefined, problem.identifier)
-                  : [
-                      {
-                        '@_root': generateId(),
-                      },
-                    ],
-                text: createTextFromExtensions(problem.extension),
-                code: {
-                  '@_code': '55607006',
-                  '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-                  '@_codeSystemName': 'SNOMED CT',
-                  '@_displayName': 'Problem',
-                  translation: [
-                    {
-                      '@_code': LOINC_CONDITION,
-                      '@_codeSystem': OID_LOINC_CODE_SYSTEM,
-                      '@_codeSystemName': 'LOINC',
-                      '@_displayName': 'Condition',
-                    },
-                  ],
-                },
-                statusCode: { '@_code': 'completed' },
-                effectiveTime: [
+    act: {
+      '@_classCode': 'ACT',
+      '@_moodCode': 'EVN',
+      templateId: [{ '@_root': OID_PROBLEM_ACT }, { '@_root': OID_PROBLEM_ACT, '@_extension': '2015-08-01' }],
+      id: mapIdentifiers(problem.id, undefined),
+      code: {
+        '@_code': 'CONC',
+        '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
+      },
+      statusCode: {
+        '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(problem.clinicalStatus?.coding?.[0]?.code, 'active'),
+      },
+      effectiveTime: mapEffectivePeriod(problem.recordedDate, undefined),
+      entryRelationship: [
+        {
+          '@_typeCode': 'SUBJ',
+          observation: {
+            '@_classCode': 'OBS',
+            '@_moodCode': 'EVN',
+            templateId: [
+              { '@_root': OID_PROBLEM_OBSERVATION },
+              { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
+            ],
+            id: problem.identifier
+              ? mapIdentifiers(undefined, problem.identifier)
+              : [
                   {
-                    low: problem.onsetDateTime ? { '@_value': mapFhirToCcdaDate(problem.onsetDateTime) } : undefined,
-                    high: problem.abatementDateTime
-                      ? { '@_value': mapFhirToCcdaDateTime(problem.abatementDateTime) }
-                      : undefined,
+                    '@_root': generateId(),
                   },
                 ],
-                value: mapCodeableConceptToCcdaValue(problem.code),
-                author: converter.mapAuthor(problem.asserter, problem.recordedDate),
-              },
-            ],
+            text: createTextFromExtensions(problem.extension),
+            code: {
+              '@_code': '55607006',
+              '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+              '@_codeSystemName': 'SNOMED CT',
+              '@_displayName': 'Problem',
+              translation: [
+                {
+                  '@_code': LOINC_CONDITION,
+                  '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                  '@_codeSystemName': 'LOINC',
+                  '@_displayName': 'Condition',
+                },
+              ],
+            },
+            statusCode: { '@_code': 'completed' },
+            effectiveTime: {
+              low: problem.onsetDateTime ? { '@_value': mapFhirToCcdaDate(problem.onsetDateTime) } : undefined,
+              high: problem.abatementDateTime
+                ? { '@_value': mapFhirToCcdaDateTime(problem.abatementDateTime) }
+                : undefined,
+            },
+            value: arrayify(mapCodeableConceptToCcdaValue(problem.code)),
+            author: converter.mapAuthor(problem.asserter, problem.recordedDate),
           },
-        ],
-      },
-    ],
+        },
+      ],
+    },
   };
 }
 
@@ -117,66 +111,62 @@ export function createHealthConcernEntry(converter: FhirToCcdaConverter, healthC
       if (detail?.resourceType === 'Observation') {
         entryRelationship.push({
           '@_typeCode': 'REFR',
-          observation: [
-            {
-              '@_classCode': 'OBS',
-              '@_moodCode': 'EVN',
-              templateId: [
-                { '@_root': OID_PROBLEM_OBSERVATION },
-                { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
+          observation: {
+            '@_classCode': 'OBS',
+            '@_moodCode': 'EVN',
+            templateId: [
+              { '@_root': OID_PROBLEM_OBSERVATION },
+              { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
+            ],
+            id: mapIdentifiers(detail.id, detail.identifier),
+            text: createTextFromExtensions(detail.extension),
+            code: {
+              '@_code': '404684003',
+              '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+              '@_codeSystemName': 'SNOMED CT',
+              '@_displayName': 'Clinical finding (finding)',
+              translation: [
+                {
+                  '@_code': LOINC_CLINICAL_FINDING,
+                  '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                  '@_codeSystemName': 'LOINC',
+                  '@_displayName': 'Clinical finding',
+                },
               ],
-              id: mapIdentifiers(detail.id, detail.identifier),
-              text: createTextFromExtensions(detail.extension),
-              code: {
-                '@_code': '404684003',
-                '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-                '@_codeSystemName': 'SNOMED CT',
-                '@_displayName': 'Clinical finding (finding)',
-                translation: [
-                  {
-                    '@_code': LOINC_CLINICAL_FINDING,
-                    '@_codeSystem': OID_LOINC_CODE_SYSTEM,
-                    '@_codeSystemName': 'LOINC',
-                    '@_displayName': 'Clinical finding',
-                  },
-                ],
-              },
-              statusCode: { '@_code': 'completed' },
-              effectiveTime: mapEffectivePeriod(detail.effectivePeriod?.start, detail.effectivePeriod?.end, true),
-              value: mapCodeableConceptToCcdaValue(detail.valueCodeableConcept),
-              author: converter.mapAuthor(detail.performer?.[0], detail.effectiveDateTime),
             },
-          ],
+            statusCode: { '@_code': 'completed' },
+            effectiveTime: mapEffectivePeriod(detail.effectivePeriod?.start, detail.effectivePeriod?.end, true),
+            value: arrayify(mapCodeableConceptToCcdaValue(detail.valueCodeableConcept)),
+            author: converter.mapAuthor(detail.performer?.[0], detail.effectiveDateTime),
+          },
         });
       }
     }
   }
 
   return {
-    act: [
-      {
-        '@_classCode': 'ACT',
-        '@_moodCode': 'EVN',
-        templateId: [
-          { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2015-08-01' },
-          { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2022-06-01' },
-        ],
-        id: mapIdentifiers(healthConcern.id, undefined),
-        code: {
-          '@_code': LOINC_HEALTH_CONCERNS_SECTION,
-          '@_codeSystem': OID_LOINC_CODE_SYSTEM,
-          '@_codeSystemName': 'LOINC',
-          '@_displayName': 'Health Concern',
-        },
-        statusCode: {
-          '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
-            healthConcern.clinicalStatus?.coding?.[0]?.code,
-            'active'
-          ),
-        },
-        effectiveTime: mapEffectivePeriod(healthConcern.recordedDate, undefined),
-        entryRelationship,
+    act: {
+      '@_classCode': 'ACT',
+      '@_moodCode': 'EVN',
+      templateId: [
+        { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2015-08-01' },
+        { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2022-06-01' },
+      ],
+      id: mapIdentifiers(healthConcern.id, undefined),
+      code: {
+        '@_code': LOINC_HEALTH_CONCERNS_SECTION,
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_codeSystemName': 'LOINC',
+        '@_displayName': 'Health Concern',
       },
-    ],
+      statusCode: {
+        '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
+          healthConcern.clinicalStatus?.coding?.[0]?.code,
+          'active'
+        ),
+      },
+      effectiveTime: mapEffectivePeriod(healthConcern.recordedDate, undefined),
+      entryRelationship,
+    },
   };
 }

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY } from '@medplum/core';
+import { arrayify, EMPTY } from '@medplum/core';
 import type {
   Address,
   Bundle,
@@ -23,6 +23,7 @@ import type {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
+import type { CdaCE, CdaParticipant1, CdaTS } from '../cda-types';
 import { mapFhirToCcdaDateTime } from '../datetime';
 import {
   OID_ASSESSMENTS_SECTION,
@@ -48,8 +49,9 @@ import type {
   CcdaCode,
   CcdaCustodian,
   CcdaEntry,
+  CcdaId,
   CcdaInformationRecipient,
-  CcdaParticipant,
+  CcdaOuterComponent,
   CcdaRecordTarget,
   CcdaSection,
   CcdaTemplateId,
@@ -164,40 +166,31 @@ export class FhirToCcdaConverter {
     // Be careful! Order is important!
     // Validate changes with ETT: https://ett.healthit.gov/ett/#/validators/ccdauscidv3#ccdaValdReport
     return {
-      realmCode: {
-        '@_code': 'US',
-      },
+      realmCode: [{ '@_code': 'US' }],
       typeId: {
         '@_root': OID_HL7_REGISTERED_MODELS,
         '@_extension': 'POCD_HD000040',
       },
       templateId,
-      id: mapIdentifiers(this.composition.id, undefined),
+      id: mapIdentifiers(this.composition.id, undefined)?.[0] as CcdaId,
       code,
       title: this.composition.title,
-      effectiveTime: mapEffectiveTime(this.composition.date, undefined),
-      confidentialityCode: this.composition.confidentiality
+      effectiveTime: mapEffectiveTime(this.composition.date, undefined) as CdaTS,
+      confidentialityCode: (this.composition.confidentiality
         ? CONFIDENTIALITY_MAPPER.mapFhirToCcdaCode(this.composition.confidentiality)
-        : undefined,
+        : undefined) as CdaCE,
       // Consol US Realm Header SHALL contain exactly one [1..1] languageCode,
       // which SHALL be selected from ValueSet Language 2.16.840.1.113883.1.11.11526 DYNAMIC (CONF:5372, R2.1=CONF:1198-5372, DSTU:806)
       languageCode: { '@_code': this.composition.language ?? 'en-US' },
       recordTarget: this.createRecordTarget(),
-      author: this.mapAuthor(this.composition.author?.[0], this.composition.date, true),
-      custodian: this.mapCustodian(this.composition.custodian),
-      informationRecipient: this.mapRecipient(referral),
+      author: this.mapAuthor(this.composition.author?.[0], this.composition.date, true) as CcdaAuthor[],
+      custodian: this.mapCustodian(this.composition.custodian) as CcdaCustodian,
+      informationRecipient: arrayify(this.mapRecipient(referral)),
       participant: this.createParticipants(),
       documentationOf: mapDocumentationOf(this.composition.event),
-      component:
-        sections.length > 0
-          ? {
-              structuredBody: {
-                component: sections.map((section) => ({
-                  section: [section],
-                })),
-              },
-            }
-          : undefined,
+      component: (sections.length > 0
+        ? { structuredBody: { component: sections.map((section) => ({ section })) } }
+        : undefined) as CcdaOuterComponent,
     };
   }
 
@@ -251,7 +244,7 @@ export class FhirToCcdaConverter {
     return [
       {
         patientRole: {
-          id: mapIdentifiers(this.patient.id, this.patient.identifier),
+          id: mapIdentifiers(this.patient.id, this.patient.identifier) as CcdaId[],
           addr: mapFhirAddressArrayToCcdaAddressArray(this.patient.address),
           telecom: mapTelecom(this.patient.telecom),
           patient: mapPatient(this.patient),
@@ -416,9 +409,9 @@ export class FhirToCcdaConverter {
             '@_root': OID_AUTHOR_PARTICIPANT,
           },
         ],
-        time: time ? { '@_value': mapFhirToCcdaDateTime(time) } : undefined,
+        time: (time ? { '@_value': mapFhirToCcdaDateTime(time) } : undefined) as CdaTS,
         assignedAuthor: {
-          id: mapIdentifiers(mainResource.id, mainResource.identifier),
+          id: mapIdentifiers(mainResource.id, mainResource.identifier) as CcdaId[],
           addr: mapFhirAddressArrayToCcdaAddressArray(address),
           telecom: mapTelecom(telecom),
           code: mapCodeableConceptToCcdaCode(code),
@@ -444,10 +437,10 @@ export class FhirToCcdaConverter {
     return {
       assignedCustodian: {
         representedCustodianOrganization: {
-          id: mapIdentifiers(organization.id, organization.identifier),
-          name: organization.name ? [organization.name] : undefined,
-          telecom: mapTelecom(organization.telecom),
-          addr: mapFhirAddressArrayToCcdaAddressArray(organization.address),
+          id: mapIdentifiers(organization.id, organization.identifier) as CcdaId[],
+          name: organization.name,
+          telecom: mapTelecom(organization.telecom)[0],
+          addr: mapFhirAddressArrayToCcdaAddressArray(organization.address)[0],
         },
       },
     };
@@ -482,7 +475,7 @@ export class FhirToCcdaConverter {
     };
   }
 
-  private createParticipants(): CcdaParticipant[] | undefined {
+  private createParticipants(): CdaParticipant1[] | undefined {
     const relatedPersons = this.bundle.entry
       ?.filter((e) => e.resource?.resourceType === 'RelatedPerson')
       .map((e) => e.resource as RelatedPerson);
@@ -543,24 +536,22 @@ export class FhirToCcdaConverter {
       text: resource.note?.[0]?.text,
       entry: [
         {
-          act: [
-            {
-              '@_classCode': 'PCPR',
-              '@_moodCode': 'INT',
-              templateId: [{ '@_root': OID_PATIENT_REFERRAL_ACTIVITY_OBSERVATION }],
-              id: mapIdentifiers(resource.id, resource.identifier),
-              code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
-              statusCode: { '@_code': 'active' },
-              effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) }],
-              priorityCode: {
-                '@_code': 'A',
-                '@_codeSystem': '2.16.840.1.113883.5.7',
-                '@_codeSystemName': 'ActPriority',
-                '@_displayName': 'ASAP',
-              },
-              author: this.mapAuthor(resource.requester, resource.occurrenceDateTime),
+          act: {
+            '@_classCode': 'PCPR',
+            '@_moodCode': 'INT',
+            templateId: [{ '@_root': OID_PATIENT_REFERRAL_ACTIVITY_OBSERVATION }],
+            id: mapIdentifiers(resource.id, resource.identifier),
+            code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+            statusCode: { '@_code': 'active' },
+            effectiveTime: { '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) },
+            priorityCode: {
+              '@_code': 'A',
+              '@_codeSystem': '2.16.840.1.113883.5.7',
+              '@_codeSystemName': 'ActPriority',
+              '@_displayName': 'ASAP',
             },
-          ],
+            author: this.mapAuthor(resource.requester, resource.occurrenceDateTime),
+          },
         },
       ],
     };
