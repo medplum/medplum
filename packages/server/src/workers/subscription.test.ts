@@ -1297,17 +1297,23 @@ describe('Subscription Worker', () => {
       (fetch as unknown as Mock)
         .mockImplementationOnce(() => mockFetchStatus(500))
         .mockImplementation(() => mockFetchStatus(200));
-      const infoSpy = vi.spyOn(loggerModule.getLogger(), 'info');
+      const attemptLogs: unknown[] = [];
+      const logger = loggerModule.getLogger();
+      const captureAttempt = (msg: string, data?: unknown): void => {
+        if (msg === 'Subscription job attempt') {
+          attemptLogs.push(data);
+        }
+      };
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(captureAttempt);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(captureAttempt);
 
       await findAndExecSubscriptionJob(patient, 'create', subscription);
       // Rerun the same job after disabling the subscription, so it is skipped
       await repo.updateResource<Subscription>({ ...subscription, status: 'off' });
       await findAndExecSubscriptionJob(patient, 'create', subscription);
 
-      const attemptLogs = infoSpy.mock.calls
-        .filter(([msg]) => msg === 'Subscription job attempt')
-        .map(([, data]) => data);
       infoSpy.mockRestore();
+      warnSpy.mockRestore();
       expect(attemptLogs).toStrictEqual([
         expect.objectContaining({
           attemptsMade: 0,
