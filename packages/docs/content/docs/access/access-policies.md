@@ -255,7 +255,7 @@ Resources are automatically assigned to compartments based on rules. Currently, 
 
 You can use compartments to succinctly create an [AccessPolicy](/docs/api/fhir/medplum/accesspolicy) for resources related to a single patient.
 
-The AccessPolicy below grants access to all `Observation` resources that belong to `Patient/xyz`. The example takes advantage of the [`_compartment` search parameter](/docs/search/advanced-search-parameters#_compartment)
+The AccessPolicy below grants access to all `Observation` resources that belong to `Patient/xyz`. The example takes advantage of the [`_compartment` search parameter](/docs/search/advanced-search-parameters#_compartment). To reuse one policy across patients, write `%patient` in the criteria and set the Patient on the user's membership. See [Caregiver access](#caregiver-access).
 
 ```json
 {
@@ -284,10 +284,11 @@ For more advanced access control configurations, You can use `%` variables to pa
 
 Medplum provides the following built-in variables:
 
-| Variable      | Description                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------- |
-| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`) |
-| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                  |
+| Variable      | Description                                                                                                                                                          |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`)                                                                         |
+| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                          |
+| `%patient`    | The patient this policy is scoped to. Defaults to the user's profile. A membership parameter named `patient` overrides it. See [Caregiver access](#caregiver-access). |
 
 <details open>
 <summary>
@@ -478,6 +479,8 @@ Then set the concrete tenant value on each membership:
 }
 ```
 
+A patient or caregiver policy uses the same two-part setup. The criteria refer to `%patient`, and the Patient reference lives on the membership parameter. See [Caregiver access](#caregiver-access).
+
 ## Example Access Policies
 
 ### Healthcare Partnerships
@@ -547,7 +550,7 @@ Because the account-tagging is handled within the resource, project administrato
 
 ### Patient Access
 
-If you are building a patient-facing application (such as [FooMedical](https://github.com/medplum/foomedical)), a common requirement is to restrict each patient's access to only their own data. In this case it is recommended to use templated access policies, that also implement compartments as shown below.
+If you are building a patient-facing application (such as [FooMedical](https://github.com/medplum/foomedical)), a common requirement is to restrict each patient's access to only their own data. Use a templated access policy whose criteria are limited to that patient's compartment.
 
 {{< warning title="Open Patient Registration" >}}
 
@@ -556,6 +559,8 @@ Patient Access is disabled by default. See our article on [enabling open patient
 {{< /warning >}}
 
 For an example Patient Access Policy template, see [your project's Default Access Policy](#default-access-policies).
+
+The default Patient policy does not set `AccessPolicy.compartment`. Each resource entry limits what the patient can read with `criteria` that contain `%patient`, and login fills `%patient` from the Patient profile. A RelatedPerson's profile is not the patient, so that reference has to be supplied on the membership. See [Caregiver access](#caregiver-access).
 
 {{< warning title="Binary Security Context" >}}
 
@@ -579,35 +584,102 @@ You can configure your project to support open registration for patients, theref
 
 ### Caregiver Access
 
-The [patient access policy](#patient-access) above can be combined with [policy parameterization](#parameterized-policies) to create an policy that allows caregivers to access data on behalf of patients (e.g parents on behalf of children.
+A caregiver, such as a parent or guardian, logs in as a [`RelatedPerson`](/docs/api/fhir/resources/relatedperson). [`RelatedPerson.patient`](/docs/api/fhir/resources/relatedperson) points at the patient whose record they should see. The RelatedPerson is the user's profile, so a policy cannot assume `%profile` is the patient.
 
-```js
+Limit that user with resource `criteria` and a parameter on their [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The policy names the patient as `%patient`. The membership supplies the Patient reference. One policy template then works for every caregiver; only the parameter changes. The project's [default RelatedPerson access policy](#default-access-policies) is this template.
+
+`AccessPolicy.compartment` is a different mechanism. When it is set, Medplum adds that reference to `meta.accounts` on resources the user creates. It does not decide which existing records the user can read. The server already places a resource in the [patient compartment](#compartments) from the patient references on the resource. Criteria such as `Observation?_compartment=%patient` match that compartment. The default Patient and RelatedPerson policies leave `compartment` unset and rely on those criteria.
+
+#### 1. Write criteria that use `%patient`
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Caregiver Access",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?_id=%patient.id"
+    },
+    {
+      "resourceType": "Observation",
+      "criteria": "Observation?_compartment=%patient"
+    },
+    {
+      "resourceType": "Condition",
+      "criteria": "Condition?_compartment=%patient"
+    }
+  ]
+}
+```
+
+The default Patient and RelatedPerson policies follow this shape for the clinical resource types in the patient compartment. `Patient` is matched by id. `Communication` is matched on `sender` and `recipient`, because those are the references that place it in the patient compartment. The other clinical types are matched with `_compartment=%patient`, as `Observation` and `Condition` are above.
+
+#### 2. Put the Patient on the membership
+
+At login, Medplum replaces every `%patient` in the policy. A parameter named `patient` on `ProjectMembership.access` supplies the reference. `%patient.id` is the id portion of that reference.
+
+```json
 {
   "resourceType": "ProjectMembership",
+  "profile": { "reference": "RelatedPerson/marge-bart" },
   "access": [
-    // Provide access to Patients and Diagnostic Reports in Organization/abc
     {
-      "policy": { "reference": "AccessPolicy/patient-access-policy-template" },
+      "policy": { "reference": "AccessPolicy/caregiver-access" },
       "parameter": [
         {
           "name": "patient",
-          "valueReference": { "reference": "Patient/xyz" }
-        }
-      ]
-    },
-    // Provide access to Patients and Diagnostic Reports in Organization/def
-    {
-      "policy": { "reference": "AccessPolicy/patient-access-policy-template" },
-      "parameter": [
-        {
-          "name": "patient",
-          "valueReference": { "reference": "Patient/uvw" }
+          "valueReference": { "reference": "Patient/bart-simpson" }
         }
       ]
     }
   ]
 }
 ```
+
+If that parameter is missing, `%patient` falls back to the user's profile. That is the right value for a Patient, whose profile is the patient, so the default Patient policy needs no parameter. It is the wrong value for a RelatedPerson: `%patient` would be the RelatedPerson, and the criteria would not match the patient's compartment.
+
+A caregiver of more than one patient gets one `access` entry per patient, each with its own `patient` parameter and the same policy. Each caregiver has their own membership, so several caregivers of one patient are several memberships.
+
+#### 3. Pass the Patient when you invite
+
+The Patient reference has to be on the membership before the caregiver logs in. When you invite a RelatedPerson and do not set an access policy, Medplum does this for you: it applies the project's default RelatedPerson policy and copies `RelatedPerson.patient` onto the membership as the `patient` parameter.
+
+In the [invite form](/docs/app/invite), choose the **RelatedPerson** role, select the **Patient**, and leave **Access Policy** empty.
+
+With the [Invite API](/docs/api/project-admin/invite), pass `patient` and omit `membership.accessPolicy` and `membership.access`:
+
+```ts
+await medplum.post('admin/projects/:projectId/invite', {
+  resourceType: 'RelatedPerson',
+  firstName: 'Marge',
+  lastName: 'Simpson',
+  email: 'marge@example.com',
+  patient: { reference: 'Patient/bart-simpson' },
+});
+```
+
+The resulting membership has the default policy and the parameter:
+
+```json
+{
+  "resourceType": "ProjectMembership",
+  "profile": { "reference": "RelatedPerson/marge-bart" },
+  "access": [
+    {
+      "policy": { "reference": "AccessPolicy/<project-default-related-person>" },
+      "parameter": [
+        {
+          "name": "patient",
+          "valueReference": { "reference": "Patient/bart-simpson" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+If the invite sets an access policy (`accessPolicy`, `access`, `membership.accessPolicy`, or `membership.access`), Medplum uses what you sent and does not add the parameter. The invite form's Access Policy field sends `accessPolicy`, so choosing a policy there skips this step. Put the policy on `membership.access` yourself, including the `patient` parameter, or add the parameter to the membership after the invite. The same applies when the project has no RelatedPerson entry in [`Project.defaultAccessPolicies`](/docs/api/fhir/medplum/project).
 
 ### WebSocket Subscriptions (`useSubscription` Hook)
 
@@ -664,10 +736,10 @@ New projects are created with a set of **default access policies**, one per prof
 
 | Profile type        | Default policy grants                                                                                                                                                 |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types.                      |
+| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden. |
 | `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                 |
-| `Patient`           | Access scoped to the patient's own compartment.                                                                                                                       |
-| `RelatedPerson`     | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                                                    |
+| `Patient`           | Access scoped to the patient's own compartment. `%patient` is the Patient profile. See [Patient access](#patient-access).                                             |
+| `RelatedPerson`     | Access scoped to the associated patient's compartment. The invite stores that Patient on the membership. See [Caregiver access](#caregiver-access).                    |
 | `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
 | `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
 

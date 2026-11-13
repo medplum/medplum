@@ -184,6 +184,56 @@ describe('MCP Routes', () => {
       // reach an external host; it is handled as an ordinary same-origin FHIR request.
       const protoRel = await fhirRequest<OperationOutcome>('GET', '//169.254.169.254/latest/meta-data/');
       expect(protoRel.resourceType).toBe('OperationOutcome');
+
+      // 11. Paths that resolve outside /fhir/R4 on the same origin are rejected
+      for (const path of [
+        '../../auth/me',
+        '%2e%2e/%2e%2e/auth/me',
+        `http://localhost:${port}/auth/me`,
+        '../R4x/Patient',
+      ]) {
+        const outside = await fhirRequest<OperationOutcome>('GET', path);
+        expect(outside.issue?.[0].severity).toBe('error');
+      }
+    } finally {
+      await client.close();
+    }
+  });
+
+  test('SSE ignores messages posted by a different membership', async () => {
+    const owner = await createTestProject({ withAccessToken: true });
+    const other = await createTestProject({ withAccessToken: true });
+
+    const transport = new SSEClientTransport(new URL(`http://localhost:${port}/mcp/sse`), {
+      requestInit: { headers: { Authorization: `Bearer ${owner.accessToken}` } },
+    });
+    const client = new Client({ name: 'example-client', version: '1.0.0' });
+    await client.connect(transport);
+
+    try {
+      const family = randomUUID();
+      const sessionId = (transport as any)._endpoint.searchParams.get('sessionId');
+      const res = await request(app)
+        .post(`/mcp/sse?sessionId=${sessionId}`)
+        .set('Authorization', 'Bearer ' + other.accessToken)
+        .send({
+          jsonrpc: '2.0',
+          id: 999,
+          method: 'tools/call',
+          params: {
+            name: 'fhir-request',
+            arguments: { method: 'POST', path: 'Patient', body: { resourceType: 'Patient', name: [{ family }] } },
+          },
+        });
+      expect(res).toHaveStatus(202);
+
+      // Messages on a session are delivered in order, so this runs after the other membership's message
+      const search = (await client.callTool({
+        name: 'fhir-request',
+        arguments: { method: 'GET', path: `Patient?name=${family}` },
+      })) as CallToolResult;
+      const bundle = JSON.parse((search.content[0] as { text: string }).text) as Bundle;
+      expect(bundle.entry ?? []).toHaveLength(0);
     } finally {
       await client.close();
     }

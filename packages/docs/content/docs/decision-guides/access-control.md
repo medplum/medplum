@@ -253,9 +253,9 @@ Decide who manages users and memberships, who manages Bots, ClientApplications, 
 
 **Project admins are trusted administrators.** They can manage access policies and memberships, and act on behalf of users. A clinical policy limits their routine access but does not prevent them from changing grants. The admin flag does not bypass clinical policies; omitting a policy can still grant broad access.
 
-**Default or custom policy?** The built-in Admin default grants broad read/write access. When admin status changes, Medplum swaps the recognized Practitioner/Admin default to the matching default, if configured. Custom policy assignments are unchanged by this swap; the admin flag still changes administrative capabilities. Use an explicit custom policy when the defaults are too broad.
+**Default or custom policy?** The built-in Admin default grants broad read/write access. Changing only a membership's admin flag leaves its access policies unchanged, so review the user's policy when you promote or demote them. Use an explicit custom policy when the defaults are too broad.
 
-Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/docs/access/access-policies#default-access-policies), [On-Behalf-Of](/docs/auth/on-behalf-of).
+Implementation: [Admin Users](/docs/access/admin), [Default Access Policies](/docs/access/access-policies#default-access-policies), [Switching a User to or from Admin](/docs/access/access-policies#switching-a-user-to-or-from-admin), [On-Behalf-Of](/docs/auth/on-behalf-of).
 
 **Next:** Review the additional decisions below that apply to your application.
 
@@ -283,7 +283,7 @@ Choose how patients register, whether caregivers or proxies need access (such as
 | Access option                                          | Approach                                                                                                   |
 | :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
 | Patient sees own data                                  | Parameterized policy with `%patient` on clinical resources                                                 |
-| Single caregiver, single patient                       | One `access` entry with `%patient`                                                                         |
+| Single caregiver, single patient                       | Invite the RelatedPerson with that Patient so the membership parameter fills `%patient`                   |
 | One caregiver, multiple patients                       | Multiple `access` entries, different `%patient`                                                            |
 | Multiple caregivers per patient                        | Each caregiver has their own ProjectMembership                                                             |
 | Revoke caregiver                                       | Remove the corresponding grants and verify API access is revoked                                           |
