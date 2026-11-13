@@ -1403,22 +1403,40 @@ describe('AppointmentProposalForm', () => {
       expect(options[0]).toHaveTextContent('Pat Quinn');
     });
 
-    test('Offers no patient who has died, by name or by medical record number', async () => {
-      await medplum.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Lee'], family: 'Whitfield' }],
-        birthDate: '1940-02-03',
-        deceasedDateTime: '2026-07-30T15:45:00.000Z',
-        identifier: [{ type: { coding: [MRN_IDENTIFIER_TYPE] }, value: '100200' }],
-      });
+    const DeceasedPatient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['Lee'], family: 'Whitfield' }],
+      birthDate: '1940-02-03',
+      deceasedDateTime: '2026-07-30T15:45:00.000Z',
+      identifier: [{ type: { coding: [MRN_IDENTIFIER_TYPE] }, value: '100200' }],
+    };
+    const DECEASED_ERROR = "This patient is deceased and can't be booked.";
+
+    test('Offers no patient who has died by name', async () => {
+      await medplum.createResource(DeceasedPatient);
       setup(medplum);
 
       await typeInAutocomplete(field(/patient/i), 'Whitfield');
       expect(await screen.findByText('Sam Whitfield')).toBeInTheDocument();
       expect(screen.queryByText('Lee Whitfield')).not.toBeInTheDocument();
+    });
 
-      await typeInAutocomplete(field(/patient/i), '100200');
-      expect(await screen.findByText('Nothing found')).toBeInTheDocument();
+    test('Finds a patient who has died by medical record number, but will not book them', async () => {
+      await medplum.createResource(DeceasedPatient);
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      await choosePatient('100200', `Deceased · ${patientDetail(DeceasedPatient, '100200')}`);
+      expect(screen.getByText(DECEASED_ERROR)).toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+
+      await removePill('Lee Whitfield');
+      expect(screen.queryByText(DECEASED_ERROR)).not.toBeInTheDocument();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
+      expect(bookButton()).toBeEnabled();
     });
 
     test('Leaves the patient out of the search for times', async () => {
