@@ -84,10 +84,11 @@ describe('Default access policies', () => {
   > = {
     Patient: { others: 'none', except: patientCompartmentAccess },
     RelatedPerson: { others: 'none', except: patientCompartmentAccess },
-    Admin: { others: 'write', except: {} },
+    Admin: { others: 'write', except: { EncryptedSecret: 'none' } },
     Practitioner: {
       others: 'write',
       except: {
+        EncryptedSecret: 'none',
         ActivityDefinition: 'read',
         Bot: 'read',
         ClientApplication: 'read',
@@ -99,8 +100,8 @@ describe('Default access policies', () => {
         ValueSet: 'read',
       },
     },
-    Bot: { others: 'write', except: { Bot: 'read', ClientApplication: 'read' } },
-    ClientApplication: { others: 'write', except: { Bot: 'read', ClientApplication: 'read' } },
+    Bot: { others: 'write', except: { Bot: 'read', ClientApplication: 'read', EncryptedSecret: 'none' } },
+    ClientApplication: { others: 'write', except: { Bot: 'read', ClientApplication: 'read', EncryptedSecret: 'none' } },
   };
 
   test.each(Object.entries(expectedAccess))('%s default resource type access', (profileType, { others, except }) => {

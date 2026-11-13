@@ -22,6 +22,7 @@ import type {
   Condition,
   Cron,
   Device,
+  EncryptedSecret,
   Login,
   Observation,
   Organization,
@@ -2424,6 +2425,57 @@ describe('AccessPolicy', () => {
       } else {
         await expect(repo.createResource<Cron>(cron)).rejects.toThrow('Forbidden');
       }
+    })
+  );
+
+  test.each<[string, AccessPolicyResource[] | undefined, boolean]>([
+    ['no access policy', undefined, false],
+    ['wildcard', [{ resourceType: '*' }], false],
+    ['named', [{ resourceType: 'EncryptedSecret' }], true],
+    ['operation only', [{ resourceType: 'EncryptedSecret', operation: ['get-value'] }], false],
+  ])('EncryptedSecret write access with %s', (_name, resource, allowed) =>
+    withTestContext(async () => {
+      const { project, login, membership } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        accessPolicy: resource && { resource },
+      });
+      const repo = await getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
+      const create = repo.createResource<EncryptedSecret>({
+        resourceType: 'EncryptedSecret',
+        status: 'active',
+        code: 'test-token',
+      });
+      if (allowed) {
+        await expect(create).resolves.toMatchObject({ resourceType: 'EncryptedSecret', code: 'test-token' });
+      } else {
+        await expect(create).rejects.toThrow('Forbidden');
+      }
+    })
+  );
+
+  test.each<[string, boolean]>([
+    ['EncryptedSecret?owner=%profile&code=test-token', true],
+    ['EncryptedSecret?_id=123', true],
+    ['EncryptedSecret?code:not=test-token', true],
+    ['EncryptedSecret?status=active', false],
+  ])('get-value grant with criteria %s kept=%s', (criteria, kept) =>
+    withTestContext(async () => {
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
+        resource: [{ resourceType: 'EncryptedSecret', criteria, operation: ['get-value'] }],
+      });
+      const accessPolicy = await buildAccessPolicy({
+        resourceType: 'ProjectMembership',
+        project: createReference(testProject),
+        user: { reference: 'User/123' },
+        profile: { reference: 'Practitioner/123' },
+        accessPolicy: createReference(policy),
+      });
+      const entry = accessPolicy.resource.find((r) => r.resourceType === 'EncryptedSecret');
+      expect(entry?.interaction).toStrictEqual([]);
+      expect(entry?.operation).toStrictEqual(kept ? ['get-value'] : []);
     })
   );
 

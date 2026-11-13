@@ -4533,6 +4533,21 @@
             }
           },
           {
+            "id" : "AccessPolicy.resource.operation",
+            "path" : "AccessPolicy.resource.operation",
+            "definition" : "Permitted FHIR operations on this resource type, by name without the leading $, such as get-value. An entry that lists operations but no interactions grants no interactions.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.operation",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "AccessPolicy.resource.hiddenFields",
             "path" : "AccessPolicy.resource.hiddenFields",
             "definition" : "Optional list of hidden fields.  Hidden fields are not readable or writeable.",

@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getResourceTypes, projectAdminResourceTypes, protectedResourceTypes } from '@medplum/core';
+import {
+  getResourceTypes,
+  projectAdminResourceTypes,
+  protectedResourceTypes,
+  wildcardMatchesResourceType,
+} from '@medplum/core';
 import type {
   AccessPolicy,
   AccessPolicyResource,
@@ -104,9 +109,9 @@ export function getDefaultPatientAccessPolicy(project: Project): Reference<Acces
  *   Those types also get no `{ resourceType }` entry, the writable entry with no hidden fields that other types get:
  *   if the hidden-fields entry is read-only, updates skip it, match that entry instead, and could overwrite the
  *   hidden fields.
- * - `'*'` never matches project admin types, so read-only ones get their own entry. Project admin and protected types
- *   are never listed as writable: the server replaces project admin entries at login and allows protected types only
- *   for super admins.
+ * - `'*'` never matches project admin types, so read-only ones get their own entry. Types `'*'` never matches and
+ *   protected types are never listed as writable: the server replaces project admin entries at login, allows
+ *   protected types only for super admins, and requires EncryptedSecret access to be granted by name.
  * @param options - The restrictions.
  * @param options.readonly - Resource types that can be read but not written.
  * @param options.hiddenFields - Fields hidden from reads (and preserved on writes), by resource type.
@@ -139,7 +144,7 @@ function writableExcept(options: {
       (resourceType) =>
         !readonly.includes(resourceType) &&
         !(resourceType in hiddenFields) &&
-        !projectAdminResourceTypes.includes(resourceType) &&
+        wildcardMatchesResourceType(resourceType) &&
         !protectedResourceTypes.includes(resourceType)
     )
     .map((resourceType) => ({ resourceType }));
