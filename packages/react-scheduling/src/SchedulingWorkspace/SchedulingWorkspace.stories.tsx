@@ -1,8 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import { SchedulingColorURI } from '@medplum/core';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import {
+  createReference,
+  SchedulingColorURI,
+  setPrimaryProvider,
+  toAppointmentSiteReference,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
+import type { Appointment, Patient, Reference, Resource, Slot } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -22,12 +29,18 @@ import {
   AuthorizationValueSets,
   CalendarWeekFixtures,
   DIAGNOSIS_VALUE_SET,
+  DrRiveraPractitioner,
+  DrRiveraSchedule,
   ImagingBenchFixtures,
   inViewerTimezone,
   PatientFixtures,
   PROCEDURE_VALUE_SET,
+  SatelliteClinic,
+  SatelliteRoom,
+  SatelliteRoomSchedule,
   SchedulingFixtures,
   TelehealthService,
+  UltrasoundImagingService,
 } from '../stories/scheduling';
 import type { SchedulingWorkspaceProps } from './SchedulingWorkspace';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
@@ -61,8 +74,68 @@ const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES).map((resource) =>
     : resource
 );
 
-// Fixtures are per story rather than shared here: the two stories differ in nothing but
-// the zones theirs declare, and a set installed for both would decide that for both.
+/**
+ * An imaging visit Dr. Rivera holds at the satellite, in its exam room, with the Slots it holds there.
+ * @param id - The appointment's id, which its Slots' are made from.
+ * @param patient - Who the visit is for.
+ * @param start - When it starts, on the viewer's clock.
+ * @param minutes - How long it lasts.
+ * @returns The Slots and the appointment.
+ */
+function riveraAtSatellite(id: string, patient: Reference<Patient>, start: Date, minutes: number): Resource[] {
+  const end = new Date(start.getTime() + minutes * 60_000);
+  const slots = [DrRiveraSchedule, SatelliteRoomSchedule].map((schedule): WithId<Slot> => ({
+    resourceType: 'Slot',
+    id: `${id}-${schedule.id}`,
+    status: 'busy',
+    start: start.toISOString(),
+    end: end.toISOString(),
+    schedule: createReference(schedule),
+  }));
+  const rivera = createReference(DrRiveraPractitioner);
+  const appointment: WithId<Appointment> = {
+    resourceType: 'Appointment',
+    id,
+    status: 'booked',
+    start: start.toISOString(),
+    end: end.toISOString(),
+    serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+    slot: slots.map(createReference),
+    supportingInformation: [toAppointmentSiteReference(SatelliteClinic)],
+    participant: setPrimaryProvider(
+      [
+        { status: 'accepted', actor: patient },
+        { status: 'accepted', actor: rivera },
+        { status: 'accepted', actor: createReference(SatelliteRoom) },
+      ],
+      rivera
+    ),
+  };
+  return [...slots, appointment];
+}
+
+/**
+ * Dr. Rivera's imaging visits at the satellite, on Wednesday morning and Thursday afternoon, though no role
+ * places Dr. Rivera there.
+ */
+const RIVERA_SATELLITE_VISITS = [
+  ...riveraAtSatellite(
+    'appt-rivera-satellite-wed',
+    { reference: 'Patient/pt-novak', display: 'Theo Novak' },
+    new Date(2020, 4, 6, 9),
+    45
+  ),
+  ...riveraAtSatellite(
+    'appt-rivera-satellite-thu',
+    { reference: 'Patient/pt-shah', display: 'Priya Shah' },
+    new Date(2020, 4, 7, 14, 30),
+    30
+  ),
+];
+
+// Fixtures are per story rather than shared here: the clinic's stories differ in the zones
+// theirs declare, and Basic adds Dr. Rivera's satellite visits, and a set installed for all
+// would decide that for all.
 export default {
   title: 'Medplum/SchedulingWorkspace',
   component: SchedulingWorkspace,
@@ -147,9 +220,15 @@ export default {
  * Monday morning's visits ended before the pinned "now" (12:05 that day), so they are drawn
  * faded: an imaging visit that was seen, and a telehealth visit the patient missed.
  *
+ * Dr. Rivera also sees two imaging patients at the satellite: Theo Novak on Wednesday morning and
+ * Priya Shah on Thursday afternoon. Choose **Uro Associates - Main Clinic**, the only site Dr.
+ * Rivera's role names, and they go. Then focus on Dr. Rivera's calendar from its row: the satellite
+ * visits come back muted, named by their visit type and site, beside the visits at the main clinic,
+ * so the open time left is really open. Hover one for its patient.
+ *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
- * somewhere else.
+ * somewhere else, without Dr. Rivera's satellite visits.
  *
  * Set **appointmentCommentMaxLength** under Controls to cap the notes: the booking form and the
  * details' "Edit" count them against it and take no more. At 50, Tuesday's imaging visit has
@@ -160,7 +239,7 @@ export default {
  * @returns The story.
  */
 export const Basic = (args: WorkspaceProps): JSX.Element => <Workspace {...args} />;
-Basic.decorators = [withFixtures(LOCAL_FIXTURES)];
+Basic.decorators = [withFixtures([...LOCAL_FIXTURES, ...RIVERA_SATELLITE_VISITS])];
 Basic.argTypes = {
   appointmentCommentMaxLength: { control: { type: 'number', min: 1 } },
 };

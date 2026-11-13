@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { useMantineTheme } from '@mantine/core';
-import { createReference, RecurrenceIdExtensionURI, ServiceTypeReferenceURI } from '@medplum/core';
+import {
+  createReference,
+  RecurrenceIdExtensionURI,
+  ServiceTypeReferenceURI,
+  toAppointmentSiteReference,
+} from '@medplum/core';
 import type {
   Appointment,
   Device,
@@ -15,6 +20,7 @@ import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MargeSimpson } from '
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { withFixtures, withMockedDate } from '../stories/decorators';
+import { MainClinic } from '../stories/scheduling';
 import type { MultiCalendarSource } from './MultiCalendar';
 import { MultiCalendar } from './MultiCalendar';
 
@@ -532,3 +538,38 @@ export const ShortAppointments = (): JSX.Element => {
   );
 };
 ShortAppointments.decorators = [withFixtures([followUpVisit])];
+
+/**
+ * Appointments drawn muted, such as ones a filter leaves out that still take up time: a fainter tint
+ * with no bar, in italics, named by their visit type and the site they record rather than their
+ * patient. They aren't clickable, but hovering one opens its card, naming the patient. On Tuesday,
+ * May 5, the 9 o'clock visit sits beside a muted one, and the one at 1 is alone.
+ *
+ * @returns The story.
+ */
+export const Muted = (): JSX.Element => {
+  const atMainClinic = (appointment: Appointment, id: string): Appointment => ({
+    ...appointment,
+    id,
+    supportingInformation: [toAppointmentSiteReference(MainClinic)],
+  });
+  const sources: MultiCalendarSource[] = [
+    { schedule: DrAliceSmithSchedule, slots: [], appointments: [followUpAppointment(9, 30)] },
+    {
+      muted: true,
+      interactive: false,
+      slots: [],
+      appointments: [
+        atMainClinic(followUpAppointment(9, 60), 'muted-9'),
+        atMainClinic(followUpAppointment(13, 45), 'muted-13'),
+      ],
+    },
+  ];
+
+  return (
+    <div style={{ height: 700, padding: '1em' }}>
+      <MultiCalendar sources={sources} />
+    </div>
+  );
+};
+Muted.decorators = [withFixtures([followUpVisit, MainClinic])];

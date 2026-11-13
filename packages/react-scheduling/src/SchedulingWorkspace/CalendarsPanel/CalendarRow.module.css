@@ -11,12 +11,19 @@
   cursor: pointer;
 }
 
+/* Keeps full-color text at 4.5:1 on either scheme. A hidden row's text, dimmed already, drops below. */
+.row[data-outside-focus] {
+  opacity: 0.65;
+}
+
 .row[data-interactive]:hover {
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
 }
 
 .eyeSlot {
   display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .eyeOff {
@@ -31,4 +38,50 @@
 
 .row:hover .eyeHint {
   opacity: 1;
+}
+
+.withAction {
+  padding-inline-end: 4px;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.withAction .row {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Hovered, a row with a focus button is highlighted as a whole, button and all, rather than its row button
+ * alone. The focused one is tinted, and darkens. */
+.withAction:hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.withAction .row:hover {
+  background-color: transparent;
+}
+
+.withAction[data-focused] {
+  background-color: light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-5));
+}
+
+.withAction[data-focused]:hover {
+  background-color: light-dark(var(--mantine-color-blue-1), var(--mantine-color-dark-4));
+}
+
+/* Shown on hover and keyboard focus, and always on the focused row or a screen without hover. */
+.focusButton {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.withAction:hover .focusButton,
+.withAction:focus-within .focusButton,
+.withAction[data-focused] .focusButton {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .focusButton {
+    opacity: 1;
+  }
 }

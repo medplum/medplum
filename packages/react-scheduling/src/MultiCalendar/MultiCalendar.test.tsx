@@ -9,8 +9,9 @@ import {
   SchedulingColorURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
+  toAppointmentSiteReference,
 } from '@medplum/core';
-import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Location, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
@@ -170,6 +171,38 @@ describe('MultiCalendar', () => {
     // Named by the source's label in place of its patient.
     expect(screen.queryByText(/Jane Williams/)).not.toBeInTheDocument();
     expect(screen.getByText('Draft').closest('.event')).toHaveClass('draft');
+  });
+
+  test("names a muted source's appointments by where they are, not who for, until hovered, and makes none clickable", async () => {
+    const site = await medplum.createResource<Location>({ resourceType: 'Location', name: 'Main Clinic' });
+    const appointment = (id: string, display: string, offsetMinutes: number): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status: 'booked',
+      start: new Date(baseDate.getTime() + offsetMinutes * 60 * 1000).toISOString(),
+      end: new Date(baseDate.getTime() + (offsetMinutes + 30) * 60 * 1000).toISOString(),
+      participant: [{ actor: { reference: `Patient/${id}`, display }, status: 'accepted' }],
+      supportingInformation: [toAppointmentSiteReference(site)],
+    });
+    const sources: MultiCalendarSource[] = [
+      { appointments: [appointment('shown', 'Homer Simpson', 0)], slots: [] },
+      { appointments: [appointment('muted', 'Jane Williams', 60)], slots: [], muted: true, interactive: false },
+    ];
+    const onSelectAppointment = vi.fn();
+    renderWithMedplum(<MultiCalendar sources={sources} onSelectAppointment={onSelectAppointment} />, medplum);
+
+    expect(screen.getByText(/Homer Simpson/).closest('.event')).not.toHaveClass('muted');
+    const muted = (await screen.findByText('Main Clinic')).closest('.event') as HTMLElement;
+    expect(muted).toHaveClass('muted');
+    expect(muted).toHaveTextContent('Appointment (no service type)');
+    expect(muted).not.toHaveAttribute('role', 'button');
+    expect(screen.queryByText('Jane Williams')).not.toBeInTheDocument();
+
+    await userEvent.click(within(muted).getByText('Main Clinic'));
+    expect(onSelectAppointment).not.toHaveBeenCalled();
+    // Its card names the patient.
+    await userEvent.hover(within(muted).getByText('Main Clinic'));
+    expect(await screen.findByText('Jane Williams')).toBeInTheDocument();
   });
 
   test('names everyone a slot holds time for, and gives its time when its schedule is unknown', async () => {

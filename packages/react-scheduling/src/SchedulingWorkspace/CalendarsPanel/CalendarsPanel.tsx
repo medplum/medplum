@@ -28,6 +28,13 @@ export interface CalendarsPanelProps {
   /** The rows to show in each section, keyed by the actor type whose schedules they are. */
   readonly items: Readonly<Record<BookableActorType, readonly CalendarsPanelItem[]>>;
   readonly onToggle?: (actorType: BookableActorType, id: string) => void;
+  /** The id of the calendar focused on, if any. */
+  readonly focusedId?: string;
+  /**
+   * Focuses on one calendar, or leaves it when it is the one focused. When given, each row gets a button for it,
+   * and while one is focused on, clicking any row leaves it rather than hiding or showing that row's calendar.
+   */
+  readonly onToggleFocus?: (id: string) => void;
   readonly className?: string;
 }
 
@@ -64,7 +71,8 @@ const SECTIONS: readonly CalendarsPanelSection[] = [
  * @returns A React Node with the Calendars panel UI in it
  */
 export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
-  const { items, candidatesLoading, filters, onToggle, className } = props;
+  const { items, candidatesLoading, filters, onToggle, focusedId, onToggleFocus, className } = props;
+  const leaveFocus = focusedId !== undefined && onToggleFocus ? () => onToggleFocus(focusedId) : undefined;
 
   return (
     <Stack gap="xs" className={className}>
@@ -97,7 +105,10 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
                     <CalendarRow
                       key={item.id}
                       item={item}
-                      onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
+                      onToggle={leaveFocus ?? (onToggle && ((id) => onToggle(section.actorType, id)))}
+                      focused={item.id === focusedId}
+                      outsideFocus={focusedId !== undefined && item.id !== focusedId}
+                      onToggleFocus={onToggleFocus}
                       icon={section.icon}
                     />
                   ))}
