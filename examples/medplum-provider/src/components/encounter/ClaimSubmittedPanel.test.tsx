@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Bot, ClaimResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
 
 const CANDID_BOT_IDENTIFIER = {
@@ -56,9 +56,7 @@ describe('ClaimSubmittedPanel', () => {
   const setup = (claimResponse: WithId<ClaimResponse> = baseClaimResponse): void => {
     render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <ClaimSubmittedPanel claimResponse={claimResponse} exportMenu={<button>Export</button>} />
-        </MantineProvider>
+        <ClaimSubmittedPanel claimResponse={claimResponse} exportMenu={<button>Export</button>} />
       </MedplumProvider>
     );
   };

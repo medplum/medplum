@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as medplumReact from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TimelineTab } from './TimelineTab';
 
 describe('TimelineTab', () => {
@@ -24,11 +24,9 @@ describe('TimelineTab', () => {
     return render(
       <MemoryRouter initialEntries={[url]}>
         <medplumReact.MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route path="/Patient/:patientId/timeline" element={<TimelineTab />} />
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route path="/Patient/:patientId/timeline" element={<TimelineTab />} />
+          </Routes>
         </medplumReact.MedplumProvider>
       </MemoryRouter>
     );

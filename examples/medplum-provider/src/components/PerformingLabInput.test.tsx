@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Patient } from '@medplum/fhirtypes';
 import type { LabOrganization } from '@medplum/health-gorilla-core';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../test-utils/render';
 import { PerformingLabInput } from './PerformingLabInput';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
@@ -88,11 +88,9 @@ describe('PerformingLabInput', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
-              <PerformingLabInput patient={mockPatient} {...props} />
-            </HealthGorillaLabOrderProvider>
-          </MantineProvider>
+          <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
+            <PerformingLabInput patient={mockPatient} {...props} />
+          </HealthGorillaLabOrderProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -146,11 +144,9 @@ describe('PerformingLabInput', () => {
     rerender(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
-              <PerformingLabInput patient={mockPatient} performingLab={lab2} />
-            </HealthGorillaLabOrderProvider>
-          </MantineProvider>
+          <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
+            <PerformingLabInput patient={mockPatient} performingLab={lab2} />
+          </HealthGorillaLabOrderProvider>
         </MedplumProvider>
       </MemoryRouter>
     );

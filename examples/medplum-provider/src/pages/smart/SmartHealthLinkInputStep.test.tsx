@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type * as MedplumReact from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import type { SmartHealthLinkInputStepProps } from './SmartHealthLinkInputStep';
 import { SmartHealthLinkInputStep } from './SmartHealthLinkInputStep';
 
@@ -42,11 +42,7 @@ describe('SmartHealthLinkInputStep', () => {
 
   function setup(overrides: Partial<SmartHealthLinkInputStepProps> = {}): ReturnType<typeof render> {
     props = { ...props, ...overrides };
-    return render(
-      <MantineProvider>
-        <SmartHealthLinkInputStep {...props} />
-      </MantineProvider>
-    );
+    return render(<SmartHealthLinkInputStep {...props} />);
   }
 
   describe('Paste view', () => {

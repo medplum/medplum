@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Patient, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TaskListItem } from './TaskListItem';
 
 describe('TaskListItem', () => {
@@ -21,9 +21,7 @@ describe('TaskListItem', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskListItem task={task} getTaskUri={getTaskUri ?? defaultGetTaskUri} />
-          </MantineProvider>
+          <TaskListItem task={task} getTaskUri={getTaskUri ?? defaultGetTaskUri} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -115,9 +113,7 @@ describe('TaskListItem', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskListItem task={mockTask} getTaskUri={getTaskUri} />
-          </MantineProvider>
+          <TaskListItem task={mockTask} getTaskUri={getTaskUri} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -130,9 +126,7 @@ describe('TaskListItem', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskListItem task={mockTask} getTaskUri={getTaskUri} />
-          </MantineProvider>
+          <TaskListItem task={mockTask} getTaskUri={getTaskUri} />
         </MedplumProvider>
       </MemoryRouter>
     );
