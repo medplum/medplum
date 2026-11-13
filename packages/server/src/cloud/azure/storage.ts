@@ -86,10 +86,11 @@ export class AzureBlobStorage extends BaseBinaryStorage {
     expiry.setHours(now.getHours() + 1); // URL valid for 1 hour
 
     const permissions = new BlobSASPermissions();
-    permissions.read = true;
     if (opts?.upload) {
       permissions.write = true;
       permissions.create = true;
+    } else {
+      permissions.read = true;
     }
 
     const generateSasUrlOptions = {

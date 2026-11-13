@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AccessPolicyInteraction, allOk, forbidden, OperationOutcomeError } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { allOk } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -29,9 +30,15 @@ export async function binaryPresignedUrlHandler(req: FhirRequest): Promise<FhirR
   const id = req.params.id;
   const params = parseInputParameters<PresignedUrlParams>(operation, req);
 
-  const resource = await repo.readResource<Binary>('Binary', id);
-  if (params.upload && !(await repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Binary', id))) {
-    throw new OperationOutcomeError(forbidden);
+  let resource: WithId<Binary>;
+  if (params.upload) {
+    resource = await repo.assertCanUpdateById<Binary>('Binary', id, {
+      operation: `Binary/$${operation.code}`,
+      fields: ['data'],
+      parameters: [{ type: 'upload', valueString: 'true' }],
+    });
+  } else {
+    resource = await repo.readResource<Binary>('Binary', id);
   }
 
   const url = await getPresignedUrl(resource, params);

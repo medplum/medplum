@@ -94,6 +94,7 @@ import {
   HistoryInteraction,
   isReadOnlyAction,
   logAuditEvent,
+  OperationInteraction,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
@@ -186,6 +187,27 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
 
 export interface ProcessAllResourcesOptions {
   delayBetweenPagesMs?: number;
+}
+
+export interface CreateOptions extends CreateResourceOptions {
+  /**
+   * Fields written outside the resource, e.g. `data` for Binary content.
+   * The write is rejected if the access policy makes any of them readonly or hidden.
+   */
+  externalFields?: string[];
+}
+
+export interface UpdateOptions extends UpdateResourceOptions {
+  /**
+   * Create a new version even if the resource is unchanged.
+   * Used when Binary content is written outside the resource, so the write gets its own version and full update checks.
+   */
+  forceNewVersion?: boolean;
+  /**
+   * See {@link CreateOptions.externalFields}.
+   * For Binary `data`, the caller writes the new version's content, so the existing content is not copied to it.
+   */
+  externalFields?: string[];
 }
 
 export type { ExecuteSqlOptions, TransactionSqlOptions } from './repository/access-tracker';
@@ -580,7 +602,7 @@ export class Repository extends FhirRepository implements Disposable {
     return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
 
-  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+  async createResource<T extends Resource>(resource: T, options?: CreateOptions): Promise<WithId<T>> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
     await this.resourceCap()?.created();
 
@@ -607,7 +629,7 @@ export class Repository extends FhirRepository implements Disposable {
     };
     const startTime = Date.now();
     try {
-      const result = await this.updateResourceImpl(resourceWithId, true);
+      const result = await this.updateResourceImpl(resourceWithId, true, { externalFields: options?.externalFields });
       const durationMs = Date.now() - startTime;
 
       await this.postCommit(async () => {
@@ -980,7 +1002,7 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+  async updateResource<T extends Resource>(resource: T, options?: UpdateOptions): Promise<WithId<T>> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1039,7 +1061,7 @@ export class Repository extends FhirRepository implements Disposable {
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
-    options?: UpdateResourceOptions
+    options?: UpdateOptions
   ): Promise<WithId<T>> {
     // Promote before pre-commit validation and existing-resource reads.
     this.setMode(RepositoryMode.WRITER);
@@ -1068,6 +1090,7 @@ export class Repository extends FhirRepository implements Disposable {
         throw new OperationOutcomeError(preconditionFailed);
       }
     }
+    this.assertExternalFieldsWritable(existing ?? validatedResource, interaction, options?.externalFields);
 
     // replaceConditionalReferences rewrites nested references in place, so it needs a resource
     // that shares no structure with validatedResource or the cached existing resource.
@@ -1125,7 +1148,7 @@ export class Repository extends FhirRepository implements Disposable {
       });
     }
 
-    if (this.isNotModified(existing, result)) {
+    if (!options?.forceNewVersion && this.isNotModified(existing, result)) {
       this.removeHiddenFields(existing);
       return existing;
     }
@@ -1140,7 +1163,9 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     await this.handleStorage(result, create);
-    await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
+    // Content written by the caller replaces the existing content, so copying it would be wasted
+    const copyFrom = options?.externalFields?.includes('data') ? undefined : existing;
+    await this.postCommit(async () => this.handleBinaryUpdate(copyFrom, result));
     if (this.shouldAddBackgroundJobs(result)) {
       await this.postCommit(async () => {
         const project = await this.getProjectById(projectId);
@@ -1161,7 +1186,7 @@ export class Repository extends FhirRepository implements Disposable {
    * Handles a Binary resource update.
    * If the resource has embedded base-64 data, writes the data to the binary storage.
    * Otherwise if the resource already exists, copies the existing binary to the new resource.
-   * @param existing - Existing binary if it exists.
+   * @param existing - Existing binary whose content to copy, if any.
    * @param resource - The resource to write to the database.
    */
   private async handleBinaryUpdate<T extends Resource>(existing: T | undefined, resource: T): Promise<void> {
@@ -2485,6 +2510,75 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Verifies that the current user may update the current version of a resource, for writes that bypass
+   * `updateResource()`, e.g. uploading Binary content through a presigned URL.
+   * Applies the checks `updateResource()` would apply to an update of the stored resource by the current user:
+   * write quota and access policy, including write constraints.
+   * Also rejects the write if the access policy makes any of the written fields readonly or hidden.
+   * The authorization is audited as the given operation, since the write itself happens outside the repository.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @param options - The write being authorized.
+   * @param options.operation - Invocation name of the operation that authorizes the write, e.g. `Binary/$presigned-url`.
+   * @param options.fields - The fields the write changes, e.g. `data` for Binary content.
+   * @param options.parameters - Operation input parameters to record on the AuditEvent entity.
+   * @returns The current version of the resource that was checked, with hidden fields removed. Its meta is kept
+   * in full, e.g. `meta.project` for presigned URLs, so it must not be returned to the user as is.
+   */
+  async assertCanUpdateById<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options: { operation: string; fields?: string[]; parameters?: AuditEventEntityDetail[] }
+  ): Promise<WithId<T>> {
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
+
+    const startTime = Date.now();
+    try {
+      // Check against the latest version, as updateResource() does
+      this.setMode(RepositoryMode.WRITER);
+      if (!this.supportsInteraction(AccessPolicyInteraction.UPDATE, resourceType)) {
+        throw new OperationOutcomeError(forbidden);
+      }
+      const existing = await this.readResourceImpl<T>(resourceType, id);
+      if (!this.canUpdateExisting(existing)) {
+        throw new OperationOutcomeError(forbidden);
+      }
+      this.assertExternalFieldsWritable(existing, AccessPolicyInteraction.UPDATE, options.fields);
+      // The out-of-band write leaves the resource unchanged, so judge it as the update updateResource() would make
+      const updated = {
+        ...existing,
+        meta: {
+          ...existing.meta,
+          versionId: this.generateId(),
+          lastUpdated: new Date().toISOString(),
+          author: this.getAuthor(),
+          onBehalfOf: this.context.onBehalfOf,
+        },
+      };
+      if (!this.isResourceWriteable(existing, updated, 'update')) {
+        throw new OperationOutcomeError(forbidden);
+      }
+
+      const result = this.removeHiddenFields(existing, AccessPolicyInteraction.READ, true);
+      this.logEvent(OperationInteraction, AuditEventOutcome.Success, undefined, {
+        resource: result,
+        operation: options.operation,
+        entityDetail: [{ type: 'versionId', valueString: result.meta?.versionId }, ...(options.parameters ?? [])],
+        durationMs: Date.now() - startTime,
+      });
+      return result;
+    } catch (err) {
+      this.logEvent(OperationInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        operation: options.operation,
+        entityDetail: options.parameters,
+        durationMs: Date.now() - startTime,
+      });
+      throw err;
+    }
+  }
+
+  /**
    * Check that a resource can be written in its current form.
    * @param previous - The resource before updates were applied.
    * @param current - The resource as it will be written.
@@ -2626,6 +2720,27 @@ export class Repository extends FhirRepository implements Disposable {
     return input;
   }
 
+  /**
+   * Rejects a write to fields stored outside the resource if the access policy makes any of them readonly or hidden,
+   * since restoreReadonlyFields() cannot restore them.
+   * @param resource - The stored resource, or the input resource on create.
+   * @param interaction - The write interaction.
+   * @param fields - The fields written outside the resource.
+   */
+  private assertExternalFieldsWritable(
+    resource: Resource,
+    interaction: AccessPolicyInteraction,
+    fields: string[] | undefined
+  ): void {
+    if (!fields?.length) {
+      return;
+    }
+    const policy = satisfiedAccessPolicy(resource, interaction, this.context.accessPolicy);
+    if (fields.some((field) => policy?.readonlyFields?.includes(field) || policy?.hiddenFields?.includes(field))) {
+      throw new OperationOutcomeError(forbidden);
+    }
+  }
+
   isSuperAdmin(): this is SuperAdminRepository {
     return !!this.context.superAdmin;
   }
@@ -2643,6 +2758,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options.resource - Optional resource to associate with the AuditEvent.
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
    * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
+   * @param options.operation - Invocation name of the FHIR operation performed, e.g. `Binary/$presigned-url`.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
    */
   private logEvent(
@@ -2653,6 +2769,7 @@ export class Repository extends FhirRepository implements Disposable {
       resource?: Resource | Reference;
       searchRequest?: SearchRequest;
       entityDetail?: AuditEventEntityDetail[];
+      operation?: string;
       durationMs?: number;
     }
   ): void {
@@ -2702,6 +2819,7 @@ export class Repository extends FhirRepository implements Disposable {
         resource,
         searchQuery: query,
         entityDetail: options?.entityDetail,
+        operation: options?.operation,
         durationMs: options?.durationMs,
         client: this.context.client,
       }
