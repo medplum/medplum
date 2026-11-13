@@ -60,8 +60,6 @@ The On-Behalf-Of model is designed to use individual users' `ProjectMembership`s
 - Requests without the header fail closed instead of running with broad application access.
 - [IP Access Rules](/docs/access/ip-access-rules) are checked on every `client_credentials` token request and every Basic auth request, so a leaked client secret can't be used from outside your network.
 
-Project Admin access to project administration resources (`ProjectMembership`, `AccessPolicy`, `Project`, etc.) is still granted on top of this policy. IP rules on the delegated user's own policy are not checked on delegated requests.
-
 ### Live updates
 
 Do not use On-Behalf-Of for WebSocket subscriptions. Use a user-scoped Medplum token, or deliver updates through a backend that enforces each recipient's resource and field-level access. WebSocket notification authorization does not preserve the HTTP request's delegation context.
