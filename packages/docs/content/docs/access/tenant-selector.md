@@ -82,7 +82,7 @@ A staff membership uses a Practitioner profile and grants for the approved tenan
 
 ### Switching the active ProjectMembership {#switching-the-active-projectmembership}
 
-The OAuth login flow selects a membership before issuing tokens. With one membership it is selected automatically; with several, the login UI submits the chosen membership to `POST /auth/profile`. A UI preference alone cannot change the token's permissions.
+The OAuth login flow selects a membership before issuing tokens. With one membership it is selected automatically; with several, the login UI submits the chosen membership to `POST /auth/profile`. The authorization code is then exchanged for tokens; the response identifies the selected project and profile. A UI preference alone cannot change the token's permissions.
 
 Switch to another saved Login, or start a login flow that selects the other membership. The SDK exposes `medplum.getLogins()` and `medplum.setActiveLogin(login)` for saved logins. Its saved-login list identifies entries by profile reference. If staff memberships share one Practitioner, use explicit membership selection and manage session state by membership instead of expecting separate saved-login entries. Label the selected practice and clear or partition caches when switching. Carry the selected Patient through forms and messages, and define what happens to unsaved work.
 
@@ -136,7 +136,7 @@ A selector changes the active tenant; it leaves the session's permissions unchan
 
 #### Tenant selector {#building-the-selector}
 
-Persist the selected practice in a URL, local session state, or `UserConfiguration`. Validate the selection against approved tenants, particularly before a backend acts on it. Apply the selected practice to displayed records and write destinations.
+Persist the selected practice in a URL for deep links, local session state for a device-local choice, or `UserConfiguration` for a preference shared across devices. Validate the selection against approved tenants, particularly before a backend acts on it. Apply the selected practice to displayed records and write destinations.
 
 ![The membership permits Patient A and Patient B. Selecting Practice B shows Patient B while both permissions remain.](/img/tenancy-design/workspace-selector.svg)
 

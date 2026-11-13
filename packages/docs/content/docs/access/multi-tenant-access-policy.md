@@ -35,6 +35,8 @@ Choose the resource that represents your tenant in the operating model. An `Orga
 
 Use `Organization` for a department as an organizational unit, and `HealthcareService` for the services it provides. See [Modeling Provider Organizations](/docs/administration/provider-directory/provider-organizations) for the clinical relationships. Choosing a resource type does not itself establish the access boundary; the assignments and grants below enforce it.
 
+Other FHIR resource types can also anchor account-based groups when their meaning fits your model. Use the chosen representation consistently; [project boundaries](/docs/access/projects) are configured separately.
+
 The diagrams show how the membership grant and Patient assignment refer to the same group. **Boxes are FHIR resources. Solid arrows follow reference fields; dashed arrows show permitted access.** [Care-team permissions](#layering-tenant-and-care-team-access) are an additional access layer within a tenant.
 
 {{< tabs groupId="access-group-type" >}}
@@ -58,6 +60,8 @@ A [CareTeam](https://hl7.org/fhir/R4/careteam.html) represents participants in c
 
 If a team operates as a separately governed business unit, model that unit with an Organization and its care participants with CareTeam.
 
+For patient-specific teams, one pattern is a CareTeam per Patient, with `CareTeam.subject` referencing that Patient. Give each clinician one access grant per assigned team, or per practice/team pair when both restrictions apply. Keep those grants synchronized with care assignments; updating `CareTeam.participant` alone does not update permissions.
+
 ![Patient meta.accounts references both Organization A and CareTeam 1. The access policy requires both assignments.](/img/tenancy-design/care-team-layer.svg)
 
 _The membership supplies this policy with the approved practice and care-team parameters. The Patient must match both assignments. CareTeam participation alone does not grant access._
@@ -77,11 +81,21 @@ Supply `organization` and `care_team` as reference parameters in the **same** `P
 
 The example grants only Patient and Encounter reads. Add explicit rules for other needed types and keep broader grants off memberships that need this restriction. Maintain the assignments when teams change. Patient-wide assignment and propagation apply to the whole patient compartment; if a shared Patient has different clinical audiences, use [resource-specific clinical rules](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
-### Tenant hierarchies and shared directories
+### Tenant hierarchies {#tenant-hierarchies-and-shared-directories}
 
-For a hierarchy such as region → clinic, one approach is to assign records to the lowest-level tenants and expand a staff member's approved regional access into one `ProjectMembership.access` entry per clinic. Update those grants when clinics are added, moved, or removed; organizational parent links alone do not grant access to child tenants.
+For a hierarchy such as region → clinic, one approach is to grant access through the lowest-level tenants:
 
-For a shared practitioner directory, explicitly grant the permitted `Practitioner` reads. If practitioner records must be tenant-specific, assign tenant accounts to them and apply corresponding criteria. Use the same distinction for shared and tenant-specific Questionnaires, terminology, and other reference data. [Projects](/docs/access/projects#project-linking) covers shared reference data across projects.
+- Assign each Patient only to the lowest-level clinic or clinics it belongs to within that hierarchy. Keep any separate care-team assignments required by your policies.
+- For staff authorized at a region or higher level, expand its descendants into one `ProjectMembership.access` grant per approved clinic, preserving any care-team conditions.
+- When a clinic is added, moved, or removed, update every affected membership with access at an ancestor level.
+
+`Organization.partOf` describes the hierarchy; it does not automatically grant access to descendants. Use patient-wide propagation only when the Patient and its clinical records have the same intended audience.
+
+### Shared directories and automation
+
+For a shared practitioner directory, explicitly grant the permitted `Practitioner` reads. If practitioner records must be tenant-specific, assign tenant accounts to them and apply corresponding criteria. Make the same choice for Questionnaires, terminology, PlanDefinitions, and ActivityDefinitions. Include the CodeSystem and ValueSet reads needed by terminology-backed UI controls. [Projects](/docs/access/projects#project-linking) covers exported reference data and read-only access across linked projects.
+
+For shared Bots, configure permission to invoke the Bot separately from its execution permissions. A Bot normally uses its own ProjectMembership policy; [`runAsUser`](/docs/bots/bot-run-as-user) selects the caller's permissions instead.
 
 ## Step 2: Assign data to tenants {#step-2-assigning-data-to-tenants}
 

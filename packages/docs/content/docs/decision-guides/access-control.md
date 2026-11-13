@@ -88,6 +88,10 @@ Repeat the policy with the approved tenant parameters, preserving any patient or
 
 Grant the approved resource types across the project only when that role is authorized for every tenant. Otherwise enumerate the permitted tenants, so later tenant additions do not silently expand access.
 
+<div id="if-tenants-form-a-hierarchy-how-will-access-extend-to-child-tenants"></div>
+
+For regional or hierarchical access, expand grants to the approved lowest-level tenants and maintain them as the hierarchy changes. See [Tenant hierarchies](/docs/access/multi-tenant-access-policy#tenant-hierarchies-and-shared-directories).
+
 #### Option D: Separate authenticated sessions for each tenant
 
 Give each session a membership limited to one tenant. Switching practices then changes the session’s permissions. One account can have several memberships, and switching to a saved login can avoid another password prompt. See [One account, separate practice sessions](/docs/access/tenant-selector#option-1-one-tenant-per-session).
