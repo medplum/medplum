@@ -9,9 +9,39 @@ Some applications put their own API server in front of Medplum, forwarding reque
 
 Medplum still enforces authentication, project isolation, and access policies on every request. It cannot verify that your proxy authenticated the right user or forwarded only what that user should be able to do. This page covers the practices we recommend for proxies, whether they use [token exchange](/docs/auth/token-exchange#server-held-medplum-tokens), [On-Behalf-Of](/docs/auth/on-behalf-of), or a dedicated `ClientApplication`.
 
+```mermaid
+flowchart LR
+    U["Browser or mobile app"] -->|"Your app's session"| P
+    subgraph P["Your API proxy (security boundary)"]
+        direction TB
+        A["Authenticate user"] --> M["Map user to their own ProjectMembership"]
+        M --> F["Allowlist route, method, resource type"]
+    end
+    P -->|"ClientApplication token<br/>+ X-Medplum-On-Behalf-Of"| MP["Medplum<br/>(project-scoped URL)"]
+    MP -->|"Delegated user's AccessPolicy applied"| D[("Project data")]
+```
+
 ## Delegate safely with On-Behalf-Of
 
 With [On-Behalf-Of](/docs/auth/on-behalf-of), your proxy decides which user each request represents, so that decision has to be airtight:
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant P as API proxy
+    participant M as Medplum
+    U->>P: Request with your app's session
+    P->>P: Verify session
+    alt Session invalid or no membership mapping
+        P-->>U: 401/403 (never call Medplum without the header)
+    else Valid
+        P->>P: Look up the user's own ProjectMembership (server-side)
+        P->>M: Request + X-Medplum-On-Behalf-Of: ProjectMembership/{id}
+        M->>M: Apply that membership's AccessPolicy
+        M-->>P: Response scoped to the user
+        P-->>U: Response
+    end
+```
 
 - Authenticate every incoming request before calling Medplum.
 - Resolve the target `ProjectMembership` from a server-side mapping of the authenticated user. Never forward an `X-Medplum-On-Behalf-Of` header or membership ID supplied by the caller. Have a robust mechanism that confirms each user can only ever act as their own `ProjectMembership`, and test it.
@@ -23,6 +53,15 @@ Where it meets your requirements, prefer [server-held token exchange](/docs/auth
 ## Lock down the ClientApplication
 
 The proxy's `ClientApplication` is a privileged machine identity. On-Behalf-Of requires it to be a Project Admin, so restrict it in every other way:
+
+```mermaid
+flowchart TD
+    R["Request using the ClientApplication's credentials"] --> IP{"Source IP allowed by<br/>the client's IP Access Rules?"}
+    IP -->|No| X["Rejected at token request<br/>or Basic auth"]
+    IP -->|Yes| H{"X-Medplum-On-Behalf-Of<br/>header present?"}
+    H -->|Yes| DU["Delegated user's AccessPolicy applies"]
+    H -->|No| EP["Client's own empty policy applies:<br/>no clinical data access"]
+```
 
 - **Permissionless access policy:** give its `ProjectMembership` an AccessPolicy with no resource access (`"resource": []`). Delegated requests use only the delegated user's access policy, so this doesn't limit your users, and a request that's missing the On-Behalf-Of header can't read or write data. See [Lock down the application credential](/docs/auth/on-behalf-of#lock-down-the-application-credential).
 - **IP restrictions:** add [IP Access Rules](/docs/access/ip-access-rules) to that policy allowing only your servers' egress IPs, followed by a wildcard block. They're checked on every `client_credentials` token request and every Basic auth request, so a leaked secret can't be used from elsewhere.
@@ -47,6 +86,17 @@ Example policy:
 ## Forward only what you need
 
 Don't blindly forward every endpoint through to the Medplum server. Allowlist only the specific routes, HTTP methods, and resource types your application uses, and reject everything else. Many applications only need part of `/fhir/R4/`.
+
+```mermaid
+flowchart LR
+    I["Incoming request"] --> R{"Route allowlisted?"}
+    R -->|No| N["Reject"]
+    R -->|Yes| MT{"Method allowlisted?"}
+    MT -->|No| N
+    MT -->|Yes| O{"Effective resource types<br/>and operation allowed?<br/>(incl. batch, $operations, _history)"}
+    O -->|No| N
+    O -->|Yes| FW["Forward to Medplum"]
+```
 
 - Keep administrative resources (`Project`, `ProjectMembership`, `AccessPolicy`, `ClientApplication`, etc.) out unless explicitly required. Your `ClientApplication` is a Project Admin, so these are reachable through it.
 - Don't forward `/auth/` or `/oauth2/` unless your application needs them. If it does, allow only the specific operations required.
