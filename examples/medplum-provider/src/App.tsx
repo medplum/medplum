@@ -4,7 +4,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import type { SpotlightLinkAction } from '@medplum/react';
-import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, Loading, Logo, SmartLogo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
   IconBook2,
@@ -67,7 +67,6 @@ import { BillingSetupPage } from './pages/settings/BillingSetupPage';
 import { SignInPage } from './pages/SignInPage';
 import { SmartHealthLinkImportModal } from './pages/smart/SmartHealthLinkImportModal';
 import { SmartHealthLinkImportPage } from './pages/smart/SmartHealthLinkImportPage';
-import { SmartLogo } from './pages/smart/SmartLogo';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
 

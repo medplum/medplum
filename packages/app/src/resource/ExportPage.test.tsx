@@ -35,7 +35,7 @@ describe('ExportPage', () => {
 
   test('Patient', async () => {
     await setup('/Patient/123/export');
-    expect(await screen.findByText('Request Export')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^Export .*Records$/ })).toBeInTheDocument();
   });
 
   test('Unsupported', async () => {
