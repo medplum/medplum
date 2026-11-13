@@ -347,6 +347,29 @@ describe('External', () => {
     }
   });
 
+  test('Callback iss parameter must match identity provider issuer', async () => {
+    const issuer = `https://${randomUUID()}.example.com`;
+    const config = getConfig();
+    const externalAuthProviders = config.externalAuthProviders;
+    config.externalAuthProviders = [{ issuer, identityProvider: { ...identityProvider, issuer } }];
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+
+    try {
+      const callback = (iss: string): Promise<request.Response> =>
+        request(app).get(
+          appendQueryParams('/auth/external', { code: randomUUID(), state: JSON.stringify({ issuer }), iss })
+        );
+
+      const mismatch = await callback('https://evil.example.com');
+      expect(mismatch).toHaveStatus(400);
+      expect(mismatch.body.issue[0].details.text).toBe('Invalid issuer');
+
+      expect(await callback(issuer)).toHaveStatus(302);
+    } finally {
+      config.externalAuthProviders = externalAuthProviders;
+    }
+  });
+
   test('ClientApplication success', async () => {
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
