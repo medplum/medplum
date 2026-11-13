@@ -13,6 +13,20 @@ IP address restrictions provide an additional layer of security by limiting acce
 
 Medplum customers primarily use IP Access Restrictions to ensure that users are only accessing data from approved origins such as on-premise devices or corporate VPN.
 
+## When to Use IP Access Rules
+
+IP rules are checked when a token is issued, not on every API call. How well they work depends on how the account authenticates:
+
+| Authentication                                | When the IP is checked | Fit                                                      |
+| :-------------------------------------------- | :--------------------- | :------------------------------------------------------- |
+| `ClientApplication` with Basic auth           | Every request          | Strong                                                   |
+| `ClientApplication` with `client_credentials` | Every token request    | Strong                                                   |
+| User sign-in (password, Google, external IdP) | At sign-in only        | Weaker: a refresh token keeps the session alive anywhere |
+
+IP rules work best for **server-to-server integrations**: a backend, an on-prem agent or a partner system with stable egress IPs that connects as a `ClientApplication`. Put the rules on the `ClientApplication`'s `ProjectMembership` AccessPolicy.
+
+For users, IP rules limit where a session can _start_ (e.g. sign-in only from the clinic network or VPN). Refresh token requests are not checked, and access tokens are not re-checked on each request, so don't rely on IP rules alone for a requirement that every request come from an approved network.
+
 ## Setting Up IP Address Restrictions in Medplum
 
 To configure IP address restrictions in Medplum, follow the steps below:
@@ -27,4 +41,18 @@ The rules are evaluated sequentially until a matching rule is found. To effectiv
 
 Once you have specified all the "allow" rules, add a wildcard "block" rule at the end to block all other IP addresses. To do this, use an asterisk (\*) as the value for the "block" rule.
 
-Please note that only IPv4 IP addresses are supported, and partial IP addresses can be used for matching. For example, specifying the value "8.8." would match "8.8.8.8" but would not match "8.7.8.8".
+Please note that only IPv4 IP addresses are supported, and partial IP addresses can be used for matching. For example, specifying the value "8.8." would match "8.8.8.8" but would not match "8.7.8.8". CIDR notation (e.g. `10.0.0.0/8`) is not supported. Matching is a plain string prefix, so include the trailing dot: "10.1" also matches "10.10.0.1".
+
+If no rule matches, access is allowed. If a membership has multiple AccessPolicies, their IP rules are evaluated as one list, in policy order.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Integration server",
+  "resource": [{ "resourceType": "*" }],
+  "ipAccessRule": [
+    { "name": "Integration egress", "value": "203.0.113.10", "action": "allow" },
+    { "name": "Block everything else", "value": "*", "action": "block" }
+  ]
+}
+```
