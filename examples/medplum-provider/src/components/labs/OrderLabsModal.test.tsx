@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Patient, QuestionnaireResponse, ServiceRequest } from '@medplum/fhirtypes';
+import type { Encounter, Patient, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { LabOrderValidationError } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
@@ -123,6 +123,8 @@ describe('OrderLabsModal', () => {
     props: {
       patientId?: string;
       patient?: Patient;
+      encounter?: Encounter;
+      task?: Task;
       draftOrder?: ServiceRequest;
       onSaveDraft?: (draft: WithId<ServiceRequest>) => void;
     } = {}
@@ -140,6 +142,8 @@ describe('OrderLabsModal', () => {
             opened
             onClose={vi.fn()}
             patient={props.patient}
+            encounter={props.encounter}
+            task={props.task}
             draftOrder={props.draftOrder}
             onSubmitLabOrder={mockOnSubmitLabOrder}
             onSaveDraft={props.onSaveDraft}
@@ -339,6 +343,61 @@ describe('OrderLabsModal', () => {
     });
 
     expect(mockOnSubmitLabOrder).toHaveBeenCalled();
+  });
+
+  describe('Submitting from an encounter task', () => {
+    const diagnosis = { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] };
+
+    async function submitFromTask(): Promise<string> {
+      const encounter = await medplum.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: { code: 'AMB' },
+      });
+      const task = await medplum.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        focus: { reference: 'ServiceRequest/draft-sr-1' },
+      });
+      const chargeItem = await medplum.createResource({
+        resourceType: 'ChargeItem',
+        status: 'planned',
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '80053' }] },
+        subject: { reference: `Patient/${HomerSimpson.id}` },
+        context: { reference: `Encounter/${encounter.id}` },
+        supportingInformation: [{ reference: 'ServiceRequest/draft-sr-1' }],
+      });
+      mockLabOrderReturn.createOrderBundle = vi.fn().mockResolvedValue({
+        serviceRequest: { resourceType: 'ServiceRequest', id: 'order-123', status: 'draft', reasonCode: [diagnosis] },
+      });
+      vi.mocked(useHealthGorillaLabOrder).mockReturnValue(mockLabOrderReturn);
+
+      setup({ encounter, task });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Submit Order' }));
+      });
+      await waitFor(() => expect(mockOnSubmitLabOrder).toHaveBeenCalled());
+      return chargeItem.id;
+    }
+
+    test('links the charge item to the submitted order and its diagnoses', async () => {
+      const chargeItemId = await submitFromTask();
+
+      const chargeItem = await medplum.readResource('ChargeItem', chargeItemId, { cache: 'no-cache' });
+      expect(chargeItem.supportingInformation).toEqual([{ reference: 'ServiceRequest/order-123' }]);
+      expect(chargeItem.reason).toEqual([diagnosis]);
+    });
+
+    test('still submits the order when linking the charge item fails', async () => {
+      const error = new Error('Patch failed');
+      vi.spyOn(medplum, 'patchResource').mockRejectedValue(error);
+
+      await submitFromTask();
+
+      expect(notifications.showErrorNotification).toHaveBeenCalledWith(error);
+      expect(medplum.executeBot).toHaveBeenCalled();
+    });
   });
 
   test('Shows error when order submission fails', async () => {
