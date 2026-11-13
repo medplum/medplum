@@ -41,4 +41,23 @@ describe('LabResultListItem', () => {
     expect(container.querySelector('[class*="selected"]')).toBeInTheDocument();
     expect(screen.queryByText(/Collected|Performed by/)).not.toBeInTheDocument();
   });
+
+  test.each<[DiagnosticReport['status'], string]>([
+    ['preliminary', 'Preliminary'],
+    ['partial', 'Partial'],
+  ])('shows a %s badge and "Received" instead of "Completed"', async (status, badgeText) => {
+    setup({ ...report, status, issued: '2024-01-15T10:00:00Z' });
+    expect(await screen.findByText(badgeText)).toBeInTheDocument();
+    expect(screen.getByText('Received 1/15/2024')).toBeInTheDocument();
+    expect(screen.queryByText(/^Completed/)).not.toBeInTheDocument();
+  });
+
+  test.each<DiagnosticReport['status']>(['final', 'corrected', 'amended'])(
+    'shows no status badge for a %s report',
+    (status) => {
+      setup({ ...report, status });
+      expect(screen.queryByText('Preliminary')).not.toBeInTheDocument();
+      expect(screen.queryByText('Partial')).not.toBeInTheDocument();
+    }
+  );
 });

@@ -1,0 +1,3 @@
+## Usage
+
+The scope of the [RiskEvidenceSynthesis](/docs/api/fhir/resources/riskevidencesynthesis) resource is to describe the likelihood of an outcome in a population with an exposure where the risk estimate is derived from the combination of research studies. Risk estimates are not effects and do not represent a difference between exposure states. Expressing risk estimates is done throughout reporting of biomedical research, systematic reviews, and clinical reference across all disciplines. Risk estimates as a "synthesis" of research studies is a different concept for risk estimation than risk estimates for an individual person.

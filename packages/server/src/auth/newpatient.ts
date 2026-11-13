@@ -9,7 +9,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { createProfile, createProjectMembership, sendLoginResult } from './utils';
+import { createProfile, createProjectMembership, getOpenRegistrationAccessPolicy, sendLoginResult } from './utils';
 
 export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
@@ -72,12 +72,13 @@ async function createPatient(
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const project = await systemRepo.readResource<Project>('Project', projectId);
 
-  if (!project.defaultPatientAccessPolicy) {
+  const policyRef = getOpenRegistrationAccessPolicy(project);
+  if (!policyRef) {
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
   const profile = (await createProfile(systemRepo, project, 'Patient', firstName, lastName, user.email)) as Patient;
-  const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
+  const policy = await systemRepo.readReference(policyRef);
   const membership = await createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),
   });

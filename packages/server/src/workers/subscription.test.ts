@@ -1310,6 +1310,58 @@ describe('Subscription Worker', () => {
       expect(jobs[2].changePriority).not.toHaveBeenCalled();
     }));
 
+  test('Logs one summary line per job attempt', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      (fetch as unknown as Mock)
+        .mockImplementationOnce(() => mockFetchStatus(500))
+        .mockImplementation(() => mockFetchStatus(200));
+      const attemptLogs: unknown[] = [];
+      const logger = loggerModule.getLogger();
+      const captureAttempt = (msg: string, data?: unknown): void => {
+        if (msg === 'Subscription job attempt') {
+          attemptLogs.push(data);
+        }
+      };
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(captureAttempt);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(captureAttempt);
+
+      await findAndExecSubscriptionJob(patient, 'create', subscription);
+      // Rerun the same job after disabling the subscription, so it is skipped
+      await repo.updateResource<Subscription>({ ...subscription, status: 'off' });
+      await findAndExecSubscriptionJob(patient, 'create', subscription);
+
+      infoSpy.mockRestore();
+      warnSpy.mockRestore();
+      expect(attemptLogs).toStrictEqual([
+        expect.objectContaining({
+          attemptsMade: 0,
+          delivery: 'rest-hook',
+          status: 500,
+          url,
+          error: 'Received status 500',
+          fetchDurationMs: expect.any(Number),
+        }),
+        expect.objectContaining({
+          attemptsMade: 1,
+          delivery: 'rest-hook',
+          status: 200,
+          error: undefined,
+          fetchDurationMs: expect.any(Number),
+        }),
+        expect.objectContaining({ attemptsMade: 0, skipReason: 'Subscription not active' }),
+      ]);
+    }));
+
   test('Retry on exception', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';
@@ -1561,6 +1613,44 @@ describe('Subscription Worker', () => {
       });
       expect(bundle.entry?.length).toStrictEqual(1);
       expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+    }));
+
+  test('Skip runAsUser bot subscriptions for system-authored resources', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runAsUser: true,
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: bot.meta?.project },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
+
+      await findAndExecSubscriptionJob(patient, 'create');
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(0);
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(bundle.entry).toHaveLength(0);
     }));
 
   test('Bot subscription execution AuditEvent is always emitted to logs', () =>
@@ -3253,11 +3343,6 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
         const {
           repo: wsRepo,
           project,
@@ -3271,8 +3356,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy No Membership Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
@@ -3321,12 +3406,8 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
         const {
+          accessPolicy,
           repo: wsRepo,
           membership,
           project,
@@ -3339,8 +3420,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy Error Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 

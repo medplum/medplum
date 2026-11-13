@@ -1,0 +1,10 @@
+{{- /* Grid of feature cards. Params: features (list of {title, icon, text}), variant ("ecosystem" | "complexity"), columns */ -}}
+<div class="landing-feature-grid{{ with .variant }} landing-feature-grid-{{ . }}{{ end }}" style="--columns: {{ .columns | default 3 }}">
+  {{ range .features }}
+    <div class="landing-feature">
+      {{ with .icon }}<div class="landing-feature-icon">{{ partial "icon" . }}</div>{{ end }}
+      <h3>{{ .title }}</h3>
+      <p>{{ .text }}</p>
+    </div>
+  {{ end }}
+</div>
