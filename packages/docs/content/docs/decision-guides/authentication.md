@@ -132,7 +132,7 @@ Your backend retains each user's exchanged Medplum token and uses it to fulfill 
   - Live updates need a backend-to-client delivery path; components expecting direct Medplum access need adaptation.
 - **Best fit:** Your architecture requires backend mediation or keeping Medplum credentials out of the client.
 
-Implementation: [Token Exchange: on the server](/docs/auth/token-exchange#server-held-medplum-tokens).
+Implementation: [Token Exchange: on the server](/docs/auth/token-exchange#server-held-medplum-tokens). See also [API Proxy Security](/docs/auth/api-proxy-security).
 
 ### Option C: On-Behalf-Of (single machine-to-machine user)
 
@@ -150,7 +150,7 @@ Your backend uses a single machine-to-machine application identity (`ClientAppli
 
 With server-held token exchange, the Medplum credential represents the user. With On-Behalf-Of, it represents the application, which selects the user context for each request. Prefer user-scoped exchange when either approach meets your requirements.
 
-Implementation: [On-Behalf-Of Delegation](/docs/auth/on-behalf-of). For the application credential, see [Client Credentials](/docs/auth/client-credentials), [Client Assertion (JWT Bearer)](/docs/auth/client-assertion), or [Mutual TLS (mTLS)](/docs/auth/mtls).
+Implementation: [On-Behalf-Of Delegation](/docs/auth/on-behalf-of) and [API Proxy Security](/docs/auth/api-proxy-security). For the application credential, see [Client Credentials](/docs/auth/client-credentials), [Client Assertion (JWT Bearer)](/docs/auth/client-assertion), or [Mutual TLS (mTLS)](/docs/auth/mtls).
 
 **Next:** For authorization-code flow or token exchange, choose your matching key below. For On-Behalf-Of, define your backend's user mapping and continue to [Before You Implement](#before-you-implement).
 
