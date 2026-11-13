@@ -56,6 +56,7 @@ import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { LogThrottle } from '../util/logthrottle';
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventEntry, SubEventPayload } from '../ws/subscriptions';
@@ -453,11 +454,41 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
+    logBinaryDataNotification(
+      resource,
+      'websocket',
+      wsSubEvents.map(([subscriptionId]) => subscriptionId)
+    );
     await publish(
       WEBSOCKET_SUB_PUBLISH_CHANNEL,
       JSON.stringify({ resource, events: wsSubEvents } satisfies SubEventPayload)
     );
   }
+}
+
+const binaryDataLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
+
+/**
+ * Logs subscription notifications that include inline `Binary.data`.
+ * The content is also available from binary storage, so subscribers should not need it in the notification.
+ * @param resource - The resource sent to subscribers.
+ * @param channel - The notification channel.
+ * @param subscriptionIds - The subscriptions that receive the resource.
+ */
+function logBinaryDataNotification(resource: Resource, channel: string, subscriptionIds: string[]): void {
+  if (resource.resourceType !== 'Binary' || resource.data === undefined) {
+    return;
+  }
+  const project = resource.meta?.project;
+  binaryDataLogThrottle.maybeLog([project, channel, ...subscriptionIds].join('|'), (suppressed) => {
+    globalLogger.warn('Subscription notification includes Binary.data', {
+      binary: resource.id,
+      project,
+      channel,
+      subscriptions: subscriptionIds,
+      suppressed,
+    });
+  });
 }
 
 /**
@@ -741,6 +772,11 @@ async function deliverSubscriptionJob(job: Job<SubscriptionJobData>, summary: Su
       using projectRepo = await getRepoForProject(versionedResource.meta.project);
       rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, projectRepo, versionedResource);
     }
+    logBinaryDataNotification(
+      rewrittenResource,
+      subscription.channel.endpoint?.startsWith('Bot/') ? 'bot' : 'rest-hook',
+      [subscription.id]
+    );
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;
