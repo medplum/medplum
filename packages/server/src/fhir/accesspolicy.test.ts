@@ -128,10 +128,11 @@ describe('AccessPolicy', () => {
           ],
         },
       });
-      expect(repo.getConfig().accessPolicy?.resource?.slice(0, 6)).toStrictEqual([
+      expect(repo.getConfig().accessPolicy?.resource?.slice(0, 7)).toStrictEqual([
         { resourceType: 'Patient' },
         { resourceType: 'Bot', criteria: 'Bot?name=Readonly', readonlyFields: ['system'] },
         { resourceType: 'Bot', criteria: 'Bot?name=Hidden', hiddenFields: ['system'] },
+        { resourceType: 'Bot', criteria: 'Bot?_lastUpdated=gt2000-01-01', readonlyFields: ['system'] },
         { resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' },
         { resourceType: 'Bot', readonlyFields: ['identifier', 'system'] },
         { resourceType: '*', readonlyFields: ['identifier'] },
@@ -142,23 +143,6 @@ describe('AccessPolicy', () => {
         accessPolicy: { resource: [{ resourceType: 'Patient' }] },
       });
       expect(patientOnlyRepo.getConfig().accessPolicy?.resource?.map((r) => r.resourceType)).not.toContain('Bot');
-    }));
-
-  test('Bot.system rule does not grant Bot access from wildcard criteria', () =>
-    withTestContext(async () => {
-      const { project, repo } = await createTestProject({
-        withRepo: true,
-        accessPolicy: { resource: [{ resourceType: '*', criteria: '*?name=Allowed' }] },
-      });
-      const bot = await (
-        await getProjectSystemRepo(project)
-      ).createResource<Bot>({
-        resourceType: 'Bot',
-        name: 'Allowed',
-      });
-      await expect(repo.createResource<Bot>({ resourceType: 'Bot', name: 'Allowed' })).rejects.toThrow('Forbidden');
-      await expect(repo.readResource('Bot', bot.id)).rejects.toThrow('Not found');
-      await expect(repo.updateResource<Bot>({ ...bot, description: 'update' })).rejects.toThrow('Not found');
     }));
 
   test.each<[string, Partial<AccessPolicy> | undefined]>([

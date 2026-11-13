@@ -458,10 +458,13 @@ function applyBotSystemReadonly(accessPolicy: PopulatedAccessPolicy): PopulatedA
     if (r.resourceType === 'Bot') {
       return [withReadonlyField(r, 'system')];
     }
-    if (r.resourceType === '*' && !r.criteria) {
-      // The first matching entry applies, so a wildcard grant gets a Bot entry ahead of it.
-      // Wildcard entries with criteria never match a single resource, so they cannot write a Bot.
-      return [withReadonlyField({ ...r, resourceType: 'Bot' }, 'system'), r];
+    if (r.resourceType === '*') {
+      // The first matching entry applies, so a wildcard grant gets a Bot entry ahead of it
+      const botEntry: AccessPolicyResource = { ...r, resourceType: 'Bot' };
+      if (r.criteria) {
+        botEntry.criteria = r.criteria.replace(/^\*\?/, 'Bot?');
+      }
+      return [withReadonlyField(botEntry, 'system'), r];
     }
     return [r];
   });
