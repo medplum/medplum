@@ -249,7 +249,7 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
           name="assignee"
           targetTypes={ASSIGNED_TARGET_TYPES}
           defaultValue={selectedOwner ? { reference: selectedOwner } : undefined}
-          onChange={(value) => setDraftOwner(value as Reference | undefined)}
+          onChange={(value) => setDraftOwner(value)}
         />
       </Modal>
     </Menu>
