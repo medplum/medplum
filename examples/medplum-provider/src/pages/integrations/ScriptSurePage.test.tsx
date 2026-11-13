@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
+import { ReadablePromise } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
-import { SCRIPTSURE_IFRAME_BOT, useScriptSureIFrame } from '@medplum/scriptsure-react';
+import { SCRIPTSURE_IFRAME_BOT, ScriptSurePracticeProvider, useScriptSureIFrame } from '@medplum/scriptsure-react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -133,23 +134,64 @@ describe('ScriptSurePage', () => {
     expect(screen.getByTitle('ScriptSure e-Prescribing')).toBeInTheDocument();
   });
 
-  test('Opens the Reports tab directly from the tab query param', async () => {
+  test('Deep-linked Reports tab defers the prescribing iframe until its tab is opened', async () => {
     const executeBot = vi
       .spyOn(medplum, 'executeBot')
       .mockResolvedValue({ url: 'https://ssu.example/widgets/report?sessiontoken=abc' });
+    const user = userEvent.setup();
     setup('/scriptsure?tab=report');
 
     expect(screen.getByRole('tab', { name: 'Reports' })).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByTitle('ScriptSure reports')).toBeInTheDocument();
     expect(executeBot).toHaveBeenCalledWith(SCRIPTSURE_IFRAME_BOT, { widget: 'report', organizationId: undefined });
+    expect(useScriptSureIFrame).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('tab', { name: 'Prescribing' }));
+
+    expect(await screen.findByTitle('ScriptSure e-Prescribing')).toBeInTheDocument();
   });
 
-  test('Shows an error when the report widget URL cannot be created', async () => {
-    vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('ScriptSure is down'));
+  test('Shows an inline error with a working Retry when the report widget URL cannot be created', async () => {
+    const executeBot = vi
+      .spyOn(medplum, 'executeBot')
+      .mockRejectedValueOnce(new Error('ScriptSure is down'))
+      .mockResolvedValueOnce({ url: 'https://ssu.example/widgets/auditlog?sessiontoken=abc' });
+    const user = userEvent.setup();
     setup('/scriptsure?tab=auditlog');
 
     expect(await screen.findByText('ScriptSure is down')).toBeInTheDocument();
     expect(screen.queryByTitle('ScriptSure audit log')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByTitle('ScriptSure audit log')).toBeInTheDocument();
+    expect(executeBot).toHaveBeenCalledTimes(2);
+  });
+
+  test('Waits for the practice selection before opening any ScriptSure session', async () => {
+    vi.spyOn(medplum, 'searchResources').mockReturnValue(
+      new ReadablePromise(
+        new Promise(() => {
+          // Never settles, so the practice provider stays loading.
+        })
+      )
+    );
+    const executeBot = vi.spyOn(medplum, 'executeBot');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ScriptSurePracticeProvider>
+            <MemoryRouter initialEntries={['/scriptsure?tab=auditlog']}>
+              <ScriptSurePage />
+            </MemoryRouter>
+          </ScriptSurePracticeProvider>
+        </MedplumProvider>
+      );
+    });
+
+    expect(screen.getByRole('tab', { name: 'Audit log' })).toBeInTheDocument();
+    expect(executeBot).not.toHaveBeenCalled();
+    expect(useScriptSureIFrame).not.toHaveBeenCalled();
   });
 
   test('Iframe fills its container', async () => {
