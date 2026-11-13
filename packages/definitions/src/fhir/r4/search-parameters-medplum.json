@@ -2632,6 +2632,92 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "EncryptedSecret-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Business identifiers of the secret",
+        "code": "identifier",
+        "base": ["EncryptedSecret"],
+        "type": "token",
+        "expression": "EncryptedSecret.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "EncryptedSecret-code",
+        "url": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-code",
+        "version": "4.0.1",
+        "name": "code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The kind of secret",
+        "code": "code",
+        "base": ["EncryptedSecret"],
+        "type": "token",
+        "expression": "EncryptedSecret.code"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-owner",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "EncryptedSecret-owner",
+        "url": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-owner",
+        "version": "4.0.1",
+        "name": "owner",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Who the secret belongs to",
+        "code": "owner",
+        "base": ["EncryptedSecret"],
+        "type": "reference",
+        "target": ["Patient", "Practitioner", "RelatedPerson", "Organization", "Bot", "ClientApplication"],
+        "expression": "EncryptedSecret.owner"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "EncryptedSecret-status",
+        "url": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The status of the secret",
+        "code": "status",
+        "base": ["EncryptedSecret"],
+        "type": "token",
+        "expression": "EncryptedSecret.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-expires",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "EncryptedSecret-expires",
+        "url": "https://medplum.com/fhir/SearchParameter/EncryptedSecret-expires",
+        "version": "4.0.1",
+        "name": "expires",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "When the secret stops being valid",
+        "code": "expires",
+        "base": ["EncryptedSecret"],
+        "type": "date",
+        "expression": "EncryptedSecret.expires"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/CoverageEligibilityRequest-coverage",
       "resource": {
         "resourceType": "SearchParameter",

@@ -77,6 +77,7 @@ export type * from './EffectEvidenceSynthesis.d.ts';
 export type * from './Element.d.ts';
 export type * from './ElementDefinition.d.ts';
 export type * from './Encounter.d.ts';
+export type * from './EncryptedSecret.d.ts';
 export type * from './Endpoint.d.ts';
 export type * from './EnrollmentRequest.d.ts';
 export type * from './EnrollmentResponse.d.ts';
