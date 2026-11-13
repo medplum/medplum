@@ -47,6 +47,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger, globalLogger } from '../logger';
+import { getCacheRedis } from '../redis';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
 import {
@@ -63,7 +64,7 @@ import { getRepoForLogin } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
-import { deleteResourceCacheEntry, getResourceCacheEntry } from './repository/resource-cache';
+import { getResourceCacheEntry, getResourceCacheKey } from './repository/resource-cache';
 import { ExpungedHistoryTag } from './repository/row-builder';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
@@ -336,7 +337,7 @@ describe('FHIR Repo', () => {
   test('Does not cache reads from the reader', () =>
     withTestContext(async () => {
       const patient = await testProjectRepo.createResource<Patient>({ resourceType: 'Patient' });
-      await deleteResourceCacheEntry('Patient', patient.id);
+      await getCacheRedis().del(getResourceCacheKey('Patient', patient.id));
 
       const repo = testProjectRepo.clone();
       repo.setMode(RepositoryMode.READER);
@@ -356,6 +357,8 @@ describe('FHIR Repo', () => {
         meta: { project: testProject.id },
       });
       await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeUndefined();
+      // The create leaves a short-lived marker that blocks read-fills; drop it as if it had expired
+      await getCacheRedis().del(getResourceCacheKey('Patient', patient.id));
 
       await systemRepo.readResource('Patient', patient.id);
       await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeDefined();

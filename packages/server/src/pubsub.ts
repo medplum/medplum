@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isResourceType } from '@medplum/core';
 import type { ResourceType, Subscription } from '@medplum/fhirtypes';
-import type { CacheEntry } from './fhir/repository/resource-cache';
+import { parseResourceCacheEntry } from './fhir/repository/resource-cache';
 import { globalLogger } from './logger';
 import { getCacheRedis, getPubSubRedis } from './redis';
 
@@ -135,11 +135,10 @@ export async function cleanupUserSubs(authorRef: string): Promise<void> {
   const staleRefs: string[] = [];
   const activeCheckItems: { ref: string; projectId: string; resourceType: ResourceType }[] = [];
   for (let i = 0; i < refs.length; i++) {
-    const entry = cacheEntries[i];
-    if (entry === null) {
+    const cacheEntry = parseResourceCacheEntry<Subscription>(cacheEntries[i]);
+    if (!cacheEntry) {
       staleRefs.push(refs[i]);
     } else {
-      const cacheEntry = JSON.parse(entry) as CacheEntry<Subscription>;
       const projectId = cacheEntry.projectId;
       const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
       if (projectId && criteriaResourceType && isResourceType(criteriaResourceType)) {

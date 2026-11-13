@@ -13,7 +13,7 @@ import { RepositoryMode } from '@medplum/fhir-router';
 import type { AuditEvent, Patient } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResult } from 'pg';
 import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
@@ -22,13 +22,16 @@ import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import { createTestProject, spyOnQuery, waitFor, withTestContext } from '../../test.setup';
 import * as workersModule from '../../workers';
-import type { Repository, SystemRepository } from '../repo';
-import { getShardSystemRepo } from '../repo';
+import type { SystemRepository } from '../repo';
+import { getShardSystemRepo, Repository } from '../repo';
 import { RepositoryConnection } from '../repository/repository-connection';
 import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { PostgresError } from '../sql';
 import { repoAccess } from './access-tracker';
+import type { CacheEntry } from './resource-cache';
+import * as resourceCacheModule from './resource-cache';
+import { getResourceCacheEntry } from './resource-cache';
 
 const TRANSACTION_SCOPE_ERROR =
   'Repository is in an active transaction; use the transaction-scoped repository passed to the callback';
@@ -596,6 +599,147 @@ describe('FHIR Repo Transactions', () => {
 
       expect(cacheReadDuringTransaction).toBe(false);
       await expect(systemRepo.readResource('Patient', patient.id, { checkCacheOnly: true })).resolves.toBeDefined();
+    }));
+
+  test('Cache writes land before post-commit callbacks', () =>
+    withTestContext(async () => {
+      let id: string | undefined;
+      let observed: CacheEntry | undefined;
+      await repo.withTransaction(
+        async (txRepo) => {
+          await txRepo.postCommit(async () => {
+            observed = await getResourceCacheEntry('Patient', id as string);
+          });
+          id = (await txRepo.createResource<Patient>({ resourceType: 'Patient' })).id;
+        },
+        { resourceTypes: ['Patient'], source: 'test.cacheWritesBeforePostCommit' }
+      );
+
+      expect(observed?.resource.id).toStrictEqual(id);
+    }));
+
+  test('Delete keeps the cache entry until the tombstone commits', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      let cachedBeforeCommit: CacheEntry | undefined;
+      // deleteFromLookupTables is private; this view exposes it to the spy
+      const proto = Repository.prototype as unknown as {
+        deleteFromLookupTables: (this: Repository, ...args: unknown[]) => Promise<void>;
+      };
+      const original = proto.deleteFromLookupTables;
+      const spy = vi.spyOn(proto, 'deleteFromLookupTables').mockImplementation(async function (
+        this: Repository,
+        ...args: unknown[]
+      ) {
+        cachedBeforeCommit = await getResourceCacheEntry('Patient', patient.id);
+        return original.apply(this, args);
+      });
+      try {
+        await systemRepo.deleteResource('Patient', patient.id);
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(cachedBeforeCommit?.resource.id).toStrictEqual(patient.id);
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeUndefined();
+    }));
+
+  test('Rolled-back savepoint discards its queued cache writes', () =>
+    withTestContext(async () => {
+      let rolledBackId: string | undefined;
+      const kept = await repo.withTransaction(
+        async (txRepo) => {
+          await expect(
+            txRepo.withTransaction(
+              async (nestedRepo) => {
+                rolledBackId = (await nestedRepo.createResource<Patient>({ resourceType: 'Patient' })).id;
+                throw new Error('roll back savepoint');
+              },
+              { resourceTypes: ['Patient'], source: 'test.savepointCacheWrites.nested' }
+            )
+          ).rejects.toThrow('roll back savepoint');
+          return txRepo.createResource<Patient>({ resourceType: 'Patient' });
+        },
+        { resourceTypes: ['Patient'], source: 'test.savepointCacheWrites' }
+      );
+
+      assert(rolledBackId);
+      await expect(getResourceCacheEntry('Patient', rolledBackId)).resolves.toBeUndefined();
+      await expect(getResourceCacheEntry('Patient', kept.id)).resolves.toMatchObject({ resource: { id: kept.id } });
+    }));
+
+  test('A lost post-commit cache flush leaves no stale entry', () =>
+    withTestContext(async () => {
+      const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      // flushResourceCacheWrites is private; this view exposes it to the spy
+      const spy = vi
+        .spyOn(
+          RepositoryConnection.prototype as unknown as {
+            flushResourceCacheWrites: (writes: unknown[]) => Promise<void>;
+          },
+          'flushResourceCacheWrites'
+        )
+        .mockResolvedValue(undefined);
+      try {
+        const v2 = await systemRepo.updateResource<Patient>({ ...v1, active: true });
+        const read = await systemRepo.readResource<Patient>('Patient', v1.id);
+        expect(read.meta?.versionId).toStrictEqual(v2.meta?.versionId);
+
+        await systemRepo.deleteResource('Patient', v1.id);
+        await expect(systemRepo.readResource('Patient', v1.id)).rejects.toThrow('Gone');
+      } finally {
+        spy.mockRestore();
+      }
+    }));
+
+  test('A COMMIT that errors after applying leaves no stale entry', () =>
+    withTestContext(async () => {
+      const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      let querySpy: MockInstance | undefined;
+      let v2: WithId<Patient> | undefined;
+      try {
+        await expect(
+          systemRepo.withTransaction(
+            async (txRepo) => {
+              const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
+              const original = client.query.bind(client) as (text: string, values?: unknown[]) => Promise<QueryResult>;
+              // The server applies the COMMIT, but the client sees the connection drop before the reply
+              querySpy = spyOnQuery(client).mockImplementation(async (text, values) => {
+                const result = await original(text, values);
+                if (text === 'COMMIT') {
+                  throw new Error('Connection terminated unexpectedly');
+                }
+                return result;
+              });
+              v2 = await txRepo.updateResource<Patient>({ ...v1, active: true });
+            },
+            { resourceTypes: ['Patient'], source: 'test.ambiguousCommit' }
+          )
+        ).rejects.toThrow();
+      } finally {
+        querySpy?.mockRestore();
+      }
+
+      assert(v2);
+      const read = await systemRepo.readResource<Patient>('Patient', v1.id);
+      expect(read.meta?.versionId).toStrictEqual(v2.meta?.versionId);
+    }));
+
+  test('A cache failure before COMMIT aborts the transaction', () =>
+    withTestContext(async () => {
+      const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const spy = vi
+        .spyOn(resourceCacheModule, 'prepareResourceCacheCommit')
+        .mockRejectedValueOnce(new Error('Redis unavailable'));
+      try {
+        await expect(systemRepo.updateResource<Patient>({ ...v1, active: true })).rejects.toThrow();
+      } finally {
+        spy.mockRestore();
+      }
+
+      const read = await systemRepo.readResource<Patient>('Patient', v1.id);
+      expect(read.meta?.versionId).toStrictEqual(v1.meta?.versionId);
+      expect(read.active).toBeUndefined();
     }));
 
   test('clone() does NOT share parent transaction state', () =>

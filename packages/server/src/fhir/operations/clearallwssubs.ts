@@ -6,7 +6,7 @@ import type { Subscription } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../context';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
-import type { CacheEntry } from '../repository/resource-cache';
+import { parseResourceCacheEntry } from '../repository/resource-cache';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -124,11 +124,10 @@ export async function clearAllWsSubs(projectId?: string): Promise<ClearAllWsSubs
       if (projectId && subscriptionIds.length > 0) {
         const cacheEntryStrs = await cacheRedis.mget(...subscriptionIds);
         for (let i = 0; i < subscriptionIds.length; i++) {
-          const cacheEntryStr = cacheEntryStrs[i];
-          if (!cacheEntryStr) {
+          const cacheEntry = parseResourceCacheEntry<Subscription>(cacheEntryStrs[i]);
+          if (!cacheEntry) {
             continue;
           }
-          const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
           const authorRef = cacheEntry.resource.meta?.author?.reference;
           if (!authorRef) {
             continue;
