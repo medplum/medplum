@@ -20,8 +20,6 @@ const NAME_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 // systems that share the value and are filtered out below.
 const IDENTIFIER_SEARCH_CRITERIA = { _count: '10' };
 
-// `:not=true` rather than `=false`, which would also drop a patient whose
-// `deceased` was never indexed.
 const LIVING_CRITERIA = { 'deceased:not': 'true' };
 
 export interface AppointmentPatientInputProps {
