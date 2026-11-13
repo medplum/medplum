@@ -835,9 +835,21 @@ describe('TaskBoard', () => {
 
     expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
     expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ filters: [{ code: 'owner', operator: 'eq', value: 'Practitioner/p1' }], offset: 0 })
-    );
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ filters: [], offset: 0 }));
+  });
+
+  test('does not show the Assigned submenu when the owner filter matches the logged-in profile', async () => {
+    const user = userEvent.setup();
+    const profile = medplum.getProfile();
+    const profileRef = `${profile?.resourceType}/${profile?.id}`;
+    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([typedTask('nurse', 'Nursing')]));
+    setup(`owner=${profileRef}`);
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => expect(screen.getByText('Status')).toBeInTheDocument());
+    expect(screen.queryByText('Assigned')).not.toBeInTheDocument();
   });
 
   test('falls back to reading the selected task when it is not in the current page', async () => {

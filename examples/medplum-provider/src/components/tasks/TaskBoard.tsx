@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Flex, Text, Tooltip } from '@mantine/core';
 import type { SearchRequest, WithId } from '@medplum/core';
-import { Operator, parseSearchRequest } from '@medplum/core';
+import { getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
-import { ListWithDetailPane, useMedplum } from '@medplum/react';
+import { ListWithDetailPane, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -66,6 +66,7 @@ export function TaskBoard({
   onNewTaskClose,
 }: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<WithId<Task>[]>([]);
   const [selectedTask, setSelectedTask] = useState<WithId<Task> | undefined>(undefined);
@@ -97,7 +98,8 @@ export function TaskBoard({
   const itemsPerPage = Number.parseInt(searchParams.get('_count') || '20', 10);
   const currentOffset = Number.parseInt(searchParams.get('_offset') || '0', 10);
   const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
-  const isMyTasks = searchParams.has('owner');
+  const profileRef = profile ? getReferenceString(profile) : undefined;
+  const isMyTasks = !!profileRef && searchParams.get('owner') === profileRef;
 
   // Parse current search from query string
   const currentSearch = useMemo(() => parseSearchRequest(`Task?${query}`), [query]);
@@ -106,6 +108,11 @@ export function TaskBoard({
 
   const selectedPriorities = useMemo(
     () => parseFilterValues<NonNullable<Task['priority']>>(currentSearch, 'priority'),
+    [currentSearch]
+  );
+
+  const selectedOwner = useMemo(
+    () => currentSearch.filters?.find((f) => f.code === 'owner')?.value,
     [currentSearch]
   );
 
@@ -194,6 +201,19 @@ export function TaskBoard({
           toggleFilterValue(currentSearch, 'priority', selectedPriorities, value as NonNullable<Task['priority']>)
         );
         break;
+      case TaskFilterType.OWNER: {
+        const nextOwner = value as string;
+        const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'owner') || [];
+        const clearing = selectedOwner === nextOwner || !nextOwner;
+        onChange({
+          ...currentSearch,
+          filters: clearing
+            ? otherFilters
+            : [...otherFilters, { code: 'owner', operator: Operator.EQUALS, value: nextOwner }],
+          offset: 0,
+        });
+        break;
+      }
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
@@ -209,7 +229,10 @@ export function TaskBoard({
   };
 
   const handleClearAllFilters = (): void => {
-    const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'status' && f.code !== 'priority') || [];
+    const otherFilters =
+      currentSearch.filters?.filter(
+        (f) => f.code !== 'status' && f.code !== 'priority' && !(f.code === 'owner' && !isMyTasks)
+      ) || [];
     onChange({
       ...currentSearch,
       filters: otherFilters,
@@ -230,6 +253,8 @@ export function TaskBoard({
         priorities={selectedPriorities}
         performerType={filters.performerType}
         performerTypes={performerTypes}
+        selectedOwner={isMyTasks ? undefined : selectedOwner}
+        isMyTasksTab={isMyTasks}
         onFilterChange={handleFilterChange}
         onClearAllFilters={handleClearAllFilters}
       />
