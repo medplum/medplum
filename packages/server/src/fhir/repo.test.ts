@@ -2102,11 +2102,12 @@ describe('FHIR Repo', () => {
       const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
 
       // Create a user in the project
-      const user1 = await repo.createResource<User>({
+      const user1 = await systemRepo.createResource<User>({
         resourceType: 'User',
         email: randomUUID() + '@example.com',
         firstName: randomUUID(),
         lastName: randomUUID(),
+        meta: { project: project.id },
       });
       expect(user1.meta?.project).toStrictEqual(project.id);
       expect(await getProjectIdColumn('User', user1.id)).toStrictEqual(project.id);

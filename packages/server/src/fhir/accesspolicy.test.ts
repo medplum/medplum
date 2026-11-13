@@ -2192,7 +2192,7 @@ describe('AccessPolicy', () => {
       // This should succeed
       const check5 = await repo2.updateResource<ProjectMembership>({
         ...check4,
-        profile: { reference: 'Practitioner/' + randomUUID() },
+        identifier: [{ system: 'https://example.com', value: randomUUID() }],
       });
       expect(check5.id).toStrictEqual(check4.id);
       expect(check5.meta?.versionId).not.toStrictEqual(check4.meta?.versionId);
@@ -2251,7 +2251,71 @@ describe('AccessPolicy', () => {
     }
   });
 
-  test('Project admin creates User and ProjectMembership in own project', () =>
+  test('PUT over a deleted resource and upsert over a missing id require create', () =>
+    withTestContext(async () => {
+      const deleted = await systemRepo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+        meta: { project: testProject.id },
+      });
+      await systemRepo.deleteResource('Communication', deleted.id);
+      const missing: WithId<Communication> = {
+        resourceType: 'Communication',
+        id: randomUUID(),
+        status: 'completed',
+        meta: { project: testProject.id },
+      };
+
+      for (const interaction of [
+        ['read', 'update'],
+        ['read', 'update', 'create'],
+      ] satisfies AccessPolicyResource['interaction'][]) {
+        const accessPolicy: AccessPolicy = {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Communication', interaction }],
+        };
+        const repo = getRepository({ projects: [testProject], accessPolicy });
+        // canSetId (needed to upsert over a missing id) is limited to super admins
+        const superAdminRepo = getRepository({ projects: [testProject], superAdmin: true, accessPolicy });
+        for (const [writer, resource] of [
+          [repo, deleted],
+          [superAdminRepo, missing],
+        ] as const) {
+          const write = writer.updateResource<Communication>({ ...resource, priority: 'stat' });
+          if (interaction.includes('create')) {
+            await expect(write).resolves.toMatchObject({ id: resource.id, priority: 'stat' });
+          } else {
+            await expect(write).rejects.toThrow('Forbidden');
+          }
+        }
+      }
+    }));
+
+  test('PUT over a deleted resource cannot move it to another project', () =>
+    withTestContext(async () => {
+      const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
+      const { repo } = await createTestProject({
+        project: { link: [{ project: createReference(linkedProject) }] },
+        withRepo: true,
+      });
+      const own = await repo.createResource<Communication>({ resourceType: 'Communication', status: 'completed' });
+      const linked = await linkedRepo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+      });
+      await repo.deleteResource('Communication', own.id);
+      await linkedRepo.deleteResource('Communication', linked.id);
+
+      await expect(repo.updateResource<Communication>(own)).resolves.toMatchObject({ id: own.id });
+      await expect(repo.updateResource<Communication>(linked)).rejects.toThrow('Forbidden');
+
+      // Without an explicit meta.project, a super admin restores it into its own project, not theirs
+      const superAdminRepo = getRepository({ projects: [testProject], superAdmin: true, extendedMode: true });
+      const restored = await superAdminRepo.updateResource<Communication>({ ...linked, meta: undefined });
+      expect(restored.meta?.project).toBe(linkedProject.id);
+    }));
+
+  test('Project admin cannot create User or ProjectMembership, but can update and delete them', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
       const otherProject = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Other' });
@@ -2267,53 +2331,56 @@ describe('AccessPolicy', () => {
         true
       );
 
-      const user = await repo2.createResource<User>({
+      // Users and memberships are created through invite, client, and bot endpoints instead
+      await expect(
+        repo2.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Own',
+          lastName: 'User',
+          project: createReference(project),
+        })
+      ).rejects.toThrow('Forbidden');
+      await expect(
+        repo2.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(project),
+          user: { reference: 'User/' + randomUUID() },
+          profile: { reference: 'Practitioner/' + randomUUID() },
+        })
+      ).rejects.toThrow('Forbidden');
+
+      const user = await systemRepo.createResource<User>({
         resourceType: 'User',
         firstName: 'Own',
         lastName: 'User',
         project: createReference(project),
+        meta: { project: project.id },
       });
-      const member = await repo2.createResource<ProjectMembership>({
+      const member = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         project: createReference(project),
         user: createReference(user),
         profile: { reference: 'Practitioner/' + randomUUID() },
       });
-      expect(member.project.reference).toBe(getReferenceString(project));
 
-      // Updates still work, with project restored by readonlyFields
+      // Updates still work, with project and profile restored by readonlyFields
       const updated = await repo2.updateResource<ProjectMembership>({
         ...member,
         admin: true,
         project: createReference(otherProject),
+        profile: { reference: 'Practitioner/' + randomUUID() },
       });
       expect(updated.admin).toBe(true);
       expect(updated.project.reference).toBe(getReferenceString(project));
+      expect(updated.profile).toStrictEqual(member.profile);
+      const updatedUser = await repo2.updateResource<User>({ ...user, firstName: 'Changed' });
+      expect(updatedUser.firstName).toBe('Changed');
 
-      await expect(
-        repo2.createResource<User>({
-          resourceType: 'User',
-          firstName: 'Other',
-          lastName: 'User',
-          project: createReference(otherProject),
-        })
-      ).rejects.toThrow('Forbidden');
-      const serverUser = await repo2.createResource<User>({
-        resourceType: 'User',
-        firstName: 'No',
-        lastName: 'Project',
-      });
-      expect(serverUser.project).toBeUndefined();
-      // Defense in depth: meta.project of a ProjectMembership comes from its project element,
-      // so this create is also outside the admin's _project criteria
-      await expect(
-        repo2.createResource<ProjectMembership>({
-          resourceType: 'ProjectMembership',
-          project: createReference(otherProject),
-          user: createReference(user),
-          profile: { reference: 'Practitioner/' + randomUUID() },
-        })
-      ).rejects.toThrow('Forbidden');
+      // A PUT over a deleted resource is a create
+      await repo2.deleteResource('ProjectMembership', member.id);
+      await expect(repo2.updateResource<ProjectMembership>(member)).rejects.toThrow('Forbidden');
+      await repo2.deleteResource('User', user.id);
+      await expect(repo2.updateResource<User>(user)).rejects.toThrow('Forbidden');
     }));
 
   test('Project admin cannot override synthetic access policy for admin types', () =>
@@ -2366,7 +2433,7 @@ describe('AccessPolicy', () => {
       // This should succeed
       const check5 = await repo.updateResource<ProjectMembership>({
         ...check4,
-        profile: { reference: 'Practitioner/' + randomUUID() },
+        identifier: [{ system: 'https://example.com', value: randomUUID() }],
       });
       expect(check5.id).toStrictEqual(check4.id);
       expect(check5.meta?.versionId).not.toStrictEqual(check4.meta?.versionId);

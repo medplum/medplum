@@ -72,7 +72,7 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { QueryResult, QueryResultRow } from 'pg';
 import { getConfig } from '../config/loader';
-import { syntheticR4Project } from '../constants';
+import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
@@ -195,6 +195,22 @@ type TransactionBinding = {
   readonly shardId: string;
   readonly scope: ConnectionScope;
 };
+
+/** The "gone" error for a deleted resource, carrying the project its tombstone belongs to. */
+class DeletedResourceError extends OperationOutcomeError {
+  readonly projectId: string | undefined;
+
+  constructor(projectId: string | undefined) {
+    super(gone);
+    this.projectId = projectId;
+  }
+}
+
+/** The previous version of a resource being updated, or the project of its tombstone if it was deleted. */
+interface ExistingResource<T extends Resource> {
+  existing?: WithId<T>;
+  deletedProjectId?: string;
+}
 
 function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
   if (context.projects && !context.projects.some((project) => project.id === syntheticR4Project.id)) {
@@ -702,7 +718,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     validateResourceType(resourceType);
 
-    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
+    const builder = new SelectQuery(resourceType)
+      .column('content')
+      .column('deleted')
+      .column('projectId')
+      .where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
@@ -711,13 +731,17 @@ export class Repository extends FhirRepository implements Disposable {
     // which picks its pool synchronously from the same mode, so a concurrent writer switch cannot change it.
     const { entry } = this.connectionFor({ resourceTypes: resourceType as ResourceType });
     const servedByWriter = entry.connection.mode === RepositoryMode.WRITER;
-    const rows = await this.sqlRead<{ content: string; deleted: boolean }>(builder, resourceType as ResourceType);
+    const rows = await this.sqlRead<{ content: string; deleted: boolean; projectId: string }>(
+      builder,
+      resourceType as ResourceType
+    );
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
 
     if (rows[0].deleted) {
-      throw new OperationOutcomeError(gone);
+      const { projectId } = rows[0];
+      throw new DeletedResourceError(projectId === systemResourceProjectId ? undefined : projectId);
     }
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
@@ -1066,7 +1090,9 @@ export class Repository extends FhirRepository implements Disposable {
       this.validateBinarySecurityContext(validatedResource);
     }
 
-    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
+    const { existing, deletedProjectId }: ExistingResource<T> = create
+      ? {}
+      : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       if (!this.canUpdateExisting(existing)) {
         // Check before the update
@@ -1097,7 +1123,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     const result = { ...updated, meta: resultMeta };
 
-    const projectId = this.getProjectId(existing, updated);
+    const projectId = this.getProjectId(existing, updated, deletedProjectId);
     if (projectId) {
       resultMeta.project = projectId;
     }
@@ -1142,7 +1168,9 @@ export class Repository extends FhirRepository implements Disposable {
       this.logPostMetadataFieldMatch(updated, result);
     }
 
-    if (!this.isResourceWriteable(existing, result, interaction)) {
+    // With no previous version (a PUT over a deleted resource, or an upsert over a missing id), the write is a create
+    const writeInteraction = existing ? interaction : AccessPolicyInteraction.CREATE;
+    if (!this.isResourceWriteable(existing, result, writeInteraction)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
     }
@@ -1268,15 +1296,18 @@ export class Repository extends FhirRepository implements Disposable {
    *  - Previous version does not exist, and user does have permission to create by ID
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @returns The existing resource, if found.
+   * @returns The existing resource if found, or the project of its tombstone if it was deleted.
    */
   private async checkExistingResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string
-  ): Promise<WithId<T> | undefined> {
+  ): Promise<ExistingResource<T>> {
     try {
-      return await this.readResourceImpl<T>(resourceType, id);
+      return { existing: await this.readResourceImpl<T>(resourceType, id) };
     } catch (err) {
+      if (err instanceof DeletedResourceError) {
+        return { deletedProjectId: err.projectId };
+      }
       const outcome = normalizeOperationOutcome(err);
       if (!isOk(outcome) && !isNotFound(outcome) && !isGone(outcome)) {
         throw new OperationOutcomeError(outcome, { cause: err });
@@ -1289,7 +1320,7 @@ export class Repository extends FhirRepository implements Disposable {
       // Otherwise, it is ok if the resource is not found.
       // This is an "update" operation, and the outcome is "not-found" or "gone",
       // and the current user has permission to create a new version.
-      return undefined;
+      return {};
     }
   }
 
@@ -2272,9 +2303,14 @@ export class Repository extends FhirRepository implements Disposable {
    * Otherwise, by default, return the current context project ID.
    * @param existing - Existing resource if one exists.
    * @param updated - The FHIR resource.
+   * @param deletedProjectId - Project of the resource's tombstone, if it was deleted.
    * @returns The project ID.
    */
-  private getProjectId(existing: Resource | undefined, updated: Resource): string | undefined {
+  private getProjectId(
+    existing: Resource | undefined,
+    updated: Resource,
+    deletedProjectId?: string
+  ): string | undefined {
     if (updated.resourceType === 'Project') {
       return updated.id;
     }
@@ -2306,7 +2342,8 @@ export class Repository extends FhirRepository implements Disposable {
       return submittedProjectId;
     }
 
-    return existing?.meta?.project ?? this.context.projects?.[0]?.id;
+    // A deleted resource is restored into its own project, which the write check requires to be the caller's
+    return existing?.meta?.project ?? deletedProjectId ?? this.context.projects?.[0]?.id;
   }
 
   /**
