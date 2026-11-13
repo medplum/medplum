@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, OperationOutcomeError } from '@medplum/core';
-import type { AccessPolicy, Project, User } from '@medplum/fhirtypes';
+import type { Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
 import { convertScimToJsonPatch, createScimUser } from './utils';
 
 describe('convertScimToJsonPatch', () => {
@@ -132,7 +130,6 @@ describe('convertScimToJsonPatch', () => {
 describe('createScimUser', () => {
   let user: WithId<User>;
   let project: WithId<Project>;
-  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -146,7 +143,6 @@ describe('createScimUser', () => {
     });
     user = registration.user;
     project = registration.project;
-    systemRepo = await getProjectSystemRepo(project);
   });
   afterAll(shutdownApp);
 
@@ -162,8 +158,12 @@ describe('createScimUser', () => {
     expect(result).toHaveProperty('userType', 'Practitioner');
   });
 
-  test('Creating a Patient fails without a defaultPatientAccessPolicy', async () => {
-    const projectWithoutPolicy = { ...project, defaultPatientAccessPolicy: undefined };
+  test('Creating a Patient fails without a patient access policy', async () => {
+    const projectWithoutPolicy = {
+      ...project,
+      defaultPatientAccessPolicy: undefined,
+      defaultAccessPolicies: project.defaultAccessPolicies?.filter((p) => p.profileType !== 'Patient'),
+    };
     await expect(
       createScimUser(createReference(user), projectWithoutPolicy, {
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
@@ -177,16 +177,9 @@ describe('createScimUser', () => {
     ).rejects.toThrow(OperationOutcomeError);
   });
 
-  test('Creating a Patient applies the defaultPatientAccessPolicy', async () => {
-    // Create default access policy
-    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-      resourceType: 'AccessPolicy',
-      resource: [{ resourceType: 'Patient' }],
-    });
-    const projectWithPolicy = { ...project, defaultPatientAccessPolicy: createReference(accessPolicy) };
-
+  test('Creating a Patient applies the Patient default access policy', async () => {
     await expect(
-      createScimUser(createReference(user), projectWithPolicy, {
+      createScimUser(createReference(user), project, {
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
         userType: 'Patient',
         name: {

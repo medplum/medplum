@@ -48,6 +48,10 @@ flowchart TD
     Encounters --> Documents
 ```
 
-When a target reference does not exist yet, load that resource first and confirm success before loading its dependents. Use the saved ID or a conditional reference that resolves uniquely to the existing resource. See [staged upserts](/docs/migration/migration-pipelines#using-transactions-for-data-integrity). Do not drop the reference merely to make the load succeed. Atomic transaction Bundles are currently unavailable on hosted Medplum.
+When a target reference does not exist yet, prefer loading that resource first and confirming success before loading its dependents. Use the saved ID or a conditional reference that resolves uniquely to the existing resource. See [staged upserts](/docs/migration/migration-pipelines#using-transactions-for-data-integrity).
+
+If the target will arrive later, and profiles and workflows permit an unresolved relationship, use a [two-pass backfill with logical references](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references). Preserve the target's source identifier, track the pending link, and resolve it explicitly after the target is loaded. Keep patient-compartment references established before exposing clinical data. A conditional reference cannot defer resolution to a later import.
+
+Do not drop the relationship merely to make the load succeed. Atomic transaction Bundles are currently unavailable on hosted Medplum.
 
 Next, define and approve the rules for [governing data mappings](/docs/migration/mapping-governance).

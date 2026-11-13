@@ -3,17 +3,28 @@
 
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest, parseJWTPayload, resolveId } from '@medplum/core';
+import type { FhirRequest } from '@medplum/fhir-router';
 import type { Bot, Login, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, Repository } from '../fhir/repo';
 import { getResourceCacheKey } from '../fhir/repository/resource-cache';
+import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import { getLoginForAccessToken, revokeLogin } from '../oauth/utils';
 import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
-import { clearBotAccessTokenCache, getBotAccessToken, getJsFileExtension, normalizeBotExecutionResult } from './utils';
+import type { BotExecutionRequest } from './types';
+import {
+  clearBotAccessTokenCache,
+  getBotAccessToken,
+  getBotRequestHeaders,
+  getJsFileExtension,
+  logBotCallerSmartScopes,
+  normalizeBotExecutionResult,
+} from './utils';
 
 describe('getJsFileExtension', () => {
   test('returns .cjs for CommonJS code with .cjs extension', () => {
@@ -59,6 +70,13 @@ describe('getJsFileExtension', () => {
   });
 });
 
+describe('getBotRequestHeaders', () => {
+  test('returns empty headers when the request has none', () => {
+    const req = { method: 'POST', url: '/', pathname: '/', params: {}, query: {}, body: {} } as FhirRequest;
+    expect(getBotRequestHeaders(req)).toStrictEqual({});
+  });
+});
+
 describe('normalizeBotExecutionResult', () => {
   test('keeps success true for OK OperationOutcome return values', () => {
     expect(normalizeBotExecutionResult({ success: true, logResult: '', returnValue: allOk })).toMatchObject({
@@ -83,6 +101,74 @@ describe('normalizeBotExecutionResult', () => {
       success: false,
       returnValue,
     });
+  });
+});
+
+describe('logBotCallerSmartScopes', () => {
+  const message = 'Bot ran as a caller with SMART scopes';
+
+  function makeRequest(callerLogin?: Partial<Login>): BotExecutionRequest {
+    const user = { reference: 'User/' + randomUUID() };
+    return {
+      bot: { resourceType: 'Bot', id: randomUUID() },
+      runAs: {
+        resourceType: 'ProjectMembership',
+        id: randomUUID(),
+        project: { reference: 'Project/' + randomUUID() },
+        user,
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      },
+      callerLogin: callerLogin && {
+        resourceType: 'Login',
+        user,
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        ...callerLogin,
+      },
+      entryPoint: 'execute',
+      input: {},
+      contentType: 'application/json',
+    };
+  }
+
+  function logCalls(request: BotExecutionRequest, times = 1): unknown[] {
+    const warnSpy = vi.spyOn(globalLogger, 'warn');
+    try {
+      for (let i = 0; i < times; i++) {
+        logBotCallerSmartScopes(request);
+      }
+      return warnSpy.mock.calls.filter(([msg]) => msg === message).map(([, data]) => data);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  }
+
+  test('Logs SMART resource scopes once per window', () => {
+    const request = makeRequest({ scope: 'openid patient/Observation.rs' });
+    expect(logCalls(request, 3)).toStrictEqual([
+      {
+        botId: request.bot.id,
+        runAsProject: resolveId(request.runAs.project),
+        callerMembership: 'ProjectMembership/' + request.runAs.id,
+        callerProfile: request.runAs.profile?.reference,
+        scope: 'openid patient/Observation.rs',
+        launch: undefined,
+        entryPoint: 'execute',
+        suppressed: 0,
+      },
+    ]);
+  });
+
+  test('Logs SMART App Launch context', () => {
+    const launch = { reference: 'SmartAppLaunch/' + randomUUID() };
+    expect(logCalls(makeRequest({ scope: 'openid', launch }))).toStrictEqual([
+      expect.objectContaining({ scope: 'openid', launch: launch.reference }),
+    ]);
+  });
+
+  test('Does not log without SMART scopes or caller', () => {
+    expect(logCalls(makeRequest({ scope: 'openid offline_access' }))).toStrictEqual([]);
+    expect(logCalls(makeRequest(undefined))).toStrictEqual([]);
   });
 });
 

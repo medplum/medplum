@@ -9,18 +9,19 @@ vi.mock('node-fetch', async () => {
   return { default: actual.default };
 });
 
-import { normalizeOperationOutcome } from '@medplum/core';
+import { getReferenceString, normalizeOperationOutcome } from '@medplum/core';
 import type { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { initTestAuth } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth } from '../test.setup';
 
 describe('MCP Routes', () => {
   const app = express();
@@ -183,6 +184,48 @@ describe('MCP Routes', () => {
       // reach an external host; it is handled as an ordinary same-origin FHIR request.
       const protoRel = await fhirRequest<OperationOutcome>('GET', '//169.254.169.254/latest/meta-data/');
       expect(protoRel.resourceType).toBe('OperationOutcome');
+    } finally {
+      await client.close();
+    }
+  });
+
+  test.each<string>(['stream', 'sse'])('MCP with %s transport On-Behalf-Of', async (transportType: string) => {
+    const TransportClass = transportType === 'stream' ? StreamableHTTPClientTransport : SSEClientTransport;
+    const admin = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+    const member = await addTestUser(admin.project, {
+      accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Observation' }] },
+    });
+
+    const transport = new TransportClass(new URL(`http://localhost:${port}/mcp/${transportType}`), {
+      requestInit: {
+        headers: {
+          Authorization: `Bearer ${admin.accessToken}`,
+          'X-Medplum-On-Behalf-Of': getReferenceString(member.membership),
+        },
+      },
+    });
+    const client = new Client({ name: 'example-client', version: '1.0.0' });
+    await client.connect(transport);
+
+    try {
+      // The delegated member's policy allows Observation
+      const created = (await client.callTool({
+        name: 'fhir-request',
+        arguments: {
+          method: 'POST',
+          path: 'Observation',
+          body: { resourceType: 'Observation', status: 'final', code: { text: 'test' } },
+        },
+      })) as CallToolResult;
+      expect(created.isError).toBeFalsy();
+      expect(created.content[0]).toMatchObject({ type: 'text', text: expect.stringContaining('"Observation"') });
+
+      // The admin caller could search Patient; the delegated member cannot
+      const denied = (await client.callTool({
+        name: 'fhir-request',
+        arguments: { method: 'GET', path: 'Patient' },
+      })) as CallToolResult;
+      expect(denied.isError).toBe(true);
     } finally {
       await client.close();
     }

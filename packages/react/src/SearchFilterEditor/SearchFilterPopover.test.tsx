@@ -64,6 +64,7 @@ describe('SearchFilterPopover', () => {
     await openPopover();
     expect(screen.getByText('Where')).toBeInTheDocument();
     expect(screen.getByLabelText('Filter 1 field', { selector: 'input' })).toHaveValue('Name');
+    expect(screen.getByLabelText('Filter 1 value')).toHaveValue('Simpson');
   });
 
   test('Describes the applied filter count on the button', async () => {
@@ -172,7 +173,7 @@ describe('SearchFilterPopover', () => {
       fireEvent.click(await screen.findByRole('option', { name: 'greater than', hidden: true }));
     });
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-0-value'), { target: { value: '0.5' } });
+      fireEvent.change(screen.getByLabelText('Filter 1 value'), { target: { value: '0.5' } });
     });
     await waitForDebounce();
 
