@@ -1,19 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi } from 'vitest';
 import { TaskFilterMenu } from './TaskFilterMenu';
 import { TaskFilterType } from './TaskFilterMenu.utils';
 
 describe('TaskFilterMenu', () => {
   const setup = async (props: Partial<React.ComponentProps<typeof TaskFilterMenu>> = {}): Promise<void> => {
+    const medplum = new MockClient();
     await act(async () => {
       render(
-        <MantineProvider>
-          <TaskFilterMenu onFilterChange={vi.fn()} performerTypes={[]} {...props} />
-        </MantineProvider>
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <TaskFilterMenu onFilterChange={vi.fn()} performerTypes={[]} {...props} />
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
       );
     });
   };
@@ -126,6 +134,34 @@ describe('TaskFilterMenu', () => {
     await user.click(screen.getByText('Urgent'));
 
     expect(onFilterChange).toHaveBeenCalledWith(TaskFilterType.PRIORITY, 'urgent');
+  });
+
+  test('opens the assignee modal when the Assigned item is clicked', async () => {
+    const user = userEvent.setup();
+    await setup();
+
+    await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Assigned')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Assigned'));
+
+    expect(await screen.findByText('Filter by assignee')).toBeInTheDocument();
+  });
+
+  test('hides the Assigned item on My Tasks tab', async () => {
+    await setup({ isMyTasksTab: true });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Status')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Assigned')).not.toBeInTheDocument();
   });
 
   test('shows checkmark next to selected priorities', async () => {

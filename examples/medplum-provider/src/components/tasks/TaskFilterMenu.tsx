@@ -1,18 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Divider, Flex, Indicator, Menu, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Button, Divider, Flex, Indicator, Menu, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import type { CodeableConcept, Patient, Task } from '@medplum/fhirtypes';
+import type { CodeableConcept, Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
+import { Modal, ReferenceInput } from '@medplum/react';
 import {
   IconCheck,
   IconChevronRight,
   IconExclamationCircle,
   IconFilter2Plus,
   IconStethoscope,
+  IconUser,
   IconUserCheck,
   IconX,
 } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
+import { useState } from 'react';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
 import {
   TASK_PRIORITIES,
@@ -62,20 +65,36 @@ function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps):
   );
 }
 
+const ASSIGNED_TARGET_TYPES: ResourceType[] = ['Practitioner', 'Organization', 'CareTeam'];
+
 interface TaskFilterMenuProps {
   statuses?: Task['status'][];
-  owner?: Task['owner'];
+  selectedOwner?: string;
   performerType?: CodeableConcept;
   priorities?: Task['priority'][];
   patient?: Patient;
   performerTypes?: CodeableConcept[];
+  isMyTasksTab?: boolean;
   onFilterChange?: (filterType: TaskFilterType, value: TaskFilterValue) => void;
   onClearAllFilters?: () => void;
 }
 
 export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
-  const { statuses = [], priorities = [], performerType, performerTypes, onFilterChange, onClearAllFilters } = props;
+  const {
+    statuses = [],
+    priorities = [],
+    selectedOwner,
+    performerType,
+    performerTypes,
+    isMyTasksTab,
+    onFilterChange,
+    onClearAllFilters,
+  } = props;
   const [opened, { open, close }] = useDisclosure(false);
+  const [assigneeModalOpened, { open: openAssigneeModal, close: closeAssigneeModal }] = useDisclosure(false);
+  const [draftOwner, setDraftOwner] = useState<Reference | undefined>(
+    selectedOwner ? { reference: selectedOwner } : undefined
+  );
 
   const uniquePerformerTypes =
     performerTypes?.filter((performerType, index, self) => {
@@ -83,7 +102,7 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
       return identifier && self.findIndex((pt) => (pt.coding?.[0]?.code || pt.text) === identifier) === index;
     }) || [];
 
-  const hasActiveFilter = statuses.length > 0 || priorities.length > 0 || !!performerType;
+  const hasActiveFilter = statuses.length > 0 || priorities.length > 0 || !!performerType || !!selectedOwner;
 
   return (
     <Menu shadow="md" width={200} position="bottom-start" radius="md" opened={opened} onOpen={open} onClose={close}>
@@ -143,6 +162,25 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
           ))}
         </FilterSubmenu>
 
+        {!isMyTasksTab && (
+          <Menu.Item
+            leftSection={<IconUser size={16} color="var(--mantine-color-dimmed)" />}
+            rightSection={
+              <Flex align="center" gap={4}>
+                {selectedOwner && <ActiveDot />}
+                <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />
+              </Flex>
+            }
+            onClick={() => {
+              setDraftOwner(selectedOwner ? { reference: selectedOwner } : undefined);
+              close();
+              openAssigneeModal();
+            }}
+          >
+            <Text size="sm">Assigned</Text>
+          </Menu.Item>
+        )}
+
         <FilterSubmenu
           icon={<IconUserCheck size={16} color="var(--mantine-color-dimmed)" />}
           label="Performer Type"
@@ -188,6 +226,32 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
           </>
         )}
       </Menu.Dropdown>
+      <Modal
+        opened={assigneeModalOpened}
+        onClose={closeAssigneeModal}
+        title="Filter by assignee"
+        size="md"
+        actions={
+          <Button
+            disabled={!draftOwner?.reference || draftOwner.reference === selectedOwner}
+            onClick={() => {
+              if (draftOwner?.reference) {
+                onFilterChange?.(TaskFilterType.OWNER, draftOwner.reference);
+                closeAssigneeModal();
+              }
+            }}
+          >
+            Apply
+          </Button>
+        }
+      >
+        <ReferenceInput
+          name="assignee"
+          targetTypes={ASSIGNED_TARGET_TYPES}
+          defaultValue={selectedOwner ? { reference: selectedOwner } : undefined}
+          onChange={(value) => setDraftOwner(value)}
+        />
+      </Modal>
     </Menu>
   );
 }
