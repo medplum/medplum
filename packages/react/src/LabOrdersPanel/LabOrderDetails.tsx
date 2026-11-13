@@ -18,7 +18,11 @@ import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } f
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import classes from '../ListWithDetailPane/ListWithDetailPane.module.css';
-import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
+import {
+  fetchLabOrderAbnDocuments,
+  fetchLabOrderRequisitionDocuments,
+  fetchLabOrderSpecimenLabelDocuments,
+} from './documentReference';
 import { LabDetailLayout } from './LabDetailLayout';
 import { LabDocumentSection } from './LabDocumentSection';
 import {
@@ -57,6 +61,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
+  const [abnDocs, setAbnDocs] = useState<DocumentReference[]>([]);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
   // Default to the Report tab whenever the caller explicitly selected a report (e.g. clicked one
@@ -217,6 +222,8 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   // Fetch Lab Order Requisition documents when order changes
   useEffect(() => {
+    let cancelled = false;
+
     const fetchDocuments = async (): Promise<void> => {
       if (!order.id) {
         setLabOrderRequisitionDocs([]);
@@ -227,19 +234,26 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
       try {
         const docs = await fetchLabOrderRequisitionDocuments(medplum, order);
-        setLabOrderRequisitionDocs(docs);
+        if (!cancelled) {
+          setLabOrderRequisitionDocs(docs);
+        }
       } catch (error) {
         console.error('Error fetching lab order requisition documents:', error);
-        setLabOrderRequisitionDocs([]);
+        if (!cancelled) {
+          setLabOrderRequisitionDocs([]);
+        }
       } finally {
-        setLoadingDocs(false);
+        if (!cancelled) {
+          setLoadingDocs(false);
+        }
       }
     };
 
     fetchDocuments().catch(console.error);
 
-    // Cleanup function to clear documents when component unmounts or order changes
+    // `cancelled` guards against a response for a previous order overwriting the current one's state.
     return () => {
+      cancelled = true;
       setLabOrderRequisitionDocs([]);
       setLoadingDocs(false);
     };
@@ -247,6 +261,8 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   // Fetch Specimen Label documents when order changes
   useEffect(() => {
+    let cancelled = false;
+
     const fetchSpecimenLabelDocuments = async (): Promise<void> => {
       if (!order.id) {
         setSpecimenLabelDocs([]);
@@ -256,37 +272,63 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       setSpecimenLabelDocs([]); // Clear previous documents immediately
 
       try {
-        // Extract Health Gorilla Requisition ID from ServiceRequest (same as requisition docs)
-        const healthGorillaRequisitionId = getHealthGorillaRequisitionId(order);
-
-        if (!healthGorillaRequisitionId) {
-          setSpecimenLabelDocs([]);
-          return;
+        const docs = await fetchLabOrderSpecimenLabelDocuments(medplum, order);
+        if (!cancelled) {
+          setSpecimenLabelDocs(docs);
         }
-
-        // Search for DocumentReference with category "SpecimenLabel" using the same identifier pattern
-        const searchParams = new URLSearchParams({
-          category: 'SpecimenLabel',
-          identifier: `https://www.healthgorilla.com|${healthGorillaRequisitionId}`,
-          _sort: '-_lastUpdated',
-        });
-
-        const searchResult = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
-        setSpecimenLabelDocs(searchResult);
       } catch (error) {
         console.error('Error fetching specimen label documents:', error);
-        setSpecimenLabelDocs([]);
+        if (!cancelled) {
+          setSpecimenLabelDocs([]);
+        }
       } finally {
-        setLoadingSpecimenDocs(false);
+        if (!cancelled) {
+          setLoadingSpecimenDocs(false);
+        }
       }
     };
 
     fetchSpecimenLabelDocuments().catch(console.error);
 
-    // Cleanup function to clear documents when component unmounts or order changes
     return () => {
+      cancelled = true;
       setSpecimenLabelDocs([]);
       setLoadingSpecimenDocs(false);
+    };
+  }, [medplum, order]);
+
+  // Fetch the ABN (Advance Beneficiary Notice) when order changes - only present for Medicare
+  // orders once Health Gorilla has generated one
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchAbnDocuments = async (): Promise<void> => {
+      if (!order.id) {
+        setAbnDocs([]);
+        return;
+      }
+      setAbnDocs([]); // Clear previous documents immediately
+
+      try {
+        const docs = await fetchLabOrderAbnDocuments(medplum, order);
+        if (!cancelled) {
+          setAbnDocs(docs);
+        }
+      } catch (error) {
+        console.error('Error fetching ABN documents:', error);
+        if (!cancelled) {
+          setAbnDocs([]);
+        }
+      }
+    };
+
+    fetchAbnDocuments().catch(console.error);
+
+    // An ABN is a signed Medicare document tied to one specific order, so a stale response
+    // showing the wrong order's ABN is a compliance concern, not just a cosmetic one.
+    return () => {
+      cancelled = true;
+      setAbnDocs([]);
     };
   }, [medplum, order]);
 
@@ -602,6 +644,13 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             emptyText="No specimen label documents found."
             docs={specimenLabelDocs}
           />
+
+          {abnDocs.length > 0 && (
+            <>
+              <Divider />
+              <LabDocumentSection title="Advance Beneficiary Notice (ABN)" loading={false} docs={abnDocs} />
+            </>
+          )}
         </Stack>
       )}
 
