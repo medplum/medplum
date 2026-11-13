@@ -2454,6 +2454,69 @@ describe('AccessPolicy', () => {
     })
   );
 
+  describe('EncryptedSecret write rules', () => {
+    async function getSecretRepo(): Promise<Repository> {
+      const { project, login, membership } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        accessPolicy: { resource: [{ resourceType: 'EncryptedSecret' }] },
+      });
+      return getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
+    }
+
+    const secret: EncryptedSecret = {
+      resourceType: 'EncryptedSecret',
+      status: 'active',
+      code: 'test-token',
+      owner: { reference: 'Practitioner/123' },
+    };
+
+    test('encryptedValue is ignored on create and carried forward on update', () =>
+      withTestContext(async () => {
+        const repo = await getSecretRepo();
+        const created = await repo.createResource<EncryptedSecret>({ ...secret, encryptedValue: 'forged' });
+        expect(created.encryptedValue).toBeUndefined();
+
+        const stored = await repo
+          .clone({ accessPolicy: undefined })
+          .updateResource({ ...created, encryptedValue: 'x' });
+        const updated = await repo.updateResource<EncryptedSecret>({ ...stored, name: 'renamed', encryptedValue: 'y' });
+        expect(updated.encryptedValue).toBe('x');
+      }));
+
+    test.each<[string, Partial<EncryptedSecret>]>([
+      ['code', { code: 'other-token' }],
+      ['owner', { owner: { reference: 'Practitioner/456' } }],
+      ['owner removed', { owner: undefined }],
+    ])('%s cannot change after create', (_name, change) =>
+      withTestContext(async () => {
+        const repo = await getSecretRepo();
+        const created = await repo.createResource<EncryptedSecret>(secret);
+        await expect(repo.updateResource<EncryptedSecret>({ ...created, ...change })).rejects.toThrow('Forbidden');
+      })
+    );
+
+    test.each(['Practitioner/123/_history/1', 'https://example.com/Practitioner/123'])(
+      'owner must be a relative literal reference: %s',
+      (reference) =>
+        withTestContext(async () => {
+          const repo = await getSecretRepo();
+          await expect(repo.createResource<EncryptedSecret>({ ...secret, owner: { reference } })).rejects.toThrow(
+            'Forbidden'
+          );
+        })
+    );
+
+    test('Revoked secret cannot be updated', () =>
+      withTestContext(async () => {
+        const repo = await getSecretRepo();
+        const revoked = await repo.createResource<EncryptedSecret>({ ...secret, status: 'revoked' });
+        await expect(repo.updateResource<EncryptedSecret>({ ...revoked, status: 'active' })).rejects.toThrow(
+          'Forbidden'
+        );
+      }));
+  });
+
   test.each<[string, boolean]>([
     ['EncryptedSecret?owner=%profile&code=test-token', true],
     ['EncryptedSecret?_id=123', true],

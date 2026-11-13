@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { AccessPolicyResource, EncryptedSecret, Parameters, Project } from '@medplum/fhirtypes';
+import type { AccessPolicyResource, EncryptedSecret, Parameters, Project, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomBytes, randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -35,8 +35,19 @@ describe('EncryptedSecret $set-value and $get-value', () => {
   async function setup(
     resource: AccessPolicyResource[],
     secret?: Partial<EncryptedSecret>
-  ): Promise<{ accessToken: string; project: WithId<Project>; secret: WithId<EncryptedSecret> }> {
-    const { accessToken, project } = await createTestProject({ withAccessToken: true, accessPolicy: { resource } });
+  ): Promise<{
+    accessToken: string;
+    project: WithId<Project>;
+    membership: WithId<ProjectMembership>;
+    secret: WithId<EncryptedSecret>;
+  }> {
+    const { accessToken, project, membership } = await createTestProject({
+      withAccessToken: true,
+      accessPolicy: { resource },
+    });
+    if (!membership) {
+      throw new Error('Test project has no membership');
+    }
     const created = await systemRepo.createResource<EncryptedSecret>({
       resourceType: 'EncryptedSecret',
       meta: { project: project.id },
@@ -44,7 +55,7 @@ describe('EncryptedSecret $set-value and $get-value', () => {
       code: 'test-token',
       ...secret,
     });
-    return { accessToken, project, secret: created };
+    return { accessToken, project, membership, secret: created };
   }
 
   function setValue(accessToken: string, id: string, value: string): request.Test {
@@ -62,12 +73,14 @@ describe('EncryptedSecret $set-value and $get-value', () => {
   }
 
   test('Set and get value', async () => {
-    const { accessToken, secret } = await setup(fullAccess);
+    const { accessToken, membership, secret } = await setup(fullAccess);
 
     const setRes = await setValue(accessToken, secret.id, 'hunter2');
     expect(setRes.status).toBe(200);
     expect(setRes.body.encryptedValue).toBeDefined();
     expect(JSON.stringify(setRes.body)).not.toContain('hunter2');
+    const stored = await systemRepo.readResource<EncryptedSecret>('EncryptedSecret', secret.id);
+    expect(stored.meta?.author?.reference).toBe(membership.profile.reference);
 
     const getRes = await getValue(accessToken, secret.id);
     expect(getRes.status).toBe(200);
