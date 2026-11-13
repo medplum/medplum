@@ -194,6 +194,11 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
     accessPolicy = applySmartScopes(accessPolicy, authState);
   }
 
+  if (!project.superAdmin) {
+    // Only super admins can set Bot.system
+    accessPolicy = applyBotSystemReadonly(accessPolicy);
+  }
+
   return accessPolicy;
 }
 
@@ -439,24 +444,33 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push(...policyReadRules);
   }
 
-  if (!project.superAdmin) {
-    // Only super admins can set Bot.system
-    accessPolicy.resource = accessPolicy.resource.flatMap((r) => {
-      if (r.resourceType === 'Bot') {
-        return [withReadonlyFields(r, ['system'])];
-      }
-      if (r.resourceType === '*') {
-        // The first matching entry applies, so wildcard grants get a Bot entry ahead of them
-        const botEntry = { ...r, resourceType: 'Bot', criteria: r.criteria?.replace(/^\*\?/, 'Bot?') };
-        return [withReadonlyFields(botEntry, ['system']), r];
-      }
-      return [r];
-    });
-  }
-
   return accessPolicy;
 }
 
-function withReadonlyFields(entry: AccessPolicyResource, fields: string[]): AccessPolicyResource {
-  return { ...entry, readonlyFields: [...(entry.readonlyFields ?? []), ...fields] };
+/**
+ * Makes `Bot.system` readonly for every entry that can write a Bot.
+ * Applied after SMART scopes, which can turn wildcard entries into Bot entries.
+ * @param accessPolicy - The access policy.
+ * @returns The access policy with `Bot.system` readonly.
+ */
+function applyBotSystemReadonly(accessPolicy: PopulatedAccessPolicy): PopulatedAccessPolicy {
+  accessPolicy.resource = accessPolicy.resource.flatMap((r) => {
+    if (r.resourceType === 'Bot') {
+      return [withReadonlyField(r, 'system')];
+    }
+    if (r.resourceType === '*' && !r.criteria) {
+      // The first matching entry applies, so a wildcard grant gets a Bot entry ahead of it.
+      // Wildcard entries with criteria never match a single resource, so they cannot write a Bot.
+      return [withReadonlyField({ ...r, resourceType: 'Bot' }, 'system'), r];
+    }
+    return [r];
+  });
+  return accessPolicy;
+}
+
+function withReadonlyField(entry: AccessPolicyResource, field: string): AccessPolicyResource {
+  if (entry.readonlyFields?.includes(field) || entry.hiddenFields?.includes(field)) {
+    return entry;
+  }
+  return { ...entry, readonlyFields: [...(entry.readonlyFields ?? []), field] };
 }
