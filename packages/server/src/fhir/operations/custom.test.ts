@@ -473,6 +473,59 @@ describe('Custom operation', () => {
     expect(result.body.issue[0].details.text).toStrictEqual('Bot returned a Binary without data');
   });
 
+  test('Request headers passed to bot without Authorization', async () => {
+    const botRes = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Bot', name: 'Headers Bot', runtimeVersion: 'vmcontext' });
+    expect(botRes).toHaveStatus(201);
+    const bot = botRes.body as WithId<Bot>;
+
+    const deployRes = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: 'exports.handler = async (medplum, event) => ({ headers: JSON.stringify(event.headers) });' });
+    expect(deployRes).toHaveStatus(200);
+
+    const operationRes = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'headers-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'headers-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [{ use: 'out', name: 'headers', type: 'string', min: 1, max: '1' }],
+      });
+    expect(operationRes).toHaveStatus(201);
+
+    const res = await request(app)
+      .post('/fhir/R4/$headers-operation')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Cookie', 'session=abc')
+      .set('X-Test', 'test')
+      .send({});
+    expect(res).toHaveStatus(200);
+    const headers = JSON.parse(res.body.parameter[0].valueString);
+    expect(headers['x-test']).toBe('test');
+    expect(headers.authorization).toBeUndefined();
+    expect(headers.cookie).toBe('session=abc');
+  });
+
   test('Error value returned all the way to the client', async () => {
     const res1 = await request(app)
       .post('/fhir/R4/Bot')

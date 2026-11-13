@@ -13,7 +13,7 @@ import { createTestProject } from '../test.setup';
 const cjsCode = `
 exports.handler = async function (medplum, event) {
   console.log(JSON.stringify(event));
-  return event.headers["x-test-return-event"] ? { input: event.input } : event.input;
+  return event.headers["x-test-return-event"] ? { input: event.input, authorization: event.headers.authorization } : event.input;
 };
 `;
 
@@ -142,11 +142,12 @@ describe('Anonymous webhooks', () => {
     const res = await request(app)
       .post(`/webhook/${botMembership.id}`)
       .set('Content-Type', ContentType.TEXT)
+      .set('Authorization', 'Bearer webhook-secret')
       .set('x-test-return-event', 'true')
       .send('hello');
     expect(res).toHaveStatus(200);
     expect(res.type).toBe(ContentType.TEXT);
-    expect(JSON.parse(res.text)).toEqual({ input: 'hello' });
+    expect(JSON.parse(res.text)).toEqual({ input: 'hello', authorization: 'Bearer webhook-secret' });
   });
 
   test('Falls back to parsed body when rawBody is enabled but content type is not JSON', async () => {
