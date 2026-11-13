@@ -375,7 +375,7 @@ export function AsyncAutocompleteControlled<T>(props: AsyncAutocompleteControlle
                 onRemove={() => handleValueRemove(item)}
               />
             ))}
-            {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
+            {!disabled && !capReached && (
               <Combobox.EventsTarget>
                 <PillsInput.Field
                   role="searchbox"

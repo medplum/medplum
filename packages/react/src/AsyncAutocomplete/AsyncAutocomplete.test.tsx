@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import type { JSX } from 'react';
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import {
   act,
   fireEvent,
@@ -571,6 +571,27 @@ describe('AsyncAutocomplete', () => {
       rerender(<AsyncAutocomplete<TestOption> {...props} value={undefined} />);
       expect(pills().getByText('Apple')).toBeInTheDocument();
       expect(pills().getByText('Banana')).toBeInTheDocument();
+    });
+
+    test('keeps an edit that the parent answers with an undefined value', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      function Parent(): JSX.Element {
+        const [value, setValue] = useState<TestOption | undefined>(apple);
+        return (
+          <AsyncAutocomplete<TestOption>
+            clearable
+            value={value}
+            toOption={toOption}
+            loadOptions={defaultLoadOptions}
+            onChange={(items) => setValue(items[0])}
+          />
+        );
+      }
+      render(<Parent />);
+
+      fireEvent.click(screen.getByTitle('Clear all'));
+      expect(pills().queryByText('Apple')).not.toBeInTheDocument();
+      warn.mockRestore();
     });
 
     test('warns once when switching between controlled and uncontrolled', () => {

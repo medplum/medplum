@@ -16,7 +16,8 @@ export interface ControllableItemsOptions {
  * @param value - The controlled selection, or undefined when uncontrolled.
  * @param defaultValue - The initial uncontrolled selection.
  * @param options - Names for the mode-switch warning, and the input's `maxValues`.
- * @returns The selection to show, and a setter for edits that only applies them when uncontrolled.
+ * @returns The selection to show, and a setter for edits. While controlled, `value` overrides an edit
+ * unless the parent answers that edit by changing `value` to undefined.
  */
 export function useControllableItems<V>(
   value: readonly V[] | undefined,
@@ -24,25 +25,17 @@ export function useControllableItems<V>(
   options: ControllableItemsOptions
 ): [readonly V[], (items: readonly V[]) => void] {
   const { component, name, maxValues } = options;
-  const [uncontrolledItems, setUncontrolledItems] = useState(defaultValue);
-  const [prevValue, setPrevValue] = useState(value);
-  if (value !== prevValue) {
-    setPrevValue(value);
-    if (value === undefined) {
-      setUncontrolledItems(prevValue ?? []);
-    }
+  // Follows `value` while controlled, so the last selection is still here once `value` is undefined.
+  const [items, setItems] = useState(defaultValue);
+  if (value !== undefined && value !== items) {
+    setItems(value);
   }
-  const controlled = value !== undefined;
-  useWarnOnModeSwitch(controlled, component, name);
-  const setItems = useCallback(
-    (items: readonly V[]): void => {
-      if (!controlled) {
-        setUncontrolledItems(maxValues === 0 ? [] : items);
-      }
-    },
-    [controlled, maxValues]
+  useWarnOnModeSwitch(value !== undefined, component, name);
+  const setEditedItems = useCallback(
+    (edited: readonly V[]): void => setItems(maxValues === 0 ? [] : edited),
+    [maxValues]
   );
-  return [value ?? uncontrolledItems, setItems];
+  return [value ?? items, setEditedItems];
 }
 
 function useWarnOnModeSwitch(controlled: boolean, component: string, name: string | undefined): void {
