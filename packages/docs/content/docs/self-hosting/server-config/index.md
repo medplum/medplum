@@ -774,6 +774,12 @@ Optional flag to enable the MCP server beta.
 
 **Default:** `false`
 
+### aiGatewayEnabled
+
+Optional flag to enable the [AI gateway](/docs/ai/ai-gateway), which serves Anthropic models on AWS Bedrock. Projects also need the `ai-gateway` feature.
+
+**Default:** `false`
+
 ### fission
 
 Optional config for Fission.io bots.

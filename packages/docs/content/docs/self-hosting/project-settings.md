@@ -16,7 +16,7 @@ Additional details are available in the full [`Project` resource schema](/docs/a
 | `features`                   | A list of optional features that are enabled for the project. Possible values are listed [below](#project-feature-flags).                                                                                                                                                                                                                  |         |
 | `defaultPatientAccessPolicy` | Deprecated. Prefer the `Patient` entry in `defaultAccessPolicies`. Used only when that entry is absent, for patient invites, [SCIM](/docs/api/scim/users) patient provisioning, and [open patient registration](/docs/user-management/open-patient-registration). Open registration also requires the `openPatientRegistration` setting. |         |
 | `link`                       | Additional Projects whose [contents should be accessible](/docs/access/projects#project-linking) to users in the current Project.                                                                                                                                                                                                          |         |
-| `defaultProfile`             | [Resource profiles](http://hl7.org/fhir/R4/profiling.html#resources) that will be added to resources written in the Project that do not specify a profile directly. This enables automatic custom resource validation. See [Default Profiles](/docs/access/projects#default-profiles) for details and examples.                                                                                                                                                                                     |         |
+| `defaultProfile`             | [Resource profiles](http://hl7.org/fhir/R4/profiling.html#resources) that will be added to resources written in the Project that do not specify a profile directly. This enables automatic custom resource validation. See [Default Profiles](/docs/access/projects#default-profiles) for details and examples.                            |         |
 | `setting`                    | Arbitrary key-value pairs available to anyone in the Project, can be set by Project Admins.                                                                                                                                                                                                                                                |         |
 | `secret`                     | Key-value pairs similar to `setting`, that can only be read by Project Admins. These can be used to [pass secrets to Bots](/docs/bots/bot-secrets)                                                                                                                                                                                         |         |
 | `systemSetting`              | Server settings related to the Project: visible to anyone, but can only be set by Super Admins.                                                                                                                                                                                                                                            |         |
@@ -27,17 +27,18 @@ Additional details are available in the full [`Project` resource schema](/docs/a
 Medplum server exposes settings to control access to specific features on a per-Project basis. The available features
 are:
 
-| Feature                   | Description                                                                                                                      |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `bots`                    | Project is allowed to create and run [Bots](/docs/bots/bot-basics)                                                               |
-| `cron`                    | Can run Bots periodically on [CRON timers](/docs/bots/bot-cron-job)                                       |
-| `email`                   | Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail)                                                   |
-| `google-auth-required`    | [Google authentication](/docs/auth/google-auth) is the only method allowed                                                       |
-| `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                                               |
-| `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
-| `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
+| Feature                   | Description                                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ai-gateway`              | Project can call the [AI gateway](/docs/ai/ai-gateway), when the server has `aiGatewayEnabled` set. Requests use the server's AWS Bedrock credentials                    |
+| `bots`                    | Project is allowed to create and run [Bots](/docs/bots/bot-basics)                                                                                                       |
+| `cron`                    | Can run Bots periodically on [CRON timers](/docs/bots/bot-cron-job)                                                                                                      |
+| `email`                   | Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail)                                                                                           |
+| `google-auth-required`    | [Google authentication](/docs/auth/google-auth) is the only method allowed                                                                                               |
+| `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                                                                                       |
+| `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand)                                         |
+| `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                                                                  |
 | `transaction-bundles`     | Enable atomic processing of transaction Bundles in a self-hosted deployment. Unavailable on hosted Medplum. See [configuration and limits](#atomic-transaction-bundles). |
-| `range-search`            | Date searches compare the full period or range. See [Searching by due date range](/docs/careplans/tasks#searching-by-due-date-range). |
+| `range-search`            | Date searches compare the full period or range. See [Searching by due date range](/docs/careplans/tasks#searching-by-due-date-range).                                    |
 
 ### Atomic transaction Bundles
 

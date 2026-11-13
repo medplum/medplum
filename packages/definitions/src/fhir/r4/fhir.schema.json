@@ -61487,6 +61487,7 @@
           "items": {
             "enum": [
               "ai",
+              "ai-gateway",
               "ai-realtime",
               "aws-comprehend",
               "aws-textract",
