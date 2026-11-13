@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { LabsPage } from './LabsPage';
 
 describe('LabsPage', () => {
@@ -67,19 +67,17 @@ describe('LabsPage', () => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <NavProvider>
-          <MantineProvider>
-            <Notifications />
-            <LocationProbe />
-            <Routes>
-              <Route path="/Patient/:patientId/ServiceRequest/:serviceRequestId" element={<LabsPage tab="open" />} />
-              <Route path="/Patient/:patientId/ServiceRequest" element={<LabsPage tab="open" />} />
-              <Route
-                path="/Patient/:patientId/DiagnosticReport/:diagnosticReportId"
-                element={<LabsPage tab="completed" />}
-              />
-              <Route path="/Patient/:patientId/DiagnosticReport" element={<LabsPage tab="completed" />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <LocationProbe />
+          <Routes>
+            <Route path="/Patient/:patientId/ServiceRequest/:serviceRequestId" element={<LabsPage tab="open" />} />
+            <Route path="/Patient/:patientId/ServiceRequest" element={<LabsPage tab="open" />} />
+            <Route
+              path="/Patient/:patientId/DiagnosticReport/:diagnosticReportId"
+              element={<LabsPage tab="completed" />}
+            />
+            <Route path="/Patient/:patientId/DiagnosticReport" element={<LabsPage tab="completed" />} />
+          </Routes>
         </NavProvider>
       </MemoryRouter>
     );

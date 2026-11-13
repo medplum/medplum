@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Encounter, Organization, Patient, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TaskProperties } from './TaskProperties';
 
 describe('TaskProperties', () => {
@@ -23,9 +23,7 @@ describe('TaskProperties', () => {
   ): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <TaskProperties task={task} onTaskChange={vi.fn()} {...props} />
-        </MantineProvider>
+        <TaskProperties task={task} onTaskChange={vi.fn()} {...props} />
       </MedplumProvider>
     );
   };
@@ -49,7 +47,7 @@ describe('TaskProperties', () => {
       expect(screen.getByText('Assignee')).toBeInTheDocument();
       expect(screen.getByText('Priority')).toBeInTheDocument();
       expect(screen.getByText('Based On')).toBeInTheDocument();
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
     });
   });
 
@@ -126,7 +124,7 @@ describe('TaskProperties', () => {
     setup(mockTask);
 
     await waitFor(() => {
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
     });
 
     expect(screen.queryByText('Encounter')).not.toBeInTheDocument();
@@ -146,9 +144,7 @@ describe('TaskProperties', () => {
 
     rerender(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <TaskProperties task={updatedTask} onTaskChange={vi.fn()} />
-        </MantineProvider>
+        <TaskProperties task={updatedTask} onTaskChange={vi.fn()} />
       </MedplumProvider>
     );
 
@@ -249,7 +245,7 @@ describe('TaskProperties', () => {
     setup(taskWithoutPatient, { onTaskChange });
 
     await waitFor(() => {
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
     });
 
     const patientInput = screen.queryByPlaceholderText('Search for patient') as HTMLInputElement;
@@ -323,7 +319,7 @@ describe('TaskProperties', () => {
     setup(taskWithPatient, { onTaskChange });
 
     await waitFor(() => {
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
       expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
     });
 

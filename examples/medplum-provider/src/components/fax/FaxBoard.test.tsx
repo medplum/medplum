@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { allOk, notFound, OperationOutcomeError } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { FaxBoard } from './FaxBoard';
 
 const INBOX_QUERY = 'medium=FAXWRIT&_sort=-sent';
@@ -69,19 +69,17 @@ describe('FaxBoard', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <FaxBoard
-              faxId={props.faxId}
-              activeTab={props.activeTab ?? 'inbox'}
-              inboxUri="/fax/inbox"
-              sentUri="/fax/sent"
-              query={INBOX_QUERY}
-              getFaxUri={(fax) => `/fax/inbox/${fax.id}`}
-              onNew={onNew}
-              onChange={onChange}
-            />
-          </MantineProvider>
+          <Notifications />
+          <FaxBoard
+            faxId={props.faxId}
+            activeTab={props.activeTab ?? 'inbox'}
+            inboxUri="/fax/inbox"
+            sentUri="/fax/sent"
+            query={INBOX_QUERY}
+            getFaxUri={(fax) => `/fax/inbox/${fax.id}`}
+            onNew={onNew}
+            onChange={onChange}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );

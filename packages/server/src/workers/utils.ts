@@ -3,7 +3,16 @@
 import type { WithId } from '@medplum/core';
 import { getExtension } from '@medplum/core';
 import type { AsyncJob, Parameters, Subscription } from '@medplum/fhirtypes';
-import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
+import type {
+  ConnectionOptions,
+  Job,
+  Processor,
+  Queue,
+  QueueOptions,
+  Worker,
+  WorkerListener,
+  WorkerOptions,
+} from 'bullmq';
 import { DelayedError, UnrecoverableError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, WorkerName } from '../config/types';
@@ -178,53 +187,80 @@ function getFinishedJobFieldsForLogging(job: Job): Record<string, string | numbe
     attemptsStarted: job.attemptsStarted,
   };
 }
+
+/** The worker events that {@link addVerboseQueueLogging} can log. */
+export type VerboseQueueEvent = 'active' | 'completed' | 'failed' | 'stalled' | 'error' | 'closing' | 'closed';
+
+const ALL_VERBOSE_QUEUE_EVENTS: readonly VerboseQueueEvent[] = [
+  'active',
+  'completed',
+  'failed',
+  'stalled',
+  'error',
+  'closing',
+  'closed',
+];
+
+/**
+ * Logs a worker's events at info level.
+ * @param queue - The queue the worker processes.
+ * @param worker - The worker whose events are logged.
+ * @param getJobDataLoggingFields - Extra fields to log from each job's data.
+ * @param events - The events to log; defaults to all. High-volume queues whose processor writes its
+ * own per-job summary line should omit `active` and `completed`.
+ */
 export function addVerboseQueueLogging<TDataType>(
   queue: Queue,
   worker: Worker,
-  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | boolean | undefined>
+  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | boolean | undefined>,
+  events: readonly VerboseQueueEvent[] = ALL_VERBOSE_QUEUE_EVENTS
 ): void {
-  worker.on('active', (job, prev) => {
-    globalLogger.info(`${queue.name} worker: active`, {
-      jobId: job.id,
-      attemptsMade: job.attemptsMade,
-      attemptsStarted: job.attemptsStarted,
-      ...getJobDataLoggingFields?.(job),
-      prev,
-    });
-  });
-  worker.on('closing', async (message) => {
-    globalLogger.info(`${queue.name} worker: closing`, { message });
-  });
-  worker.on('closed', async () => {
-    globalLogger.info(`${queue.name} worker: closed`);
-  });
-  worker.on('completed', async (job, result, prev) => {
-    globalLogger.info(`${queue.name} worker: completed`, {
-      ...getFinishedJobFieldsForLogging(job),
-      ...getJobDataLoggingFields?.(job),
-      result,
-      prev,
-    });
-  });
-
-  worker.on('error', (failedReason) =>
-    globalLogger.info(`${queue.name} worker: error`, {
-      error: failedReason instanceof Error ? failedReason.message : String(failedReason),
-      stack: failedReason instanceof Error ? failedReason.stack : undefined,
-    })
-  );
-  worker.on('failed', (job, error, prev) =>
-    globalLogger.info(`${queue.name} worker: failed`, {
-      ...(job && getFinishedJobFieldsForLogging(job)),
-      ...(job && getJobDataLoggingFields?.(job)),
-      prev,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-  );
-  worker.on('stalled', (jobId, prev) => {
-    globalLogger.info(`${queue.name} worker: stalled`, { jobId, prev });
-  });
+  const listeners: { [E in VerboseQueueEvent]: WorkerListener<TDataType>[E] } = {
+    active: (job, prev) => {
+      globalLogger.info(`${queue.name} worker: active`, {
+        jobId: job.id,
+        attemptsMade: job.attemptsMade,
+        attemptsStarted: job.attemptsStarted,
+        ...getJobDataLoggingFields?.(job),
+        prev,
+      });
+    },
+    completed: (job, result, prev) => {
+      globalLogger.info(`${queue.name} worker: completed`, {
+        ...getFinishedJobFieldsForLogging(job),
+        ...getJobDataLoggingFields?.(job),
+        result,
+        prev,
+      });
+    },
+    closing: (message) => {
+      globalLogger.info(`${queue.name} worker: closing`, { message });
+    },
+    closed: () => {
+      globalLogger.info(`${queue.name} worker: closed`);
+    },
+    error: (failedReason) => {
+      globalLogger.info(`${queue.name} worker: error`, {
+        error: failedReason instanceof Error ? failedReason.message : String(failedReason),
+        stack: failedReason instanceof Error ? failedReason.stack : undefined,
+      });
+    },
+    failed: (job, error, prev) => {
+      globalLogger.info(`${queue.name} worker: failed`, {
+        ...(job && getFinishedJobFieldsForLogging(job)),
+        ...(job && getJobDataLoggingFields?.(job)),
+        prev,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    },
+    stalled: (jobId, prev) => {
+      globalLogger.info(`${queue.name} worker: stalled`, { jobId, prev });
+    },
+  };
+  for (const event of events) {
+    worker.on(event, listeners[event]);
+  }
 }
 
 /**

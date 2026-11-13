@@ -133,20 +133,21 @@ Every migration must define scope, identifiers, mapping ownership, validation, s
 
 Use these factors to identify where the migration needs additional design and validation.
 
-| Factor | What it changes | Guidance |
-| :--- | :--- | :--- |
-| Multiple source systems, versions, or local variations | Inventory, identifier systems, and mapping layers | [Scope and acceptance](#what-data-and-history-will-move-and-who-accepts-them), [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed) |
-| Cross-source or existing-record patient matching | Identity workflow and reference sequencing | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work) |
-| Automated merge execution during migration | Review thresholds, audit, and reversal risk | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work) |
-| Custom profiles, extensions, or implementation-guide conformance | Mapping approval and validation configuration | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Validation](#what-evidence-establishes-correctness-and-acceptance) |
-| One source record producing several linked FHIR resources | Stable IDs, dependency ordering, explicit atomicity requirements, and reconciliation | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs) |
-| Expected load time may exceed the cutover window or service limits | Import path, throughput testing, and recovery | [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate) |
-| The source remains active while data moves | Incremental changes, write authority, and conflicts | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled) |
-| Little or no downtime is acceptable | Change capture, rehearsal depth, and rollback | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate) |
-| Documents, files, images, or DICOM | Storage, access, integrity, and retrieval testing | [Files and complex data](#how-will-documents-binaries-and-complex-data-remain-usable) |
-| Historical workflows must remain operational | Domain-specific modeling and validation | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Validation](#what-evidence-establishes-correctness-and-acceptance) |
-| External systems remaining authoritative after cutover | Long-term ownership and synchronization | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled), [Operational ownership](#who-monitors-runs-resolves-exceptions-and-accepts-operational-ownership) |
-| Reusable onboarding or ongoing synchronization pipeline | Operational ownership, versioning, and reconciliation | [Scope and acceptance](#what-data-and-history-will-move-and-who-accepts-them), [Operational ownership](#who-monitors-runs-resolves-exceptions-and-accepts-operational-ownership) |
+| Factor                                                             | What it changes                                                                                     | Guidance                                                                                                                                                                                  |
+| :----------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Multiple source systems, versions, or local variations             | Inventory, identifier systems, and mapping layers                                                   | [Scope and acceptance](#what-data-and-history-will-move-and-who-accepts-them), [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed)                                        |
+| Cross-source or existing-record patient matching                   | Identity workflow and reference sequencing                                                          | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work)                                                                                                       |
+| Automated merge execution during migration                         | Review thresholds, audit, and reversal risk                                                         | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work)                                                                                                       |
+| Custom profiles, extensions, or implementation-guide conformance   | Mapping approval and validation configuration                                                       | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Validation](#what-evidence-establishes-correctness-and-acceptance)                                                  |
+| One source record producing several linked FHIR resources          | Stable IDs, dependency ordering, explicit atomicity requirements, and reconciliation                | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs)                                    |
+| Referenced records arrive after their dependents                   | Profile eligibility for logical references, pending-link tracking, and a second reconciliation pass | [Identity and deduplication](#how-will-identifiers-matching-and-deduplication-work), [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs)                    |
+| Expected load time may exceed the cutover window or service limits | Import path, throughput testing, and recovery                                                       | [Load architecture](#which-load-architecture-meets-throughput-and-recovery-needs), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate)                                |
+| The source remains active while data moves                         | Incremental changes, write authority, and conflicts                                                 | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled)                                                                                                    |
+| Little or no downtime is acceptable                                | Change capture, rehearsal depth, and rollback                                                       | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled), [Dress rehearsals](#what-must-testing-and-dress-rehearsals-demonstrate)                           |
+| Documents, files, images, or DICOM                                 | Storage, access, integrity, and retrieval testing                                                   | [Files and complex data](#how-will-documents-binaries-and-complex-data-remain-usable)                                                                                                     |
+| Historical workflows must remain operational                       | Domain-specific modeling and validation                                                             | [FHIR mapping](#how-will-fhir-mappings-and-terminology-be-governed), [Validation](#what-evidence-establishes-correctness-and-acceptance)                                                  |
+| External systems remaining authoritative after cutover             | Long-term ownership and synchronization                                                             | [Write authority](#when-does-write-authority-change-and-how-are-later-changes-handled), [Operational ownership](#who-monitors-runs-resolves-exceptions-and-accepts-operational-ownership) |
+| Reusable onboarding or ongoing synchronization pipeline            | Operational ownership, versioning, and reconciliation                                               | [Scope and acceptance](#what-data-and-history-will-move-and-who-accepts-them), [Operational ownership](#who-monitors-runs-resolves-exceptions-and-accepts-operational-ownership)          |
 
 Cover every topic, adjusting the depth to your migration. Include documents, binaries, and complex data only when those domains are in scope. For each topic, record the decision, accountable owner, and acceptance criteria.
 
@@ -208,19 +209,24 @@ Decide whether a source record remains distinct, maps to an existing resource, o
 - Where can duplicates occur: within a source, across sources, or against Medplum?
 - What evidence and risk threshold permit automatic matching versus human review?
 - Will migration merge records, or only report candidates for later remediation?
+- Can referenced records arrive later, and do profiles and workflows permit those links to remain unresolved temporarily?
 
-| Situation                                    | Approach                                                                                                                  |
-| :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------ |
-| Stable source key                            | Preserve it in `identifier` under a source-specific system URI; use it for writes that are safe to repeat.                |
-| Different systems reuse the same value       | Use distinct identifier system URIs; never treat the bare value as globally unique.                                       |
-| Source patient may match an existing Patient | Run the approved identity workflow before loading dependent records.                                                      |
-| Match is ambiguous                           | Keep records separate and route to human review.                                                                          |
-| Existing target ID is not known              | Use a conditional reference only when the identifier finds exactly one resource and the migration identity can search it. |
-| Related resources are created together       | Load prerequisites first, then batch dependent upserts with saved references; reconcile partial progress.                                                                             |
-| Related resource was loaded earlier          | Use a source-to-target ID lookup or a conditional reference that resolves uniquely.                                       |
-| Keys are missing or unstable                 | Define a governed replacement key before loading; do not use mutable demographics as the key for repeated runs.           |
+| Situation                                       | Approach                                                                                                                                                                                                                                                                                |
+| :---------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stable source key                               | Preserve it in `identifier` under a source-specific system URI; use it for writes that are safe to repeat.                                                                                                                                                                              |
+| Different systems reuse the same value          | Use distinct identifier system URIs; never treat the bare value as globally unique.                                                                                                                                                                                                     |
+| Source patient may match an existing Patient    | Run the approved identity workflow before loading dependent records.                                                                                                                                                                                                                    |
+| Match is ambiguous                              | Keep records separate and route to human review.                                                                                                                                                                                                                                        |
+| Existing target ID is not known                 | Use a conditional reference only when the identifier finds exactly one resource and the migration identity can search it.                                                                                                                                                               |
+| Related resources are created together          | Load prerequisites first, then batch dependent upserts with saved references; reconcile partial progress.                                                                                                                                                                               |
+| Related resource was loaded earlier             | Use a source-to-target ID lookup or a conditional reference that resolves uniquely.                                                                                                                                                                                                     |
+| Related resource will arrive later              | If profiles and workflows permit it, preserve a logical reference in `Reference.identifier` and track the link for a [two-pass backfill](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references). Keep actual Patient references for patient-compartment access. |
+| A resolved relationship is required immediately | Load a valid target first or stage the dependent record until the target is available.                                                                                                                                                                                                  |
+| Keys are missing or unstable                    | Define a governed replacement key before loading; do not use mutable demographics as the key for repeated runs.                                                                                                                                                                         |
 
 A source identifier answers "which source record is this?" It does not by itself answer "which real-world person is this?"
+
+Conditional references require exactly one existing match during the write. Logical references can preserve identifiers before a target exists, but the migration must later establish the literal reference. Choose an explicit reconciliation process and acceptance deadline for those links.
 
 <div id="33-mapping--terminology-governance"></div>
 
@@ -281,14 +287,15 @@ Decide how the team will prove structural conformance, referential integrity, se
 - How is every success, rejection, skip, retry, record held for review, and exception reported?
 - Which evidence and thresholds must each stakeholder approve?
 
-| Situation                                   | Approach                                                                                                                                                            |
-| :------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| One source row maps to one resource         | Reconcile eligible, successful, rejected, skipped, and held-for-review counts.                                                                                      |
-| One source row maps to several resources    | Reconcile each target type and expected relationship separately.                                                                                                    |
-| Deduplication changes counts                | Report source records, master records, match decisions, and unresolved candidates separately.                                                                       |
-| Profile conformance is required             | Confirm the intended profiles are installed and selected and terminology validation is configured, then run `$validate`; structural validity is not clinical proof. |
-| Clinical meaning cannot be proven by counts | Use repeatable, reproducible random, and risk-based whole-chart samples.                                                                                            |
-| Exceptions remain                           | Track owner, severity, remediation, acceptance impact, and approval.                                                                                                |
+| Situation                                   | Approach                                                                                                                                                                                         |
+| :------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One source row maps to one resource         | Reconcile eligible, successful, rejected, skipped, and held-for-review counts.                                                                                                                   |
+| One source row maps to several resources    | Reconcile each target type and expected relationship separately.                                                                                                                                 |
+| Two-pass backfill leaves pending links      | Reconcile pending, resolved, ambiguous, and failed links against stored resources. Verify source identifiers and patient context; require completion or an approved exception before acceptance. |
+| Deduplication changes counts                | Report source records, master records, match decisions, and unresolved candidates separately.                                                                                                    |
+| Profile conformance is required             | Confirm the intended profiles are installed and selected and terminology validation is configured, then run `$validate`; structural validity is not clinical proof.                              |
+| Clinical meaning cannot be proven by counts | Use repeatable, reproducible random, and risk-based whole-chart samples.                                                                                                                         |
+| Exceptions remain                           | Track owner, severity, remediation, acceptance impact, and approval.                                                                                                                             |
 
 Do not prescribe a universal verification percentage. Choose samples after exact extraction counts are known and adjust for variability, risk, complexity, and defect history.
 
@@ -307,9 +314,17 @@ Decide which writes must succeed or fail together, how the pipeline resumes, and
 - Which writes are independent, and which small groups must succeed or fail together?
 - Which import path and measured throughput fit the data shape and cutover window?
 - How are results, checkpoints, retries, and rejected resources recorded?
+- Will pending links be reconciled by a batch second pass or automatically by a Subscription-triggered Bot? Who owns retries, conflicts, and the final sweep?
 - Which downstream automations run, and what thresholds pause the load?
 
 For automations that remain active during the load, verify tenant scope and idempotency, and define how missed or failed work is recovered. Apply [Planning Automations](/docs/subscriptions#planning-automations) to these subscriptions; a successful import does not establish that its downstream side effects succeeded.
+
+| Pending-link strategy      | Choose when                                                                                 | Required recovery                                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Batch second pass          | Related records arrive in known import stages and links can wait until the stage completes. | Keep a durable manifest; retry zero matches after later loads and review ambiguity or concurrent changes.                                                |
+| Subscription-triggered Bot | Targets arrive continuously and links should be completed soon after arrival.               | Deploy a custom reconciler, handle either arrival order, make repeated events safe, track handler failures, and run a scheduled or final manifest sweep. |
+
+Medplum does not automatically revisit identifier-only references when targets arrive. Both strategies implement the same [two-pass reconciliation checks](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references). A Bot can discover dependents in Medplum using [reference identifier searches](/docs/migration/migration-pipelines#finding-dependents-by-their-logical-reference); retain the manifest for recovery and acceptance evidence. Reruns must preserve completed links, and patches must protect concurrent edits with version checks.
 
 **Output:** Choose a load path, define groups that require all-or-nothing writes and source-of-truth boundaries, and document recovery and side-effect handling in the [pipeline design](/docs/migration/migration-pipelines).
 
@@ -431,9 +446,23 @@ Decide whether complex data becomes structured resources, binary content, metada
 - Which complex domains are in scope, and must they remain operational or only viewable?
 - Are original bytes, structured data, searchable metadata, or all three required?
 - How are identity, clinical context, access, integrity, and retrieval verified?
+- Will files use SDK uploads, presigned upload/download URLs, or source URLs consumed by auto-download? Who renews expired URLs and resumes failed transfers?
 - Which unsupported or ambiguous data needs human review or legacy retention?
 
 Use [Binary Data](/docs/fhir-datastore/binary-data), the [Messaging Data Model](/docs/communications/messaging-data-model), and the [DICOM Data Model](/docs/dicom/data-model) rather than defining those models inside the migration plan.
+
+For files, choose the transfer path separately from the metadata model:
+
+| Situation                                                           | Approach                                                                                                                                                                                                     |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The migration process already has the bytes and Medplum credentials | Use the SDK file helpers with the intended security context and patient-linked metadata.                                                                                                                     |
+| A separate process needs temporary upload access                    | Create the Binary metadata with its security context, then obtain a presigned upload URL with `$presigned-url?upload=true`. Upload bytes with `PUT`, track the Binary ID for retries, and verify completion. |
+| A process needs temporary download access                           | Obtain a fresh presigned download URL through `$presigned-url` or a returned attachment URL; use `GET` and verify the bytes.                                                                                 |
+| The source supplies accessible file URLs                            | Consider auto-download; source presigned URLs must remain valid through queue delays and retrieval retries. Track failures and renew expired source URLs.                                                    |
+
+See [Uploading and Downloading with Presigned URLs](/docs/migration/migration-pipelines#uploading-and-downloading-with-presigned-urls) for the request flow. Store stable `Binary/{id}` references in metadata and manifests. Presigned URLs expire and grant access to their holders, so exclude them from logs and durable manifests. Define byte-integrity checks and a completion gate that distinguishes metadata creation from a successful file transfer.
+
+Finalize Binary metadata before requesting an upload URL and keep it unchanged until the upload is verified. Track the Binary version for retries; if it changes, stop old transfers and obtain a fresh URL. A presigned upload overwrites bytes without a new FHIR version or history entry. If earlier content must be retained, upload replacements to a new Binary before changing the attachment.
 
 <div id="310-monitoring-exceptions--handoff"></div>
 
@@ -470,6 +499,8 @@ Record:
 - Data scope, history boundaries, and exclusions
 - Identifier, matching, and mapping decisions
 - Load path, recovery approach, and operational owner
+- Pending-link strategy, reconciliation owner, and completion criteria when referenced data arrives later
+- File transfer method, URL renewal, and byte-verification criteria when files are in scope
 - Write authority, cutover approach, and rollback criteria
 - Validation evidence, acceptance thresholds, and approvers
 - Security controls and unresolved risks

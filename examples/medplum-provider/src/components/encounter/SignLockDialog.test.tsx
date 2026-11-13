@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { SignLockDialog } from './SignLockDialog';
 
 describe('SignLockDialog', () => {
@@ -21,9 +21,7 @@ describe('SignLockDialog', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <SignLockDialog onSign={vi.fn()} {...props} />
-          </MantineProvider>
+          <SignLockDialog onSign={vi.fn()} {...props} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -99,9 +97,7 @@ describe('SignLockDialog', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplumWithoutProfile}>
-          <MantineProvider>
-            <SignLockDialog onSign={onSign} />
-          </MantineProvider>
+          <SignLockDialog onSign={onSign} />
         </MedplumProvider>
       </MemoryRouter>
     );

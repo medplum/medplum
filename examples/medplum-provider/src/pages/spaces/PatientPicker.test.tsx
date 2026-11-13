@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider, Menu } from '@mantine/core';
+import { Menu } from '@mantine/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { PatientPicker } from './PatientPicker';
 
 vi.mock('../../utils/notifications', () => ({
@@ -31,11 +32,9 @@ describe('PatientPicker', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Menu opened>
-              <PatientPicker onSelect={vi.fn()} {...props} />
-            </Menu>
-          </MantineProvider>
+          <Menu opened>
+            <PatientPicker onSelect={vi.fn()} {...props} />
+          </Menu>
         </MedplumProvider>
       </MemoryRouter>
     );

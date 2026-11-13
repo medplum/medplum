@@ -12,6 +12,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import type {
+  AccessPolicy,
   ContactPoint,
   Login,
   OperationOutcome,
@@ -30,6 +31,7 @@ import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH, TOTP_ENROLLMENT_EXPI
 import type { AuthenticatedRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getProjectAppName } from '../email/utils';
+import { getDefaultPatientAccessPolicy } from '../fhir/default-access-policies';
 import { sendOutcome } from '../fhir/outcomes';
 import { getInactiveReason } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
@@ -161,6 +163,19 @@ export function isPractitionerEmailDomainAllowed(
 }
 
 /**
+ * Access policy for a self-registered patient.
+ * Requires `Project.setting` `openPatientRegistration` to be `true`, then {@link getDefaultPatientAccessPolicy}.
+ * @param project - The project a user is attempting to register into.
+ * @returns The access policy reference, or undefined when registration is not allowed.
+ */
+export function getOpenRegistrationAccessPolicy(project: Project): Reference<AccessPolicy> | undefined {
+  if (project.setting?.find((s) => s.name === 'openPatientRegistration')?.valueBoolean !== true) {
+    return undefined;
+  }
+  return getDefaultPatientAccessPolicy(project);
+}
+
+/**
  * Determines whether a project accepts open self-registration.
  * @param project - The project a user is attempting to register into.
  * @returns An OperationOutcome describing the rejection, or undefined if registration is allowed.
@@ -170,7 +185,7 @@ export function projectRegistrationAllowed(project: Project): OperationOutcome |
   if (inactiveReason) {
     return badRequest(inactiveReason);
   }
-  if (!project.defaultPatientAccessPolicy) {
+  if (!getOpenRegistrationAccessPolicy(project)) {
     return badRequest('Project does not allow open registration');
   }
   return undefined;

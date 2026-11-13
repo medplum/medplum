@@ -21,6 +21,12 @@ export interface AsyncAutocompleteProps<T> extends Omit<
 > {
   readonly name?: string;
   readonly label?: ReactNode;
+  /**
+   * Names the field for assistive technology, for use instead of a visible `label` (don't pass both). The name
+   * goes on the search box and on a group around the whole field, which keeps the selected values (and, at
+   * `maxValues`, the clear button) named while the search box is hidden (disabled or at `maxValues`).
+   */
+  readonly 'aria-label'?: string;
   readonly description?: ReactNode;
   readonly error?: ReactNode;
   readonly defaultValue?: T | T[];
@@ -55,6 +61,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const {
     name,
     label,
+    'aria-label': ariaLabel,
     description,
     error,
     defaultValue,
@@ -310,6 +317,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           required={required}
           withAsterisk={withAsterisk}
           disabled={disabled}
+          wrapperProps={ariaLabel ? { role: 'group', 'aria-label': ariaLabel } : undefined}
         >
           <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
             {selected.map((item) => (
@@ -325,6 +333,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
                 <PillsInput.Field
                   role="searchbox"
                   name={name}
+                  aria-label={ariaLabel}
                   value={search}
                   placeholder={placeholder}
                   onFocus={handleSearchChange}

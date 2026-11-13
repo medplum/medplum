@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Encounter, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import ConditionModal from './ConditionModal';
 
 const mockPatient: WithId<Patient> = {
@@ -37,9 +37,7 @@ describe('ConditionModal', () => {
   const setup = (props: Partial<Parameters<typeof ConditionModal>[0]> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <ConditionModal patient={mockPatient} encounter={mockEncounter} onSubmit={vi.fn()} {...props} />
-        </MantineProvider>
+        <ConditionModal patient={mockPatient} encounter={mockEncounter} onSubmit={vi.fn()} {...props} />
       </MedplumProvider>
     );
   };

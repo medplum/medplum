@@ -572,6 +572,29 @@ describe('Date time parsing', () => {
     const expectedResult = '2023-05-08T12:30:04.000Z';
     expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
   });
+
+  test.each([
+    ['2024', '2024-01-01T00:00:00.000Z'],
+    ['2024-0500', '2024-01-01T05:00:00.000Z'],
+    ['202401', '2024-01-01T00:00:00.000Z'],
+    ['202401-0500', '2024-01-01T05:00:00.000Z'],
+    ['20240115', '2024-01-15T00:00:00.000Z'],
+    ['20240115-0500', '2024-01-15T05:00:00.000Z'],
+    ['2024011509', '2024-01-15T09:00:00.000Z'],
+    ['2024011509-0500', '2024-01-15T14:00:00.000Z'],
+    ['202401150930', '2024-01-15T09:30:00.000Z'],
+    ['202401150930-0500', '2024-01-15T14:30:00.000Z'],
+    ['20240115093045', '2024-01-15T09:30:45.000Z'],
+    ['20240115093045-0500', '2024-01-15T14:30:45.000Z'],
+    ['20240115093045.5', '2024-01-15T09:30:45.500Z'],
+    ['20240115093045.05', '2024-01-15T09:30:45.050Z'],
+    ['20240115093045.123', '2024-01-15T09:30:45.123Z'],
+    ['20240115093045.1234', '2024-01-15T09:30:45.123Z'],
+    ['20240115093045.5-0500', '2024-01-15T14:30:45.500Z'],
+    ['20240115093045.5+0130', '2024-01-15T08:00:45.500Z'],
+  ])('DTM precision %s', (hl7Date, expectedResult) => {
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
+  });
 });
 
 describe('Date time formatting', () => {
@@ -591,6 +614,16 @@ describe('Date time formatting', () => {
     const isoDateTime = '2023-05-08T10:30:04.123Z';
     const expectedResult = '20230508103004.123';
     expect(formatHl7DateTime(isoDateTime)).toBe(expectedResult);
+  });
+
+  test.each([
+    ['2023-05-08T10:30:04.050Z', '20230508103004.050'],
+    ['2023-05-08T10:30:04.005Z', '20230508103004.005'],
+    ['2023-05-08T10:30:04.500Z', '20230508103004.500'],
+  ])('Pads milliseconds %s', (isoDateTime, expectedResult) => {
+    const formatted = formatHl7DateTime(isoDateTime);
+    expect(formatted).toBe(expectedResult);
+    expect(parseHl7DateTime(formatted)).toBe(isoDateTime);
   });
 });
 

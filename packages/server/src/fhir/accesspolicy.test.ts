@@ -3366,6 +3366,118 @@ describe('AccessPolicy', () => {
       await expect(repo.readResource('Patient', patient2.id)).rejects.toThrow('Not found');
     }));
 
+  describe('Wildcard policy with criteria on single resources', () => {
+    const tagSystem = 'http://example.com/tag';
+    let patientA: WithId<Patient>;
+    let patientB: WithId<Patient>;
+
+    beforeEach(async () => {
+      patientA = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+      });
+      patientB = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+      });
+    });
+
+    async function getMemberRepo(resource: AccessPolicyResource, scope?: string): Promise<Repository> {
+      const { membership } = await addTestUser(testProject, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [resource] },
+      });
+      return getRepoForLogin({
+        login: { resourceType: 'Login', scope } as Login,
+        smartAppLaunch: { resourceType: 'SmartAppLaunch', id: randomUUID(), patient: createReference(patientA) },
+        project: testProject,
+        membership,
+        userConfig: { resourceType: 'UserConfiguration' },
+      });
+    }
+
+    function observation(patient: Patient, extra?: Partial<Observation>): Observation {
+      return {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+        meta: { project: testProject.id },
+        ...extra,
+      };
+    }
+
+    test('Compartment criteria', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({ resourceType: '*', criteria: `*?_compartment=Patient/${patientA.id}` });
+
+        const created = await repo.createResource(observation(patientA));
+        const updated = await repo.updateResource({ ...created, valueString: 'updated' });
+        expect(updated.valueString).toBe('updated');
+        await expect(repo.updateResource({ ...updated, subject: createReference(patientB) })).rejects.toThrow(
+          'Forbidden'
+        );
+        await expect(repo.deleteResource('Observation', created.id)).resolves.toBeUndefined();
+
+        await expect(repo.createResource(observation(patientB))).rejects.toThrow('Forbidden');
+        const observationB = await systemRepo.createResource(observation(patientB));
+        await expect(repo.updateResource({ ...observationB, valueString: 'updated' })).rejects.toThrow('Not found');
+        await expect(repo.deleteResource('Observation', observationB.id)).rejects.toThrow('Not found');
+
+        // Not in any Patient compartment
+        await expect(repo.createResource<Organization>({ resourceType: 'Organization' })).rejects.toThrow('Forbidden');
+        await expect(repo.createResource<Bot>({ resourceType: 'Bot', name: 'test' })).rejects.toThrow('Forbidden');
+      }));
+
+    test('Hidden fields', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({
+          resourceType: '*',
+          criteria: `*?_compartment=Patient/${patientA.id}`,
+          hiddenFields: ['note'],
+        });
+        const created = await systemRepo.createResource(observation(patientA, { note: [{ text: 'secret' }] }));
+        const read = await repo.readResource<Observation>('Observation', created.id);
+        expect(read.note).toBeUndefined();
+      }));
+
+    test('Tag criteria', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({ resourceType: '*', criteria: `*?_tag=${tagSystem}|shared` });
+        const tag = [{ system: tagSystem, code: 'shared' }];
+
+        const created = await repo.createResource(observation(patientA, { meta: { tag } }));
+        await expect(repo.updateResource({ ...created, valueString: 'updated' })).resolves.toBeDefined();
+        await expect(repo.updateResource({ ...created, meta: { ...created.meta, tag: [] } })).rejects.toThrow(
+          'Forbidden'
+        );
+        await expect(
+          repo.createResource<Organization>({ resourceType: 'Organization', meta: { tag } })
+        ).resolves.toBeDefined();
+
+        await expect(repo.createResource(observation(patientA))).rejects.toThrow('Forbidden');
+      }));
+
+    test('SMART patient wildcard scope', () =>
+      withTestContext(async () => {
+        // Narrowed to `*?_compartment=Patient/<patientA>`
+        const repo = await getMemberRepo({ resourceType: '*' }, 'openid patient/*.cruds');
+        const created = await repo.createResource(observation(patientA));
+        await expect(repo.updateResource({ ...created, valueString: 'updated' })).resolves.toBeDefined();
+        await expect(repo.createResource(observation(patientB))).rejects.toThrow('Forbidden');
+      }));
+
+    test('Parameter the resource type does not define', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({ resourceType: '*', criteria: '*?status=final' });
+        await expect(repo.createResource(observation(patientA))).resolves.toBeDefined();
+        // Organization has no `status` search parameter, so the criteria never matches it
+        await expect(repo.createResource<Organization>({ resourceType: 'Organization' })).rejects.toThrow('Forbidden');
+
+        const unknownRepo = await getMemberRepo({ resourceType: '*', criteria: '*?not-a-param=x' });
+        await expect(unknownRepo.createResource(observation(patientA))).rejects.toThrow('Forbidden');
+      }));
+  });
+
   test('Limit specific FHIR interactions', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({

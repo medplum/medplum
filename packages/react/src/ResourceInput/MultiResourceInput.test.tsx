@@ -42,8 +42,10 @@ describe('MultiResourceInput', () => {
       resourceType: 'Patient',
       name: 'foo',
       placeholder: 'Test',
+      'aria-label': 'Patients',
     });
     expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Patients' })).toBeInTheDocument();
   });
 
   test('Renders default value from reference', async () => {

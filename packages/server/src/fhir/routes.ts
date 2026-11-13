@@ -459,12 +459,22 @@ function initInternalFhirRouter(): FhirRouter {
     return [allOk];
   });
 
-  // Resend subscriptions
+  // Resend subscriptions for the current version
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
     const options = req.body as ResendSubscriptionsOptions | undefined;
-    await ctx.repo.resendSubscriptions(resourceType, id, options);
+    // The version is only specified in the URL, using the versioned route below
+    await ctx.repo.resendSubscriptions(resourceType, id, { ...options, versionId: undefined });
+    return [allOk];
+  });
+
+  // Resend subscriptions for a specific historical version
+  router.add('POST', '/:resourceType/:id/_history/:vid/$resend', async (req: FhirRequest) => {
+    const ctx = getAuthenticatedContext();
+    const { resourceType, id, vid } = req.params as { resourceType: ResourceType; id: string; vid: string };
+    const options = req.body as ResendSubscriptionsOptions | undefined;
+    await ctx.repo.resendSubscriptions(resourceType, id, { ...options, versionId: vid });
     return [allOk];
   });
 

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -18,14 +17,12 @@ describe('QuestionnairePreview', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter>
-            <MantineProvider>
-              <Notifications />
-              <ErrorBoundary>
-                <Suspense fallback={<Loading />}>
-                  <QuestionnairePreview resourceType="Questionnaire" id={questionnaire.id as string} />
-                </Suspense>
-              </ErrorBoundary>
-            </MantineProvider>
+            <Notifications />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading />}>
+                <QuestionnairePreview resourceType="Questionnaire" id={questionnaire.id as string} />
+              </Suspense>
+            </ErrorBoundary>
           </MemoryRouter>
         </MedplumProvider>
       );

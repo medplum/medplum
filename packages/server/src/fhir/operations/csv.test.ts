@@ -182,6 +182,20 @@ describe('CSV Export', () => {
     expect(res.body.issue[0].details.text).toStrictEqual('Invalid FHIRPath expression');
   });
 
+  test('Escape column names', async () => {
+    const res1 = await request(app)
+      .get(`/fhir/R4/Patient/$csv?_fields=id,-1&_id=${randomUUID()}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res1).toHaveStatus(200);
+    expect(res1.text).toStrictEqual(`\uFEFF"id","'-1"`);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/Patient/$csv?_fields=id/*%0A=1%2B1%0A"*/&_id=${randomUUID()}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2).toHaveStatus(200);
+    expect(res2.text).toStrictEqual(`\uFEFF"id/*\n=1+1\n""*/"`);
+  });
+
   test('Escape formula string', async () => {
     // Create a patient that we want to export
     const res1 = await request(app)
