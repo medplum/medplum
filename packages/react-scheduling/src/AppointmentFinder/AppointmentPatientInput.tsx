@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { formatDate, getDisplayString, getReferenceString, isDeceased } from '@medplum/core';
+import { formatDate, getDisplayString, getReferenceString } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { getMedicalRecordNumber, hasMedicalRecordNumber } from '../patients';
+import { getMedicalRecordNumber, hasMedicalRecordNumber, isDeceased } from '../patients';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 
 // Alphabetical, then by birth date: a short prefix — or the first click, before

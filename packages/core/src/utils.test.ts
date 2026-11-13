@@ -60,7 +60,6 @@ import {
   getReferenceString,
   getWebSocketUrl,
   isComplexTypeCode,
-  isDeceased,
   isDefined,
   isEmpty,
   isLowerCase,
@@ -662,13 +661,6 @@ describe('Core Utils', () => {
     expect(calculateAgeString('2020-01-01', '2021-02-01')).toStrictEqual('013M');
     expect(calculateAgeString('2020-01-01', '2021-02-02')).toStrictEqual('013M');
     expect(calculateAgeString('2020-01-01', '2022-01-01')).toStrictEqual('002Y');
-  });
-
-  test('Is deceased', () => {
-    expect(isDeceased({ resourceType: 'Patient' })).toBe(false);
-    expect(isDeceased({ resourceType: 'Patient', deceasedBoolean: false })).toBe(false);
-    expect(isDeceased({ resourceType: 'Patient', deceasedBoolean: true })).toBe(true);
-    expect(isDeceased({ resourceType: 'Patient', deceasedDateTime: '2026-10-30T15:45:00.000Z' })).toBe(true);
   });
 
   test('Get Questionnaire answers', () => {

@@ -455,16 +455,6 @@ export function calculateAgeString(birthDateStr: string, endDateStr?: string): s
 }
 
 /**
- * Returns true if the patient's record says they have died: `deceasedBoolean: true`, or a
- * `deceasedDateTime` of any value. The `deceased` search parameter reads it the same way.
- * @param patient - The patient to check.
- * @returns True if the patient has died.
- */
-export function isDeceased(patient: Patient): boolean {
-  return patient.deceasedBoolean === true || patient.deceasedDateTime !== undefined;
-}
-
-/**
  * Returns all questionnaire answers as a map by link ID.
  * @param response - The questionnaire response resource.
  * @returns Questionnaire answers mapped by link ID.

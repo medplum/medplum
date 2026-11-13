@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getDisplayString, isDeceased, isOk, normalizeErrorString } from '@medplum/core';
+import { getDisplayString, isOk, normalizeErrorString } from '@medplum/core';
 import type { Appointment, OperationOutcome } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { getPatientParticipant } from '../actors';
+import { isDeceased } from '../patients';
 
 export interface AppointmentPatientNameProps {
   readonly appointment: Appointment;
