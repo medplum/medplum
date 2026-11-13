@@ -17,8 +17,6 @@ Medplum customers primarily use IP Access Restrictions to ensure that users are 
 
 IP rules work best for **server-to-server integrations**: a backend, an on-prem agent or a partner system with stable egress IPs that connects as a `ClientApplication`. Put the rules on the `ClientApplication`'s `ProjectMembership` AccessPolicy. For backends that act for users through [On-Behalf-Of](/docs/auth/on-behalf-of#lock-down-the-application-credential), pair the IP rules with an AccessPolicy that grants no resource access.
 
-For users, IP rules limit where a session can _start_ (e.g. sign-in only from the clinic network or VPN). Refresh token requests are not checked, and access tokens are not re-checked on each request, so don't rely on IP rules alone for a requirement that every request come from an approved network.
-
 ## Setting Up IP Address Restrictions in Medplum
 
 To configure IP address restrictions in Medplum, follow the steps below:
