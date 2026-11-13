@@ -34,6 +34,8 @@ export interface BulkExportJobData {
   readonly since?: string;
   readonly typeFilters?: SearchRequest[];
   readonly groupId?: string;
+  /** True to write resources deleted since `since` to the `deleted` output. Not supported for Group exports. */
+  readonly includeDeleted?: boolean;
 }
 
 export interface ProjectArchiveJobData extends Pick<
@@ -76,7 +78,7 @@ export const initBulkExportWorker: WorkerInitializer = (config, options) => {
 
 export function queueBulkExport(
   asyncJob: WithId<AsyncJob>,
-  params: Pick<BulkExportJobData, 'exportLevel' | 'types' | 'since' | 'typeFilters' | 'groupId'>
+  params: Pick<BulkExportJobData, 'exportLevel' | 'types' | 'since' | 'typeFilters' | 'groupId' | 'includeDeleted'>
 ): Promise<void> {
   return addJob('BulkExport', asyncJob, params);
 }
@@ -111,13 +113,13 @@ export async function execBulkExportJob(job: Job<BulkExportJobData | ProjectArch
       await archiveProject(exporter, project, (job.data as ProjectArchiveJobData).includeAuditEvents);
       return;
     }
-    const { exportLevel, types, since, typeFilters, groupId } = job.data as BulkExportJobData;
+    const { exportLevel, types, since, typeFilters, groupId, includeDeleted } = job.data as BulkExportJobData;
     if (exportLevel === 'Group') {
       assert(groupId, 'Group export requires a group ID');
       const group = await repo.readResource<Group>('Group', groupId);
       await groupExportResources(repo, exporter, project, group, types, since);
     } else {
-      await exportResources(exporter, project, types, exportLevel, since, typeFilters);
+      await exportResources(exporter, project, types, exportLevel, since, typeFilters, includeDeleted);
     }
   });
 }
