@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "5.2.15",
+  "version": "5.2.17",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -25,16 +25,16 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@docsearch/css": "5.1.2",
-    "@docsearch/js": "5.1.2",
-    "@medplum/core": "5.2.15",
+    "@docsearch/css": "5.2.0",
+    "@docsearch/js": "5.2.0",
+    "@medplum/core": "5.2.17",
     "@swup/preload-plugin": "3.2.12",
-    "@tabler/icons": "3.49.0",
-    "hugo-bin": "0.166.0",
+    "@tabler/icons": "3.50.0",
+    "hugo-bin": "0.167.0",
     "infima": "0.2.0-alpha.45",
-    "mermaid": "12.2.0",
+    "mermaid": "12.3.0",
     "open-color": "1.9.1",
-    "rimraf": "6.1.3",
+    "rimraf": "6.1.4",
     "swup": "4.10.0"
   }
 }

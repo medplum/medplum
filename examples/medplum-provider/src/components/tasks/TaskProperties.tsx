@@ -3,9 +3,21 @@
 import type { PaperProps } from '@mantine/core';
 import { Divider, Flex, Paper, Stack, Text } from '@mantine/core';
 import { createReference } from '@medplum/core';
-import type { Organization, Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
+import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
+
+/** Resource types that can be assigned as the Task owner. */
+const TASK_OWNER_TYPES: ResourceType[] = [
+  'Practitioner',
+  'PractitionerRole',
+  'Organization',
+  'CareTeam',
+  'HealthcareService',
+  'Patient',
+  'Device',
+  'RelatedPerson',
+];
 
 interface TaskPropertiesProps extends PaperProps {
   task: Task;
@@ -34,7 +46,7 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
     await handleTaskUpdate({ ...task, priority: value as Task['priority'] } as Task);
   };
 
-  const handleOwnerChange = async (value: Reference<Practitioner | Organization> | undefined): Promise<void> => {
+  const handleOwnerChange = async (value: Task['owner']): Promise<void> => {
     await handleTaskUpdate({ ...task, owner: value } as Task);
   };
 
@@ -76,9 +88,9 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
             </Text>
             <ReferenceInput
               name="owner"
-              targetTypes={['Practitioner', 'Organization']}
+              targetTypes={TASK_OWNER_TYPES}
               defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
-              onChange={async (value: Reference<Practitioner | Organization> | undefined) => {
+              onChange={async (value: Task['owner']) => {
                 await handleOwnerChange(value ? { reference: value.reference } : undefined);
               }}
             />

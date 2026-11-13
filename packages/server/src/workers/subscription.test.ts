@@ -1535,6 +1535,44 @@ describe('Subscription Worker', () => {
       expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
     }));
 
+  test('Skip runAsUser bot subscriptions for system-authored resources', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runAsUser: true,
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: bot.meta?.project },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
+
+      await findAndExecSubscriptionJob(patient, 'create');
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(0);
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(bundle.entry).toHaveLength(0);
+    }));
+
   test('Bot subscription execution AuditEvent is always emitted to logs', () =>
     withTestContext(async () => {
       const config = await loadTestConfig();

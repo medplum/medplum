@@ -2,7 +2,7 @@
 
 ## Documentation is the source of truth
 
-- Prefer the local Medplum docs at `medplum-link/packages/docs/docs/`. Each `[slug]` below resolves to a `.md`, `.mdx`, or `index` file at that path. Adjust the clone path to your environment.
+- Prefer the local Medplum docs at `medplum-link/packages/docs/content/docs/`. Each `[slug]` below resolves to `<slug>.md`, `<slug>/index.md`, or `<slug>/_index.md` at that path. Adjust the clone path to your environment.
 - If the clone is unavailable, resolve `[slug]` at `https://www.medplum.com/docs/[slug]` using available web or documentation tools. Do not assume a custom skill or MCP server is configured. Say when a required source is inaccessible.
 
 Read the relevant doc once before building in an area – prefer real Medplum patterns over generic
@@ -14,7 +14,7 @@ before writing code – the rules below are reminders, not a substitute for the 
 
 Apply these rules immediately, even before an application folder exists. Initial planning does not require persistent setup.
 Once the application's folder is known, check its agent instructions and offer the optional rules setup in section 5 of
-`medplum-link/packages/docs/docs/building-with-ai-coding-assistants.md`
+`medplum-link/packages/docs/content/docs/building-with-ai-coding-assistants.md`
 (or https://www.medplum.com/docs/building-with-ai-coding-assistants#5-encode-your-conventions-in-a-rule-file).
 For application design or substantial feature planning, follow `medplum-link/packages/docs/static/ai/planning.md`
 (or https://www.medplum.com/ai/planning.md with web access).

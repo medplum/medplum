@@ -22,8 +22,20 @@
 }
 
 .modal .title {
-  font-size: var(--mantine-font-size-lg);
-  font-weight: 700;
+  font-size: var(--mantine-font-size-md);
+  font-weight: 800;
+}
+
+@media (hover: hover) {
+  .modal .close:hover:where(:not(:disabled, [data-disabled])) {
+    background-color: var(--mantine-color-gray-light-hover);
+  }
+}
+
+@media (hover: none) {
+  .modal .close:active:where(:not(:disabled, [data-disabled])) {
+    background-color: var(--mantine-color-gray-light-hover);
+  }
 }
 
 .modal .body {

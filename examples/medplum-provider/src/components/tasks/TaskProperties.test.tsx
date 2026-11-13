@@ -49,7 +49,7 @@ describe('TaskProperties', () => {
       expect(screen.getByText('Assignee')).toBeInTheDocument();
       expect(screen.getByText('Priority')).toBeInTheDocument();
       expect(screen.getByText('Based On')).toBeInTheDocument();
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
     });
   });
 
@@ -126,7 +126,7 @@ describe('TaskProperties', () => {
     setup(mockTask);
 
     await waitFor(() => {
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
     });
 
     expect(screen.queryByText('Encounter')).not.toBeInTheDocument();
@@ -249,7 +249,7 @@ describe('TaskProperties', () => {
     setup(taskWithoutPatient, { onTaskChange });
 
     await waitFor(() => {
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
     });
 
     const patientInput = screen.queryByPlaceholderText('Search for patient') as HTMLInputElement;
@@ -323,7 +323,7 @@ describe('TaskProperties', () => {
     setup(taskWithPatient, { onTaskChange });
 
     await waitFor(() => {
-      expect(screen.getByText('Patient')).toBeInTheDocument();
+      expect(screen.getByText('Patient', { selector: 'label' })).toBeInTheDocument();
       expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
     });
 

@@ -12,6 +12,7 @@ import { globalLogger } from '../logger';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
+  checkIpAccessRules,
   getAuthTokens,
   getClientApplication,
   getClientApplicationMembership,
@@ -24,6 +25,44 @@ import {
 } from './utils';
 
 let client: ClientApplication;
+
+describe('IP access rules', () => {
+  test.each([
+    ['1.2.3.4', '1.2.3.4', true],
+    ['1.2.3.4', '1.2.3.44', false],
+    ['1.2.3', '1.2.3.44', true],
+    ['1.2.3', '1.2.30.44', false],
+    ['8.8.', '8.8.8.8', true],
+    ['8.8.', '8.80.8.8', false],
+    ['*', '1.2.3.44', true],
+  ])('rule %s against %s matches: %s', async (value, remoteAddress, matches) => {
+    const login: Login = {
+      resourceType: 'Login',
+      user: { reference: 'ClientApplication/test' },
+      authMethod: 'client',
+      authTime: '2026-11-10T00:00:00Z',
+      remoteAddress,
+    };
+    const blocked = checkIpAccessRules(login, {
+      resourceType: 'AccessPolicy',
+      ipAccessRule: [{ value, action: 'block' }],
+    });
+    const allowed = checkIpAccessRules(login, {
+      resourceType: 'AccessPolicy',
+      ipAccessRule: [
+        { value, action: 'allow' },
+        { value: '*', action: 'block' },
+      ],
+    });
+    if (matches) {
+      await expect(blocked).rejects.toThrow('IP address not allowed');
+      await expect(allowed).resolves.toBeUndefined();
+    } else {
+      await expect(blocked).resolves.toBeUndefined();
+      await expect(allowed).rejects.toThrow('IP address not allowed');
+    }
+  });
+});
 
 describe('OAuth utils', () => {
   beforeAll(async () => {
