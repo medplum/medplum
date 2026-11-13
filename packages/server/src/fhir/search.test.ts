@@ -4608,6 +4608,16 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       ).rejects.toThrow(/^Unknown search parameter: xyz$/);
     }));
 
+  test('ValueSet code search parameter is not supported', async () =>
+    withTestContext(async () => {
+      await expect(
+        repo.search({
+          resourceType: 'ValueSet',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'abc' }],
+        })
+      ).rejects.toThrow(/^Unknown search parameter: code$/);
+    }));
+
   test('Date range search', () =>
     withTestContext(async () => {
       const ident = randomUUID();

@@ -6,11 +6,13 @@ import {
   createReference,
   forbidden,
   getReferenceString,
+  getStatus,
   OperationOutcomeError,
   Operator,
   resolveId,
 } from '@medplum/core';
 import type {
+  AccessPolicy,
   ContactPoint,
   Login,
   OperationOutcome,
@@ -25,10 +27,11 @@ import { randomInt } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
-import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants';
+import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH, TOTP_ENROLLMENT_EXPIRATION_MS } from '../constants';
 import type { AuthenticatedRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getProjectAppName } from '../email/utils';
+import { getDefaultPatientAccessPolicy } from '../fhir/default-access-policies';
 import { sendOutcome } from '../fhir/outcomes';
 import { getInactiveReason } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
@@ -36,6 +39,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
+import { getCacheRedis } from '../redis';
 
 export type MfaMethod = 'totp' | 'email';
 
@@ -159,6 +163,19 @@ export function isPractitionerEmailDomainAllowed(
 }
 
 /**
+ * Access policy for a self-registered patient.
+ * Requires `Project.setting` `openPatientRegistration` to be `true`, then {@link getDefaultPatientAccessPolicy}.
+ * @param project - The project a user is attempting to register into.
+ * @returns The access policy reference, or undefined when registration is not allowed.
+ */
+export function getOpenRegistrationAccessPolicy(project: Project): Reference<AccessPolicy> | undefined {
+  if (project.setting?.find((s) => s.name === 'openPatientRegistration')?.valueBoolean !== true) {
+    return undefined;
+  }
+  return getDefaultPatientAccessPolicy(project);
+}
+
+/**
  * Determines whether a project accepts open self-registration.
  * @param project - The project a user is attempting to register into.
  * @returns An OperationOutcome describing the rejection, or undefined if registration is allowed.
@@ -168,7 +185,7 @@ export function projectRegistrationAllowed(project: Project): OperationOutcome |
   if (inactiveReason) {
     return badRequest(inactiveReason);
   }
-  if (!project.defaultPatientAccessPolicy) {
+  if (!getOpenRegistrationAccessPolicy(project)) {
     return badRequest('Project does not allow open registration');
   }
   return undefined;
@@ -191,14 +208,12 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
 }
 
 /**
- * Builds the authenticator (TOTP) enrollment payload for a user, generating and
- * persisting an `mfaSecret` first if the user does not have one.
+ * Builds the authenticator (TOTP) enrollment payload offered to a login.
  *
- * A secret is only created up front when a user is invited with `mfaRequired`,
- * so a user who comes under a requirement later — for example when the
- * project-wide `mfaRequired` setting is enabled — reaches enrollment without
- * one. Generating on demand keeps the QR code usable in that case. Users who
- * already have a secret keep it, so the URI is stable across repeated calls.
+ * Each login is offered its own secret, kept for `TOTP_ENROLLMENT_EXPIRATION_MS`
+ * so the URI is stable across repeated calls for that login. It only becomes
+ * `User.mfaSecret` when the same login confirms it with a code, so the secret
+ * of an enrolled authenticator is never part of an offer.
  *
  * The issuer is the project's app name and the account name identifies the user,
  * so the entry reads as "Acme Health" / "alice@example.com" in the user's
@@ -206,24 +221,92 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
  * it is the part that carries the branding; the Key URI spec forbids colons in
  * either field because apps split the label on the first one. Projects without an
  * `appName` keep the `medplum.com` issuer.
- * @param repo - The system repository used to persist a newly generated secret.
+ * @param login - The login the enrollment is offered to.
  * @param user - The user enrolling in an authenticator app.
  * @param project - The project the user is logging in to, if known.
  * @returns The enrollment URI and a QR code data URL for it.
  */
 export async function buildTotpEnrollment(
-  repo: SystemRepository,
+  login: Login,
   user: WithId<User>,
   project: Project | undefined
 ): Promise<{ enrollUri: string; enrollQrCode: string }> {
-  let mfaSecret = user.mfaSecret;
-  if (!mfaSecret) {
-    mfaSecret = authenticator.generateSecret();
-    await repo.updateResource<User>({ ...user, mfaSecret });
-  }
+  const offered = authenticator.generateSecret();
+  // Stores the new secret unless the login already has one, which is returned instead
+  const mfaSecret =
+    (await getCacheRedis().set(
+      getTotpEnrollmentKey(login, user),
+      offered,
+      'PX',
+      TOTP_ENROLLMENT_EXPIRATION_MS,
+      'NX',
+      'GET'
+    )) ?? offered;
   const issuer = (getProjectAppName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
   const enrollUri = authenticator.keyuri(user.email ?? user.id, issuer, mfaSecret);
   return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };
+}
+
+/**
+ * Returns the authenticator (TOTP) secret that `buildTotpEnrollment` offered to a login.
+ * @param login - The login confirming the enrollment.
+ * @param user - The user enrolling in an authenticator app.
+ * @returns The offered secret, or undefined if none was offered or the offer has expired.
+ */
+export async function getTotpEnrollmentSecret(login: Login, user: WithId<User>): Promise<string | undefined> {
+  return (await getCacheRedis().get(getTotpEnrollmentKey(login, user))) ?? undefined;
+}
+
+/**
+ * Ends the authenticator (TOTP) enrollment offer made to a login.
+ * @param login - The login the enrollment was offered to.
+ * @param user - The user the enrollment was offered for.
+ */
+export async function clearTotpEnrollmentSecret(login: Login, user: WithId<User>): Promise<void> {
+  await getCacheRedis().del(getTotpEnrollmentKey(login, user));
+}
+
+/**
+ * Enrolls the user in TOTP with the secret that was offered to the login, and ends the offer.
+ * @param login - The login that confirmed the offered secret.
+ * @param user - The user.
+ * @param secret - The offered secret.
+ */
+export async function enrollTotp(login: Login, user: WithId<User>, secret: string): Promise<void> {
+  try {
+    // If the user changed since it was read (e.g. another login enrolled), fail rather than overwrite it
+    await getGlobalSystemRepo().updateResource(
+      { ...user, mfaSecret: secret, mfaEnrolled: true, mfaMethod: addMfaMethod(user, 'totp') },
+      { ifMatch: user.meta?.versionId }
+    );
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+      throw new OperationOutcomeError(badRequest('Already enrolled'));
+    }
+    throw err;
+  }
+  await clearTotpEnrollmentSecret(login, user);
+}
+
+/**
+ * Returns the union of the user's existing MFA methods plus the new method.
+ * @param user - The user.
+ * @param method - The method to add.
+ * @returns The updated list of MFA methods.
+ */
+export function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
+  const methods = getEnrolledMfaMethods(user);
+  if (!methods.includes(method)) {
+    methods.push(method);
+  }
+  return methods;
+}
+
+function getTotpEnrollmentKey(login: Login, user: WithId<User>): string {
+  if (!login.id) {
+    throw new OperationOutcomeError(badRequest('Invalid login'));
+  }
+  return `medplum:mfa:totp-enroll:${user.id.toLowerCase()}:${login.id.toLowerCase()}`;
 }
 
 /**
@@ -394,7 +477,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   const project = await getLoginProject(login);
 
   if (isMfaRequired(user, project) && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
-    const { enrollUri, enrollQrCode } = await buildTotpEnrollment(systemRepo, user, project);
+    const { enrollUri, enrollQrCode } = await buildTotpEnrollment(login, user, project);
     res.json({
       login: login.id,
       mfaEnrollRequired: true,

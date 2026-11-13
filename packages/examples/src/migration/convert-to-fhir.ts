@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient } from '@medplum/core';
+import { createReference, MedplumClient } from '@medplum/core';
 import type { Condition, Patient } from '@medplum/fhirtypes';
 const medplum = new MedplumClient();
 
@@ -37,7 +37,7 @@ const patientWithIdentifier: Patient =
   };
 // end-block patient-with-identifier
 
-await medplum.createResource(patientWithIdentifier);
+const savedPatient = await medplum.createResource(patientWithIdentifier);
 
 const conditionExample: Condition =
   // start-block condition-example
@@ -106,3 +106,19 @@ const conditionalReferenceExample: Condition =
 // end-block conditional-reference-example
 
 await medplum.createResource(conditionalReferenceExample);
+
+// start-block logical-reference-example
+export const conditionWithPendingEncounter: Condition = {
+  resourceType: 'Condition',
+  identifier: [{ system: 'http://your-source-system.com/patientConditionId', value: 'PC001' }],
+  subject: createReference(savedPatient),
+  code: { text: 'Hypertension' },
+  encounter: {
+    type: 'Encounter',
+    identifier: {
+      system: 'http://your-source-system.com/encounterId',
+      value: 'E001',
+    },
+  },
+};
+// end-block logical-reference-example

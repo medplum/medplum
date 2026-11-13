@@ -283,7 +283,8 @@ describe('Email API Routes', () => {
       expect(options.from).toBe(config.supportEmail);
       expect(options.sender).toBe(config.supportEmail);
       expect(options.disableFileAccess).toBe(true);
-      for (const key of ['envelope', 'raw', 'headers', 'dkim', 'auth', 'disableUrlAccess']) {
+      expect(options.disableUrlAccess).toBe(true);
+      for (const key of ['envelope', 'raw', 'headers', 'dkim', 'auth']) {
         expect(options[key]).toBeUndefined();
       }
       expect(mockSESv2Client.send.callCount).toBe(0);

@@ -3,6 +3,7 @@
 import type {
   CapabilityStatementRestInteraction,
   CapabilityStatementRestResourceInteraction,
+  CapabilityStatementRestResourceOperation,
 } from '@medplum/fhirtypes';
 import type { MedplumCapabilityStatementConfig } from './types';
 
@@ -23,6 +24,23 @@ export const DEFAULT_SYSTEM_INTERACTIONS: CapabilityStatementRestInteraction['co
 
 /** The `interactions` key setting the default for resource types not listed explicitly. */
 export const DEFAULT_INTERACTIONS_KEY = '*';
+
+/**
+ * The terminology service operations supported by the server, keyed by resource type.
+ * See: https://hl7.org/fhir/R4/terminology-service.html#operations
+ */
+export const TERMINOLOGY_OPERATIONS: Record<string, CapabilityStatementRestResourceOperation[]> = {
+  CodeSystem: [
+    { name: 'lookup', definition: 'http://hl7.org/fhir/OperationDefinition/CodeSystem-lookup' },
+    { name: 'validate-code', definition: 'http://hl7.org/fhir/OperationDefinition/CodeSystem-validate-code' },
+    { name: 'subsumes', definition: 'http://hl7.org/fhir/OperationDefinition/CodeSystem-subsumes' },
+  ],
+  ValueSet: [
+    { name: 'expand', definition: 'http://hl7.org/fhir/OperationDefinition/ValueSet-expand' },
+    { name: 'validate-code', definition: 'http://hl7.org/fhir/OperationDefinition/ValueSet-validate-code' },
+  ],
+  ConceptMap: [{ name: 'translate', definition: 'http://hl7.org/fhir/OperationDefinition/ConceptMap-translate' }],
+};
 
 /**
  * Returns whether the given resource type should be advertised in the CapabilityStatement.
