@@ -12,7 +12,13 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bot, OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';
-import { getBotBodyInput, getBotDefaultHeaders, getBotProjectMembership, isBinaryWithoutData } from '../../bots/utils';
+import {
+  getBotBodyInput,
+  getBotDefaultHeaders,
+  getBotProjectMembership,
+  getBotRequestHeaders,
+  isBinaryWithoutData,
+} from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { searchUnique } from '../searchunique';
@@ -96,7 +102,7 @@ export async function tryCustomOperation(
     requester: ctx.membership.profile,
     input,
     contentType: req.headers?.['content-type'] as string,
-    headers: req.headers,
+    headers: getBotRequestHeaders(req),
     traceId: ctx.traceId,
     defaultHeaders: getBotDefaultHeaders(req, bot),
   });
