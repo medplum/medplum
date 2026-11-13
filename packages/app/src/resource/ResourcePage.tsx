@@ -36,6 +36,10 @@ function getTabs(resourceType: string, options: { isAdmin: boolean }): string[] 
     result.push('Apply', 'Builder');
   }
 
+  if (resourceType === 'ConceptMap') {
+    result.push('Builder');
+  }
+
   if (resourceType === 'Questionnaire') {
     result.push('Preview', 'Builder', 'Bots', 'Responses');
   }
