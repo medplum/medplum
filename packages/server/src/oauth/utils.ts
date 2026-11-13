@@ -164,12 +164,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
       }
     }
     if (request.redirectUri && !getClientRedirectUri(client, request.redirectUri)) {
-      getLogger().warn('Login redirect URI is not registered for client', {
-        clientId: client.id,
-        authMethod: request.authMethod,
-        redirectUri: request.redirectUri,
-        partialMatch: !!getClientRedirectUri(client, request.redirectUri, true),
-      });
+      throw new OperationOutcomeError(badRequest('Invalid redirect URI'));
     }
   }
 
