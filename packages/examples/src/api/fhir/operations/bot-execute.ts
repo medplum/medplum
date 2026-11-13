@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, MedplumClient } from '@medplum/core';
+// start-block async-imports
+import { ContentType, isOk, isOperationOutcome, MedplumClient, OperationOutcomeError } from '@medplum/core';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
+// end-block async-imports
 
 const medplum = new MedplumClient();
 
@@ -51,16 +54,18 @@ export async function executeAsync(): Promise<void> {
 
 export async function executeAsyncWithPolling(): Promise<void> {
   // start-block execute-async-with-polling
-  const response = await medplum.executeBot('your-bot-id', { foo: 'bar' }, ContentType.JSON, {
+  const job: AsyncJob = await medplum.executeBot('your-bot-id', { foo: 'bar' }, ContentType.JSON, {
     headers: {
       Prefer: 'respond-async',
     },
-    pollStatusOnAccepted: true, // Poll the status until completion
+    pollStatusOnAccepted: true, // Returns the terminal AsyncJob, not the Bot result
     pollStatusPeriod: 2000, // Poll every 2 seconds
   });
+  const output = getCompletedBotOutput(job); // Defined below
+  // Apply your Bot's result contract to output before declaring business success.
   // end-block execute-async-with-polling
 
-  console.log(response);
+  console.log(output);
 }
 
 export async function checkJobStatusExample(): Promise<void> {
@@ -68,57 +73,71 @@ export async function checkJobStatusExample(): Promise<void> {
   // Example: Get the status URL from the Content-Location header
   const accessToken = 'your-access-token';
   const response = await fetch('https://api.medplum.com/fhir/R4/Bot/bot-id/$execute', {
+    method: 'POST',
     headers: {
       Prefer: 'respond-async',
       Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ foo: 'bar' }),
   });
 
-  // Get the status URL from the Content-Location header
+  if (response.status !== 202) {
+    throw new Error(`Expected asynchronous acceptance; received HTTP ${response.status}`);
+  }
   const statusUrl = response.headers.get('Content-Location');
   if (!statusUrl) {
     throw new Error('No Content-Location header found');
   }
 
-  // Poll the status until completion, using a for loop with max attempts
-  let result: any = undefined;
-  for (let attempt = 1; attempt <= 30; attempt++) {
-    const statusResponse = await fetch(statusUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    const asyncJob = await statusResponse.json();
-
-    if (asyncJob.status === 'completed') {
-      // Extract the result from the output parameters
-      const responseBody = asyncJob.output?.parameter?.find((p: any) => p.name === 'responseBody');
-      result = responseBody?.valueString || responseBody?.valueBoolean || responseBody?.valueInteger;
-    } else if (asyncJob.status === 'error') {
-      // Handle error case
-      const outcome = asyncJob.output?.parameter?.find((p: any) => p.name === 'outcome');
-      throw new Error(`Bot execution failed: ${outcome?.resource?.issue?.[0]?.details?.text}`);
-    }
-
-    // Wait 2 second before polling again
-    await sleep(2000);
-  }
-
-  // If the result is undefined, throw an error
-  if (result === undefined) {
-    throw new Error('Max polling attempts reached without completion');
-  }
-
+  // Retain statusUrl so a caller can resume polling after a disconnect or timeout.
+  const pollingClient = new MedplumClient({ baseUrl: 'https://api.medplum.com/', accessToken });
+  const output = await waitForBotJob(pollingClient, statusUrl);
   // end-block check-job-status-manual
-  console.log(result);
+  console.log(output);
 }
 
-async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+// start-block inspect-job-output
+export function getCompletedBotOutput(job: AsyncJob): Parameters {
+  // A completed wrapper can still contain a Bot error OperationOutcome.
+  for (const parameter of job.output?.parameter ?? []) {
+    if (isOperationOutcome(parameter.resource) && !isOk(parameter.resource)) {
+      throw new OperationOutcomeError(parameter.resource);
+    }
+  }
+  if (job.status !== 'completed') {
+    throw new Error(`Bot job is ${job.status}; inspect its output before retrying`);
+  }
+  if (!job.output) {
+    throw new Error('Bot job has no output; reconcile its result before retrying');
+  }
+  // Preserve the Parameters, including false/zero values. The caller must also
+  // interpret any custom success/failure representation returned by its Bot.
+  return job.output;
 }
+// end-block inspect-job-output
+
+// start-block wait-for-job
+export async function waitForBotJob(
+  client: MedplumClient,
+  statusUrl: string,
+  maxAttempts = 30,
+  pollInterval = 2000
+): Promise<Parameters> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const job = await client.get<AsyncJob>(statusUrl, { cache: 'no-cache', pollStatusOnAccepted: false });
+    if (job.status === 'completed' || job.status === 'error' || job.status === 'cancelled') {
+      return getCompletedBotOutput(job);
+    }
+    if (attempt + 1 < maxAttempts) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, pollInterval);
+      });
+    }
+  }
+  throw new Error(`Polling limit reached; retain ${statusUrl} and reconcile before resubmitting`);
+}
+// end-block wait-for-job
 
 export async function exampleResponses(): Promise<void> {
   const _successResponse =

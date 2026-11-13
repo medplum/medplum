@@ -8,6 +8,10 @@ toc_max_heading_level: 2
 
 A production Bot needs a repeatable build, an explicit execution identity, a controlled trigger, and a way to diagnose and recover failed work. This guide takes a Bot from source control through staging, deployment, and ongoing operation.
 
+{{< tip title="Choose your processing approach" >}}
+Use the [Event Processing and Automation Decision Guide](/docs/decision-guides/event-processing-and-automation) to choose an execution environment, trigger, and completion model for each flow.
+{{< /tip >}}
+
 If you are writing your first handler, start with [Bot Basics](/docs/bots/bot-basics). For a local runtime, see [Running Bots Locally](/docs/bots/running-bots-locally).
 
 <span id="this-guide-will-show-you"></span>

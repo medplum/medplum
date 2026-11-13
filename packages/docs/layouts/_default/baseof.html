@@ -55,7 +55,14 @@
                   {{ partial "blog/sidebar.html" . }}
                 {{- end }}
                 <div class="main-content">
-                  {{ partial "breadcrumbs" . }}
+                  {{ if and .Params.download_slug (hasPrefix .Path "/docs/decision-guides/") (eq .Kind "page") }}
+                    <div class="guide-page-header">
+                      {{ partial "breadcrumbs" . }}
+                      {{ partial "guide-downloads.html" . }}
+                    </div>
+                  {{ else }}
+                    {{ partial "breadcrumbs" . }}
+                  {{ end }}
                   {{- /* Mobile copy of the table of contents (shown below 997px); the id is dropped so it stays unique */ -}}
                   {{- $toc := partial "toc.html" . }}
                   {{ if findRE "<li>" $toc 1 }}

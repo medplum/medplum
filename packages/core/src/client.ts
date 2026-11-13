@@ -2391,11 +2391,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(result.id);
    * ```
    *
-   * This method is syntactic sugar for:
-   *
-   * ```typescript
-   * return searchOne(resourceType, query) ?? createResource(resource);
-   * ```
+   * This method sends a conditional create request with an `If-None-Exist` header.
+   * The server checks for an existing match as part of the create request;
+   * the client does not perform a separate search followed by a create.
    *
    * The query parameter only contains the search parameters (what would be in the URL following the "?").
    *

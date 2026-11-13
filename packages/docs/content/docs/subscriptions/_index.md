@@ -5,6 +5,12 @@ docs_tags:
   - subscription
 ---
 
+{{< tip title="Planning event processing" >}}
+
+Use the [Event Processing and Automation Decision Guide](/docs/decision-guides/event-processing-and-automation) to decide when resource changes should trigger processing and what that requires for completion, repeat handling, and recovery.
+
+{{< /tip >}}
+
 Subscriptions are event-driven notifications, like webhooks, and are commonly used for integrations and automations. Medplum supports subscribing to changes on FHIR resources. There is a description [FHIR Subscriptions](https://www.hl7.org/fhir/subscription.html) on HL7.org that describes the functionality in detail.
 
 - [Subscriptions](https://app.medplum.com/Subscription) can be created and updated on the [Medplum App](/docs/app)
