@@ -305,6 +305,47 @@ describe('Expand', () => {
     });
   });
 
+  test('Instance level expansion', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/fhir/ValueSet/instance-' + randomUUID(),
+        compose: {
+          include: [
+            { system: 'http://hl7.org/fhir/resource-types', concept: [{ code: 'Patient' }, { code: 'Practitioner' }] },
+          ],
+        },
+      } satisfies ValueSet);
+    expect(res1).toHaveStatus(201);
+    const id = res1.body.id;
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/${id}/$expand?filter=practitioner`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.id).toStrictEqual(id);
+    expect(res2.body.expansion.contains).toStrictEqual([
+      { system: 'http://hl7.org/fhir/resource-types', code: 'Practitioner', display: 'Practitioner' },
+    ]);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/ValueSet/${id}/$expand`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'count', valueInteger: 1 }] });
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.expansion.contains).toHaveLength(1);
+
+    const res4 = await request(app)
+      .get(`/fhir/R4/ValueSet/${randomUUID()}/$expand`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4).toHaveStatus(404);
+  });
+
   test('CodeSystem resolution', async () => {
     const codeSystem: CodeSystem = {
       resourceType: 'CodeSystem',

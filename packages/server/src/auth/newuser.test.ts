@@ -19,10 +19,12 @@ const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 async function enableOpenRegistration(project: WithId<Project>): Promise<void> {
-  const patientPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient')?.accessPolicy;
   await withTestContext(async () => {
     const systemRepo = await getProjectSystemRepo(project);
-    await systemRepo.updateResource({ ...project, defaultPatientAccessPolicy: patientPolicy });
+    await systemRepo.updateResource({
+      ...project,
+      setting: [...(project.setting ?? []), { name: 'openPatientRegistration', valueBoolean: true }],
+    });
   });
 }
 
@@ -234,8 +236,8 @@ describe('New user', () => {
         email,
         password,
       });
-      // As a super admin, set the recaptcha site key
-      // and the default access policy
+      // As a super admin, set the recaptcha site key and enable open registration.
+      // The project already has a Patient entry in defaultAccessPolicies.
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
@@ -247,9 +249,7 @@ describe('New user', () => {
             recaptchaSecretKey,
           },
         ],
-        defaultPatientAccessPolicy: {
-          reference: 'AccessPolicy/' + randomUUID(),
-        },
+        setting: [{ name: 'openPatientRegistration', valueBoolean: true }],
       });
       return project;
     });
@@ -324,7 +324,7 @@ describe('New user', () => {
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSiteKey');
   });
 
-  test('Custom recaptcha client missing access policy', async () => {
+  test('Custom recaptcha client rejects registration when open registration is disabled', async () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
@@ -339,13 +339,10 @@ describe('New user', () => {
         email,
         password,
       });
-      // As a super admin, set the recaptcha site key
-      // but *not* the access policy (remove the default patient access policy
-      // that is automatically provisioned on project creation)
+      // Recaptcha is configured, but openPatientRegistration is not set.
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
-        defaultPatientAccessPolicy: undefined,
         site: [
           {
             name: 'Test Site',

@@ -49,6 +49,7 @@ import { FormCreatePage } from './resource/FormCreatePage';
 import { HistoryPage } from './resource/HistoryPage';
 import { JsonCreatePage } from './resource/JsonCreatePage';
 import { JsonPage } from './resource/JsonPage';
+import { MembershipPage } from './resource/MembershipPage';
 import { PreviewPage } from './resource/PreviewPage';
 import { ProfilesPage } from './resource/ProfilesPage';
 import { QuestionnaireBotsPage } from './resource/QuestionnaireBotsPage';
@@ -140,6 +141,7 @@ export function AppRoutes(): JSX.Element {
             <Route path=":versionId" element={<ResourceVersionPage />} />
           </Route>
           <Route path="json" element={<JsonPage />} />
+          <Route path="membership" element={<MembershipPage />} />
           <Route path="preview" element={<PreviewPage />} />
           <Route path="responses" element={<QuestionnaireResponsePage />} />
           <Route path="report" element={<ReportPage />} />

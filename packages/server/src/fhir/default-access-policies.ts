@@ -84,6 +84,16 @@ export function getDefaultAccessPolicy(
 }
 
 /**
+ * Patient access policy used when none is chosen explicitly.
+ * Prefers the Patient entry in `defaultAccessPolicies`, then the deprecated `defaultPatientAccessPolicy`.
+ * @param project - The project.
+ * @returns The access policy reference, if the project defines one.
+ */
+export function getDefaultPatientAccessPolicy(project: Project): Reference<AccessPolicy> | undefined {
+  return getDefaultAccessPolicy(project, 'Patient') ?? project.defaultPatientAccessPolicy;
+}
+
+/**
  * Compiles "read/write everything, except these restrictions" into access policy entries.
  *
  * - Permissions are additive, so a write wildcard would override any read-only entry. When a non-admin type must be

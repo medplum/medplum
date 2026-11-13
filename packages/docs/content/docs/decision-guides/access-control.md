@@ -274,9 +274,9 @@ Choose how patients register, whether caregivers or proxies need access (such as
 | Registration option    | Approach                                                                 |
 | :--------------------- | :----------------------------------------------------------------------- |
 | Invite-only            | Use the Invite API with a patient-scoped policy                          |
-| Open self-registration | Set `Project.defaultPatientAccessPolicy`; this enables open registration |
+| Open self-registration | Set `Project.setting` `openPatientRegistration` to `true`, and keep a Patient policy in `defaultAccessPolicies` (or the deprecated `defaultPatientAccessPolicy` when that entry is absent) |
 
-**Check both enrollment paths.** Open registration uses `Project.defaultPatientAccessPolicy`. Patient invitations without an explicit policy prefer the Patient entry in `Project.defaultAccessPolicies`, falling back to `defaultPatientAccessPolicy` if that entry is absent. Align these defaults if both paths should grant the same access. Changing the registration default affects future registrations; it does not migrate existing memberships. See [Default Access Policies](/docs/access/access-policies#default-access-policies).
+**Check both enrollment paths.** Open registration requires the `openPatientRegistration` setting and a Patient access policy. The policy is the Patient entry in `Project.defaultAccessPolicies`, falling back to the deprecated `defaultPatientAccessPolicy` when that entry is absent. Patient invitations and [SCIM](/docs/api/scim/users) patient provisioning use the same resolution and do not require the setting. SCIM refuses to create a Patient when neither policy is set. Changing the policy affects future registrations and invites; it does not migrate existing memberships. See [Default Access Policies](/docs/access/access-policies#default-access-policies).
 
 ### Which patient records can each person access?
 

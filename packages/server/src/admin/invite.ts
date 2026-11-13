@@ -29,7 +29,6 @@ import type {
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
-import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -37,7 +36,7 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getAllowedProjects, getRepoForProjects } from '../fhir/accesspolicy';
-import { getDefaultAccessPolicy } from '../fhir/default-access-policies';
+import { getDefaultAccessPolicy, getDefaultPatientAccessPolicy } from '../fhir/default-access-policies';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
@@ -200,11 +199,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     project = createReference(request.project);
   }
 
-  let mfaSecret: string | undefined = undefined;
-  if (mfaRequired) {
-    mfaSecret = authenticator.generateSecret();
-  }
-
   return {
     resourceType: 'User',
     meta: project ? { project: resolveId(project) } : undefined,
@@ -214,7 +208,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     passwordHash,
     project,
     mfaRequired,
-    mfaSecret,
   };
 }
 
@@ -419,14 +412,10 @@ async function upsertProjectMembership(
 
   // Patients only. RelatedPerson and Practitioner invites are unchanged.
   // Also applies on upsert when no policy is provided in the request.
-  // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
   if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const defaultPolicy = getDefaultAccessPolicy(project, 'Patient');
+    const defaultPolicy = getDefaultPatientAccessPolicy(project);
     if (defaultPolicy) {
       partialMembership.accessPolicy = defaultPolicy;
-    } else if (project.defaultPatientAccessPolicy) {
-      // Fallback to legacy field for backwards compatibility
-      partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
     }
   }
 
