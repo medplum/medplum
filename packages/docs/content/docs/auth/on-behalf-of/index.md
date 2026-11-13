@@ -42,7 +42,7 @@ Treat a rejected delegation request as a failure; do not retry it without the he
 
 ### Lock down the application credential
 
-The application credential can act as any user in the project, so restrict it as much as you can. A recommended pattern is to give the `ClientApplication`'s membership an AccessPolicy that grants no resource access and restricts IP addresses to your backend's egress IPs:
+The On-Behalf-Of model is designed to use individual users' `ProjectMembership`s while authenticating through a single machine-to-machine user. We recommend configuring the `ClientApplication` that serves the proxy layer with a "least permissive" AccessPolicy, including IP access rules:
 
 ```json
 {
