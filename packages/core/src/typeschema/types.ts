@@ -17,6 +17,7 @@ import { OperationOutcomeError, badRequest } from '../outcomes';
 import type { TypedValue } from '../types';
 import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
+import { applyXmlPropertyNames, isXmlLogicalModel } from './xml';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -36,6 +37,8 @@ export interface InternalTypeSchema {
   innerTypes: InternalTypeSchema[];
   summaryProperties?: Set<string>;
   mandatoryProperties?: Set<string>;
+  /** For XML logical models, element names follow the XML parser convention (`@_attr`, `#text`); see `loadDataType`. */
+  xmlPropertyNames?: boolean;
 }
 
 export interface InternalSchemaElement {
@@ -50,6 +53,10 @@ export interface InternalSchemaElement {
   fixed?: TypedValue;
   pattern?: TypedValue;
   binding?: ElementDefinitionBinding;
+  /** True for elements represented as XML attributes, which are always strings in parsed XML. */
+  xmlAttribute?: boolean;
+  /** True for elements holding XML markup (e.g. CDA narrative), which parses to nested objects. */
+  xmlMarkup?: boolean;
 }
 
 export interface ElementType {
@@ -137,6 +144,14 @@ export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | B
   }
 }
 
+/**
+ * Parses and indexes a structure definition.
+ *
+ * Logical models of XML formats, such as the HL7 CDA StructureDefinitions, are recognized by their XML
+ * representation markers. Their elements are named the way an XML parser names them (`@_attribute`, `#text`,
+ * `prefix:name`), so that parsed XML can be typed and validated without converting it first.
+ * @param sd - The structure definition.
+ */
 export function loadDataType(sd: StructureDefinition): void {
   if (!sd?.name) {
     throw new Error(`Failed loading StructureDefinition from bundle`);
@@ -145,7 +160,14 @@ export function loadDataType(sd: StructureDefinition): void {
     return;
   }
   const schema = parseStructureDefinition(sd);
+  if (isXmlLogicalModel(sd)) {
+    applyXmlPropertyNames(schema, sd);
+  }
   const specialCase = TYPE_SPECIAL_CASES[sd.url];
+  // Logical models name their types by URL. Profiles of them (e.g. C-CDA templates on CDA) are indexed by
+  // their own URL below, so they do not replace the base type or its inner types.
+  const isUrlType =
+    sd.derivation !== 'constraint' && (sd.type?.startsWith('http://') || sd.type?.startsWith('https://'));
   let dataTypes: DataTypesMap;
   let typeName: string;
 
@@ -158,8 +180,7 @@ export function loadDataType(sd: StructureDefinition): void {
     // By default, only index by "type" for "official" FHIR types
     sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
     sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
-    sd.type?.startsWith('http://') ||
-    sd.type?.startsWith('https://')
+    isUrlType
   ) {
     dataTypes = DATA_TYPES;
     typeName = sd.type;
@@ -169,6 +190,11 @@ export function loadDataType(sd: StructureDefinition): void {
   }
 
   dataTypes[typeName] = schema;
+  // Types named by URL are also indexed by their StructureDefinition URL. Special cases are named by "name",
+  // even when their type is a URL, so this checks the name actually used.
+  if (dataTypes === DATA_TYPES && typeName.startsWith('http') && sd.url !== typeName) {
+    dataTypes[sd.url] = schema;
+  }
 
   for (const inner of schema.innerTypes) {
     inner.parentType = schema;
@@ -248,6 +274,8 @@ class StructureDefinitionParser {
   private slicingContext: { field: SlicingRules; current?: SliceDefinition; path: string } | undefined;
   private readonly innerTypes: InternalTypeSchema[];
   private backboneContext: BackboneContext | undefined;
+  /** For logical models, paths of elements that have child elements and so define an inner type. */
+  private readonly logicalParents: Set<string>;
 
   /**
    * @param sd - The StructureDefinition to parse
@@ -262,6 +290,15 @@ class StructureDefinitionParser {
     this.elements = sd.snapshot.element.slice(1);
     this.elementIndex = Object.create(null);
     this.index = 0;
+    this.logicalParents = new Set();
+    if (sd.kind === 'logical') {
+      for (const e of this.elements) {
+        const parent = e.path?.split('.').slice(0, -1).join('.');
+        if (parent && parent !== this.root.path) {
+          this.logicalParents.add(parent);
+        }
+      }
+    }
     this.resourceSchema = {
       name: sd.name,
       path: this.root.path,
@@ -357,7 +394,7 @@ class StructureDefinitionParser {
       this.innerTypes.push(this.backboneContext.type);
       this.backboneContext = this.backboneContext.parent;
     }
-    const typeName = getElementDefinitionTypeName(element);
+    const typeName = this.innerTypeName(element);
     this.backboneContext = {
       type: {
         name: typeName,
@@ -456,7 +493,8 @@ class StructureDefinitionParser {
     const next = this.peek();
     return !!(
       pathsCompatible(current?.path, next?.path) &&
-      current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code))
+      (current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code)) ||
+        this.logicalParents.has(current.path))
     );
   }
 
@@ -474,11 +512,36 @@ class StructureDefinitionParser {
     this.slicingContext.field.slices.push(this.slicingContext.current);
   }
 
-  private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
-    return (ed.type ?? []).map((type) => {
-      let code: string | undefined;
+  /**
+   * Inner types of logical models are named "<type url>#<path>" so they cannot collide with FHIR
+   * type names (e.g. CDA Observation.referenceRange vs FHIR ObservationReferenceRange).
+   * @param ed - The element that defines the inner type.
+   * @returns The inner type name.
+   */
+  private innerTypeName(ed: ElementDefinition): string {
+    return this.getLogicalInnerTypeName(ed.path) ?? getElementDefinitionTypeName(ed);
+  }
 
-      if (type.code === 'BackboneElement' || type.code === 'Element') {
+  /**
+   * Returns the name of the logical model inner type defined at a path, if any.
+   * @param path - The element path, e.g. "Observation.referenceRange".
+   * @returns The inner type name, or undefined if the path does not define a logical model inner type.
+   */
+  private getLogicalInnerTypeName(path: string | undefined): string | undefined {
+    if (!path || !this.logicalParents.has(path)) {
+      return undefined;
+    }
+    return `${this.resourceSchema.type}#${path.split('.').slice(1).join('.')}`;
+  }
+
+  private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
+    // A content reference uses the type defined at the referenced path
+    const typePath = ed.contentReference ? ed.contentReference.slice(ed.contentReference.indexOf('#') + 1) : ed.path;
+    const logicalInnerType = this.getLogicalInnerTypeName(typePath);
+    return (ed.type ?? []).map((type) => {
+      let code: string | undefined = logicalInnerType;
+
+      if (!code && (type.code === 'BackboneElement' || type.code === 'Element')) {
         code = getElementDefinitionTypeName(ed);
       }
 
