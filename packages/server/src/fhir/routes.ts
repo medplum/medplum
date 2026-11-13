@@ -29,6 +29,7 @@ import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
 import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
+import { ccdaValidateHandler } from './operations/ccdavalidate';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { claimSubmitPostByIdHandler, claimSubmitPostHandler } from './operations/claimsubmit';
@@ -401,6 +402,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
   router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
+
+  // C-CDA $ccda-validate operation
+  router.add('POST', '/$ccda-validate', ccdaValidateHandler);
 
   // SMART Health Cards operations
   router.add('POST', '/Patient/:id/$generate-smart-health-card', generateSmartHealthCardHandler);
