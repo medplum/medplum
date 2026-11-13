@@ -9,7 +9,7 @@ Medplum distinguishes between two different types of admin user: **project admin
 
 ## Project Admin
 
-A project (or tenant) level user. This is the most common type of admin user at an organization.
+A user with administrative privileges in a Project. A project can contain several application tenants, so project-admin authority is broader than administration of one tenant. Use controlled administrative workflows when tenant staff need limited actions within a shared project. See [Tenancy Design](/docs/decision-guides/tenancy-design).
 
 See our [User Management Guide](/docs/user-management#promote-existing-user-to-admin) for more information on how to grant project admin privileges.
 
@@ -17,7 +17,7 @@ Project Admins have the following privileges:
 
 - **Invite / remove users** - See our [User Management Guide](/docs/user-management) for mor information
 - **Create Bots** - See our guide on [Bots](/docs/bots/bot-basics) to learn how to create and write Bots
-- **Write the `meta.account` element** - Every resource has a `meta.account` property that can be used for advanced access control scenarios. See our guide on [access policies](/docs/access/access-policies) for more information.
+- **Manage tenant account assignments** - Use [`$set-accounts`](/docs/api/fhir/operations/set-accounts) to set `meta.accounts`. The server includes these references in `meta.compartment`; access policies determine who can access the assigned resources.
 - **View Administrative Resources** - The following Medplum resource types are only accessible to project admin [Users](/docs/api/fhir/medplum/user), [`Bots`](/docs/api/fhir/medplum/bot), or [`ClientApplications`](/docs/api/fhir/medplum/clientapplication):
   - [`Project`](/docs/api/fhir/medplum/project) - used to adjust [Project settings](/docs/access/projects#settings)
   - [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) - used to manage user registration and privileges (see: [User Management Guide](/docs/user-management))

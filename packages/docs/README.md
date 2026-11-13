@@ -86,3 +86,15 @@ node packages/docs/scripts/check-provider-labels.mjs
 ### Decision Guides
 
 The Decision Guide PDF and Word downloads are generated from their Markdown with `npm run build:guides`, which needs pandoc and LibreOffice. You normally don't need to run it: CI regenerates and commits them when a guide changes (`.github/workflows/autofix-ci.yml`).
+
+For diagrams that must appear in downloads, embed an image from `/img/` and keep its editable source beside it in `static/img/`. The export script resolves those image paths locally; Mermaid code blocks are rendered only on the website.
+
+The tenancy diagrams use SVGs with a shared layout and style generator. Edit `scripts/build-tenancy-diagrams.mjs`, then run from the repository root:
+
+```bash
+node packages/docs/scripts/build-tenancy-diagrams.mjs --png
+```
+
+The optional `--png` step requires Python 3, CairoSVG, and native Cairo. It refreshes the three PNGs used by decision-guide downloads. Commit the generated SVGs and PNGs in `static/img/tenancy-design/` with source changes. Technical pages use SVGs directly; the image render hook gives these figures a scrollable frame on narrow screens.
+
+Match the standard Mermaid styling: purple boxes for FHIR resources, lightly shaded containers for scopes, and small rounded boxes for application controls or account choices. Solid labeled arrows follow resource references; dashed arrows show permissions. Use labels to identify the practice and shared resources. Corresponding resources should keep the same positions across comparison diagrams.

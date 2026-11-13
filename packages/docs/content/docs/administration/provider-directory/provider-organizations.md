@@ -14,6 +14,8 @@ We'll cover
 - How to model provider care teams
 - How to assign practitioners to multiple divisions and teams
 
+Organizational relationships describe the clinical model. If you need separate tenant boundaries, choose them in [Tenancy Design](/docs/decision-guides/tenancy-design). Role and care-team permissions can also apply within one organization or within each tenant; see [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access). Hierarchy and team membership alone do not grant access.
+
 ## Modeling the Organizational Hierarchy
 
 To model groups, it is recommended to use the `Organization` resource. `Organizations` model how people are grouped, and can be organized in a hierarchical structure by utilizing the `partOf` reference field.

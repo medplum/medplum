@@ -46,16 +46,16 @@ Use the [questions below](#before-you-start) to establish your use case, then fo
 
 <div id="q3-where-do-receiving-providers-live-relative-to-your-tenant"></div>
 
-### Where do receiving providers live relative to your tenant?
+### Where do receiving providers work? {#where-do-receiving-providers-live-relative-to-your-tenant}
 
-- Inside your tenant only
-- Partner tenants or organizations
+- Within your care operation
+- Partner organizations, including other tenants if your application has them
 - External organizations without FHIR connectivity
 - Some combination
 
 *Why: drives how recipients are stored and selected ([Recipients](#how-will-recipients-be-selected-and-maintained)), and which outbound channels you support ([Delivery](#which-channels-and-payloads-will-deliver-the-referral)).*
 
-For teams sharing one project, create receiving work against the shared ServiceRequest directly. Add transmission and identifier reconciliation when records cross systems. See [internal and external referrals](/docs/careplans/referrals#decide-whether-the-teams-share-a-project).
+When teams in one project are authorized to share the ServiceRequest, create receiving work against it directly. For separate tenants, define the permitted [clinical sharing](/docs/decision-guides/tenancy-design#clinical-sharing-and-record-lifecycle) first. Add transmission and identifier reconciliation when records cross systems. See [internal and external referrals](/docs/careplans/referrals#decide-whether-the-teams-share-a-project).
 
 <div id="q4-is-this-a-new-build-or-replacingextending-something-and-what-other-systems-must-it-work-with"></div>
 

@@ -63,6 +63,8 @@ Binary resources **cannot** use compartment-based access controls. They require 
 
 ## Implementation Best Practices
 
+Choose a `securityContext` whose permitted readers match the file's intended audience. If a Patient is shared across practices but a file is practice-specific, pointing at the shared Patient can expose the file too broadly. Use a context with the required clinical or care-team restrictions; see [Clinical-record isolation](/docs/tenancy-design/patient-records#clinical-record-isolation).
+
 ### 1. HTTP API Binary Upload (Most Common)
 
 Most developers create Binary resources by uploading raw binary content via HTTP POST:

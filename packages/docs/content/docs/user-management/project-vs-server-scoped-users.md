@@ -11,7 +11,7 @@ Server scoped [`Users`](/docs/api/fhir/medplum/user) can be used across multiple
 
 ### Project Scoped Users
 
-Project scoped [`Users`](/docs/api/fhir/medplum/user) exist inside a single [`Project`](/docs/api/fhir/medplum/project). Project scoped Users should be used for **real practicing clinicians and patients** that will primarily interact with a single production project. By default, Patients are scoped to `project`. If you want to include a project scoped User in multiple projects, you will need to invite them to each [`Project`](/docs/api/fhir/medplum/project) separately.
+Project scoped [`Users`](/docs/api/fhir/medplum/user) exist inside a single [`Project`](/docs/api/fhir/medplum/project). Project scoped Users should be used for **real practicing clinicians and patients** that will primarily interact with a single production project. By default, Patients are scoped to `project`. Inviting the same email with project scope in another project creates or matches the identity in that project's scope; it does not establish a shared server-scoped identity.
 
 You can specify the scope of a [User](/docs/api/fhir/medplum/user) by adding the `scope` parameter to the [Invite User](/docs/api/project-admin/invite) endpoint.
 
@@ -25,44 +25,12 @@ const response = await medplum.post('/admin/projects/:projectId/invite', {
 })
 ```
 
-```mermaid
-flowchart TD
-    subgraph MedplumServer[" "]
-        %% Server‑Scoped User
-        SS1[<div style="text-align: center;">User<br><strong>Company Dev/Admin</strong><br><small><em style='color:gray;'>Server Scoped</em></small></div>]
-        SS1 --> PM1_SS1
-        SS1 --> PM2_SS1
+![A server-scoped User is referenced by memberships in two projects. Project-scoped Users are separately defined in each project.](/img/tenancy-design/identity-scopes.svg)
 
-        %% Staging Project subgraph
-        subgraph StagingProject["<div style='font-size:20px; font-weight:bold;'>Staging Project</div>"]
-            SD1[<div style="text-align: center;">User<br><strong>Test Doctor 1</strong><br><small><em style='color:gray;'>Project Scoped</em></small></div>]
-            PM1[<div style="text-align: center;">ProjectMembership<br><small style='color:gray;'>Project: Staging Project<br>Profile: &lt;Practitioner&gt;</small></div>]
-            SD1 --> PM1
+_Boxes are FHIR resources; solid arrows follow `ProjectMembership.user`. Containers show the project associated with each membership. A server-scoped identity can serve both projects; project-scoped invitations match identities separately._
 
-            PAT1[<div style="text-align: center;">User<br><strong>Example Patient 1</strong><br><small><em style='color:gray;'>Project Scoped</em></small></div>]
-            PM_PAT1[<div style="text-align: center;">ProjectMembership<br><small style='color:gray;'>Project: Staging Project<br>Profile: &lt;Patient&gt;</small></div>]
-            PAT1 --> PM_PAT1
+Within one project, a User can have several memberships and profiles. An Organization or HealthcareService tenant does not create another authentication namespace. Choose shared or independent identities separately from the tenant resource type; see [Tenancy account choices](/docs/decision-guides/tenancy-design#staff-workflows-and-patient-accounts).
 
-            PM1_SS1[<div style="text-align: center;">ProjectMembership<br><small style='color:gray;'>Project: Staging Project<br>Profile: &lt;Practitioner&gt;</small></div>]
-        end
-
-        %% Production Project subgraph
-        subgraph ProdProject["<div style='font-size:20px; font-weight:bold;'>Production Project</div>"]
-            PAT2[<div style="text-align: center;">User<br><strong>John Doe</strong><br><small><em style='color:gray;'>Project Scoped</em></small></div>]
-            PM_PAT2[<div style="text-align: center;">ProjectMembership<br><small style='color:gray;'>Project: Production Project<br>Profile: &lt;Patient&gt;</small></div>]
-            PAT2 --> PM_PAT2
-
-            DR_SMITH[<div style="text-align: center;">User<br><strong>Dr. Alice Smith</strong><br><small><em style='color:gray;'>Project Scoped</em></small></div>]
-            DR_SMITH_PM[<div style="text-align: center;">ProjectMembership<br><small style='color:gray;'>Project: Production Project<br>Profile: &lt;Practitioner&gt;</small></div>]
-            DR_SMITH --> DR_SMITH_PM
-
-            PM2_SS1[<div style="text-align: center;">ProjectMembership<br><small style='color:gray;'>Project: Production Project<br>Profile: &lt;Practitioner&gt;</small></div>]
-        end
-    end
-
-    style MedplumServer fill:#f5f5f5,stroke:#888888,stroke-width:2px;
-
-```
 
 {{< info >}}
 For **hosted customers**, you will only have control over the User resources for your project scoped users. Self-hosted customers can access **server scoped users** from their [super admin project](/docs/self-hosting/super-admin-guide).
@@ -79,7 +47,7 @@ Project Admins have the ability to update the name and email address of project-
 {{< info >}}
 To change the email address that is displayed in the Medplum app (and in FHIR resources), you must update both the User resource and the user's Profile resource (such as Patient or Practitioner). The User resource controls login and authentication, while the Profile resource controls the display name and email shown in clinical and administrative contexts.
 
-**Recommended approach:** Use the [`$update-email`](/docs/api/fhir/operations/user-update-email) operation which automatically handles updating both resources in a single transaction.
+**Recommended approach:** Use [`$update-email`](/docs/api/fhir/operations/user-update-email) to change the login email. Its optional `updateProfileTelecom` setting also updates one associated profile. For multiple memberships, leave that setting false and update the intended profiles explicitly.
 {{< /info >}}
 
 **How to update a User's login email:**
@@ -88,7 +56,7 @@ To change the email address that is displayed in the Medplum app (and in FHIR re
   Navigate to the Project Admin page, select the "Users" tab, and click on the user you wish to edit. You can update their email address directly from the user details page.
 
 - **API (Recommended - FHIR `$update-email` operation):**  
-  The [`$update-email`](/docs/api/fhir/operations/user-update-email) operation is the recommended method as it automatically updates both the User resource and the profile resource in a single transaction:
+  The [`$update-email`](/docs/api/fhir/operations/user-update-email) operation updates the login email and handles verification and session revocation. The following example also updates the associated profile and assumes a User with one membership:
   ```typescript
   await medplum.post(`fhir/R4/User/${userId}/$update-email`, {
     resourceType: 'Parameters',
@@ -101,23 +69,7 @@ To change the email address that is displayed in the Medplum app (and in FHIR re
   ```
 
   {{< note >}}
-  For server scoped users, where you don't have access to the User resource, you can get the user id from the ProjectMembership resource's `ProjectMembership.user` reference.
-  ```typescript
-  const memberships = await medplum.searchResources('ProjectMembership', {
-    profile: profileReference
-  });
-  
-  const userId = memberships[0].user?.reference?.split('/')[1];
-
-  await medplum.post(`fhir/R4/User/${userId}/$update-email`, {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'email', valueString: 'new-email@example.com' },
-      { name: 'updateProfileTelecom', valueBoolean: true },
-      { name: 'skipEmailVerification', valueBoolean: true }
-    ]
-  });
-  ```
+  Changing a server-scoped User's email requires super-admin authority. The operation does not support `updateProfileTelecom: true` for server-scoped Users. Update any intended profile contact information separately through an authorized workflow.
   {{< /note >}}
 
 - **API (SCIM):**  

@@ -48,7 +48,9 @@ This policy grants read-only access to:
 
 ## Parameterized Access Policy
 
-For deployments with multiple organizations, you can use a [parameterized access policy](/docs/access/access-policies#parameterized-policies) to share a single policy across all `ClientApplication` resources. This uses the `%org` variable to scope resources to the appropriate organization:
+This example uses Organizations as access groups within one project. An organization can represent an application tenant or a narrower group; choose its role in [Tenancy Design](/docs/decision-guides/tenancy-design). Assign the resources to the intended organization using [tenant account assignments](/docs/access/multi-tenant-access-policy#step-2-assigning-data-to-tenants).
+
+Use a [parameterized access policy](/docs/access/access-policies#parameterized-policies) to reuse the policy for each `ClientApplication`. The `%org` variable restricts access to resources assigned to the approved organization:
 
 ```json
 {
@@ -86,7 +88,7 @@ For deployments with multiple organizations, you can use a [parameterized access
 
 Bot invocations inherit permissions from the invoking `ClientApplication`. You must add entries to the access policy for any resource types that your bots need to read or write.
 
-For example, if your bot creates `Patient` resources as part of its workflow, add read/write access:
+For example, to read and update Patients already assigned to the organization, add a Patient rule. Creating Patients also requires an assignment workflow, as described below:
 
 ```json
 {
@@ -126,7 +128,9 @@ For example, if your bot creates `Patient` resources as part of its workflow, ad
 
 ## Using Compartments for Resource Tagging
 
-You can add a top-level `compartment` to the access policy to automatically tag all resources created by the bot with the appropriate organization. This ensures that resources are forced into the correct compartment:
+An existing policy can use a top-level `compartment` to stamp an organization account on ordinary resource creation. This also applies a broad compartment restriction, so check its effect on shared reference data. For new designs, prefer resource-level criteria with a controlled [$set-accounts assignment workflow](/docs/api/fhir/operations/set-accounts); that operation requires project-admin or super-admin authority.
+
+The following example illustrates the top-level pattern:
 
 ```json
 {
@@ -167,7 +171,7 @@ You can add a top-level `compartment` to the access policy to automatically tag 
 }
 ```
 
-With this configuration, any `Patient` resources created by the bot will automatically have their `meta.account` set to the organization specified in the policy parameter.
+For ordinary Patient creation with this effective policy, the server includes the organization reference in `meta.accounts` and computes `meta.compartment`. Editing an existing Patient does not add the editor's organization. Clinical-resource writes can inherit the referenced Patient's accounts, so a shared Patient with separate clinical audiences needs [resource-specific rules](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
 ## Configuring the ProjectMembership
 
@@ -200,7 +204,7 @@ This configuration allows you to:
 
 1. Use the same `AccessPolicy` resource for all agent `ClientApplication` resources
 2. Scope each agent's access to resources within its specific organization
-3. Automatically tag resources created by bots with the correct organization compartment
+3. Supply the organization for the configured assignment workflow
 
 ## See Also
 

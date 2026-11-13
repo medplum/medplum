@@ -5,17 +5,29 @@ weight: 10
 docs_tags: [auth]
 ---
 
-Medplum [`Projects`](/docs/api/fhir/medplum/project) are the primary mechanism of access control. [`Projects`](/docs/api/fhir/medplum/project) are isolated containers of FHIR resources that are administered separately, and which can have different settings.
+Medplum [`Projects`](/docs/api/fhir/medplum/project) are resource containers with separate administration, settings, and access boundaries. Every application uses a project, whether it serves one organization or many tenants. [Access policies](/docs/access/access-policies) define permissions within that boundary.
 
 A common requirement for development teams is to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging, before deploying workflow changes to production. A common Medplum usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
 
 ## Isolation Model
 
-Medplum [`Projects`](/docs/api/fhir/medplum/project) create a hard boundary between FHIR resources, and resources within one project cannot reference resources in another.
+Medplum [`Projects`](/docs/api/fhir/medplum/project) isolate FHIR resources. Ordinary membership in one project does not grant access to another project's resources. Explicit [project linking](#project-linking) supports shared reference data under the rules below.
 
 Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own user administration. A user can be a member of one, or multiple [`Projects`](/docs/api/fhir/medplum/project), with different privileges in each. See our [User Administration Guide](/docs/user-management) for more information.
 
 [`Projects`](/docs/api/fhir/medplum/project) can each be configured with own global settings and secrets (see [Project Settings](#settings) below).
+
+## Project-per-customer tenancy
+
+A self-hosted application can provision a project for each of its customer organizations. Here, the tenant is the application's customer; this pattern describes application tenancy design. See the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design) for the customer requirements that justify it.
+
+Each project contains its own Patient and clinical resources, memberships, settings, and secrets. Plan customer provisioning, configuration rollout, integration credentials, and offboarding across projects. Cross-project workflows need explicit coordination. Server operators retain super-admin privileges; project isolation does not imply a separate database or deployment for each customer.
+
+Project-per-customer tenancy requires self-hosting. Applications using hosted Medplum can implement tenant separation within their project using [shared or tenant-specific Patients](/docs/tenancy-design/patient-records) and [tenant access policies](/docs/access/multi-tenant-access-policy). Development and staging projects serve a different purpose from customer-tenancy provisioning.
+
+Within each project, access policies can further limit staff to assigned patients or care teams. A project per customer and finer [care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) can be used together.
+
+Choose authentication identity scope separately. [Project-scoped Users](/docs/user-management/project-vs-server-scoped-users) keep account provisioning within a project; self-hosted systems can also use server-scoped identities with memberships in multiple projects where shared credentials are intended.
 
 ## Project Linking
 
