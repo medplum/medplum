@@ -162,6 +162,7 @@ describe('OrderLabsModal', () => {
 
     expect(screen.getByText('Requester')).toBeInTheDocument();
     expect(screen.getByLabelText(/^Patient/)).toBeInTheDocument();
+    expect(screen.getByText('Practice location')).toBeInTheDocument();
     expect(screen.getByText('Selected tests')).toBeInTheDocument();
     expect(screen.getByText('Diagnoses')).toBeInTheDocument();
     expect(screen.getByText('Bill to')).toBeInTheDocument();
@@ -464,6 +465,7 @@ describe('OrderLabsModal', () => {
       vi.mocked(getLabOrderDraftDefaults).mockResolvedValue({
         patient: HomerSimpson,
         requester: { resourceType: 'Practitioner', id: 'req-1', name: [{ given: ['Dr'], family: 'Who' }] },
+        requestingLocation: { resourceType: 'Organization', id: 'loc-1', name: 'Main Street Clinic' },
         performingLab: { resourceType: 'Organization', id: 'lab-123', name: 'Test Lab' },
         encounter: { reference: 'Encounter/enc-1' },
         task: { resourceType: 'Task', id: 'task-1', status: 'requested', intent: 'order' },
@@ -520,6 +522,10 @@ describe('OrderLabsModal', () => {
       expect(screen.getByLabelText('Order notes')).toHaveValue('Fasting');
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       expect(screen.getByText('Dr Who')).toBeInTheDocument();
+      expect(screen.getByText('Main Street Clinic')).toBeInTheDocument();
+      expect(useHealthGorillaLabOrder).toHaveBeenLastCalledWith(
+        expect.objectContaining({ requestingLocation: expect.objectContaining({ id: 'loc-1' }) })
+      );
       expect(showNotification).toHaveBeenCalledWith(
         expect.objectContaining({ color: 'yellow', message: expect.stringContaining('Metabolic panel') })
       );
@@ -562,7 +568,11 @@ describe('OrderLabsModal', () => {
       await waitFor(() => {
         expect(onSaveDraft).toHaveBeenCalledWith(draftOrder);
       });
-      expect(saveLabOrderDraft).toHaveBeenCalledWith(medplum, expect.anything(), draftOrder);
+      expect(saveLabOrderDraft).toHaveBeenCalledWith(
+        medplum,
+        expect.objectContaining({ requestingLocation: expect.objectContaining({ id: 'loc-1' }) }),
+        draftOrder
+      );
     });
 
     test('still shows the form when the draft cannot be loaded', async () => {
