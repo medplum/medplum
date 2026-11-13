@@ -170,7 +170,7 @@ export function MultiResourceInput<T extends Resource = Resource>(props: MultiRe
     name: props.name,
     maxValues: props.maxValues,
   });
-  const { resources, pending } = useResolvedResources(items);
+  const { resources, pending, remember } = useResolvedResources(items);
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<T[]> => {
@@ -189,12 +189,13 @@ export function MultiResourceInput<T extends Resource = Resource>(props: MultiRe
 
   const handleChange = useCallback(
     (newResources: T[]) => {
+      remember(newResources);
       setItems(newResources);
       if (onChange) {
         onChange(newResources);
       }
     },
-    [setItems, onChange]
+    [remember, setItems, onChange]
   );
 
   return (
@@ -219,43 +220,63 @@ export function MultiResourceInput<T extends Resource = Resource>(props: MultiRe
 }
 
 /**
- * Resolves the selection to resources, reading references the client hasn't cached. While a read is
- * pending, the last fully resolved selection is shown.
+ * Resolves the selection to resources, reading the references that neither the client cache nor this
+ * input holds. While a read is pending, the last fully resolved selection is shown.
  * @param value - The selected resources and references.
- * @returns The resources to show, and whether a read is pending. An edit made while pending would drop
- * the references still being read.
+ * @returns The resources to show, whether a read is pending, and `remember`, which keeps resources the
+ * input is handed so a parent that stores them as references doesn't cause a read. An edit made while
+ * pending would drop the references still being read.
  */
 function useResolvedResources<T extends Resource>(
   value: readonly (T | Reference<T>)[]
-): { resources: T[]; pending: boolean } {
+): { resources: T[]; pending: boolean; remember: (resources: readonly T[]) => void } {
   const medplum = useMedplum();
-  // The last read, by the client that made it and the uncached references it covered. null marks a
+  // What this input has read or been handed, by reference, for the client it came from. null marks a
   // reference that could not be read.
-  const [read, setRead] = useState<{ medplum: MedplumClient; key: string; results: Map<string, T | null> }>();
+  const [known, setKnown] = useState<{ medplum: MedplumClient; byReference: ReadonlyMap<string, T | null> }>();
+  const byReference = known?.medplum === medplum ? known.byReference : undefined;
 
   const { resolved, pendingKey } = useMemo(() => {
-    const uncached = new Set<string>();
-    for (const item of value) {
-      if (!isResource<T>(item) && isReference<T>(item) && !medplum.getCachedReference(item)) {
-        uncached.add(item.reference);
-      }
-    }
-    const key = uncached.size > 0 ? JSON.stringify([...uncached]) : '';
-    const results = read?.medplum === medplum && read.key === key ? read.results : undefined;
-
     const resolved: T[] = [];
+    const unread = new Set<string>();
     for (const item of value) {
       if (isResource<T>(item)) {
         resolved.push(item);
       } else if (isReference<T>(item)) {
-        const resource = medplum.getCachedReference(item) ?? results?.get(item.reference);
+        const resource = medplum.getCachedReference(item) ?? byReference?.get(item.reference);
         if (resource) {
           resolved.push(resource);
+        } else if (resource === undefined) {
+          unread.add(item.reference);
         }
       }
     }
-    return { resolved, pendingKey: key && !results ? key : '' };
-  }, [medplum, value, read]);
+    return { resolved, pendingKey: unread.size > 0 ? JSON.stringify([...unread]) : '' };
+  }, [medplum, value, byReference]);
+
+  const learn = useCallback(
+    (entries: readonly (readonly [string, T | null])[]): void => {
+      setKnown((prev) => ({
+        medplum,
+        byReference: new Map([...(prev?.medplum === medplum ? prev.byReference : []), ...entries]),
+      }));
+    },
+    [medplum]
+  );
+
+  const remember = useCallback(
+    (resources: readonly T[]): void => {
+      const entries: [string, T][] = [];
+      for (const resource of resources) {
+        const reference = getReferenceString(resource);
+        if (reference) {
+          entries.push([reference, resource]);
+        }
+      }
+      learn(entries);
+    },
+    [learn]
+  );
 
   useEffect(() => {
     if (!pendingKey) {
@@ -266,23 +287,19 @@ function useResolvedResources<T extends Resource>(
     Promise.allSettled(references.map((reference) => medplum.readReference<T>({ reference })))
       .then((settled) => {
         if (!cancelled) {
-          const results = new Map<string, T | null>();
-          settled.forEach((result, i) => {
-            results.set(references[i], result.status === 'fulfilled' ? result.value : null);
-          });
-          setRead({ medplum, key: pendingKey, results });
+          learn(settled.map((result, i) => [references[i], result.status === 'fulfilled' ? result.value : null]));
         }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [medplum, pendingKey]);
+  }, [medplum, pendingKey, learn]);
 
   const [lastResolved, setLastResolved] = useState(resolved);
   if (!pendingKey && resolved !== lastResolved) {
     setLastResolved(resolved);
   }
 
-  return { resources: pendingKey ? lastResolved : resolved, pending: !!pendingKey };
+  return { resources: pendingKey ? lastResolved : resolved, pending: !!pendingKey, remember };
 }
