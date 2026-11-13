@@ -1849,9 +1849,7 @@ describe('Subscription Worker', () => {
             resourceType: 'Patient',
             name: [{ given: ['Alice'], family: `AutoDisableBot${i}` }],
           });
-          await expect(findAndExecSubscriptionJob(patient, 'create', subscription)).rejects.toThrow(
-            UnrecoverableError
-          );
+          await expect(findAndExecSubscriptionJob(patient, 'create', subscription)).rejects.toThrow(UnrecoverableError);
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);

@@ -5,6 +5,7 @@ import {
   AccessPolicyInteraction,
   ContentType,
   EMPTY,
+  OperationOutcomeError,
   Operator,
   createReference,
   getExtension,
@@ -15,7 +16,6 @@ import {
   isString,
   matchesSearchRequest,
   normalizeOperationOutcome,
-  OperationOutcomeError,
   parseSearchRequest,
   resolveId,
   resourceMatchesSubscriptionCriteria,
@@ -91,18 +91,21 @@ const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 const MAX_JOB_ATTEMPTS = 19;
 
 /**
- * The default number of times a job will be attempted.
- * This can be overridden by the subscription-max-attempts extension.
+ * The default number of retries after the first attempt fails (5 attempts in total).
+ * This can be overridden by the subscription-max-attempts extension, which also counts retries.
  */
 const DEFAULT_ATTEMPTS = 4;
 
 /**
- * The default number of retries for a failed Bot handler when subscription-max-attempts is not specified.
+ * The default number of retries for a failed Bot execution when subscription-max-attempts is not specified.
  * Bot handlers are not guaranteed to be idempotent, so they run once unless retries are opted into.
  */
-const DEFAULT_BOT_HANDLER_ATTEMPTS = 0;
+const DEFAULT_BOT_HANDLER_RETRIES = 0;
 
-/** Thrown when a Bot subscription's handler runs and fails. Setup errors before the handler runs use other error types. */
+/**
+ * Thrown when executeBot returns an unsuccessful result: the handler failed, or the invocation itself failed
+ * (for example, Lambda throttling). Errors thrown before the Bot is invoked use other error types.
+ */
 class BotExecutionFailedError extends OperationOutcomeError {}
 
 /**
@@ -1041,7 +1044,7 @@ async function catchJobError(
 ): Promise<void> {
   const maxJobAttempts =
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
-      ?.valueInteger ?? (err instanceof BotExecutionFailedError ? DEFAULT_BOT_HANDLER_ATTEMPTS : DEFAULT_ATTEMPTS);
+      ?.valueInteger ?? (err instanceof BotExecutionFailedError ? DEFAULT_BOT_HANDLER_RETRIES : DEFAULT_ATTEMPTS);
 
   if (job.attemptsMade >= maxJobAttempts) {
     // All retries exhausted - record as a final failure for auto-disable tracking
