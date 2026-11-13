@@ -44,6 +44,7 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import type { TestProjectOptions } from '../test.setup';
@@ -143,6 +144,29 @@ describe('AccessPolicy', () => {
         accessPolicy: { resource: [{ resourceType: 'Patient' }] },
       });
       expect(patientOnlyRepo.getConfig().accessPolicy?.resource?.map((r) => r.resourceType)).not.toContain('Bot');
+    }));
+
+  test('Bot.system rule does not repeat wildcard criteria in Bot searches', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' }] },
+      });
+      const bot = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test Bot' });
+
+      // Creating switches the repo to the writer pool
+      const querySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, repo.shardId), 'query');
+      try {
+        const bundle = await repo.search({
+          resourceType: 'Bot',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: bot.id }],
+        });
+        expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual([bot.id]);
+        const sql = querySpy.mock.calls.map((call) => String(call[0])).find((text) => text.includes('FROM "Bot"'));
+        expect(sql?.match(/"lastUpdated" >/g)).toHaveLength(1);
+      } finally {
+        querySpy.mockRestore();
+      }
     }));
 
   test.each<[string, Partial<AccessPolicy> | undefined]>([

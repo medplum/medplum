@@ -1992,6 +1992,7 @@ export class Repository extends FhirRepository implements Disposable {
     const expressions: Expression[] = [];
 
     const isProjectAdminResource = projectAdminResourceTypes.includes(resourceType);
+    const appliedCriteria = new Set<string>();
 
     for (const policy of accessPolicy.resource) {
       if (
@@ -2022,6 +2023,11 @@ export class Repository extends FhirRepository implements Disposable {
             const queryIndex = criteria.indexOf('?');
             criteria = resourceType + '?' + criteria.slice(queryIndex + 1);
           }
+          if (appliedCriteria.has(criteria)) {
+            // Another entry already applied the same criteria, e.g. a wildcard entry and its Bot copy
+            continue;
+          }
+          appliedCriteria.add(criteria);
           const searchRequest = parseSearchRequest(criteria);
           const accessPolicyExpression = buildSearchExpression(
             this,
