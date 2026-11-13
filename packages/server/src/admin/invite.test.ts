@@ -2019,7 +2019,6 @@ describe('Admin Invite', () => {
       const relatedPersonPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         name: 'Default RelatedPerson Policy',
-        compartment: { reference: '%patient' },
         resource: [{ resourceType: 'RelatedPerson', criteria: 'RelatedPerson?patient=%patient' }],
       });
       const patient = await systemRepo.createResource<Patient>({

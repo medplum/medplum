@@ -283,7 +283,7 @@ Choose how patients register, whether caregivers or proxies need access (such as
 | Access option                                          | Approach                                                                                                   |
 | :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
 | Patient sees own data                                  | Parameterized policy with `%patient` on clinical resources                                                 |
-| Single caregiver, single patient                       | One `access` entry with `%patient`                                                                         |
+| Single caregiver, single patient                       | Invite the RelatedPerson with that Patient so the membership parameter fills `%patient`                   |
 | One caregiver, multiple patients                       | Multiple `access` entries, different `%patient`                                                            |
 | Multiple caregivers per patient                        | Each caregiver has their own ProjectMembership                                                             |
 | Revoke caregiver                                       | Remove the corresponding grants and verify API access is revoked                                           |
