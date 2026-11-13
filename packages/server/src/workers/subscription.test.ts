@@ -225,6 +225,7 @@ describe('Subscription Worker', () => {
         project: binary.meta?.project,
         channel: 'rest-hook',
         subscriptions: [subscription.id],
+        suppressed: 0,
       });
       warnSpy.mockRestore();
     }));
@@ -2881,6 +2882,7 @@ describe('Subscription Worker', () => {
           project: wsProject.id,
           channel: 'websocket',
           subscriptions: [subscription.id],
+          suppressed: 0,
         });
         warnSpy.mockRestore();
       }));

@@ -56,6 +56,7 @@ import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { LogThrottle } from '../util/logthrottle';
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventEntry, SubEventPayload } from '../ws/subscriptions';
@@ -465,6 +466,8 @@ export async function addSubscriptionJobs(
   }
 }
 
+const binaryDataLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
+
 /**
  * Logs subscription notifications that include inline `Binary.data`.
  * The content is also available from binary storage, so subscribers should not need it in the notification.
@@ -473,14 +476,19 @@ export async function addSubscriptionJobs(
  * @param subscriptionIds - The subscriptions that receive the resource.
  */
 function logBinaryDataNotification(resource: Resource, channel: string, subscriptionIds: string[]): void {
-  if (resource.resourceType === 'Binary' && resource.data !== undefined) {
+  if (resource.resourceType !== 'Binary' || resource.data === undefined) {
+    return;
+  }
+  const project = resource.meta?.project;
+  binaryDataLogThrottle.maybeLog([project, channel, ...subscriptionIds].join('|'), (suppressed) => {
     globalLogger.warn('Subscription notification includes Binary.data', {
       binary: resource.id,
-      project: resource.meta?.project,
+      project,
       channel,
       subscriptions: subscriptionIds,
+      suppressed,
     });
-  }
+  });
 }
 
 /**
