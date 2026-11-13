@@ -37,8 +37,10 @@ describe('ResourceInput', () => {
       resourceType: 'Patient',
       name: 'foo',
       placeholder: 'Test',
+      'aria-label': 'Patient',
     });
     expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Patient' })).toBeInTheDocument();
   });
 
   test('Renders default value', async () => {
