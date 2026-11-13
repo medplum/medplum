@@ -194,16 +194,17 @@ describe('Subscription Worker', () => {
       await findAndExecSubscriptionJob(patient, 'delete');
     }));
 
-  test('Binary notification does not include embedded data', () =>
+  test('Logs Binary notification that includes embedded data', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';
-      await repo.createResource<Subscription>({
+      const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         status: 'active',
         criteria: 'Binary',
         channel: { type: 'rest-hook', endpoint: url },
       });
+      const warnSpy = vi.spyOn(globalLogger, 'warn');
 
       const binary = await repo.createResource<Binary>({
         resourceType: 'Binary',
@@ -218,8 +219,14 @@ describe('Subscription Worker', () => {
       const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as Binary;
       expect(body.id).toStrictEqual(binary.id);
       expect(body.contentType).toStrictEqual(ContentType.TEXT);
-      expect(body.data).toBeUndefined();
-      expect(body.meta?.tag).toContainEqual({ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' });
+      expect(body.data).toStrictEqual('SGVsbG8gV29ybGQh');
+      expect(warnSpy).toHaveBeenCalledWith('Subscription notification includes Binary.data', {
+        binary: binary.id,
+        project: binary.meta?.project,
+        channel: 'rest-hook',
+        subscriptions: [subscription.id],
+      });
+      warnSpy.mockRestore();
     }));
 
   test('Does not send subscriptions when disabled', () =>
@@ -2835,7 +2842,7 @@ describe('Subscription Worker', () => {
       return authorRef;
     }
 
-    test('Binary notification does not include embedded data', () =>
+    test('Logs Binary notification that includes embedded data', () =>
       withTestContext(async () => {
         const {
           repo: wsSubRepo,
@@ -2856,6 +2863,7 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
         await bindSubscription(subscription, wsProject.id, login.id, membership.id);
+        const warnSpy = vi.spyOn(globalLogger, 'warn');
 
         const nextArgsPromise = waitForNextSubNotification<Binary>();
         const binary = await wsSubRepo.createResource<Binary>({
@@ -2867,11 +2875,14 @@ describe('Subscription Worker', () => {
 
         const [resource] = await nextArgsPromise;
         expect(resource.id).toStrictEqual(binary.id);
-        expect(resource.data).toBeUndefined();
-        expect(resource.meta?.tag).toContainEqual({
-          system: 'http://hl7.org/fhir/v3/ObservationValue',
-          code: 'SUBSETTED',
+        expect(resource.data).toStrictEqual('SGVsbG8gV29ybGQh');
+        expect(warnSpy).toHaveBeenCalledWith('Subscription notification includes Binary.data', {
+          binary: binary.id,
+          project: wsProject.id,
+          channel: 'websocket',
+          subscriptions: [subscription.id],
         });
+        warnSpy.mockRestore();
       }));
 
     test('Enabled', () =>

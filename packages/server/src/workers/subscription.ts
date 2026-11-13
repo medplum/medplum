@@ -24,7 +24,6 @@ import {
 import type {
   Bot,
   ClientApplication,
-  Coding,
   Patient,
   Practitioner,
   Project,
@@ -454,27 +453,34 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
+    logBinaryDataNotification(
+      resource,
+      'websocket',
+      wsSubEvents.map(([subscriptionId]) => subscriptionId)
+    );
     await publish(
       WEBSOCKET_SUB_PUBLISH_CHANNEL,
-      JSON.stringify({ resource: removeBinaryData(resource), events: wsSubEvents } satisfies SubEventPayload)
+      JSON.stringify({ resource, events: wsSubEvents } satisfies SubEventPayload)
     );
   }
 }
 
-const SUBSETTED_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
-
 /**
- * Removes inline `Binary.data` from a resource sent to subscribers, and tags it as subsetted.
- * Subscribers read the content from binary storage instead.
- * @param resource - The resource to send.
- * @returns The resource without `Binary.data`.
+ * Logs subscription notifications that include inline `Binary.data`.
+ * The content is also available from binary storage, so subscribers should not need it in the notification.
+ * @param resource - The resource sent to subscribers.
+ * @param channel - The notification channel.
+ * @param subscriptionIds - The subscriptions that receive the resource.
  */
-function removeBinaryData<T extends Resource>(resource: T): T {
-  if (resource.resourceType !== 'Binary' || resource.data === undefined) {
-    return resource;
+function logBinaryDataNotification(resource: Resource, channel: string, subscriptionIds: string[]): void {
+  if (resource.resourceType === 'Binary' && resource.data !== undefined) {
+    globalLogger.warn('Subscription notification includes Binary.data', {
+      binary: resource.id,
+      project: resource.meta?.project,
+      channel,
+      subscriptions: subscriptionIds,
+    });
   }
-  const { data: _data, ...rest } = resource;
-  return { ...rest, meta: { ...rest.meta, tag: [...(rest.meta?.tag ?? []), SUBSETTED_TAG] } } as T;
 }
 
 /**
@@ -758,7 +764,11 @@ async function deliverSubscriptionJob(job: Job<SubscriptionJobData>, summary: Su
       using projectRepo = await getRepoForProject(versionedResource.meta.project);
       rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, projectRepo, versionedResource);
     }
-    rewrittenResource = removeBinaryData(rewrittenResource);
+    logBinaryDataNotification(
+      rewrittenResource,
+      subscription.channel.endpoint?.startsWith('Bot/') ? 'bot' : 'rest-hook',
+      [subscription.id]
+    );
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;
