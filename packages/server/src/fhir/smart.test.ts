@@ -10,7 +10,7 @@ import { loadTestConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
 import { createTestProject } from '../test.setup';
 import type { PopulatedAccessPolicy } from './accesspolicy';
-import { applySmartScopes, getPartialPermissionScopes, parseSmartScopes } from './smart';
+import { applySmartScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {
@@ -97,23 +97,6 @@ describe('SMART on FHIR', () => {
       },
     ]);
     expect(parseSmartScopes('patient/Observation.rs?')[0].params).toBeUndefined();
-  });
-
-  test.each<[string, string[]]>([
-    ['openid offline_access', []],
-    ['patient/Observation.rs patient/Patient.read', []],
-    ['patient/Observation.read patient/Observation.write', []],
-    ['patient/Observation.r patient/Observation.s', []],
-    ['user/*.*', []],
-    ['patient/Observation.r', ['patient/Observation.r']],
-    ['patient/Observation.s', ['patient/Observation.s']],
-    ['user/Patient.c openid', ['user/Patient.c']],
-    ['patient/Observation.write', ['patient/Observation.cud']],
-    ['patient/Observation.c patient/Observation.rs', ['patient/Observation.crs']],
-    ['user/*.* user/Patient.c', []],
-    ['user/*.c user/Patient.rs', ['user/*.c', 'user/Patient.crs']],
-  ])('Partial permission scopes for %s', (scope, expected) => {
-    expect(getPartialPermissionScopes(scope)).toStrictEqual(expected);
   });
 
   describe('applySmartScopes()', () => {
@@ -285,6 +268,36 @@ describe('SMART on FHIR', () => {
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.SEARCH, 'Observation')).toBe(true);
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.UPDATE, 'Observation')).toBe(false);
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.READ, 'Patient')).toBe(false);
+    });
+
+    test.each<[string, AccessPolicyInteraction[], AccessPolicyInteraction[]]>([
+      ['user/Observation.c', ['create'], ['read', 'search', 'update', 'delete']],
+      ['user/Observation.r', ['read', 'vread', 'history'], ['search', 'create', 'update']],
+      ['user/Observation.s', ['search'], ['read', 'create']],
+      ['user/Observation.cu', ['create', 'update'], ['read', 'search', 'delete']],
+      ['user/*.c user/Observation.rs', ['create', 'read', 'search'], ['update', 'delete']],
+    ])('Partial permission scope %s', (scope, allowed, denied) => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Observation' }],
+      };
+
+      const result = applySmartScopes(startAccessPolicy, authStateFor(scope));
+      for (const interaction of allowed) {
+        expect(accessPolicySupportsInteraction(result, interaction, 'Observation')).toBe(true);
+      }
+      for (const interaction of denied) {
+        expect(accessPolicySupportsInteraction(result, interaction, 'Observation')).toBe(false);
+      }
+    });
+
+    test('Partial permission scope never widens a read-only entry', () => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Observation', readonly: true }],
+      };
+
+      expect(applySmartScopes(startAccessPolicy, authStateFor('user/Observation.c')).resource).toStrictEqual([]);
     });
 
     test('Scope with no permissions grants no access', () => {

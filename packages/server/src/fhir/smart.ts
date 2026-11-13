@@ -7,6 +7,7 @@
  */
 
 import {
+  AccessPolicyInteraction,
   badRequest,
   ContentType,
   deepClone,
@@ -169,38 +170,6 @@ export function parseSmartScopeString(scope: string): SmartScope | undefined {
   };
 }
 
-/**
- * Returns the SMART scopes whose combined permissions, per permission type and resource type, are
- * neither read-only (`rs`) nor full access (`cruds`).
- * @param scope - The OAuth scope string.
- * @returns The partial permission scopes, such as `patient/Observation.cs`.
- */
-export function getPartialPermissionScopes(scope: string | undefined): string[] {
-  const permissions = new Map<string, Set<string>>();
-  for (const smartScope of parseSmartScopes(scope)) {
-    const key = `${smartScope.permissionType}/${smartScope.resourceType}`;
-    let letters = permissions.get(key);
-    if (!letters) {
-      letters = new Set<string>();
-      permissions.set(key, letters);
-    }
-    for (const letter of smartScope.scope) {
-      letters.add(letter);
-    }
-  }
-
-  const result: string[] = [];
-  for (const [key, letters] of permissions) {
-    // Wildcard scopes also apply to each concrete resource type of the same permission type
-    const wildcard = permissions.get(key.split('/')[0] + '/*');
-    const combined = [...'cruds'].filter((letter) => letters.has(letter) || wildcard?.has(letter)).join('');
-    if (combined !== 'rs' && combined !== 'cruds') {
-      result.push(`${key}.${combined}`);
-    }
-  }
-  return result;
-}
-
 function normalizeV2ScopeString(str: string): string {
   switch (str) {
     case '*':
@@ -290,7 +259,17 @@ function intersectSmartScopes(
   return result;
 }
 
-const readOnlyScope = /^[rs]+$/;
+const writeScope = /[cud]/;
+
+const allInteractions = Object.values(AccessPolicyInteraction);
+
+const scopeLetterInteractions: Record<string, AccessPolicyInteraction[]> = {
+  c: [AccessPolicyInteraction.CREATE],
+  r: [AccessPolicyInteraction.READ, AccessPolicyInteraction.VREAD, AccessPolicyInteraction.HISTORY],
+  u: [AccessPolicyInteraction.UPDATE],
+  d: [AccessPolicyInteraction.DELETE],
+  s: [AccessPolicyInteraction.SEARCH],
+};
 
 /**
  * Narrows an AccessPolicy resource entry by a single SMART scope.
@@ -334,12 +313,18 @@ function narrowEntry(
     delete result.criteria;
   }
 
-  if (readOnlyScope.exec(scope.scope)) {
+  if (!writeScope.test(scope.scope)) {
     result.readonly = true;
-    result.interaction = result.interaction?.filter((interaction) => readInteractions.includes(interaction));
-    if (result.interaction?.length === 0) {
-      return undefined;
-    }
+  }
+  const available = result.interaction ?? (result.readonly ? readInteractions : allInteractions);
+  const allowed = available.filter((interaction) =>
+    [...scope.scope].some((letter) => scopeLetterInteractions[letter]?.includes(interaction))
+  );
+  if (allowed.length === 0) {
+    return undefined;
+  }
+  if (allowed.length < available.length) {
+    result.interaction = allowed;
   }
   return result;
 }
