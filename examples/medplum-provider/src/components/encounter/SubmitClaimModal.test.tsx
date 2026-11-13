@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Condition, Coverage, Patient } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { SubmitClaimModal } from './SubmitClaimModal';
 
 const mockCondition: Condition = {
@@ -68,11 +68,7 @@ function getCoverageCheckbox(payerName: string): HTMLElement {
 
 function setup(overrides: Partial<React.ComponentProps<typeof SubmitClaimModal>> = {}): void {
   act(() => {
-    render(
-      <MantineProvider>
-        <SubmitClaimModal {...defaultProps} {...overrides} />
-      </MantineProvider>
-    );
+    render(<SubmitClaimModal {...defaultProps} {...overrides} />);
   });
 }
 

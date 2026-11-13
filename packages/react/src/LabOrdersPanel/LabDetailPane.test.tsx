@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerServiceRequest, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { beforeEach, expect, test, vi } from 'vitest';
+import { render } from '../test-utils/render';
 import { LabDetailPane } from './LabDetailPane';
 
 vi.mock('@mantine/notifications');
@@ -35,9 +35,7 @@ const report = HomerDiagnosticReport as WithId<DiagnosticReport>;
 const setup = (props: Parameters<typeof LabDetailPane>[0]): ReturnType<typeof render> =>
   render(
     <MedplumProvider medplum={medplum}>
-      <MantineProvider>
-        <LabDetailPane {...props} />
-      </MantineProvider>
+      <LabDetailPane {...props} />
     </MedplumProvider>
   );
 
@@ -80,9 +78,7 @@ test('passes a Reference to the selected report, and updates it when switching r
   const secondReport = { ...report, id: 'dr-2' };
   rerender(
     <MedplumProvider medplum={medplum}>
-      <MantineProvider>
-        <LabDetailPane item={secondReport} />
-      </MantineProvider>
+      <LabDetailPane item={secondReport} />
     </MedplumProvider>
   );
 

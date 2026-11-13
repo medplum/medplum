@@ -41,3 +41,15 @@ export function hasMedicalRecordNumber(patient: Patient, mrnSystem: string | und
         ) === true)
   );
 }
+
+/**
+ * Tells whether a patient's record says they have died: `deceasedBoolean: true`,
+ * or a `deceasedDateTime` of any value. The `deceased` search parameter reads it
+ * the same way.
+ *
+ * @param patient - The patient to check.
+ * @returns True when the patient has died.
+ */
+export function isDeceased(patient: Patient): boolean {
+  return patient.deceasedBoolean === true || patient.deceasedDateTime !== undefined;
+}

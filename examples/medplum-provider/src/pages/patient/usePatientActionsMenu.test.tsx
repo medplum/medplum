@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider, Menu } from '@mantine/core';
+import { Menu } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { loadDataType } from '@medplum/core';
 import type { Patient, Reference, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { usePatientActionsMenu } from './usePatientActionsMenu';
 
 describe('usePatientActionsMenu', () => {
@@ -56,10 +57,8 @@ describe('usePatientActionsMenu', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Harness patient={patient} />
-          </MantineProvider>
+          <Notifications />
+          <Harness patient={patient} />
         </MedplumProvider>
       </MemoryRouter>
     );

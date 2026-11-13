@@ -89,7 +89,7 @@ The following function arguments are available to the Bot code, to enable it to 
 | `event.secrets`     | `Record<string, ProjectSetting>`                                                             | Map of project secrets accessible to the bot. See [Bot Secrets](/docs/bots/bot-secrets) for more details |
 | `event.traceId`     | `string` (optional)                                                                          | Trace ID for request correlation and debugging                                                           |
 | `event.requester`   | `Reference<Bot \| ClientApplication \| Patient \| Practitioner \| RelatedPerson>` (optional) | Reference to the resource that requested the bot execution                                               |
-| `event.headers`     | `Record<string, string \| string[] \| undefined>` (optional)                                 | Headers from the original HTTP request, when invoked by HTTP request                                     |
+| `event.headers`     | `Record<string, string \| string[] \| undefined>` (optional)                                 | Headers from the original HTTP request. `Authorization` is removed, except on `/webhook` requests        |
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
 

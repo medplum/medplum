@@ -194,6 +194,42 @@ describe('Subscription Worker', () => {
       await findAndExecSubscriptionJob(patient, 'delete');
     }));
 
+  test('Logs Binary notification that includes embedded data', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Binary',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+      const warnSpy = vi.spyOn(globalLogger, 'warn');
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        data: 'SGVsbG8gV29ybGQh',
+      });
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(binary, 'create');
+
+      expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST' }));
+      const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as Binary;
+      expect(body.id).toStrictEqual(binary.id);
+      expect(body.contentType).toStrictEqual(ContentType.TEXT);
+      expect(body.data).toStrictEqual('SGVsbG8gV29ybGQh');
+      expect(warnSpy).toHaveBeenCalledWith('Subscription notification includes Binary.data', {
+        binary: binary.id,
+        project: binary.meta?.project,
+        channel: 'rest-hook',
+        subscriptions: [subscription.id],
+        suppressed: 0,
+      });
+      warnSpy.mockRestore();
+    }));
+
   test('Does not send subscriptions when disabled', () =>
     withTestContext(async () => {
       await repo.createResource<Subscription>({
@@ -1282,6 +1318,58 @@ describe('Subscription Worker', () => {
       expect(jobs[2].changePriority).not.toHaveBeenCalled();
     }));
 
+  test('Logs one summary line per job attempt', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      (fetch as unknown as Mock)
+        .mockImplementationOnce(() => mockFetchStatus(500))
+        .mockImplementation(() => mockFetchStatus(200));
+      const attemptLogs: unknown[] = [];
+      const logger = loggerModule.getLogger();
+      const captureAttempt = (msg: string, data?: unknown): void => {
+        if (msg === 'Subscription job attempt') {
+          attemptLogs.push(data);
+        }
+      };
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(captureAttempt);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(captureAttempt);
+
+      await findAndExecSubscriptionJob(patient, 'create', subscription);
+      // Rerun the same job after disabling the subscription, so it is skipped
+      await repo.updateResource<Subscription>({ ...subscription, status: 'off' });
+      await findAndExecSubscriptionJob(patient, 'create', subscription);
+
+      infoSpy.mockRestore();
+      warnSpy.mockRestore();
+      expect(attemptLogs).toStrictEqual([
+        expect.objectContaining({
+          attemptsMade: 0,
+          delivery: 'rest-hook',
+          status: 500,
+          url,
+          error: 'Received status 500',
+          fetchDurationMs: expect.any(Number),
+        }),
+        expect.objectContaining({
+          attemptsMade: 1,
+          delivery: 'rest-hook',
+          status: 200,
+          error: undefined,
+          fetchDurationMs: expect.any(Number),
+        }),
+        expect.objectContaining({ attemptsMade: 0, skipReason: 'Subscription not active' }),
+      ]);
+    }));
+
   test('Retry on exception', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';
@@ -1533,6 +1621,44 @@ describe('Subscription Worker', () => {
       });
       expect(bundle.entry?.length).toStrictEqual(1);
       expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+    }));
+
+  test('Skip runAsUser bot subscriptions for system-authored resources', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runAsUser: true,
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: bot.meta?.project },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
+
+      await findAndExecSubscriptionJob(patient, 'create');
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(0);
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(bundle.entry).toHaveLength(0);
     }));
 
   test('Bot subscription execution AuditEvent is always emitted to logs', () =>
@@ -2716,6 +2842,50 @@ describe('Subscription Worker', () => {
       });
       return authorRef;
     }
+
+    test('Logs Binary notification that includes embedded data', () =>
+      withTestContext(async () => {
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          membership,
+          login,
+        } = await createTestProject({
+          project: { name: 'WebSocket Binary Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+          withClient: true,
+          withAccessToken: true,
+        });
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Binary',
+          channel: { type: 'websocket' },
+        });
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
+        const warnSpy = vi.spyOn(globalLogger, 'warn');
+
+        const nextArgsPromise = waitForNextSubNotification<Binary>();
+        const binary = await wsSubRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType: ContentType.TEXT,
+          data: 'SGVsbG8gV29ybGQh',
+        });
+        await findAndExecDispatchJob(binary, 'create');
+
+        const [resource] = await nextArgsPromise;
+        expect(resource.id).toStrictEqual(binary.id);
+        expect(resource.data).toStrictEqual('SGVsbG8gV29ybGQh');
+        expect(warnSpy).toHaveBeenCalledWith('Subscription notification includes Binary.data', {
+          binary: binary.id,
+          project: wsProject.id,
+          channel: 'websocket',
+          subscriptions: [subscription.id],
+          suppressed: 0,
+        });
+        warnSpy.mockRestore();
+      }));
 
     test('Enabled', () =>
       withTestContext(async () => {

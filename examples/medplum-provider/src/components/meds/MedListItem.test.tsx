@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { MedicationOrderExtensions } from '@medplum/core';
 import type { MedicationRequest } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { expect, test } from 'vitest';
+import { render } from '../../test-utils/render';
 import { MedListItem } from './MedListItem';
 
 const extensions = { pendingOrderStatusUrl: 'https://example.com/pending-order-status' } as MedicationOrderExtensions;
@@ -26,15 +26,13 @@ function setup(item: MedicationRequest, completed = false, selectedItem?: Medica
   return render(
     <MemoryRouter>
       <MedplumProvider medplum={new MockClient()}>
-        <MantineProvider>
-          <MedListItem
-            item={item}
-            selectedItem={selectedItem}
-            activeTab={completed ? 'completed' : 'active'}
-            getItemUrl={(mr) => `/meds/${mr.id}`}
-            medicationOrderExtensions={extensions}
-          />
-        </MantineProvider>
+        <MedListItem
+          item={item}
+          selectedItem={selectedItem}
+          activeTab={completed ? 'completed' : 'active'}
+          getItemUrl={(mr) => `/meds/${mr.id}`}
+          medicationOrderExtensions={extensions}
+        />
       </MedplumProvider>
     </MemoryRouter>
   ).container;

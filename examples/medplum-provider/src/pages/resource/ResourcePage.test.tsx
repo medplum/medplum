@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -17,14 +16,12 @@ describe('ResourcePage', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <MantineProvider>
-              <Notifications />
-              <ErrorBoundary>
-                <Suspense fallback={<Loading />}>
-                  <App />
-                </Suspense>
-              </ErrorBoundary>
-            </MantineProvider>
+            <Notifications />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading />}>
+                <App />
+              </Suspense>
+            </ErrorBoundary>
           </MemoryRouter>
         </MedplumProvider>
       );

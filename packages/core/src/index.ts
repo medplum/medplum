@@ -52,6 +52,7 @@ export * from './search/search';
 export * from './sftp';
 export * from './smarthealthlinks';
 export * from './sql-on-fhir/eval';
+export * from './static-client';
 export * from './storage';
 export * from './subscriptions';
 export * from './types';

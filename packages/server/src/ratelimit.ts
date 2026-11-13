@@ -49,7 +49,7 @@ const categories: RateLimitCategoryConfig[] = [
     name: 'auth',
     serverConfigKey: 'defaultAuthRateLimit',
     systemSettingName: 'authRateLimit',
-    defaultLimitPerMinute: 1200,
+    defaultLimitPerMinute: 600,
     matchesUrl: (url: string) => (url.startsWith('/auth/') || url.startsWith('/oauth2/')) && url !== '/auth/me',
   },
   {

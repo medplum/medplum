@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, forbidden } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
@@ -20,10 +19,8 @@ describe('SuperAdminPage', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-          <MantineProvider env="test">
-            <Notifications />
-            <AppRoutes />
-          </MantineProvider>
+          <Notifications />
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );

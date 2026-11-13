@@ -301,7 +301,7 @@ describe('HomePage', () => {
     await act(async () => {
       fireEvent.click(exportButton);
     });
-    expect(screen.getByText('Export as Transaction Bundle')).toBeInTheDocument();
+    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled());
   });
 
   test('Export Transaction Bundle button, error notifies', async () => {

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { DocumentReference } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { showErrorNotification } from '../../utils/notifications';
 import type { UploadDocumentModalProps } from './UploadDocumentModal';
 import { UploadDocumentModal } from './UploadDocumentModal';
@@ -27,9 +27,7 @@ describe('UploadDocumentModal', () => {
   const setup = (props: Partial<UploadDocumentModalProps> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <UploadDocumentModal opened={true} onClose={vi.fn()} patient={HomerSimpson} onCreated={vi.fn()} {...props} />
-        </MantineProvider>
+        <UploadDocumentModal opened={true} onClose={vi.fn()} patient={HomerSimpson} onCreated={vi.fn()} {...props} />
       </MedplumProvider>
     );
   };

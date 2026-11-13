@@ -7,6 +7,7 @@ import type {
   ClientApplication,
   Cron,
   Device,
+  Login,
   Patient,
   Practitioner,
   Project,
@@ -21,6 +22,10 @@ export interface BotExecutionRequest {
   readonly bot: WithId<Bot>;
   readonly runAs: WithId<ProjectMembership>;
   readonly runAsProject?: WithId<Project>;
+  /** The caller's login when `runAs` is the caller's own membership */
+  readonly callerLogin?: Login;
+  /** The route a caller invoked the bot through */
+  readonly entryPoint?: 'execute' | 'custom-operation' | 'cds' | 'agent';
   readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   readonly input: any;
   readonly contentType: string;

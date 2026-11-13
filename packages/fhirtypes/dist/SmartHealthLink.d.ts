@@ -136,6 +136,11 @@ export interface SmartHealthLink {
   passcodeHash?: string;
 
   /**
+   * Number of incorrect passcodes submitted for the SMART Health Link.
+   */
+  passcodeFailures?: number;
+
+  /**
    * Encrypted file available from the SMART Health Link.
    */
   file: SmartHealthLinkFile[];

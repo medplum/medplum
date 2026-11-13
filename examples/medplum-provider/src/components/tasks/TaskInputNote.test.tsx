@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import type { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { render } from '../../test-utils/render';
 import { TaskInputNote } from './TaskInputNote';
 
 describe('TaskInputNote', () => {
@@ -27,9 +27,7 @@ describe('TaskInputNote', () => {
   ): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <TaskInputNote task={task} {...props} />
-        </MantineProvider>
+        <TaskInputNote task={task} {...props} />
       </MedplumProvider>
     );
   };

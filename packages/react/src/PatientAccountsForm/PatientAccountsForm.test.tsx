@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { allOk } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
@@ -43,12 +42,12 @@ describe('PatientAccountsForm', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
+        <>
           <Notifications />
           <MedplumProvider medplum={client}>
             <PatientAccountsForm patient={patient} />
           </MedplumProvider>
-        </MantineProvider>
+        </>
       );
     });
     return client;

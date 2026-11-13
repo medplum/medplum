@@ -9,12 +9,15 @@ import type { RenderResult } from '@testing-library/react';
 import { act, fireEvent, screen, render as testingLibraryRender, waitFor } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
+import type { JSX, ReactNode } from 'react';
 
 export { act, fireEvent, screen, userEvent, waitFor };
 export type { RenderResult, UserEvent };
 
-export function render(ui: React.ReactNode): RenderResult {
-  return testingLibraryRender(<>{ui}</>, {
-    wrapper: ({ children }: { children: React.ReactNode }) => <MantineProvider>{children}</MantineProvider>,
+export function render(ui: ReactNode, wrapper?: ({ children }: { children: ReactNode }) => JSX.Element): RenderResult {
+  return testingLibraryRender(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <MantineProvider env="test">{wrapper ? wrapper({ children }) : children}</MantineProvider>
+    ),
   });
 }

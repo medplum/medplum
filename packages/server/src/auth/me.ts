@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { getReferenceString, Operator } from '@medplum/core';
+import { AccessPolicyInteraction, getReferenceString, Operator } from '@medplum/core';
 import type {
+  ClientApplication,
   Login,
   Project,
   ProjectMembership,
@@ -38,22 +39,30 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState, repo, systemRepo } = getAuthenticatedContext();
-  const { project, membership } = authState;
-  const profileRef = membership.profile as Reference<ProfileResource>;
-  const profile = await readMembershipReference<ProfileResource>(
+  const { authState, repo, systemRepo, project, membership } = getAuthenticatedContext();
+  const profileRef = membership.profile as Reference<ProfileResource | ClientApplication>;
+  let profile = await readMembershipReference<ProfileResource | ClientApplication>(
     systemRepo,
     membership,
     profileRef,
     membershipProfileTypes,
     { allowLinkedProjects: true }
   );
+  if (hasSmartResourceScopes(authState.login) && !repo.canPerformInteraction(AccessPolicyInteraction.READ, profile)) {
+    profile = { resourceType: profile.resourceType, id: profile.id } as WithId<ProfileResource>;
+  }
+  profile = repo.removeHiddenFields(profile, undefined, true);
+  if (profile.resourceType === 'ClientApplication') {
+    profile = { ...profile };
+    delete profile.secret;
+    delete profile.retiringSecret;
+  }
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
   let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
-  if (membership.user?.reference?.startsWith('User/')) {
+  if (!authState.onBehalfOfMembership && membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
   }
 

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { Parameters, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -18,14 +17,12 @@ describe('ValueSetPreview', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter>
-            <MantineProvider>
-              <Notifications />
-              <ErrorBoundary>
-                <Suspense fallback={<Loading />}>
-                  <ValueSetPreview valueSet={valueSet} />
-                </Suspense>
-              </ErrorBoundary>
-            </MantineProvider>
+            <Notifications />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading />}>
+                <ValueSetPreview valueSet={valueSet} />
+              </Suspense>
+            </ErrorBoundary>
           </MemoryRouter>
         </MedplumProvider>
       );

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../../test-utils/render';
 import { TaskStatusPanel } from './TaskStatusPanel';
 
 const mockTask: Task = {
@@ -38,14 +38,12 @@ describe('TaskStatusPanel', () => {
   const setup = async (task: Task, enabled = true): Promise<void> => {
     await act(async () => {
       render(
-        <MantineProvider env="test">
-          <TaskStatusPanel
-            task={task}
-            enabled={enabled}
-            onActionButtonClicked={mockOnActionButtonClicked}
-            onChangeStatus={mockOnChangeStatus}
-          />
-        </MantineProvider>
+        <TaskStatusPanel
+          task={task}
+          enabled={enabled}
+          onActionButtonClicked={mockOnActionButtonClicked}
+          onChangeStatus={mockOnChangeStatus}
+        />
       );
     });
   };

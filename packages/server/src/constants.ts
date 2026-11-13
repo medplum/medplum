@@ -36,6 +36,9 @@ export const WEBSOCKET_SUB_PUBLISH_CHANNEL = 'medplum:subscriptions:r4:websocket
  */
 export const EMAIL_MFA_CODE_EXPIRATION_MS = 20 * 60 * 1000; // 20 minutes
 
+/** How long a login can confirm the authenticator (TOTP) secret offered to it for enrollment. */
+export const TOTP_ENROLLMENT_EXPIRATION_MS = 20 * 60 * 1000; // 20 minutes
+
 /** Maximum age and failed-attempt window for a password login awaiting MFA. */
 export const MFA_LOGIN_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
 

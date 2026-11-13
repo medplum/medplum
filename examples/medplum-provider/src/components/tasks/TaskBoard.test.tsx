@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { ReadablePromise } from '@medplum/core';
 import type { Bundle, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TaskBoard } from './TaskBoard';
 
 describe('TaskBoard', () => {
@@ -29,19 +29,17 @@ describe('TaskBoard', () => {
     return (
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskBoard
-              query={query}
-              selectedTaskId={undefined}
-              onDelete={vi.fn()}
-              onNew={vi.fn()}
-              onChange={vi.fn()}
-              getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
-              myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
-              allTasksUri="/Task?_sort=-_lastUpdated"
-              {...props}
-            />
-          </MantineProvider>
+          <TaskBoard
+            query={query}
+            selectedTaskId={undefined}
+            onDelete={vi.fn()}
+            onNew={vi.fn()}
+            onChange={vi.fn()}
+            getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
+            myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
+            allTasksUri="/Task?_sort=-_lastUpdated"
+            {...props}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );

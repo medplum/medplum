@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Annotation, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TaskNoteItem } from './TaskNoteItem';
 
 describe('TaskNoteItem', () => {
@@ -18,9 +18,7 @@ describe('TaskNoteItem', () => {
   const setup = (note: Annotation): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <TaskNoteItem note={note} index={0} />
-        </MantineProvider>
+        <TaskNoteItem note={note} index={0} />
       </MedplumProvider>
     );
   };

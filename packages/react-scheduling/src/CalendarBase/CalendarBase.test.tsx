@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, sleep } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Patient, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { createRef } from 'react';
 import { describe, expect, test, vi } from 'vitest';
@@ -66,6 +66,20 @@ describe('CalendarBase', () => {
       setup({ eventSources: [{ appointments: [appointment], slots: [] }] });
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       expect(screen.queryByText('Old Name')).not.toBeInTheDocument();
+    });
+
+    test('marks a patient who has died', async () => {
+      const medplum = new MockClient();
+      const patient = await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Lee'], family: 'Whitfield' }],
+        deceasedDateTime: '2026-07-30T15:45:00.000Z',
+      });
+      const appointment = createAppointment({
+        participant: [{ actor: createReference(patient), status: 'accepted' }],
+      });
+      renderWithMedplum(<CalendarBase eventSources={[{ appointments: [appointment], slots: [] }]} />, medplum);
+      expect(await screen.findByText('Lee Whitfield (deceased)')).toBeInTheDocument();
     });
 
     test('says the patient is loading when the reference has no display', async () => {

@@ -37,6 +37,22 @@ describe('CapabilityStatement', () => {
     expect(getResource('Claim')).toBeDefined();
   });
 
+  test.each([
+    ['CodeSystem', ['lookup', 'validate-code', 'subsumes']],
+    ['ValueSet', ['expand', 'validate-code']],
+    ['ConceptMap', ['translate']],
+  ])('Terminology service capabilities for %s', (type, operations) => {
+    // See: https://hl7.org/fhir/R4/terminology-service.html#4.6.1
+    const resource = getResource(type);
+    expect(resource?.interaction?.map((i) => i.code)).toEqual(expect.arrayContaining(['read', 'search-type']));
+    expect(resource?.searchParam?.map((p) => p.name)).toEqual(
+      expect.arrayContaining(['url', 'version', 'name', 'title', 'status'])
+    );
+    expect(resource?.operation).toStrictEqual(
+      operations.map((name) => ({ name, definition: `http://hl7.org/fhir/OperationDefinition/${type}-${name}` }))
+    );
+  });
+
   test('Include resource types', () => {
     config.capabilityStatement = { includeResourceTypes: ['Patient', 'Observation'] };
     const resources = buildCapabilityStatement().rest?.[0].resource;

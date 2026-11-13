@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { calculateAgeString } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as medplumReact from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { EditTab } from './EditTab';
 import { PatientPage } from './PatientPage';
 import { TimelineTab } from './TimelineTab';
@@ -27,16 +27,14 @@ describe('PatientPage', () => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Patient/:patientId/*" element={<PatientPage />}>
-                <Route path="edit" element={<EditTab />} />
-                <Route path="" element={<TimelineTab />} />
-                <Route path="*" element={<TimelineTab />} />
-              </Route>
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Patient/:patientId/*" element={<PatientPage />}>
+              <Route path="edit" element={<EditTab />} />
+              <Route path="" element={<TimelineTab />} />
+              <Route path="*" element={<TimelineTab />} />
+            </Route>
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

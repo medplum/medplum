@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Encounter, Provenance } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as notifications from '../../utils/notifications';
 import { SignAddendum } from './SignAddendum';
@@ -45,14 +45,12 @@ describe('SignAddendumCard', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <SignAddendum
-              encounter={mockEncounter}
-              provenances={[]}
-              chartNoteStatus={ChartNoteStatus.Unsigned}
-              {...props}
-            />
-          </MantineProvider>
+          <SignAddendum
+            encounter={mockEncounter}
+            provenances={[]}
+            chartNoteStatus={ChartNoteStatus.Unsigned}
+            {...props}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );

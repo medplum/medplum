@@ -1,20 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TaskFilterMenu } from './TaskFilterMenu';
 import { TaskFilterType } from './TaskFilterMenu.utils';
 
 describe('TaskFilterMenu', () => {
   const setup = async (props: Partial<React.ComponentProps<typeof TaskFilterMenu>> = {}): Promise<void> => {
     await act(async () => {
-      render(
-        <MantineProvider>
-          <TaskFilterMenu onFilterChange={vi.fn()} performerTypes={[]} {...props} />
-        </MantineProvider>
-      );
+      render(<TaskFilterMenu onFilterChange={vi.fn()} performerTypes={[]} {...props} />);
     });
   };
 

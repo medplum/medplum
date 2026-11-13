@@ -172,8 +172,16 @@ function matchesResourcePolicyFilters(resource: Resource, resourcePolicy: Access
     // Deprecated - to be removed in v5
     return false;
   }
-  if (resourcePolicy.criteria && !matchesSearchRequest(resource, parseSearchRequest(resourcePolicy.criteria))) {
-    return false;
+  if (resourcePolicy.criteria) {
+    let criteria = resourcePolicy.criteria;
+    if (resourcePolicy.resourceType === '*' && criteria.startsWith('*?')) {
+      // As in search, a wildcard entry's parameters apply to the resource's own type.
+      // Parameters that type does not define never match.
+      criteria = resource.resourceType + criteria.slice(1);
+    }
+    if (!matchesSearchRequest(resource, parseSearchRequest(criteria))) {
+      return false;
+    }
   }
   return true;
 }

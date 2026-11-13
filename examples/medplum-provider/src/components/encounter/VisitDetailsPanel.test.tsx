@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { PatchOperation, WithId } from '@medplum/core';
 import type { Encounter, Location, Organization, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const mockEncounter: WithId<Encounter> = {
@@ -40,14 +40,12 @@ describe('VisitDetailsPanel', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <VisitDetailsPanel
-              encounter={mockEncounter}
-              onEncounterChange={vi.fn()}
-              onBillingOrganizationChange={vi.fn()}
-              {...props}
-            />
-          </MantineProvider>
+          <VisitDetailsPanel
+            encounter={mockEncounter}
+            onEncounterChange={vi.fn()}
+            onBillingOrganizationChange={vi.fn()}
+            {...props}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );

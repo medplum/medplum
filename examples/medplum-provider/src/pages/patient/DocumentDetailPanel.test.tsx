@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { formatDate } from '@medplum/core';
 import type { Attachment, DocumentReference } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
 
 const PDF_URL = 'http://example.com/binary/summary.pdf';
@@ -58,15 +58,13 @@ describe('DocumentDetailPanel', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <DocumentDetailPanel
-              item={item}
-              patientRef={{ reference: `Patient/${HomerSimpson.id}` }}
-              onDocumentChange={onDocumentChange}
-              onDocumentDeleted={onDocumentDeleted}
-            />
-          </MantineProvider>
+          <Notifications />
+          <DocumentDetailPanel
+            item={item}
+            patientRef={{ reference: `Patient/${HomerSimpson.id}` }}
+            onDocumentChange={onDocumentChange}
+            onDocumentDeleted={onDocumentDeleted}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );
