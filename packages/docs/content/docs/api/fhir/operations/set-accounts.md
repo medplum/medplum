@@ -44,6 +44,14 @@ Choose [shared or tenant-specific Patient records](/docs/tenancy-design/patient-
 
 `propagate: false` skips updates to existing compartment resources. It does not disable account inheritance on later resource writes. A shared Patient with separate clinical records needs [resource-specific access rules and write handling](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
+## Assign accounts during a resource write
+
+A trusted backend with project-admin or super-admin authority can include `meta.accounts` in a resource create or update request with the `X-Medplum: extended` header. The supplied accounts override Patient-account inheritance for that write, so the resource can have its intended assignment from creation. Medplum still computes its Patient and Project compartment references.
+
+Include the complete intended account list on every such write. If `meta` is present but both `meta.accounts` and legacy `meta.account` are absent, the write clears explicit account assignments. Extended responses include legacy `meta.account`; remove or update it when replacing `meta.accounts`, because the server combines both fields.
+
+Direct writes affect only the target resource. Use `$set-accounts` when you need to propagate a Patient's account changes to existing patient-compartment resources.
+
 ## Invoke the `$set-accounts` operation
 
 ```

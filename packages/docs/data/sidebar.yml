@@ -387,6 +387,7 @@ items:
   - type: "category"
     label: "Authorization and Access Control"
     id: "docs/access"
+    # Keep this explicit list current when adding access pages; tenancy pages above retain their /docs/access URLs.
     items:
       - type: "doc"
         id: "docs/access/projects"

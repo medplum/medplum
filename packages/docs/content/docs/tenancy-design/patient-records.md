@@ -72,6 +72,8 @@ Verify that the member is authorized for that Patient and organization before as
 
 Where clinical fields do not express the intended boundary, design a controlled resource-assignment workflow using [`$set-accounts`](/docs/api/fhir/operations/set-accounts) and compartment-based policies. Cover both creation and later updates: ordinary clinical-resource writes can derive account assignments from the referenced Patient again. Keep all write paths consistent, including Bots and imports. Initial writes must obey the intended boundary; an asynchronous correction after a resource becomes readable can expose it to the wrong tenant.
 
+A trusted backend with project-admin or super-admin authority can [set `meta.accounts` during creation or update using extended mode](/docs/api/fhir/operations/set-accounts#assign-accounts-during-a-resource-write). This sets the intended accounts in the same write, overriding Patient-account inheritance for that write. Follow the metadata handling requirements on that page for every subsequent write.
+
 **Patient-wide tenant assignment is a sharing operation.** Adding both organizations to a Patient and filtering all clinical resources only by those inherited compartments grants both organizations access. Setting `propagate: false` only skips the existing-resource sweep; it does not disable inheritance on later writes. Test the intended separation after creation, editing, and reassignment.
 
 For files, choose a `Binary.securityContext` whose access matches the file's intended audience. A tenant-specific file linked to a shared Patient as its security context may become accessible to both tenants. See [Binary Security Context](/docs/access/binary-security-context).

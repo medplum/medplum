@@ -68,8 +68,8 @@ function isMissingToolError(err) {
 // pandoc succeeded) can't leave a raw even-columns docx sitting in static/.
 function buildDocx(slug, markdownBody, tmpDir) {
   const tmpMd = path.join(tmpDir, `${slug}.md`);
-  // Resolve site image paths for pandoc, which reads the Markdown from a temporary directory.
-  const bodyWithImages = markdownBody.replace(/(!\[[^\]]*\]\()\/(img\/[^)]+)\)/g, (_, prefix, asset) => `${prefix}<${path.join(STATIC_DIR, asset)}>)`);
+  // Resolve site image paths for pandoc, preserving any optional title after the URL.
+  const bodyWithImages = markdownBody.replace(/(!\[[^\]]*\]\()\/(img\/[^\s)]+)(?=\s|\))/g, (_, prefix, asset) => `${prefix}<${path.join(STATIC_DIR, asset)}>`);
   const content = `![Medplum](${WORDMARK_PNG})\n\n${bodyWithImages}`;
   fs.writeFileSync(tmpMd, content);
 

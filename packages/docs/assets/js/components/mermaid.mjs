@@ -11,8 +11,8 @@ function currentTheme() {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default';
 }
 
-async function renderDiagrams({ selector = 'pre.mermaid', force = false } = {}) {
-  if (!document.querySelector(selector)) {
+async function renderDiagrams({ roots = [document], force = false } = {}) {
+  if (!roots.some((root) => root.querySelector('pre.mermaid'))) {
     return;
   }
   mermaidPromise ??= import(MERMAID_URL).then((m) => m.default);
@@ -20,7 +20,7 @@ async function renderDiagrams({ selector = 'pre.mermaid', force = false } = {}) 
   const theme = currentTheme();
   // Hidden panels have no measurable layout. Render them after they become visible, including on tab changes.
   // Query after loading Mermaid in case navigation replaced the original page while the import was pending.
-  const blocks = [...document.querySelectorAll(selector)].filter(
+  const blocks = [...new Set(roots.flatMap((root) => [...root.querySelectorAll('pre.mermaid')]))].filter(
     (block) => block.getClientRects().length > 0 && (force || block.dataset.renderedTheme !== theme)
   );
   if (blocks.length === 0) {
@@ -51,12 +51,12 @@ export function initMermaid() {
 }
 
 // Refresh visible tab diagrams even after a rapid switch interrupted an earlier layout measurement.
-document.addEventListener('tabs:change', () => queueRender({ selector: '.tab-panel pre.mermaid', force: true }));
+document.addEventListener('tabs:change', (event) => queueRender({ roots: event.detail.containers, force: true }));
 document.addEventListener(
   'toggle',
   (event) => {
     if (event.target instanceof HTMLDetailsElement && event.target.open) {
-      queueRender({ selector: 'details[open] pre.mermaid', force: true });
+      queueRender({ roots: [event.target], force: true });
     }
   },
   true
