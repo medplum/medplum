@@ -20,6 +20,8 @@ import type {
   Encounter,
   EncounterDiagnosis,
   Extension,
+  FamilyMemberHistory,
+  FamilyMemberHistoryCondition,
   Goal,
   GoalTarget,
   HumanName,
@@ -43,11 +45,15 @@ import type {
 } from '@medplum/fhirtypes';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
 import {
+  OID_AGE_OBSERVATION,
   OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL,
   OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL_V2,
   OID_ALLERGIES_SECTION_ENTRIES_REQUIRED,
   OID_ALLERGIES_SECTION_ENTRIES_REQUIRED_V2,
   OID_CARE_TEAMS_SECTION,
+  OID_FAMILY_HISTORY_DEATH_OBSERVATION,
+  OID_FAMILY_HISTORY_ORGANIZER,
+  OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER,
   OID_GOAL_OBSERVATION,
   OID_GOALS_SECTION,
   OID_HEALTH_CONCERNS_SECTION,
@@ -64,11 +70,14 @@ import {
   OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
   OID_REASON_FOR_REFERRAL,
+  OID_RESULT_ORGANIZER,
+  OID_VITAL_SIGNS_ORGANIZER,
 } from './oids';
 import { sanitizeNullFlavors } from './sanitize';
 import {
   ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
+  ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   ALLERGY_CLINICAL_CODE_SYSTEM,
   ALLERGY_SEVERITY_MAPPER,
   ALLERGY_STATUS_MAPPER,
@@ -407,7 +416,10 @@ class CcdaToFhirConverter {
     }
 
     for (const organizer of entry.organizer ?? EMPTY) {
-      resources.push(this.processOrganizer(section, organizer));
+      const resource = this.processOrganizer(section, organizer);
+      if (resource) {
+        resources.push(resource);
+      }
     }
 
     for (const observation of entry.observation ?? EMPTY) {
@@ -1062,12 +1074,29 @@ class CcdaToFhirConverter {
     return result;
   }
 
-  private processOrganizer(section: CcdaSection, organizer: CcdaOrganizer): Resource {
-    const templateId = section.templateId[0]['@_root'];
-    if (templateId === OID_CARE_TEAMS_SECTION) {
+  private processOrganizer(section: CcdaSection, organizer: CcdaOrganizer): Resource | undefined {
+    const sectionTemplateId = section.templateId[0]['@_root'];
+    if (sectionTemplateId === OID_CARE_TEAMS_SECTION) {
       return this.processCareTeamOrganizer(organizer);
     }
-    return this.processVitalsOrganizer(organizer);
+
+    // Route by the organizer's own templates: it can have several, such as a vendor template and a C-CDA one
+    const templateIds = organizer.templateId?.map((templateId) => templateId['@_root']) ?? [];
+    if (templateIds.includes(OID_FAMILY_HISTORY_ORGANIZER)) {
+      return this.processFamilyHistoryOrganizer(organizer);
+    }
+    if (
+      templateIds.includes(OID_VITAL_SIGNS_ORGANIZER) ||
+      templateIds.includes(OID_RESULT_ORGANIZER) ||
+      templateIds.includes(OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER)
+    ) {
+      // These organizers group observations of the patient
+      return this.processVitalsOrganizer(organizer);
+    }
+    if (this.options?.ignoreUnsupportedSections) {
+      return undefined;
+    }
+    throw new Error('Unhandled organizer templateId: ' + templateIds[0]);
   }
 
   private processCareTeamOrganizer(organizer: CcdaOrganizer): CareTeam {
@@ -1105,6 +1134,67 @@ class CcdaToFhirConverter {
       role: performer.functionCode ? [this.mapCode(performer.functionCode) as CodeableConcept] : undefined,
       member: this.mapAssignedEntityToReference(performer.assignedEntity),
       period: this.mapEffectiveTimeToPeriod(act.effectiveTime?.[0]),
+    };
+  }
+
+  private processFamilyHistoryOrganizer(organizer: CcdaOrganizer): FamilyMemberHistory {
+    const relatedSubject = organizer.subject?.relatedSubject;
+    const sex = this.mapGenderCode(relatedSubject?.subject?.administrativeGenderCode?.['@_code']);
+
+    const conditions: FamilyMemberHistoryCondition[] = [];
+    for (const component of organizer.component ?? EMPTY) {
+      for (const observation of component.observation ?? EMPTY) {
+        const condition = this.processFamilyHistoryObservation(observation);
+        if (condition) {
+          conditions.push(condition);
+        }
+      }
+    }
+
+    return {
+      resourceType: 'FamilyMemberHistory',
+      id: this.mapId(organizer.id),
+      identifier: this.mapIdentifiers(organizer.id),
+      status: 'completed',
+      patient: createReference(this.patient as Patient),
+      // The relationship is required in FHIR, so a relationship the document does not state is unknown
+      relationship: this.mapCode(relatedSubject?.code) ?? {
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+            valueCode: 'unknown',
+          },
+        ],
+      },
+      sex: sex ? { coding: [{ system: ADMINISTRATIVE_GENDER_CODE_SYSTEM, code: sex }] } : undefined,
+      condition: conditions.length > 0 ? conditions : undefined,
+    };
+  }
+
+  private processFamilyHistoryObservation(observation: CcdaObservation): FamilyMemberHistoryCondition | undefined {
+    // FHIR has no negated condition of a family member, so a negated observation would state the opposite
+    if (observation['@_negationInd'] === 'true') {
+      return undefined;
+    }
+
+    const code = this.mapCode(observation.value as CcdaCode);
+    if (!code) {
+      return undefined;
+    }
+
+    const related =
+      observation.entryRelationship
+        ?.flatMap((relationship) => relationship.observation ?? EMPTY)
+        .filter((relatedObservation) => relatedObservation['@_negationInd'] !== 'true') ?? [];
+    const ageObservation = related.find((o) => o.templateId?.some((t) => t['@_root'] === OID_AGE_OBSERVATION));
+    const causedDeath = related.some((o) =>
+      o.templateId?.some((t) => t['@_root'] === OID_FAMILY_HISTORY_DEATH_OBSERVATION)
+    );
+
+    return {
+      code,
+      onsetAge: this.mapQuantity(ageObservation?.value as CcdaQuantity | undefined),
+      ...(causedDeath && { contributedToDeath: true }),
     };
   }
 
