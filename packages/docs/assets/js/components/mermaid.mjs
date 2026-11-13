@@ -5,32 +5,62 @@
 const MERMAID_URL = '/js/mermaid/mermaid.esm.min.mjs';
 
 let mermaidPromise;
+let renderQueue = Promise.resolve();
 
 function currentTheme() {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default';
 }
 
-async function renderDiagrams() {
-  const blocks = [...document.querySelectorAll('pre.mermaid')];
-  if (blocks.length === 0) {
+async function renderDiagrams({ selector = 'pre.mermaid', force = false } = {}) {
+  if (!document.querySelector(selector)) {
     return;
   }
   mermaidPromise ??= import(MERMAID_URL).then((m) => m.default);
   const mermaid = await mermaidPromise;
-  mermaid.initialize({ startOnLoad: false, theme: currentTheme() });
+  const theme = currentTheme();
+  // Hidden panels have no measurable layout. Render them after they become visible, including on tab changes.
+  // Query after loading Mermaid in case navigation replaced the original page while the import was pending.
+  const blocks = [...document.querySelectorAll(selector)].filter(
+    (block) => block.getClientRects().length > 0 && (force || block.dataset.renderedTheme !== theme)
+  );
+  if (blocks.length === 0) {
+    return;
+  }
+  mermaid.initialize({ startOnLoad: false, theme });
 
   for (const block of blocks) {
     // Keep the source so the diagram can re-render when the theme changes
     block.dataset.source ??= block.textContent;
+    delete block.dataset.renderedTheme;
     block.textContent = block.dataset.source;
     block.removeAttribute('data-processed');
   }
   await mermaid.run({ nodes: blocks });
+  for (const block of blocks) {
+    block.dataset.renderedTheme = theme;
+  }
+}
+
+function queueRender(options) {
+  // Mermaid uses shared rendering state. Serialize navigation, tab, and theme updates.
+  renderQueue = renderQueue.then(() => renderDiagrams(options)).catch(console.error);
 }
 
 export function initMermaid() {
-  renderDiagrams().catch(console.error);
+  queueRender();
 }
+
+// Refresh visible tab diagrams even after a rapid switch interrupted an earlier layout measurement.
+document.addEventListener('tabs:change', () => queueRender({ selector: '.tab-panel pre.mermaid', force: true }));
+document.addEventListener(
+  'toggle',
+  (event) => {
+    if (event.target instanceof HTMLDetailsElement && event.target.open) {
+      queueRender({ selector: 'details[open] pre.mermaid', force: true });
+    }
+  },
+  true
+);
 
 // Re-render with the matching mermaid theme when the site theme changes
 new MutationObserver(initMermaid).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

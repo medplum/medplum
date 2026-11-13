@@ -60,6 +60,8 @@ function onTabClick(container, value) {
     url.searchParams.set(queryString, value);
     window.history.replaceState(window.history.state, '', url);
   }
+  // Notify layout-dependent content after every synchronized panel has become visible.
+  document.dispatchEvent(new CustomEvent('tabs:change'));
 }
 
 export function initTabs() {
