@@ -24,6 +24,7 @@ import {
 import type {
   Bot,
   ClientApplication,
+  Coding,
   Patient,
   Practitioner,
   Project,
@@ -56,7 +57,6 @@ import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
-import { LogThrottle } from '../util/logthrottle';
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventEntry, SubEventPayload } from '../ws/subscriptions';
@@ -454,41 +454,27 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    logBinaryDataNotification(
-      resource,
-      'websocket',
-      wsSubEvents.map(([subscriptionId]) => subscriptionId)
-    );
     await publish(
       WEBSOCKET_SUB_PUBLISH_CHANNEL,
-      JSON.stringify({ resource, events: wsSubEvents } satisfies SubEventPayload)
+      JSON.stringify({ resource: removeBinaryData(resource), events: wsSubEvents } satisfies SubEventPayload)
     );
   }
 }
 
-const binaryDataLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
+const SUBSETTED_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
 /**
- * Logs subscription notifications that include inline `Binary.data`.
- * The content is also available from binary storage, so subscribers should not need it in the notification.
- * @param resource - The resource sent to subscribers.
- * @param channel - The notification channel.
- * @param subscriptionIds - The subscriptions that receive the resource.
+ * Removes inline `Binary.data` from a resource sent to subscribers, and tags it as subsetted.
+ * Subscribers read the content from binary storage instead.
+ * @param resource - The resource to send.
+ * @returns The resource without `Binary.data`.
  */
-function logBinaryDataNotification(resource: Resource, channel: string, subscriptionIds: string[]): void {
+function removeBinaryData<T extends Resource>(resource: T): T {
   if (resource.resourceType !== 'Binary' || resource.data === undefined) {
-    return;
+    return resource;
   }
-  const project = resource.meta?.project;
-  binaryDataLogThrottle.maybeLog([project, channel, ...subscriptionIds].join('|'), (suppressed) => {
-    globalLogger.warn('Subscription notification includes Binary.data', {
-      binary: resource.id,
-      project,
-      channel,
-      subscriptions: subscriptionIds,
-      suppressed,
-    });
-  });
+  const { data: _data, ...rest } = resource;
+  return { ...rest, meta: { ...rest.meta, tag: [...(rest.meta?.tag ?? []), SUBSETTED_TAG] } } as T;
 }
 
 /**
@@ -772,11 +758,7 @@ async function deliverSubscriptionJob(job: Job<SubscriptionJobData>, summary: Su
       using projectRepo = await getRepoForProject(versionedResource.meta.project);
       rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, projectRepo, versionedResource);
     }
-    logBinaryDataNotification(
-      rewrittenResource,
-      subscription.channel.endpoint?.startsWith('Bot/') ? 'bot' : 'rest-hook',
-      [subscription.id]
-    );
+    rewrittenResource = removeBinaryData(rewrittenResource);
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;
