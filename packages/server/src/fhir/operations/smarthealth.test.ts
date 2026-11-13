@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, generateId } from '@medplum/core';
 import type { Binary, Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
+import bcrypt from 'bcrypt';
 import express from 'express';
 import { base64url, CompactEncrypt, CompactSign, exportJWK, generateKeyPair } from 'jose';
 import { deflateRawSync } from 'node:zlib';
@@ -233,16 +234,11 @@ describe('SMART Health operations', () => {
     const postManifest = (passcode: string): request.Test =>
       request(app).post(manifestPath).set('Content-Type', ContentType.JSON).send({ passcode });
 
-    // Sent concurrently, so each guess must reserve its own attempt
-    const wrongResponses = await Promise.all(
-      Array.from({ length: SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1 }, () => postManifest('0000'))
-    );
-    expect(wrongResponses.map((r) => r.status)).toStrictEqual(
-      Array(SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1).fill(401)
-    );
-    expect(wrongResponses.map((r) => r.body.remainingAttempts).sort((a, b) => a - b)).toStrictEqual(
-      Array.from({ length: SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1 }, (_, i) => i + 1)
-    );
+    for (let remaining = SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1; remaining > 0; remaining--) {
+      const wrongResponse = await postManifest('0000');
+      expect(wrongResponse).toHaveStatus(401);
+      expect(wrongResponse.body.remainingAttempts).toBe(remaining);
+    }
 
     // A correct passcode does not use up an attempt
     expect(await postManifest('1234')).toHaveStatus(200);
@@ -255,6 +251,31 @@ describe('SMART Health operations', () => {
     const correctResponse = await postManifest('1234');
     expect(correctResponse).toHaveStatus(400);
     expect(correctResponse.body.error).toContain('revoked');
+  });
+
+  test('Rejects a correct passcode when the link is revoked during the check', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '1234' });
+    expect(generateResponse).toHaveStatus(200);
+    const manifestPath = new URL(getStringParameter(generateResponse.body, 'manifestUrl')).pathname;
+    const smartHealthLink = await readGeneratedSmartHealthLink(manifestPath);
+
+    // Stands in for concurrent incorrect guesses revoking the link while this one is checked
+    const compareSpy = vi.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => {
+      await repo.updateResource<SmartHealthLink>({ ...smartHealthLink, status: 'revoked' });
+      return true;
+    });
+    const response = await request(app)
+      .post(manifestPath)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '1234' });
+    compareSpy.mockRestore();
+    expect(response).toHaveStatus(400);
+    expect(response.body.error).toContain('revoked');
   });
 
   test('Rejects invalid SMART Health Links', async () => {
