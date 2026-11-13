@@ -5,6 +5,7 @@ import type {
   ResolveSmartHealthLinkParams,
   SmartHealthLinkManifestFile,
   SmartHealthLinkPayload,
+  WithId,
 } from '@medplum/core';
 import {
   allOk,
@@ -36,6 +37,7 @@ import { bcryptHashPassword } from '../../auth/utils';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
+import { getRateLimitRedis } from '../../redis';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import { safeFetch } from '../../util/url';
@@ -46,6 +48,39 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 
 const EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS = 5000;
 const MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES = 10 * 1024 * 1024;
+
+// The SHL spec requires a lifetime limit on incorrect passcodes; reaching it revokes the link
+export const SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT = 10;
+
+// Reserve an attempt before the passcode is checked, so concurrent guesses cannot exceed the limit
+const RESERVE_PASSCODE_ATTEMPT = `
+local count = tonumber(redis.call('GET', KEYS[1]) or '0')
+if count >= tonumber(ARGV[1]) then
+  return -1
+end
+count = redis.call('INCR', KEYS[1])
+if count == 1 and ARGV[2] ~= '' then redis.call('PEXPIREAT', KEYS[1], ARGV[2]) end
+return count
+`;
+
+// Give back the reservation of a correct passcode, leaving other failures counted
+const RELEASE_PASSCODE_ATTEMPT = `
+local count = tonumber(redis.call('GET', KEYS[1]) or '0')
+if count <= 1 then
+  return redis.call('DEL', KEYS[1])
+end
+return redis.call('DECR', KEYS[1])
+`;
+
+interface PasscodeRedisCommands {
+  reserveSmartHealthLinkPasscodeAttempt(key: string, limit: number, expiresAtMs: string): Promise<number>;
+  releaseSmartHealthLinkPasscodeAttempt(key: string): Promise<unknown>;
+}
+
+interface SmartHealthLinkValidationError {
+  error: string;
+  remainingAttempts?: number;
+}
 
 interface ResolvedSmartHealthLink {
   manifest?: Record<string, unknown>;
@@ -246,7 +281,8 @@ export async function smartHealthLinkManifestHandler(req: ExpressRequest, res: E
   const passcode = typeof req.body?.passcode === 'string' ? req.body.passcode : undefined;
   const outcome = await validateSmartHealthLink(smartHealthLink, passcode);
   if (outcome) {
-    res.status(400).json({ error: outcome });
+    // The SHL spec requires 401 with the remaining attempts for an incorrect passcode
+    res.status(outcome.remainingAttempts === undefined ? 400 : 401).json(outcome);
     return;
   }
   res
@@ -269,7 +305,7 @@ export async function smartHealthLinkPayloadHandler(req: ExpressRequest, res: Ex
   }
   const outcome = await validateSmartHealthLink(smartHealthLink);
   if (outcome) {
-    res.status(400).json({ error: outcome });
+    res.status(400).json(outcome);
     return;
   }
   const encrypted = await readSmartHealthLinkEncryptedFile(smartHealthLink);
@@ -293,7 +329,7 @@ async function resolveGeneratedSmartHealthLink(
   }
   const outcome = await validateSmartHealthLink(smartHealthLink, passcode);
   if (outcome) {
-    throw new Error(outcome);
+    throw new Error(outcome.error);
   }
   if (smartHealthLink.mode === 'direct' && !recipient) {
     throw new Error('Expected recipient parameter');
@@ -427,24 +463,70 @@ async function buildSmartHealthLinkManifest(
 }
 
 async function validateSmartHealthLink(
-  smartHealthLink: SmartHealthLink,
+  smartHealthLink: WithId<SmartHealthLink>,
   passcode?: string
-): Promise<string | undefined> {
+): Promise<SmartHealthLinkValidationError | undefined> {
   if (smartHealthLink.status !== 'active') {
-    return 'SMART Health Link has been revoked';
+    return { error: 'SMART Health Link has been revoked' };
   }
   if (smartHealthLink.expiresAt !== undefined && new Date(smartHealthLink.expiresAt).getTime() <= Date.now()) {
-    return 'SMART Health Link has expired';
+    return { error: 'SMART Health Link has expired' };
   }
   if (smartHealthLink.flag?.includes('P')) {
-    if (!passcode || !smartHealthLink.passcodeHash || !(await bcrypt.compare(passcode, smartHealthLink.passcodeHash))) {
-      return 'Invalid SMART Health Link passcode';
-    }
+    return checkSmartHealthLinkPasscode(smartHealthLink, passcode);
   }
   return undefined;
 }
 
-async function readSmartHealthLink(id: string | undefined): Promise<SmartHealthLink | undefined> {
+async function checkSmartHealthLinkPasscode(
+  smartHealthLink: WithId<SmartHealthLink>,
+  passcode: string | undefined
+): Promise<SmartHealthLinkValidationError | undefined> {
+  const redis = getPasscodeRedis();
+  const key = `medplum:shl:passcode:${smartHealthLink.id}`;
+  const expiresAtMs = smartHealthLink.expiresAt ? String(new Date(smartHealthLink.expiresAt).getTime()) : '';
+  const attempts = await redis.reserveSmartHealthLinkPasscodeAttempt(
+    key,
+    SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT,
+    expiresAtMs
+  );
+  if (attempts < 0) {
+    return { error: 'SMART Health Link has been revoked' };
+  }
+
+  if (passcode && smartHealthLink.passcodeHash && (await bcrypt.compare(passcode, smartHealthLink.passcodeHash))) {
+    try {
+      await redis.releaseSmartHealthLinkPasscodeAttempt(key);
+    } catch (err) {
+      getLogger().error('Failed to release SMART Health Link passcode attempt', { err });
+    }
+    return undefined;
+  }
+
+  if (attempts >= SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT) {
+    await getGlobalSystemRepo().patchResource<SmartHealthLink>('SmartHealthLink', smartHealthLink.id, [
+      { op: 'replace', path: '/status', value: 'revoked' },
+    ]);
+  }
+  return {
+    error: 'Invalid SMART Health Link passcode',
+    remainingAttempts: SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - attempts,
+  };
+}
+
+const configuredRedisClients = new WeakSet<object>();
+
+function getPasscodeRedis(): ReturnType<typeof getRateLimitRedis> & PasscodeRedisCommands {
+  const redis = getRateLimitRedis();
+  if (!configuredRedisClients.has(redis)) {
+    redis.defineCommand('reserveSmartHealthLinkPasscodeAttempt', { numberOfKeys: 1, lua: RESERVE_PASSCODE_ATTEMPT });
+    redis.defineCommand('releaseSmartHealthLinkPasscodeAttempt', { numberOfKeys: 1, lua: RELEASE_PASSCODE_ATTEMPT });
+    configuredRedisClients.add(redis);
+  }
+  return redis as ReturnType<typeof getRateLimitRedis> & PasscodeRedisCommands;
+}
+
+async function readSmartHealthLink(id: string | undefined): Promise<WithId<SmartHealthLink> | undefined> {
   if (!id) {
     return undefined;
   }

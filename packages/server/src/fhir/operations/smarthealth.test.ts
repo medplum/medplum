@@ -12,6 +12,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { KeyLike } from '../../oauth/keys';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
+import { SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT } from './smarthealthlinks';
 
 const app = express();
 let accessToken: string;
@@ -220,6 +221,42 @@ describe('SMART Health operations', () => {
     expect(getBooleanParameter(viewerResolveResponse.body, 'valid')).toBe(true);
   });
 
+  test('Revokes a SMART Health Link after too many incorrect passcodes', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '1234' });
+    expect(generateResponse).toHaveStatus(200);
+    const manifestPath = new URL(getStringParameter(generateResponse.body, 'manifestUrl')).pathname;
+    const postManifest = (passcode: string): request.Test =>
+      request(app).post(manifestPath).set('Content-Type', ContentType.JSON).send({ passcode });
+
+    // Sent concurrently, so each guess must reserve its own attempt
+    const wrongResponses = await Promise.all(
+      Array.from({ length: SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1 }, () => postManifest('0000'))
+    );
+    expect(wrongResponses.map((r) => r.status)).toStrictEqual(
+      Array(SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1).fill(401)
+    );
+    expect(wrongResponses.map((r) => r.body.remainingAttempts).sort((a, b) => a - b)).toStrictEqual(
+      Array.from({ length: SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1 }, (_, i) => i + 1)
+    );
+
+    // A correct passcode does not use up an attempt
+    expect(await postManifest('1234')).toHaveStatus(200);
+
+    const lastResponse = await postManifest('0000');
+    expect(lastResponse).toHaveStatus(401);
+    expect(lastResponse.body.remainingAttempts).toBe(0);
+    expect(await readGeneratedSmartHealthLink(manifestPath)).toMatchObject({ status: 'revoked' });
+
+    const correctResponse = await postManifest('1234');
+    expect(correctResponse).toHaveStatus(400);
+    expect(correctResponse.body.error).toContain('revoked');
+  });
+
   test('Rejects invalid SMART Health Links', async () => {
     const patient = await createPatient();
     const passcodeResponse = await request(app)
@@ -235,7 +272,7 @@ describe('SMART Health operations', () => {
       .post(manifestUrl.pathname)
       .set('Content-Type', ContentType.JSON)
       .send({ recipient: 'Test Recipient' });
-    expect(missingPasscodeManifestResponse).toHaveStatus(400);
+    expect(missingPasscodeManifestResponse).toHaveStatus(401);
     expect(missingPasscodeManifestResponse.body.error).toContain('passcode');
 
     const wrongPasscodeResolveResponse = await request(app)
