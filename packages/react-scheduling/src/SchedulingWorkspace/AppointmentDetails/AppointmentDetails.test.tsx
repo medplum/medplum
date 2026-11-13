@@ -247,7 +247,7 @@ describe('AppointmentDetails', () => {
   test('describes the appointment', async () => {
     renderDetails(BOOKED_APPOINTMENT);
 
-    expect(screen.getByText('booked')).toBeInTheDocument();
+    expect(screen.getByText('Status').nextElementSibling).toHaveTextContent('booked');
     expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
@@ -461,8 +461,14 @@ describe('AppointmentDetails', () => {
 
     await openCancellation();
 
-    expect(screen.getByPlaceholderText('Search reasons')).toBeInTheDocument();
-    expect(screen.queryByText('Bring prior films')).not.toBeInTheDocument();
+    // The reason first, and the visit being called off described under it.
+    const reason = screen.getByPlaceholderText('Search reasons');
+    const notes = screen.getByText('Bring prior films');
+    expect(reason.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(cancelButton()).not.toBeInTheDocument();
+    // The way back sits at the foot, after the details.
+    const back = screen.getByRole('button', { name: 'Back to Appointment Details' });
+    expect(notes.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   test('offers no cancellation until a reason is chosen', async () => {
@@ -607,20 +613,11 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Patient: Feeling Better')).toBeInTheDocument();
   });
 
-  test('offers no cancellation for an appointment $cancel would refuse', async () => {
-    renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+  test.each(['cancelled', 'fulfilled'] as const)('offers no cancellation for a %s appointment', async (status) => {
+    renderDetails({ ...BOOKED_APPOINTMENT, status });
     await screen.findByText('Miles Cooper');
 
-    expect(cancelButton()).toHaveAttribute('disabled');
-    expect(screen.getByText('This appointment is cancelled.')).toBeInTheDocument();
-  });
-
-  test('says why an appointment already seen cannot be cancelled', async () => {
-    renderDetails({ ...BOOKED_APPOINTMENT, status: 'fulfilled' });
-    await screen.findByText('Miles Cooper');
-
-    expect(cancelButton()).toHaveAttribute('disabled');
-    expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
   });
 
   test('links to the visit in the external system', async () => {

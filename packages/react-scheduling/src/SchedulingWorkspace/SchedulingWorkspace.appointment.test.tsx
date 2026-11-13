@@ -246,8 +246,7 @@ describe('SchedulingWorkspace appointment details', () => {
     // The pane lands back on the details, describing what is now a cancelled visit with
     // nothing left to press.
     await waitFor(() => expect(within(details() as HTMLElement).getByText('cancelled')).toBeInTheDocument());
-    expect(cancelButton()).toHaveAttribute('disabled');
-    expect(within(details() as HTMLElement).getByText('This appointment is cancelled.')).toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
 
     // And the grid drops the visit on the same announcement, without re-fetching, since
     // cancelled appointments are not drawn on the calendar.

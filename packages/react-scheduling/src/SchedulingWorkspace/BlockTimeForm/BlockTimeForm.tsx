@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Divider, Stack, Textarea, TextInput } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference, isDefined, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Schedule, Slot } from '@medplum/fhirtypes';
@@ -180,6 +180,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
           setWritten(false);
         }}
       />
+      <Divider />
 
       {writeError !== undefined && (
         <Alert color="red" title="Could not block this time">
@@ -187,10 +188,22 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
         </Alert>
       )}
       <Button fullWidth disabled={!range || schedules.length === 0 || written} loading={writing} onClick={handleSubmit}>
-        Block time
+        {getBlockLabel(schedules.length)}
       </Button>
     </Stack>
   );
+}
+
+/**
+ * Names the submit button after how many calendars it blocks.
+ * @param count - How many calendars are chosen.
+ * @returns The label.
+ */
+function getBlockLabel(count: number): string {
+  if (count === 0) {
+    return 'Block Time';
+  }
+  return `Block Time on ${count} ${count === 1 ? 'Calendar' : 'Calendars'}`;
 }
 
 interface BlockSlotsOptions {
