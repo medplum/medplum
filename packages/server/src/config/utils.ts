@@ -248,6 +248,7 @@ export function isBooleanConfig(key: string): boolean {
 
 const objectKeys = new Set([
   'capabilityStatement',
+  'encryptedSecretKeys',
   'tls',
   'ssl',
   'defaultProjectFeatures',

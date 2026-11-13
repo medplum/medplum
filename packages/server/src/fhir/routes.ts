@@ -54,6 +54,7 @@ import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
 import { deployHandler } from './operations/deploy';
+import { encryptedSecretGetValueHandler, encryptedSecretSetValueHandler } from './operations/encryptedsecret';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
@@ -342,6 +343,10 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Binary $scan operation
   router.add('POST', '/Binary/:id/$scan', binaryScanHandler);
+
+  // EncryptedSecret $set-value and $get-value operations
+  router.add('POST', '/EncryptedSecret/:id/$set-value', encryptedSecretSetValueHandler);
+  router.add('POST', '/EncryptedSecret/:id/$get-value', encryptedSecretGetValueHandler);
 
   // Bot $init operation
   router.add('POST', '/Bot/$init', botInitHandler);
