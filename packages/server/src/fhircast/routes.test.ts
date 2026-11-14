@@ -1179,6 +1179,34 @@ describe('FHIRcast routes', () => {
       }
     }));
 
+  test('Subscription to events the FHIRcast scopes do not permit is rejected', () =>
+    withTestContext(async () => {
+      const { accessToken: imagingToken } = await addTestUser(project, {
+        scope: 'openid user/ImagingStudy.rs fhircast/ImagingStudy-open.read',
+      });
+      for (const [events, status] of [
+        [['ImagingStudy-open'], 202],
+        // `heartbeat` and `syncerror` are sent to every subscriber
+        [['ImagingStudy-open', 'syncerror'], 202],
+        [['ImagingStudy-open', 'Patient-open'], 403],
+        [['ImagingStudy-close'], 403],
+      ] as const) {
+        const res = await request(server)
+          .post(STU3_BASE_ROUTE)
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + imagingToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic: randomUUID(),
+              events: [...events],
+            })
+          );
+        expect(res).toHaveStatus(status);
+      }
+    }));
+
   test('FHIRcast scopes limit reading the current context and requesting context changes', () =>
     withTestContext(async () => {
       const topic = randomUUID();

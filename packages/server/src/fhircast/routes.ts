@@ -250,6 +250,12 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     return;
   }
 
+  const scopes = getFhircastScopes(ctx.login.scope);
+  if (!events.every((event) => fhircastScopesPermit(scopes, event, 'read'))) {
+    sendOutcome(res, forbidden);
+    return;
+  }
+
   // Every subscribe request gets its own endpoint, so that the Hub can tell apart subscribers
   // sharing a topic and remember the events each one asked for.
   const endpoint = generateId();
@@ -260,7 +266,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       events,
       version: getFhircastVersion(req),
       // The socket connects without a token, so the scopes that limit what it is sent are stored here
-      scopes: getFhircastScopes(ctx.login.scope),
+      scopes,
     });
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to create subscription for topic')));

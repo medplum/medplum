@@ -21,9 +21,10 @@ import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
+import { FhircastVersion, setEndpointSubscription } from '../fhircast/utils';
 import { globalLogger } from '../logger';
 import * as redis from '../redis';
-import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { createTestProject, initTestAuth, withTestContext } from '../test.setup';
 import { handleFhircastConnection } from './fhircast';
 
 describe('FHIRcast WebSocket', () => {
@@ -379,23 +380,15 @@ describe('FHIRcast WebSocket', () => {
           membership: { admin: true },
           withAccessToken: true,
         });
-        const { accessToken: limitedToken } = await addTestUser(project, {
-          scope: 'openid user/ImagingStudy.rs fhircast/ImagingStudy-open.read',
+        // Stored directly, since a subscribe request for events its scopes do not permit is rejected
+        const endpoint = generateId();
+        await setEndpointSubscription(endpoint, {
+          projectId: project.id,
+          topic,
+          events: ['Patient-open', 'ImagingStudy-open'],
+          version: FhircastVersion.STU3,
+          scopes: ['imagingstudy-open.read'],
         });
-
-        const res = await request(server)
-          .post('/fhircast/STU3')
-          .set('Content-Type', ContentType.FORM_URL_ENCODED)
-          .set('Authorization', 'Bearer ' + limitedToken)
-          .send(
-            serializeFhircastSubscriptionRequest({
-              mode: 'subscribe',
-              channelType: 'websocket',
-              topic,
-              events: ['Patient-open', 'ImagingStudy-open'],
-            })
-          );
-        expect(res).toHaveStatus(202);
 
         const publishEvent = async (payload: FhircastMessagePayload): Promise<void> => {
           const publishRes = await request(server)
@@ -407,7 +400,7 @@ describe('FHIRcast WebSocket', () => {
         };
 
         await request(server)
-          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .ws(`/ws/fhircast/${endpoint}`)
           .expectJson((obj) => {
             expect(obj['hub.events']).toBe('Patient-open,ImagingStudy-open');
           })
