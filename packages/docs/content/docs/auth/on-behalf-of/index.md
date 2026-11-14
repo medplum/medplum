@@ -42,7 +42,7 @@ Treat a rejected delegation request as a failure; do not retry it without the he
 
 ### Lock down the application credential
 
-The On-Behalf-Of model is designed to use individual users' `ProjectMembership`s while authenticating through a single machine-to-machine user. We recommend configuring the `ClientApplication` that serves the proxy layer with a "least permissive" AccessPolicy, including IP access rules:
+The On-Behalf-Of model is designed to use individual users' `ProjectMembership`s while authenticating through a single machine-to-machine user. We recommend configuring the `ClientApplication` used for server-to-server communication with a "least permissive" AccessPolicy, including IP access rules:
 
 ```json
 {
