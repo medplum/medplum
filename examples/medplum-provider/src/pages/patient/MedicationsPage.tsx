@@ -26,6 +26,7 @@ import type { MedTab } from '../../components/meds/MedListItem';
 import { MedListItem } from '../../components/meds/MedListItem';
 import { MedSelectEmpty } from '../../components/meds/MedSelectEmpty';
 import { PrescriptionIFrameModal } from '../../components/meds/PrescriptionIFrameModal';
+import { ScriptSureReportsMenu } from '../../components/meds/ScriptSureReportsMenu';
 import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from '../../components/utils';
 import { usePatient } from '../../hooks/usePatient';
 import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
@@ -581,21 +582,24 @@ export function MedicationsPage(): JSX.Element {
   ];
 
   const headerActions = hasScriptSure && (
-    <Tooltip label="Order medication" position="bottom" openDelay={500}>
-      <ActionIcon
-        radius="xl"
-        variant="filled"
-        color="blue"
-        size={32}
-        aria-label="Order medication"
-        onClick={() => {
-          refreshCartCount().catch(showErrorNotification);
-          setNewOrderModalOpened(true);
-        }}
-      >
-        <IconPlus size={16} />
-      </ActionIcon>
-    </Tooltip>
+    <Group gap="xs" wrap="nowrap">
+      <ScriptSureReportsMenu />
+      <Tooltip label="Order medication" position="bottom" openDelay={500}>
+        <ActionIcon
+          radius="xl"
+          variant="filled"
+          color="blue"
+          size={32}
+          aria-label="Order medication"
+          onClick={() => {
+            refreshCartCount().catch(showErrorNotification);
+            setNewOrderModalOpened(true);
+          }}
+        >
+          <IconPlus size={16} />
+        </ActionIcon>
+      </Tooltip>
+    </Group>
   );
 
   const cartFooter = showCart && total > 0 && (
