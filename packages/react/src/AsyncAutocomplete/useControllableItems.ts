@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface ControllableItemsOptions {
-  /** The component named in the warning about switching between controlled and uncontrolled. */
+  /** Named in the mode-switch warning. */
   readonly component: string;
   readonly name?: string;
   /** At 0, edits are reported without being kept. */
