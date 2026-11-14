@@ -77,6 +77,12 @@ const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
  */
 export const minCursorBasedSearchPageSize = 20;
 
+const searchInteractions: readonly AccessPolicyInteraction[] = Object.freeze([AccessPolicyInteraction.SEARCH]);
+const searchResultInteractions: readonly AccessPolicyInteraction[] = Object.freeze([
+  AccessPolicyInteraction.READ,
+  AccessPolicyInteraction.SEARCH,
+]);
+
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
   offset: number;
@@ -461,7 +467,7 @@ function getBaseSelectQueryForResourceType(
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
+  repo.addSecurityFilters(builder, resourceType, searchInteractions);
   addSearchFilters(repo, builder, resourceType, searchRequest, opts?.trackedResourceTypes);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
@@ -474,7 +480,7 @@ function getBaseSelectQueryForResourceType(
 }
 
 function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
-  repo.removeHiddenFields(resource);
+  repo.removeHiddenFields(resource, searchResultInteractions);
   if (searchRequest.fields) {
     const schema = getDataType(resource.resourceType);
     subsetResource(

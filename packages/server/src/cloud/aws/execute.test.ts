@@ -6,8 +6,9 @@ import {
   ListLayerVersionsCommand,
   ResourceNotFoundException,
 } from '@aws-sdk/client-lambda';
+import type { WithId } from '@medplum/core';
 import { badRequest, ContentType } from '@medplum/core';
-import type { Bot } from '@medplum/fhirtypes';
+import type { Bot, Project } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
@@ -17,12 +18,13 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
-import { initTestAuth } from '../../test.setup';
+import { createBotMembership, createTestProject } from '../../test.setup';
 import { getLambdaFunctionName, normalizeLambdaExecutionError } from './execute';
 
 const app = express();
 let accessToken: string;
-let bot: Bot;
+let project: WithId<Project>;
+let bot: WithId<Bot>;
 
 describe('Execute', () => {
   let mockLambdaClient: AwsClientStub<LambdaClient>;
@@ -58,7 +60,7 @@ describe('Execute', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ membership: { admin: true } });
+    ({ project, accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } }));
 
     const res = await request(app)
       .post(`/fhir/R4/Bot`)
@@ -77,7 +79,8 @@ describe('Execute', () => {
         `,
       });
     expect(res).toHaveStatus(201);
-    bot = res.body as Bot;
+    bot = res.body as WithId<Bot>;
+    await createBotMembership(project, bot);
   });
 
   afterAll(async () => {
@@ -160,7 +163,8 @@ describe('Execute', () => {
         code: '',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project, bot);
 
     // Execute the bot
     const res2 = await request(app)
@@ -182,7 +186,8 @@ describe('Execute', () => {
         runtimeVersion: 'unsupported',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project, bot);
 
     // Step 2: Publish the bot
     const res2 = await request(app)

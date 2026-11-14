@@ -308,7 +308,7 @@ Choose patient-context, provider-context, or standalone launch. Define the scope
 | Access within the current user's permissions        | Use `user/` scopes and the user's AccessPolicy                                       |
 | Access after the user is offline                    | Request `offline_access` for a refresh token                                         |
 
-Launch scopes request context; they do not grant clinical data access. Clinical scopes work alongside AccessPolicy restrictions. Use `.rs` for read/search access or `.cruds` for full access within the policy; enforce finer interaction restrictions through `AccessPolicy.resource.interaction` rather than assuming arbitrary SMART permission-letter combinations are enforced.
+Launch scopes request context; they do not grant clinical data access. Clinical scopes work alongside AccessPolicy restrictions: each SMART permission letter (`c`, `r`, `u`, `d`, `s`) grants only its interactions, and only within what the AccessPolicy already permits. For example, `.rs` grants read and search, and `.cruds` grants full access within the policy.
 
 Implementation: [SMART Scopes](/docs/access/smart-scopes).
 

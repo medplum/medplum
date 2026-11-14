@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   createReference,
@@ -54,6 +54,7 @@ import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
+import { SelectQuery, SqlBuilder } from './sql';
 
 function getRepository(repoContext: Partial<RepositoryContext>): Repository {
   return new Repository({
@@ -1475,6 +1476,37 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-02',
       });
+    }));
+
+  test('Write responses match reads when only the write entry hides fields', () =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            { resourceType: 'Patient', interaction: ['read', 'search'] },
+            { resourceType: 'Patient', interaction: ['update'], hiddenFields: ['name'] },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
+      });
+
+      const updated = await repo2.updateResource<Patient>({ ...patient, name: undefined, birthDate: '1970-01-02' });
+      expect(updated.name).toStrictEqual(patient.name);
+      expect(updated).toEqual(await repo2.readResource('Patient', patient.id));
+
+      const patched = await repo2.patchResource<Patient>('Patient', patient.id, [
+        { op: 'replace', path: '/birthDate', value: '1970-01-03' },
+      ]);
+      expect(patched.name).toStrictEqual(patient.name);
+      expect(patched).toEqual(await repo2.readResource('Patient', patient.id));
     }));
 
   test.each<[string, AccessPolicyResource[]]>([
@@ -3862,5 +3894,167 @@ describe('AccessPolicy', () => {
           );
         }
       }));
+
+    describe('Permission letters grant exactly their interactions', () => {
+      async function setup(
+        resource: AccessPolicyResource[] = [
+          { resourceType: 'Patient', hiddenFields: ['birthDate'], readonlyFields: ['identifier'] },
+        ]
+      ): Promise<{
+        systemRepo: SystemRepository;
+        getScopedRepo: (scope: string, extendedMode?: boolean) => Promise<Repository>;
+        seed: (patient?: Partial<Patient>) => Promise<WithId<Patient>>;
+      }> {
+        const { project, membership, login } = await createTestProject({
+          withClient: true,
+          withAccessToken: true,
+          accessPolicy: { resourceType: 'AccessPolicy', resource },
+        });
+        const systemRepo = await getProjectSystemRepo(project);
+        return {
+          systemRepo,
+          getScopedRepo: (scope, extendedMode) =>
+            getRepoForLogin({ login: { ...login, scope }, project, membership, userConfig }, extendedMode),
+          seed: (patient) =>
+            systemRepo.createResource<Patient>({
+              resourceType: 'Patient',
+              meta: { project: project.id },
+              name: [{ family: 'Original' }],
+              birthDate: '1970-01-01',
+              identifier: [{ system: 'http://hl7.org/fhir/sid/us-ssn', value: '123-45-6789' }],
+              ...patient,
+            }),
+        };
+      }
+
+      const searchById = (id: string): SearchRequest<Patient> => parseSearchRequest<Patient>('Patient?_id=' + id);
+
+      test('Create and search', () =>
+        withTestContext(async () => {
+          const { getScopedRepo, seed } = await setup();
+          const seeded = await seed();
+
+          const createRepo = await getScopedRepo('openid user/Patient.c');
+          await createRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await expect(createRepo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(createRepo.searchResources(searchById(seeded.id))).rejects.toThrow('Forbidden');
+          await expect(createRepo.updateResource({ ...seeded, active: true })).rejects.toThrow('Forbidden');
+          await expect(createRepo.deleteResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+
+          const createSearchRepo = await getScopedRepo('openid user/Patient.cs', true);
+          const created = await createSearchRepo.createResource<Patient>({
+            resourceType: 'Patient',
+            birthDate: '1970-01-01',
+          });
+          expect(created.birthDate).toBeUndefined();
+          expect(created.meta?.project).toBeDefined();
+          expect(created.meta?.author).toBeDefined();
+          expect(await createSearchRepo.searchResources(searchById(created.id))).toStrictEqual([created]);
+        }));
+
+      test.each([false, true])('Update only (extendedMode=%s)', (extendedMode) =>
+        withTestContext(async () => {
+          const { systemRepo, getScopedRepo, seed } = await setup();
+          const seeded = await seed();
+          const repo = await getScopedRepo('openid user/Patient.u', extendedMode);
+
+          const update = { ...seeded, name: [{ family: 'Changed' }], birthDate: undefined, identifier: undefined };
+          const first = await repo.updateResource<Patient>(update);
+          const second = await repo.updateResource<Patient>(update);
+          expect(second.meta?.versionId).toStrictEqual(first.meta?.versionId);
+          for (const result of [first, second]) {
+            expect(result.name?.[0]?.family).toBe('Changed');
+            expect(result.birthDate).toBeUndefined();
+            expect(result.identifier).toBeUndefined();
+            if (extendedMode) {
+              expect(result.meta?.project).toBeUndefined();
+              expect(result.meta?.compartment).toBeUndefined();
+              expect(result.meta?.author).toBeUndefined();
+            }
+          }
+
+          const stored = await systemRepo.readResource<Patient>('Patient', seeded.id);
+          expect(stored.name?.[0]?.family).toBe('Changed');
+          expect(stored.birthDate).toStrictEqual(seeded.birthDate);
+          expect(stored.identifier).toStrictEqual(seeded.identifier);
+
+          await expect(repo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(
+            repo.patchResource('Patient', seeded.id, [{ op: 'test', path: '/birthDate', value: '1970-01-01' }])
+          ).rejects.toThrow('Forbidden');
+          await expect(repo.searchResources(searchById(seeded.id))).rejects.toThrow('Forbidden');
+        })
+      );
+
+      test('Update only when the update changes the matching entry', () =>
+        withTestContext(async () => {
+          const { systemRepo, getScopedRepo, seed } = await setup([
+            { resourceType: 'Patient', criteria: 'Patient?active=true', readonlyFields: ['identifier'] },
+            { resourceType: 'Patient' },
+          ]);
+          const seeded = await seed({ active: true });
+          const repo = await getScopedRepo('openid user/Patient.u');
+
+          const updated = await repo.updateResource<Patient>({ ...seeded, active: false, identifier: undefined });
+          expect(updated.active).toBe(false);
+          expect(updated.identifier).toBeUndefined();
+
+          const stored = await systemRepo.readResource<Patient>('Patient', seeded.id);
+          expect(stored.active).toBe(false);
+          expect(stored.identifier).toStrictEqual(seeded.identifier);
+        }));
+
+      test('Delete only', () =>
+        withTestContext(async () => {
+          const { systemRepo, getScopedRepo, seed } = await setup();
+          const seeded = await seed();
+          const repo = await getScopedRepo('openid user/Patient.d');
+
+          await expect(repo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(
+            repo.deleteResource('Patient', seeded.id, { ifMatch: seeded.meta?.versionId })
+          ).resolves.toBeUndefined();
+          await expect(systemRepo.readResource('Patient', seeded.id)).rejects.toThrow('Gone');
+        }));
+
+      test('Read and search are independent', () =>
+        withTestContext(async () => {
+          const { getScopedRepo, seed } = await setup();
+          const seeded = await seed();
+
+          const readRepo = await getScopedRepo('openid user/Patient.r');
+          await expect(readRepo.readResource('Patient', seeded.id)).resolves.toBeDefined();
+          await expect(readRepo.readHistory('Patient', seeded.id)).resolves.toBeDefined();
+          await expect(readRepo.searchResources(searchById(seeded.id))).rejects.toThrow('Forbidden');
+
+          const searchRepo = await getScopedRepo('openid user/Patient.s');
+          const results = await searchRepo.searchResources(searchById(seeded.id));
+          expect(results).toHaveLength(1);
+          expect(results[0].id).toBe(seeded.id);
+          expect(results[0].birthDate).toBeUndefined();
+          await expect(searchRepo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(searchRepo.readHistory('Patient', seeded.id)).rejects.toThrow('Forbidden');
+        }));
+
+      test('Entries with the same criteria filter once', () =>
+        withTestContext(async () => {
+          const { getScopedRepo } = await setup([
+            { resourceType: 'Patient', interaction: ['read'], criteria: 'Patient?active=true' },
+            { resourceType: 'Patient', interaction: ['update'], criteria: 'Patient?active=true' },
+          ]);
+          const repo = await getScopedRepo('openid user/Patient.ru');
+
+          const toSql = (interactions: AccessPolicyInteraction[]): string => {
+            const builder = new SelectQuery('Patient');
+            repo.addSecurityFilters(builder, 'Patient', interactions);
+            const sql = new SqlBuilder();
+            builder.buildSql(sql);
+            return sql.toString();
+          };
+          expect(toSql([AccessPolicyInteraction.READ, AccessPolicyInteraction.UPDATE])).toStrictEqual(
+            toSql([AccessPolicyInteraction.READ])
+          );
+        }));
+    });
   });
 });

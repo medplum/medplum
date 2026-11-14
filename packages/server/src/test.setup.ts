@@ -5,6 +5,7 @@ import { createReference, getReferenceString, sleep } from '@medplum/core';
 import type {
   AccessPolicy,
   AsyncJob,
+  Bot,
   Bundle,
   BundleEntry,
   ClientApplication,
@@ -335,6 +336,28 @@ export async function addTestUser(
   });
 
   return { ...inviteResponse, accessToken };
+}
+
+/**
+ * Creates a Bot's ProjectMembership in its project, like `Bot/$init` and the admin bot route do.
+ * Executing a Bot without `runAsUser` requires one.
+ * @param project - The Bot's project.
+ * @param bot - The Bot.
+ * @returns The Bot's ProjectMembership.
+ */
+export async function createBotMembership(
+  project: WithId<Project>,
+  bot: WithId<Bot>
+): Promise<WithId<ProjectMembership>> {
+  const { getProjectSystemRepo } = await import('./fhir/repo');
+  const systemRepo = await getProjectSystemRepo(project);
+  return systemRepo.createResource<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    project: createReference(project),
+    user: createReference(bot),
+    profile: createReference(bot),
+    meta: { project: project.id },
+  });
 }
 
 /**

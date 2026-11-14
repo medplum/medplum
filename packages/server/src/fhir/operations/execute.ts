@@ -156,11 +156,10 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    const bot = await searchUnique<Bot>(
-      ctx.repo,
-      { resourceType: 'Bot', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
-      'Execute Bot by identifier'
-    );
+    const bot = await searchUnique<Bot>(ctx.repo, {
+      resourceType: 'Bot',
+      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
+    });
 
     if (!bot) {
       throw new OperationOutcomeError(notFound);

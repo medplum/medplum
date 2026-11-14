@@ -7,7 +7,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { createBotMembership, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 
 const app = express();
@@ -66,6 +66,7 @@ async function setEligibilitySubmitOperation(
 
 // Creates a custom eligibility-submit OperationDefinition backed by a deployed Bot.
 async function deployEligibilityOperation(
+  project: WithId<Project>,
   accessToken: string,
   code = SUB_OPERATION_CODE,
   insurerDisplay = 'Test Payer'
@@ -77,6 +78,7 @@ async function deployEligibilityOperation(
     .send({ resourceType: 'Bot', name: 'Eligibility Submit Bot', runtimeVersion: 'vmcontext' });
   expect(res1).toHaveStatus(201);
   const bot = res1.body as WithId<Bot>;
+  await createBotMembership(project, bot);
 
   const res2 = await request(app)
     .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -159,7 +161,7 @@ describe('CoverageEligibilityRequest $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployEligibilityOperation(accessToken);
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -179,7 +181,7 @@ describe('CoverageEligibilityRequest $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployEligibilityOperation(accessToken);
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -198,7 +200,7 @@ describe('CoverageEligibilityRequest $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployEligibilityOperation(accessToken);
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const bundle: Bundle = {
@@ -223,7 +225,7 @@ describe('CoverageEligibilityRequest $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployEligibilityOperation(accessToken);
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -249,7 +251,7 @@ describe('CoverageEligibilityRequest $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployEligibilityOperation(accessToken);
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const createRes = await request(app)
@@ -276,7 +278,7 @@ describe('CoverageEligibilityRequest $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployEligibilityOperation(accessToken);
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)

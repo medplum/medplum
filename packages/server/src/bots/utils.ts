@@ -50,7 +50,6 @@ import { getBinaryStorage } from '../storage/loader';
 import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
-const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
 const callerSmartScopesLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
@@ -75,16 +74,9 @@ export async function getBotProjectMembership(
   if (membership) {
     return membership;
   }
-  missingMembershipLogThrottle.maybeLog(`${project}/${bot.id}`, (suppressed) => {
-    getLogger().warn('Bot executed without ProjectMembership', {
-      botId: bot.id,
-      botProject: bot.meta?.project,
-      runAsProject: project,
-      runAsMembership: ctx.membership.id,
-      suppressed,
-    });
-  });
-  return ctx.membership;
+  throw new OperationOutcomeError(
+    badRequest('Bot does not have a ProjectMembership in this project; create one or set Bot.runAsUser')
+  );
 }
 
 /**

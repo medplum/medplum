@@ -61,11 +61,10 @@ export async function getAgentForRequest(
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return searchUnique<Agent>(
-      repo,
-      { resourceType: 'Agent', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
-      'Agent identifier'
-    );
+    return searchUnique<Agent>(repo, {
+      resourceType: 'Agent',
+      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
+    });
   }
 
   // If no agent ID or identifier, return undefined
@@ -97,7 +96,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     }
   }
   if (destination.startsWith('Device?')) {
-    return searchUnique<Device>(repo, parseSearchRequest(destination), 'Agent push Device destination');
+    return searchUnique<Device>(repo, parseSearchRequest(destination));
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };
