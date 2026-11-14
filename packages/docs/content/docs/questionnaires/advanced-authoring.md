@@ -17,6 +17,7 @@ Medplum's form renderer supports a subset of Structured Data Capture (SDC). Use 
 | Show a question using more complex logic              | SDC `enableWhenExpression` with FHIRPath                                                                                      |
 | Calculate an answer from other answers                | SDC `calculatedExpression` with FHIRPath                                                                                      |
 | Split a long form into steps                          | Top-level groups with the `page` item control                                                                                 |
+| Reuse sections across several forms                   | [Compose modules before publishing](/docs/questionnaires/modular-questionnaires)                                              |
 | Collect several entries, such as multiple medications | A repeating group; see [intake questionnaire design](/docs/intake/intake-questionnaires#structure-groups-and-repeating-items) |
 | Prefill from patient or encounter data                | Load the data in your application and supply a `QuestionnaireResponse`                                                        |
 
@@ -149,6 +150,7 @@ This table describes the current Medplum form renderer. SDC covers a wider set o
 | SDC `initialExpression`, `launchContext`, `variable`, `answerExpression` | No built-in evaluation in this form renderer. Load context and populate answers or choices in application code. `%patient` and `%encounter` are not supplied as expression variables. |
 | Signature capture                                                        | Supported on the single-page form; see [Consent and Signatures](/docs/consent). The paginated branch currently does not render the signature input.                                   |
 | SDC template extraction                                                  | A separate server operation; see [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses). Form submission alone does not invoke it.                   |
+| SDC `subQuestionnaire` / `$assemble`                                     | No built-in assembly. [Compose a complete Questionnaire](/docs/questionnaires/modular-questionnaires) in application code or use a compatible external assembler before rendering.    |
 
 Use this as a feature-level compatibility checklist. When importing a questionnaire:
 
