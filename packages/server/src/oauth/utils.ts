@@ -768,6 +768,7 @@ export async function getAuthTokens(
     accessLifetime?: string;
     refreshLifetime?: string;
     issuer?: string;
+    dpopJkt?: string;
   }
 ): Promise<TokenResult> {
   assert.equal(getReferenceString(user), login.user?.reference);
@@ -809,6 +810,7 @@ export async function getAuthTokens(
       scope: login.scope as string,
       profile: profile.reference as string,
       email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
+      cnf: options?.dpopJkt ? { jkt: options.dpopJkt } : undefined,
     },
     { lifetime: options?.accessLifetime, issuer: options?.issuer }
   );

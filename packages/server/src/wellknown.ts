@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { apiCatalogHandler } from './api-catalog';
 import { getConfig } from './config/loader';
 import { smartConfigurationHandler, smartStylingHandler } from './fhir/smart';
+import { DPOP_SIGNING_ALGORITHMS } from './oauth/dpop';
 import { getJwks } from './oauth/keys';
 import { getProjectScopedUrl } from './util/url';
 
@@ -47,6 +48,7 @@ function handleOAuthConfig(req: Request, res: Response): void {
     ],
     request_object_signing_alg_values_supported: ['none'],
     code_challenge_methods_supported: ['S256', 'plain'],
+    dpop_signing_alg_values_supported: DPOP_SIGNING_ALGORITHMS,
   });
 }
 
@@ -70,6 +72,7 @@ function handleOauthProtectedResource(req: Request, res: Response): void {
     authorization_servers: [getProjectScopedUrl(req.originalUrl, config.issuer)],
     scopes_supported: ['openid', 'profile', 'email', 'phone', 'address'],
     bearer_methods_supported: ['header'],
+    dpop_signing_alg_values_supported: DPOP_SIGNING_ALGORITHMS,
     introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
   });
 }

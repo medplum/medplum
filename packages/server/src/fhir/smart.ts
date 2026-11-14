@@ -23,6 +23,7 @@ import {
 import type { AccessPolicy, AccessPolicyResource, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { getConfig } from '../config/loader';
+import { DPOP_SIGNING_ALGORITHMS } from '../oauth/dpop';
 import type { AuthState } from '../oauth/middleware';
 import { getProjectScopedUrl } from '../util/url';
 import type { PopulatedAccessPolicy } from './accesspolicy';
@@ -88,6 +89,7 @@ export function smartConfigurationHandler(req: Request, res: Response): void {
       scopes_supported: SMART_SCOPES_SUPPORTED,
       response_types_supported: ['code'],
       introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
+      dpop_signing_alg_values_supported: DPOP_SIGNING_ALGORITHMS,
       capabilities: [
         'authorize-post',
         'permission-v1',

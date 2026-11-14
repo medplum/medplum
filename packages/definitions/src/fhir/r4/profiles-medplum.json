@@ -3493,6 +3493,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Login.dpopJkt",
+            "path" : "Login.dpopJkt",
+            "definition" : "The JWK SHA-256 thumbprint of the DPoP key this login's tokens are bound to (RFC 9449).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Login.dpopJkt",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }

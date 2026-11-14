@@ -24,6 +24,13 @@ export const DPOP_SIGNING_ALGORITHMS = [
   OAuthSigningAlgorithm.PS512,
 ];
 
+declare module 'express-serve-static-core' {
+  interface Locals {
+    /** JWK thumbprint of the request's verified DPoP proof, set by the token endpoint. */
+    dpopJkt?: string;
+  }
+}
+
 export type DpopProofResult = { jkt: string } | { error: string };
 
 /**
