@@ -64,6 +64,7 @@ import {
 } from '../util/auditevent';
 import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
 import { getClientRedirectUri, getStandardClientById } from './clients';
+import { verifyDpopProof } from './dpop';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
 import type { AuthenticationResult, AuthState } from './middleware';
@@ -1183,11 +1184,13 @@ export async function verifyMultipleMatchingException(
  * Handles "on behalf of" requests if the "x-medplum-on-behalf-of" header is present.
  * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
+ * @param tokenType - The Authorization scheme the token was presented with.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(
   req: Request | undefined,
-  accessToken: string
+  accessToken: string,
+  tokenType: 'Bearer' | 'DPoP' = 'Bearer'
 ): Promise<AuthenticationResult | undefined> {
   const globalSystemRepo = getGlobalSystemRepo();
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
@@ -1196,6 +1199,9 @@ export async function getLoginForAccessToken(
     const expectedIssuer = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
     verifyResult = await verifyJwt(accessToken, expectedIssuer);
   } catch {
+    if (tokenType === 'DPoP') {
+      return undefined;
+    }
     const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
     if (!externalAuthState) {
       return undefined;
@@ -1213,6 +1219,10 @@ export async function getLoginForAccessToken(
   const config = getConfig();
   const expectedAudience = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
   if (claims.aud !== expectedAudience || claims.refresh_secret !== undefined) {
+    return undefined;
+  }
+
+  if (!(await isValidTokenBinding(req, accessToken, tokenType, claims.cnf?.jkt))) {
     return undefined;
   }
 
@@ -1234,6 +1244,33 @@ export async function getLoginForAccessToken(
   }
   const systemRepo = await getProjectSystemRepo(project);
   return makeAuthResult(systemRepo, req, login, project, membership, { accessToken, remoteAddress: req?.ip });
+}
+
+/**
+ * Checks that the access token was presented the way its binding requires.
+ * A DPoP-bound token must use the DPoP scheme with a proof from the bound key, so it is rejected
+ * where no HTTP request carries a proof (such as WebSocket messages).
+ * An unbound token must use the Bearer scheme (RFC 9449 section 7.1).
+ * @param req - The incoming HTTP request, if any.
+ * @param accessToken - The access token as provided by the client.
+ * @param tokenType - The Authorization scheme the token was presented with.
+ * @param jkt - The JWK thumbprint from the token's `cnf` claim, if the token is DPoP-bound.
+ * @returns True if the token binding is satisfied.
+ */
+async function isValidTokenBinding(
+  req: Request | undefined,
+  accessToken: string,
+  tokenType: 'Bearer' | 'DPoP',
+  jkt: string | undefined
+): Promise<boolean> {
+  if (!jkt) {
+    return tokenType === 'Bearer';
+  }
+  if (tokenType !== 'DPoP' || !req) {
+    return false;
+  }
+  const result = await verifyDpopProof(req, accessToken);
+  return 'jkt' in result && result.jkt === jkt;
 }
 
 /**

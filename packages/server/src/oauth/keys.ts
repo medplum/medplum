@@ -61,6 +61,12 @@ export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
    * Included when the 'email' scope is requested and the user is a User resource.
    */
   email?: string;
+
+  /**
+   * Confirmation claim for sender-constrained tokens.
+   * When `jkt` is set, the token is DPoP-bound to the key with that JWK SHA-256 thumbprint (RFC 9449 section 6).
+   */
+  cnf?: { jkt?: string };
 }
 
 export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
