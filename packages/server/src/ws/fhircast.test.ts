@@ -21,9 +21,10 @@ import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
+import { FhircastVersion, setEndpointSubscription } from '../fhircast/utils';
 import { globalLogger } from '../logger';
 import * as redis from '../redis';
-import { initTestAuth, withTestContext } from '../test.setup';
+import { createTestProject, initTestAuth, withTestContext } from '../test.setup';
 import { handleFhircastConnection } from './fhircast';
 
 describe('FHIRcast WebSocket', () => {
@@ -356,6 +357,73 @@ describe('FHIRcast WebSocket', () => {
               ])
             );
             // `syncerror` reaches every subscriber, subscribed to or not
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'syncerror', [
+                { key: 'operationoutcome', resource: { ...badRequest('Something went wrong'), id: generateId() } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('ImagingStudy-open');
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('syncerror');
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    test("Only events the subscriber's FHIRcast scopes permit are delivered", () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const { project, accessToken: adminToken } = await createTestProject({
+          membership: { admin: true },
+          withAccessToken: true,
+        });
+        // Stored directly, since a subscribe request for events its scopes do not permit is rejected
+        const endpoint = generateId();
+        await setEndpointSubscription(endpoint, {
+          projectId: project.id,
+          topic,
+          events: ['Patient-open', 'ImagingStudy-open'],
+          version: FhircastVersion.STU3,
+          scopes: ['imagingstudy-open.read'],
+        });
+
+        const publishEvent = async (payload: FhircastMessagePayload): Promise<void> => {
+          const publishRes = await request(server)
+            .post(`/fhircast/STU3/${topic}`)
+            .set('Content-Type', ContentType.JSON)
+            .set('Authorization', 'Bearer ' + adminToken)
+            .send(payload);
+          expect(publishRes).toHaveStatus(202);
+        };
+
+        await request(server)
+          .ws(`/ws/fhircast/${endpoint}`)
+          .expectJson((obj) => {
+            expect(obj['hub.events']).toBe('Patient-open,ImagingStudy-open');
+          })
+          .exec(async () => {
+            // Subscribed to, but not permitted by the scopes
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'Patient-open', [
+                { key: 'patient', resource: { resourceType: 'Patient', id: generateId() } },
+              ])
+            );
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'ImagingStudy-open', [
+                {
+                  key: 'study',
+                  resource: {
+                    resourceType: 'ImagingStudy',
+                    id: generateId(),
+                    status: 'available',
+                    subject: { reference: `Patient/${generateId()}` },
+                  },
+                },
+              ])
+            );
             await publishEvent(
               createFhircastMessagePayload(topic, 'syncerror', [
                 { key: 'operationoutcome', resource: { ...badRequest('Something went wrong'), id: generateId() } },
