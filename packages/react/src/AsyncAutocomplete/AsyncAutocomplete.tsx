@@ -9,6 +9,7 @@ import type { JSX, KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
+import { useControllableItems } from './useControllableItems';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
   readonly active?: boolean;
@@ -30,6 +31,12 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly description?: ReactNode;
   readonly error?: ReactNode;
   readonly defaultValue?: T | T[];
+  /**
+   * The selected items. Passing this (`null` or `[]` for none) makes the component controlled: user
+   * edits only call `onChange`. Changing it to `undefined` makes the component uncontrolled, keeping the
+   * last selection, as a native `<input>` does. Don't pass it with `maxValues={0}`.
+   */
+  readonly value?: T | readonly T[] | null;
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
@@ -51,9 +58,39 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly maxValues?: number;
   readonly optionsDropdownMaxHeight?: number;
   readonly minInputLength?: number; // minimum number of input characters required before executing loadOptions
+  /** Shows a loader in place of the clear button, as while a search runs. */
+  readonly loading?: boolean;
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
+  const { defaultValue, value, onChange, ...rest } = props;
+  const controlledItems = useMemo(() => (value === undefined ? undefined : toItems(value)), [value]);
+  const [items, setItems] = useControllableItems(controlledItems, () => toItems(defaultValue), {
+    component: 'AsyncAutocomplete',
+    name: rest.name,
+    maxValues: rest.maxValues,
+  });
+  const handleChange = useCallback(
+    (newItems: T[]): void => {
+      setItems(newItems);
+      onChange(newItems);
+    },
+    [setItems, onChange]
+  );
+
+  return <AsyncAutocompleteControlled<T> {...rest} value={items} onChange={handleChange} />;
+}
+
+export interface AsyncAutocompleteControlledProps<T> extends Omit<AsyncAutocompleteProps<T>, 'defaultValue' | 'value'> {
+  readonly value: readonly T[];
+}
+
+/**
+ * For inputs that hold their own uncontrolled selection. Not exported from the package.
+ * @param props - The autocomplete props, with the selection always given as `value`.
+ * @returns The autocomplete element.
+ */
+export function AsyncAutocompleteControlled<T>(props: AsyncAutocompleteControlledProps<T>): JSX.Element {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
     onDropdownOpen: () => combobox.updateSelectedOptionIndex('active'),
@@ -64,7 +101,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     'aria-label': ariaLabel,
     description,
     error,
-    defaultValue,
+    value,
     toOption,
     loadOptions,
     itemComponent,
@@ -81,15 +118,27 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     maxValues,
     optionsDropdownMaxHeight = 320,
     minInputLength = 0,
+    loading,
     ...rest
   } = props;
   const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
-  const defaultItems = toDefaultItems(defaultValue);
+  const selected = useMemo(() => value.map(toOption), [value, toOption]);
   const [search, setSearch] = useState('');
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
-  const [selected, setSelected] = useState(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
+
+  // The search input is hidden at the cap, which `value` can also reach. Clear the search so stale
+  // text and options don't linger with no input left to dismiss them.
+  const capReached = !!maxValues && selected.length >= maxValues;
+  const [prevCapReached, setPrevCapReached] = useState(capReached);
+  if (capReached !== prevCapReached) {
+    setPrevCapReached(capReached);
+    if (capReached) {
+      setSearch('');
+      setOptions([]);
+    }
+  }
   const ItemComponent = itemComponent ?? DefaultItemComponent;
   const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
@@ -101,12 +150,22 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const abortControllerRef = useRef<AbortController>(abortController);
   const autoSubmitRef = useRef<boolean>(false);
   const selectedRef = useRef(selected);
+  const capReachedRef = useRef(capReached);
   useLayoutEffect(() => {
     searchRef.current = search;
     timerRef.current = timer;
     abortControllerRef.current = abortController;
     selectedRef.current = selected;
+    capReachedRef.current = capReached;
   });
+
+  useEffect(() => {
+    if (capReached) {
+      // The cap cleared the options, so the same search text has to load again.
+      lastValueRef.current = undefined;
+      combobox.closeDropdown();
+    }
+  }, [capReached, combobox]);
 
   const handleValueAdd = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
@@ -118,7 +177,6 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       // when maxValues is 0, still fire the onChange when an item is selected
       if (maxValues === 0) {
         onChange([item.resource]);
-        setSelected([]);
         return;
       }
 
@@ -129,24 +187,21 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           // Remove from the front
           newSelected.shift();
         }
-
-        if (newSelected.length >= maxValues) {
-          // The search input is about to be hidden now that the cap is reached; reset the dropdown
-          // state so it doesn't linger with stale options and no input left to dismiss it.
-          setSearch('');
-          setOptions([]);
-          combobox.closeDropdown();
-        }
       }
 
       onChange(newSelected.map((v) => v.resource));
-      setSelected(newSelected);
     },
-    [maxValues, onChange, combobox, setSearch, setOptions]
+    [maxValues, onChange]
   );
 
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
+
+    // A search still pending when the cap hid the input is dropped, auto-submit included.
+    if (capReachedRef.current) {
+      autoSubmitRef.current = false;
+      return;
+    }
 
     if (searchRef.current === lastValueRef.current && loadOptions === lastLoadOptionsRef.current) {
       // Same search input and loadOptions function, move on
@@ -164,17 +219,22 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
     loadOptions(searchRef.current ?? '', newAbortController.signal)
       .then((newValues: T[]) => {
-        if (!newAbortController.signal.aborted) {
-          const newOptions = newValues.map(toOption);
-          setOptions(newOptions);
-          if (autoSubmitRef.current) {
-            if (newOptions.length > 0) {
-              handleValueAdd(newOptions[0]);
-            }
-            autoSubmitRef.current = false;
-          } else if (newValues.length > 0) {
-            combobox.openDropdown();
+        if (newAbortController.signal.aborted) {
+          return;
+        }
+        if (capReachedRef.current) {
+          autoSubmitRef.current = false;
+          return;
+        }
+        const newOptions = newValues.map(toOption);
+        setOptions(newOptions);
+        if (autoSubmitRef.current) {
+          if (newOptions.length > 0) {
+            handleValueAdd(newOptions[0]);
           }
+          autoSubmitRef.current = false;
+        } else if (newValues.length > 0) {
+          combobox.openDropdown();
         }
       })
       .catch((err) => {
@@ -217,9 +277,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     (newValue: string): void => {
       const alreadySelected = selected.some((v) => v.value === newValue);
       if (alreadySelected) {
-        const newSelected = selected.filter((v) => v.value !== newValue);
-        onChange(newSelected.map((v) => v.resource));
-        setSelected(newSelected);
+        onChange(selected.filter((v) => v.value !== newValue).map((v) => v.resource));
       } else {
         let option = options?.find((option) => option.value === newValue);
         if (!option && creatable !== false && onCreate) {
@@ -255,9 +313,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
-      const newSelected = selected.filter((v) => v.value !== item.value);
-      onChange(newSelected.map((v) => v.resource));
-      setSelected(newSelected);
+      onChange(selected.filter((v) => v.value !== item.value).map((v) => v.resource));
     },
     [selected, onChange]
   );
@@ -270,7 +326,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           // We need to wait for the results to come in.
           autoSubmitRef.current = true;
         }
-      } else if (e.key === 'Backspace' && search.length === 0) {
+      } else if (e.key === 'Backspace' && search.length === 0 && selected.length > 0) {
         killEvent(e);
         handleValueRemove(selected[selected.length - 1]);
       }
@@ -294,7 +350,6 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       size="sm"
       onClear={() => {
         setSearch('');
-        setSelected([]);
         onChange([]);
         combobox.closeDropdown();
       }}
@@ -313,7 +368,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           error={error}
           className={props.className}
           leftSection={leftSection}
-          rightSection={abortController ? <Loader size={16} /> : clearButton}
+          rightSection={loading || abortController ? <Loader size={16} /> : clearButton}
           required={required}
           withAsterisk={withAsterisk}
           disabled={disabled}
@@ -328,7 +383,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
                 onRemove={() => handleValueRemove(item)}
               />
             ))}
-            {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
+            {!disabled && !capReached && (
               <Combobox.EventsTarget>
                 <PillsInput.Field
                   role="searchbox"
@@ -372,14 +427,14 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   );
 }
 
-function toDefaultItems<T>(defaultValue: T | T[] | undefined): T[] {
-  if (!defaultValue) {
+function toItems<T>(value: T | readonly T[] | null | undefined): T[] {
+  if (!value) {
     return [];
   }
-  if (Array.isArray(defaultValue)) {
-    return defaultValue;
+  if (Array.isArray(value)) {
+    return [...value];
   }
-  return [defaultValue];
+  return [value as T];
 }
 
 function DefaultItemComponent<T>(props: AsyncAutocompleteOption<T>): JSX.Element {

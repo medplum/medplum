@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import type { JSX } from 'react';
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import {
   act,
   fireEvent,
@@ -574,5 +574,125 @@ describe('AsyncAutocomplete', () => {
 
     await typeInAutocomplete(input, 'zzz');
     expect(screen.getByText('Empty::zzz')).toBeInTheDocument();
+  });
+
+  describe('controlled', () => {
+    function pills(): ReturnType<typeof within> {
+      return within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
+    }
+
+    test('follows value from the parent without remounting', async () => {
+      const props = { toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={apple} />);
+      expect(pills().getByText('Apple')).toBeInTheDocument();
+
+      const input = screen.getByRole('searchbox');
+      await typeInAutocomplete(input, 'ch');
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={[banana, cherry]} />);
+      expect(pills().queryByText('Apple')).not.toBeInTheDocument();
+      expect(pills().getByText('Banana')).toBeInTheDocument();
+      expect(pills().getByText('Cherry')).toBeInTheDocument();
+      expect(screen.getByRole('searchbox')).toBe(input);
+      expect(input).toHaveValue('ch');
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      expect(pills().queryByText('Banana')).not.toBeInTheDocument();
+      expect(pills().queryByText('Cherry')).not.toBeInTheDocument();
+    });
+
+    test('keeps the last selection when value changes to undefined', () => {
+      const props = { toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={[apple, banana]} />);
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={undefined} />);
+      expect(pills().getByText('Apple')).toBeInTheDocument();
+      expect(pills().getByText('Banana')).toBeInTheDocument();
+    });
+
+    test('keeps an edit that the parent answers with an undefined value', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      function Parent(): JSX.Element {
+        const [value, setValue] = useState<TestOption | undefined>(apple);
+        return (
+          <AsyncAutocomplete<TestOption>
+            clearable
+            value={value}
+            toOption={toOption}
+            loadOptions={defaultLoadOptions}
+            onChange={(items) => setValue(items[0])}
+          />
+        );
+      }
+      render(<Parent />);
+
+      fireEvent.click(screen.getByTitle('Clear all'));
+      expect(pills().queryByText('Apple')).not.toBeInTheDocument();
+      warn.mockRestore();
+    });
+
+    test('warns once when switching between controlled and uncontrolled', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const props = { name: 'fruit', toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={[apple]} />);
+      expect(warn).not.toHaveBeenCalled();
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={undefined} />);
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={[apple]} />);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain('"fruit" switched from controlled to uncontrolled');
+      warn.mockRestore();
+    });
+
+    test('reports edits through onChange without applying them', async () => {
+      const onChange = vi.fn();
+      render(
+        <AsyncAutocomplete<TestOption>
+          clearable
+          value={[apple]}
+          toOption={toOption}
+          loadOptions={defaultLoadOptions}
+          onChange={onChange}
+        />
+      );
+
+      await selectAutocompleteOption(screen.getByRole('searchbox'), 'Banana', 'Banana');
+      expect(onChange).toHaveBeenLastCalledWith([apple, banana]);
+      expect(pills().queryByText('Banana')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByTitle('Clear all'));
+      expect(onChange).toHaveBeenLastCalledWith([]);
+      expect(pills().getByText('Apple')).toBeInTheDocument();
+    });
+
+    test('clears the search when value fills the last slot', async () => {
+      const props = { maxValues: 1, toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'ch');
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={apple} />);
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      expect(screen.getByRole('searchbox')).toHaveValue('');
+
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'ch');
+      expect(screen.getByText('Cherry')).toBeInTheDocument();
+    });
+
+    test('drops a search still pending when value fills the last slot', async () => {
+      const props = { maxValues: 1, toOption, loadOptions: defaultLoadOptions, onChange: vi.fn() };
+      const { rerender } = render(<AsyncAutocomplete<TestOption> {...props} value={null} />);
+      await act(async () => {
+        fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'an' } });
+      });
+
+      rerender(<AsyncAutocomplete<TestOption> {...props} value={apple} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(screen.queryByText('Banana')).not.toBeInTheDocument();
+    });
   });
 });

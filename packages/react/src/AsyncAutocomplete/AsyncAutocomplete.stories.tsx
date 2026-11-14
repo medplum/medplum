@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Title } from '@mantine/core';
+import { Button, Code, Group, Title } from '@mantine/core';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import type { AsyncAutocompleteOption } from './AsyncAutocomplete';
 import { AsyncAutocomplete } from './AsyncAutocomplete';
 
 export default {
@@ -97,6 +98,44 @@ export function SlowAsyncAutocomplete(): JSX.Element {
         Values
       </Title>
       <code>{JSON.stringify(values)}</code>
+    </>
+  );
+}
+
+async function loadFruit(input: string): Promise<Option[]> {
+  return options.filter(
+    (o) => o.code.toLowerCase().includes(input.toLowerCase()) || o.display.toLowerCase().includes(input.toLowerCase())
+  );
+}
+
+function fruitToOption(option: Option): AsyncAutocompleteOption<Option> {
+  return { value: option.code, label: option.display, resource: option };
+}
+
+export function ControlledAsyncAutocomplete(): JSX.Element {
+  const [values, setValues] = useState<Option[]>([options[0]]);
+  return (
+    <>
+      <AsyncAutocomplete
+        label="Controlled Async Autocomplete"
+        value={values}
+        loadOptions={loadFruit}
+        toOption={fruitToOption}
+        onChange={setValues}
+        clearable
+      />
+      <Group mt="md">
+        <Button variant="default" onClick={() => setValues([options[1]])}>
+          Select Banana
+        </Button>
+        <Button variant="default" onClick={() => setValues([])}>
+          Clear
+        </Button>
+      </Group>
+      <Title order={6} mt="md">
+        Values
+      </Title>
+      <Code>{JSON.stringify(values)}</Code>
     </>
   );
 }
