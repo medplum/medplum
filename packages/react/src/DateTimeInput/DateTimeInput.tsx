@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { TextInput } from '@mantine/core';
+import { ActionIcon, TextInput } from '@mantine/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
-import type { ChangeEvent, JSX } from 'react';
+import { IconCalendarEvent } from '@tabler/icons-react';
+import type { ChangeEvent, FocusEvent, JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
+import classes from './DateTimeInput.module.css';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 
 export interface DateTimeInputProps extends PrimitiveTypeInputProps {
@@ -25,8 +28,19 @@ export interface DateTimeInputProps extends PrimitiveTypeInputProps {
  * @returns The JSX element to render.
  */
 export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
+  const defaultValue = convertIsoToLocal(props.defaultValue);
+  const [empty, setEmpty] = useState(!defaultValue);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      setEmpty(isEmpty(inputRef.current));
+    }
+  }, [defaultValue]);
+
   return (
     <TextInput
+      ref={inputRef}
       id={props.name}
       name={props.name}
       label={props.label}
@@ -37,10 +51,27 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       disabled={props.disabled}
       type={getInputType()}
       step={1}
-      defaultValue={convertIsoToLocal(props.defaultValue)}
+      defaultValue={defaultValue}
+      classNames={{ input: classes.input }}
+      data-empty={empty || undefined}
       autoFocus={props.autoFocus}
       error={getErrorsForInput(props.outcome, props.name)}
+      rightSection={
+        <ActionIcon
+          variant="transparent"
+          color="gray"
+          className={classes.pickerButton}
+          aria-label="Open date picker"
+          disabled={props.disabled}
+          onClick={() => openPicker(inputRef.current)}
+        >
+          <IconCalendarEvent size={16} stroke={2} className={classes.pickerIcon} />
+        </ActionIcon>
+      }
+      rightSectionPointerEvents="all"
+      onBlur={(e: FocusEvent<HTMLInputElement>) => setEmpty(isEmpty(e.currentTarget))}
       onChange={(e: ChangeEvent<HTMLInputElement>) => {
+        setEmpty(isEmpty(e.currentTarget));
         if (props.onChange) {
           const newValue = e.currentTarget.value;
           props.onChange(convertLocalToIso(newValue));
@@ -48,6 +79,18 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       }}
     />
   );
+}
+
+function isEmpty(input: HTMLInputElement): boolean {
+  return !input.value && !input.validity.badInput;
+}
+
+function openPicker(input: HTMLInputElement | null): void {
+  try {
+    input?.showPicker?.();
+  } catch {
+    // showPicker throws in cross-origin iframes
+  }
 }
 
 /**
