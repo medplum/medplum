@@ -44,8 +44,10 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
+import type { TestProjectOptions } from '../test.setup';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin, getRepoForProject } from './accesspolicy';
 import type { SystemRepository } from './repo';
@@ -79,6 +81,118 @@ describe('AccessPolicy', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  test.each<[string, TestProjectOptions]>([
+    ['without an access policy', {}],
+    ['with a wildcard access policy', { accessPolicy: { resource: [{ resourceType: '*' }] } }],
+    ['with a Bot access policy', { accessPolicy: { resource: [{ resourceType: 'Bot' }] } }],
+    ['as a project admin', { membership: { admin: true } }],
+  ])('Only super admins can set Bot.system %s', (_, options) =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ ...options, withRepo: true });
+
+      // Create, update and patch silently drop the flag
+      const bot1 = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test Bot', system: true });
+      expect(bot1.system).toBeUndefined();
+
+      const bot2 = await repo.updateResource<Bot>({ ...bot1, description: 'update', system: true });
+      expect(bot2.description).toStrictEqual('update');
+      expect(bot2.system).toBeUndefined();
+
+      const bot3 = await repo.patchResource<Bot>('Bot', bot1.id, [
+        { op: 'add', path: '/description', value: 'patch' },
+        { op: 'add', path: '/system', value: true },
+      ]);
+      expect(bot3.description).toStrictEqual('patch');
+      expect(bot3.system).toBeUndefined();
+
+      // A super admin can set the flag, and later edits keep it
+      const bot4 = await (await getProjectSystemRepo(project)).updateResource<Bot>({ ...bot3, system: true });
+      expect(bot4.system).toBe(true);
+
+      const bot5 = await repo.updateResource<Bot>({ ...bot4, description: 'after', system: undefined });
+      expect(bot5.description).toStrictEqual('after');
+      expect(bot5.system).toBe(true);
+    })
+  );
+
+  test('Bot.system rule is added only for wildcard and Bot entries', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resource: [
+            { resourceType: 'Patient' },
+            { resourceType: 'Bot', criteria: 'Bot?name=Readonly', readonlyFields: ['system'] },
+            { resourceType: 'Bot', criteria: 'Bot?name=Hidden', hiddenFields: ['system'] },
+            { resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' },
+            { resourceType: '*', readonlyFields: ['identifier'] },
+          ],
+        },
+      });
+      expect(repo.getConfig().accessPolicy?.resource?.slice(0, 7)).toStrictEqual([
+        { resourceType: 'Patient' },
+        { resourceType: 'Bot', criteria: 'Bot?name=Readonly', readonlyFields: ['system'] },
+        { resourceType: 'Bot', criteria: 'Bot?name=Hidden', hiddenFields: ['system'] },
+        { resourceType: 'Bot', criteria: 'Bot?_lastUpdated=gt2000-01-01', readonlyFields: ['system'] },
+        { resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' },
+        { resourceType: 'Bot', readonlyFields: ['identifier', 'system'] },
+        { resourceType: '*', readonlyFields: ['identifier'] },
+      ]);
+
+      const { repo: patientOnlyRepo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+      });
+      expect(patientOnlyRepo.getConfig().accessPolicy?.resource?.map((r) => r.resourceType)).not.toContain('Bot');
+    }));
+
+  test('Bot.system rule does not repeat wildcard criteria in Bot searches', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' }] },
+      });
+      const bot = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test Bot' });
+
+      // Creating switches the repo to the writer pool
+      const querySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, repo.shardId), 'query');
+      try {
+        const bundle = await repo.search({
+          resourceType: 'Bot',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: bot.id }],
+        });
+        expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual([bot.id]);
+        const sql = querySpy.mock.calls.map((call) => String(call[0])).find((text) => text.includes('FROM "Bot"'));
+        expect(sql?.match(/"lastUpdated" >/g)).toHaveLength(1);
+      } finally {
+        querySpy.mockRestore();
+      }
+    }));
+
+  test.each<[string, Partial<AccessPolicy> | undefined]>([
+    ['without an access policy', undefined],
+    ['with wildcard criteria', { resource: [{ resourceType: '*', criteria: '*?name=Test' }] }],
+  ])('Only super admins can set Bot.system with SMART scopes %s', (_, accessPolicy) =>
+    withTestContext(async () => {
+      const { project, membership, login } = await createTestProject({
+        accessPolicy,
+        withClient: true,
+        withAccessToken: true,
+      });
+      const repo = await getRepoForLogin({
+        login: { ...login, scope: 'openid user/Bot.cruds' },
+        project,
+        membership,
+        userConfig: { resourceType: 'UserConfiguration' },
+      });
+
+      const bot = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test', system: true });
+      expect(bot.system).toBeUndefined();
+      const updated = await repo.updateResource<Bot>({ ...bot, system: true });
+      expect(updated.system).toBeUndefined();
+    })
+  );
 
   test('Access policy restricting read', () =>
     withTestContext(async () => {
