@@ -49,7 +49,7 @@ test('the collision check catches duplicate IDs at different depths', () => {
   expect(() => assertUniqueLinkIds(items)).toThrow('Duplicate Questionnaire linkId: same');
 });
 
-test('publishing retries reuse the definition and a saved assignment stays on its original revision', async () => {
+test('publishing retries reuse the definition and loading by its ID reopens the original assignment', async () => {
   const medplum = new MockClient();
   const first = await publishVisitPreparation(medplum);
   expect((await publishVisitPreparation(medplum)).id).toBe(first.id);
@@ -58,7 +58,7 @@ test('publishing retries reuse the definition and a saved assignment stays on it
     ...buildVisitPreparation(),
     status: 'active',
     version: '2.0.0',
-    identifier: [{ system: 'https://example.org/questionnaire-definition', value: 'visit-preparation-v2' }],
+    identifier: [{ system: 'https://example.org/questionnaire-definition', value: 'visit-preparation-2.0.0' }],
   });
   expect(revision.id).not.toBe(first.id);
   const resumed = await loadActivityForm(medplum, first.id as string, 'example', 'visit-1');

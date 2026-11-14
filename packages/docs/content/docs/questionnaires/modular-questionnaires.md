@@ -32,7 +32,7 @@ flowchart TD
     C --> D["Complete the form<br/>and save one response"]
 ```
 
-Keep the published definition available for its responses. When a module changes, review and publish a new complete form for new assignments. Existing assignments continue using their original definition.
+Keep the published definition available for its responses. When a module changes, review and publish a new complete form for new assignments. Existing assignments continue using their original definition when they reference its resource ID and that resource remains unchanged.
 
 ### What Medplum supports
 
@@ -100,7 +100,7 @@ After reviewing the form, add this helper to `modular-questionnaires.ts` and cal
 
 {{< code-example file="packages/examples/src/questionnaires/modular-questionnaires.ts" language="ts" blocks="publish" >}}
 
-Keep the returned Questionnaire ID in configuration. This identifier-based conditional create makes a retry reuse the existing definition. Replace the identifier system with one owned by your application. Reusing the same identifier after changing the code returns the previous definition; give each new published revision a new identifier.
+Keep the returned Questionnaire ID in configuration. This identifier-based conditional create makes a retry reuse the existing definition. Replace the identifier system with one owned by your application. The helper derives the identifier from the composed Questionnaire's `version`. Bump that version for each new published revision; keeping it unchanged returns the previous definition even if the code has changed.
 
 The final definition uses the resource-ID strategy from [Saving and Resuming Responses](/docs/questionnaires/saving-and-resuming): load the stored Questionnaire by ID and assign a response that points to `Questionnaire/{id}`. The composed definition intentionally has no canonical `url`; the source module URLs identify the modules only. Keep a published resource unchanged while responses depend on it.
 

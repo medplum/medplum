@@ -78,9 +78,13 @@ export function assertUniqueLinkIds(items: QuestionnaireItem[], seen = new Set<s
 
 // start-block publish
 export async function publishVisitPreparation(medplum: MedplumClient): Promise<Questionnaire> {
-  const identifier = { system: 'https://example.org/questionnaire-definition', value: 'visit-preparation-v1' };
+  const questionnaire = buildVisitPreparation();
+  const identifier = {
+    system: 'https://example.org/questionnaire-definition',
+    value: `visit-preparation-${questionnaire.version}`,
+  };
   return medplum.createResourceIfNoneExist<Questionnaire>(
-    { ...buildVisitPreparation(), status: 'active', identifier: [identifier] },
+    { ...questionnaire, status: 'active', identifier: [identifier] },
     new URLSearchParams({ identifier: `${identifier.system}|${identifier.value}` }).toString()
   );
 }
