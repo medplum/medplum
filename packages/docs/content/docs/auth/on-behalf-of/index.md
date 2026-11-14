@@ -15,7 +15,7 @@ Consider this common Medplum architectural pattern:
 
 ![On-Behalf-Of](on-behalf-of.webp)
 
-Your backend authenticates the person using your application's login system, resolves the corresponding Medplum membership, and attaches that context to outgoing Medplum requests. Derive the delegation header from the verified identity and authorized application context.
+Your backend authenticates the person using your application's login system, resolves the corresponding Medplum membership, and attaches that context to outgoing Medplum requests. Derive the delegation header from the verified identity and authorized application context. See [Server-to-Server Communication Security](/docs/auth/server-to-server-security) for recommended practices.
 
 ## How to Use
 
