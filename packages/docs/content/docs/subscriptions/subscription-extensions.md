@@ -245,14 +245,18 @@ def handle_webhook():
 
 ## Retry Policy
 
-If your subscription failed or threw an error, you can configure it to attempt to execute the operation multiple times.
+If a subscription delivery fails, Medplum can retry it.
 
-To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with the valueInteger set to a number between 1-18.
+To set the number of retries, use the `https://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with `valueInteger` set to a number between 1 and 18. Medplum makes the first attempt, then up to that many retries. For example, a value of 3 allows up to 4 attempts in total.
 
-The default number of attempts is 4.
+HTTP `rest-hook` endpoints retry up to 4 times by default (5 attempts in total).
+
+Retries only deliver the current version of a resource. If the resource that triggered the subscription has been updated or deleted since the event, the retry is skipped and the failure is not recorded. The update or delete triggers its own event if the subscription matches it.
 
 {{< warning title="Note" >}}
-Subscriptions with Bot endpoints will only execute once and will not retry on failure. The `subscription-max-attempts` extension only applies to rest-hook subscriptions with external HTTP endpoints.
+By default, Subscriptions with Bot endpoints (`Bot/<id>`) run the Bot once and do not retry when the execution fails. Set the `subscription-max-attempts` extension on a Bot subscription to opt into retries when the Bot throws an error, returns a non-OK `OperationOutcome`, or cannot be invoked (for example, when AWS Lambda throttles the request). Errors thrown before Medplum invokes the Bot, such as a failure to read the Bot or its `ProjectMembership`, still retry up to 4 times by default.
+
+Because a retry runs the handler again from the beginning, Bot handlers should be idempotent when retries are enabled. A Bot that updates the resource that triggered it and then fails is not retried, because that resource is no longer the current version. A Bot execution that fails after its final attempt counts toward automatic subscription disabling when that is configured on the server or project, whether or not `subscription-max-attempts` is set.
 {{< /warning >}}
 
 ```json
@@ -283,25 +287,25 @@ Retries are not immediate. Medplum spaces them out using **exponential backoff w
 - **Maximum delay:** the delay between attempts is capped at **8 hours**.
 - **Jitter:** a random factor of ±10% is applied to each delay to avoid thundering-herd retries, so actual times may vary slightly from the values below.
 
-Because retries back off exponentially, increasing `subscription-max-attempts` extends the total retry window super-linearly. The following table shows approximately how long Medplum will keep retrying (from the first failure until the last attempt) for a given `subscription-max-attempts` value:
+Because retries back off exponentially, increasing `subscription-max-attempts` extends the total retry window super-linearly. The following table shows approximately how long Medplum will keep retrying (from the first failure until the last retry) for a given `subscription-max-attempts` value:
 
 | `subscription-max-attempts` | Approx. total retry window |
 | --------------------------- | -------------------------- |
-| 4 (default)                 | ~2 minutes                 |
-| 6                           | ~10 minutes                |
-| 8                           | ~40 minutes                |
-| 10                          | ~3 hours                   |
-| 12                          | ~11 hours                  |
-| 15                          | ~1.5 days                  |
-| 18 (max)                    | ~2.5 days                  |
+| 4 (default)                 | ~5 minutes                 |
+| 6                           | ~20 minutes                |
+| 8                           | ~1.5 hours                 |
+| 10                          | ~6 hours                   |
+| 12                          | ~19 hours                  |
+| 15                          | ~1.8 days                  |
+| 18 (max)                    | ~2.8 days                  |
 
 ### Planning for downtime in the destination service
 
 If the system receiving your webhook (for example, an external API, integration engine, or your own backend) experiences downtime, the retry policy is what determines whether the event is eventually delivered or lost:
 
-- With the **default of 4 attempts**, retries are exhausted in roughly **2 minutes**. This is only enough to survive brief, transient blips (e.g. a momentary network error or a quick restart).
-- To survive longer outages (maintenance windows, multi-hour incidents), raise `subscription-max-attempts`. For example, `12` covers roughly an 11-hour outage, and the maximum of `18` covers roughly 2.5 days.
-- Once the maximum number of attempts is exhausted, the event is **not** retried again and the notification is effectively dropped. Medplum does not queue events indefinitely.
+- With the **default of 4 retries**, retries are exhausted in roughly **5 minutes**. This is only enough to survive brief, transient blips (e.g. a momentary network error or a quick restart).
+- To survive longer outages (maintenance windows, multi-hour incidents), raise `subscription-max-attempts`. For example, `12` covers roughly a 19-hour outage, and the maximum of `18` covers roughly 2.8 days.
+- Once all retries are exhausted, the event is **not** retried again and the notification is effectively dropped. Medplum does not queue events indefinitely.
 
 For each attempt, an [`AuditEvent`](/docs/api/fhir/resources/auditevent) records the outcome (unless configured for [log-only destination](#auditevent-destination)), so you can inspect delivery history and failures at `https://app.medplum.com/Subscription/<id>/event`.
 
