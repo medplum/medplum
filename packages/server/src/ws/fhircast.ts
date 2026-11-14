@@ -9,9 +9,11 @@ import type { FhircastChannelMessage } from '../fhircast/utils';
 import {
   extractEndpoint,
   FHIRCAST_LEASE_SECONDS,
+  fhircastScopesPermit,
   FhircastVersion,
   getEndpointSubscription,
   serializeFhircastChannelMessage,
+  UNCONDITIONAL_EVENTS,
 } from '../fhircast/utils';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
@@ -33,6 +35,8 @@ let heartbeatHandler: (() => void) | undefined;
 type ConnectedSubscriber = {
   projectAndTopic: string;
   events: Set<string>;
+  /** The `fhircast/` scopes of the subscriber's login, if it is limited by scopes. */
+  scopes?: string[];
 };
 
 const websocketMap = new Map<WebSocket, ConnectedSubscriber>();
@@ -82,12 +86,6 @@ export function stopFhircastHeartbeat(): void {
   }
 }
 
-// Events delivered to every subscriber regardless of the events they subscribed to: `heartbeat`
-// keeps the connection alive, and `syncerror` reports a context change the subscriber may have
-// caused, so a subscriber can't opt out of hearing about its own failures.
-// Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-Events.html
-const UNCONDITIONAL_EVENTS = new Set(['heartbeat', 'syncerror']);
-
 /**
  * Decides what a subscriber should be sent from a message published to its topic.
  *
@@ -97,13 +95,13 @@ const UNCONDITIONAL_EVENTS = new Set(['heartbeat', 'syncerror']);
  * for.
  * @param message - The raw message published to the topic.
  * @param endpoint - The endpoint this subscriber connected with.
- * @param subscribedEvents - The events this subscriber requested.
+ * @param subscriber - The subscriber's requested events and scopes.
  * @returns The payload to forward, or `undefined` if the message is not for this subscriber.
  */
 function messageForSubscriber(
   message: string,
   endpoint: string,
-  subscribedEvents: Set<string>
+  subscriber: ConnectedSubscriber
 ): Record<string, any> | undefined {
   let channelMessage: FhircastChannelMessage | undefined;
   try {
@@ -122,7 +120,10 @@ function messageForSubscriber(
   const eventName = channelMessage.payload.event?.['hub.event'];
   if (typeof eventName === 'string') {
     const normalizedEventName = eventName.toLowerCase();
-    if (!UNCONDITIONAL_EVENTS.has(normalizedEventName) && !subscribedEvents.has(normalizedEventName)) {
+    if (!UNCONDITIONAL_EVENTS.has(normalizedEventName) && !subscriber.events.has(normalizedEventName)) {
+      return undefined;
+    }
+    if (!fhircastScopesPermit(subscriber.scopes, eventName, 'read')) {
       return undefined;
     }
   }
@@ -161,7 +162,7 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   const redisSubscriber = getPubSubRedisSubscriber();
 
-  const { projectId, topic, events, version } = subscription;
+  const { projectId, topic, events, version, scopes } = subscription;
   const projectAndTopic = `${projectId}:${topic}`;
 
   // Bind all listeners (and topic bookkeeping) before awaiting the subscribe, so that
@@ -171,15 +172,19 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
 
   // Increment ref count for the specified topic
   topicRefCountMap.set(projectAndTopic, (topicRefCountMap.get(projectAndTopic) ?? 0) + 1);
-  websocketMap.set(socket, { projectAndTopic, events: new Set(events.map((event) => event.toLowerCase())) });
+  websocketMap.set(socket, {
+    projectAndTopic,
+    events: new Set(events.map((event) => event.toLowerCase())),
+    scopes,
+  });
 
   redisSubscriber.on('message', (_channel: string, message: string) => {
-    const subscribedEvents = websocketMap.get(socket)?.events;
-    if (!subscribedEvents) {
+    const subscriber = websocketMap.get(socket);
+    if (!subscriber) {
       // The socket is gone; nothing left to deliver to
       return;
     }
-    const payload = messageForSubscriber(message, endpoint, subscribedEvents);
+    const payload = messageForSubscriber(message, endpoint, subscriber);
     if (!payload) {
       return;
     }

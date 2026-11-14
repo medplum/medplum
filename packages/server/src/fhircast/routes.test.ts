@@ -4,6 +4,7 @@ import type {
   CurrentContext,
   FhircastEventContext,
   FhircastEventPayload,
+  FhircastMessagePayload,
   PendingSubscriptionRequest,
   WithId,
 } from '@medplum/core';
@@ -25,7 +26,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
 import { getCacheRedis } from '../redis';
-import { createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import type { EventCategory } from './routes';
 import { getEventCategory } from './routes';
 import {
@@ -1149,6 +1150,84 @@ describe('FHIRcast routes', () => {
       ],
     });
   });
+
+  test('Subscription stores the FHIRcast scopes of the login', () =>
+    withTestContext(async () => {
+      const { accessToken: limitedToken } = await addTestUser(project, {
+        scope: 'openid fhircast/Patient-open.read fhircast/Patient-close.READ',
+      });
+      for (const [token, scopes] of [
+        [limitedToken, ['patient-open.read', 'patient-close.read']],
+        // A login without SMART or FHIRcast scopes is not limited
+        [accessToken, undefined],
+      ] as const) {
+        const res = await request(server)
+          .post(STU3_BASE_ROUTE)
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + token)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic: randomUUID(),
+              events: ['Patient-open'],
+            })
+          );
+        expect(res).toHaveStatus(202);
+        const subscription = await getEndpointSubscription(extractEndpoint(res.body['hub.channel.endpoint']) ?? '');
+        expect(subscription?.scopes).toStrictEqual(scopes);
+      }
+    }));
+
+  test('FHIRcast scopes limit reading the current context and requesting context changes', () =>
+    withTestContext(async () => {
+      const topic = randomUUID();
+      const { accessToken: imagingToken } = await addTestUser(project, {
+        scope: 'openid user/ImagingStudy.rs fhircast/ImagingStudy-open.read',
+      });
+      const { accessToken: patientReadToken } = await addTestUser(project, {
+        scope: 'openid fhircast/Patient-open.read',
+      });
+      const { accessToken: patientWriteToken } = await addTestUser(project, {
+        scope: 'openid fhircast/Patient-close.write',
+      });
+      const { accessToken: wildcardToken } = await addTestUser(project, { scope: 'openid fhircast/*.*' });
+
+      const patient = { key: 'patient', resource: { resourceType: 'Patient', id: randomUUID() } } as const;
+      const postEvent = (token: string, payload: FhircastMessagePayload): Promise<any> =>
+        request(server)
+          .post(STU3_BASE_ROUTE)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + token)
+          .send(payload);
+
+      expect(await postEvent(accessToken, createFhircastMessagePayload(topic, 'Patient-open', [patient]))).toHaveStatus(
+        202
+      );
+
+      for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+        for (const [token, status] of [
+          [imagingToken, 403],
+          [patientWriteToken, 403],
+          [patientReadToken, 200],
+          [wildcardToken, 200],
+        ] as const) {
+          const res = await request(server)
+            .get(`${route}/${topic}`)
+            .set('Authorization', 'Bearer ' + token);
+          expect(res).toHaveStatus(status);
+        }
+      }
+
+      // Requesting a context change takes the write scope for the event
+      const closePayload = createFhircastMessagePayload(topic, 'Patient-close', [patient]);
+      expect(await postEvent(imagingToken, closePayload)).toHaveStatus(403);
+      expect(await postEvent(patientReadToken, closePayload)).toHaveStatus(403);
+      expect((await getCurrentContext(project.id, topic))?.['context.type']).toStrictEqual('Patient');
+
+      expect(await postEvent(patientWriteToken, closePayload)).toHaveStatus(202);
+      expect(await getCurrentContext(project.id, topic)).toBeUndefined();
+    }));
 
   test('Get context after *-close event', async () => {
     let beforeContextRes: any;

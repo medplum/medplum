@@ -13,6 +13,7 @@ import {
   badRequest,
   conflict,
   EMPTY,
+  forbidden,
   generateId,
   getWebSocketUrl,
   isResource,
@@ -40,9 +41,11 @@ import {
   deleteEndpointSubscription,
   extractAnchorResourceType,
   extractEndpoint,
+  fhircastScopesPermit,
   FhircastVersion,
   getCurrentContext,
   getEndpointSubscription,
+  getFhircastScopes,
   getTopicContextStorageKey,
   getTopicCurrentContextKey,
   parseFhircastEvents,
@@ -256,6 +259,8 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       topic,
       events,
       version: getFhircastVersion(req),
+      // The socket connects without a token, so the scopes that limit what it is sent are stored here
+      scopes: getFhircastScopes(ctx.login.scope),
     });
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to create subscription for topic')));
@@ -332,6 +337,10 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
 
 async function handleContextChangeRequest(req: Request, res: Response): Promise<void> {
   const { event } = req.body as FhircastMessagePayload;
+  if (!fhircastScopesPermit(getFhircastScopes(getAuthenticatedContext().login.scope), event['hub.event'], 'write')) {
+    sendOutcome(res, forbidden);
+    return;
+  }
   const eventCategory = getEventCategory(event['hub.event']);
   await EVENT_HANDLERS[eventCategory](req, res);
 }
@@ -597,11 +606,30 @@ async function closeCurrentContext(projectId: string, topic: string): Promise<vo
   await getCacheRedis().del(topicCurrentContextKey);
 }
 
-// Get the current subscription status
-protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
-  const { project } = getAuthenticatedContext();
+/**
+ * Reads the current context of the topic a request names.
+ * The current context is what the latest `*-open` event established, so reading it takes the scope to receive that event.
+ * @param req - The request.
+ * @returns The current context, or `undefined` if there is none.
+ */
+async function getCurrentContextForRequest(
+  req: Request
+): Promise<CurrentContext<FhircastAnchorResourceType> | undefined> {
+  const { project, login } = getAuthenticatedContext();
   const topic = singularize(req.params.topic) ?? '';
   const currentContext = await getCurrentContext(project.id, topic);
+  if (
+    currentContext &&
+    !fhircastScopesPermit(getFhircastScopes(login.scope), `${currentContext['context.type']}-open`, 'read')
+  ) {
+    throw new OperationOutcomeError(forbidden);
+  }
+  return currentContext;
+}
+
+// Get the current subscription status
+protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
+  const currentContext = await getCurrentContextForRequest(req);
   // Non-standard FHIRcast extension to support Nuance PowerCast Hub
   if (!currentContext) {
     res.status(200).json([]);
@@ -611,9 +639,7 @@ protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
 });
 
 protectedSTU3Routes.get('/:topic', async (req: Request, res: Response) => {
-  const { project } = getAuthenticatedContext();
-  const topic = singularize(req.params.topic) ?? '';
-  const currentContext = await getCurrentContext(project.id, topic);
+  const currentContext = await getCurrentContextForRequest(req);
   if (!currentContext) {
     // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
     res.status(200).json({
