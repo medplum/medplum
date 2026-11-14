@@ -40,6 +40,26 @@ Without the header, Medplum uses the application's own access. A valid header fo
 
 Treat a rejected delegation request as a failure; do not retry it without the header. Keep privileged application operations separate from handlers serving user requests.
 
+### Lock down the application credential
+
+The On-Behalf-Of model is designed to use individual users' `ProjectMembership`s while authenticating through a single machine-to-machine user. We recommend configuring the `ClientApplication` used for server-to-server communication with a "least permissive" AccessPolicy, including IP access rules:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "On-Behalf-Of backend",
+  "resource": [],
+  "ipAccessRule": [
+    { "name": "Backend egress", "value": "203.0.113.10", "action": "allow" },
+    { "name": "Block everything else", "value": "*", "action": "block" }
+  ]
+}
+```
+
+- Delegated requests use only the delegated membership's access policy, so this policy doesn't limit what users can do.
+- Requests without the header fail closed instead of running with broad application access.
+- [IP Access Rules](/docs/access/ip-access-rules) are checked on every `client_credentials` token request and every Basic auth request, so a leaked client secret can't be used from outside your network.
+
 ### Live updates
 
 Do not use On-Behalf-Of for WebSocket subscriptions. Use a user-scoped Medplum token, or deliver updates through a backend that enforces each recipient's resource and field-level access. WebSocket notification authorization does not preserve the HTTP request's delegation context.

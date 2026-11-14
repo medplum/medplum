@@ -13,6 +13,10 @@ IP address restrictions provide an additional layer of security by limiting acce
 
 Medplum customers primarily use IP Access Restrictions to ensure that users are only accessing data from approved origins such as on-premise devices or corporate VPN.
 
+## When to Use IP Access Rules
+
+IP rules work best for **server-to-server integrations**: a backend, an on-prem agent or a partner system with stable egress IPs that connects as a `ClientApplication`. Put the rules on the `ClientApplication`'s `ProjectMembership` AccessPolicy. For backends that act for users through [On-Behalf-Of](/docs/auth/on-behalf-of#lock-down-the-application-credential), pair the IP rules with an AccessPolicy that grants no resource access.
+
 ## Setting Up IP Address Restrictions in Medplum
 
 To configure IP address restrictions in Medplum, follow the steps below:
@@ -29,4 +33,18 @@ Once you have specified all the "allow" rules, add a wildcard "block" rule at th
 
 Please note that only IPv4 IP addresses are supported, and partial IP addresses can be used for matching. For example, specifying the value "8.8." would match "8.8.8.8" but would not match "8.7.8.8".
 
-Matching respects octet boundaries: "1.2.3" or "1.2.3." matches "1.2.3.44", but not "1.2.30.44". A complete address such as "1.2.3.4" matches only that address, not "1.2.3.44".
+Matching respects octet boundaries: "1.2.3" or "1.2.3." matches "1.2.3.44", but not "1.2.30.44". A complete address such as "1.2.3.4" matches only that address, not "1.2.3.44". CIDR notation (e.g. `10.0.0.0/8`) is not supported.
+
+If no rule matches, access is allowed. If a membership has multiple AccessPolicies, their IP rules are evaluated as one list, in policy order.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Integration server",
+  "resource": [{ "resourceType": "*" }],
+  "ipAccessRule": [
+    { "name": "Integration egress", "value": "203.0.113.10", "action": "allow" },
+    { "name": "Block everything else", "value": "*", "action": "block" }
+  ]
+}
+```
