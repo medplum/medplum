@@ -169,6 +169,37 @@ describe('Profile', () => {
     expect(res2.body.issue[0].details.text).toBe('Login profile already set');
   });
 
+  test('Concurrent requests set the login profile only once', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.login).toBeDefined();
+
+    const memberships = [membership1, membership2];
+    const results = await Promise.all(
+      memberships.map((membership) =>
+        request(app).post('/auth/profile').type('json').send({
+          login: res1.body.login,
+          profile: membership.id,
+        })
+      )
+    );
+
+    const winner = results.findIndex((res) => res.status === 200);
+    expect(winner).not.toBe(-1);
+    const loser = results[1 - winner];
+    expect(results[winner].body.code).toBeDefined();
+    expect(loser).toHaveStatus(400);
+    expect(loser.body.issue[0].details.text).toBe('Login profile already set');
+
+    // The code that was handed out must be for the membership that was stored
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    expect(login.membership?.reference).toBe(getReferenceString(memberships[winner]));
+  });
+
   test('Membership not found', async () => {
     const res1 = await request(app).post('/auth/login').type('json').send({
       scope: 'openid',
