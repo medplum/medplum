@@ -517,6 +517,10 @@ function getIncludeOptions(repo: Repository): IncludeOptions {
     // Run sub-searches through the query pipeline directly rather than re-entering
     // `Repository.search()`, which would additionally build bundle links for every sub-search.
     executeSearch: async (searchRequest: SearchRequest): Promise<WithId<Resource>[]> => {
+      // Canonical `_include` target types come from the search parameter definition rather than the request
+      if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, searchRequest.resourceType)) {
+        return [];
+      }
       const trackedResourceTypes = new Set<ResourceType>();
       const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
       const result = await getSearchEntries(
