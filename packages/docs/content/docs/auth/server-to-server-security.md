@@ -1,18 +1,18 @@
 ---
-id: api-proxy-security
-title: API Proxy Security
+id: server-to-server-security
+title: Server-to-Server Communication Security
 weight: 320
 docs_tags: [auth]
 ---
 
-Some applications put their own API server in front of Medplum, forwarding requests on behalf of their users. This is often called an API proxy. It's a flexible pattern for custom business logic and integrations, but the proxy becomes part of your security boundary: it holds credentials, decides which user each request represents, and controls what reaches Medplum.
+Some applications put their own API server in front of Medplum and call Medplum from that server on behalf of their users. This server-to-server communication is a flexible pattern for custom business logic and integrations, but your server becomes part of your security boundary: it holds credentials, decides which user each request represents, and controls what reaches Medplum.
 
-Medplum still enforces authentication, project isolation, and access policies on every request. It cannot verify that your proxy authenticated the right user or forwarded only what that user should be able to do. This page covers the practices we recommend for proxies, whether they use [token exchange](/docs/auth/token-exchange#server-held-medplum-tokens), [On-Behalf-Of](/docs/auth/on-behalf-of), or a dedicated `ClientApplication`.
+Medplum still enforces authentication, project isolation, and access policies on every request. It cannot verify that your server authenticated the right user or forwarded only what that user should be able to do. This page covers the practices we recommend for server-to-server communication, whether it uses [token exchange](/docs/auth/token-exchange#server-held-medplum-tokens), [On-Behalf-Of](/docs/auth/on-behalf-of), or a dedicated `ClientApplication`.
 
 ```mermaid
 flowchart LR
     U["Browser or mobile app"] -->|"Your app's session"| P
-    subgraph P["Your API proxy (security boundary)"]
+    subgraph P["Your server (security boundary)"]
         direction TB
         A["Authenticate user"] --> M["Map user to their own ProjectMembership"]
         M --> F["Allowlist route, method, resource type"]
@@ -23,12 +23,12 @@ flowchart LR
 
 ## Delegate safely with On-Behalf-Of
 
-With [On-Behalf-Of](/docs/auth/on-behalf-of), your proxy decides which user each request represents, so that decision has to be airtight:
+With [On-Behalf-Of](/docs/auth/on-behalf-of), your server decides which user each request represents, so that decision has to be airtight:
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant P as API proxy
+    participant P as Your server
     participant M as Medplum
     U->>P: Request with your app's session
     P->>P: Verify session
@@ -52,7 +52,7 @@ Where it meets your requirements, prefer [server-held token exchange](/docs/auth
 
 ## Lock down the ClientApplication
 
-The proxy's `ClientApplication` is a privileged machine identity. On-Behalf-Of requires it to be a Project Admin, so restrict it in every other way:
+Your server's `ClientApplication` is a privileged machine identity. On-Behalf-Of requires it to be a Project Admin, so restrict it in every other way:
 
 ```mermaid
 flowchart TD
@@ -74,10 +74,10 @@ Example policy:
 ```json
 {
   "resourceType": "AccessPolicy",
-  "name": "API proxy",
+  "name": "Server-to-server client",
   "resource": [],
   "ipAccessRule": [
-    { "name": "Proxy egress", "value": "203.0.113.10", "action": "allow" },
+    { "name": "Server egress", "value": "203.0.113.10", "action": "allow" },
     { "name": "Block everything else", "value": "*", "action": "block" }
   ]
 }
@@ -126,7 +126,7 @@ A single shared client is fine when every request runs as the same application i
 
 ## Treat every request as untrusted
 
-Assume attackers will call your proxy directly, with arbitrary paths, query parameters, headers, and methods, not just what your UI sends.
+Assume attackers will call your server directly, with arbitrary paths, query parameters, headers, and methods, not just what your UI sends.
 
 - Don't let user input choose the upstream URL, project, credential, or authentication context.
 - Don't blindly forward `Authorization`, `X-Medplum-On-Behalf-Of`, or other security-sensitive headers.
@@ -136,15 +136,15 @@ Assume attackers will call your proxy directly, with arbitrary paths, query para
 
 Include these cases in automated integration tests, and supplement them with periodic security reviews or penetration testing:
 
-| Scenario               | Verify that                                                                       |
-| :--------------------- | :-------------------------------------------------------------------------------- |
-| Cross-project access   | Tokens or identities from another project can't reach your data through the proxy |
-| Cross-user access      | One user can't read or write another user's data                                  |
-| Missing authentication | Unauthenticated requests are rejected                                             |
-| Missing delegation     | Requests never fall back to the application's own permissions                     |
-| Unexpected routes      | Unlisted resources, admin resources, and auth endpoints are rejected              |
-| Concurrent sessions    | Simultaneous users never share credentials or cached responses                    |
-| Credential exposure    | Secrets and tokens never appear in responses, logs, or error messages             |
+| Scenario               | Verify that                                                                         |
+| :--------------------- | :---------------------------------------------------------------------------------- |
+| Cross-project access   | Tokens or identities from another project can't reach your data through your server |
+| Cross-user access      | One user can't read or write another user's data                                    |
+| Missing authentication | Unauthenticated requests are rejected                                               |
+| Missing delegation     | Requests never fall back to the application's own permissions                       |
+| Unexpected routes      | Unlisted resources, admin resources, and auth endpoints are rejected                |
+| Concurrent sessions    | Simultaneous users never share credentials or cached responses                      |
+| Credential exposure    | Secrets and tokens never appear in responses, logs, or error messages               |
 
 ## Related
 
