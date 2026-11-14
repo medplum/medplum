@@ -1233,18 +1233,24 @@ describe('FHIRcast routes', () => {
         202
       );
 
-      for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
-        for (const [token, status] of [
-          [imagingToken, 403],
-          [patientWriteToken, 403],
-          [patientReadToken, 200],
-          [wildcardToken, 200],
-        ] as const) {
-          const res = await request(server)
-            .get(`${route}/${topic}`)
-            .set('Authorization', 'Bearer ' + token);
-          expect(res).toHaveStatus(status);
-        }
+      // A context set by an event the caller may not receive reads as no context
+      for (const [token, visible] of [
+        [imagingToken, false],
+        [patientWriteToken, false],
+        [patientReadToken, true],
+        [wildcardToken, true],
+      ] as const) {
+        const stu2Res = await request(server)
+          .get(`${STU2_BASE_ROUTE}/${topic}`)
+          .set('Authorization', 'Bearer ' + token);
+        expect(stu2Res).toHaveStatus(200);
+        expect(stu2Res.body).toHaveLength(visible ? 1 : 0);
+
+        const stu3Res = await request(server)
+          .get(`${STU3_BASE_ROUTE}/${topic}`)
+          .set('Authorization', 'Bearer ' + token);
+        expect(stu3Res).toHaveStatus(200);
+        expect(stu3Res.body['context.type']).toStrictEqual(visible ? 'Patient' : '');
       }
 
       // Requesting a context change takes the write scope for the event

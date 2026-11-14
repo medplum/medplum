@@ -614,9 +614,11 @@ async function closeCurrentContext(projectId: string, topic: string): Promise<vo
 
 /**
  * Reads the current context of the topic a request names.
- * The current context is what the latest `*-open` event established, so reading it takes the scope to receive that event.
+ * The spec defines the current context according to the subscriber's subscription, and a subscription can only
+ * include events its scopes permit. A context set by an event the caller may not receive reads as no context.
+ * Source: https://fhircast.hl7.org/STU3/2-9-GetCurrentContext.html
  * @param req - The request.
- * @returns The current context, or `undefined` if there is none.
+ * @returns The current context, or `undefined` if there is none the caller may read.
  */
 async function getCurrentContextForRequest(
   req: Request
@@ -628,7 +630,7 @@ async function getCurrentContextForRequest(
     currentContext &&
     !fhircastScopesPermit(getFhircastScopes(login.scope), `${currentContext['context.type']}-open`, 'read')
   ) {
-    throw new OperationOutcomeError(forbidden);
+    return undefined;
   }
   return currentContext;
 }
