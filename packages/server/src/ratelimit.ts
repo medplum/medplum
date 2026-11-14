@@ -27,37 +27,40 @@ interface RateLimitCategoryConfig {
   readonly serverConfigKey: keyof ServerConfig;
   readonly systemSettingName: string;
   readonly defaultLimitPerMinute: number;
-  readonly matchesUrl: (url: string) => boolean;
+  // Request paths are lowercased before matching, so these must be lowercase (enforced in ratelimit.test.ts)
+  readonly paths?: readonly string[];
+  readonly prefixes?: readonly string[];
+  readonly excludedPaths?: readonly string[];
 }
 
-const categories: RateLimitCategoryConfig[] = [
+export const categories: RateLimitCategoryConfig[] = [
   {
     name: 'login',
     serverConfigKey: 'defaultLoginRateLimit',
     systemSettingName: 'loginRateLimit',
     defaultLimitPerMinute: 5,
-    matchesUrl: (url: string) => url === '/auth/login' || url === '/auth/newuser' || url === '/auth/newproject',
+    paths: ['/auth/login', '/auth/newuser', '/auth/newproject'],
   },
   {
     name: 'mfa',
     serverConfigKey: 'defaultMfaRateLimit',
     systemSettingName: 'mfaRateLimit',
     defaultLimitPerMinute: 10,
-    matchesUrl: (url: string) => url === '/auth/mfa/verify' || url === '/auth/mfa/login-enroll',
+    paths: ['/auth/mfa/verify', '/auth/mfa/login-enroll'],
   },
   {
     name: 'auth',
     serverConfigKey: 'defaultAuthRateLimit',
     systemSettingName: 'authRateLimit',
     defaultLimitPerMinute: 600,
-    matchesUrl: (url: string) => (url.startsWith('/auth/') || url.startsWith('/oauth2/')) && url !== '/auth/me',
+    prefixes: ['/auth/', '/oauth2/'],
+    excludedPaths: ['/auth/me'],
   },
   {
     name: 'default',
     serverConfigKey: 'defaultRateLimit',
     systemSettingName: 'rateLimit',
-    defaultLimitPerMinute: 60_000,
-    matchesUrl: (_url: string) => true, // Applies to all other paths
+    defaultLimitPerMinute: 60_000, // Applies to all other paths
   },
 ];
 
@@ -159,10 +162,17 @@ function getRateLimitForRequest(req: Request, config?: ServerConfig): number {
 }
 
 function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
-  const url = getNormalizedPath(req.originalUrl);
+  // Express routing is case-insensitive and ignores one trailing slash
+  let url = getNormalizedPath(req.originalUrl.toLowerCase());
+  if (url.length > 1 && url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
   for (let i = 0; i < categories.length - 1; i++) {
     const category = categories[i];
-    if (category.matchesUrl(url)) {
+    if (
+      !category.excludedPaths?.includes(url) &&
+      (category.paths?.includes(url) || category.prefixes?.some((prefix) => url.startsWith(prefix)))
+    ) {
       return category;
     }
   }
