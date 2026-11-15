@@ -38,6 +38,10 @@ let project: WithId<Project>;
 let systemRepo: SystemRepository;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
+// A client in a Project without the legacyExternalAuth system setting
+let otherProject: WithId<Project>;
+let otherClient: ClientApplication;
+const otherEmail = `other-${randomUUID()}@example.com`;
 
 describe('External', () => {
   beforeAll(async () => {
@@ -55,10 +59,13 @@ describe('External', () => {
         remoteAddress: '5.5.5.5',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
-      project = registerResult.project;
       defaultClient = registerResult.client;
 
-      systemRepo = await getProjectSystemRepo(project);
+      systemRepo = await getProjectSystemRepo(registerResult.project);
+      project = await systemRepo.updateResource<Project>({
+        ...registerResult.project,
+        systemSetting: [{ name: 'legacyExternalAuth', valueBoolean: true }],
+      });
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
@@ -88,6 +95,23 @@ describe('External', () => {
           identitySource: 'email',
           identityMappingMode: 'user-email',
         },
+      });
+
+      const otherResult = await registerNew({
+        firstName: 'Other',
+        lastName: 'User',
+        projectName: 'Other External Test Project',
+        email: otherEmail,
+        password: 'password!@#',
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0',
+      });
+      otherProject = otherResult.project;
+      otherClient = await createClient(await getProjectSystemRepo(otherProject), {
+        project: otherProject,
+        name: 'Other External Auth Client',
+        redirectUri,
+        identityProvider: { ...identityProvider, identitySource: 'email', identityMappingMode: 'user-email' },
       });
 
       // Invite user with external ID
@@ -561,12 +585,12 @@ describe('External', () => {
 
   test('Client callback path success', async () => {
     const warnSpy = vi.spyOn(Logger.prototype, 'warn');
-    const url = appendQueryParams(`/auth/external/${externalAuthClient.id}`, {
+    const url = appendQueryParams(`/auth/external/${otherClient.id}`, {
       code: randomUUID(),
-      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+      state: JSON.stringify({ redirectUri, clientId: otherClient.id }),
     });
     fetchMock.mockClear();
-    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
 
     const res = await request(app).get(url);
     expect(res).toHaveStatus(302);
@@ -574,7 +598,7 @@ describe('External', () => {
 
     // The token request repeats the per-client redirect URI
     const body = new URLSearchParams(fetchMock.mock.calls[0][1]?.body as string);
-    expect(body.get('redirect_uri')).toBe(getConfig().baseUrl + 'auth/external/' + externalAuthClient.id);
+    expect(body.get('redirect_uri')).toBe(getConfig().baseUrl + 'auth/external/' + otherClient.id);
     expect(warnSpy).not.toHaveBeenCalledWith(
       'Client identity provider signed in through the shared external auth callback',
       expect.anything()
@@ -597,6 +621,33 @@ describe('External', () => {
       { clientId: externalAuthClient.id, projectId: project.id }
     );
     warnSpy.mockRestore();
+  });
+
+  test('Shared callback path requires the legacyExternalAuth system setting', async () => {
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: otherClient.id }),
+    });
+    fetchMock.mockClear();
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe(
+      `Invalid redirect URI for client identity provider, use ${getConfig().baseUrl}auth/external/${otherClient.id}`
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // A Project admin cannot enable it through Project.setting
+    await withTestContext(async () => {
+      const otherRepo = await getProjectSystemRepo(otherProject);
+      otherProject = await otherRepo.updateResource<Project>({
+        ...otherProject,
+        setting: [{ name: 'legacyExternalAuth', valueBoolean: true }],
+      });
+    });
+    const res2 = await request(app).get(url);
+    expect(res2).toHaveStatus(400);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('Client callback path requires the state client', async () => {
@@ -1147,7 +1198,7 @@ describe('External', () => {
     });
 
     // Now try to login with the external ID
-    const url = appendQueryParams('/auth/external', {
+    const url = appendQueryParams(`/auth/external/${client.id}`, {
       code: randomUUID(),
       state: JSON.stringify({ clientId: client.id, redirectUri }),
     });

@@ -237,6 +237,13 @@ async function getIdentityProvider(
   if (state.clientId) {
     client = await getClientApplication(state.clientId);
     if (client.identityProvider) {
+      if (!(await isLegacyExternalAuthAllowed(client))) {
+        throw new OperationOutcomeError(
+          badRequest(
+            `Invalid redirect URI for client identity provider, use ${getConfig().baseUrl}auth/external/${client.id}`
+          )
+        );
+      }
       return { idp: client.identityProvider, client };
     }
   }
@@ -441,6 +448,17 @@ function isValidReturnToUrl(
  * @param client - The client application.
  * @returns True if partial matching is allowed, false otherwise.
  */
+/**
+ * Returns true if the client's Project may use the shared /auth/external callback for its client identity providers.
+ * Read from Project.systemSetting, which only super admins can set.
+ * @param client - The client application.
+ * @returns True if the shared callback is allowed for the client.
+ */
+async function isLegacyExternalAuthAllowed(client: ClientApplication): Promise<boolean> {
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', client.meta?.project as string);
+  return project.systemSetting?.find((s) => s.name === 'legacyExternalAuth')?.valueBoolean === true;
+}
+
 async function isDangerousRedirectUriPartialMatchAllowed(client: ClientApplication): Promise<boolean> {
   const systemRepo = getGlobalSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', client.meta?.project as string);
