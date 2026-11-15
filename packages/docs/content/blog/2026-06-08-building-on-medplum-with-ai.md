@@ -10,6 +10,8 @@ More and more Medplum users are building with AI coding assistants — Cursor, C
 
 <!--more-->
 
+> **Update:** We've made it easier to connect coding agents to Medplum's decision guides and persistent rules, helping them work through healthcare design choices and follow documented implementation patterns across tasks. See [Give Your Coding Agent a Head Start on Medplum](/blog/ai-coding-agents-on-medplum) for a vital-signs example and setup for individual builders and engineering teams.
+
 The single biggest lever we have found is this: **make your AI tools learn from Medplum's open-source code and docs rather than from solely generic FHIR training data.** This dramatically improves the outputs you get from any request you make.
 
 ## Give your tools access to Medplum
@@ -40,7 +42,7 @@ And the part we would never skip, because this is healthcare: **review the outpu
 
 ## Put it in a rule file
 
-Everything above works better when you write it down once instead of repeating it in every prompt. A rule file — `CLAUDE.md`, Cursor rules, or an `AGENTS.md` — gets read on every turn, so it keeps the model pointed at Medplum's docs without being told, and it survives the context decay from the last section. We offer a starter rule file you can drop in and adapt; grab it from the [guide](/docs/building-with-ai-coding-assistants#5-encode-your-conventions-in-a-rule-file).
+Write down the conventions you want later coding tasks to follow. A project instruction file, such as `CLAUDE.md`, Cursor rules, or `AGENTS.md`, can point the agent to Medplum's docs, reusable rules, and your saved project decisions. Instruction loading varies by tool, so verify that the agent reads those references in a fresh session and reload the relevant context after compaction. The [setup guide](/docs/building-with-ai-coding-assistants#5-encode-your-conventions-in-a-rule-file) explains how to connect the rules to your application.
 
 ## Advanced: direct data access
 

@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../test-utils/render';
 import { LabListItem } from './LabListItem';
 
 describe('LabListItem', () => {
@@ -26,9 +26,7 @@ describe('LabListItem', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <LabListItem item={item} selectedItem={selectedItem} activeTab={activeTab} onItemSelect={onItemSelect} />
-          </MantineProvider>
+          <LabListItem item={item} selectedItem={selectedItem} activeTab={activeTab} onItemSelect={onItemSelect} />
         </MedplumProvider>
       </MemoryRouter>
     );

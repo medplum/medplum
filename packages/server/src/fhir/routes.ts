@@ -96,6 +96,7 @@ import type { ResendSubscriptionsOptions } from './repo';
 import { validateRepositoryResourceStrictly } from './repository/validation';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { getTerminologyCapabilities } from './terminology-capabilities';
 
 export const fhirRouter = Router();
 
@@ -167,8 +168,9 @@ const publicRoutes = Router();
 fhirRouter.use(publicRoutes);
 
 // Metadata / CapabilityStatement
-publicRoutes.get('/metadata', (_req: Request, res: Response) => {
-  res.status(200).json(getCapabilityStatement());
+publicRoutes.get('/metadata', async (req: Request, res: Response) => {
+  const metadata = req.query.mode === 'terminology' ? await getTerminologyCapabilities() : getCapabilityStatement();
+  res.status(200).json(metadata);
 });
 
 // FHIR Versions
@@ -278,6 +280,8 @@ function initInternalFhirRouter(): FhirRouter {
   // ValueSet $expand operation
   router.add('GET', '/ValueSet/$expand', expandOperator);
   router.add('POST', '/ValueSet/$expand', expandOperator);
+  router.add('GET', '/ValueSet/:id/$expand', expandOperator);
+  router.add('POST', '/ValueSet/:id/$expand', expandOperator);
 
   // CodeSystem $import operation
   router.add('POST', '/CodeSystem/$import', codeSystemImportHandler);
@@ -455,12 +459,22 @@ function initInternalFhirRouter(): FhirRouter {
     return [allOk];
   });
 
-  // Resend subscriptions
+  // Resend subscriptions for the current version
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
     const options = req.body as ResendSubscriptionsOptions | undefined;
-    await ctx.repo.resendSubscriptions(resourceType, id, options);
+    // The version is only specified in the URL, using the versioned route below
+    await ctx.repo.resendSubscriptions(resourceType, id, { ...options, versionId: undefined });
+    return [allOk];
+  });
+
+  // Resend subscriptions for a specific historical version
+  router.add('POST', '/:resourceType/:id/_history/:vid/$resend', async (req: FhirRequest) => {
+    const ctx = getAuthenticatedContext();
+    const { resourceType, id, vid } = req.params as { resourceType: ResourceType; id: string; vid: string };
+    const options = req.body as ResendSubscriptionsOptions | undefined;
+    await ctx.repo.resendSubscriptions(resourceType, id, { ...options, versionId: vid });
     return [allOk];
   });
 

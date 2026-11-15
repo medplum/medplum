@@ -74,6 +74,15 @@ Pages are Markdown with front matter (`title`, and optionally `description`, `si
 - **Heading links**: a heading's ID comes from its text; set one with `## Heading {#custom-id}`.
 - **Diagrams**: a ` ```mermaid ` code block renders a Mermaid diagram.
 
+### Provider Navigation Labels
+
+When a Provider navigation label changes, update the corresponding guide title, index link, and navigation instructions.
+CI checks the Orders guide against `PatientPageTabs` in the Provider source. Run the check from the repository root:
+
+```bash
+node packages/docs/scripts/check-provider-labels.mjs
+```
+
 ### Decision Guides
 
 The Decision Guide PDF and Word downloads are generated from their Markdown with `npm run build:guides`, which needs pandoc and LibreOffice. You normally don't need to run it: CI regenerates and commits them when a guide changes (`.github/workflows/autofix-ci.yml`).

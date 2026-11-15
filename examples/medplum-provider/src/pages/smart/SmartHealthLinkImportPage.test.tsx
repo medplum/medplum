@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import type { SmartHealthLinkImportProps } from './SmartHealthLinkImport';
 import { SmartHealthLinkImportPage } from './SmartHealthLinkImportPage';
 
@@ -40,12 +40,10 @@ describe('SmartHealthLinkImportPage', () => {
     return render(
       <MemoryRouter initialEntries={['/smart-health-link']}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
-              <Route path="/Patient/:id/timeline" element={<div>patient timeline</div>} />
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
+            <Route path="/Patient/:id/timeline" element={<div>patient timeline</div>} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

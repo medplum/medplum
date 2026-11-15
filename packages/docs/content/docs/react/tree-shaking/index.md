@@ -10,9 +10,9 @@ Removing such code has several benefits: it shrinks program size, an important c
 
 ## How to use Tree Shaking
 
-Step 1 - Use one of the popular JavaScript build tools such as Webpack, Rollup, or Vite. We have verified that tree shaking works with these tools.
+Step 1 - Use a bundler that supports tree shaking, such as Webpack, Rollup, or Vite.
 
-Step 2 - Use ES Modules (ESM) for your front-end build. While the ESM transition is still in progress, using ESM during development on front end projects is largely stable.
+Step 2 - Preserve ES Modules (ESM) in the JavaScript sent to your bundler so it can analyze imports and remove unused exports.
 
 - TypeScript: Use [`"module": "esnext"`](https://www.typescriptlang.org/tsconfig#module)
 - Webpack: [ECMAScript Modules](https://webpack.js.org/guides/ecma-script-modules/)
@@ -25,16 +25,16 @@ We recommend using the [`source-map-explorer`](https://www.npmjs.com/package/sou
 
 ## Example
 
-The [Medplum Hello World](https://github.com/medplum/medplum-hello-world) project uses tree shaking. The project is pre-configured with `source-map-explorer`, so you can quickly analyze the bundle size.
+The [Medplum Hello World](https://github.com/medplum/medplum/tree/main/examples/medplum-hello-world) project uses tree shaking. Build the application with source maps enabled and use a bundle analyzer to inspect which dependencies are included.
 
-![Medplum Hello World Tree Shaking](tree-shaking.png)
+![Medplum Hello World Tree Shaking](./tree-shaking.png)
 
 ## Behind the scenes
 
 Medplum libraries such as `@medplum/core` and `@medplum/react` follow best practices, so tree shaking should work automatically for most build tools.
 
-- Libraries ship with `preserveModules` for ESM builds
-- Libraries ship with `"sideEffects": false`
+- Libraries expose an ESM entry point that lets bundlers analyze named imports
+- Package metadata identifies side effects; `@medplum/react` preserves CSS imports with `"sideEffects": ["*.css"]`
 
 ## Additional reading
 

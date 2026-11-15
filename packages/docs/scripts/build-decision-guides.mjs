@@ -87,6 +87,18 @@ function postProcessDocx(docxPath) {
   xml = stripImageSourcePaths(xml);
   fs.writeFileSync(documentXmlPath, xml);
 
+  // Root-relative site links need absolute URLs when opened in a downloaded file.
+  const relationshipsPath = path.join(extractDir, 'word', '_rels', 'document.xml.rels');
+  const relationships = fs.readFileSync(relationshipsPath, 'utf8');
+  fs.writeFileSync(
+    relationshipsPath,
+    relationships.replace(/<Relationship\b[^>]*\/>/g, (relationship) =>
+      relationship.includes('Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"')
+        ? relationship.replace(/Target="\/(?!\/)/, 'Target="https://www.medplum.com/')
+        : relationship
+    )
+  );
+
   const corePropsPath = path.join(extractDir, 'docProps', 'core.xml');
   if (fs.existsSync(corePropsPath)) {
     fs.writeFileSync(corePropsPath, normalizeCoreProps(fs.readFileSync(corePropsPath, 'utf8')));

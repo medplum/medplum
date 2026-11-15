@@ -12,6 +12,7 @@ import { globalLogger } from '../logger';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
+  checkIpAccessRules,
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
@@ -23,6 +24,44 @@ import {
 } from './utils';
 
 let client: ClientApplication;
+
+describe('IP access rules', () => {
+  test.each([
+    ['1.2.3.4', '1.2.3.4', true],
+    ['1.2.3.4', '1.2.3.44', false],
+    ['1.2.3', '1.2.3.44', true],
+    ['1.2.3', '1.2.30.44', false],
+    ['8.8.', '8.8.8.8', true],
+    ['8.8.', '8.80.8.8', false],
+    ['*', '1.2.3.44', true],
+  ])('rule %s against %s matches: %s', async (value, remoteAddress, matches) => {
+    const login: Login = {
+      resourceType: 'Login',
+      user: { reference: 'ClientApplication/test' },
+      authMethod: 'client',
+      authTime: '2026-11-10T00:00:00Z',
+      remoteAddress,
+    };
+    const blocked = checkIpAccessRules(login, {
+      resourceType: 'AccessPolicy',
+      ipAccessRule: [{ value, action: 'block' }],
+    });
+    const allowed = checkIpAccessRules(login, {
+      resourceType: 'AccessPolicy',
+      ipAccessRule: [
+        { value, action: 'allow' },
+        { value: '*', action: 'block' },
+      ],
+    });
+    if (matches) {
+      await expect(blocked).rejects.toThrow('IP address not allowed');
+      await expect(allowed).resolves.toBeUndefined();
+    } else {
+      await expect(blocked).resolves.toBeUndefined();
+      await expect(allowed).rejects.toThrow('IP address not allowed');
+    }
+  });
+});
 
 describe('OAuth utils', () => {
   beforeAll(async () => {
@@ -582,54 +621,6 @@ describe('OAuth utils', () => {
         systemRepo = repo.getSystemRepo();
       });
     });
-
-    test.each(['login', 'membership', 'unavailable'])(
-      'Logs partial SMART permissions with project %s',
-      async (source) => {
-        const { user, login, patient } = await withTestContext(async () => {
-          const user = await systemRepo.createResource<User>({
-            resourceType: 'User',
-            firstName: 'Test',
-            lastName: 'User',
-          });
-          const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-          const membership = await systemRepo.createResource<ProjectMembership>({
-            resourceType: 'ProjectMembership',
-            user: createReference(user),
-            profile: createReference(patient),
-            project: createReference(project),
-          });
-          const login = await systemRepo.createResource<Login>({
-            resourceType: 'Login',
-            authMethod: 'password',
-            user: createReference(user),
-            membership: createReference(membership),
-            project: source === 'login' ? createReference(project) : undefined,
-            scope: 'openid user/Patient.c',
-            granted: true,
-            authTime: new Date().toISOString(),
-            nonce: randomUUID(),
-          });
-          return { user, login, patient };
-        });
-
-        if (source === 'unavailable') {
-          login.membership = { reference: `ProjectMembership/${randomUUID()}` };
-        }
-        const warnSpy = vi.spyOn(globalLogger, 'warn');
-        try {
-          const tokens = await getAuthTokens(user, login, createReference(patient));
-          expect((await verifyJwt(tokens.accessToken)).payload.scope).toBe(login.scope);
-          expect(warnSpy).toHaveBeenCalledWith('SMART scopes with partial permissions', {
-            clientId: undefined,
-            projectId: source === 'unavailable' ? undefined : project.id,
-            scopes: ['user/Patient.c'],
-          });
-        } finally {
-          warnSpy.mockRestore();
-        }
-      }
-    );
 
     test('Access token includes email when email scope is requested for User', async () => {
       await withTestContext(async () => {

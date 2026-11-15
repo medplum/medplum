@@ -46,6 +46,8 @@ For example, consider this `Patient`:
 
 The SCIM `userName` property will be the system generated FHIR resource ID. This can be used in combination with the SCIM `userType` to identify the FHIR resource for the user.
 
+Creating a `Patient` requires a patient access policy on the project: the `Patient` entry in [`Project.defaultAccessPolicies`](/docs/access/access-policies#default-access-policies), or the deprecated `Project.defaultPatientAccessPolicy` when that entry is absent. The created membership receives that policy. SCIM returns an error when neither is set.
+
 ## Create a user
 
 Create a user by making an HTTP `POST` request to `https://api.medplum.com/scim/v2/Users`

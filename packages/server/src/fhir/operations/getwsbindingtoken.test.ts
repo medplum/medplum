@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { ContentType, getReferenceString } from '@medplum/core';
 import type { OperationOutcome, Parameters, Subscription } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { verifyJwt } from '../../oauth/keys';
-import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -155,6 +155,33 @@ describe('Get WebSocket binding token', () => {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid' }],
     });
+  });
+
+  test('Refuses On-Behalf-Of', async () => {
+    const { project, accessToken: adminToken } = await createTestProject({
+      project: { features: ['websocket-subscriptions'] },
+      withAccessToken: true,
+      membership: { admin: true },
+    });
+    const member = await addTestUser(project);
+    const res1 = await request(app)
+      .post('/fhir/R4/Subscription')
+      .set('Authorization', 'Bearer ' + adminToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      } satisfies Subscription);
+    expect(res1).toHaveStatus(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/Subscription/${res1.body.id}/$get-ws-binding-token`)
+      .set('Authorization', 'Bearer ' + adminToken)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(member.membership));
+    expect(res2).toHaveStatus(403);
   });
 
   test("should return OperationOutcome error if Project doesn't have `websocket-subscriptions` feature enabled", async () => {

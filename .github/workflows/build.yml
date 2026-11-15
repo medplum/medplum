@@ -69,6 +69,8 @@ jobs:
           echo "npm version: $(npm --version)"
       - name: Install
         run: npm ci
+      - name: Check Provider documentation labels
+        run: node packages/docs/scripts/check-provider-labels.mjs
       - name: Build Project
         run: npm run build
         env:

@@ -135,6 +135,8 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
 
 Medplum provides React components to help you view and build [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resources. You can preview the [QuestionnaireForm](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--basic) and [QuestionnaireBuilder](https://storybook.medplum.com/?path=/story/medplum-questionnairebuilder--basic) components in [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
 
+For calculations, expression-based conditions, and multi-page forms, see [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring). For application integration, see [Saving and Resuming Responses](/docs/questionnaires/saving-and-resuming).
+
 ### Signature Required
 
 To require a signature for a Questionnaire, add the following extension to the Questionnaire resource:
