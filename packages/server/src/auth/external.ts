@@ -239,9 +239,13 @@ async function getIdentityProvider(
     client = await getClientApplication(state.clientId);
     if (client.identityProvider) {
       if (!(await isLegacyExternalAuthAllowed(client))) {
+        getLogger().warn('Client identity provider refused on the shared external auth callback', {
+          clientId: client.id,
+          projectId: client.meta?.project,
+        });
         throw new OperationOutcomeError(
           badRequest(
-            `Invalid redirect URI for client identity provider, use ${getConfig().baseUrl}auth/external/${client.id}`
+            `Client identity provider must use the per-client callback ${getConfig().baseUrl}auth/external/${client.id}`
           )
         );
       }

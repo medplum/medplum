@@ -624,6 +624,7 @@ describe('External', () => {
   });
 
   test('Shared callback path requires the legacyExternalAuth system setting', async () => {
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
       state: JSON.stringify({ redirectUri, clientId: otherClient.id }),
@@ -633,9 +634,14 @@ describe('External', () => {
     const res = await request(app).get(url);
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe(
-      `Invalid redirect URI for client identity provider, use ${getConfig().baseUrl}auth/external/${otherClient.id}`
+      `Client identity provider must use the per-client callback ${getConfig().baseUrl}auth/external/${otherClient.id}`
     );
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith('Client identity provider refused on the shared external auth callback', {
+      clientId: otherClient.id,
+      projectId: otherProject.id,
+    });
+    warnSpy.mockRestore();
 
     // A Project admin cannot enable it through Project.setting
     await withTestContext(async () => {
