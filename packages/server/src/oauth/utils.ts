@@ -9,6 +9,7 @@ import {
   forbidden,
   getDateProperty,
   getReferenceString,
+  getStatus,
   isJwt,
   isString,
   isUUID,
@@ -592,7 +593,16 @@ export async function setLoginMembership(
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource(updatedLogin);
+  try {
+    // `ifMatch` makes this a compare-and-swap: all of the checks above were made on `login`,
+    // so of several concurrent requests for the same login, exactly one gets to set the membership
+    return await globalSystemRepo.updateResource(updatedLogin, { ifMatch: login.meta?.versionId });
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+      throw new OperationOutcomeError(badRequest('Login profile already set'));
+    }
+    throw err;
+  }
 }
 
 /**
