@@ -451,11 +451,15 @@ function isValidReturnToUrl(
 /**
  * Returns true if the client's Project may use the shared /auth/external callback for its client identity providers.
  * Read from Project.systemSetting, which only super admins can set.
+ * Clients without a Project (server config `defaultOAuthClients`, or created by a super admin) are always allowed.
  * @param client - The client application.
  * @returns True if the shared callback is allowed for the client.
  */
 async function isLegacyExternalAuthAllowed(client: ClientApplication): Promise<boolean> {
-  const project = await getGlobalSystemRepo().readResource<Project>('Project', client.meta?.project as string);
+  if (!client.meta?.project) {
+    return true;
+  }
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', client.meta.project);
   return project.systemSetting?.find((s) => s.name === 'legacyExternalAuth')?.valueBoolean === true;
 }
 

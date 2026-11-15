@@ -13,7 +13,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
@@ -648,6 +648,28 @@ describe('External', () => {
     const res2 = await request(app).get(url);
     expect(res2).toHaveStatus(400);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('Shared callback path allows client identity providers without a project', async () => {
+    const projectlessClient = await withTestContext(() =>
+      getGlobalSystemRepo().createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        name: 'Projectless External Auth Client',
+        identityProvider,
+      })
+    );
+    expect(projectlessClient.meta?.project).toBeUndefined();
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ clientId: projectlessClient.id }),
+    });
+    fetchMock.mockClear();
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(302);
+    expect(fetchMock).toHaveBeenCalled();
   });
 
   test('Client callback path requires the state client', async () => {
