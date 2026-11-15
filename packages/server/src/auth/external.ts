@@ -82,8 +82,9 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
+  // The per-client path only uses its client's identity provider and redirect URIs
   let domainConfig: DomainConfiguration | undefined;
-  if (body.domain) {
+  if (body.domain && callbackClientId === undefined) {
     domainConfig = await getDomainConfiguration(body.domain);
   }
 
@@ -151,7 +152,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     userAgent: req.get('User-Agent'),
   });
 
-  if (callbackClientId === undefined && client?.identityProvider && idp === client.identityProvider) {
+  if (callbackClientId === undefined && client?.identityProvider) {
     getLogger().warn('Client identity provider signed in through the shared external auth callback', {
       clientId: client.id,
       projectId: client.meta?.project,
@@ -444,11 +445,6 @@ function isValidReturnToUrl(
 }
 
 /**
- * Returns true if the client application allows partial matching of redirect URIs, false otherwise.
- * @param client - The client application.
- * @returns True if partial matching is allowed, false otherwise.
- */
-/**
  * Returns true if the client's Project may use the shared /auth/external callback for its client identity providers.
  * Read from Project.systemSetting, which only super admins can set.
  * Clients without a Project (server config `defaultOAuthClients`, or created by a super admin) are always allowed.
@@ -463,6 +459,11 @@ async function isLegacyExternalAuthAllowed(client: ClientApplication): Promise<b
   return project.systemSetting?.find((s) => s.name === 'legacyExternalAuth')?.valueBoolean === true;
 }
 
+/**
+ * Returns true if the client application allows partial matching of redirect URIs, false otherwise.
+ * @param client - The client application.
+ * @returns True if partial matching is allowed, false otherwise.
+ */
 async function isDangerousRedirectUriPartialMatchAllowed(client: ClientApplication): Promise<boolean> {
   const systemRepo = getGlobalSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', client.meta?.project as string);

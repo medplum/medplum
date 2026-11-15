@@ -648,6 +648,11 @@ describe('External', () => {
     const res2 = await request(app).get(url);
     expect(res2).toHaveStatus(400);
     expect(fetchMock).not.toHaveBeenCalled();
+
+    await withTestContext(async () => {
+      const otherRepo = await getProjectSystemRepo(otherProject);
+      otherProject = await otherRepo.updateResource<Project>({ ...otherProject, setting: undefined });
+    });
   });
 
   test('Shared callback path allows client identity providers without a project', async () => {

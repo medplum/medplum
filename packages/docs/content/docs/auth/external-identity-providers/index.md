@@ -57,6 +57,8 @@ Medplum provides a minimal example application which demonstrates using Auth0 as
 
 Setup your external authentication provider (Auth0, AWS Cognito, Okta, etc). Use "https://api.medplum.com/auth/external/<client-id>" as the "redirect URI" (also known as the "callback URL" in some systems), where `<client-id>` is the ID of your Medplum `ClientApplication`.
 
+If your identity provider is registered with the shared callback "https://api.medplum.com/auth/external", register the per-client URL above, pass it as the `redirectUri` to `signInWithExternalAuth`, and then remove the shared URL. The shared callback only accepts `ClientApplication` identity providers in Projects with the `legacyExternalAuth` system setting; for all others it returns `400 Invalid redirect URI for client identity provider`. Domain-level identity providers (`DomainConfiguration`) keep using the shared callback.
+
 The provider must support OIDC and return an `id_token` from its token endpoint. Request the `openid` scope; the SDK helper defaults to `openid profile email`. Configure the provider to return `email` for email matching or `sub` for subject matching.
 
 Configure `jwksUrl` and `issuer` on the identity provider to enable ID-token signature and issuer verification. Medplum checks the audience against `audience` when configured, otherwise against the provider's `clientId`.
