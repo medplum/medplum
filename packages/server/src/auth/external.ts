@@ -54,6 +54,9 @@ interface ExternalLoginIdentity {
 }
 
 export async function externalCallbackHandler(req: Request, res: Response): Promise<void> {
+  // Set when the identity provider redirected to the per-client callback path /auth/external/:clientId
+  const callbackClientId = req.params.clientId as string | undefined;
+
   const code = req.query.code as string;
   if (!code) {
     sendOutcome(res, badRequest('Missing code'));
@@ -74,12 +77,17 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
+  if (callbackClientId !== undefined && body.clientId !== callbackClientId) {
+    sendOutcome(res, badRequest('Invalid client'));
+    return;
+  }
+
   let domainConfig: DomainConfiguration | undefined;
   if (body.domain) {
     domainConfig = await getDomainConfiguration(body.domain);
   }
 
-  const { idp, client } = await getIdentityProvider(body, domainConfig);
+  const { idp, client } = await getIdentityProvider(body, domainConfig, callbackClientId);
   if (!idp) {
     sendOutcome(res, badRequest('Identity provider not found'));
     return;
@@ -92,7 +100,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const userInfo = await verifyExternalCode(idp, code, body.codeChallenge);
+  const userInfo = await verifyExternalCode(idp, code, body.codeChallenge, callbackClientId);
 
   let identity: ExternalLoginIdentity;
   try {
@@ -142,6 +150,13 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
+
+  if (callbackClientId === undefined && client?.identityProvider && idp === client.identityProvider) {
+    getLogger().warn('Client identity provider signed in through the shared external auth callback', {
+      clientId: client.id,
+      projectId: client.meta?.project,
+    });
+  }
 
   // The identity provider authenticated the user, which is the control this flag records.
   await getGlobalSystemRepo().patchResource<User>('User', resolveId(login.user) as string, [
@@ -202,14 +217,22 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
  * Tries to find the identity provider configuration.
  * @param state - The external auth state.
  * @param domainConfig - The domain configuration.
+ * @param callbackClientId - The client ID from the per-client callback path, if any.
  * @returns External identity provider definition if found.
  */
 async function getIdentityProvider(
   state: ExternalAuthState,
-  domainConfig: DomainConfiguration | undefined
+  domainConfig: DomainConfiguration | undefined,
+  callbackClientId: string | undefined
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
   let idp: IdentityProvider | undefined;
   let client: ClientApplication | undefined;
+
+  if (callbackClientId !== undefined) {
+    // The per-client path only serves that client's identity provider
+    client = await getClientApplication(callbackClientId);
+    return { idp: client.identityProvider, client };
+  }
 
   if (state.clientId) {
     client = await getClientApplication(state.clientId);
@@ -276,12 +299,14 @@ function getIdentityMappingMode(idp: IdentityProvider): IdentityMappingMode {
  * @param idp - The identity provider configuration.
  * @param code - The authorization code.
  * @param codeVerifier - The code verifier.
+ * @param callbackClientId - The client ID from the per-client callback path, if any.
  * @returns ID token claims.
  */
 async function verifyExternalCode(
   idp: IdentityProvider,
   code: string,
-  codeVerifier: string | undefined
+  codeVerifier: string | undefined,
+  callbackClientId: string | undefined
 ): Promise<Record<string, unknown>> {
   if (!idp.tokenUrl) {
     throw new OperationOutcomeError(badRequest('Missing token URL for external identity provider'));
@@ -295,7 +320,11 @@ async function verifyExternalCode(
 
   const params = new URLSearchParams();
   params.append('grant_type', OAuthGrantType.AuthorizationCode);
-  params.append('redirect_uri', getConfig().baseUrl + 'auth/external');
+  // Must match the redirect_uri of the authorization request
+  params.append(
+    'redirect_uri',
+    getConfig().baseUrl + 'auth/external' + (callbackClientId === undefined ? '' : '/' + callbackClientId)
+  );
   params.append('code', code);
 
   if (idp.usePkce && codeVerifier) {

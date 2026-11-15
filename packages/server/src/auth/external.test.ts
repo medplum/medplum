@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, OAuthTokenAuthMethod } from '@medplum/core';
+import { ContentType, Logger, OAuthTokenAuthMethod } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -557,6 +557,72 @@ describe('External', () => {
     const res = await request(app).get(url);
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Identity provider not found');
+  });
+
+  test('Client callback path success', async () => {
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    const url = appendQueryParams(`/auth/external/${externalAuthClient.id}`, {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+    });
+    fetchMock.mockClear();
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(302);
+    expect(new URL(res.header.location).searchParams.get('code')).toBeTruthy();
+
+    // The token request repeats the per-client redirect URI
+    const body = new URLSearchParams(fetchMock.mock.calls[0][1]?.body as string);
+    expect(body.get('redirect_uri')).toBe(getConfig().baseUrl + 'auth/external/' + externalAuthClient.id);
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      'Client identity provider signed in through the shared external auth callback',
+      expect.anything()
+    );
+    warnSpy.mockRestore();
+  });
+
+  test('Shared callback path logs client identity provider sign-ins', async () => {
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(302);
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Client identity provider signed in through the shared external auth callback',
+      { clientId: externalAuthClient.id, projectId: project.id }
+    );
+    warnSpy.mockRestore();
+  });
+
+  test('Client callback path requires the state client', async () => {
+    const url = appendQueryParams(`/auth/external/${externalAuthClient.id}`, {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: defaultClient.id }),
+    });
+    fetchMock.mockClear();
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid client');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('Client callback path does not fall back to other identity providers', async () => {
+    const url = appendQueryParams(`/auth/external/${defaultClient.id}`, {
+      code: randomUUID(),
+      state: JSON.stringify({ domain, redirectUri, clientId: defaultClient.id }),
+    });
+    fetchMock.mockClear();
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Identity provider not found');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('Missing token URL', async () => {
