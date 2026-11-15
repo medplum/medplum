@@ -1184,7 +1184,7 @@ export async function verifyMultipleMatchingException(
  * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
  * @param options - Optional verification options.
- * @param options.audience - The expected audience, for tokens issued to a specific endpoint. Defaults to the issuer.
+ * @param options.audience - The expected audience, for tokens issued to a specific endpoint. Defaults to the (project-scoped) issuer.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(

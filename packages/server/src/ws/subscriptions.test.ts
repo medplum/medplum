@@ -1181,6 +1181,40 @@ describe('WebSocket Subscription', () => {
       verifyJwtSpy.mockRestore();
     }));
 
+  test('Token with a different audience', () =>
+    withTestContext(async () => {
+      const verifyJwtSpy = vi.spyOn(keysModule, 'verifyJwt').mockImplementation(async () => ({
+        payload: {
+          subscription_id: randomUUID(),
+          login_id: randomUUID(),
+          membership_id: randomUUID(),
+          aud: config.issuer,
+        },
+        protectedHeader: { alg: 'RS256' },
+      }));
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token: 'issuer-audience-token' } })
+        .expectJson({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'invalid',
+              details: { text: 'Token is not a WebSocket binding token. Get a new one from $get-ws-binding-token.' },
+            },
+          ],
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      verifyJwtSpy.mockRestore();
+    }));
+
   test('Token failed to validate', () =>
     withTestContext(async () => {
       // Mock verifyJwt to throw an error

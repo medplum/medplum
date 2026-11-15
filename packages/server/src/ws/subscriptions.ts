@@ -456,6 +456,12 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
         return undefined;
       }
     }
+    if (tokenPayload.aud !== getWsBindingTokenAudience()) {
+      socket.send(
+        JSON.stringify(badRequest('Token is not a WebSocket binding token. Get a new one from $get-ws-binding-token.'))
+      );
+      return undefined;
+    }
     return tokenPayload as WebSocketSubToken;
   };
 
