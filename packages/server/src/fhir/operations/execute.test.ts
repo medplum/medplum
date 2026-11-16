@@ -203,6 +203,7 @@ describe('Execute', () => {
   let project1: WithId<Project>;
   let accessToken1: string;
   const bots = {} as Record<BotName, WithId<Bot>>;
+  const botMemberships = {} as Record<BotName, WithId<ProjectMembership>>;
 
   beforeAll(async () => {
     app = express();
@@ -228,7 +229,7 @@ describe('Execute', () => {
     accessToken1 = testSetup.accessToken;
 
     async function setupBot(
-      name: string,
+      name: BotName,
       system: boolean,
       esmCode: string,
       cjsCode: string,
@@ -252,6 +253,15 @@ describe('Execute', () => {
 
       expect(res1).toHaveStatus(201);
       const bot = res1.body as WithId<Bot>;
+
+      // A plain FHIR create does not create a ProjectMembership; this is what the admin route and Bot/$init create
+      const systemRepo = await getProjectSystemRepo(project1);
+      botMemberships[name] = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project1),
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
 
       const res2 = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -513,7 +523,7 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
-      .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext' });
+      .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext', runAsUser: true });
     expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
@@ -653,6 +663,7 @@ describe('Execute', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'vmcontext',
+        runAsUser: true,
       });
     expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
@@ -800,7 +811,6 @@ describe('Execute', () => {
 
   test.each<[string, Partial<Bot>, boolean]>([
     ['runAsUser', { runAsUser: true }, false],
-    ['without a membership', {}, false],
     ['with its own membership', {}, true],
   ])('Bot %s and a caller with SMART scopes', async (_name, botProps, withMembership) => {
     const res1 = await request(app)
@@ -867,6 +877,54 @@ describe('Execute', () => {
     }
   });
 
+  test('Bot without project membership does not run as the caller', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext' });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+    expect(bot.runAsUser).toBeUndefined();
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ code: `exports.handler = async (medplum) => ({ token: medplum.getAccessToken() });` });
+    expect(res2).toHaveStatus(200);
+
+    const execute = (): Promise<request.Response> =>
+      request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send({});
+
+    const res3 = await execute();
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue[0].details.text).toStrictEqual('Could not find project membership for bot');
+
+    const systemRepo = await getProjectSystemRepo(project1);
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(project1),
+      user: createReference(bot),
+      profile: createReference(bot),
+    });
+    clearBotAccessTokenCache();
+    const res4 = await execute();
+    expect(res4).toHaveStatus(200);
+    expect(parseJWTPayload(res4.body.token).profile).toStrictEqual(getReferenceString(bot));
+
+    // Removing the bot's membership must not hand it the caller's access
+    await systemRepo.deleteResource('ProjectMembership', membership.id);
+    clearBotAccessTokenCache();
+    const res5 = await execute();
+    expect(res5).toHaveStatus(400);
+    expect(res5.body.issue[0].details.text).toStrictEqual('Could not find project membership for bot');
+  });
+
   test('Propagates trace ID', async () => {
     // Create a bot with empty code
     const res1 = await request(app)
@@ -877,6 +935,7 @@ describe('Execute', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'vmcontext',
+        runAsUser: true,
       });
     expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
@@ -917,6 +976,7 @@ describe('Execute', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'vmcontext',
+        runAsUser: true,
       });
     expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
@@ -1119,26 +1179,10 @@ describe('Execute', () => {
     });
 
     describe('bot with a membership in the project that owns it', () => {
-      const ownMemberships = {} as Record<BotName, WithId<ProjectMembership>>;
-
-      beforeAll(async () => {
-        // This is what the admin route and Bot/$init create
-        const systemRepo = await getProjectSystemRepo(project1);
-        for (const botName of ['echoBot', 'booleanBot'] as const) {
-          ownMemberships[botName] = await systemRepo.createResource<ProjectMembership>({
-            resourceType: 'ProjectMembership',
-            project: createReference(project1),
-            user: createReference(bots[botName]),
-            profile: createReference(bots[botName]),
-          });
-        }
-      });
-
       test.each<[BotName, 'own' | 'linking', boolean]>([
         ['echoBot', 'own', true],
         ['echoBot', 'linking', false], // Has a membership in the linking project too
         ['booleanBot', 'own', true],
-        ['booleanBot', 'linking', false], // Falls back to the caller's membership
       ])('Bot %s called from %s project', async (botName, whichProject, expectOwnMembership) => {
         clearBotAccessTokenCache();
         const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
@@ -1158,7 +1202,17 @@ describe('Execute', () => {
         const authState = (await getLoginForAccessToken(undefined, generatedAccessToken))?.authState;
 
         expect(authState?.project?.id).toBe(expectOwnMembership ? project1.id : project2.id);
-        expect(authState?.membership?.id === ownMemberships[botName].id).toBe(expectOwnMembership);
+        expect(authState?.membership?.id === botMemberships[botName].id).toBe(expectOwnMembership);
+      });
+
+      test('Bot without a membership in the linking project does not run as the caller', async () => {
+        const res = await request(app)
+          .post(`/fhir/R4/Bot/${bots.booleanBot.id}/$execute`)
+          .set('Content-Type', ContentType.TEXT)
+          .set('Authorization', 'Bearer ' + accessToken2)
+          .send('input: true');
+        expect(res).toHaveStatus(400);
+        expect(res.body.issue[0].details.text).toStrictEqual('Could not find project membership for bot');
       });
     });
   });

@@ -50,13 +50,13 @@ import { getBinaryStorage } from '../storage/loader';
 import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
-const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
 const callerSmartScopesLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
  * Returns the bot's project membership.
  * If the bot is configured to run as the user, then use the current user's membership.
- * Otherwise, use the bot's project membership in the current project
+ * Otherwise, use the bot's project membership in the current project.
+ * A bot without "runAsUser" never borrows the caller's membership: if it has no membership, this throws.
  * @param ctx - The authenticated request context.
  * @param bot - The bot resource.
  * @returns The project membership for the bot.
@@ -66,25 +66,13 @@ export async function getBotProjectMembership(
   bot: WithId<Bot>
 ): Promise<WithId<ProjectMembership>> {
   if (bot.runAsUser) {
-    // If the bot is configured to run as the user, then use the current user's membership
     return ctx.membership;
   }
-  // Otherwise, use the bot's project membership in the current project
-  const project = ctx.project.id;
-  const membership = await findProjectMembership(project, createReference(bot));
-  if (membership) {
-    return membership;
+  const membership = await findProjectMembership(ctx.project.id, createReference(bot));
+  if (!membership) {
+    throw new OperationOutcomeError(badRequest('Could not find project membership for bot'));
   }
-  missingMembershipLogThrottle.maybeLog(`${project}/${bot.id}`, (suppressed) => {
-    getLogger().warn('Bot executed without ProjectMembership', {
-      botId: bot.id,
-      botProject: bot.meta?.project,
-      runAsProject: project,
-      runAsMembership: ctx.membership.id,
-      suppressed,
-    });
-  });
-  return ctx.membership;
+  return membership;
 }
 
 /**

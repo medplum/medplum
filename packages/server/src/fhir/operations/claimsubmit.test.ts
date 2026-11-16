@@ -78,7 +78,7 @@ async function deployClaimOperation(
     .post('/fhir/R4/Bot')
     .set('Content-Type', ContentType.FHIR_JSON)
     .set('Authorization', 'Bearer ' + accessToken)
-    .send({ resourceType: 'Bot', name: 'Claim Submit Bot', runtimeVersion: 'vmcontext' });
+    .send({ resourceType: 'Bot', runAsUser: true, name: 'Claim Submit Bot', runtimeVersion: 'vmcontext' });
   expect(res1).toHaveStatus(201);
   const bot = res1.body as WithId<Bot>;
 

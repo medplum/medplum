@@ -124,6 +124,7 @@ describe('Custom operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'Custom Operation Bot',
         runtimeVersion: 'vmcontext',
       });
@@ -203,6 +204,54 @@ describe('Custom operation', () => {
     });
   });
 
+  test('Bot without project membership does not run as the caller', async () => {
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Bot', name: 'No Membership Bot', runtimeVersion: 'vmcontext' });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `exports.handler = async (medplum, event) => event.input;` });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'my-no-membership-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'my-no-membership-operation',
+        system: false,
+        type: true,
+        instance: false,
+        parameter: [{ use: 'out', name: 'return', type: 'Patient', min: 1, max: '1' }],
+      });
+    expect(res3).toHaveStatus(201);
+
+    const res4 = await request(app)
+      .post('/fhir/R4/Patient/$my-no-membership-operation')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res4).toHaveStatus(400);
+    expect(res4.body.issue[0].details.text).toStrictEqual('Could not find project membership for bot');
+  });
+
   test('System-level custom operation', async () => {
     const resMissing = await request(app)
       .post('/fhir/R4/$my-system-operation')
@@ -217,6 +266,7 @@ describe('Custom operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'System Custom Operation Bot',
         runtimeVersion: 'vmcontext',
       });
@@ -361,6 +411,7 @@ describe('Custom operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'Parameters Custom Operation Bot',
         runtimeVersion: 'vmcontext',
       });
@@ -424,7 +475,7 @@ describe('Custom operation', () => {
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Bot', name: 'Binary Custom Operation Bot', runtimeVersion: 'vmcontext' });
+      .send({ resourceType: 'Bot', runAsUser: true, name: 'Binary Custom Operation Bot', runtimeVersion: 'vmcontext' });
     expect(botRes).toHaveStatus(201);
     const bot = botRes.body as WithId<Bot>;
 
@@ -478,7 +529,7 @@ describe('Custom operation', () => {
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Bot', name: 'Headers Bot', runtimeVersion: 'vmcontext' });
+      .send({ resourceType: 'Bot', runAsUser: true, name: 'Headers Bot', runtimeVersion: 'vmcontext' });
     expect(botRes).toHaveStatus(201);
     const bot = botRes.body as WithId<Bot>;
 
@@ -533,6 +584,7 @@ describe('Custom operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'Custom Operation Bot',
         runtimeVersion: 'vmcontext',
       });
@@ -608,6 +660,7 @@ describe('Custom operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'Custom Operation Bot',
         runtimeVersion: 'vmcontext',
       });
@@ -696,6 +749,7 @@ describe('Custom operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'Instance Operation Bot',
         runtimeVersion: 'vmcontext',
       });
@@ -764,7 +818,7 @@ describe('Custom operation', () => {
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Bot', name: 'Echo Bot', runtimeVersion: 'vmcontext' });
+      .send({ resourceType: 'Bot', runAsUser: true, name: 'Echo Bot', runtimeVersion: 'vmcontext' });
     expect(res1).toHaveStatus(201);
     const bot = res1.body as WithId<Bot>;
 
@@ -809,7 +863,7 @@ describe('Custom operation', () => {
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Bot', name: 'Raw Body Operation Bot', runtimeVersion: 'vmcontext' });
+      .send({ resourceType: 'Bot', runAsUser: true, name: 'Raw Body Operation Bot', runtimeVersion: 'vmcontext' });
     expect(botRes).toHaveStatus(201);
     const bot = botRes.body as WithId<Bot>;
 
@@ -884,7 +938,7 @@ describe('Custom operation', () => {
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Bot', name: 'GET Instance Bot', runtimeVersion: 'vmcontext' });
+      .send({ resourceType: 'Bot', runAsUser: true, name: 'GET Instance Bot', runtimeVersion: 'vmcontext' });
     expect(res1).toHaveStatus(201);
     const bot = res1.body as WithId<Bot>;
 
@@ -940,7 +994,7 @@ describe('Custom operation', () => {
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Bot', name: 'Type Level Bot', runtimeVersion: 'vmcontext' });
+      .send({ resourceType: 'Bot', runAsUser: true, name: 'Type Level Bot', runtimeVersion: 'vmcontext' });
     expect(res1).toHaveStatus(201);
     const bot = res1.body as WithId<Bot>;
 

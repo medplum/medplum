@@ -6,6 +6,8 @@ weight: 110
 
 By default, the AccessPolicy that is applied to a Medplum Bot is defined by the Bot's [ProjectMembership](/docs/api/fhir/medplum/projectmembership). This can be useful for many cases where the Bot should have different access to resources than the user who triggered the Bot.
 
+A Bot without `runAsUser` must have a ProjectMembership in the project where it runs. Bots created in the Medplum App, through `POST /admin/projects/:projectId/bot`, or with `Bot/$init` get one automatically. A Bot created with a plain FHIR create (for example `medplum.createResource({ resourceType: 'Bot', ... })`), or one whose ProjectMembership was removed, has none. Executing such a Bot with `$execute` or a custom operation fails with "Could not find project membership for bot". It never falls back to the access of the user who triggered it.
+
 However, there are cases where you may want the __Bot to inherit the access of the user who triggered it__. To do this, you can set the `runAsUser` field on the [Bot](/docs/api/fhir/medplum/bot) to true.
 
 Example:

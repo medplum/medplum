@@ -79,6 +79,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
         name: 'Streaming Test Bot',
         runtimeVersion: 'awslambda',

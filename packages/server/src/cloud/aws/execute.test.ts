@@ -66,6 +66,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
@@ -156,6 +157,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'Test Bot',
         code: '',
       });
@@ -178,6 +180,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        runAsUser: true,
         name: 'Test Bot',
         runtimeVersion: 'unsupported',
       });
