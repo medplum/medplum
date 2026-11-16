@@ -5,13 +5,13 @@ import { GetObjectTaggingCommand, NoSuchKey, PutObjectTaggingCommand, S3Client }
 import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { AsyncJob, Binary, OperationOutcome } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorageKey } from '../../storage/base';
 import { initBinaryStorage } from '../../storage/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import {
   MALWARE_SCAN_PENDING_MS,

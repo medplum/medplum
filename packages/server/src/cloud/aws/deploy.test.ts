@@ -16,7 +16,6 @@ import {
 } from '@aws-sdk/client-lambda';
 import { allOk, badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import JSZip from 'jszip';
@@ -25,6 +24,7 @@ import { runInNewContext } from 'vm';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { createTestProject, waitFor } from '../../test.setup';
 import {
   DEFAULT_LAMBDA_TIMEOUT,

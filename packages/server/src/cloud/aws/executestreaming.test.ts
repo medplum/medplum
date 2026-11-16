@@ -4,12 +4,12 @@ import { InvokeWithResponseStreamCommand, LambdaClient, ListLayerVersionsCommand
 import type { WithId } from '@medplum/core';
 import { badRequest, ContentType, getStatus } from '@medplum/core';
 import type { Bot, Project } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { createBotMembership, createTestProject } from '../../test.setup';
 
 const app = express();

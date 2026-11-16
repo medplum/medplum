@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { ContentType } from '@medplum/core';
-import { mockAwsClient } from '../test-utils/mockAwsClient';
 import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { initTestAuth } from '../test.setup';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {

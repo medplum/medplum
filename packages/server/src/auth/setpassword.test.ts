@@ -3,7 +3,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference, Operator } from '@medplum/core';
 import type { Login, UserSecurityRequest } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -18,6 +17,7 @@ import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/r
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { revokeUserLogins, setPassword } from './setpassword';

@@ -9,7 +9,6 @@ import {
 import type { WithId } from '@medplum/core';
 import { badRequest, ContentType } from '@medplum/core';
 import type { Bot, Project } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -17,6 +16,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { createBotMembership, createTestProject } from '../../test.setup';
 import { getLambdaFunctionName, normalizeLambdaExecutionError } from './execute';
 

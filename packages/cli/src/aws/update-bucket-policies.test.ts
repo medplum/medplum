@@ -9,10 +9,10 @@ import {
 } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client } from '@aws-sdk/client-s3';
-import { mockAwsClient } from './mockAwsClient';
 import fs from 'node:fs';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
+import { mockAwsClient } from './mockAwsClient';
 import { updateBucketPolicy } from './update-bucket-policies';
 
 vi.mock('node:fs', () => {

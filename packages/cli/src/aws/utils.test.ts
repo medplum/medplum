@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { mockAwsClient } from './mockAwsClient';
 import fs from 'node:fs';
 import type { Mock } from 'vitest';
+import { mockAwsClient } from './mockAwsClient';
 import { printConfigNotFound, printStackNotFound } from './utils';
 
 vi.mock('node:fs', () => {

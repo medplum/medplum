@@ -6,9 +6,9 @@ import {
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import { mockAwsClient } from './mockAwsClient';
 import type { MockInstance } from 'vitest';
 import { main } from '../index';
+import { mockAwsClient } from './mockAwsClient';
 
 describe('describe command', () => {
   let processError: MockInstance;

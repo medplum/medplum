@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { mockAwsClient } from './mockAwsClient';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { getConfigFileName } from '../utils';
+import { mockAwsClient } from './mockAwsClient';
 import { mockReadline } from './test.utils';
 
 vi.mock('node:readline');

@@ -14,12 +14,12 @@ import {
 } from '@aws-sdk/client-lambda';
 import { ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import express from 'express';
 import JSZip from 'jszip';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { initTestAuth } from '../../test.setup';
 import { DEFAULT_LAMBDA_TIMEOUT } from './deploy';
 

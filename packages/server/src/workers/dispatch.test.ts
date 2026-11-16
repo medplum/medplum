@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { DeleteFunctionCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import type { Bot, Patient, Subscription } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../test-utils/mockAwsClient';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getDispatchQueue } from './dispatch';
 import { findAndExecDispatchJob } from './test-utils';

@@ -11,13 +11,13 @@ import {
 import { ContentType } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import { sdkStreamMixin } from '@smithy/util-stream';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import type { Request } from 'express';
 import { createHash } from 'node:crypto';
 import type internal from 'stream';
 import { Readable } from 'stream';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 
 describe('Storage', () => {
   let mockS3Client: ReturnType<typeof mockAwsClient>;

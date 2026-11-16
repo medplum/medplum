@@ -21,7 +21,6 @@ import type {
   RelatedPerson,
   User,
 } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
@@ -37,6 +36,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { SelectQuery } from '../fhir/sql';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import {
   addTestUser,
   createTestProject,

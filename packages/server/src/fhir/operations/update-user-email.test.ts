@@ -12,7 +12,6 @@ import type {
   User,
   UserSecurityRequest,
 } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -20,6 +19,7 @@ import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getAuthTokens, tryLogin } from '../../oauth/utils';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { createTestProject, getSuperAdminTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
 

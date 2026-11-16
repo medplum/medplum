@@ -8,13 +8,13 @@ import {
 } from '@aws-sdk/client-cloudformation';
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import type { MedplumClient } from '@medplum/core';
-import { mockAwsClient } from './mockAwsClient';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { createMedplumClient } from '../util/client';
+import { mockAwsClient } from './mockAwsClient';
 
 vi.mock('node:child_process');
 vi.mock('../util/client');

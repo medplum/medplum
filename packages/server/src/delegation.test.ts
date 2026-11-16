@@ -16,7 +16,6 @@ import type {
   Project,
   ProjectMembership,
 } from '@medplum/fhirtypes';
-import { mockAwsClient } from './test-utils/mockAwsClient';
 import type { Job } from 'bullmq';
 import { Worker } from 'bullmq';
 import express from 'express';
@@ -28,6 +27,7 @@ import { loadTestConfig } from './config/loader';
 import { getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
+import { mockAwsClient } from './test-utils/mockAwsClient';
 import {
   addTestUser,
   createTestProject,

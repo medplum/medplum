@@ -8,13 +8,13 @@ import {
 } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { mockAwsClient } from './mockAwsClient';
 import fastGlob from 'fast-glob';
 import fs from 'node:fs';
 import { Writable } from 'node:stream';
 import * as tar from 'tar';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
+import { mockAwsClient } from './mockAwsClient';
 
 vi.mock('fast-glob', () => {
   const mock = { sync: vi.fn(() => []) };

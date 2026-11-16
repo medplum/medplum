@@ -9,11 +9,11 @@ import {
 } from '@aws-sdk/client-textract';
 import { ContentType } from '@medplum/core';
 import type { Binary, Media } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { initTestAuth } from '../../test.setup';
 
 describe('AWS Textract', () => {

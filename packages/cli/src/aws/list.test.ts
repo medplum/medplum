@@ -6,8 +6,8 @@ import {
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import { mockAwsClient } from './mockAwsClient';
 import { main } from '../index';
+import { mockAwsClient } from './mockAwsClient';
 
 describe('list command', () => {
   beforeAll(() => {

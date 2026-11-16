@@ -27,7 +27,6 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import { mockAwsClient } from '../test-utils/mockAwsClient';
 import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
@@ -54,6 +53,7 @@ import {
 } from '../pubsub';
 import * as redisModule from '../redis';
 import { getPubSubRedisSubscriber } from '../redis';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { createTestProject, waitForPubSubRedisSubscriberReady, withTestContext } from '../test.setup';
 import { mockFetchStatus } from '../test.setup.fetch';
 import { AuditEventOutcome } from '../util/auditevent';
