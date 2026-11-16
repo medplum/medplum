@@ -237,6 +237,37 @@ describe('Whole-questionnaire assembly', () => {
   });
 
   test.each(['variable', 'launchContext'])(
+    'allows a child to satisfy assembleContext with its own %s after propagation',
+    async (kind) => {
+      const declaration = kind === 'variable' ? variable('user') : launchContext();
+      const child = module('child');
+      child.extension?.push({ url: sdc + 'sdc-questionnaire-assembleContext', valueString: 'user' }, declaration);
+      await repo.createResource(child);
+      const root = module('root', [group('section', [placeholder('child')])]);
+      const original = deepClone(root);
+      const result = await assembleQuestionnaire(repo, root);
+      expect(result.issues).toEqual([]);
+      expect(result.questionnaire.item?.[0].item?.[0].linkId).toBe('section.q');
+      const containingScope = kind === 'variable' ? result.questionnaire.item?.[0] : result.questionnaire;
+      expect(containingScope?.extension).toContainEqual(declaration);
+      expect(root).toEqual(original);
+    }
+  );
+
+  test('deduplicates a shared parent and child launch context required by assembleContext', async () => {
+    const launch = launchContext();
+    const child = module('child');
+    child.extension?.push({ url: sdc + 'sdc-questionnaire-assembleContext', valueString: 'user' }, launchContext());
+    await repo.createResource(child);
+    const root = module('root', [placeholder('child')]);
+    root.extension?.push(launch);
+    const result = await assembleQuestionnaire(repo, root);
+    expect(result.issues).toEqual([]);
+    expect(result.questionnaire.item?.[0].linkId).toBe('q');
+    expect(result.questionnaire.extension?.filter((e) => e.url === launch.url)).toEqual([launch]);
+  });
+
+  test.each(['variable', 'launchContext'])(
     'resolves propagated %s dependencies from nested imports in either sibling order',
     async (kind) => {
       const provider = module('provider', [{ linkId: 'provider', type: 'string' }]);

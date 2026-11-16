@@ -296,6 +296,8 @@ class QuestionnaireAssembler {
   private checkContexts(): void {
     // SDC permits declarations later in a scope. Keep live container references until
     // all imports have propagated their variables and global launch contexts.
+    // Medplum interprets availability in that completed scope, including declarations
+    // propagated from the module that requires the context.
     const launchNames = new Set(
       extensions(this.root, LAUNCH_CONTEXT_URL).map(
         (e) => e.extension?.find((part) => part.url === 'name')?.valueCoding?.code
