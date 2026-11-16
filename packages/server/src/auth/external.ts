@@ -48,7 +48,7 @@ export interface ExternalAuthState {
 type IdentitySource = NonNullable<IdentityProvider['identitySource']>;
 type IdentityMappingMode = NonNullable<IdentityProvider['identityMappingMode']>;
 
-interface ExternalLoginIdentity {
+export interface ExternalLoginIdentity {
   email?: string;
   externalId?: string;
 }
@@ -85,7 +85,12 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
-  logExternalCallback(req, idp, client, domainConfig);
+  // RFC 9207: if the identity provider reports its issuer, it must match the configured issuer
+  const iss = req.query.iss;
+  if (iss !== undefined && idp.issuer && iss !== idp.issuer) {
+    sendOutcome(res, badRequest('Invalid issuer'));
+    return;
+  }
 
   const userInfo = await verifyExternalCode(idp, code, body.codeChallenge);
 
@@ -225,45 +230,13 @@ async function getIdentityProvider(
 }
 
 /**
- * Logs which identity provider handled an external auth callback, and whether the callback's
- * `iss` parameter (RFC 9207) matches the identity provider's configured issuer.
- * @param req - The callback request.
- * @param idp - The identity provider selected for the callback.
- * @param client - The client application, if the identity provider came from one.
- * @param domainConfig - The domain configuration, if the identity provider came from one.
+ * Maps the claims from an external identity provider to the identity used to look up the Medplum user.
+ * Every flow that signs in a user from external claims must use this, so that they agree on who the user is.
+ * @param idp - The identity provider configuration.
+ * @param userInfo - The claims from the external identity provider.
+ * @returns The email or external ID to log in with.
  */
-function logExternalCallback(
-  req: Request,
-  idp: IdentityProvider,
-  client: ClientApplication | undefined,
-  domainConfig: DomainConfiguration | undefined
-): void {
-  const iss = isString(req.query.iss) ? req.query.iss : undefined;
-  let idpSource = 'server';
-  if (client?.identityProvider === idp) {
-    idpSource = 'client';
-  } else if (domainConfig?.identityProvider === idp) {
-    idpSource = 'domain';
-  }
-  let tokenUrlHost: string | undefined;
-  try {
-    tokenUrlHost = idp.tokenUrl ? new URL(idp.tokenUrl).host : undefined;
-  } catch {
-    tokenUrlHost = undefined;
-  }
-  getLogger().info('External auth callback', {
-    idpSource,
-    clientId: client?.id,
-    projectId: client?.meta?.project,
-    domain: domainConfig?.domain,
-    issuer: idp.issuer,
-    iss,
-    issMatches: iss && idp.issuer ? iss === idp.issuer : undefined,
-    tokenUrlHost,
-  });
-}
-
-async function resolveExternalLoginIdentity(
+export async function resolveExternalLoginIdentity(
   idp: IdentityProvider,
   userInfo: Record<string, unknown>
 ): Promise<ExternalLoginIdentity> {

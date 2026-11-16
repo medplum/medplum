@@ -16,7 +16,15 @@ import {
   setPrimaryProvider,
   toAppointmentSiteReference,
 } from '@medplum/core';
-import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  CodeableConcept,
+  HealthcareService,
+  Parameters,
+  Patient,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
 import type { JSX } from 'react';
@@ -352,6 +360,17 @@ describe('AppointmentDetails', () => {
 
     expect(await screen.findByText('100041')).toBeInTheDocument();
     expect(screen.getByText('MRN')).toBeInTheDocument();
+  });
+
+  test('marks a patient who has died', async () => {
+    const patient = await medplum.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Lee'], family: 'Whitfield' }],
+      deceasedBoolean: true,
+    });
+    renderDetails({ ...BOOKED_APPOINTMENT, participant: [{ status: 'accepted', actor: createReference(patient) }] });
+
+    expect(await screen.findByText('Lee Whitfield (deceased)')).toBeInTheDocument();
   });
 
   test('names the primary provider apart from the other providers, rooms, and devices', async () => {

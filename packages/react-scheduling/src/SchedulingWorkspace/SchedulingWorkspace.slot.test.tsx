@@ -87,7 +87,9 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(screen.getByText('Miles Cooper'));
     expect(appointmentDetails()).toBeInTheDocument();
     expect(slotDetails()).not.toBeInTheDocument();
-    expect(screen.getByText('Miles Cooper').closest('.appointment')).toHaveClass('selected');
+    expect(screen.getByText('Miles Cooper', { selector: '.appointment *' }).closest('.appointment')).toHaveClass(
+      'selected'
+    );
     expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
     await userEvent.click(screen.getByText('Blocked'));
     expect(slotDetails()).toBeInTheDocument();

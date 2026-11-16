@@ -15,7 +15,7 @@ Find your Client Application.
 
 Set `ClientApplication.identityProvider.useSubject` to `true`.
 
-The external IDP callback also supports explicit `identitySource` and `identityMappingMode` settings. If supplied, keep them set to `subject` and `project-membership-external-id` for subject matching. Token exchange selects its matching mode using `useSubject`.
+The external IDP callback and token exchange also support explicit `identitySource` and `identityMappingMode` settings, which take precedence over `useSubject`. If supplied, keep them set to `subject` and `project-membership-external-id` for subject matching.
 
 ## Invite user
 

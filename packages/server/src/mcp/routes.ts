@@ -6,6 +6,7 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
 import type { IncomingMessage } from 'node:http';
+import { getAuthenticatedContext } from '../context';
 import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
@@ -33,16 +34,22 @@ mcpRouter.all('/stream', async (req: Request, res: Response) => {
 // MCP SSE is technically deprecated, but most major LLM clients still use it
 mcpRouter.get('/sse', async (req, res) => {
   const transport = new SSEServerTransport('/mcp/sse', res);
+  const membershipId = getAuthenticatedContext().membership.id;
 
   const redisSubscriber = getPubSubRedisSubscriber();
   redisSubscriber.on('message', async (_channel: string, data: string) => {
     try {
+      const envelope = JSON.parse(data) as SseEnvelope;
+      if (envelope.membershipId !== membershipId) {
+        getLogger().warn('Rejected MCP SSE message from a different membership', { sessionId: transport.sessionId });
+        return;
+      }
       const dummyReq = { headers: { 'content-type': 'application/json' } } as IncomingMessage;
       const dummyRes = {
         writeHead: (_statusCode: number, _headers?: Record<string, string>) => dummyRes,
         end: (_data?: string) => {},
       } as unknown as Response;
-      await transport.handlePostMessage(dummyReq, dummyRes, data);
+      await transport.handlePostMessage(dummyReq, dummyRes, envelope.message);
     } catch (err: any) {
       getLogger().error('Error handling MCP SSE message', err);
     }
@@ -76,11 +83,16 @@ mcpRouter.post(
       return;
     }
     const sessionId = req.query?.sessionId as string;
-    const body = req.body;
-    await publish(getRedisChannelForSessionId(sessionId), JSON.stringify(body));
+    const envelope: SseEnvelope = { membershipId: getAuthenticatedContext().membership.id, message: req.body };
+    await publish(getRedisChannelForSessionId(sessionId), JSON.stringify(envelope));
     res.status(202).end('Accepted');
   }
 );
+
+interface SseEnvelope {
+  membershipId: string;
+  message: unknown;
+}
 
 function getRedisChannelForSessionId(sessionId: string): string {
   return `medplum:mcp:sse:${sessionId}`;

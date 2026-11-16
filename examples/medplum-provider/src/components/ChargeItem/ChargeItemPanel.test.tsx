@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { notFound, OperationOutcomeError } from '@medplum/core';
 import type { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import ChargeItemPanel from './ChargeItemPanel';
 
@@ -131,9 +131,7 @@ describe('ChargeItemPanel', () => {
   const setup = (props: Partial<Parameters<typeof ChargeItemPanel>[0]> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <ChargeItemPanel chargeItem={mockChargeItem} onChange={vi.fn()} onDelete={vi.fn()} {...props} />
-        </MantineProvider>
+        <ChargeItemPanel chargeItem={mockChargeItem} onChange={vi.fn()} onDelete={vi.fn()} {...props} />
       </MedplumProvider>
     );
   };
@@ -318,9 +316,7 @@ describe('ChargeItemPanel', () => {
 
     rerender(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <ChargeItemPanel chargeItem={updatedItem} onChange={vi.fn()} onDelete={vi.fn()} />
-        </MantineProvider>
+        <ChargeItemPanel chargeItem={updatedItem} onChange={vi.fn()} onDelete={vi.fn()} />
       </MedplumProvider>
     );
 

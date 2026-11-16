@@ -896,6 +896,54 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toStrictEqual(author);
     }));
 
+  test('Security filters fail closed when no entry grants the interactions', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Patient', interaction: ['read'] }] },
+      });
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+      });
+
+      const countVisible = async (interactions: AccessPolicyInteraction[]): Promise<number> => {
+        const builder = new SelectQuery('Patient').column('id').where('id', '=', patient.id);
+        repo.addSecurityFilters(builder, 'Patient', interactions);
+        return (await repo.sqlRead(builder, 'Patient', { mode: DatabaseMode.WRITER })).length;
+      };
+
+      expect(await countVisible([AccessPolicyInteraction.READ])).toBe(1);
+      expect(await countVisible([AccessPolicyInteraction.SEARCH])).toBe(0);
+      expect(await countVisible([])).toBe(0);
+    }));
+
+  test('Security filters do not let a readonly entry grant write interactions', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+      });
+      // Bypasses getUserConfiguration, which expands readonly into an interaction list for membership entries
+      const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+        projects: [project],
+        author: { reference: 'Practitioner/' + randomUUID() },
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Patient', readonly: true }] },
+      });
+
+      const countVisible = async (interactions: AccessPolicyInteraction[]): Promise<number> => {
+        const builder = new SelectQuery('Patient').column('id').where('id', '=', patient.id);
+        repo.addSecurityFilters(builder, 'Patient', interactions);
+        return (await repo.sqlRead(builder, 'Patient', { mode: DatabaseMode.WRITER })).length;
+      };
+
+      expect(await countVisible([AccessPolicyInteraction.READ])).toBe(1);
+      expect(await countVisible([AccessPolicyInteraction.UPDATE])).toBe(0);
+      expect(await countVisible([AccessPolicyInteraction.DELETE])).toBe(0);
+    }));
+
   test('Skip background jobs when configured', () =>
     withTestContext(async () => {
       const { project } = await createTestProject();

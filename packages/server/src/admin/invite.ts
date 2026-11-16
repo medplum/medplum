@@ -419,7 +419,9 @@ async function upsertProjectMembership(
     }
   }
 
-  // Apply default membership policy for RelatedPerson invites, with patient as a parameter.
+  // RelatedPerson's profile is not the patient. Put the associated Patient on
+  // ProjectMembership.access.parameter so login substitutes it for %patient in the policy
+  // criteria. Without that parameter, login would substitute the RelatedPerson profile.
   if (
     request.resourceType === 'RelatedPerson' &&
     !partialMembership.accessPolicy &&

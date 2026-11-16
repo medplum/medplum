@@ -22,6 +22,7 @@ import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
+import { getWsBindingTokenAudience } from '../fhir/operations/getwsbindingtoken';
 import type { Repository } from '../fhir/repo';
 import type { CacheEntry } from '../fhir/repository/resource-cache';
 import { getFullUrl } from '../fhir/response';
@@ -180,7 +181,9 @@ async function notifySubscriber(
 
   let notification: Bundle | undefined;
   try {
-    const repo = (await getLoginForAccessToken(undefined, subMetadata.rawToken))?.repo;
+    const repo = (
+      await getLoginForAccessToken(undefined, subMetadata.rawToken, { audience: getWsBindingTokenAudience() })
+    )?.repo;
     if (!repo) {
       globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
       return false;
@@ -452,6 +455,12 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
         socket.terminate();
         return undefined;
       }
+    }
+    if (tokenPayload.aud !== getWsBindingTokenAudience()) {
+      socket.send(
+        JSON.stringify(badRequest('Token is not a WebSocket binding token. Get a new one from $get-ws-binding-token.'))
+      );
+      return undefined;
     }
     return tokenPayload as WebSocketSubToken;
   };
