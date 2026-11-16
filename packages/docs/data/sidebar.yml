@@ -220,6 +220,8 @@ items:
       - type: "doc"
         id: "docs/questionnaires/advanced-authoring"
       - type: "doc"
+        id: "docs/questionnaires/modular-questionnaires"
+      - type: "doc"
         id: "docs/questionnaires/saving-and-resuming"
       - type: "doc"
         id: "docs/questionnaires/parsing-questionnaire-responses"

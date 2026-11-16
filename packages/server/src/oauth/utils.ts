@@ -9,6 +9,7 @@ import {
   forbidden,
   getDateProperty,
   getReferenceString,
+  getStatus,
   isJwt,
   isString,
   isUUID,
@@ -592,7 +593,16 @@ export async function setLoginMembership(
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource(updatedLogin);
+  try {
+    // `ifMatch` makes this a compare-and-swap: all of the checks above were made on `login`,
+    // so of several concurrent requests for the same login, exactly one gets to set the membership
+    return await globalSystemRepo.updateResource(updatedLogin, { ifMatch: login.meta?.versionId });
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+      throw new OperationOutcomeError(badRequest('Login profile already set'));
+    }
+    throw err;
+  }
 }
 
 /**
@@ -1183,11 +1193,14 @@ export async function verifyMultipleMatchingException(
  * Handles "on behalf of" requests if the "x-medplum-on-behalf-of" header is present.
  * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
+ * @param options - Optional verification options.
+ * @param options.audience - The expected audience, for tokens issued to a specific endpoint. Defaults to the (project-scoped) issuer.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(
   req: Request | undefined,
-  accessToken: string
+  accessToken: string,
+  options?: { audience?: string }
 ): Promise<AuthenticationResult | undefined> {
   const globalSystemRepo = getGlobalSystemRepo();
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
@@ -1211,7 +1224,8 @@ export async function getLoginForAccessToken(
   // ID tokens are audienced to the client rather than to the issuer, and refresh tokens carry a refresh secret.
   // Without these checks, either one is accepted as an access token. See RFC 8725 sections 3.9 and 3.12.
   const config = getConfig();
-  const expectedAudience = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
+  const expectedAudience =
+    options?.audience ?? (req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer);
   if (claims.aud !== expectedAudience || claims.refresh_secret !== undefined) {
     return undefined;
   }

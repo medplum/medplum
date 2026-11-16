@@ -542,7 +542,11 @@ describe('AccessPolicy', () => {
   ): Promise<Repository> {
     const memberAccess: ProjectMembershipAccess[] = [];
     for (const { policy, organization } of access) {
-      const created = await systemRepo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy', ...policy });
+      const created = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
+        ...policy,
+      });
       memberAccess.push({
         policy: createReference(created),
         parameter: organization ? [{ name: 'organization', valueReference: { reference: organization } }] : [],
