@@ -279,26 +279,31 @@ describe('OAuth utils', () => {
     expect(login).toBeDefined();
   });
 
-  test.each([
-    ['https://example.com/', false],
-    ['https://example.com/other', true],
-  ])('Login with redirect URI %s', async (redirectUri, warned) => {
-    const warnSpy = vi.spyOn(globalLogger, 'warn');
-    try {
-      await tryLogin({
+  test('Login with registered redirect URI', async () => {
+    const login = await tryLogin({
+      clientId: client.id,
+      authMethod: 'password',
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid',
+      nonce: 'nonce',
+      redirectUri: 'https://example.com/',
+    });
+    expect(login).toBeDefined();
+  });
+
+  test('Login with unregistered redirect URI', async () => {
+    await expect(
+      tryLogin({
         clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
         scope: 'openid',
         nonce: 'nonce',
-        redirectUri,
-      });
-      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Login redirect URI is not registered for client');
-      expect(calls.length > 0).toBe(warned);
-    } finally {
-      warnSpy.mockRestore();
-    }
+        redirectUri: 'https://example.com/other',
+      })
+    ).rejects.toThrow('Invalid redirect URI');
   });
 
   test('External auth without email or externalId', () => {
