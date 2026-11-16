@@ -474,7 +474,7 @@ function removeBinaryData<T extends Resource>(resource: T): T {
     return resource;
   }
   const { data: _data, ...rest } = resource;
-  return { ...rest, meta: { ...rest.meta, tag: [...(rest.meta?.tag ?? []), SUBSETTED_TAG] } } as T;
+  return { ...rest, meta: { ...rest.meta, tag: append(rest.meta?.tag, SUBSETTED_TAG) } } as T;
 }
 
 /**
